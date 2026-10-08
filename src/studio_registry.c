@@ -1,4 +1,3 @@
-/* Application-owned composition over installed authoring packages. */
 #include "studio_registry.h"
 
 #include "authoring/application_catalog.h"
@@ -19,10 +18,14 @@ static bool same_types(type_catalog_pack a, type_catalog_pack b)
         return false;
     }
     for (int i = 0; i < a.type_count; i++) {
-        if (a.types[i] != b.types[i]) { return false; }
+        if (a.types[i] != b.types[i]) {
+            return false;
+        }
     }
     for (int i = 0; i < a.enum_count; i++) {
-        if (a.enums[i] != b.enums[i]) { return false; }
+        if (a.enums[i] != b.enums[i]) {
+            return false;
+        }
     }
     return true;
 }
@@ -43,12 +46,18 @@ int type_catalog_pack_count()
 type_catalog_pack type_catalog_pack_at(int index)
 {
     assert(index >= 0);
-    if (index == 0) { return GAME_TYPE_PACK; }
-    if (index == 1) { return STUDIO_TYPE_PACK; }
+    if (index == 0) {
+        return GAME_TYPE_PACK;
+    }
+    if (index == 1) {
+        return STUDIO_TYPE_PACK;
+    }
     index -= 2;
     for (int i = 0; catalog && i < authoring_graph_catalog_type_pack_count(catalog); i++) {
         type_catalog_pack pack = authoring_graph_catalog_type_pack_at(catalog, i);
-        if (graph_types(pack) && index-- == 0) { return pack; }
+        if (graph_types(pack) && index-- == 0) {
+            return pack;
+        }
     }
     assert(false);
     return (type_catalog_pack){ 0 };

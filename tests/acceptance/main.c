@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <yyjson.h>
 
 studio *studio_acceptance_studio(void *);
 int studio_acceptance_host_main(int, char **);
@@ -70,67 +69,6 @@ static bool check_counter(studio *s, int expected, bool dirty, const node **lite
     const script_expression *value = &a->expressions[expression];
     const char *text = asset_code_text(code);
     bool actual_dirty = asset_code_dirty(code);
-    if (actual_dirty != dirty || value->kind != SCRIPT_EXPR_CONSTANT ||
-        value->constant.type != PIN_I32 || value->constant.i != expected) {
-        av_value *state = asset_code_capture(code);
-        const char *disk = av_get_str(av_obj_get(state, "disk"));
-        const char *baseline = av_get_str(av_obj_get(state, "disk_metadata"));
-        const char *metadata = av_get_str(av_obj_get(state, "metadata"));
-        const av_value *history = av_obj_get(state, "history");
-        int step = av_get_int(av_obj_get(state, "step"));
-        const char *snapshot = av_get_str(av_obj_get(av_arr_get(history, step), "metadata"));
-        baseline = baseline ? baseline : "";
-        metadata = metadata ? metadata : "";
-        snapshot = snapshot ? snapshot : "";
-        size_t at = 0;
-        while (baseline[at] && metadata[at] && baseline[at] == metadata[at]) {
-            at++;
-        }
-        fprintf(stderr,
-                "Studio dirty diagnostic: text_equals_disk=%d step=%d history=%zu "
-                "baseline_bytes=%zu metadata_bytes=%zu snapshot_equals_metadata=%d "
-                "first_difference=%zu baseline=%.80s metadata=%.80s\n",
-                disk && !strcmp(text, disk), step, av_arr_size(history),
-                strlen(baseline), strlen(metadata), !strcmp(snapshot, metadata),
-                at, baseline + at, metadata + at);
-        size_t count = av_arr_size(history);
-        for (size_t i = 0; i < count && i < 8; i++) {
-            const av_value *entry = av_arr_get(history, i);
-            const char *entry_text = av_get_str(av_obj_get(entry, "text"));
-            const char *entry_metadata = av_get_str(av_obj_get(entry, "metadata"));
-            entry_metadata = entry_metadata ? entry_metadata : "";
-            size_t difference = 0;
-            while (baseline[difference] && entry_metadata[difference] &&
-                   baseline[difference] == entry_metadata[difference]) {
-                difference++;
-            }
-            yyjson_doc *doc = yyjson_read(entry_metadata, strlen(entry_metadata), 0);
-            yyjson_val *root = doc ? yyjson_doc_get_root(doc) : NULL;
-            fprintf(stderr,
-                    "Studio history[%zu]: text=%.120s metadata_bytes=%zu keys=%zu "
-                    "nodes=%zu watches=%zu boxes=%zu routes=%zu first_difference=%zu "
-                    "baseline=%.80s metadata=%.80s\n",
-                    i, entry_text ? entry_text : "", strlen(entry_metadata),
-                    yyjson_obj_size(root), yyjson_arr_size(yyjson_obj_get(root, "source_layout")),
-                    yyjson_arr_size(yyjson_obj_get(root, "source_pin_watches")),
-                    yyjson_arr_size(yyjson_obj_get(root, "source_comment_boxes")),
-                    yyjson_arr_size(yyjson_obj_get(root, "source_edge_routes")),
-                    difference, baseline + difference, entry_metadata + difference);
-            if (i > 0) {
-                const char *previous = av_get_str(av_obj_get(av_arr_get(history, i - 1), "metadata"));
-                previous = previous ? previous : "";
-                size_t changed = 0;
-                while (previous[changed] && entry_metadata[changed] &&
-                       previous[changed] == entry_metadata[changed]) {
-                    changed++;
-                }
-                fprintf(stderr, "Studio history delta[%zu]: at=%zu previous=%.120s current=%.120s\n",
-                        i, changed, previous + changed, entry_metadata + changed);
-            }
-            yyjson_doc_free(doc);
-        }
-        av_value_free(state);
-    }
     REQUIRE(value->kind == SCRIPT_EXPR_CONSTANT);
     REQUIRE(value->constant.type == PIN_I32 && value->constant.i == expected);
     REQUIRE(value->range.end == value->range.start + 1);
