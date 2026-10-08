@@ -1,0 +1,18 @@
+/* Assets (studio_assets.c, the `assets` source), after Unity's Project
+   window and Unreal's Content Browser: every indexed asset as a grid of
+   Tiles as wide as the area or, at the size slider's smallest step, as
+   TreeRows grouped by kind. One List windows either; C sizes the tiles
+   (--tile-width, --tile-height) and places each row or line of tiles it
+   shows in the List's spacer, keeping one where it is while it stays in
+   view, so a scroll changes only those entering. A click selects, a double
+   click opens, a right press opens the asset's menu, and draggable assets
+   carry their kind and name. */
+body { padding: 0dp; overflow: hidden; }
+.assets { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; }
+#assets-list { padding: 3dp 4dp 8dp; }
+#assets-list [data-ui=TreeRow] { position: absolute; left: 0dp; right: 0dp; }
+.assets-line { position: absolute; left: 0dp; right: 0dp; display: flex; gap: 4dp; }
+.assets-line > [data-ui=Tile] { flex: 0 0 auto; width: var(--tile-width, 104dp); height: var(--tile-height, 122dp); }
+.tree-row { tab-index: none; }
+[data-unused] .tree-row .meta { color: var(--disabled-foreground); }
+[data-unresolved] .tree-row .icon { color: var(--warning); }

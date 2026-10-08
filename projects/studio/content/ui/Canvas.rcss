@@ -1,0 +1,36 @@
+/* The Canvas (studio_canvas.c's `canvas` source): a ui asset alone on a
+   stage, as Storybook shows a story. Its frame, native in
+   #canvas-frame-slot, sits at the screen size the header chooses, centered
+   with room around it; the size and what uses the asset label the stage's
+   bottom left, over the game UI's error. Storybook's Actions log lists each
+   event the asset emitted, newest last, in a column beside the stage so it
+   never covers the asset; it follows new rows while at its end. Density
+   sets an action's height, and the stage keeps dark roles in every theme
+   (theme/viewport.rcss). */
+@import "theme/viewport.rcss";
+body.area-panel { padding: 0dp; overflow: hidden; }
+.viewport { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display: flex; background-color: var(--viewport); }
+.canvas-stage { position: relative; flex: 1 1 0dp; overflow: hidden; background-color: #121214; }
+.viewport.light .canvas-stage { background-color: #d4d4d8; }
+.canvas-frame-slot { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; }
+.surface { position: absolute; }
+.view-label { position: absolute; left: 12dp; right: 12dp; bottom: 10dp; color: var(--foreground); font-size: var(--studio-font-11, 11dp); pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.view-label .dim { display: block; overflow: hidden; text-overflow: ellipsis; }
+.viewport.light .view-label { color: #3f3f46; }
+.viewport.light .view-label .dim { color: #71717a; }
+.notice { position: absolute; left: 12dp; right: 12dp; bottom: 36dp; padding: 6dp 8dp; border-radius: var(--r); background-color: var(--notice); color: var(--notice-fg); white-space: normal; }
+.canvas-actions { flex: 0 0 240dp; display: flex; flex-direction: column; border-left: 1dp var(--line); background-color: var(--floating); }
+.canvas-actions-head { display: flex; align-items: center; gap: 6dp; height: var(--header-h); flex: 0 0 auto; padding: 0dp 4dp 0dp 10dp; font-size: var(--studio-font-11, 11dp); border-bottom: 1dp var(--line); }
+.canvas-actions-head .icon { color: var(--faint-foreground); font-size: 12dp; width: 14dp; }
+.canvas-actions-head .title { font-weight: 600; color: var(--foreground); }
+.canvas-actions > [data-ui=List] { flex: 1 1 0dp; min-height: 0dp; }
+#canvas-actions-list { box-sizing: border-box; padding: 2dp 4dp; font-family: var(--font-numeric); }
+.canvas-action { display: flex; align-items: center; gap: 6dp; height: var(--studio-height-20, 20dp); padding: 0dp 6dp; border-radius: var(--r); white-space: nowrap; overflow: hidden; }
+body.comfortable .canvas-action { height: var(--studio-height-24, 24dp); }
+.canvas-action:hover { background-color: var(--accent); }
+.canvas-action .event { color: var(--primary-text); font-weight: 600; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.canvas-action .element { color: var(--muted-foreground); flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.canvas-action .value { color: var(--foreground); flex: 0 0 auto; }
+.canvas-action .count { color: var(--faint-foreground); flex: 0 0 auto; }
+.canvas-action .time { margin-left: auto; color: var(--faint-foreground); flex: 0 0 auto; }
+.canvas-actions-empty { display: block; padding: 16dp 10dp; text-align: center; color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); pointer-events: none; }

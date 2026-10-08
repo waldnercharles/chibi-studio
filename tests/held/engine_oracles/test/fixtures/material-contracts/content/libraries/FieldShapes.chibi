@@ -1,0 +1,13 @@
+library "FieldShapes" {
+    pure function "Islands"(X: float = 0.0, Y: float = 0.0) -> (Value: float = 0.0) {
+        depth_limit 64;
+        value field_add = field_add(A: entry.X, B: 90.0);
+        value field_circle = field_circle(X: field_add, Y: entry.Y, Radius: 65.0);
+        value field_subtract = field_subtract(A: entry.X, B: 60.0);
+        value field_box = field_box(X: field_subtract, Y: entry.Y, "Half Width": 55.0, "Half Height": 85.0);
+        value field_min = field_min(A: field_circle, B: field_box);
+        value field_capsule = field_capsule(X: entry.X, Y: entry.Y, AX: -90.0, AY: 0.0, BX: 60.0, BY: 0.0, Radius: 18.0);
+        value field_smooth_union = field_smooth_union(A: field_min, B: field_capsule, Radius: 15.0);
+        result Value: float = field_smooth_union;
+    }
+}

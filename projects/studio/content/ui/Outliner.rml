@@ -1,0 +1,38 @@
+<div class="outliner-panel">
+  <use ui="List" id="outliner-list" data-attr-data-list-rows="self.total" data-drop="prototype" data-event-window="emit('ShowRows', ev.first, ev.count)" data-event-drop="emit('ListDropped', ev.type, ev.payload)" data-area-keys="Left:FoldRoot Right:UnfoldRoot">
+    <use ui="TreeRow" class="outliner-root" data-if="self.rootShown" data-alias-item="self.root" data-event-click="emit('RootClicked', self.root.open)" data-event-dblclick="emit('ToggleRoot')"><span class="meta">{{ self.count }}</span><div class="view-toggles"></div></use>
+    <div class="outliner-row" data-for="row : self.rows">
+      <use ui="TreeRow" data-when="!row.renaming" data-alias-item="row" data-attr-data-object="row.key" data-attr-data-drop="row.drop" data-event-drop="emit('RowDropped', row.key, ev.type, ev.payload); stop()" data-event-click="emit('RowClicked', row.key)" data-event-dblclick="emit('studio.rename')" data-event-contextmenu="emit('RowMenu', row.key)">
+        <div class="inline row" data-if="row.behaviors > 0"><span class="icon">&#xebb9;</span><span class="meta">{{ row.behaviors }}</span></div>
+        <div class="view-toggles">
+          <button class="btn icon-only toggle" data-attr-data-state="row.hidden ? 'on' : ''" data-attr-data-tip="row.hidden ? 'Show in Editor' : 'Hide in Editor'" data-attr-data-kbd="row.hidden ? commands.showAll.shortcut : commands.hideSelected.shortcut" data-attr-data-tip-about="self.isolateTip" data-event-click="emit('EyeClicked', row.key, row.hidden); stop()" data-event-dblclick="stop()"><span class="icon">{{ row.hidden ? '&#xeae7;' : '&#xea70;' }}</span></button>
+          <button class="btn icon-only toggle" data-attr-data-state="row.locked ? 'on' : ''" data-attr-data-tip="row.locked ? 'Unlock' : 'Lock'" data-tip-about="A locked object can't be picked in the Scene" data-event-click="emit('LockClicked', row.key, row.locked); stop()" data-event-dblclick="stop()"><span class="icon">{{ row.locked ? '&#xea75;' : '&#xeb74;' }}</span></button>
+        </div>
+      </use>
+      <div class="tree-row object-rename" data-when="row.renaming">
+        <span class="icon">{{ row.icon }}</span>
+        <div class="field text"><input type="text" class="part value" autofocus="" data-value-lazy="row.label" data-event-change="emit('RenameCommitted', row.key, ev.value)" data-event-blur="emit('RenameLeft', row.key)" data-keys="Enter:RenameEnter Escape:RenameCancel"/></div>
+      </div>
+    </div>
+  </use>
+  <div class="outliner-empty" data-if="self.notice != ''">{{ self.notice }}</div>
+  <use ui="Menu" id="outliner-menu">
+    <use ui="MenuGroup" data-alias-group="self.menu"/>
+    <use ui="MenuCommand" data-alias-command="commands.frame"/>
+    <use ui="MenuCommand" data-alias-command="commands.duplicate"/>
+    <use ui="MenuCommand" data-alias-command="commands.rename"/>
+    <use ui="MenuSeparator"/>
+    <use ui="MenuCommand" data-alias-command="commands.cut"/>
+    <use ui="MenuCommand" data-alias-command="commands.copy"/>
+    <use ui="MenuCommand" data-alias-command="commands.paste"/>
+    <use ui="MenuSeparator"/>
+    <use ui="MenuCommand" data-alias-command="commands.openPrototype"/>
+    <use ui="MenuItem" data-if="self.menu.actor" data-alias-item="self.menu.spawnBreak" data-event-click="emit('SpawnBreak')"/>
+    <use ui="MenuCommand" data-if="self.menu.live" data-alias-command="commands.keepChanges"/>
+    <use ui="MenuCommand" data-if="!self.menu.live" data-alias-command="commands.applyOverrides"/>
+    <use ui="MenuCommand" data-if="!self.menu.live" data-alias-command="commands.saveAsPrototype"/>
+    <use ui="MenuCommand" data-alias-command="commands.hideSelected"/>
+    <use ui="MenuSeparator"/>
+    <use ui="MenuCommand" data-alias-command="commands.delete"/>
+  </use>
+</div>

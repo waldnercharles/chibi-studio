@@ -1,0 +1,4 @@
+name "AssetsHeader"
+components {
+    GAME.GameUi document="AssetsHeader" hidden=#true
+}

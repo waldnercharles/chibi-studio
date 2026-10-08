@@ -1,0 +1,6 @@
+/* S0 spike (docs/studio-rml-migration.md): the Properties Object tab
+   authored over a `properties` variable, measured by test/editor/ui_bench.c
+   and not shown by Studio. The theme and Properties.rcss style its rows. */
+body { width: 100%; height: 100%; margin: 0dp; padding: 0dp; overflow: hidden; }
+.identity { display: flex; align-items: center; gap: 6dp; padding: 0dp 2dp 8dp; }
+.identity .name { font-weight: 600; }

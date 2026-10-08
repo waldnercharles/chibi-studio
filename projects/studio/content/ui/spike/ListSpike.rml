@@ -1,0 +1,3 @@
+<use ui="List" id="bench-list">
+  <use ui="TreeRow" data-for="row : bench.rows" data-alias-item="row" data-attr-data-drag="row.drag" data-attr-data-drag-payload="row.name" data-attr-data-drag-icon="row.icon"></use>
+</use>

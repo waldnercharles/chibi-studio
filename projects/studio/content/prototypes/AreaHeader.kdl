@@ -1,0 +1,4 @@
+name "AreaHeader"
+components {
+    GAME.GameUi document="AreaHeader" hidden=#true
+}

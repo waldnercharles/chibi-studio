@@ -1,0 +1,8 @@
+/* Rename across uses and safe delete (studio_refactor.c, the `refactor`
+   source), a popover at the pointer in a document of its own shown only
+   while it asks, as JetBrains' Rename and Safe Delete ask. A rename names
+   the symbol anew: Enter shows each asset it rewrites with the name it
+   takes or how many changes, and how often prose mentions it; Enter again,
+   or Rename, applies it and a toast offers Undo. A delete of what is still
+   used lists the uses and asks. Its look is the theme's .refactor. */
+body { display: block; }

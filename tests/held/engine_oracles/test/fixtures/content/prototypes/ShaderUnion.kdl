@@ -1,0 +1,6 @@
+name "ShaderUnion"
+components {
+    GAME.GameAppearance antialias=0.5 border_color=0x20ddaaff color=0x20ddaaff height=68.0 width=104.0
+    GAME.GameShader bounds_x=52.0 bounds_y=34.0 material="" parameters="" shape="SmoothUnion"
+    (object)GAME.GameTransform
+}

@@ -1,0 +1,10 @@
+/* The Outliner's header controls, in its AreaHeader, driven by the
+   OutlinerHeaderInput behavior: the filter, which sets the object filter
+   (FilterTyped) and shows it as self.filter, and Add, which searches the
+   scene's prototypes in a ChoiceList, as Unity's Add Component and
+   Blender's Shift+A search do. */
+body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.add { flex: 0 0 auto; }
+/* Rows 8 dp wider than their content, which the list's scrollbar takes,
+   as the kit's dropdowns size them. */
+#outliner-add .menu-item { padding-right: 16dp; }

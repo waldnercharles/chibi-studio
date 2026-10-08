@@ -1,0 +1,4 @@
+name "Refactor"
+components {
+    GAME.GameUi document="Refactor" hidden=#true
+}

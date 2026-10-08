@@ -1,0 +1,1677 @@
+{
+  "status": "held source preservation; not executable acceptance",
+  "origin_checkout": "/Users/cwaldner/.codex/worktrees/e537/c-blueprints",
+  "source_header_count": 85,
+  "fixture_tree_count": 232,
+  "literal_authored_file_count": 17,
+  "unique_preserved_files": 321,
+  "records": [
+    {
+      "path": "content/behaviors/HealthBehavior.chibi",
+      "bytes": 3246,
+      "sha256": "973b7e465b50ad6954c15be3db91e176491f72f011efe5b0f65294992f015d0c"
+    },
+    {
+      "path": "content/behaviors/PlayerContactBehavior.chibi",
+      "bytes": 2685,
+      "sha256": "919eae8941a14c91c316d1835576668bc43454d691341913bdbb93b609310072"
+    },
+    {
+      "path": "content/prototypes/ArenaEnemy.kdl",
+      "bytes": 907,
+      "sha256": "4f9dc17a79aaa36f4ddb0ae3f135e842f6d4dd53c9a131d0e3822dc11e307bee"
+    },
+    {
+      "path": "content/scenes/Arena3D.kdl",
+      "bytes": 4186,
+      "sha256": "6f09d3b203fe16827cfdbedc523c25ca59b05d3a3f8eb876af909d2cb5539fcb"
+    },
+    {
+      "path": "test/appearance.c",
+      "bytes": 14923,
+      "sha256": "79dfc46892e749837a63716e63a25173c2e0c043d998af1a6d4ee5876d518453"
+    },
+    {
+      "path": "test/arena_input.c",
+      "bytes": 22471,
+      "sha256": "6896c9d25c76696c59f87b699b3ed2c6acbba9f41678bd2780c7702c2e27b577"
+    },
+    {
+      "path": "test/arena_play.c",
+      "bytes": 93068,
+      "sha256": "b3197ed77b9494952a7a4191f2e356b60ffd2acd3eae54624d2a8bfb3dc6f999"
+    },
+    {
+      "path": "test/asset_fixture.h",
+      "bytes": 507,
+      "sha256": "157999aefff6bb67a83b27b1fafa53e4365cf3952fe4c7218416af6600d45ace"
+    },
+    {
+      "path": "test/collab_protocol.c",
+      "bytes": 2295,
+      "sha256": "0d403ef2aea23be8088996feb08bb3fe96ca0c35fe93d055950aca061af8f50e"
+    },
+    {
+      "path": "test/collab_replay.c",
+      "bytes": 9053,
+      "sha256": "2f181d96002358d26230643cde09e72194788b810496bb4da8ceaea7b3f51b63"
+    },
+    {
+      "path": "test/editor/asset_code.c",
+      "bytes": 18637,
+      "sha256": "8765cc64bda2f89fb75cbd2c659b7d51ea7a21378f608dd116f3ca1c18ec4205"
+    },
+    {
+      "path": "test/editor/code_intelligence.c",
+      "bytes": 24527,
+      "sha256": "c432595d6b58febb8023d1b0dc574f28db3b72cdee26c474b28f796cf967179f"
+    },
+    {
+      "path": "test/editor/code_intelligence_studio.c",
+      "bytes": 30048,
+      "sha256": "d400ace344ef95baa8cafbaf9031e0fbf31de84714617801d00c0806835670fc"
+    },
+    {
+      "path": "test/editor/commands.c",
+      "bytes": 72731,
+      "sha256": "c6ee20f83d5f4656050a557499c08d59356b6145d48f7245f122c793f64cace5"
+    },
+    {
+      "path": "test/editor/debug_target.c",
+      "bytes": 13560,
+      "sha256": "e7bdef46f3f240f69707482fd7ab12bccb6f4a4f3a55e3a2e53fbc13c08986bb"
+    },
+    {
+      "path": "test/editor/iframe_bindings.c",
+      "bytes": 8581,
+      "sha256": "985bba7115c85032b3b2ff90ae1de7550979e47b6874505004fecb120e3921f8"
+    },
+    {
+      "path": "test/editor/kit_code.c",
+      "bytes": 38626,
+      "sha256": "b180e2d7c236797fb97136560ae31403fdcd37e8f9f7462d3b41154ab52ff856"
+    },
+    {
+      "path": "test/editor/kit_documents.c",
+      "bytes": 17863,
+      "sha256": "e960044618f61699925baa4945e10fd4c33a8c7f5bbd1d1e001d791187de9201"
+    },
+    {
+      "path": "test/editor/kit_empty_documents.c",
+      "bytes": 4661,
+      "sha256": "ba871938509f6a74a054ae19ed0175db7a55c9a10dced0422c4b31108a07d13c"
+    },
+    {
+      "path": "test/editor/kit_host.c",
+      "bytes": 15750,
+      "sha256": "7b8dc1f1a78b4bafbf9ca88816b83cf1973247ee03a92f8520496fd47749cf60"
+    },
+    {
+      "path": "test/editor/kit_slot.c",
+      "bytes": 22926,
+      "sha256": "eae2d3a431858ffc0edd3b16c20573b63a1220a7eeaea4074deaeba3e8bcf449"
+    },
+    {
+      "path": "test/editor/rmlui_kit.c",
+      "bytes": 116225,
+      "sha256": "3ba49d43c20f10b88c643e3c1e81db9f1e8c931f89c535fb362e7b6cb4f72699"
+    },
+    {
+      "path": "test/editor/rmlui_render.c",
+      "bytes": 65970,
+      "sha256": "d74b957774ae651d7cf9b1d85f5cfe869b69483b5b16eab8a3bb0d65db30cb52"
+    },
+    {
+      "path": "test/editor/scene_gizmo.c",
+      "bytes": 8787,
+      "sha256": "45fa77bdc996a0a8c186d6489245b5741aaac702250aad8ebc1a97da2b682105"
+    },
+    {
+      "path": "test/editor/scene_selection.c",
+      "bytes": 13065,
+      "sha256": "593694d805f91e2c229462a3e7b318ce92bdfd8094ad8b3e3a08f8c40e8672e5"
+    },
+    {
+      "path": "test/editor/scene_view.c",
+      "bytes": 8533,
+      "sha256": "b8be4b0bf0ca016de91d456c523187c6c4bb48b0556cb8cc7d5571307a7eaf19"
+    },
+    {
+      "path": "test/editor/studio_commands.c",
+      "bytes": 17817,
+      "sha256": "1d7174c3793d69995c5516622162a7b569f458308160bb3863e565b0aee36f72"
+    },
+    {
+      "path": "test/editor/studio_documents.c",
+      "bytes": 18024,
+      "sha256": "64ba56a6aed085b883ff85fefc58d7eaf4957365791afc5019c522a4ecf2fa3b"
+    },
+    {
+      "path": "test/editor/studio_documents.h",
+      "bytes": 5680,
+      "sha256": "e932e356a901f154d7d3e869e7c1c5af94dbefd21244fe9585f106a2cd090b48"
+    },
+    {
+      "path": "test/editor/studio_documents_assets.c",
+      "bytes": 7112,
+      "sha256": "ff0a3861d5c75c2d7b9a8ff0541f74eed8b47267e47e76478a1055ec3c95da31"
+    },
+    {
+      "path": "test/editor/studio_documents_chrome.c",
+      "bytes": 17873,
+      "sha256": "9ed3b3f561a4bde6248e740e8b483063d083a2ae4a96fa7dd7169535a1bfe78b"
+    },
+    {
+      "path": "test/editor/studio_documents_designer.c",
+      "bytes": 32768,
+      "sha256": "4ed75fce3c1271d8fcde69dd92b95fb490e672410a5ec820d38b9245456b328f"
+    },
+    {
+      "path": "test/editor/studio_documents_graph.c",
+      "bytes": 37078,
+      "sha256": "0deade973c6c1fd33d7e0879fb49f9b1d546d4f9c7980dc05aa31d062c4066c3"
+    },
+    {
+      "path": "test/editor/studio_documents_graph_chrome.c",
+      "bytes": 25962,
+      "sha256": "36b875cba0dd98e52b8d9f2bdf5918ee321cf1e2bc7d73950921f1f0420b0bea"
+    },
+    {
+      "path": "test/editor/studio_documents_inspector.c",
+      "bytes": 13664,
+      "sha256": "d03cc6700cd58972a5b953eb3bc0da7063d46ceafe829bf919265d4020a79541"
+    },
+    {
+      "path": "test/editor/studio_documents_members.c",
+      "bytes": 19149,
+      "sha256": "e1a5b8df49f561fde292c84e25d5b1cb0d7f4064c9faa41e4f3cc6408d7708a5"
+    },
+    {
+      "path": "test/editor/studio_documents_outliner.c",
+      "bytes": 32481,
+      "sha256": "fdeca1ecfb778b68792474d9e73c58b6bf45f7ccc92e0ec7c4c7cc246da620e4"
+    },
+    {
+      "path": "test/editor/studio_documents_output.c",
+      "bytes": 20570,
+      "sha256": "e2fa0dbdaaa41c97c99efd5527f357e1ee8fe3d11f633b08986dcbb6e2fa5eea"
+    },
+    {
+      "path": "test/editor/studio_documents_palette.c",
+      "bytes": 22573,
+      "sha256": "86cf08bdd05344cb6587960853a04e9bb0f4ee44f4d6b356cc6432ecfa2dd15b"
+    },
+    {
+      "path": "test/editor/studio_documents_panels.c",
+      "bytes": 53354,
+      "sha256": "ed81a684ecbc6c84830d371f59f2fe086fd017ae0a03088531f1b7d6ba7f17bc"
+    },
+    {
+      "path": "test/editor/studio_documents_properties.c",
+      "bytes": 37806,
+      "sha256": "1272926cb56aa0b90fdf452fc19bfcc594b24459507c6875b098095c38855ede"
+    },
+    {
+      "path": "test/editor/studio_documents_scene.c",
+      "bytes": 18581,
+      "sha256": "ada9c85e72db51a494f1c7e8b52aad32ad81e4bde7324cfae19c1c835a9ff3f3"
+    },
+    {
+      "path": "test/editor/studio_documents_shell.c",
+      "bytes": 96009,
+      "sha256": "8c34eabf6131f8e1adceb24039812a96ede6523dee13f3dd46b13fe42bd16995"
+    },
+    {
+      "path": "test/editor/studio_graph_inputs.c",
+      "bytes": 70971,
+      "sha256": "d9571758bcd542725ea0343badd4c3d7f78b968a2ca46f2fe49c461953edde08"
+    },
+    {
+      "path": "test/editor/studio_graph_zoom.c",
+      "bytes": 11846,
+      "sha256": "7e870f4af963a10b346d4448f998d643df155cabdb5f930bb03608d09a868224"
+    },
+    {
+      "path": "test/editor/studio_models.c",
+      "bytes": 37286,
+      "sha256": "7b1b454be27d0d3d2e7b96c081b28625fded6c88f2606d7746f98e0f400d9e87"
+    },
+    {
+      "path": "test/editor/studio_new_assets.c",
+      "bytes": 27552,
+      "sha256": "8e6e5eb9c36ddb6052533b3e58d62222ff7a6470ff3c943baa864432030e4048"
+    },
+    {
+      "path": "test/editor/studio_nodes_gate.c",
+      "bytes": 5282,
+      "sha256": "a92785b8950fe37fb09db4db774e5efcc68175b339aea0bfe05eefc25495263b"
+    },
+    {
+      "path": "test/editor/studio_pinch.c",
+      "bytes": 1785,
+      "sha256": "f9e40656ae1ca06c151bebbb3b5d67cc92e394a1266c001e86285dd5a9bb4d1b"
+    },
+    {
+      "path": "test/editor/studio_settings.c",
+      "bytes": 79970,
+      "sha256": "d4e954aa5f8a4b31fb0c9b76a999d9fbbe593a1d47e6d59bc08182594f790e4d"
+    },
+    {
+      "path": "test/editor/studio_thumbnails.c",
+      "bytes": 34651,
+      "sha256": "217023764182ed89738a96848fa32d909c7f9f6eb8cc377addeb12d9c7b0ca03"
+    },
+    {
+      "path": "test/editor/ui_bench.c",
+      "bytes": 49802,
+      "sha256": "312d7d984b10c75c4ac41d42b52ea079b59bd78f50d03906c5e4f5b47ac4c8ec"
+    },
+    {
+      "path": "test/editor/ui_bench.h",
+      "bytes": 3111,
+      "sha256": "316f596132c2339eb32ec5e1c0fd2dc0fbf9136f9ad1290e1de8406e5c301b68"
+    },
+    {
+      "path": "test/editor/ui_bench_studio.c",
+      "bytes": 99314,
+      "sha256": "4fc492000780a4c1657585b941ec5cf52d71fb7baff576bdb3fee6a355cc8dd7"
+    },
+    {
+      "path": "test/editor/ui_designer.c",
+      "bytes": 30408,
+      "sha256": "c136696bd0cea7e6408cebe9ef2fc7ed35c6da27fdb5e5a869d800823ef078da"
+    },
+    {
+      "path": "test/editor/ui_documents.c",
+      "bytes": 33560,
+      "sha256": "d3813d110eb551b45c9208509e059b1e64100d3196c06f6989ab3a82a7c0f450"
+    },
+    {
+      "path": "test/editor/ui_inspector.c",
+      "bytes": 14316,
+      "sha256": "6ce4ee9149d0e6114503c0048cb09189a15e541fe551cc4fb5adf17f40a0fe01"
+    },
+    {
+      "path": "test/editor/ui_popovers.c",
+      "bytes": 27491,
+      "sha256": "6e4d7d7d6ccc136451dcb16394276a77a15ec5b69cae57f92e5077cf5035ed26"
+    },
+    {
+      "path": "test/editor/ui_sources.c",
+      "bytes": 14761,
+      "sha256": "28f6f99242417c2a408b8c0a923e60f94c3b027930f57b920379ab36030cc9e3"
+    },
+    {
+      "path": "test/editor/ui_wiring.c",
+      "bytes": 11365,
+      "sha256": "6ba8c5965d76b75bca4642185a70d6c79025a90e9224c793be2612957da459c2"
+    },
+    {
+      "path": "test/editor_checkpoint.c",
+      "bytes": 8247,
+      "sha256": "a5c57499dbee6953b5b35d5b3f028df98ff607e62a6101fdc7fb3a375ab911b6"
+    },
+    {
+      "path": "test/editor_documents.c",
+      "bytes": 9055,
+      "sha256": "03c5de1aa91490e16552487c3b955ba8700b9a3862d5c081ffd6221e3fa035b6"
+    },
+    {
+      "path": "test/editor_flow.c",
+      "bytes": 7790,
+      "sha256": "536623c3fe53ac7466bd2f9642f3d293ce8208a06c6f7e513d3a8787506f2438"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/README.md",
+      "bytes": 360,
+      "sha256": "2e518b59d84846741ff9aa97e140af8d14dab2e184c5bfe05e85efa8b524a833"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/events/CollectExperience.kdl",
+      "bytes": 202,
+      "sha256": "bde027f8b22b0c27244d854464656916b91c1fe8990814ff8b9c6dc657d25fb5"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/events/Damage.kdl",
+      "bytes": 321,
+      "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/events/Damaged.kdl",
+      "bytes": 371,
+      "sha256": "c15780843c895e8e5a6cc6f49360c8b7d10684ba3bf6b08e82925d20cc8a3789"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/events/Died.kdl",
+      "bytes": 301,
+      "sha256": "a657074520b482981fa4ed753dc6fe8c08e6a93b41b20193ac32a04850504ce9"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/events/RefreshEncounter.kdl",
+      "bytes": 179,
+      "sha256": "6a4e38e5560a51fdf4d64659e8608f5e36d320325b0673c80e99da93a68d6e93"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/libraries/DirectionMath.chibi",
+      "bytes": 392,
+      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/libraries/DirectionMath.chibi.meta",
+      "bytes": 951,
+      "sha256": "99279ee363bc8fd0dfa8c7e0ef40aed6d633678983fd636fdcac580e9d4ab611"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/libraries/MovementActions.chibi",
+      "bytes": 417,
+      "sha256": "0e8bc6d946c51d743a492f16ae86c048ae4af519527c5bff2df9e148940df8de"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/libraries/MovementActions.chibi.meta",
+      "bytes": 815,
+      "sha256": "b68e2a66c3d7eda715520a93eaab838e8733a8fd2f6818347b505557e6595404"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/libraries/WeaponActions.chibi",
+      "bytes": 1970,
+      "sha256": "0e2588c5583c6a518db82db5f33398a1a5135b8a96b7b280db8ee1a79423f79d"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/libraries/WeaponActions.chibi.meta",
+      "bytes": 4821,
+      "sha256": "54aad801de7a595e97f52fefefd863cd58ed0ed544c98124630686fff28a9bde"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/scenes/Start.kdl",
+      "bytes": 39,
+      "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/content/shader-libraries/ShaderMath.kdl",
+      "bytes": 5636,
+      "sha256": "40b0f0e65b56c3765bb267c407212991f7226c0a980c396aac585846b82685b4"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/fixtures.json",
+      "bytes": 3193,
+      "sha256": "143990103573bba3a3bd83725a7bbcdd83f2a2ba3c220dbb0e57e3d84e83065c"
+    },
+    {
+      "path": "test/fixtures/behavior-catalog/project.kdl",
+      "bytes": 94,
+      "sha256": "cf6579bb8420eed70e34bdcf5b1e03f48391abf1fe9f7bce94e67111a8775990"
+    },
+    {
+      "path": "test/fixtures/component-presentation/README.md",
+      "bytes": 232,
+      "sha256": "92ff59c61a8b9b6680efb078851f6a408456bff5b63776bd6501f2faf554a77f"
+    },
+    {
+      "path": "test/fixtures/component-presentation/content/editor/Components.kdl",
+      "bytes": 3707,
+      "sha256": "715ac09169ae07f5af6cbd58a18b7e080cbb152198086dac97ce1ba4921e519b"
+    },
+    {
+      "path": "test/fixtures/component-presentation/content/prototypes/InspectorSubject.kdl",
+      "bytes": 186,
+      "sha256": "2892c9913a0e36b9e190075fb1cc324e44d42b95da7cf374965c6b3fbb968446"
+    },
+    {
+      "path": "test/fixtures/component-presentation/content/scenes/Start.kdl",
+      "bytes": 39,
+      "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+    },
+    {
+      "path": "test/fixtures/component-presentation/fixtures.json",
+      "bytes": 465,
+      "sha256": "dc1f3e2b6a87688b22fd0f9ab11af1bb6c7d8784d5c75fffa08074f41b20ffe6"
+    },
+    {
+      "path": "test/fixtures/component-presentation/project.kdl",
+      "bytes": 100,
+      "sha256": "e388943fffa2b270cae5caf7edf64d4dd13907149b61933413e3c533ad08ddc9"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/ArenaShardBehavior.chibi",
+      "bytes": 6602,
+      "sha256": "c18d512396b2ad65a542985e028c3efbceb332f7c1bda4029080c02679ad0d46"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/ArenaShardBehavior.chibi.meta",
+      "bytes": 18727,
+      "sha256": "f841e91ce1fc40e5099d70c43ec39d26a003df9a4f1e73e169431d40e5fa50de"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/AutoWeaponBehavior.chibi",
+      "bytes": 1598,
+      "sha256": "b90bcabbe08f6098e2973394727f1d26f35860b8acf8ddf5193e203ed6905eb0"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/AutoWeaponBehavior.chibi.meta",
+      "bytes": 5206,
+      "sha256": "2e33e01280f1b78c4c504d63732fde042ed948082404cda7d479af9abe0c2c93"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/DamageFlashBehavior.chibi",
+      "bytes": 571,
+      "sha256": "068270d9836bf8a86ce0893536f45c5c9c45e894e3165d195147ce71e460ce20"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/DamageFlashBehavior.chibi.meta",
+      "bytes": 1603,
+      "sha256": "348ccbb4b75c2a0fe40bf44827711fff3a335accd48c70fbafc2f50a44a2146e"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/DashBehavior.chibi",
+      "bytes": 7574,
+      "sha256": "b1c70ec469ddffef324f8b2885291318e61dbedaf03f7b1dacbe7bed710174b8"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/DashBehavior.chibi.meta",
+      "bytes": 26247,
+      "sha256": "a7afaf470388cc88dead4c8a35b400ebe325e77d7a307cfd13a71e8c87452756"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/InputBehavior.chibi",
+      "bytes": 1512,
+      "sha256": "372adc8343987476b407ff737e7b6b60d9857bf0d0bc3fc605da34cb1913a8aa"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/InputBehavior.chibi.meta",
+      "bytes": 4910,
+      "sha256": "b71e592f613423ebb6ee85896115709d8ae3189851d8c9d0fb8ca1ac71cdf2aa"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/MovementTrailBehavior.chibi",
+      "bytes": 3043,
+      "sha256": "066b919a22262a6eb4bc571d52ed63eb2fd176891d38f021a0fce13b8efd39b6"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/MovementTrailBehavior.chibi.meta",
+      "bytes": 7543,
+      "sha256": "381849190886b46082f001460c0b92fc3d58420e0cdb9106c649c8952a1ae74e"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/ProjectileBehavior.chibi",
+      "bytes": 1750,
+      "sha256": "89e2fffe383c2a3896ede22441b886a3e7550b1f655574208b0a08d658395b4c"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/ProjectileBehavior.chibi.meta",
+      "bytes": 5655,
+      "sha256": "c0015c789700c8ad9d7c8eea6e7c5a661cb9b4e6b28eec448b0fda7c0e0fe5d0"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/ReplayInput.chibi",
+      "bytes": 167,
+      "sha256": "9d40da85ffb67f5a4e80c120b873d01e2c570854361a7247eddc0aa331c69805"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/ReplayInput.chibi.meta",
+      "bytes": 676,
+      "sha256": "b01d2b7e0506dab82eda2a76bfbd7c4574987d0c82ebb905d29d3d767286b750"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/WaveBehavior.chibi",
+      "bytes": 2621,
+      "sha256": "49cb103d386071ed03f086ddd69506125b7e72f3af2aef595d2691b6b5ff4b4d"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/WaveBehavior.chibi.meta",
+      "bytes": 8259,
+      "sha256": "aac19bdee16016be472e75cbb6c6ab0544ae90c53e57a9262ec22dea596305ed"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/WavePulseBehavior.chibi",
+      "bytes": 1395,
+      "sha256": "2ba29627ef95048b901340046b10e987049735af6e8fc5e827aa0b6c61aaa9fd"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/WavePulseBehavior.chibi.meta",
+      "bytes": 4199,
+      "sha256": "14ffd9a165553386901f427bbaa9750517cb6a5b1ee7ea4c4ff9074448b8da31"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/WeaponBehavior.chibi",
+      "bytes": 343,
+      "sha256": "2dd03c9ad7eb69416280deb5b461d88bc843a8bfabdd527931a27cfa2f9bc446"
+    },
+    {
+      "path": "test/fixtures/content/behaviors/WeaponBehavior.chibi.meta",
+      "bytes": 1391,
+      "sha256": "7985e174edb045c4298153bda9f5f9e2b99cad2fd8a3bb8930ffdbc9dc3bba3b"
+    },
+    {
+      "path": "test/fixtures/content/events/CollectExperience.kdl",
+      "bytes": 202,
+      "sha256": "bde027f8b22b0c27244d854464656916b91c1fe8990814ff8b9c6dc657d25fb5"
+    },
+    {
+      "path": "test/fixtures/content/events/Damage.kdl",
+      "bytes": 321,
+      "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+    },
+    {
+      "path": "test/fixtures/content/events/Damaged.kdl",
+      "bytes": 371,
+      "sha256": "c15780843c895e8e5a6cc6f49360c8b7d10684ba3bf6b08e82925d20cc8a3789"
+    },
+    {
+      "path": "test/fixtures/content/events/Died.kdl",
+      "bytes": 301,
+      "sha256": "a657074520b482981fa4ed753dc6fe8c08e6a93b41b20193ac32a04850504ce9"
+    },
+    {
+      "path": "test/fixtures/content/events/RefreshEncounter.kdl",
+      "bytes": 179,
+      "sha256": "6a4e38e5560a51fdf4d64659e8608f5e36d320325b0673c80e99da93a68d6e93"
+    },
+    {
+      "path": "test/fixtures/content/libraries/DirectionMath.chibi",
+      "bytes": 392,
+      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+    },
+    {
+      "path": "test/fixtures/content/libraries/DirectionMath.chibi.meta",
+      "bytes": 951,
+      "sha256": "99279ee363bc8fd0dfa8c7e0ef40aed6d633678983fd636fdcac580e9d4ab611"
+    },
+    {
+      "path": "test/fixtures/content/libraries/MovementActions.chibi",
+      "bytes": 417,
+      "sha256": "0e8bc6d946c51d743a492f16ae86c048ae4af519527c5bff2df9e148940df8de"
+    },
+    {
+      "path": "test/fixtures/content/libraries/MovementActions.chibi.meta",
+      "bytes": 815,
+      "sha256": "b68e2a66c3d7eda715520a93eaab838e8733a8fd2f6818347b505557e6595404"
+    },
+    {
+      "path": "test/fixtures/content/libraries/WeaponActions.chibi",
+      "bytes": 1965,
+      "sha256": "a21ce63baf82ce32849edeb5b19b4140b7add76a768046a6856755cb4e237ca2"
+    },
+    {
+      "path": "test/fixtures/content/libraries/WeaponActions.chibi.meta",
+      "bytes": 4654,
+      "sha256": "a1b650650af4de008e62de04d7c866ceb143c9ea0601d0ffc15d389882f8874c"
+    },
+    {
+      "path": "test/fixtures/content/materials/EnergyCells.kdl",
+      "bytes": 7088,
+      "sha256": "7066159ad6b12cdc5a537e2086b731676533ae085427ac001fb5995be99abb5c"
+    },
+    {
+      "path": "test/fixtures/content/materials/OutlineGradient.kdl",
+      "bytes": 12677,
+      "sha256": "aae82750e8a0811104b8d3c428e882073284d69caf85e3dd4209c6dcc250130a"
+    },
+    {
+      "path": "test/fixtures/content/materials/PulseRing.kdl",
+      "bytes": 6073,
+      "sha256": "bc5d534c75ea0299ca310b9e52e4c7b72a125a58611746bc25474f6a89b268d7"
+    },
+    {
+      "path": "test/fixtures/content/prototypes/Editor2DPreview.kdl",
+      "bytes": 235,
+      "sha256": "41ec911b9195987cc7726fcde2236aa56f865c36f56cbb76fa41001a08c93a06"
+    },
+    {
+      "path": "test/fixtures/content/prototypes/Encounter.kdl",
+      "bytes": 104,
+      "sha256": "e8ded4ae49d9b4595ca5767a076e6745f9fcdbbe4698875bb5df5669abb1ffc1"
+    },
+    {
+      "path": "test/fixtures/content/prototypes/Enemy.kdl",
+      "bytes": 720,
+      "sha256": "9f86175526b0c604c5191cad1396280a7f70278480140af00909a8eb0cf41730"
+    },
+    {
+      "path": "test/fixtures/content/prototypes/Player.kdl",
+      "bytes": 822,
+      "sha256": "d256a659b33aab8afee24789f1eddababbe8ad9060f12a94c6bc298f2f669019"
+    },
+    {
+      "path": "test/fixtures/content/prototypes/Projectile.kdl",
+      "bytes": 623,
+      "sha256": "c77e524c721592dfd06e01c4ebb59d67a1b48d867ce1c43ffbb61f529fd72207"
+    },
+    {
+      "path": "test/fixtures/content/prototypes/ShaderGradient.kdl",
+      "bytes": 285,
+      "sha256": "aa01c06e872a76aae0072290cb8ced5cf40872acf76a101a67a29b9a7871ab78"
+    },
+    {
+      "path": "test/fixtures/content/prototypes/ShaderRing.kdl",
+      "bytes": 314,
+      "sha256": "18764f134232fb185eb7678d37199650366212a0c178f752dfc3315aacca69f0"
+    },
+    {
+      "path": "test/fixtures/content/prototypes/ShaderUnion.kdl",
+      "bytes": 262,
+      "sha256": "fe126ec931aefd79dcd8854ad70fd8d5ccad47f36b1d19e756c30398bdc3fcd2"
+    },
+    {
+      "path": "test/fixtures/content/scenes/Editor2D.kdl",
+      "bytes": 880,
+      "sha256": "40cf1015bcd212c9f5bebd661b49f7a40ec10186e5346f02313263dfdaf55954"
+    },
+    {
+      "path": "test/fixtures/content/scenes/NeonSwarm.kdl",
+      "bytes": 368,
+      "sha256": "0b7baa033183465462a851594100c423d113c17d7f412275b1a1110dc624952a"
+    },
+    {
+      "path": "test/fixtures/content/scenes/ShaderDemo.kdl",
+      "bytes": 546,
+      "sha256": "e15c39b9ced611305fb6ece9f0489a80fcfd4c385cd15744176b6f1af625742c"
+    },
+    {
+      "path": "test/fixtures/content/scenes/ShaderImageDemo.kdl",
+      "bytes": 952,
+      "sha256": "56ee6492c94c273a9289582176b265e7ec66de6069aa340ed68ad5530e344bc5"
+    },
+    {
+      "path": "test/fixtures/content/scenes/Start.kdl",
+      "bytes": 39,
+      "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+    },
+    {
+      "path": "test/fixtures/content/shader-libraries/ShaderMath.kdl",
+      "bytes": 4644,
+      "sha256": "5ff7c6a7e7e45afaf5b3a0ad0bbd4b2eb5157dae8b380970079f2a6e65783f89"
+    },
+    {
+      "path": "test/fixtures/content/shapes/SmoothUnion.kdl",
+      "bytes": 1770,
+      "sha256": "64fc1f817c2023d4176af55e8813eb284f5953a027e3f99b4d8a99f4e8d16e73"
+    },
+    {
+      "path": "test/fixtures/content/textures/EnergyCells.png",
+      "bytes": 931,
+      "sha256": "828502f9f946e8901d8f34b00f39e0b53743aad459f317d2ce3bf3ca6f2c7d94"
+    },
+    {
+      "path": "test/fixtures/editor_scene.kdl",
+      "bytes": 706,
+      "sha256": "0e1585c331e9f1740e120d812e2235f2d33bee420f6adf94d0bfea2920609ec4"
+    },
+    {
+      "path": "test/fixtures/generation.bin",
+      "bytes": 256,
+      "sha256": "40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880"
+    },
+    {
+      "path": "test/fixtures/graph-routing/README.md",
+      "bytes": 578,
+      "sha256": "0e675156690720ad2679277f6b8bd097033fd3295596e302728367fff14c2519"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/BoostEmitter.chibi",
+      "bytes": 115,
+      "sha256": "2b7ea0f8c6458eab778f66cda98389948c2047db6addf385922e73f8a181e34c"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/BoostEmitter.chibi.meta",
+      "bytes": 1868,
+      "sha256": "7b015441611629217d757f276bf6129bdafddc87dd7f25d95a8efe02cc42e2f5"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/CameraFollow.chibi",
+      "bytes": 212,
+      "sha256": "d4b11ca9e2830ef36afb749ae29340aa8e91b897760d697b41475ab897032058"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/CameraFollow.chibi.meta",
+      "bytes": 3436,
+      "sha256": "067aed59633096169e7d8619e5c94076588bd9fc761b4bee4818ada1e499653e"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/CutMaterial.chibi",
+      "bytes": 255,
+      "sha256": "1657178333bb3436adc3f9665cea6a47c3569d853b65fc952e174b643db5ec4f"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/CutMaterial.chibi.meta",
+      "bytes": 1030,
+      "sha256": "39353b563c655a49ae829b6d640daa54a563d5a174e92d2e67b32deb380e4845"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/HudDisplay.chibi",
+      "bytes": 2770,
+      "sha256": "993d336c7ae4480a569b24e08b58a3e8b3f55a6f3c2650508d6f24775f81f821"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/HudDisplay.chibi.meta",
+      "bytes": 7704,
+      "sha256": "e397991409850202b9d254c4cf21361c4f6ef6741e638801560518bbe5907a14"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/HullDamage.chibi",
+      "bytes": 596,
+      "sha256": "cdbfa92bcf31453ebb51e099631a05bcc424367283c778023cef3891f2ffca89"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/HullDamage.chibi.meta",
+      "bytes": 3722,
+      "sha256": "03be7d4c4f8a6dd7858025caed1d9f20a19fa77365ae623eb7d07fb48d142581"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/MaterialImpactHealth.chibi",
+      "bytes": 519,
+      "sha256": "fae9952169c2afff133e46bb296fc4c467333a24eeb23840bd12f8cfe0678530"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/MaterialImpactHealth.chibi.meta",
+      "bytes": 3659,
+      "sha256": "4b65ba2b5d0f65817b22dc8cc1f9d1f91d48b55d41ddd2d9614aec95bdd57ffb"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/Movement.chibi",
+      "bytes": 854,
+      "sha256": "4f14f158cf83604f1691f31b28ae56a9d5b1abba2aef1be945741a5f878a4426"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/Movement.chibi.meta",
+      "bytes": 8334,
+      "sha256": "c49af8dd0a91a5cf998c8e9c7929fa2d17ce48410fe26cded3529b354b959f82"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/MovementEmitter.chibi",
+      "bytes": 191,
+      "sha256": "c20251a648ec523daa94f5deea4f2478c764cf26c82a7436fbef452cb131eaf6"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/MovementEmitter.chibi.meta",
+      "bytes": 3704,
+      "sha256": "e626b3fabaea37986b5710846f40dab7259f71851eed3c393d66ed24f010abc2"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/PlayerEffects.chibi",
+      "bytes": 235,
+      "sha256": "75e65dcd8a7291c668c02dc3bd3d9ad73a7c3a55678c837edc71b222c66f30e3"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/PlayerEffects.chibi.meta",
+      "bytes": 1678,
+      "sha256": "a87a4d6c466a9df809896ead9831b36c0b63f29d713edeff29363810e5b08846"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/ProjectileEffects.chibi",
+      "bytes": 320,
+      "sha256": "40f11ec82e65e1fd36994c354dba2035f181d99673adf4b0362b32b513bd63ba"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/ProjectileEffects.chibi.meta",
+      "bytes": 1068,
+      "sha256": "ae14f3252f6d46033b021c53f0eb89b3c18e4e7350bbfb5295a48dd9fce37ed0"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/ProjectileHit.chibi",
+      "bytes": 428,
+      "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/ProjectileHit.chibi.meta",
+      "bytes": 4488,
+      "sha256": "3be30e373e71310e3e6f078f2a3e621a30091d0cfa5723be10251f5c640e1f87"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/ProjectileLifecycle.chibi",
+      "bytes": 634,
+      "sha256": "fcc649c849fbb61b7ce337be3ea072149a397589ad13e45a84952894ef632b38"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/ProjectileLifecycle.chibi.meta",
+      "bytes": 5728,
+      "sha256": "8534ba3c14648e94e1165dc4367b6731d505f0a713caaea674dc48555cab9115"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/Pursuit.chibi",
+      "bytes": 784,
+      "sha256": "3c7a4bf572de6814ce0368f1e818d03fc9198f07433ed176038e8110c524a50a"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/Pursuit.chibi.meta",
+      "bytes": 5715,
+      "sha256": "7463b710ef558d93e43f6bdcac5b4c41337a333e2d0a33a1447493d51106b686"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/SwarmerEffects.chibi",
+      "bytes": 204,
+      "sha256": "7f32f3b59e9384132069e198b3674ec887b1677c87d661191502098a12727660"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/SwarmerEffects.chibi.meta",
+      "bytes": 676,
+      "sha256": "6a5e83fd0f98bc7b5e01ed61a259efe9c091e430fb9c819554bdb7c6de771e98"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/Weapon.chibi",
+      "bytes": 2438,
+      "sha256": "c1148c36914c05893fa1d2db6627caa1bdc27831d05ccf6f5b11e02828dd7ac5"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/behaviors/Weapon.chibi.meta",
+      "bytes": 7224,
+      "sha256": "1978344e3128a034de9b105419e8cc68a9927efd1f4498b008ad89a95cce63bf"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/events/Damage.kdl",
+      "bytes": 321,
+      "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/events/Material Impact.kdl",
+      "bytes": 324,
+      "sha256": "d57898ee3f520364fe2344140d8caa9db4811dc534be90321b40bc25421137d2"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/libraries/DirectionMath.chibi",
+      "bytes": 392,
+      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/libraries/DirectionMath.chibi.meta",
+      "bytes": 951,
+      "sha256": "99279ee363bc8fd0dfa8c7e0ef40aed6d633678983fd636fdcac580e9d4ab611"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/libraries/WeaponActions.chibi",
+      "bytes": 2053,
+      "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/libraries/WeaponActions.chibi.meta",
+      "bytes": 4494,
+      "sha256": "8e0c20091261eae8609671d0c0fd1a2a03a4b0d33d5612c073564928ba7713fa"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/prototypes/BoostEmitter.kdl",
+      "bytes": 103,
+      "sha256": "dbfbe93b42d42c2e86a5ac889b13f391c9c7940f0998fe365392fc14ee28f76e"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/prototypes/MovementEmitter.kdl",
+      "bytes": 106,
+      "sha256": "88c77a2e00e7f1f4c24efa115dbc433c121b44eb896172ce30a3200394eadab6"
+    },
+    {
+      "path": "test/fixtures/graph-routing/content/scenes/Start.kdl",
+      "bytes": 39,
+      "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+    },
+    {
+      "path": "test/fixtures/graph-routing/fixtures.json",
+      "bytes": 11335,
+      "sha256": "47481946fc076cc9ee91e28ad50f43f8287aa773cb6746ea7552fafc30496d4c"
+    },
+    {
+      "path": "test/fixtures/graph-routing/project.kdl",
+      "bytes": 88,
+      "sha256": "9982731c2a66cf54fac46d0609378c8a1142cd75d7ae71743736d9cccaef436d"
+    },
+    {
+      "path": "test/fixtures/graph/MeshSurfaceSweep01.chibi",
+      "bytes": 539,
+      "sha256": "e2d1d91bc3b106fbcce1269da617d0733b5a21a7d804b1021892d74b2d25d92f"
+    },
+    {
+      "path": "test/fixtures/graph/MeshSurfaceSweep01.chibi.meta",
+      "bytes": 7326,
+      "sha256": "4f079af177606c9a96e73ec2a1516d234d2cbc7273a9f97f01740572e403b9dd"
+    },
+    {
+      "path": "test/fixtures/language/README.md",
+      "bytes": 379,
+      "sha256": "64629e25ab9aa24ce8fe6c480dbcd1ab28c2e4b88e210486e24bbea913741077"
+    },
+    {
+      "path": "test/fixtures/language/content/behaviors/ArenaDropBehavior.chibi",
+      "bytes": 5436,
+      "sha256": "b2b409a5419b2e1887f9c03fd960878dae881be198f772d1835f13e7a84a0ca2"
+    },
+    {
+      "path": "test/fixtures/language/content/behaviors/ArenaDropBehavior.chibi.meta",
+      "bytes": 12863,
+      "sha256": "5302ecfb416b6d993caa5242914e566c3d041b3d8e81f31494ea0ff5246333a6"
+    },
+    {
+      "path": "test/fixtures/language/content/behaviors/CameraFollow.chibi",
+      "bytes": 212,
+      "sha256": "d4b11ca9e2830ef36afb749ae29340aa8e91b897760d697b41475ab897032058"
+    },
+    {
+      "path": "test/fixtures/language/content/behaviors/CameraFollow.chibi.meta",
+      "bytes": 3436,
+      "sha256": "067aed59633096169e7d8619e5c94076588bd9fc761b4bee4818ada1e499653e"
+    },
+    {
+      "path": "test/fixtures/language/content/behaviors/HealthBehavior.chibi",
+      "bytes": 3246,
+      "sha256": "973b7e465b50ad6954c15be3db91e176491f72f011efe5b0f65294992f015d0c"
+    },
+    {
+      "path": "test/fixtures/language/content/behaviors/HealthBehavior.chibi.meta",
+      "bytes": 12467,
+      "sha256": "abf3d8a0a6bb03eb6ac5f1f6d270f95eb2d9da2a2c34c8cf350512b61c80c7ab"
+    },
+    {
+      "path": "test/fixtures/language/content/behaviors/PlayerEffects.chibi",
+      "bytes": 235,
+      "sha256": "75e65dcd8a7291c668c02dc3bd3d9ad73a7c3a55678c837edc71b222c66f30e3"
+    },
+    {
+      "path": "test/fixtures/language/content/behaviors/PlayerEffects.chibi.meta",
+      "bytes": 1678,
+      "sha256": "a87a4d6c466a9df809896ead9831b36c0b63f29d713edeff29363810e5b08846"
+    },
+    {
+      "path": "test/fixtures/language/content/behaviors/ProjectileHit.chibi",
+      "bytes": 428,
+      "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131"
+    },
+    {
+      "path": "test/fixtures/language/content/behaviors/ProjectileHit.chibi.meta",
+      "bytes": 4488,
+      "sha256": "3be30e373e71310e3e6f078f2a3e621a30091d0cfa5723be10251f5c640e1f87"
+    },
+    {
+      "path": "test/fixtures/language/content/behaviors/WatchedPayload.chibi",
+      "bytes": 119,
+      "sha256": "e55f029a430d561aa34984c96ffda0a357f9717b5b0bf4e3eb902f30d7705761"
+    },
+    {
+      "path": "test/fixtures/language/content/events/Damage.kdl",
+      "bytes": 321,
+      "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+    },
+    {
+      "path": "test/fixtures/language/content/libraries/DirectionMath.chibi",
+      "bytes": 392,
+      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+    },
+    {
+      "path": "test/fixtures/language/content/libraries/DirectionMath.chibi.meta",
+      "bytes": 951,
+      "sha256": "99279ee363bc8fd0dfa8c7e0ef40aed6d633678983fd636fdcac580e9d4ab611"
+    },
+    {
+      "path": "test/fixtures/language/content/libraries/WeaponActions.chibi",
+      "bytes": 2053,
+      "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6"
+    },
+    {
+      "path": "test/fixtures/language/content/libraries/WeaponActions.chibi.meta",
+      "bytes": 4494,
+      "sha256": "8e0c20091261eae8609671d0c0fd1a2a03a4b0d33d5612c073564928ba7713fa"
+    },
+    {
+      "path": "test/fixtures/language/content/prototypes/BoostEmitter.kdl",
+      "bytes": 103,
+      "sha256": "dbfbe93b42d42c2e86a5ac889b13f391c9c7940f0998fe365392fc14ee28f76e"
+    },
+    {
+      "path": "test/fixtures/language/content/prototypes/MovementEmitter.kdl",
+      "bytes": 106,
+      "sha256": "88c77a2e00e7f1f4c24efa115dbc433c121b44eb896172ce30a3200394eadab6"
+    },
+    {
+      "path": "test/fixtures/language/content/scenes/Start.kdl",
+      "bytes": 39,
+      "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+    },
+    {
+      "path": "test/fixtures/language/content/systems/FreeMotion.chibi",
+      "bytes": 141,
+      "sha256": "ca406d1a9675cb97bf2583de96e1266a7abf36ecfac1c0c8b17f53c78b4af859"
+    },
+    {
+      "path": "test/fixtures/language/content/systems/FreeMotion.chibi.meta",
+      "bytes": 1864,
+      "sha256": "5ead66ed3ad7233d79dc4a33a083cf158462e4f35874245c5244e8ebb550b8d9"
+    },
+    {
+      "path": "test/fixtures/language/fixtures.json",
+      "bytes": 5192,
+      "sha256": "037ae831fea9b956c5891a31761aae4519a05073b8faa7935187efbe27e95235"
+    },
+    {
+      "path": "test/fixtures/language/project.kdl",
+      "bytes": 86,
+      "sha256": "1a2b984420c837616cee73c371a6e4bd54792e319624ad4052d3d8421c0b2699"
+    },
+    {
+      "path": "test/fixtures/language/prototype/README.md",
+      "bytes": 644,
+      "sha256": "0a25b3c8fd8b0c2d33b6ea90fda0c3daa15fe33df6caaee6022e72ae2509b554"
+    },
+    {
+      "path": "test/fixtures/language/prototype/branching.chibi",
+      "bytes": 447,
+      "sha256": "41628bef44c9b7a88b49fb21fad9057596939c50e34784117334778ac1f2b5e1"
+    },
+    {
+      "path": "test/fixtures/language/prototype/cooldown.chibi",
+      "bytes": 241,
+      "sha256": "ac148520ce3ee4c9de2c4a4bc1bb6601947bac4c74129a9fda7b10aa4530af17"
+    },
+    {
+      "path": "test/fixtures/language/prototype/expressions.chibi",
+      "bytes": 375,
+      "sha256": "d7183848525bc219786eff729d1b7cab35a49e16ea57eef3ecbcfbc842a051e0"
+    },
+    {
+      "path": "test/fixtures/language/prototype/projectile.chibi",
+      "bytes": 177,
+      "sha256": "4b7f7443c46f29abd24ecc37eb7f012286f010dc196faf2c56506a558815a14f"
+    },
+    {
+      "path": "test/fixtures/language/prototype/recharge.chibi",
+      "bytes": 179,
+      "sha256": "6994643523b5e833bfe2d234d3eacc7f64ff9f34965e0e7093e9cffc15b25930"
+    },
+    {
+      "path": "test/fixtures/material-contracts/README.md",
+      "bytes": 320,
+      "sha256": "422f3ef34552265bb6a3d9f66dc0cd8070744cff349d24deec3f5abc2bad77bb"
+    },
+    {
+      "path": "test/fixtures/material-contracts/content/behaviors/MaterialImpactHealth.chibi",
+      "bytes": 519,
+      "sha256": "fae9952169c2afff133e46bb296fc4c467333a24eeb23840bd12f8cfe0678530"
+    },
+    {
+      "path": "test/fixtures/material-contracts/content/behaviors/MaterialImpactHealth.chibi.meta",
+      "bytes": 3659,
+      "sha256": "4b65ba2b5d0f65817b22dc8cc1f9d1f91d48b55d41ddd2d9614aec95bdd57ffb"
+    },
+    {
+      "path": "test/fixtures/material-contracts/content/events/Material Impact.kdl",
+      "bytes": 324,
+      "sha256": "d57898ee3f520364fe2344140d8caa9db4811dc534be90321b40bc25421137d2"
+    },
+    {
+      "path": "test/fixtures/material-contracts/content/fields/CaveField.kdl",
+      "bytes": 10375,
+      "sha256": "8198cc73d3cb13cef8981cceb92a9d85b99522fffa29c7427f8ac0dfda8d27bc"
+    },
+    {
+      "path": "test/fixtures/material-contracts/content/fields/MaterialIslands.kdl",
+      "bytes": 908,
+      "sha256": "fffc1afacdb8ad3b8ab3d3443b282e4bf636c4dd2f28cebb39b04890678e0ff1"
+    },
+    {
+      "path": "test/fixtures/material-contracts/content/libraries/FieldShapes.chibi",
+      "bytes": 801,
+      "sha256": "7c277ea5f214211b3dcf1ae3cce3fd2d2116230582b68cf790e934895ca6f721"
+    },
+    {
+      "path": "test/fixtures/material-contracts/content/libraries/FieldShapes.chibi.meta",
+      "bytes": 1987,
+      "sha256": "5592e42398f449adfa417b410515e1faca76621c9947bc366248874f3dbcb094"
+    },
+    {
+      "path": "test/fixtures/material-contracts/content/materials/ArenaFloor.kdl",
+      "bytes": 26339,
+      "sha256": "5bc9998716a5ad357cb4553ac04260095d0715c84557ea1c9d8e2fb48cbfb762"
+    },
+    {
+      "path": "test/fixtures/material-contracts/content/scenes/Start.kdl",
+      "bytes": 39,
+      "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+    },
+    {
+      "path": "test/fixtures/material-contracts/fixtures.json",
+      "bytes": 2070,
+      "sha256": "0d4ad1b11ec209f7c3b779c9f06c46758ffc2705f6e6e5e806fdae5eb51693a4"
+    },
+    {
+      "path": "test/fixtures/material-contracts/project.kdl",
+      "bytes": 86,
+      "sha256": "dbc3a30fa19140f3c2b4e6673fa5962478ef9eeade711a1f481e91a509eb9389"
+    },
+    {
+      "path": "test/fixtures/mesh_sdf/box.obj",
+      "bytes": 239,
+      "sha256": "3f1777c4855a62044b416bb8a3e6952eed35a7fc92a0981325017190452e248e"
+    },
+    {
+      "path": "test/fixtures/project.kdl",
+      "bytes": 85,
+      "sha256": "35d2eff7dcd87218cb6de139cc10dc829a73a2d19cd964da66443550b8c6fab2"
+    },
+    {
+      "path": "test/fixtures/prototypes/InputEntity.kdl",
+      "bytes": 430,
+      "sha256": "eb6ca0acbb4aa6b61e7b4be6b9f8296e7eb377f47b44c6dd6c71e89fcd65c547"
+    },
+    {
+      "path": "test/fixtures/prototypes/StaticEntity.kdl",
+      "bytes": 187,
+      "sha256": "f8dc01f764b575cd639566c5cf0fb34c33efc29ea4bf72385b6f55f01bc6d343"
+    },
+    {
+      "path": "test/fixtures/refactor/README.md",
+      "bytes": 1149,
+      "sha256": "c1fda10c37124ab767084cea98c0acd0bad17757cfd69fb438f38621387bea78"
+    },
+    {
+      "path": "test/fixtures/refactor/references/behaviors/HullDamage.chibi",
+      "bytes": 596,
+      "sha256": "cdbfa92bcf31453ebb51e099631a05bcc424367283c778023cef3891f2ffca89"
+    },
+    {
+      "path": "test/fixtures/refactor/references/behaviors/ProjectileEffects.chibi",
+      "bytes": 320,
+      "sha256": "40f11ec82e65e1fd36994c354dba2035f181d99673adf4b0362b32b513bd63ba"
+    },
+    {
+      "path": "test/fixtures/refactor/references/behaviors/ProjectileHit.chibi",
+      "bytes": 428,
+      "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131"
+    },
+    {
+      "path": "test/fixtures/refactor/references/behaviors/Pursuit.chibi",
+      "bytes": 784,
+      "sha256": "3c7a4bf572de6814ce0368f1e818d03fc9198f07433ed176038e8110c524a50a"
+    },
+    {
+      "path": "test/fixtures/refactor/references/behaviors/SwarmerEffects.chibi",
+      "bytes": 204,
+      "sha256": "7f32f3b59e9384132069e198b3674ec887b1677c87d661191502098a12727660"
+    },
+    {
+      "path": "test/fixtures/refactor/references/behaviors/Weapon.chibi",
+      "bytes": 2438,
+      "sha256": "c1148c36914c05893fa1d2db6627caa1bdc27831d05ccf6f5b11e02828dd7ac5"
+    },
+    {
+      "path": "test/fixtures/refactor/references/events/CollectExperience.kdl",
+      "bytes": 202,
+      "sha256": "bde027f8b22b0c27244d854464656916b91c1fe8990814ff8b9c6dc657d25fb5"
+    },
+    {
+      "path": "test/fixtures/refactor/references/events/Damage.kdl",
+      "bytes": 321,
+      "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+    },
+    {
+      "path": "test/fixtures/refactor/references/fields/BasaltCave.kdl",
+      "bytes": 337,
+      "sha256": "ef4ab9a4cfa89041edbef2860d129e7c4f257490aaffd957285fe892568ed2b7"
+    },
+    {
+      "path": "test/fixtures/refactor/references/libraries/DirectionMath.chibi",
+      "bytes": 392,
+      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+    },
+    {
+      "path": "test/fixtures/refactor/references/libraries/WeaponActions.chibi",
+      "bytes": 2053,
+      "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6"
+    },
+    {
+      "path": "test/fixtures/refactor/references/materials/Basalt.kdl",
+      "bytes": 404,
+      "sha256": "33331d526d217f2e09f5dc10ab8e3c081cd38fa58787955430be9e7a8b50cf2f"
+    },
+    {
+      "path": "test/fixtures/refactor/references/prototypes/Cave.kdl",
+      "bytes": 109,
+      "sha256": "f712e4a40c16cfa4d9b368c560e893a75e4849ba2d0c24c8ad1cda1e0de31caa"
+    },
+    {
+      "path": "test/fixtures/refactor/references/prototypes/FreeMotionSystem.kdl",
+      "bytes": 80,
+      "sha256": "35bc8e29368e3b3443f4f89e876e09841c06f6302e4a9b20a645b1f0982946d4"
+    },
+    {
+      "path": "test/fixtures/refactor/references/prototypes/Player.kdl",
+      "bytes": 60,
+      "sha256": "b1d6a7dd0d53c30feb27927d3189209d59f65047b28cb238f35dc48efd5ce640"
+    },
+    {
+      "path": "test/fixtures/refactor/references/prototypes/Projectile.kdl",
+      "bytes": 65,
+      "sha256": "03199078c635e8459f6e5aece12a8eef24f10398a5cf3778e4b127f1267591b9"
+    },
+    {
+      "path": "test/fixtures/refactor/references/prototypes/Swarmer.kdl",
+      "bytes": 42,
+      "sha256": "1f6ec37dc3ca4aec07fcc5ef51399e99c40f79070a9797d8ef4bdfbe725263a8"
+    },
+    {
+      "path": "test/fixtures/refactor/references/prototypes/TrailEmitter.kdl",
+      "bytes": 72,
+      "sha256": "7826edcb9e4e20525204f97e57907630b8d02f5eea9b6dda82ecfdefce54d8ff"
+    },
+    {
+      "path": "test/fixtures/refactor/references/scenes/Sandbox.kdl",
+      "bytes": 290,
+      "sha256": "188fa82614e9c007253f5649745fd4550ae44b764ac10a2d8a02404dc2176eeb"
+    },
+    {
+      "path": "test/fixtures/refactor/references/systems/FreeMotion.chibi",
+      "bytes": 141,
+      "sha256": "ca406d1a9675cb97bf2583de96e1266a7abf36ecfac1c0c8b17f53c78b4af859"
+    },
+    {
+      "path": "test/fixtures/refactor/references/ui/MenuButton.rml",
+      "bytes": 39,
+      "sha256": "f97aeaae2c0be78c3bc39c0710592cbaad93b637e4122a83907f85f43667c833"
+    },
+    {
+      "path": "test/fixtures/refactor/references/ui/PauseMenu.rml",
+      "bytes": 480,
+      "sha256": "6b7953877e414a058539da2e569bea3d6866be536a5ce0c14720f93a3076b06e"
+    },
+    {
+      "path": "test/fixtures/refactor/values/behaviors/ArenaDropBehavior.chibi",
+      "bytes": 5436,
+      "sha256": "b2b409a5419b2e1887f9c03fd960878dae881be198f772d1835f13e7a84a0ca2"
+    },
+    {
+      "path": "test/fixtures/refactor/values/materials/ArenaExperience.kdl",
+      "bytes": 413,
+      "sha256": "45be1da080d0cdcbfa2b33588477b7a30df5b3c9d06be297b9a4892f90c15898"
+    },
+    {
+      "path": "test/fixtures/refactor/values/prototypes/ArenaExperience.kdl",
+      "bytes": 85,
+      "sha256": "36d8c74305659e374e4e0a0f5722711e48e8be26da04266d5ab42bc7b4715f4a"
+    },
+    {
+      "path": "test/fixtures/refactor/values/prototypes/OrbitFlipper.kdl",
+      "bytes": 91,
+      "sha256": "3a6273d9a6867a4cda1ead65688a74c14d7e845d67cd04a84c29e02d60310ee1"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/README.md",
+      "bytes": 892,
+      "sha256": "7d2d49e3d238cceb2f03f960ed6b82a5e0e09f15e9b4892717cb2eb4290e529d"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/behaviors/Movement.chibi",
+      "bytes": 854,
+      "sha256": "4f14f158cf83604f1691f31b28ae56a9d5b1abba2aef1be945741a5f878a4426"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/behaviors/Movement.chibi.meta",
+      "bytes": 8334,
+      "sha256": "c49af8dd0a91a5cf998c8e9c7929fa2d17ce48410fe26cded3529b354b959f82"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/behaviors/Weapon.chibi",
+      "bytes": 2438,
+      "sha256": "c1148c36914c05893fa1d2db6627caa1bdc27831d05ccf6f5b11e02828dd7ac5"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/behaviors/Weapon.chibi.meta",
+      "bytes": 7224,
+      "sha256": "1978344e3128a034de9b105419e8cc68a9927efd1f4498b008ad89a95cce63bf"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/editor/Components.kdl",
+      "bytes": 3707,
+      "sha256": "715ac09169ae07f5af6cbd58a18b7e080cbb152198086dac97ce1ba4921e519b"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/libraries/DirectionMath.chibi",
+      "bytes": 392,
+      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/libraries/DirectionMath.chibi.meta",
+      "bytes": 951,
+      "sha256": "99279ee363bc8fd0dfa8c7e0ef40aed6d633678983fd636fdcac580e9d4ab611"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/libraries/WeaponActions.chibi",
+      "bytes": 2053,
+      "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/libraries/WeaponActions.chibi.meta",
+      "bytes": 4494,
+      "sha256": "8e0c20091261eae8609671d0c0fd1a2a03a4b0d33d5612c073564928ba7713fa"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/prototypes/Camera.kdl",
+      "bytes": 105,
+      "sha256": "354c4e1410ef0a36f32001f9c26decaaa432787a8378efc1d45e262511e3c51c"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/prototypes/Player.kdl",
+      "bytes": 522,
+      "sha256": "07b8f677156e54a8fcd0cf94f6dfc5d6a0b7960c1587a936ed7e0ca787420c7f"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/prototypes/Projectile.kdl",
+      "bytes": 189,
+      "sha256": "5f869389167d71f4e5467f6ad64873e6f219ca2908acc8c31e0310ede02569af"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/scenarios/Firefight.kdl",
+      "bytes": 56,
+      "sha256": "081b057508fc94fe573a1b18c524a4e955ef1d72861729d0741b06899f51dd84"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/scenes/Sandbox.kdl",
+      "bytes": 123,
+      "sha256": "fa5cfdbb1f7580a383fd714ef2bed0486520c32ba49a0f6eaa7c83a4a49b34a1"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/ui/HUD.rcss",
+      "bytes": 25,
+      "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/ui/HUD.rml",
+      "bytes": 107,
+      "sha256": "ff0e980b989f0982398029ee3d77e087a871612051667f6b2d944ecad1d184be"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/ui/MenuButton.rcss",
+      "bytes": 25,
+      "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/ui/MenuButton.rml",
+      "bytes": 25,
+      "sha256": "cb1ff2208354950aebb36584c24cf93d4a38218cee52ff536ec9e1359cb7037b"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/ui/Meter.rcss",
+      "bytes": 25,
+      "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/ui/Meter.rml",
+      "bytes": 56,
+      "sha256": "db086141f1adfdc8a967564ff52776add10620b613a54bdaadd36caaf2fd3444"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/ui/PauseMenu.rcss",
+      "bytes": 25,
+      "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/content/ui/PauseMenu.rml",
+      "bytes": 47,
+      "sha256": "8b6c2d10e8bb47935cdc98a29d6d1fea0785f2b7c24ed1c7b58c34f007fea140"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/fixtures.json",
+      "bytes": 5474,
+      "sha256": "82527f2f58649f365134dcce9a229854d6bd08e4fd97cf818a93e1207cc62e46"
+    },
+    {
+      "path": "test/fixtures/studio-workspace/project.kdl",
+      "bytes": 96,
+      "sha256": "d4c314ecbb9646858c480a56e938f5992ea6f64514f369f32b787483a584b49e"
+    },
+    {
+      "path": "test/fixtures/studio/content/behaviors/Teller.chibi",
+      "bytes": 46,
+      "sha256": "eca5b09eab4191670e01b424fdd903c49bb9ba91350a310d7d52bdf61283f328"
+    },
+    {
+      "path": "test/fixtures/studio/content/behaviors/Teller.chibi.meta",
+      "bytes": 221,
+      "sha256": "5e0bea2bfa2a3a0c8a57bcaf40521dbe8a457f13c96456a2fd8549e7a72d9a77"
+    },
+    {
+      "path": "test/fixtures/studio/content/libraries/Weapons.chibi",
+      "bytes": 316,
+      "sha256": "c9c133cb51e7a007df721a9285ece475d680948dd06208b79c757602dec30940"
+    },
+    {
+      "path": "test/fixtures/studio/content/libraries/Weapons.chibi.meta",
+      "bytes": 979,
+      "sha256": "eed42b1b6addd58d4b81a3b2f5b510034a885a01b46a06680c8f7a7bcadba6b1"
+    },
+    {
+      "path": "test/fixtures/studio/content/prototypes/Binding.kdl",
+      "bytes": 169,
+      "sha256": "88349e3e0f0cd29a0ba9c2b77ea65109ec32ca62db4a560e454a505de6f70d77"
+    },
+    {
+      "path": "test/fixtures/studio/content/prototypes/Vault.kdl",
+      "bytes": 168,
+      "sha256": "b0a82262c878460a94c1ed1d33dccd33fe2bd4f574c57ad97e14ec4f6fd1761a"
+    },
+    {
+      "path": "test/fixtures/studio/content/scenes/Binding.kdl",
+      "bytes": 86,
+      "sha256": "ebe9b016283d2ce1dafa64f01be08f3d5e69f20937b541c4000cbbbbd4177468"
+    },
+    {
+      "path": "test/fixtures/studio/content/scenes/Main.kdl",
+      "bytes": 38,
+      "sha256": "9750fd67199801a2612ce9f6e5f1ae1a1b4b2f1b6b1b271735e0e6f8c672f560"
+    },
+    {
+      "path": "test/fixtures/studio/content/scenes/Vault.kdl",
+      "bytes": 80,
+      "sha256": "a2c597a1a6d103e67f41d83c73520c501d1040a622683d0019be69b2fb7a5159"
+    },
+    {
+      "path": "test/fixtures/studio/content/ui/Bank.rcss",
+      "bytes": 56,
+      "sha256": "880471e7796e19a96c3cd747a57efdddfdfda1f25d2d3311be856a4c4031e1f2"
+    },
+    {
+      "path": "test/fixtures/studio/content/ui/Bank.rml",
+      "bytes": 92,
+      "sha256": "5e23e85d011eeec3ea33cafe91108bb854f48eab5cc8cec16fcb44d069f6667f"
+    },
+    {
+      "path": "test/fixtures/studio/project.kdl",
+      "bytes": 83,
+      "sha256": "82c5940df6ba740be430d887b93e8841fe2e599450ee4b66ba8c8cfe770a4e18"
+    },
+    {
+      "path": "test/fixtures/systems/MovementSystem.chibi",
+      "bytes": 739,
+      "sha256": "66f97f5574c01713d526da152cfcbbde574f09b81687d1f815bb5bc440e8d4af"
+    },
+    {
+      "path": "test/fixtures/systems/MovementSystem.chibi.meta",
+      "bytes": 1548,
+      "sha256": "89de2b461507f429d5bfa30449203e90e121508a05e72edc6755dcafe40a039e"
+    },
+    {
+      "path": "test/graph/document.c",
+      "bytes": 28152,
+      "sha256": "76d258c0f2b17df1afbd6655797deeb3f37099bcb2b5a0880325a9f2ce697366"
+    },
+    {
+      "path": "test/graph/editing.c",
+      "bytes": 14476,
+      "sha256": "632a9fc3d1ede6728ff5f20de2c5f2b26f6c17bdbbd0cbc5e33718f3804b89ab"
+    },
+    {
+      "path": "test/graph/input_bindings.c",
+      "bytes": 82180,
+      "sha256": "7790bdb0c8039def2e81209ccc91e0c7332bfc6b960b02dd5581df43dffd16de"
+    },
+    {
+      "path": "test/graph/optimizer.c",
+      "bytes": 33604,
+      "sha256": "2e16a4a6ae8643982d0938b9e4c2cea02dfc65a3cb63076338acc0749dcc0cb5"
+    },
+    {
+      "path": "test/graph/optimizer_sources.c",
+      "bytes": 13241,
+      "sha256": "b2c5ae966250008e0d676070d51725a9ad26b29e448c46a9ccad98c4fb1a1bcd"
+    },
+    {
+      "path": "test/graph_navigation.c",
+      "bytes": 8089,
+      "sha256": "25bdbcad1464833fcb8c383cb98b9ff8d505e72b106262dd54a5b26c54803f11"
+    },
+    {
+      "path": "test/labels.c",
+      "bytes": 3666,
+      "sha256": "7cbcbc4ee15d9e8f6f5962b19eda8941f3348d4c988491b2919611a8374fb8eb"
+    },
+    {
+      "path": "test/math_expression.c",
+      "bytes": 95861,
+      "sha256": "f9c936509887f4994c46d6fc2cd5174628ba0118cf43cf5cdafd796e3cf51da7"
+    },
+    {
+      "path": "test/movement_input.c",
+      "bytes": 713,
+      "sha256": "1b72582bb5e9084c72d582be629caedb351d80c85a7032bf8b59398d56dbbd43"
+    },
+    {
+      "path": "test/movement_trail.c",
+      "bytes": 6524,
+      "sha256": "7fcafef3db0fb598fd49367b3e9f5223125b0d42d59b28caeaa72451d5e2a73f"
+    },
+    {
+      "path": "test/physics_executor.h",
+      "bytes": 494,
+      "sha256": "314692d337991b59bef6afebd646983b06378818a61bca27ea81b8f547c8b6e8"
+    },
+    {
+      "path": "test/runtime/catalog.c",
+      "bytes": 12917,
+      "sha256": "12f59792c89b496dfbc8ba0a1ef1817d68554e8655186b560661ca63a96d313f"
+    },
+    {
+      "path": "test/runtime/game_capabilities.c",
+      "bytes": 10025,
+      "sha256": "ba32fe527ff82722f7ff6af16feddfbd66fe44166ebf8711eeb0e930d5f4f5b4"
+    },
+    {
+      "path": "test/runtime/ui_source.c",
+      "bytes": 36957,
+      "sha256": "dc7530cdcb9ceba934dcfa9e7b951fec83821d80d7949538ac207d5c2aec8a37"
+    },
+    {
+      "path": "test/scene_checkpoint.c",
+      "bytes": 56259,
+      "sha256": "0b7781c59708d55334449acff2f0dd3804c682b63cba0668e9f36ba33921b27c"
+    },
+    {
+      "path": "test/scene_debug.c",
+      "bytes": 13148,
+      "sha256": "7d23eb0b5054316068f41d717ef57f95208b3f0990a6a05f25ac2197abd58fb4"
+    },
+    {
+      "path": "test/scene_disk.c",
+      "bytes": 14248,
+      "sha256": "4ce3eb149935c4fc14541709f0a7d356ab8802e98fb12388a53b345de43ba9f6"
+    },
+    {
+      "path": "test/scene_history.c",
+      "bytes": 33350,
+      "sha256": "2798f9f10957b47b3803539b4dd18c28f77aaf55818add4cbec5fe6e395813ed"
+    },
+    {
+      "path": "test/scene_instances.c",
+      "bytes": 38257,
+      "sha256": "ce6c69c8d9bfbd779ce1102373a020b7441ba5d5c8cba0624a230e13342c3361"
+    },
+    {
+      "path": "test/scene_refactor.c",
+      "bytes": 15207,
+      "sha256": "e5b137a7fa4a80679f5f152fdbeaa7b3a65a42b37ee47befe47c34e0232d4267"
+    },
+    {
+      "path": "test/sdf_material.c",
+      "bytes": 72309,
+      "sha256": "97855c7553bf57adeda0eaae57f4a6da3a6fb36a3ada86447d61f354382b09ce"
+    },
+    {
+      "path": "test/suite_internal.h",
+      "bytes": 10521,
+      "sha256": "1f9a608789cbe722d02798b4e399e7f2036071ccdf25b1503c38c85a9dcb4463"
+    },
+    {
+      "path": "test/support/code_fixture.h",
+      "bytes": 4284,
+      "sha256": "417f29c7873bc47c41c91d4b39864396f232bece3fa2907cc1109d518dedbf16"
+    },
+    {
+      "path": "test/support/event_fixture.h",
+      "bytes": 3182,
+      "sha256": "9bd8fdb98157836f67b242ec7ed4d425e6cead0d0b06205b4b6b48bd7d685e47"
+    },
+    {
+      "path": "test/support/physics_executor.c",
+      "bytes": 1384,
+      "sha256": "a0ee35f2c2828b4c1322984ffae561c9aea3d9f3a4bf3d5b3861e9d74c4ac98d"
+    },
+    {
+      "path": "test/support/simulation_fixture.h",
+      "bytes": 1601,
+      "sha256": "94db64c0dc7c522649ff8d32e50ce83864229bdd2f6c5d6b9d4a54cb99bdf584"
+    }
+  ],
+  "unresolved_or_directory_literal_references": [
+    "content/%s.mesh.json",
+    "content/behaviors",
+    "content/behaviors/Panel.chibi",
+    "content/behaviors/Spin.chibi",
+    "content/behaviors/Teller.chibi",
+    "content/behaviors/Weapon.chibi",
+    "content/events/PendingReferenceEvent.kdl",
+    "content/events/UpdatedReferenceEvent.kdl",
+    "content/fields/Ground.kdl",
+    "content/libraries",
+    "content/libraries/Shared.chibi",
+    "content/prototypes",
+    "content/prototypes/Dot.kdl",
+    "content/prototypes/Eye.kdl",
+    "content/prototypes/Ground.kdl",
+    "content/prototypes/Panel.kdl",
+    "content/prototypes/Sign.kdl",
+    "content/prototypes/Vault.kdl",
+    "content/scenes",
+    "content/scenes/Cave.kdl",
+    "content/scenes/Hall.kdl",
+    "content/scenes/Main.kdl",
+    "content/scenes/Studio.kdl",
+    "content/sdf-bake-render-XXXXXX",
+    "content/sdf-model-images-XXXXXX",
+    "content/ui/Bank.rml",
+    "content/ui/Desk.rml",
+    "content/ui/Notice.rml",
+    "content/ui/Settings.rml",
+    "content/ui/Widgets.rml",
+    "content/ui/bank.rml",
+    "content/ui/theme/base.rcss",
+    "projects/arena2d",
+    "projects/arena2d/content/",
+    "projects/studio",
+    "projects/studio/content",
+    "projects/studio/content/ui",
+    "projects/studio/content/ui/%s.rcss",
+    "projects/studio/content/ui/%s.rml",
+    "test/fixtures/content",
+    "test/fixtures/content/behaviors/%s.chibi",
+    "test/fixtures/content/behaviors/HealthBehavior.chibi",
+    "test/fixtures/content/behaviors/PlayerContactBehavior.chibi",
+    "test/fixtures/content/prototypes/%s.kdl",
+    "test/fixtures/language",
+    "test/fixtures/language/content",
+    "test/fixtures/language/content/libraries/CheckpointCaller.chibi",
+    "test/fixtures/language/content/libraries/CheckpointLibrary.chibi",
+    "test/fixtures/studio",
+    "test/fixtures/studio-workspace"
+  ],
+  "originals": "78 editor-dependent oracle originals retired after explicit acceptance and refreshed hash verification;7 helpers and232 fixtures retain engine ownership",
+  "build_target": null,
+  "prior_snapshots": [
+    {
+      "source": "test/movement_trail.c",
+      "snapshot": "prior_snapshots/ebc60a87f99d1cbe035d483c900e5735cb9e38379c23b9a50c0be3356efa2f92/test/movement_trail.c",
+      "bytes": 6732,
+      "sha256": "ebc60a87f99d1cbe035d483c900e5735cb9e38379c23b9a50c0be3356efa2f92"
+    }
+  ]
+}

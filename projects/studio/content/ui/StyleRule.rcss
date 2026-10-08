@@ -1,0 +1,13 @@
+/* A line of the Styles pane: an ancestor whose rules follow, a rule with
+   where it was declared, or one of its declarations. */
+body { display: block; }
+.ancestor { display: block; margin-top: 12dp; font-size: var(--studio-font-11, 11dp); color: var(--muted-foreground); }
+.rule { display: flex; align-items: center; gap: 8dp; margin-top: 6dp; padding-top: 4dp; border-top: 1dp var(--line); }
+.selector { flex: 1 1 0dp; color: var(--foreground); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.origin { flex: 0 0 auto; font-size: var(--studio-font-10, 10dp); color: var(--faint-foreground); }
+.origin.link { color: var(--link); cursor: pointer; }
+.origin.link:hover { text-decoration: underline; }
+.declaration { display: block; padding-left: 12dp; min-height: 18dp; line-height: var(--studio-line-18, 18dp); word-break: break-all; }
+.declaration .name { color: var(--tok-name); }
+.declaration .colon { margin-right: 4dp; color: var(--faint-foreground); }
+.declaration .value { color: var(--foreground); }

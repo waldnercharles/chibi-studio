@@ -1,0 +1,11 @@
+/* A virtualized list, as react-virtuoso draws one: a scrolling view, a spacer
+   as tall as every row, and only the rows in view, placed at their offset.
+   Give it an id (id="list") and rows of one fixed height. The VirtualList
+   behavior reads where the view is scrolled (Get UI Scroll) and sets
+   self.first and self.row, then sends ShowRows with the rows to show; the
+   entity's own behavior answers with self.rows and self.total. */
+/* The list fills what holds it, and scrolls inside that height. */
+body { display: block; height: 100%; }
+.vlist { display: block; overflow-y: auto; height: 100%; }
+.vlist-content { position: relative; }
+.vlist-window { position: absolute; left: 0dp; right: 0dp; top: 0dp; }

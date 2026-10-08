@@ -1,0 +1,5 @@
+name "NewProject"
+components {
+    GAME.GameUi document="NewProject" hidden=#true
+}
+(array)behaviors "NewProjectKeys"

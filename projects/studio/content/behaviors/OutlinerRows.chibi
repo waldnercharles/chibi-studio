@@ -1,0 +1,114 @@
+behavior "OutlinerRows" {
+    owner "ecs.entity";
+    state First: int = 0;
+    state Count: int = 0;
+    state Collapsed: bool = false;
+    state ShownOpen: bool = true;
+    action scene_objects = engine["Scene Objects"](First: convert<"To Integer">("max(First - 1, 0)"(First: int = &state.First)), Count: convert<"To Integer">("Count - 1 + step(1, First)"(Count: int = &state.Count, First: int = &state.First)));
+    value scene_info = scene_info();
+    value not = not(Value: &state.Collapsed);
+    value shown_0 = (convert<"To Real">(&local.Shown) > 0);
+    action branch_3 = engine["Branch"](Condition: shown_0);
+    value text_equal = text_equal(A: scene_info.Filter, B: "");
+    value not_2 = not(Value: &state.Collapsed);
+    value open_shownopen_open_shownopen = ((rootclicked.Open && !&state.ShownOpen) || (!rootclicked.Open && &state.ShownOpen));
+    value not_3 = not(Value: rootclicked.Open);
+    value string_2 = engine["String"](Value: "");
+    value integer = integer(Value: 0);
+    value integer_2 = integer(Value: 1);
+    value string_3 = engine["String"](Value: "");
+    value string_4 = engine["String"](Value: "No objects. Add a prototype to start.");
+    value string_5 = engine["String"](Value: "No matches");
+    value object_row = object_row(Object: revealobject.Object);
+    value row_0 = (convert<"To Real">(object_row) >= 0);
+    local Shown = scene_objects.Shown;
+    on Begin as begin() {
+        await set_ui_data(Entity: 0, Name: "root.icon", Value: string = string_2);
+        await set_ui_data(Entity: 0, Name: "root.parent", Value: bool = engine["Bool"](Value: true));
+        set_ui_data(Entity: 0, Name: "root.depth", Value: int = integer);
+    }
+    on ShowRows as showrows(First: int = 0, Count: int = 0) {
+        await set_variable<"First">(Value: showrows.First);
+        set_variable<"Count">(Value: showrows.Count);
+    }
+    on Refresh as refresh() {
+        scene_objects();
+    }
+    after scene_objects {
+        await set_ui_data(Entity: 0, Name: "rootShown", Value: bool = (cast<double>(&state.First) == 0));
+        await set_ui_data(Entity: 0, Name: "count", Value: int = &local.Shown);
+        await set_ui_data(Entity: 0, Name: "root.label", Value: string = scene_info.Title);
+        await set_ui_data(Entity: 0, Name: "root.open", Value: bool = not);
+        await set_variable<"ShownOpen">(Value: bool = not);
+        if (&state.Collapsed) {
+            await set_ui_data(Entity: 0, Name: "rows", Value: struct<"SceneObjectRow">[] = clear(Array: struct<"SceneObjectRow">[] = scene_objects.Rows));
+            await set_ui_data(Entity: 0, Name: "total", Value: int = integer_2);
+            branch_3();
+        } else {
+            await set_ui_data(Entity: 0, Name: "rows", Value: struct<"SceneObjectRow">[] = scene_objects.Rows);
+            await set_ui_data(Entity: 0, Name: "total", Value: double = "1 + Shown"(Shown: int = &local.Shown));
+            branch_3();
+        }
+    }
+    after branch_3.True {
+        set_ui_data(Entity: 0, Name: "notice", Value: string = string_3);
+    }
+    after branch_3.False {
+        if (text_equal) {
+            set_ui_data(Entity: 0, Name: "notice", Value: string = string_4);
+        } else {
+            set_ui_data(Entity: 0, Name: "notice", Value: string = string_5);
+        }
+    }
+    on FoldRoot as foldroot() {
+        set_variable<"Collapsed">(Value: bool = true);
+    }
+    on UnfoldRoot as unfoldroot() {
+        set_variable<"Collapsed">(Value: bool = false);
+    }
+    on ToggleRoot as toggleroot() {
+        set_variable<"Collapsed">(Value: bool = not_2);
+    }
+    on RootClicked as rootclicked(Open: bool = false) {
+        if (open_shownopen_open_shownopen) {
+            set_variable<"Collapsed">(Value: bool = not_3);
+        } else {
+        }
+    }
+    on RevealObject as revealobject(Object: string = "") {
+        await set_variable<"Collapsed">(Value: bool = false);
+        if (row_0) {
+            reveal_ui_list_row(Entity: 0, Element: "#outliner-list", Row: convert<"To Integer">("Row + 1"(Row: int = object_row)));
+        } else {
+        }
+    }
+    pure function "max(First - 1, 0)"<T0: int, T1: double>(First: T0 = 0) -> (Result: T1 = 0.0) {
+        depth_limit 64;
+        value real = real(Value: 1.0);
+        value subtract = subtract(A: double = convert<"To Real">(entry), B: double = real);
+        value real_2 = real(Value: 0.0);
+        value max = max(A: double = subtract, B: double = real_2);
+        result Result: double = max;
+    }
+    pure function "Count - 1 + step(1, First)"<T0: int, T1: int, T2: double>(Count: T0 = 0, First: T1 = 0) -> (Result: T2 = 0.0) {
+        depth_limit 64;
+        value real = real(Value: 1.0);
+        value subtract = subtract(A: double = convert<"To Real">(entry.Count), B: double = real);
+        value real_2 = real(Value: 1.0);
+        value step = step(Value: convert<"To Real">(entry.First), Edge: real_2);
+        value add = add(A: double = subtract, B: double = step);
+        result Result: double = add;
+    }
+    pure function "1 + Shown"<T0: int, T1: double>(Shown: T0 = 0) -> (Result: T1 = 0.0) {
+        depth_limit 64;
+        value real = real(Value: 1.0);
+        value add = add(A: double = real, B: double = convert<"To Real">(entry));
+        result Result: double = add;
+    }
+    pure function "Row + 1"<T0: int, T1: double>(Row: T0 = 0) -> (Result: T1 = 0.0) {
+        depth_limit 64;
+        value real = real(Value: 1.0);
+        value add = add(A: double = convert<"To Real">(entry), B: double = real);
+        result Result: double = add;
+    }
+}

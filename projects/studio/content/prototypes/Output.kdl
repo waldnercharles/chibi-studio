@@ -1,0 +1,4 @@
+name "Output"
+components {
+    GAME.GameUi document="Output" hidden=#true
+}

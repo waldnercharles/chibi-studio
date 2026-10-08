@@ -1,0 +1,6 @@
+/* One property, as Properties lays it out: its label, which focuses the
+   control whose id is the property's, and its controls, the use's
+   children. Alias the property as data-alias-property: an object with id,
+   label, tip (its label when it has a description, else empty), about
+   (the description) and overridden. */
+body { display: block; }

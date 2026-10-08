@@ -1,0 +1,28 @@
+/* One setting, as a VS Code or macOS settings row: its label, a
+   description, its control (the use's children) and Reset. Alias the
+   setting as data-alias-setting: an object with label, description, value,
+   default and modified. A modified setting shows the override mark and
+   Reset, which puts its default back. */
+.setting {
+  position: relative; display: flex; align-items: center; gap: 16dp;
+  padding: 7dp 8dp 7dp 16dp; border-bottom: 1dp var(--line);
+}
+.setting:hover { background-color: color-mix(in srgb, var(--foreground) 2%, transparent); }
+.setting-text { flex: 1 1 0dp; display: flex; flex-direction: column; gap: 2dp; }
+.setting-label { position: relative; color: var(--foreground); font-weight: 500; }
+.setting-dot {
+  position: absolute; left: -11dp; top: 5dp; width: 6dp; height: 6dp; border-radius: 3dp;
+  background-color: var(--override); visibility: hidden;
+}
+.setting.modified .setting-dot { visibility: visible; }
+.setting-description { color: var(--muted-foreground); font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-15, 15dp); }
+.setting-control { flex: 0 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: 8dp; }
+.setting-control .select-root { min-width: 190dp; }
+.setting-reset { visibility: hidden; nav: auto; }
+.setting.modified .setting-reset { visibility: visible; }
+
+@media (max-width: 1000dp) {
+  .setting { flex-direction: column; align-items: stretch; gap: 8dp; }
+  .setting-text { flex: 0 0 auto; }
+  .setting-control { justify-content: flex-start; flex-wrap: wrap; }
+}

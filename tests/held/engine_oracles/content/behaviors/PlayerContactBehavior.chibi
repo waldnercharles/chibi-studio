@@ -1,0 +1,70 @@
+behavior "PlayerContactBehavior" {
+    owner "ecs.entity";
+    macro RemainingExpired(Remaining: double) -> () {
+        exit True;
+        exit False;
+        if (Remaining <= 0) {
+            goto True;
+        } else {
+            goto False;
+        }
+    }
+    state Remaining: float = 0.0;
+    value has_gamedash = has_game_dash();
+    value max_remaining_dt_0: double = (max(cast<double>(&state.Remaining) - cast<double>(&delta), 0));
+    action remaining_0 = RemainingExpired(Remaining: plain double = &state.Remaining);
+    on Tick as tick() {
+        set_variable<"Remaining">(Value: float = max_remaining_dt_0);
+    }
+    on "Contact Begin" as contact_begin(Other: handle<"ecs.entity"> = 0, Point: struct<"CF_V2"> = null) {
+        if (has_gamedash) {
+            if (cast<double>(&component("GAME.GameDash", "remaining")) > 0) {
+            } else {
+                remaining_0();
+            }
+        } else {
+            remaining_0();
+        }
+    }
+    after remaining_0.True {
+        "Check Enemy Contact"(Other: contact_begin.Other);
+    }
+    function "Check Enemy Contact"(Other: handle<"ecs.entity"> = 0) -> () {
+        depth_limit 64;
+        value hasentity_gamecollider = has_entity_game_collider(Entity: &local.Other);
+        value getentity_gamecollider = get_entity_game_collider(Entity: &local.Other);
+        value has_any_flags = has_any_flags(Value: getentity_gamecollider.Value.category, Flags: 2);
+        value hasentity_gamehealth = has_entity_game_health(Entity: &local.Other);
+        value getentity_gamehealth = get_entity_game_health(Entity: &local.Other);
+        value current: int = getentity_gamehealth.Value.current;
+        local Other = entry.Other;
+        after entry {
+            if (hasentity_gamecollider) {
+                if (has_any_flags) {
+                    if (hasentity_gamehealth) {
+                        if (convert<"To Real">(current) >= 1) {
+                            await "Apply Contact Damage"(Other: &local.Other);
+                            return();
+                        } else {
+                            return();
+                        }
+                    } else {
+                        return();
+                    }
+                } else {
+                    return();
+                }
+            } else {
+                return();
+            }
+        }
+    }
+    function "Apply Contact Damage"(Other: handle<"ecs.entity"> = 0) -> () {
+        depth_limit 64;
+        after entry {
+            await set_variable<"Remaining">(Value: float = 0.5);
+            await send_event<"Damage">(Entity: self, Amount: int = 10, Source: entry.Other);
+            return();
+        }
+    }
+}

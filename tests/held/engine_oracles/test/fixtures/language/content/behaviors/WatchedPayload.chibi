@@ -1,0 +1,5 @@
+behavior WatchedPayload {
+    on Tick as tick(DeltaSeconds: float = 0.0) {
+        self.Velocity = vec2(0, 0);
+    }
+}

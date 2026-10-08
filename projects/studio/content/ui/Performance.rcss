@@ -1,0 +1,18 @@
+/* Performance (studio_performance.c): live charts of the last 30 seconds,
+   Liveline's <line-chart>s over the series C publishes (perf:frame, the
+   four simulation phases and perf:gpu), with Recharts' legend. New samples
+   redraw the charts and lay nothing out. */
+.perf { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display: flex; flex-direction: column; padding: 6dp 10dp 8dp; gap: 4dp; overflow-y: auto; }
+.perf-heading { display: block; line-height: var(--studio-line-16, 16dp); color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); }
+.perf-chart { flex: 1 1 0dp; min-height: 60dp; }
+.perf-legend { display: flex; gap: 14dp; flex: 0 0 auto; height: var(--studio-height-18, 18dp); align-items: center; }
+.perf-key { display: flex; align-items: center; gap: 5dp; }
+.perf-key span { display: block; line-height: var(--studio-line-16, 16dp); color: var(--muted-foreground); font-size: var(--studio-font-11, 11dp); }
+.perf-dot { width: 8dp; height: 8dp; border-radius: 4dp; }
+/* The series' colors, as studio_performance.c publishes them. */
+.perf-dot.behavior { background-color: #6f9fe8; }
+.perf-dot.physics { background-color: #57ab5a; }
+.perf-dot.systems { background-color: #d9a53d; }
+.perf-dot.rendering { background-color: #c586c0; }
+.perf-idle { flex: 1 1 0dp; display: block; line-height: var(--studio-line-40, 40dp); text-align: center; color: var(--faint-foreground); }
+.perf-status { flex: 0 0 auto; display: block; line-height: var(--studio-line-16, 16dp); color: var(--muted-foreground); font-size: var(--studio-font-11, 11dp); }

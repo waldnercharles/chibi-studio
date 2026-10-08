@@ -1,0 +1,8 @@
+name "InspectorSubject"
+components {
+    (object)GAME.GameInput
+    (object)GAME.GameCollider
+    (object)GAME.GameMaterial
+    (object)GAME.GameHealth
+    (object)GAME.GameAppearance
+}

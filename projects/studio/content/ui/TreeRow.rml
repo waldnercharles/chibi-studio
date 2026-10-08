@@ -1,0 +1,7 @@
+<div class="tree-row" data-attrif-data-selected="item.selected || (item.key + '' != '' && item.key + '' == selection + '')" data-attrif-data-active="item.active || (item.key + '' != '' && item.key + '' == active + '')" data-attrif-data-marked="item.marked" data-attrif-data-hidden="item.hidden" data-style-padding-left="(6 + item.depth * 14) + 'dp'">
+  <span class="icon twisty sm" data-event-click="item.open = !item.open">{{ item.parent ? (item.open ? '&#xeab4;' : '&#xeab6;') : '' }}</span>
+  <span class="icon">{{ item.icon }}</span>
+  <span class="name">{{ item.label }}</span>
+  <span class="meta">{{ item.meta }}</span>
+  <span class="trail"><slot/></span>
+</div>

@@ -1,0 +1,40 @@
+behavior "InputBehavior" {
+    owner "ecs.entity";
+    action set_gamevelocity = set_game_velocity(Value: "MovementActions"."Movement Velocity"(direction: input.Direction, speed: get_game_movement()));
+    value has_gamedash = has_game_dash();
+    value get_gamedash = get_game_dash();
+    value less = less(A: 0.0, B: get_gamedash.Value.remaining);
+    on Input as input(Direction: struct<"CF_V2"> = null) {
+        if (has_gamedash) {
+            if (less) {
+            } else {
+                set_gamevelocity();
+            }
+        } else {
+            set_gamevelocity();
+        }
+    }
+    after set_gamevelocity {
+        "Face Direction"(Direction: input.Direction);
+    }
+    function "Face Direction"(Direction: struct<"CF_V2"> = null) -> () {
+        depth_limit 64;
+        value has_gameorientation = has_game_orientation();
+        value abs = abs(Value: float = entry.Direction.x);
+        value abs_2 = abs(Value: float = entry.Direction.y);
+        value add = add(A: float = abs, B: float = abs_2);
+        value greater_or_equal = greater_or_equal(A: 0.0, B: add);
+        after entry {
+            if (has_gameorientation) {
+                if (greater_or_equal) {
+                    return();
+                } else {
+                    await set_game_orientation(Value: "DirectionMath"."Direction Orientation"(X: entry.Direction.x, Y: entry.Direction.y));
+                    return();
+                }
+            } else {
+                return();
+            }
+        }
+    }
+}

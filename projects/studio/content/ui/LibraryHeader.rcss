@@ -1,0 +1,4 @@
+/* The Library's header controls, in its AreaHeader: the filter, two-way
+   bound to library.filter as the area's view state, as Assets' name
+   filter is. */
+body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }

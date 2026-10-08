@@ -1,0 +1,9 @@
+# Held engine Studio test oracles
+
+These files preserve historical Studio test sources and fixture bytes from the engine checkout. They are held for case-by-case migration into this repository. No executable target is supplied, and copying them does not establish that the former suites run against the installed SDK.
+
+`PROVENANCE.json` records each original relative path, byte count and SHA256. It includes 78 direct editor-header consumers and seven test helper records, the complete 232-file engine fixture tree, and 17 existing literal authored asset references. Four of those literal assets are outside the fixture tree. There are 321 unique preserved files.
+
+The 50 directory, dynamic or missing literal references remain listed in the manifest. This is a preservation inventory, not a complete executable dependency resolution. Some sources include retired private graph executor headers or use the former engine test dispatcher. Those contracts must be replaced with public SDK APIs before an individual case is admitted.
+
+After the accepted external Studio interaction check, 78 editor-dependent engine oracle originals were retired. Seven shared helpers and all engine fixture files retain their existing ownership. Refreshed files retain their prior snapshots and hashes in `PROVENANCE.json`. Historical full UI, GPU and timing suites remain quarantined under the original test policy; no acceptance or performance result is inferred from this copy.

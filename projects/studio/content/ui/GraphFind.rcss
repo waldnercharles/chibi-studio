@@ -1,0 +1,10 @@
+/* Find in graph (studio_graph_find.c), over the canvas's top right in the
+   theme's .find-widget, as VS Code's find widget: the query, the match
+   count, Previous, Next and Close, and below them the matches, eight rows
+   tall at most, each naming its node and, when the match is in a pin,
+   value or another graph, where. */
+body { display: flex; flex-direction: column; gap: 4dp; }
+/* A focused query shows as the kit's field did while editing. */
+.field.search:focus-within { background-color: var(--field-edit); }
+.graph-find-list { position: relative; }
+.graph-find-list .tree-row .meta { display: block; flex: 0 1 auto; max-width: 60%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

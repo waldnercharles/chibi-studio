@@ -1,0 +1,28 @@
+/* The Hierarchy (studio_designer_hierarchy.c), as Unity UI Builder's and
+   UMG's: a UI document as a row, then a row per element its filter shows,
+   in a List whose window the `hierarchy` source fills for this area's
+   `view`. A row selects on click, folds with its twisty, opens its source
+   (or its widget) on a double click and its menu on a right press, and
+   drags to reorder or reparent: its top and bottom quarters drop before and
+   after it and its middle inside it (data-drop-zones="tree"); an element
+   that holds nothing takes halves ("list"). A row carried with the keyboard
+   marks the slot it would drop in as a pointer drag does, by
+   data-carry-zone. The list is one Tab stop, and while the keyboard holds
+   it the active row shows the focus ring. */
+body { overflow: hidden; padding: 0dp; }
+.hierarchy-panel { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; }
+.list {
+  position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; height: auto; padding: 3dp 4dp 8dp;
+  tab-index: auto;
+}
+.hierarchy-row { display: block; }
+.tree-row { tab-index: none; }
+.tree-row .name { flex: 0 1 auto; }
+.tree-row .meta { flex: 1 1 0dp; margin-left: 2dp; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree-row .bound { font-size: 12dp; width: 14dp; color: var(--link); pointer-events: none; }
+.list:focus-visible .tree-row[data-active] { border-color: var(--ring); }
+/* Where a carried row would drop: a line above or below the row, or the row
+   itself. */
+[data-carry-zone=before] .tree-row { border-color: transparent; border-top-color: var(--primary); background-color: transparent; }
+[data-carry-zone=after] .tree-row { border-color: transparent; border-bottom-color: var(--primary); background-color: transparent; }
+[data-carry-zone=inside] .tree-row { border-color: var(--primary); background-color: var(--primary-soft); }

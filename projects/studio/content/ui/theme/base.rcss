@@ -1,0 +1,19 @@
+/* Resets, text helpers and scrollbars. */
+* { box-sizing: border-box; }
+div, section, header, nav, main, footer, p { display: block; }
+body { font-family: var(--studio-standard-font-family, geist); font-size: var(--studio-font-13, 13dp); line-height: var(--studio-line-18, 18dp); color: var(--foreground); }
+
+.icon { font-family: Symbols; font-size: 14dp; line-height: var(--studio-line-16, 16dp); width: 16dp; text-align: center; display: inline-block; color: var(--muted-foreground); }
+.icon.sm { font-size: 12dp; width: 12dp; }
+.dim { color: var(--faint-foreground); }
+.muted { color: var(--muted-foreground); }
+.spacer { flex: 1 1 0dp; }
+.row { display: flex; align-items: center; gap: 6dp; }
+
+scrollbarvertical { width: 10dp; margin-left: 0dp; }
+scrollbarvertical slidertrack { background-color: transparent; }
+scrollbarvertical sliderbar { margin: 2dp; border-radius: 3dp; background-color: var(--scrollbar); }
+scrollbarvertical sliderbar:hover { background-color: var(--scrollbar-hover); }
+scrollbarhorizontal { height: 10dp; }
+scrollbarhorizontal sliderbar { margin: 2dp; border-radius: 3dp; background-color: var(--scrollbar); }
+scrollbarcorner { background-color: transparent; }

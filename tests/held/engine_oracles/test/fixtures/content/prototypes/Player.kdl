@@ -1,0 +1,15 @@
+name "Player"
+components {
+    GAME.GameAppearance antialias=1.0 color=0xffffffff glow_color=0xffffff50 glow_radius=8.0 height=18.0 shape="Stroked Chevron" stroke_width=1.0 width=20.0
+    GAME.GameBody continuous=#true type="Dynamic"
+    GAME.GameCollider category=1 mask=10 radius=12.0
+    GAME.GameHealth current=100 maximum=100
+    (object)GAME.GameInput
+    GAME.GameMaterial absorption=1.0 albedo=0x1a1a1a1a emission_color=0xffffffff emission_intensity=0.1 emission_multiplier=1.0 scene=0xffffffff
+    GAME.GameMovement speed=180.0
+    (object)GAME.GameOrientation
+    GAME.GameTransform x=320.0 y=-180.0
+    (object)GAME.GameVelocity
+    GAME.GameWeapon cooldown=0.25 damage=10
+}
+(array)behaviors "AutoWeaponBehavior" "HealthBehavior" "InputBehavior" "MovementTrailBehavior" "PlayerContactBehavior" "WeaponBehavior"

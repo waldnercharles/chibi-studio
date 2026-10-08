@@ -1,0 +1,7 @@
+/* A menu item bound as a radio (Base UI's Menu.RadioItem), as
+   data-checked="save.key" value="v": a click or Enter chooses it and its
+   menu stays open; the menu highlights it (data-highlighted). */
+.menu-option { position: relative; tab-index: auto; }
+.menu-option input { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; tab-index: none; }
+.menu-option .lead { opacity: 0; }
+.menu-option input:checked ~ .lead { opacity: 1; }

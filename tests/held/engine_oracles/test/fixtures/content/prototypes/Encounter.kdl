@@ -1,0 +1,5 @@
+name "Encounter"
+components {
+    GAME.GameTransform x=320.0 y=-180.0
+}
+(array)behaviors "WaveBehavior"

@@ -1,0 +1,9 @@
+behavior ProjectileHit {
+    on ContactBegin {
+        damage_material(Entity: event.Other, Point: event.Point + self.Velocity.norm() * 0.5, Radius: 4.0, Energy: 1.0, Cause: 0, Source: self);
+        if (!is_pierceable_material_fragment(Entity: event.Other)) {
+            await send_event<"Damage">(Entity: event.Other, Amount: self.Projectile.Damage, Source: self);
+            destroy_entity(Entity: self);
+        }
+    }
+}

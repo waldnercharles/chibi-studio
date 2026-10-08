@@ -1,0 +1,4 @@
+name "GraphMenu"
+components {
+    GAME.GameUi document="GraphMenu" hidden=#true
+}

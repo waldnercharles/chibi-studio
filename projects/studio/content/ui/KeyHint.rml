@@ -1,0 +1,1 @@
+<span class="icon" data-if="hint.icon != ''">{{ hint.icon }}</span><span class="kbd-key" data-if="hint.key != ''">{{ hint.key }}</span><span class="label">{{ hint.label }}</span>

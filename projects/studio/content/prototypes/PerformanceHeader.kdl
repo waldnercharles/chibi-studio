@@ -1,0 +1,4 @@
+name "PerformanceHeader"
+components {
+    GAME.GameUi document="PerformanceHeader" hidden=#true
+}

@@ -1,0 +1,35 @@
+behavior "OutlinerRename" {
+    owner "ecs.entity";
+    state Left: string = "";
+    value renaming_object = renaming_object();
+    value text_equal = text_equal(A: renaming_object, B: renamecommitted.Key);
+    value left_2 = get_variable<"Left">();
+    value renaming_object_2 = renaming_object();
+    value text_equal_2 = text_equal(A: left_2, B: renaming_object_2);
+    action left_3 = set_variable<"Left">(Value: string = "");
+    on RenameCommitted as renamecommitted(Key: string = "", Name: string = "") {
+        if (text_equal) {
+            await rename_object(Object: renamecommitted.Key, Name: renamecommitted.Name);
+            end_rename();
+        } else {
+        }
+    }
+    on RenameCancel as renamecancel() {
+        await end_rename();
+        focus_ui_element(Entity: 0, Element: "#outliner-list");
+    }
+    on RenameEnter as renameenter() {
+        focus_ui_element(Entity: 0, Element: "#outliner-list");
+    }
+    on RenameLeft as renameleft(Key: string = "") {
+        set_variable<"Left">(Value: string = renameleft.Key);
+    }
+    on Refresh as refresh() {
+        if (text_equal_2) {
+            await end_rename();
+            left_3();
+        } else {
+            left_3();
+        }
+    }
+}

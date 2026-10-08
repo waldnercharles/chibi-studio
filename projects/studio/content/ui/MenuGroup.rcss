@@ -1,0 +1,3 @@
+/* A heading over a group of menu items: the use's children, or the label of
+   data-alias-group. */
+body { display: block; }

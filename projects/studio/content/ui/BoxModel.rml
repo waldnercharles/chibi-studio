@@ -1,0 +1,28 @@
+<div class="box margin">
+  <span class="caption">margin</span>
+  <div class="edge">{{ inspector.box.margin.top }}</div>
+  <div class="middle">
+    <div class="side">{{ inspector.box.margin.left }}</div>
+    <div class="box border">
+      <span class="caption">border</span>
+      <div class="edge">{{ inspector.box.border.top }}</div>
+      <div class="middle">
+        <div class="side">{{ inspector.box.border.left }}</div>
+        <div class="box padding">
+          <span class="caption">padding</span>
+          <div class="edge">{{ inspector.box.padding.top }}</div>
+          <div class="middle">
+            <div class="side">{{ inspector.box.padding.left }}</div>
+            <div class="content">{{ inspector.size }}</div>
+            <div class="side">{{ inspector.box.padding.right }}</div>
+          </div>
+          <div class="edge">{{ inspector.box.padding.bottom }}</div>
+        </div>
+        <div class="side">{{ inspector.box.border.right }}</div>
+      </div>
+      <div class="edge">{{ inspector.box.border.bottom }}</div>
+    </div>
+    <div class="side">{{ inspector.box.margin.right }}</div>
+  </div>
+  <div class="edge">{{ inspector.box.margin.bottom }}</div>
+</div>

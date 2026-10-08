@@ -1,0 +1,17 @@
+version 3
+name "BasaltCave"
+domain "field"
+id_counter 10
+(array)graphs {
+    - {
+        kind "event"
+        name ""
+        (array)nodes {
+            - id=1 type="Field Constant" { inputs Value=-1.0; }
+            - id=4 type="Field Output"
+        }
+        (array)edges {
+            - from="1.Value" to="4.Value"
+        }
+    }
+}

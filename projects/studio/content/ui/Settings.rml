@@ -1,0 +1,87 @@
+<use ui="Dialog" class="window" data-keys="Escape:Close">
+  <div class="settings">
+    <div class="head">
+      <div class="head-side">
+        <span class="icon">&#xeaf8;</span>
+        <span class="head-title">Settings</span>
+      </div>
+      <use ui="Segmented" class="scope">
+        <label><input type="radio" data-checked="settings.scope" value="editor"/><span class="face">Editor</span></label>
+        <label><input type="radio" data-checked="settings.scope" value="project"/><span class="face">Project</span></label>
+      </use>
+      <div class="head-side end">
+        <span class="btn icon-only close" data-event-click="emit('Close')"><span class="icon">&#xea76;</span></span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="aside">
+        <div class="search">
+          <span class="icon lead">&#xea6d;</span>
+          <input type="text" class="search-input" placeholder="Search settings" data-value="settings.query" autofocus/>
+          <span class="clear" data-if="settings.query != ''" data-event-click="settings.query = ''"><span class="icon">&#xea76;</span></span>
+        </div>
+        <use ui="SidebarNav" data-keys="Up:NavPrevious Down:NavNext" data-event-click="settings.query = ''" data-class-searching="settings.query != ''">
+          <label class="nav-item" data-for="item : settings.categories" data-if="!item.hidden" data-class-dim="item.dim">
+            <input type="radio" data-checked="settings.category" data-attr-value="item.id"/>
+            <span class="nav-face">
+              <span class="icon">{{ item.icon }}</span>
+              <span class="label">{{ item.label }}</span>
+              <span class="count" data-if="item.badge != ''">{{ item.badge }}</span>
+              <span class="dot" data-if="item.dot &amp;&amp; item.badge == ''"/>
+            </span>
+          </label>
+        </use>
+        <div class="aside-foot">Changes save as you make them.</div>
+      </div>
+      <div class="main">
+        <div class="page-head">
+          <span class="page-title" data-if="settings.query == ''">{{ settings.title }}</span>
+          <span class="page-title" data-if="settings.query != ''">Search Results</span>
+          <span class="badge accent" data-if="settings.query != ''">{{ settings.matches }}</span>
+          <span class="badge" data-if="settings.scope == 'project'">{{ settings.project }}</span>
+          <span class="badge warning conflicts" data-if="settings.category == 'keyboard' &amp;&amp; settings.query == '' &amp;&amp; settings.conflicts &gt; 0" data-event-click="settings.query = 'conflict'">{{ settings.conflicts }} conflicting</span>
+        </div>
+        <div class="row-slot" data-for="row : settings.rows" data-if="row.shown">
+          <div class="group" data-if="row.head">{{ row.group }}</div>
+          <use ui="SettingRow" data-alias-setting="row">
+            <div data-when="row.control == 'bool'"><use ui="Switch" data-checked="row.value" value="true"/></div>
+            <div data-when="row.control == 'choice'">
+              <use ui="Segmented" data-when="row.type == 'choice' &amp;&amp; row.choices.size &lt;= 3">
+                <label data-for="choice : row.choices"><input type="radio" data-checked="row.value" data-attr-value="choice.value"/><span class="face">{{ choice.label }}</span></label>
+              </use>
+              <div data-when="row.type != 'choice' || row.choices.size &gt; 3">
+                <use ui="Select">
+                  <select data-value="row.value">
+                    <option data-for="choice : row.choices" data-attr-value="choice.value">{{ choice.label }}</option>
+                  </select>
+                </use>
+              </div>
+            </div>
+            <div class="range" data-when="row.control == 'range'">
+              <span class="readout">{{ row.value }}</span>
+              <use ui="Slider" data-value="row.position" min="0" max="1" data-attr-step="row.tick"/>
+            </div>
+            <div class="text-control" data-when="row.control == 'text'"><use ui="TextField" data-alias-text="row.value"/></div>
+            <div class="shortcut" data-if="row.type == 'shortcut'">
+              <div class="keys">
+                <span class="key" data-for="key : row.keys">{{ key }}</span>
+                <span class="none" data-if="row.keys.size == 0">Unassigned</span>
+                <button class="btn outline sm record-shortcut" data-if="!row.indexed &amp;&amp; !row.recording" data-event-click="emit('settings.record', row.key)">Record</button>
+                <span class="recording" data-if="row.recording">Press a key combination. Esc cancels.</span>
+              </div>
+              <span class="shortcut-aliases" data-if="row.aliases != ''">{{ row.aliases }}</span>
+              <span class="shortcut-context">{{ row.context }}</span>
+              <span class="shortcut-conflict" data-if="row.conflict != ''"><span class="icon">&#xea6c;</span>{{ row.conflict }}</span>
+            </div>
+          </use>
+        </div>
+        <div class="empty" data-if="settings.matches == 0">
+          <span class="icon empty-icon">&#xea6d;</span>
+          <div class="empty-title">No settings found</div>
+          <div class="empty-hint">Try another word, or clear the search.</div>
+          <span class="btn outline" data-event-click="settings.query = ''">Clear Search</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</use>

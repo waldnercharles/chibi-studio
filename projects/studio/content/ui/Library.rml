@@ -1,0 +1,11 @@
+<div class="designer-library">
+  <div class="designer-section"><span class="title">Elements</span></div>
+  <div class="designer-tiles">
+    <div class="designer-tile" data-for="item : library.elements" data-if="item.shown" data-drag="ui" data-attr-data-drag-payload="item.markup" data-attr-data-drag-label="item.label" data-attr-data-drag-icon="item.icon" data-attr-data-tip="item.label" data-attr-data-tip-about="item.markup" data-event-click="emit('library.add', item.markup, item.label)"><span class="icon glyph">{{ item.icon }}</span><span class="label">{{ item.label }}</span></div>
+  </div>
+  <div class="designer-section"><span class="title">Widgets</span></div>
+  <div class="designer-tiles">
+    <div class="designer-tile" data-for="item : library.widgets" data-if="item.shown" data-drag="ui" data-attr-data-drag-payload="item.markup" data-attr-data-drag-label="item.label" data-attr-data-drag-icon="item.icon" data-attr-data-tip="item.label" data-attr-data-tip-about="item.markup" data-event-click="emit('library.add', item.markup, item.label)"><span class="icon glyph">{{ item.icon }}</span><span class="label">{{ item.label }}</span></div>
+    <span class="designer-none" data-if="library.none">No other ui assets yet</span>
+  </div>
+</div>

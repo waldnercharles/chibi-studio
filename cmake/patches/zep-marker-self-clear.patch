@@ -1,0 +1,26 @@
+--- a/src/range_markers.cpp
++++ b/src/range_markers.cpp
+@@ -126,8 +126,10 @@
+         }
+         else
+         {
+-            buffer.ClearRangeMarker(shared_from_this());
++            // The buffer held the last reference: keep this alive until done.
++            auto self = shared_from_this();
+             m_enabled = false;
++            buffer.ClearRangeMarker(self);
+         }
+     }
+ }
+@@ -156,8 +158,10 @@
+         }
+         else
+         {
+-            buffer.ClearRangeMarker(shared_from_this());
++            // The buffer held the last reference: keep this alive until done.
++            auto self = shared_from_this();
+             m_enabled = false;
++            buffer.ClearRangeMarker(self);
+         }
+     }
+ }

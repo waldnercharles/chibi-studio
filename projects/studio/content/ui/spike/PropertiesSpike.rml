@@ -1,0 +1,45 @@
+<div class="properties spike">
+  <nav class="prop-tabs">
+    <span class="btn icon-only" data-for="tab : properties.tabs" data-attr-data-state="tab.on ? 'on' : 'off'" data-attr-data-tip="tab.tip" data-event-click="emit('properties.tab', tab.id)"><span class="icon">{{ tab.icon }}</span></span>
+  </nav>
+  <div class="prop-scroll">
+    <div class="identity">
+      <span class="name">{{ properties.identity.name }}</span>
+      <span class="badge" data-if="properties.identity.prototype != ''">{{ properties.identity.prototype }}</span>
+    </div>
+    <section class="panel" data-for="panel : properties.panels" data-attrif-data-open="panel.open">
+      <div class="panel-head" data-event-click="emit('properties.panel', panel.key)">
+        <span class="icon chev">&#xeab4;</span>
+        <span class="title">{{ panel.title }}</span>
+        <span class="badge override" data-if="panel.badge != ''">{{ panel.badge }}</span>
+        <span class="spacer"/>
+        <span class="icon grip">&#xeb04;</span>
+      </div>
+      <div class="panel-body" data-if="panel.open">
+        <div class="prop" data-for="row : panel.rows" data-attrif-data-overridden="row.overridden">
+          <label class="label" data-attr-data-tip="row.about"><span>{{ row.label }}</span></label>
+          <div class="control">
+            <number-field class="field number" data-for="n : row.number" data-attr-value="n.value" data-attr-step="n.step" data-attr-precision="n.precision" data-attrif-integer="n.integer" data-attr-unit="n.unit" data-attrif-data-overridden="row.overridden" data-attrif-readonly="row.readonly" data-attrif-mixed="row.mixed" data-attrif-invalid="row.invalid" data-event-change="emit('properties.change', row.id)"></number-field>
+            <div class="joined" data-for="v : row.vector">
+              <number-field class="field number" data-for="a : v.axes" data-attr-value="a.value" data-attr-step="a.step" data-attr-precision="a.precision" data-attr-addon="a.label" data-attr-data-axis="a.key" data-attrif-data-overridden="row.overridden" data-attrif-readonly="row.readonly" data-attrif-mixed="row.mixed" data-event-change="emit('properties.change', row.id)"></number-field>
+            </div>
+            <div class="check" data-for="b : row.bool" data-attrif-data-checked="b.value" data-attrif-data-readonly="row.readonly" data-attrif-data-mixed="row.mixed" data-event-click="emit('properties.toggle', row.id)">
+              <span class="box"><span class="icon">&#xeab2;</span><span class="icon dash">&#xeacc;</span></span>
+            </div>
+            <div class="field select" data-for="c : row.choice" data-attrif-data-readonly="row.readonly" data-attrif-data-mixed="row.mixed" data-event-click="emit('properties.choose', row.id)">
+              <span class="part value">{{ c.label }}</span>
+              <span class="icon caret">&#xeab4;</span>
+            </div>
+            <div class="field color" data-for="c : row.color" data-attrif-data-readonly="row.readonly" data-attrif-data-mixed="row.mixed" data-event-click="emit('properties.color', row.id)">
+              <div class="mark"/>
+              <div class="swatch" data-style-background-color="c.css"/>
+            </div>
+            <div class="field text" data-for="t : row.text" data-attrif-data-readonly="row.readonly">
+              <span class="part value">{{ t.value }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

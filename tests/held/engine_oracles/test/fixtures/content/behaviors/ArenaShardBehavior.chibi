@@ -1,0 +1,111 @@
+behavior "ArenaShardBehavior" {
+    owner "ecs.entity";
+    state Age: float = 0.0;
+    state "Pitch Rate": float = 0.0;
+    state "Roll Rate": float = 0.0;
+    state Lift: float = 0.0;
+    state "Birth Scale": float = 1.0;
+    value delta_time = delta_time();
+    action age_2 = set_variable<"Age">(Value: float = (get_variable<"Age">()+delta_time));
+    value greater_or_equal = greater_or_equal(A: "Age Phase"(Age: float = age_2.Value, Delta: float = delta_time), B: 1.0);
+    value get_gamevisualtransform = get_game_visual_transform();
+    value random_range = random_range(Min: -6.0, Max: 6.0);
+    value random_range_2 = random_range(Min: -7.0, Max: 7.0);
+    value random_range_3 = random_range(Min: 18.0, Max: 42.0);
+    on Tick as tick() {
+        age_2();
+    }
+    after age_2 {
+        if (greater_or_equal) {
+            destroy_entity(Entity: self);
+        } else {
+            "Advance Shard Motion"(Seconds: delta_time, Age: age_2.Value);
+        }
+    }
+    on Begin as begin() {
+        "Initialize Shard"(scale: get_gamevisualtransform.Value.scale, "Pitch Rate": random_range, "Roll Rate": random_range_2, Lift: random_range_3);
+    }
+    pure function "Age Phase"<T0: float, T1: float, T2: float>(Age: T0 = 0.0, Delta: T1 = 0.0) -> (Result: T2 = 0.0) {
+        depth_limit 64;
+        value add = add(A: double = entry.Age, B: double = entry.Delta);
+        value real = real(Value: 0.55);
+        value divide = divide(A: double = add, B: double = real);
+        result Result: float = divide;
+    }
+    pure function "Fade"<T0: float, T1: double>(Normalized: T0 = 0.0) -> (Result: T1 = 0.0) {
+        depth_limit 64;
+        value real = real(Value: 1.0);
+        value subtract = subtract(A: double = real, B: double = entry);
+        value real_2 = real(Value: 1.0);
+        value subtract_2 = subtract(A: double = real_2, B: double = entry);
+        value multiply = multiply(A: double = subtract, B: double = subtract_2);
+        result Result: double = multiply;
+    }
+    pure function "Position X"<T0: float, T1: float, T2: float, T3: float>(PositionX: T0 = 0.0, VelocityX: T1 = 0.0, Delta: T2 = 0.0) -> (Result: T3 = 0.0) {
+        depth_limit 64;
+        value multiply = multiply(A: double = entry.VelocityX, B: double = entry.Delta);
+        value add = add(A: float = entry.PositionX, B: double = multiply);
+        result Result: float = add;
+    }
+    pure function "Position Y"<T0: float, T1: float, T2: float, T3: float>(PositionY: T0 = 0.0, VelocityY: T1 = 0.0, Delta: T2 = 0.0) -> (Result: T3 = 0.0) {
+        depth_limit 64;
+        value multiply = multiply(A: double = entry.VelocityY, B: double = entry.Delta);
+        value add = add(A: float = entry.PositionY, B: double = multiply);
+        result Result: float = add;
+    }
+    pure function "Pitch"<T0: float, T1: float, T2: float, T3: float>(Pitch: T0 = 0.0, PitchRate: T1 = 0.0, Delta: T2 = 0.0) -> (Result: T3 = 0.0) {
+        depth_limit 64;
+        value multiply = multiply(A: double = entry.PitchRate, B: double = entry.Delta);
+        value add = add(A: float = entry.Pitch, B: double = multiply);
+        result Result: float = add;
+    }
+    pure function "Roll"<T0: float, T1: float, T2: float, T3: float>(Roll: T0 = 0.0, RollRate: T1 = 0.0, Delta: T2 = 0.0) -> (Result: T3 = 0.0) {
+        depth_limit 64;
+        value multiply = multiply(A: double = entry.RollRate, B: double = entry.Delta);
+        value add = add(A: float = entry.Roll, B: double = multiply);
+        result Result: float = add;
+    }
+    function "Initialize Shard"(scale: float = 0.0, "Pitch Rate": double = 0.0, "Roll Rate": double = 0.0, Lift: double = 0.0) -> () {
+        depth_limit 64;
+        after entry {
+            await set_variable<"Birth Scale">(Value: float = entry.scale);
+            await set_variable<"Pitch Rate">(Value: float = entry."Pitch Rate");
+            await set_variable<"Roll Rate">(Value: float = entry."Roll Rate");
+            await set_variable<"Lift">(Value: float = entry.Lift);
+            return();
+        }
+    }
+    function "Advance Shard Motion"(Seconds: float = 0.0, Age: float = 0.0) -> () {
+        depth_limit 64;
+        value get_gametransform = get_game_transform();
+        value get_gamevelocity = get_game_velocity();
+        value get_gamevisualtransform = get_game_visual_transform();
+        value pitch_rate = get_variable<"Pitch Rate">();
+        value roll_rate = get_variable<"Roll Rate">();
+        value lift = get_variable<"Lift">();
+        value get_gamegeometry3d = get_game_geometry3_d();
+        value multiply: double = multiply(A: plain double = lift, B: plain double = entry.Seconds);
+        value add: double = add(A: plain double = get_gamegeometry3d.Value.elevation, B: plain double = multiply);
+        value multiply_2: double = multiply(A: plain double = entry.Seconds, B: plain double = 90.0);
+        value subtract: double = subtract(A: plain double = lift, B: plain double = multiply_2);
+        value age_phase = "Age Phase"(Age: float = entry.Age, Delta: float = entry.Seconds);
+        value birth_scale = get_variable<"Birth Scale">();
+        value multiply_3 = multiply(A: float = birth_scale, B: double = Fade(Normalized: float = age_phase));
+        value x: float = get_gametransform.Value.x;
+        value x_2: float = get_gamevelocity.Value.x;
+        value y: float = get_gametransform.Value.y;
+        value y_2: float = get_gamevelocity.Value.y;
+        value pitch_2: float = get_gamevisualtransform.Value.pitch;
+        value roll_2: float = get_gamevisualtransform.Value.roll;
+        after entry {
+            await set_game_transform_x(Value: "Position X"(PositionX: float = get_gametransform.Value.x, VelocityX: float = get_gamevelocity.Value.x, Delta: float = entry.Seconds), Target: 0);
+            await set_game_transform_y(Value: "Position Y"(PositionY: float = get_gametransform.Value.y, VelocityY: float = get_gamevelocity.Value.y, Delta: float = entry.Seconds), Target: 0);
+            await set_game_visual_transform_pitch(Value: Pitch(Pitch: float = get_gamevisualtransform.Value.pitch, PitchRate: float = pitch_rate, Delta: float = entry.Seconds), Target: 0);
+            await set_game_visual_transform_roll(Value: Roll(Roll: float = get_gamevisualtransform.Value.roll, RollRate: float = roll_rate, Delta: float = entry.Seconds), Target: 0);
+            await set_game_visual_transform_scale(Value: multiply_3, Target: 0);
+            await set_game_geometry3_d_elevation(Value: add, Target: 0);
+            await set_variable<"Lift">(Value: float = subtract);
+            return();
+        }
+    }
+}

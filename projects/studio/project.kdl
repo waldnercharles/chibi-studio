@@ -1,0 +1,5 @@
+version 10
+name "Studio"
+content "content"
+start_scene "scenes/Studio.kdl"
+ui "StudioShell"

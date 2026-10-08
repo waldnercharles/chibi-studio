@@ -1,0 +1,5 @@
+/* The Members header's filter, in its AreaHeader's controls: typing
+   filters the members by name or category. Focused, it shows its ring, as
+   the kit's fields do while editing. */
+body { display: flex; flex: 1 1 0dp; max-width: 240dp; }
+.field:focus { border-color: var(--ring); }

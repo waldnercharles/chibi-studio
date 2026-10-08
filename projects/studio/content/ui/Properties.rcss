@@ -1,0 +1,41 @@
+/* Properties (studio_properties.c's `properties` source): the context tabs,
+   then the selection's identity, a collapsible panel per component with a
+   row per field, its behaviors, and the Scene tab's settings; the Node and
+   Member tabs are graph_details' rows (studio_graph_details.c). */
+body, body.area-panel { width: 100%; height: 100%; margin: 0dp; padding: 0dp; overflow: hidden; }
+.properties { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display: flex; }
+.prop-tabs {
+  width: var(--studio-height-34, 34dp); flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
+  gap: 2dp; padding: 5dp 0dp; background-color: var(--rail); border-right: 1dp var(--edge);
+}
+.prop-tabs .tab { display: flex; flex-direction: column; align-items: center; gap: 2dp; }
+.prop-tabs .btn { width: var(--h-sm); height: var(--h-sm); padding: 0dp; }
+.prop-tabs .btn .icon { font-size: var(--studio-font-14, 14dp); line-height: var(--studio-line-18, 18dp); width: var(--studio-height-18, 18dp); color: var(--faint-foreground); }
+.prop-tabs .btn[data-state=on] { background-color: var(--selected); }
+.prop-tabs .btn[data-state=on] .icon { color: var(--primary-text); }
+.prop-tabs .tab-sep { width: var(--studio-height-18, 18dp); height: 1dp; background-color: var(--line); margin: 4dp 0dp; }
+.prop-scroll { flex: 1 1 0dp; overflow-y: auto; padding: 8dp 8dp 16dp; }
+/* Labels follow the center of the value they describe, including tall values. */
+.prop { align-items: center; }
+/* A row's one control, as its kind builds it. */
+.kind { display: flex; flex: 1 1 0dp; min-width: 0dp; }
+/* RmlUi gives :focus to a focused element's ancestors too, as :focus-within. */
+.field.text:focus { background-color: var(--field-edit); border-color: var(--ring); }
+.identity .name-field .field.text:focus { background-color: var(--field-edit); border-color: var(--ring); }
+/* A panel's head folds it, but for its menu. */
+.panel-fold { display: flex; align-items: center; gap: 6dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+/* Why a scene setting is read-only while the scene runs. */
+.prop-note { padding: 0dp 4dp 8dp; color: var(--faint-foreground); }
+/* Several selected objects: a chip per prototype among them, wrapping. */
+.identity .lineage.prototypes { flex-wrap: wrap; white-space: normal; gap: 2dp 4dp; }
+/* A behavior row opens its graph, but for its Detach. */
+.behavior-open { display: flex; align-items: center; gap: 6dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+/* The Node and Member tabs: an expression's field and its error, a
+   signature pin's block and a compound value's popover rows. */
+.graph-row { display: block; }
+.graph-expression { display: block; }
+.graph-expression .notice { display: block; margin-top: 4dp; }
+.graph-sub { display: block; }
+.graph-sub-heading { display: block; margin-top: var(--gap); }
+.graph-inline-part { display: block; }
+.param-settings [data-ui=EnumField] { flex: 1 1 78dp; min-width: 0dp; }

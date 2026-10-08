@@ -1,0 +1,10 @@
+/* Output's controls in its area header (studio_output.c): the views, whose
+   labels carry counts, so segments fit their labels; Problems' scope and
+   Refresh; the filter; Clear. */
+body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.output-views, .output-scope { display: flex; flex: 0 0 auto; }
+.segmented, .seg { flex: 0 0 auto; }
+.seg { tab-index: auto; }
+.output-scope { margin-left: 6dp; }
+.output-filter { width: 160dp; display: flex; }
+.btn { flex: 0 0 auto; }

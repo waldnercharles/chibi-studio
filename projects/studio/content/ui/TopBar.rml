@@ -1,0 +1,211 @@
+<div class="app-chrome">
+  <header class="topbar">
+    <div class="brand"><div class="mark"/></div>
+    <!-- The menubar: each menu's MenuCommands run Studio's commands by id,
+         and its lists (new project, projects, web projects, prototypes to
+         add) come from the `menubar` source. -->
+    <menubar class="menus">
+      <button class="btn trigger" popovertarget="menu-file" aria-haspopup="menu"><span class="label">File</span></button>
+      <use ui="Menu" id="menu-file">
+        <use ui="Submenu" data-alias-item="menubar.items.newMenu">
+          <use ui="MenuItem" data-alias-item="menubar.items.project" data-event-click="emit('menubar.newProject')"/>
+          <use ui="MenuSeparator"/>
+          <use ui="MenuCommand" data-alias-command="commands.newScene"/>
+          <use ui="MenuCommand" data-alias-command="commands.newPrototype"/>
+          <use ui="MenuSeparator"/>
+          <use ui="MenuCommand" data-alias-command="commands.newBehavior"/>
+          <use ui="MenuCommand" data-alias-command="commands.newEvent"/>
+          <use ui="MenuCommand" data-alias-command="commands.newSystem"/>
+          <use ui="MenuCommand" data-alias-command="commands.newLibrary"/>
+          <use ui="MenuSeparator"/>
+          <use ui="MenuCommand" data-alias-command="commands.newMaterial"/>
+          <use ui="MenuCommand" data-alias-command="commands.newShape"/>
+          <use ui="MenuCommand" data-alias-command="commands.newField"/>
+          <use ui="MenuCommand" data-alias-command="commands.newShaderLibrary"/>
+          <use ui="MenuCommand" data-alias-command="commands.newModel"/>
+          <use ui="MenuSeparator"/>
+          <use ui="MenuCommand" data-alias-command="commands.newUiWidget"/>
+          <use ui="MenuCommand" data-alias-command="commands.newUiDocument"/>
+          <use ui="MenuCommand" data-alias-command="commands.newStylesheet"/>
+        </use>
+        <use ui="MenuCommand" data-alias-command="commands.search"/>
+        <use ui="Submenu" data-if="menubar.projects.size > 0" data-alias-item="menubar.items.openProject">
+          <use ui="MenuItem" data-for="project, i : menubar.projects" data-alias-item="project" data-event-click="emit('menubar.openProject', i)"/>
+        </use>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.save"/>
+        <use ui="MenuCommand" data-alias-command="commands.reload"/>
+        <use ui="MenuCommand" data-alias-command="commands.closeTab"/>
+        <use ui="MenuItem" data-if="menubar.web" data-alias-item="menubar.items.importProject" data-event-click="emit('menubar.importProject')"/>
+        <use ui="MenuItem" data-if="menubar.web" data-alias-item="menubar.items.exportProject" data-event-click="emit('menubar.exportProject')"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.settings"/>
+      </use>
+      <button class="btn trigger" popovertarget="menu-edit" aria-haspopup="menu"><span class="label">Edit</span></button>
+      <use ui="Menu" id="menu-edit">
+        <use ui="MenuCommand" data-alias-command="commands.undo"/>
+        <use ui="MenuCommand" data-alias-command="commands.redo"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.cut"/>
+        <use ui="MenuCommand" data-alias-command="commands.copy"/>
+        <use ui="MenuCommand" data-alias-command="commands.paste"/>
+        <use ui="MenuCommand" data-alias-command="commands.duplicate"/>
+        <use ui="MenuCommand" data-alias-command="commands.rename"/>
+        <use ui="MenuCommand" data-alias-command="commands.delete"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.selectAll"/>
+        <use ui="MenuCommand" data-alias-command="commands.deselect"/>
+        <use ui="MenuCommand" data-alias-command="commands.find"/>
+      </use>
+      <button class="btn trigger" popovertarget="menu-view" aria-haspopup="menu"><span class="label">View</span></button>
+      <use ui="Menu" id="menu-view">
+        <use ui="MenuCommand" data-alias-command="commands.previousTab"/>
+        <use ui="MenuCommand" data-alias-command="commands.nextTab"/>
+        <use ui="MenuCommand" data-alias-command="commands.togglePinTab"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.frame"/>
+        <use ui="MenuCommand" data-alias-command="commands.frameAll"/>
+        <use ui="MenuCommand" data-alias-command="commands.resetCamera"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.hideSelected"/>
+        <use ui="MenuCommand" data-alias-command="commands.hideUnselected"/>
+        <use ui="MenuCommand" data-alias-command="commands.showAll"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.showLiveValues"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuGroup">Drawers</use>
+        <use ui="MenuCommand" data-alias-command="commands.toggleAssets"/>
+        <use ui="MenuCommand" data-alias-command="commands.toggleOutput"/>
+        <use ui="MenuCommand" data-alias-command="commands.togglePerformance"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.inspectElement"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuGroup">Layout Mode</use>
+        <use ui="MenuCommand" data-alias-command="commands.workspaceHorizontalSplit"/>
+        <use ui="MenuCommand" data-alias-command="commands.workspaceVerticalSplit"/>
+        <use ui="MenuCommand" data-alias-command="commands.toggleSidePane"/>
+        <use ui="MenuCommand" data-alias-command="commands.maximize"/>
+        <use ui="MenuCommand" data-alias-command="commands.resetLayout"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuGroup">UI Scale</use>
+        <use ui="MenuCommand" data-alias-command="commands.zoomIn"/>
+        <use ui="MenuCommand" data-alias-command="commands.zoomOut"/>
+        <use ui="MenuCommand" data-alias-command="commands.zoomReset"/>
+      </use>
+      <button class="btn trigger" popovertarget="menu-object" aria-haspopup="menu"><span class="label">Object</span></button>
+      <use ui="Menu" id="menu-object">
+        <use ui="Submenu" data-alias-item="menubar.items.add">
+          <use ui="MenuItem" data-for="prototype : menubar.prototypes" data-alias-item="prototype" data-event-click="emit('menubar.add', prototype.label)"/>
+        </use>
+        <use ui="MenuCommand" data-alias-command="commands.duplicate"/>
+        <use ui="MenuCommand" data-alias-command="commands.rename"/>
+        <use ui="MenuCommand" data-alias-command="commands.delete"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.openPrototype"/>
+        <use ui="MenuCommand" data-alias-command="commands.applyOverrides"/>
+        <use ui="MenuCommand" data-alias-command="commands.saveAsPrototype"/>
+        <use ui="MenuCommand" data-alias-command="commands.addComponent"/>
+        <use ui="MenuSeparator"/>
+        <use ui="Submenu" data-alias-item="menubar.items.transform">
+          <use ui="MenuCommand" data-alias-command="commands.selectTool"/>
+          <use ui="MenuCommand" data-alias-command="commands.moveTool"/>
+          <use ui="MenuCommand" data-alias-command="commands.rotateTool"/>
+          <use ui="MenuCommand" data-alias-command="commands.scaleTool"/>
+          <use ui="MenuSeparator"/>
+          <use ui="MenuCommand" data-alias-command="commands.grab"/>
+          <use ui="MenuCommand" data-alias-command="commands.toggleSnap"/>
+          <use ui="MenuCommand" data-alias-command="commands.finerGrid"/>
+          <use ui="MenuCommand" data-alias-command="commands.coarserGrid"/>
+        </use>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.keepChanges"/>
+      </use>
+      <button class="btn trigger" popovertarget="menu-play" aria-haspopup="menu"><span class="label">Play</span></button>
+      <use ui="Menu" id="menu-play">
+        <use ui="MenuCommand" data-alias-command="commands.play"/>
+        <use ui="MenuCommand" data-alias-command="commands.stop"/>
+        <use ui="MenuCommand" data-alias-command="commands.step"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuGroup">Playback Speed</use>
+        <use ui="MenuCommand" data-alias-command="commands.slower"/>
+        <use ui="MenuCommand" data-alias-command="commands.faster"/>
+        <use ui="MenuCommand" data-alias-command="commands.normalSpeed"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.resume"/>
+        <use ui="MenuCommand" data-alias-command="commands.stepOver"/>
+        <use ui="MenuCommand" data-alias-command="commands.stepInto"/>
+        <use ui="MenuCommand" data-alias-command="commands.stepOut"/>
+      </use>
+      <button class="btn trigger" popovertarget="menu-help" aria-haspopup="menu"><span class="label">Help</span></button>
+      <use ui="Menu" id="menu-help">
+        <use ui="MenuCommand" data-alias-command="commands.keyboardShortcuts"/>
+      </use>
+    </menubar>
+    <div id="layout">
+      <button class="btn icon-only" popovertarget="layout-menu" aria-haspopup="menu" data-tip="Layout"><span class="icon">&#xebeb;</span></button>
+      <use ui="Menu" id="layout-menu">
+        <use ui="MenuGroup">Layout</use>
+        <use ui="MenuCommand" data-alias-command="commands.workspaceHorizontalSplit"/>
+        <use ui="MenuCommand" data-alias-command="commands.workspaceVerticalSplit"/>
+      </use>
+    </div>
+    <div class="sep"/>
+
+    <div class="spacer"/>
+    <div class="transport">
+      <div id="play-target">
+        <button class="btn subtle target" popovertarget="target-menu" aria-haspopup="menu" data-tip="Play target"><span class="icon">{{ shell.target.icon }}</span><morph-text class="label">{{ shell.target.label }}</morph-text></button>
+        <use ui="Menu" id="target-menu">
+          <use ui="MenuGroup">Play</use>
+          <use ui="MenuItem" data-alias-item="shell.target.scene" data-event-click="emit('shell.target', 'scene')"/>
+          <use ui="MenuItem" data-alias-item="shell.target.preview" data-event-click="emit('shell.target', 'preview')"/>
+        </use>
+      </div>
+      <div class="group">
+        <button class="btn icon-only" data-attr-data-tip="commands.play.label" data-attr-data-kbd="commands.play.shortcut" data-attr-data-state="editor.playing && !editor.paused ? 'on' : 'off'" data-event-click="emit('studio.play')" data-attrif-data-disabled="!commands.play.enabled"><span class="icon">{{ commands.play.icon }}</span></button>
+        <button class="btn icon-only" data-attr-data-tip="commands.stop.label" data-attrif-data-disabled="!commands.stop.enabled" data-event-click="emit('studio.stop')"><span class="icon">{{ commands.stop.icon }}</span></button>
+        <button class="btn icon-only" data-if="!editor.paused" data-attr-data-tip="commands.step.label" data-event-click="emit('studio.step')" data-attrif-data-disabled="!commands.step.enabled"><span class="icon">{{ commands.step.icon }}</span></button>
+        <div id="debug-steps" data-if="editor.paused">
+          <button class="btn icon-only" data-attr-data-tip="commands.stepOver.label" data-attr-data-kbd="commands.stepOver.shortcut" data-event-click="emit('studio.stepOver')"><span class="icon">{{ commands.stepOver.icon }}</span></button>
+          <button class="btn icon-only" data-attr-data-tip="commands.stepInto.label" data-attr-data-kbd="commands.stepInto.shortcut" data-event-click="emit('studio.stepInto')"><span class="icon">{{ commands.stepInto.icon }}</span></button>
+          <button class="btn icon-only" data-attr-data-tip="commands.stepOut.label" data-attr-data-kbd="commands.stepOut.shortcut" data-event-click="emit('studio.stepOut')"><span class="icon">{{ commands.stepOut.icon }}</span></button>
+        </div>
+      </div>
+      <div id="speed">
+        <button class="btn subtle speed" popovertarget="speed-menu" aria-haspopup="menu" data-tip="Playback Speed" data-tip-about="Game time per second. Behaviors, physics and effects slow alike; Stop returns to 1&#xd7;." data-attr-data-state="shell.speed.on ? 'on' : 'off'"><span class="label">{{ shell.speed.label }}</span></button>
+        <use ui="Menu" id="speed-menu">
+          <use ui="MenuGroup">Playback Speed</use>
+          <use ui="MenuCommand" data-alias-command="commands.slower"/>
+          <use ui="MenuCommand" data-alias-command="commands.faster"/>
+          <use ui="MenuCommand" data-alias-command="commands.normalSpeed"/>
+          <use ui="MenuSeparator"/>
+          <use ui="MenuItem" data-for="preset, i : shell.speed.presets" data-alias-item="preset" data-event-click="emit('shell.speed', i)"/>
+        </use>
+      </div>
+    </div>
+    <div class="spacer"/>
+    <button class="btn collaboration-trigger" data-attr-data-tip="commands.collaboration.label" data-attr-data-state="collaboration.connected ? 'on' : 'off'" data-event-click="emit('studio.collaboration')"><span class="icon">{{ commands.collaboration.icon }}</span><span class="label">Collab</span></button>
+    <div class="sep"/>
+    <button class="btn icon-only side-pane" data-attr-data-tip="commands.toggleSidePane.label" data-attr-data-state="commands.toggleSidePane.checked ? 'on' : 'off'" data-event-click="emit('studio.toggleSidePane')"><span class="icon">{{ commands.toggleSidePane.icon }}</span></button>
+    <button class="btn icon-only" data-attr-data-tip="commands.settings.label" data-attr-data-kbd="commands.settings.shortcut" data-event-click="emit('studio.settings')"><span class="icon">{{ commands.settings.icon }}</span></button>
+    <button class="btn search-trigger" data-attr-data-tip="commands.search.label" data-attr-data-kbd="commands.search.shortcut" data-event-click="emit('studio.search')"><span class="icon">{{ commands.search.icon }}</span><span class="label">{{ commands.search.label }}</span><span class="kbd">{{ commands.search.shortcut }}</span></button>
+  </header>
+  <nav class="doc-tabs" aria-label="Open documents">
+    <tab-list class="doc-tab-list" role="tablist" aria-label="Open documents">
+      <div class="doc-tab" role="presentation" data-for="tab, i : editor.tabs" data-attr-data-state="tab.active ? 'on' : 'off'" data-attrif-data-pinned="tab.pinned" data-event-contextmenu="emit('shell.tabMenu', i)">
+        <button class="btn face" role="tab" data-attr-aria-selected="tab.active ? 'true' : 'false'" data-attr-aria-label="tab.label" data-attr-data-tip="tab.path != '' ? tab.path : tab.label" data-event-click="emit('studio.selectTab', i)"><span class="icon">{{ tab.icon }}</span><span class="label">{{ tab.label }}<span class="doc-title-fade" aria-hidden="true"/></span><span class="dirty-dot" data-if="tab.dirty" data-tip="Unsaved changes"/></button>
+        <button class="btn icon-only doc-pin" data-when="tab.pinned" data-attr-data-tip="tab.pinLabel" data-attr-aria-label="tab.pinLabel" aria-pressed="true" data-event-click="emit('studio.togglePinTab', i)"><span class="icon">&#xf0931;</span></button>
+        <button class="btn icon-only doc-close" data-when="!tab.pinned" data-tab-close data-attr-data-tip="tab.closeReason" data-attr-aria-label="tab.closeReason" data-attr-data-kbd="commands.closeTab.shortcut" data-attrif-data-disabled="!tab.closable" data-event-click="emit('studio.closeTab', i)"><span class="doc-close-cover" aria-hidden="true"/><span class="doc-close-fade" aria-hidden="true"/><span class="doc-close-highlight" aria-hidden="true"/><span class="icon">&#xea76;</span></button>
+      </div>
+    </tab-list>
+    <button class="btn icon-only open-tabs" popovertarget="open-tabs-menu" aria-haspopup="menu" aria-label="Open tabs" data-tip="Open tabs"><span class="icon">&#xeab4;</span></button>
+    <use ui="Menu" id="open-tabs-menu">
+      <use ui="MenuGroup">Open tabs</use>
+      <use ui="MenuItem" data-for="tab, i : editor.tabs" data-alias-item="tab" data-event-click="emit('studio.selectTab', i)"/>
+    </use>
+    <use ui="Menu" id="tab-menu">
+      <use ui="MenuItem" data-alias-item="shell.tabMenu.pin" data-event-click="emit('shell.tabPin')"/>
+      <use ui="MenuItem" data-alias-item="shell.tabMenu.close" data-event-click="emit('shell.tabClose')"/>
+    </use>
+  </nav>
+</div>

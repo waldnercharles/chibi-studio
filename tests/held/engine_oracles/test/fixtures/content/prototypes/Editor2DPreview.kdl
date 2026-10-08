@@ -1,0 +1,5 @@
+name "Editor2DPreview"
+components {
+    GAME.GameAppearance antialias=1.0 color=0xffffffff glow_color=0xffffff50 glow_radius=8.0 height=18.0 shape="Stroked Chevron" stroke_width=1.0 width=20.0
+    GAME.GameTransform x=320.0 y=-180.0
+}

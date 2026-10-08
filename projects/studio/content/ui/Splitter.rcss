@@ -1,0 +1,6 @@
+/* The native <splitter>: dragging moves its value along axis="x" or "y",
+   within min and max (invert moves it against the pointer); input runs
+   while it drags and change once when it is released. */
+.splitter { display: block; flex: 0 0 auto; width: 6dp; border-radius: 3dp; }
+.splitter[axis=y] { width: auto; height: 6dp; }
+.splitter:hover, .splitter[data-dragging] { background-color: var(--primary-wash); }

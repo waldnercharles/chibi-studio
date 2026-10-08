@@ -1,0 +1,16 @@
+behavior "WidgetGallery" {
+    owner "ecs.entity";
+    state Rows: int[] = [];
+    value rows = get_variable<"Rows">();
+    action rows_2 = set_variable<"Rows">(Value: int[] = resize(Array: int[] = rows, Index: 10000));
+    value rows_3 = get_variable<"Rows">();
+    on Begin as begin() {
+        rows_2();
+    }
+    after rows_2 {
+        set_ui_data(Entity: 0, Name: "total", Value: int = length(Array: int[] = rows_2.Value));
+    }
+    on ShowRows as showrows(First: int = 0, Count: int = 0) {
+        set_ui_data(Entity: 0, Name: "rows", Value: int[] = slice(Array: int[] = rows_3, Start: showrows.First, Count: showrows.Count));
+    }
+}

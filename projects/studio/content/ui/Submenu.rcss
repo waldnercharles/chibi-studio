@@ -1,0 +1,11 @@
+/* A menu row that opens the use's children as a menu beside it, after a
+   100 ms hover, a click or Right (Base UI's SubmenuTrigger); Left closes
+   it. Alias the row as data-alias-item: an object with label and icon.
+   RmlUi places a fixed box against its nearest positioned ancestor, so the
+   submenu sits in a room as wide as a menu may grow, as Menu does, and fits
+   its widest row rather than its parent menu's width. Its items are built
+   when it opens, as Menu's are. */
+body { display: block; }
+.menu-item { height: var(--menu-row-h); }
+.chev { color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); }
+.room { position: absolute; width: 480dp; height: 0dp; }

@@ -1,0 +1,14 @@
+/* A menu's item (Base UI's Menu.Item). Alias it as data-alias-item: an
+   object with icon, label, shortcut, checked and disabled; the use's
+   children add to its label. Its data-event-click runs it, and the click
+   closes its menu. data-current marks the current choice among several;
+   with aria-haspopup and popovertarget it opens a submenu, with a chevron. */
+body { display: block; }
+.menu-item { height: var(--menu-row-h); }
+/* The label keeps its width, so a menu grows to its widest row, as the kit's
+   menus measure theirs. */
+.text { flex: 1 0 auto; }
+.lead { flex: 0 0 auto; }
+.chev { display: none; color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); }
+.menu-item[aria-haspopup] .chev { display: block; }
+.menu-item[aria-haspopup] .kbd { display: none; }

@@ -1,0 +1,66 @@
+<span class="dim" data-if="!graph_header.open">No behavior open</span>
+<div class="graph-head" data-if="graph_header.open">
+  <button class="btn icon-only" data-tip="Back" data-attr-data-kbd="graph_header.backKbd" data-attrif-data-disabled="!graph_header.back" data-event-click="emit('graph_header.back')"><span class="icon">&#xea9b;</span></button>
+  <button class="btn icon-only" data-tip="Forward" data-attr-data-kbd="graph_header.forwardKbd" data-attrif-data-disabled="!graph_header.forward" data-event-click="emit('graph_header.forward')"><span class="icon">&#xea9c;</span></button>
+  <div class="crumbs">
+    <button class="btn crumb" popovertarget="crumb-asset" aria-haspopup="menu"><span class="icon">{{ graph_header.asset.icon }}</span><span class="label">{{ graph_header.asset.label }}</span></button>
+    <span class="icon crumb-sep">&#xeab6;</span>
+    <div class="caller" data-for="caller : graph_header.callers">
+      <button class="btn crumb" data-event-click="emit('graph_header.caller', caller.id)"><span class="label">{{ caller.label }}</span></button>
+      <span class="icon crumb-sep">&#xeab6;</span>
+    </div>
+    <button class="btn crumb current" data-if="!graph_header.renaming" popovertarget="graph-picker" aria-haspopup="menu" data-tip="Graphs"><span class="icon">{{ graph_header.graph.icon }}</span><span class="label">{{ graph_header.graph.label }}</span></button>
+    <div class="field text rename" data-when="graph_header.renaming"><input type="text" class="part value" autofocus="" data-attr-value="graph_header.graph.label" data-keys="Escape:graph_header.cancel" data-event-change="emit('graph_header.renamed', ev.value)" data-event-blur="emit('graph_header.cancel')"/></div>
+  </div>
+  <div class="segmented" data-if="graph_header.sourceView" data-tip="Behavior view">
+    <button class="seg" data-attrif-data-pressed="graph_header.view == 0" data-event-click="emit('graph_header.view', 0)">Graph</button>
+    <button class="seg" data-attrif-data-pressed="graph_header.view == 1" data-event-click="emit('graph_header.view', 1)">Code</button>
+    <button class="seg" data-attrif-data-pressed="graph_header.view == 2" data-event-click="emit('graph_header.view', 2)">Both</button>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn subtle sm debug-target" data-if="graph_header.debug" popovertarget="debug-targets" aria-haspopup="listbox" data-tip="Debug target" data-attr-data-tip-about="graph_header.targetAbout"><span class="icon">&#xebf8;</span><morph-text class="label">{{ graph_header.target }}</morph-text></button>
+  <number-flow class="number-flow readout" data-if="graph_view.zoomShown" data-attr-value="graph_view.zoom" precision="0" prefix="" suffix="%"></number-flow>
+  <button class="btn icon-only" popovertarget="graph-actions" aria-haspopup="menu" data-tip="Graph"><span class="icon">&#xea7c;</span></button>
+  <button class="btn icon-only" data-tip="Arrange" data-attr-data-kbd="graph_header.arrangeKbd" data-attrif-data-disabled="graph_header.readonly" data-event-click="emit('graph_header.arrange')"><span class="icon">&#xebeb;</span></button>
+  <button class="btn icon-only" data-tip="Find" data-attr-data-kbd="commands.find.shortcut" data-attr-data-state="graph_header.find ? 'on' : ''" data-event-click="emit('graph_header.find')"><span class="icon">&#xea6d;</span></button>
+  <button class="btn icon-only" data-tip="Frame all" data-kbd="Home" data-event-click="emit('graph_header.frame')"><span class="icon">&#xf004c;</span></button>
+  <use ui="GraphView"/>
+  <use ui="Menu" id="crumb-asset">
+    <use ui="MenuItem" data-alias-item="graph_menus.refs" data-event-click="emit('graph_header.assetRefs')"/>
+    <use ui="Submenu" data-if="graph_menus.kinds" data-alias-item="graph_menus.kind">
+      <use ui="MenuItem" data-for="asset : graph_menus.assets" data-alias-item="asset" data-attrif-data-current="asset.current" data-event-click="emit('graph_header.asset', asset.label)"></use>
+    </use>
+  </use>
+  <use ui="Menu" id="graph-picker">
+    <use ui="MenuGroup">Graphs</use>
+    <use ui="MenuItem" data-for="g : graph_menus.graphs" data-alias-item="g" data-attrif-data-current="g.current" data-event-click="emit('graph_header.graph', g.id)"></use>
+    <use ui="MenuSeparator"/>
+    <use ui="MenuItem" data-alias-item="graph_menus.newFunction" data-event-click="emit('graph_header.newFunction')"/>
+    <use ui="MenuItem" data-alias-item="graph_menus.newMacro" data-event-click="emit('graph_header.newMacro')"/>
+    <use ui="MenuSeparator" data-if="graph_menus.named"/>
+    <use ui="MenuItem" data-if="graph_menus.named" data-alias-item="graph_menus.rename" data-event-click="emit('graph_header.rename')"/>
+    <use ui="MenuItem" data-if="graph_menus.named" data-alias-item="graph_menus.graphRefs" data-event-click="emit('graph_header.graphRefs')"/>
+    <use ui="MenuItem" data-if="graph_menus.named" data-alias-item="graph_menus.graphCalls" data-event-click="emit('graph_header.graphCalls')"/>
+    <use ui="MenuItem" data-if="graph_menus.named" data-alias-item="graph_menus.remove" data-event-click="emit('graph_header.remove')"/>
+  </use>
+  <use ui="Menu" id="graph-actions">
+    <use ui="MenuItem" data-alias-item="graph_view.optimize" data-event-click="emit('graph_header.optimize')"/>
+    <use ui="MenuItem" data-alias-item="graph_view.collapse" data-event-click="emit('graph_header.collapse')"/>
+    <use ui="MenuSeparator"/>
+    <use ui="Submenu" data-if="graph_view.align" data-alias-item="graph_view.alignment">
+      <use ui="MenuItem" data-for="edge : graph_view.edges" data-alias-item="edge" data-event-click="emit('graph_header.align', edge.id)"></use>
+      <use ui="MenuSeparator"/>
+      <use ui="MenuItem" data-alias-item="graph_view.horizontal" data-event-click="emit('graph_header.distribute', 0)"/>
+      <use ui="MenuItem" data-alias-item="graph_view.vertical" data-event-click="emit('graph_header.distribute', 1)"/>
+    </use>
+    <use ui="MenuItem" data-alias-item="graph_view.straighten" data-event-click="emit('graph_header.straighten')"/>
+  </use>
+  <div class="popup dropdown" popover id="debug-targets">
+    <use ui="ChoiceList" placeholder="Search instances" data-event-change="emit('graph_header.target', ev.value)">
+      <div role="group" data-for="group : graph_targets.groups">
+        <use ui="MenuGroup" data-if="group.label != ''" data-alias-group="group"/>
+        <div class="menu-item" role="option" data-for="option : group.options" data-attr-value="option.id" data-attr-data-label="option.label" data-attr-data-keywords="option.keywords" data-attrif-data-current="option.current"><span class="icon lead">{{ option.icon }}</span><span class="text"><span class="label">{{ option.label }}</span></span></div>
+      </div>
+    </use>
+  </div>
+</div>

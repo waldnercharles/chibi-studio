@@ -1,0 +1,42 @@
+{
+  "content/behaviors/MaterialImpactHealth.chibi": {
+    "purpose": "material impact to ECS component update",
+    "sha256": "fae9952169c2afff133e46bb296fc4c467333a24eeb23840bd12f8cfe0678530",
+    "source": "projects/arena2d/content/behaviors/MaterialImpactHealth.chibi"
+  },
+  "content/behaviors/MaterialImpactHealth.chibi.meta": {
+    "purpose": "material impact to ECS component update",
+    "sha256": "4b65ba2b5d0f65817b22dc8cc1f9d1f91d48b55d41ddd2d9614aec95bdd57ffb",
+    "source": "projects/arena2d/content/behaviors/MaterialImpactHealth.chibi.meta"
+  },
+  "content/events/Material Impact.kdl": {
+    "purpose": "material impact payload dispatch",
+    "sha256": "d57898ee3f520364fe2344140d8caa9db4811dc534be90321b40bc25421137d2",
+    "source": "projects/arena2d/content/events/Material Impact.kdl"
+  },
+  "content/fields/CaveField.kdl": {
+    "purpose": "field noise and terrain generation",
+    "sha256": "8198cc73d3cb13cef8981cceb92a9d85b99522fffa29c7427f8ac0dfda8d27bc",
+    "source": "projects/arena2d/content/fields/CaveField.kdl"
+  },
+  "content/fields/MaterialIslands.kdl": {
+    "purpose": "shared field-library dependency",
+    "sha256": "fffc1afacdb8ad3b8ab3d3443b282e4bf636c4dd2f28cebb39b04890678e0ff1",
+    "source": "projects/arena2d/content/fields/MaterialIslands.kdl"
+  },
+  "content/libraries/FieldShapes.chibi": {
+    "purpose": "field library registration and replacement",
+    "sha256": "7c277ea5f214211b3dcf1ae3cce3fd2d2116230582b68cf790e934895ca6f721",
+    "source": "projects/arena2d/content/libraries/FieldShapes.chibi"
+  },
+  "content/libraries/FieldShapes.chibi.meta": {
+    "purpose": "field library registration and replacement",
+    "sha256": "5592e42398f449adfa417b410515e1faca76621c9947bc366248874f3dbcb094",
+    "source": "projects/arena2d/content/libraries/FieldShapes.chibi.meta"
+  },
+  "content/materials/ArenaFloor.kdl": {
+    "purpose": "CPU shader contour and beat arithmetic assertions",
+    "sha256": "5bc9998716a5ad357cb4553ac04260095d0715c84557ea1c9d8e2fb48cbfb762",
+    "source": "content/materials/ArenaFloor.kdl"
+  }
+}

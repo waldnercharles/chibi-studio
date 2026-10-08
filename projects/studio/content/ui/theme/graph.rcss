@@ -1,0 +1,273 @@
+/* The behavior graph canvas (studio_graph.c, the kit's graph.rml), ported
+   from the Studio prototype's graph styles. This document lives in its own
+   context whose dp ratio is the zoom, so every length here is in graph units
+   and scales with the view. */
+
+body.graph-canvas {
+    width: 100%; height: 100%; margin: 0dp; padding: 0dp; overflow: hidden;
+    background-color: var(--canvas);
+    /* Graph geometry keeps its own fixed pitch at every application density. */
+    --h: 22dp; --text-line: 20dp; --input-line: 16dp; --input-pad: 2dp; --h-sm: 18dp; --row: 22dp; --gap: 2dp;
+    /* Node categories. */
+    --n-event: #7a2f42;
+    --n-flow: #46464e;
+    --n-pure: #2f4a36;
+    --n-function: #2d4f7a;
+    --n-variable: #5a3a2c;
+    --n-literal: #6b5530;
+    --n-expr: #245e6c;
+    --n-call: #2d5a3c;
+    --node: var(--card);
+    --node-edge: var(--border);
+    --chip: var(--muted);
+    --chip-fg: var(--tok-keyword);
+    --conversion: var(--popover);
+    --selected-object: #e0701c;
+    --active-object: #ffa53a;
+    --bubble: #e6e2cbf2;
+    --bubble-fg: #1f1f22;
+    /* The debug target's activity: the running rim takes the execution
+       wire's color, and live value chips sit on the canvas. */
+    --flow-running: #e8e8ea8c;
+    --live-chip: #1d1d21e6;
+}
+/* Light canvases keep full-color titles in lighter tints (Blender's light theme). */
+body.graph-canvas:not(.dark) {
+    --n-event: #e8cbd4;
+    --n-flow: #d7dce5;
+    --n-pure: #d0e4d6;
+    --n-function: #cadbf0;
+    --n-variable: #e8d7cb;
+    --n-literal: #ebdfbd;
+    --n-expr: #c8e2e6;
+    --n-call: #cce1d1;
+    --bubble: #fff6ccf2;
+    --flow-running: #52525b8c;
+    --live-chip: #ffffffe6;
+}
+
+#back, #front { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; pointer-events: none; }
+#world { position: absolute; left: 0dp; top: 0dp; width: 0dp; height: 0dp; }
+.wires { display: block; position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; pointer-events: none; }
+.stage { position: absolute; left: 0dp; top: 0dp; width: 0dp; height: 0dp; }
+
+/* measure_node sizes nodes; widths come from C. */
+.gnode {
+    position: absolute;
+    background-color: var(--node); border: 1dp var(--node-edge); border-radius: var(--r-lg);
+    color: var(--foreground); font-size: var(--studio-font-12, 12dp);
+}
+.gnode[data-error] { border-color: var(--destructive); }
+.gnode[data-warning] { border-color: var(--warning); }
+.gnode[data-selected] { border-color: var(--selected-object); z-index: 2; }
+.gnode[data-active] { border-color: var(--active-object); }
+.gnode[data-dim] { opacity: 0.45; }
+.gnode[data-breakpoint] .gnode-head { border-left: 4dp #e5534b; }
+.gnode[data-disabled] { opacity: 0.5; }
+
+.gnode-head {
+    position: relative; display: flex; align-items: center; gap: 6dp; height: var(--studio-height-24, 24dp); padding: 0dp 10dp;
+    border-radius: 5dp 5dp 0dp 0dp; color: #ffffff; background-color: var(--n-pure);
+}
+.gnode-head:last-child { border-radius: 5dp; }
+/* Unlabeled execution pins sit on the title's edges (Unity Visual Scripting). */
+.hpin { position: absolute; top: 0dp; width: 0dp; height: var(--studio-height-24, 24dp); }
+/* The pins sit on the node's outer edge, past its 1 dp border. */
+.hpin.in { left: -1dp; }
+.hpin.out { right: -1dp; }
+.hpin > .socket { top: 4dp; }
+.gnode-head .icon { color: #ffffffcc; font-size: 12dp; width: 14dp; }
+.gnode-head .title { display: block; flex: 1 1 auto; white-space: nowrap; overflow: hidden; font-weight: 600; line-height: var(--studio-line-24, 24dp); }
+.gnode-head .symbol { display: block; font-weight: 700; font-size: var(--studio-font-14, 14dp); line-height: var(--studio-line-24, 24dp); }
+.gnode[data-kind=event] .gnode-head { background-color: var(--n-event); }
+.gnode[data-kind=flow] .gnode-head { background-color: var(--n-flow); }
+.gnode[data-kind=function] .gnode-head { background-color: var(--n-function); }
+.gnode[data-kind=variable] .gnode-head { background-color: var(--n-variable); }
+.gnode[data-kind=literal] .gnode-head { background-color: var(--n-literal); }
+.gnode[data-kind=call] .gnode-head { background-color: var(--n-call); }
+.gnode[data-kind=expression] .gnode-head { background-color: var(--n-expr); }
+
+body.graph-canvas:not(.dark) .gnode-head, body.graph-canvas:not(.dark) .gnode-head .icon { color: #28313e; }
+
+/* Rows sit on a fixed pitch, which pin_y assumes: row i's socket is at head (24)
+   + pad (4) + (i + 0.5) * 22 below the node's border, after any code. Execution
+   pins pair up first, then data outputs, then data inputs (Blender's order). */
+.gnode-body { display: block; padding: 4dp 0dp 6dp; }
+.grow { position: relative; display: flex; align-items: center; gap: 6dp; height: var(--studio-height-22, 22dp); padding: 0dp 10dp; }
+.grow.out { justify-content: flex-end; }
+.grow.exec { padding: 0dp; gap: 12dp; }
+.ghalf { position: relative; display: flex; align-items: center; gap: 6dp; height: var(--studio-height-22, 22dp); }
+.ghalf.in { padding-left: 10dp; }
+.ghalf.out { padding-right: 10dp; margin-left: auto; justify-content: flex-end; }
+/* Labels and fields stay inside the node; the full label remains in its tooltip. */
+.gpin-label { display: block; flex: 0 1 auto; min-width: 0dp; max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--muted-foreground); white-space: nowrap; line-height: var(--studio-line-22, 22dp); }
+[data-hover] > .gpin-label { color: var(--foreground); }
+.grow .field { flex: 1 1 auto; min-width: 0dp; height: var(--studio-height-18, 18dp); }
+.grow.out .field { flex: 0 0 64dp; }
+.grow .field .part { height: var(--studio-height-16, 16dp); line-height: var(--studio-line-16, 16dp); }
+/* Compact graph fields have a 16 dp inner box. Shell input padding would
+   clip the glyphs and caret inside that box. */
+.grow .field input.value { padding-top: 0dp; padding-bottom: 0dp; }
+.grow .segmented { height: var(--studio-height-18, 18dp); }
+.grow .check { flex: 0 0 auto; }
+/* Editors and chips fill the row to the node's edge, so their right edges align. */
+.grow .chip {
+    display: flex; align-items: center; gap: 4dp; flex: 1 1 auto; min-width: 0dp; height: var(--studio-height-18, 18dp);
+    padding: 0dp 6dp; border-radius: 3dp; background-color: var(--chip); color: var(--chip-fg);
+    font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-18, 18dp); overflow: hidden;
+}
+.grow .chip .icon { flex: 0 0 auto; width: 12dp; font-size: 11dp; line-height: var(--studio-line-18, 18dp); color: var(--faint-foreground); }
+.chip-text { display: block; flex: 1 1 auto; min-width: 0dp; white-space: nowrap; overflow: hidden; }
+.grow .chip.source { color: var(--tok-name); }
+.graph-inline-values { min-width: 320dp; max-width: 480dp; max-height: 460dp; overflow-y: auto; }
+.graph-inline-heading { display: block; margin: 2dp 4dp 6dp; color: var(--muted-foreground); font-size: var(--studio-font-11, 11dp); font-weight: 600; }
+.graph-inline-node { display: block; padding: 2dp 0dp 4dp; border-top: 1dp var(--border); }
+.graph-inline-title { display: block; padding: 4dp 6dp 2dp; color: var(--foreground); font-weight: 600; }
+.graph-inline-row { display: flex; align-items: center; gap: 8dp; min-height: 26dp; padding: 2dp 4dp; }
+.graph-inline-label { display: block; flex: 0 0 104dp; overflow: hidden; color: var(--muted-foreground); white-space: nowrap; }
+.graph-inline-row .field { flex: 1 1 auto; min-width: 0dp; }
+/* A variadic node's last row adds a pin on its side (Unreal's Add pin). */
+.gadd .btn { color: var(--faint-foreground); }
+
+/* An expression's source, lines wrapped by measure_node: 16 dp lines, 12 dp of
+   padding and margin below, 48 dp across, which keeps its edit button clear. */
+.gcode {
+    position: relative; display: block; margin: 0dp 8dp 4dp; padding: 4dp 26dp 4dp 6dp; border-radius: 4dp; cursor: text;
+    background-color: var(--chip); font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-16, 16dp);
+}
+.graph-expression-editor { flex: 0 1 auto; max-width: 100%; min-width: 0dp; }
+.graph-expression-editor.standalone { margin: 0dp 8dp 4dp; }
+.graph-expression-editor.standalone .field { height: var(--studio-height-24, 24dp); }
+.graph-expression-editor .field { width: 100%; min-width: 0dp; }
+/* Lines may run 6 dp past their measured room, as glyphs hint wider at small
+   zooms, and stop short of the edit button. */
+.gcode-line { display: block; height: var(--studio-height-16, 16dp); margin-right: -6dp; white-space: pre; overflow: hidden; }
+.gcode-edit { position: absolute; top: 2dp; right: 2dp; z-index: 1; width: 18dp; height: 18dp; padding: 0dp; opacity: 0.55; }
+.gcode:hover .gcode-edit { opacity: 1; }
+
+/* Compact nodes (Unreal): an operator's symbol sits between its inputs and its
+   centered output; a one-output read is a pill with its socket on the title. */
+.gnode[data-form=operator] { border-radius: 10dp; }
+.gnode[data-form=operator] .gnode-body { position: relative; padding: 4dp 0dp; }
+.gnode[data-form=operator] .grow.in { padding-right: 0dp; }
+.gsymbol {
+    position: absolute; top: 0dp; bottom: 0dp; text-align: center; white-space: nowrap;
+    font-size: var(--studio-font-18, 18dp); font-weight: 700; color: var(--muted-foreground);
+}
+.gout { position: absolute; right: 0dp; width: 12dp; height: var(--studio-height-22, 22dp); }
+.gnode[data-form=getter] { border-radius: 13dp; }
+.gnode[data-form=getter] .gnode-head { border-radius: 12dp; }
+
+/* A socket is a 16 dp hit area centered on the node edge; kit_dot draws it. */
+.socket { position: absolute; top: 3dp; width: 16dp; height: var(--studio-height-16, 16dp); }
+.in > .socket { left: -8dp; }
+.out > .socket { right: -8dp; }
+/* Row containers end at the node's inner border edge; sockets target its outer edge. */
+.grow.in > .socket, .ghalf.in > .socket { left: -9dp; }
+.grow.out > .socket, .ghalf.out > .socket, .gout > .socket { right: -9dp; }
+.socket kit-dot { position: absolute; left: 3dp; top: 3dp; width: 10dp; height: 10dp; }
+
+/* Level of detail: far out, pins and values give way to titles. */
+body.far .gpin-label, body.far .grow .field, body.far .grow .chip, body.far .grow .check, body.far .grow .segmented, body.far .gcode, body.far .gadd { visibility: hidden; }
+body.far .gnode-head .title { font-size: var(--studio-font-16, 16dp); }
+
+/* Comment frames (studio_graph_comment.c): a tint layer keyed by the frame's
+   color, the title, and grips on the edges and corners that resize it. */
+.gcomment { position: absolute; }
+.gcomment[data-selected] { margin: -2dp 0dp 0dp -2dp; border: 2dp var(--selected-object); border-radius: var(--r-lg); }
+.gcomment-tint {
+    position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp;
+    border: 1dp #8a8a9666; border-radius: var(--r-lg); background-color: #8a8a961f;
+}
+.gcomment-title {
+    position: relative; display: block; height: var(--studio-height-28, 28dp); padding: 0dp 10dp; line-height: var(--studio-line-28, 28dp); font-size: var(--studio-font-14, 14dp); font-weight: 600;
+    color: var(--foreground); white-space: nowrap; overflow: hidden; cursor: move;
+}
+.gcomment-edit { position: relative; display: block; padding: 3dp 4dp; }
+.gcomment-edit .field { font-size: var(--studio-font-14, 14dp); font-weight: 600; }
+body.far .gcomment-title { font-size: var(--studio-font-28, 28dp); height: 44dp; line-height: var(--studio-line-44, 44dp); }
+.grip { position: absolute; }
+.grip.n, .grip.s { left: 8dp; right: 8dp; height: 8dp; cursor: ns-resize; }
+.grip.w, .grip.e { top: 8dp; bottom: 8dp; width: 8dp; cursor: ew-resize; }
+.grip.n { top: -4dp; }
+.grip.s { bottom: -4dp; }
+.grip.w { left: -4dp; }
+.grip.e { right: -4dp; }
+.grip.nw, .grip.ne, .grip.sw, .grip.se { width: 12dp; height: 12dp; }
+.grip.nw { left: -4dp; top: -4dp; cursor: nwse-resize; }
+.grip.se { right: -4dp; bottom: -4dp; cursor: nwse-resize; }
+.grip.ne { right: -4dp; top: -4dp; cursor: nesw-resize; }
+.grip.sw { left: -4dp; bottom: -4dp; cursor: nesw-resize; }
+
+/* A node's comment floats above it (Unreal's comment bubble). */
+.gbubble {
+    position: absolute; left: 0dp; bottom: 100%; margin-bottom: 6dp;
+    padding: 3dp 8dp; border-radius: 6dp; background-color: var(--bubble); border: 1dp var(--node-edge);
+    color: var(--bubble-fg); font-size: var(--studio-font-12, 12dp); line-height: var(--studio-line-16, 16dp);
+}
+.gbubble-text { display: block; white-space: pre-wrap; }
+body.far .gbubble { visibility: hidden; }
+
+/* Centered on the wire's middle by a negative margin (emit_conversions). */
+.gconversion {
+    position: absolute; display: block; height: var(--studio-height-16, 16dp); margin-top: -8dp;
+    border-radius: 8dp; background-color: var(--conversion); border: 1dp var(--border);
+    color: var(--muted-foreground); font-size: var(--studio-font-10, 10dp); line-height: var(--studio-line-14, 14dp); text-align: center; white-space: nowrap; overflow: hidden;
+}
+
+.marquee { position: absolute; border: 1dp var(--primary-edge); background-color: var(--primary-soft); }
+.link-error {
+    position: absolute; padding: 2dp 8dp; border-radius: var(--r); background-color: var(--notice);
+    color: var(--notice-fg); font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-16, 16dp); white-space: nowrap;
+}
+
+/* A wire's reroute point: a 14 dp hit area centered on the point. */
+.greroute { position: absolute; width: 14dp; height: var(--studio-height-14, 14dp); margin-left: -7dp; margin-top: -7dp; cursor: move; }
+.greroute kit-dot { position: absolute; left: 2dp; top: 2dp; width: 10dp; height: 10dp; }
+
+/* A problem sits on the node's top edge by its right corner, clear of the
+   title's socket (Blender's node warnings); a paused run's node takes a 3 dp
+   accent ring outside its border. */
+.gproblem {
+    position: absolute; top: -10dp; right: 14dp; width: 18dp; height: var(--studio-height-18, 18dp); border-radius: 9dp;
+    background-color: var(--node); text-align: center; z-index: 3;
+}
+.gproblem .icon { width: 18dp; font-size: 14dp; line-height: var(--studio-line-18, 18dp); color: var(--warning); }
+.gnode[data-error] .gproblem .icon { color: var(--destructive); }
+.gpaused {
+    position: absolute; left: -5dp; top: -5dp; right: -5dp; bottom: -5dp;
+    border: 3dp var(--primary); border-radius: 10dp; pointer-events: none;
+    opacity: 1; transition: opacity 0.14s cubic-out;
+}
+.gpaused[data-starting-style] { opacity: 0; }
+.gnode[data-paused] { z-index: 3; }
+/* A node the debug target is running wears a rim in the execution wire's
+   color; once it stops the rim fades over 0.4 s, as its wires' pulses do. */
+.grunning {
+    position: absolute; left: -3dp; top: -3dp; right: -3dp; bottom: -3dp;
+    border: 1.5dp var(--flow-running); border-radius: 9dp; pointer-events: none;
+    opacity: 1; transition: opacity 0.4s cubic-in-out;
+}
+.grunning[data-ending-style] { opacity: 0; }
+.gnode[data-form=operator] .grunning { border-radius: 13dp; }
+.gnode[data-form=getter] .grunning { border-radius: 16dp; }
+
+/* A watched pin's value floats outside the node beside its socket (Unreal);
+   Show Live Values gives every data output a quieter chip. */
+.gwatch {
+    position: absolute; top: -9dp; height: var(--studio-height-16, 16dp); padding: 0dp 6dp; border-radius: 8dp;
+    background-color: var(--primary); color: var(--primary-foreground); font-size: var(--studio-font-10, 10dp); line-height: var(--studio-line-16, 16dp);
+    font-family: var(--font-numeric); white-space: nowrap; pointer-events: none;
+    display: flex; align-items: center;
+}
+.gwatch[data-live] {
+    top: -10dp; height: var(--studio-height-16, 16dp); padding: 0dp 5dp; border-radius: 4dp;
+    background-color: var(--live-chip); color: var(--foreground); border: 1dp var(--node-edge);
+    line-height: var(--studio-line-14, 14dp);
+}
+.gwatch-swatch {
+    width: 8dp; height: 8dp; margin-right: 4dp; border-radius: 2dp;
+    border: 1dp var(--node-edge);
+}
+.in > .gwatch { right: 100%; margin-right: 10dp; }
+.out > .gwatch { left: 100%; margin-left: 10dp; }

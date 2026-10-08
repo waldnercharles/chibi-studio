@@ -1,0 +1,4 @@
+name "Workspace"
+components {
+    GAME.GameUi document="Workspace" hidden=#true
+}

@@ -1,0 +1,74 @@
+version 1
+name "Studio"
+(array)entities {
+    - {
+        name "Settings"
+        prototype "Settings"
+        (array)behaviors "NavKeys" "Dismiss"
+    }
+    - name="Data" prototype="Data"
+    - name="Theme" prototype="Theme"
+    - name="Inspector" prototype="Inspector"
+    - name="StatusBar" prototype="StatusBar"
+    - name="TopBar" prototype="TopBar"
+    - name="Workspace" prototype="Workspace"
+    - {
+        name "Collaboration"
+        prototype "Collaboration"
+        (array)behaviors "NavKeys" "Dismiss"
+    }
+    - {
+        name "Shortcuts"
+        prototype "Shortcuts"
+        (array)behaviors "Dismiss"
+    }
+    - {
+        name "NewProject"
+        prototype "NewProject"
+        (array)behaviors "NewProjectKeys"
+    }
+    - name="AreaHeader" prototype="AreaHeader"
+    - name="Properties" prototype="Properties"
+    - name="PropertiesHeader" prototype="PropertiesHeader"
+    - {
+        name "Outliner"
+        prototype "Outliner"
+        (array)behaviors "OutlinerInput" "OutlinerMenu" "OutlinerRename" "OutlinerRows"
+    }
+    - {
+        name "OutlinerHeader"
+        prototype "OutlinerHeader"
+        (array)behaviors "OutlinerHeaderInput"
+    }
+    - {
+        name "Widgets"
+        prototype "Widgets"
+        (array)behaviors "VirtualList" "WidgetGallery"
+    }
+    - name="Assets" prototype="Assets"
+    - name="AssetsHeader" prototype="AssetsHeader"
+    - name="NewAsset" prototype="NewAsset"
+    - name="Output" prototype="Output"
+    - name="OutputHeader" prototype="OutputHeader"
+    - name="Members" prototype="Members"
+    - name="MembersHeader" prototype="MembersHeader"
+    - name="Scene" prototype="Scene"
+    - name="SceneHeader" prototype="SceneHeader"
+    - name="Canvas" prototype="Canvas"
+    - name="Performance" prototype="Performance"
+    - name="PerformanceHeader" prototype="PerformanceHeader"
+    - name="BehaviorHeader" prototype="BehaviorHeader"
+    - name="GraphFind" prototype="GraphFind"
+    - name="CodeHeader" prototype="CodeHeader"
+    - name="CodeFind" prototype="CodeFind"
+    - name="Details" prototype="Details"
+    - name="DetailsHeader" prototype="DetailsHeader"
+    - name="Hierarchy" prototype="Hierarchy"
+    - name="HierarchyHeader" prototype="HierarchyHeader"
+    - name="Library" prototype="Library"
+    - name="LibraryHeader" prototype="LibraryHeader"
+    - name="Palette" prototype="Palette"
+    - name="Picker" prototype="Picker"
+    - name="Refactor" prototype="Refactor"
+    - name="GraphMenu" prototype="GraphMenu"
+}

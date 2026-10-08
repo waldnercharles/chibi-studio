@@ -1,0 +1,48 @@
+behavior "MovementTrailBehavior" {
+    owner "ecs.entity";
+    state "Particle Carry": float = 0.0;
+    value is_stationary = "Is Stationary"(Direction: input.Direction);
+    on Input as input(Direction: struct<"CF_V2"> = null) {
+        if (is_stationary) {
+            set_variable<"Particle Carry">(Value: float = 0.0);
+        } else {
+            "Emit Movement Trail"(Direction: input.Direction);
+        }
+    }
+    function "Emit Movement Trail"(Direction: struct<"CF_V2"> = null) -> () {
+        depth_limit 32;
+        value particle_carry = get_variable<"Particle Carry">();
+        value add: float = add(A: plain float = particle_carry, B: plain float = "Emission Budget"(dt: delta_time()));
+        value normalize_vector_2 = vec2_norm(Value: entry.Direction);
+        value multiply: struct<"CF_V2"> = multiply(A: plain struct<"CF_V2"> = normalize_vector_2, B: plain float = -1.0);
+        value multiply_2: struct<"CF_V2"> = multiply(A: plain struct<"CF_V2"> = multiply, B: plain float = 9.0);
+        value get_gametransform = get_game_transform();
+        value add_2: struct<"CF_V2"> = add(A: plain struct<"CF_V2"> = convert<"game_transform_to_cf">(get_gametransform), B: plain struct<"CF_V2"> = multiply_2);
+        value subtract: float = subtract(A: plain float = particle_carry, B: plain float = 1.0);
+        after entry {
+            await set_variable<"Particle Carry">(Value: float = add);
+            while (greater_or_equal(A: particle_carry, B: 1.0)) {
+                await emit_directed_particles(Position: add_2, Direction: multiply, Count: 1, Color: 4288223999, "End Color": 1291911040, "Min Speed": 30.0, "Max Speed": 60.0, "Min Lifetime": 0.2, "Max Lifetime": 0.4, "Min Size": 2.0, "Max Size": 4.0, Spread: 1.571, "Min Drag": 4.0, "Max Drag": 8.0, "Min Emission": 0.2, "Max Emission": 0.4, "Size Exponent": 1.5, Elevation: 0.0, Shape: 0);
+                set_variable<"Particle Carry">(Value: float = subtract);
+            }
+            return();
+        }
+    }
+    pure function "Emission Budget"<T0: float, T1: float>(dt: T0 = 0.0) -> (Result: T1 = 0.0) {
+        depth_limit 64;
+        value real = real(Value: 0.0);
+        value real_2 = real(Value: 0.10000000149011612);
+        value clamp = clamp(Value: double = entry, Min: double = real, Max: double = real_2);
+        value real_3 = real(Value: 64.0);
+        value multiply = multiply(A: double = clamp, B: double = real_3);
+        result Result: float = multiply;
+    }
+    pure function "Is Stationary"(Direction: struct<"CF_V2"> = null) -> (Stationary: bool = false) {
+        depth_limit 32;
+        value multiply: float = multiply(A: plain float = entry.Direction.x, B: plain float = entry.Direction.x);
+        value multiply_2: float = multiply(A: plain float = entry.Direction.y, B: plain float = entry.Direction.y);
+        value add: float = add(A: plain float = multiply, B: plain float = multiply_2);
+        value greater_or_equal = greater_or_equal(A: 0.0, B: add);
+        result Stationary: bool = greater_or_equal;
+    }
+}

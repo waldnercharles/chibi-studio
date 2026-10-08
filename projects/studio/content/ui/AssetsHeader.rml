@@ -1,0 +1,11 @@
+<div class="assets-kind"><use ui="EnumField" data-alias-table="assets.kinds" data-alias-value="assets.kind" data-event-change="emit('assets.kind', ev.value)"/></div>
+<div class="assets-filter"><div class="field search"><span class="part addon"><span class="icon sm">&#xea6d;</span></span><input type="text" id="assets-filter" class="part value" placeholder="Filter" data-value="assets.filter"/></div></div>
+<div class="assets-size"><number-field class="field number" min="40" max="160" step="8" precision="0" integer="" slider="" addon="Size" data-tip="Thumbnail Size" data-tip-about="The smallest size lists assets by kind." data-attr-value="assets.tile" data-event-input="emit('assets.tile', ev.value)" data-event-change="emit('assets.tile', ev.value)"></number-field></div>
+<button class="btn icon-only" id="asset-new-button" popovertarget="asset-new" aria-haspopup="menu" data-tip="New Asset"><span class="icon">&#xea60;</span></button>
+<use ui="Menu" id="asset-new">
+  <div data-for="entry : asset_menus.create">
+    <use ui="MenuSeparator" data-if="entry.separator"/>
+    <use ui="MenuGroup" data-if="entry.heading.label != ''" data-alias-group="entry.heading"/>
+    <use ui="MenuItem" data-alias-item="entry" data-event-click="emit('studio.' + entry.id)"/>
+  </div>
+</use>

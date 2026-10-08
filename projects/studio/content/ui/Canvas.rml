@@ -1,0 +1,19 @@
+<div class="viewport canvas" data-class-light="canvas.light">
+  <div class="canvas-stage">
+    <div class="canvas-frame-slot" id="canvas-frame-slot"></div>
+    <div class="view-label canvas-label"><span>{{ canvas.frame }}</span><span class="dim">{{ canvas.usedBy }}</span></div>
+    <span class="notice" data-if="canvas.error != ''">{{ canvas.error }}</span>
+  </div>
+  <div class="canvas-actions" data-if="canvas.open">
+    <div class="canvas-actions-head">
+      <span class="icon">&#xea86;</span>
+      <span class="title">Actions</span>
+      <div class="spacer"></div>
+      <button class="btn sm icon-only" data-tip="Clear" data-attrif-data-disabled="canvas.total == 0" data-event-click="emit('canvas.clear')"><span class="icon">&#xea81;</span></button>
+    </div>
+    <span class="canvas-actions-empty" data-if="canvas.total == 0">No actions yet</span>
+    <use ui="List" id="canvas-actions-list" data-if="canvas.total > 0" data-event-scroll="emit('canvas.scroll')">
+      <div class="canvas-action" data-for="row : canvas.rows"><span class="event">{{ row.event }}</span><span class="element">{{ row.element }}</span><span class="value">{{ row.value }}</span><span class="count">{{ row.count }}</span><span class="time">{{ row.time }}</span></div>
+    </use>
+  </div>
+</div>

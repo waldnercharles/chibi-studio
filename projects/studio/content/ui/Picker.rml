@@ -1,0 +1,12 @@
+<div class="popup dropdown asset-picker" popover id="picker">
+  <choice-list virtualized class="choice-list" data-attr-aria-setsize="palette.count" data-attr-highlight="palette_ui.highlight" data-event-highlight="emit('palette.highlight', ev.value, ev.pointer)" data-event-change="emit('palette.choose', ev.value)">
+    <div class="field search"><span class="part addon"><span class="icon sm">&#xea6d;</span></span><input type="text" class="part value" id="palette-search" data-attr-placeholder="palette.placeholder" data-event-input="emit('palette.query', ev.value)"/></div>
+    <use ui="List" id="palette-list" data-event-scroll="emit('palette.scroll')">
+      <div class="picker-row" data-for="row : palette.rows">
+        <div class="menu-group" data-if="row.heading">{{ row.label }}</div>
+        <div class="menu-item" role="option" data-if="!row.heading" data-attr-value="row.place" data-attr-aria-posinset="row.place" data-attrif-data-current="row.current" data-attrif-data-described="row.about != ''"><span class="icon lead">{{ row.icon }}</span><span class="text"><span class="label" data-rml="row.label"></span><span class="about">{{ row.about }}</span></span></div>
+      </div>
+    </use>
+    <div class="picker-empty" data-if="palette.count == 0">{{ palette.empty }}</div>
+  </choice-list>
+</div>

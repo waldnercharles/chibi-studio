@@ -1,0 +1,29 @@
+version 1
+name "Image Shader Demo"
+presentation "3d"
+(array)entities {
+    - {
+        name "Energy Box"
+        prototype "ShaderEnergy"
+        components {
+            GameTransform x=-185.0 y=0.0
+        }
+    }
+    - {
+        name "Energy Prism"
+        prototype "ShaderEnergy"
+        components {
+            GameGeometry3D primitive=4 width=140.0 depth=140.0 height=24.0 elevation=12.0
+            GameShader material="EnergyCells" shape="" parameters="Intensity 2.1\n(array)\"Scroll Speed\" -0.045 0.025\n(array)Tiling 1.2 1.2\n" bounds_x=0.0 bounds_y=0.0
+        }
+    }
+    - {
+        name "Energy Sphere"
+        prototype "ShaderEnergy"
+        components {
+            GameTransform x=185.0 y=0.0
+            GameGeometry3D primitive=1 width=110.0 depth=110.0 height=110.0 elevation=55.0
+            GameShader material="EnergyCells" shape="" parameters="Intensity 1.3\n(array)Tiling 2 1\n" bounds_x=0.0 bounds_y=0.0
+        }
+    }
+}

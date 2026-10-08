@@ -1,0 +1,4 @@
+name "OutputHeader"
+components {
+    GAME.GameUi document="OutputHeader" hidden=#true
+}

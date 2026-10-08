@@ -1,0 +1,3 @@
+<div class="joined" attrs>
+  <number-field class="field number" data-for="axis : axes" data-attr-id="axis.key == 'x' ? field.id : field.id + '.' + axis.key" data-attr-aria-label="field.label + ' ' + axis.label" data-attr-name="axis.key" data-attr-value="values[axis.slot]" data-attr-addon="axis.label" data-attr-data-axis="axis.key" data-attr-step="axis.step" data-attr-precision="axis.precision" data-attr-min="axis.min" data-attr-max="axis.max" data-attr-unit="axis.unit" data-attrif-slider="axis.slider" data-attrif-float="field.float" data-attrif-mixed="axis.mixed" data-attrif-readonly="field.readonly" data-attrif-data-overridden="axis.overridden"></number-field>
+</div>

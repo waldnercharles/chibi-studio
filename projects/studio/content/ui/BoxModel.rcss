@@ -1,0 +1,13 @@
+/* DevTools' box model: the selection's margin, border and padding in dp
+   around its content size, in the colors its highlight uses. */
+body { display: block; margin-top: 8dp; font-size: var(--studio-font-10, 10dp); line-height: var(--studio-line-16, 16dp); color: var(--foreground); }
+.box { position: relative; display: block; border: 1dp var(--line); border-radius: 3dp; padding: 0dp 2dp; }
+.caption { position: absolute; left: 4dp; top: 0dp; font-size: var(--studio-font-9, 9dp); color: var(--muted-foreground); }
+.edge { display: block; height: var(--studio-height-16, 16dp); text-align: center; }
+.middle { display: flex; align-items: center; }
+.side { flex: 0 0 auto; width: 30dp; text-align: center; }
+.middle .box, .content { flex: 1 1 0dp; }
+.margin { background-color: #f6b26b38; }
+.border { background-color: #ffe59944; }
+.padding { background-color: #93c47d3d; }
+.content { display: block; height: var(--studio-height-20, 20dp); line-height: var(--studio-line-20, 20dp); text-align: center; border-radius: 2dp; background-color: #6fa8dc55; white-space: nowrap; }

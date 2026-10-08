@@ -1,0 +1,669 @@
+/* Rename and safe delete across files: one popover names the symbol anew
+ * and lists every asset the rename rewrites, or lists what still uses a
+ * symbol being deleted and asks to delete it anyway (JetBrains' Rename and
+ * Safe Delete; Blender asks in a popup menu). Applying writes every file or
+ * none (editor/workspace/asset_refactor.h); a toast then offers Undo, which
+ * puts every file back. */
+#include "assets/refactor.h"
+#include "authoring/preview_source.h"
+#include "authoring/source_rename.h"
+#include "editor/studio/studio_graph_internal.h"
+#include "editor/workspace/asset_refactor.h"
+#include "graph/compiler/validation.h"
+#include "graph/document/events.h"
+#include "support/array.h"
+#include "support/xalloc.h"
+#include "ui/popover.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define LISTED 10 /* assets or uses a popover lists before "N more" */
+
+static void close_state(studio_refactor *r)
+{
+    app_refactor_free(r->plan);
+    free(r->source_before);
+    free(r->source_after);
+    free(r->source_metadata);
+    afree(r->uses);
+    *r = (studio_refactor){ .undo = r->undo,
+                            .undo_toast = r->undo_toast,
+                            .mounted = r->mounted };
+}
+
+/* The symbol with its asset found again, since the index may have been
+   rebuilt since the popover opened. */
+static reference_symbol resolved(studio *s)
+{
+    studio_refactor *r = &s->refactor;
+    app_scene_authoring_refresh_asset_index(s->scene);
+    const reference_index *index = app_scene_authoring_asset_index(s->scene);
+    reference_symbol symbol = r->symbol;
+    symbol.asset = reference_index_find_name(index, r->asset_kind, r->asset);
+    symbol.name = symbol.kind == REFERENCE_SYMBOL_EVENT ? r->event : NULL;
+    return symbol;
+}
+
+static void begin(studio *s, studio_refactor_mode mode, reference_symbol symbol, const char *name)
+{
+    studio_refactor *r = &s->refactor;
+    close_state(r);
+    const reference_asset *asset = reference_index_asset_at(
+        app_scene_authoring_asset_index(s->scene),
+        symbol.asset
+    );
+    bool event = symbol.kind == REFERENCE_SYMBOL_EVENT;
+    r->mode = mode;
+    r->symbol = symbol;
+    r->asset_kind = event ? REFERENCE_ASSET_EVENT : (int)asset->kind;
+    snprintf(
+        r->asset,
+        sizeof r->asset,
+        "%s",
+        event ? (symbol.name ? symbol.name : "") : asset->name
+    );
+    snprintf(r->event, sizeof r->event, "%s", event ? symbol.name : "");
+    snprintf(r->title, sizeof r->title, "%s", name);
+    snprintf(r->name, sizeof r->name, "%s", name);
+    r->opening = true;
+}
+
+static asset_code *source_code(studio *s, const char *path)
+{
+    for (int i = 0; i < acount(s->code.assets); i++) {
+        if (!strcmp(path, asset_code_path(s->code.assets[i]))) {
+            return s->code.assets[i];
+        }
+    }
+    return NULL;
+}
+
+void studio_refactor_source(studio *s, const char *path, int offset)
+{
+    asset_code *code = source_code(s, path);
+    const authoring_navigation *index = code ? asset_code_navigation(code) : NULL;
+    const authoring_reference
+        *reference = index
+                       ? authoring_navigation_at(index, asset_code_document(code), offset)
+                       : NULL;
+    if (!reference || !authoring_navigation_definition(index, reference->target)) {
+        studio_report(s, "No editable symbol at this position");
+        return;
+    }
+    const char *name = authoring_navigation_name(index, reference->target);
+    studio_refactor *r = &s->refactor;
+    close_state(r);
+    r->mode = STUDIO_REFACTOR_RENAME;
+    r->opening = true;
+    r->source_offset = offset;
+    snprintf(r->source_path, sizeof r->source_path, "%s", path);
+    snprintf(r->title, sizeof r->title, "%s", name ? name : "");
+    snprintf(r->name, sizeof r->name, "%s", name ? name : "");
+    r->source_before = xstrdup(asset_code_text(code));
+}
+
+static void plan_source(studio *s, asset_code *code)
+{
+    studio_refactor *r = &s->refactor;
+    const authoring_navigation *index = asset_code_navigation(code);
+    int document = asset_code_document(code);
+    const authoring_reference *reference = authoring_navigation_at(index, document, r->source_offset);
+    if (!reference) {
+        snprintf(r->error, sizeof r->error, "Source symbol is no longer available");
+        return;
+    }
+    authoring_rename_plan *rename = authoring_source_rename(
+        index,
+        reference->target,
+        r->name,
+        r->error,
+        sizeof r->error
+    );
+    if (!rename) {
+        return;
+    }
+    r->source_project = reference->target.kind == AUTHORING_PROGRAM;
+    for (int i = 0; i < rename->count; i++) {
+        r->source_project |= rename->edits[i].document != document;
+    }
+    if (r->source_project) {
+        app_scene_authoring_plan_source_rename(
+            s->scene,
+            index,
+            reference->target,
+            r->name,
+            &r->plan,
+            r->error,
+            sizeof r->error
+        );
+    } else {
+        r->source_after = authoring_rename_document(
+            rename,
+            document,
+            r->source_before,
+            r->error,
+            sizeof r->error
+        );
+        source_catalog_edit edit = { .path = asset_code_path(code),
+                                     .text = r->source_after };
+        if (r->source_after && game_preview_sources_validate(
+                                   s->scene->live,
+                                   &edit,
+                                   1,
+                                   r->error,
+                                   sizeof r->error
+                               )) {
+            free(r->source_after);
+            r->source_after = NULL;
+        }
+    }
+    authoring_rename_plan_free(rename);
+}
+
+static void plan(studio *s)
+{
+    studio_refactor *r = &s->refactor;
+    app_refactor_free(r->plan);
+    r->plan = NULL;
+    r->error[0] = '\0';
+    snprintf(r->planned, sizeof r->planned, "%s", r->name);
+    asset_code *code = r->source_path[0] ? source_code(s, r->source_path) : NULL;
+    if (r->source_path[0] &&
+        (!code || strcmp(r->source_before, asset_code_text(code)))) {
+        snprintf(r->error, sizeof r->error, "Source changed; reopen Rename");
+        return;
+    }
+    if (r->source_path[0]) {
+        free(r->source_after);
+        r->source_after = NULL;
+        free(r->source_metadata);
+        r->source_metadata = NULL;
+        plan_source(s, code);
+        return;
+    }
+
+    app_scene_authoring_plan_rename(
+        s->scene,
+        resolved(s),
+        r->name,
+        &r->plan,
+        r->error,
+        sizeof r->error
+    );
+}
+
+static void open_rename(studio *s, reference_symbol symbol, const char *name)
+{
+    begin(s, STUDIO_REFACTOR_RENAME, symbol, name);
+}
+
+bool studio_refactor_member_rename(studio *s, reference_symbol symbol, const char *name, const char *new_name)
+{
+    if (!app_scene_authoring_refactor_reaches(s->scene, symbol)) {
+        return false;
+    }
+    begin(s, STUDIO_REFACTOR_RENAME, symbol, name);
+    snprintf(s->refactor.name, sizeof s->refactor.name, "%s", new_name);
+    plan(s);
+    return true;
+}
+
+/* What still uses a symbol, as "Asset › Place". */
+static void describe_uses(studio *s, reference_symbol symbol)
+{
+    const reference_index *index = app_scene_authoring_asset_index(s->scene);
+    const reference **uses = NULL;
+    refactor_blockers(index, symbol, &uses);
+    for (int i = 0; i < acount(uses); i++) {
+        char place[192];
+        refactor_describe(index, uses[i], place, sizeof place);
+        studio_refactor_use use;
+        snprintf(use.text, sizeof use.text, "%s", place);
+        apush(s->refactor.uses, use);
+    }
+    afree(uses);
+}
+
+bool studio_refactor_confirm_delete(
+    studio *s,
+    reference_symbol symbol,
+    const char *name,
+    studio_member_kind member,
+    uint64_t id
+)
+{
+    app_scene_authoring_refresh_asset_index(s->scene);
+    const reference **uses = NULL;
+    refactor_blockers(app_scene_authoring_asset_index(s->scene), symbol, &uses);
+    bool used = acount(uses) > 0;
+    afree(uses);
+    if (!used) {
+        return false;
+    }
+    begin(s, STUDIO_REFACTOR_DELETE, symbol, name);
+    s->refactor.member = member;
+    s->refactor.member_id = id;
+    describe_uses(s, symbol);
+    return true;
+}
+
+/* ---------- Applying ---------- */
+
+static void offer_undo(studio *s, app_refactor *undo, const char *title, int assets)
+{
+    studio_refactor *r = &s->refactor;
+    app_refactor_free(r->undo);
+    r->undo = undo;
+    char description[64];
+    snprintf(description, sizeof description, "%d %s", assets, assets == 1 ? "asset" : "assets");
+    kit_toast_dismiss(s->kit, r->undo_toast);
+    r->undo_toast = kit_toast(
+        s->kit,
+        0,
+        &(
+            kit_toast_desc
+        ){ .title = title, .description = description, .action = "Undo", .duration = 6 }
+    );
+    studio_record(s, KIT_TOAST_DEFAULT, title);
+}
+
+static void refused(studio *s, const char *title, const char *error)
+{
+    kit_toast(s->kit, 0, &(kit_toast_desc){ .type = KIT_TOAST_WARNING, .title = title, .description = error });
+}
+
+/* Applies a plan; renaming the open graph asset keeps its graph's camera. */
+static int apply_plan(studio *s, const app_refactor *plan, app_refactor **undo, char *error, size_t size)
+{
+    const char *id = s->scene->graph_document_id;
+    char *open = id ? xstrdup(id) : NULL;
+    int result = app_scene_authoring_apply_refactor(s->scene, plan, undo, error, size);
+    for (int i = 0; result == 0 && open && i < app_refactor_count(plan); i++) {
+        app_refactor_asset asset = app_refactor_at(plan, i);
+        if (asset.renamed && !strcmp(asset.name, open) && s->scene->graph_document_id &&
+            !strcmp(asset.renamed, s->scene->graph_document_id)) {
+            sg_keep_graph_view(s);
+        }
+    }
+    free(open);
+    return result;
+}
+
+static void apply(studio *s, const app_refactor *plan, const char *title)
+{
+    app_refactor *undo = NULL;
+    char error[256] = "";
+    if (apply_plan(s, plan, &undo, error, sizeof error) != 0) {
+        refused(s, "Nothing changed", error);
+        return;
+    }
+    offer_undo(s, undo, title, app_refactor_count(plan));
+}
+
+static void apply_rename(studio *s)
+{
+    studio_refactor *r = &s->refactor;
+    if (r->source_project) {
+        asset_code *code = source_code(s, r->source_path);
+        if (!code || strcmp(r->source_before, asset_code_text(code)) ||
+            asset_code_dirty(code)) {
+            snprintf(r->error, sizeof r->error, "Source changed; reopen Rename");
+            return;
+        }
+    }
+    if (r->source_path[0] && !r->source_project) {
+        if (!r->source_after ||
+            !studio_code_replace(s, r->source_path, r->source_before, r->source_after, r->source_metadata)) {
+            snprintf(r->error, sizeof r->error, "Source changed; reopen Rename");
+            return;
+        }
+        studio_report(s, "Renamed symbol");
+        close_state(r);
+        return;
+    }
+    char title[192];
+    snprintf(title, sizeof title, "Renamed %s", r->title);
+    apply(s, r->plan, title);
+    close_state(r);
+}
+
+bool studio_asset_refactorable(const reference_asset *asset)
+{
+    return asset && !asset->unresolved && asset->kind != REFERENCE_ASSET_SCENE &&
+           asset->kind != REFERENCE_ASSET_SYSTEM &&
+           (asset->kind != REFERENCE_ASSET_UI ||
+            studio_asset_nameable(asset, REFERENCE_ASSET_UI));
+}
+
+/* Deletes an asset's file, or an event definition's. */
+static void delete_asset(studio *s, reference_symbol symbol, const char *name)
+{
+    app_refactor *plan = NULL;
+    char error[256] = "";
+    char title[192];
+    snprintf(title, sizeof title, "Deleted %s", name);
+    if (app_scene_authoring_plan_delete(s->scene, symbol, &plan, error, sizeof error) !=
+        0) {
+        refused(s, "Can't delete", error);
+        return;
+    }
+    apply(s, plan, title);
+    app_refactor_free(plan);
+}
+
+void studio_refactor_delete_asset(studio *s, int asset)
+{
+    const reference_asset *
+        found = reference_index_asset_at(app_scene_authoring_asset_index(s->scene), asset);
+    if (!studio_asset_refactorable(found)) {
+        return;
+    }
+    reference_symbol symbol = { .kind = REFERENCE_SYMBOL_ASSET, .asset = asset };
+    char name[128];
+    snprintf(name, sizeof name, "%s", found->name);
+    if (!studio_refactor_confirm_delete(s, symbol, name, STUDIO_MEMBER_NONE, 0)) {
+        delete_asset(s, symbol, name);
+    }
+}
+
+void studio_refactor_rename_asset(studio *s, int asset)
+{
+    const reference_asset *
+        found = reference_index_asset_at(app_scene_authoring_asset_index(s->scene), asset);
+    if (studio_asset_refactorable(found)) {
+        open_rename(
+            s,
+            (reference_symbol){ .kind = REFERENCE_SYMBOL_ASSET, .asset = asset },
+            found->name
+        );
+    }
+}
+
+static void confirm_delete(studio *s)
+{
+    studio_refactor *r = &s->refactor;
+    if (r->member) {
+        studio_members_delete_now(s, r->member, r->member_id);
+    } else {
+        char name[128];
+        snprintf(name, sizeof name, "%s", r->title);
+        delete_asset(s, resolved(s), name);
+    }
+    close_state(r);
+}
+
+/* ---------- Symbols ---------- */
+
+const char *studio_event_renameable(const studio *s, const node *n)
+{
+    if (studio_node_reactive(s, n)) {
+        return NULL;
+    }
+    const char *name = n && n->desc ? n->desc->name : "";
+    bool event = !strcmp(name, "Event") || !strcmp(name, "Call Event") ||
+                 !strcmp(name, "Send Event");
+    return event && n->reference_name && n->reference_name[0] &&
+                   !game_host_event_reserved(n->reference_name)
+             ? n->reference_name
+             : NULL;
+}
+
+void studio_refactor_rename_event(studio *s, const char *event)
+{
+    if (game_host_event_reserved(event)) {
+        return;
+    }
+    app_scene_authoring_refresh_asset_index(s->scene);
+    reference_symbol symbol = {
+        .kind = REFERENCE_SYMBOL_EVENT,
+        .asset = reference_index_find_name(app_scene_authoring_asset_index(s->scene), REFERENCE_ASSET_EVENT, event),
+        .name = event,
+    };
+    open_rename(s, symbol, event);
+}
+
+/* ---------- The popover (Refactor.rml, the `refactor` source) ---------- */
+
+/* Ids in Refactor.rml. */
+#define POPOVER_ID "refactor"
+#define NAME_ID "refactor-name"
+
+/* What the popover lists: a rename's assets and its mentions, or what
+   still uses a symbol being deleted. */
+typedef struct
+{
+    uint32_t icon;
+    char label[192];
+    char meta[64];
+} listed_row;
+
+static void list_row(listed_row **rows, uint32_t icon, const char *label, const char *meta)
+{
+    apush(*rows, ((listed_row){ .icon = icon }));
+    snprintf(alast(*rows).label, sizeof alast(*rows).label, "%s", label);
+    snprintf(alast(*rows).meta, sizeof alast(*rows).meta, "%s", meta);
+}
+
+static void list_more(listed_row **rows, int more)
+{
+    char text[32];
+    snprintf(text, sizeof text, "%d more", more);
+    list_row(rows, KIT_ICON_MORE, text, "");
+}
+
+static bool planned_now(const studio_refactor *r)
+{
+    return (r->source_path[0] && !r->source_project ? r->source_after != NULL
+                                                    : r->plan != NULL) &&
+           !strcmp(r->planned, r->name);
+}
+
+/* A rename lists each asset it rewrites with the name it takes or how many
+   changes it makes, LISTED at most, and how often prose mentions it. */
+static void plan_rows(const studio_refactor *r, listed_row **rows)
+{
+    int count = app_refactor_count(r->plan);
+    for (int i = 0; i < count && i < LISTED; i++) {
+        app_refactor_asset asset = app_refactor_at(r->plan, i);
+        char meta[64];
+        if (asset.renamed) {
+            snprintf(meta, sizeof meta, "%s", asset.renamed);
+        } else {
+            snprintf(meta, sizeof meta, "%d", asset.changes);
+        }
+        list_row(rows, studio_asset_kind_icon(asset.kind), asset.name, meta);
+    }
+    if (count > LISTED) {
+        list_more(rows, count - LISTED);
+    }
+    int mentions = app_refactor_mentions(r->plan);
+    if (mentions) {
+        char text[48];
+        snprintf(text, sizeof text, "%d %s", mentions, mentions == 1 ? "mention" : "mentions");
+        list_row(rows, KIT_ICON_WARNING, text, "");
+    }
+}
+
+static listed_row *rows_of(const studio_refactor *r)
+{
+    listed_row *rows = NULL;
+    if (r->mode == STUDIO_REFACTOR_RENAME && planned_now(r)) {
+        if (r->source_path[0] && !r->source_project) {
+            list_row(&rows, KIT_ICON_EXPRESSION, r->source_path, "Shared Undo");
+        } else {
+            plan_rows(r, &rows);
+        }
+    }
+    for (int i = 0;
+         r->mode == STUDIO_REFACTOR_DELETE && i < acount(r->uses) && i < LISTED;
+         i++) {
+        list_row(&rows, KIT_ICON_REFERENCES, r->uses[i].text, "");
+    }
+    if (r->mode == STUDIO_REFACTOR_DELETE && acount(r->uses) > LISTED) {
+        list_more(&rows, acount(r->uses) - LISTED);
+    }
+    return rows;
+}
+
+static const char *const ROW_TEXTS[] = { "icon", "label", "meta" };
+static const char *const ITEM_TEXTS[] = { "icon", "label", "shortcut" };
+
+static void add_texts(yyjson_mut_doc *doc, yyjson_mut_val *obj, const char *const *names, size_t count)
+{
+    for (size_t i = 0; i < count; i++) {
+        yyjson_mut_obj_add_strcpy(doc, obj, names[i], "");
+    }
+}
+
+void studio_refactor_add(yyjson_mut_doc *doc)
+{
+    yyjson_mut_val *r = yyjson_mut_obj_add_obj(doc, yyjson_mut_doc_get_root(doc), "refactor");
+    yyjson_mut_obj_add_strcpy(doc, r, "title", "");
+    yyjson_mut_obj_add_strcpy(doc, r, "error", "");
+    yyjson_mut_obj_add_bool(doc, r, "rename", false);
+    yyjson_mut_obj_add_arr(doc, r, "rows");
+    yyjson_mut_val *apply = yyjson_mut_obj_add_obj(doc, r, "apply");
+    add_texts(doc, apply, ITEM_TEXTS, sizeof ITEM_TEXTS / sizeof *ITEM_TEXTS);
+    yyjson_mut_obj_add_bool(doc, apply, "checked", false);
+    yyjson_mut_obj_add_bool(doc, apply, "disabled", false);
+}
+
+static bool put_glyph(yyjson_mut_doc *doc, yyjson_mut_val *obj, const char *name, uint32_t icon)
+{
+    char glyph[5];
+    studio_glyph(glyph, icon);
+    return ui_data_put_text(doc, obj, name, glyph);
+}
+
+static bool show_rows(yyjson_mut_doc *doc, yyjson_mut_val *array, const listed_row *rows)
+{
+    int had = (int)yyjson_mut_arr_size(array);
+    bool changed = had != acount(rows);
+    for (int i = had; i < acount(rows); i++) {
+        add_texts(doc, yyjson_mut_arr_add_obj(doc, array), ROW_TEXTS, sizeof ROW_TEXTS / sizeof *ROW_TEXTS);
+    }
+    for (int i = had; i > acount(rows); i--) {
+        yyjson_mut_arr_remove_last(array);
+    }
+    yyjson_mut_val *item;
+    yyjson_mut_arr_iter it = yyjson_mut_arr_iter_with(array);
+    for (int i = 0; (item = yyjson_mut_arr_iter_next(&it)); i++) {
+        changed |= put_glyph(doc, item, "icon", rows[i].icon);
+        changed |= ui_data_put_text(doc, item, "label", rows[i].label);
+        changed |= ui_data_put_text(doc, item, "meta", rows[i].meta);
+    }
+    return changed;
+}
+
+/* The title, a rename's error, its rows and the action that applies:
+   Rename once the name shown was planned, or Delete. */
+bool studio_refactor_sync(studio *s, const studio_panel_sync *at)
+{
+    studio_refactor *r = &s->refactor;
+    if (!r->mode || at->preview) {
+        return false;
+    }
+    bool rename = r->mode == STUDIO_REFACTOR_RENAME;
+    bool changed = ui_data_put_text(at->doc, at->variable, "title", r->title);
+    changed |= ui_data_put_text(at->doc, at->variable, "error", rename ? r->error : "");
+    changed |= ui_data_put_bool(at->variable, "rename", rename);
+    listed_row *rows = rows_of(r);
+    changed |= show_rows(at->doc, yyjson_mut_obj_get(at->variable, "rows"), rows);
+    afree(rows);
+    yyjson_mut_val *apply = yyjson_mut_obj_get(at->variable, "apply");
+    changed |= ui_data_put_text(at->doc, apply, "label", rename ? "Rename" : "Delete");
+    changed |= put_glyph(at->doc, apply, "icon", rename ? KIT_ICON_EDIT : KIT_ICON_TRASH);
+    return ui_data_put_bool(apply, "disabled", rename && !planned_now(r)) || changed;
+}
+
+/* name: the name as typed; enter: Enter in the name, which shows what a new
+   name rewrites, and applies it once shown; apply: the Rename or Delete
+   item. */
+void studio_refactor_action(studio *s, const char *action, const ui_activation *a)
+{
+    studio_refactor *r = &s->refactor;
+    if (!strcmp(action, "name") && a->argc && r->mode == STUDIO_REFACTOR_RENAME) {
+        snprintf(r->name, sizeof r->name, "%s", a->args[0]);
+    } else if (!strcmp(action, "enter") && r->mode == STUDIO_REFACTOR_RENAME) {
+        if (planned_now(r)) {
+            apply_rename(s);
+        } else if (strcmp(r->name, r->title)) {
+            plan(s);
+        }
+    } else if (!strcmp(action, "apply") && r->mode == STUDIO_REFACTOR_RENAME) {
+        if (planned_now(r)) {
+            apply_rename(s);
+        }
+    } else if (!strcmp(action, "apply") && r->mode == STUDIO_REFACTOR_DELETE) {
+        confirm_delete(s);
+    }
+}
+
+/* Shows the popover at the pointer, its name field focused with the name
+   selected, as the kit's popover opened. */
+static void show(studio *s, rml_element *popover)
+{
+    studio_refactor *r = &s->refactor;
+    float ratio = studio_pixel_ratio(s);
+    popover_show(
+        popover,
+        &(popover_anchor){ .side = POPOVER_POINT,
+                           .box = { s->in.mouse_x * ratio, s->in.mouse_y * ratio, 0, 0 } }
+    );
+    rml_element *field = rml_element_query_selector(popover, "#" NAME_ID);
+    if (field && r->mode == STUDIO_REFACTOR_RENAME) {
+        rml_element_set_value(field, r->name);
+        rml_element_focus(field, true);
+        rml_element_select(field);
+    }
+}
+
+void studio_refactor_frame(studio *s)
+{
+    kit *k = s->kit;
+    studio_refactor *r = &s->refactor;
+    if (r->undo_toast && kit_toast_action(k, r->undo_toast)) {
+        r->undo_toast = 0;
+        app_refactor *undo = r->undo;
+        r->undo = NULL;
+        app_refactor *redo = NULL;
+        char error[256] = "";
+        if (apply_plan(s, undo, &redo, error, sizeof error) == 0) {
+            studio_report(s, "Undo");
+        } else {
+            refused(s, "Can't undo", error);
+        }
+        app_refactor_free(undo);
+        app_refactor_free(redo);
+    }
+    /* Its document lives while it asks; a host the kit removes lets its
+       mount go first. */
+    if (!r->mode) {
+        if (r->mounted) {
+            studio_ui_panel_detach(s, "Refactor");
+            r->mounted = false;
+        }
+        return;
+    }
+    kit_document_begin(k, "refactor", "bar-place", true);
+    rml_element *host = studio_ui_panel(s, "refactor", "Refactor");
+    kit_document_end(k);
+    r->mounted = true;
+    rml_element *popover = host ? rml_element_query_selector(host, "#" POPOVER_ID)
+                                : NULL;
+    if (popover && r->opening) {
+        show(s, popover);
+        r->opening = false;
+    } else if (popover && r->mode && !popover_open(popover)) {
+        close_state(r);
+    }
+}
+
+void studio_refactor_free(studio *s)
+{
+    close_state(&s->refactor);
+    app_refactor_free(s->refactor.undo);
+    s->refactor.undo = NULL;
+}

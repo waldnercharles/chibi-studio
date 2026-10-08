@@ -1,0 +1,20 @@
+/* A row of a tree or list, as the Outliner's and Assets' native rows: depth
+   indent, twisty, icon, label, meta and the use's children trailing (the
+   Outliner's eye and lock). Alias the row as data-alias-item: an object
+   with label, icon (a glyph), meta, depth, parent (it has children), open,
+   selected, active, marked and hidden; the twisty writes item.open, which
+   is UI-local. A panel whose selection changes often keeps it out of its
+   rows: give each item a key and alias the selected and the active key as
+   data-alias-selection and data-alias-active, from a variable of their
+   own, so a selection re-evaluates only the rows' two state views (the
+   flags still mark rows the keys don't). Put data-drag, data-drop and
+   data-drop-zones (src/ui/drag.h) on the use: the row's marks follow them
+   here. The rows' own look is the theme's .tree-row (theme/tree.rcss). */
+body { display: block; }
+/* A drop target that takes the drag, then the one under the pointer, and
+   where in it a drop lands: a line before or after it, or filled. */
+body[data-drop-accept] .tree-row { border-color: var(--primary-edge); }
+body[data-drop-over] { background-color: transparent; }
+body[data-drop-over] .tree-row { border-color: var(--primary); background-color: var(--primary-soft); }
+body[data-drop-zone=before] .tree-row { border-color: transparent; border-top-color: var(--primary); background-color: transparent; }
+body[data-drop-zone=after] .tree-row { border-color: transparent; border-bottom-color: var(--primary); background-color: transparent; }

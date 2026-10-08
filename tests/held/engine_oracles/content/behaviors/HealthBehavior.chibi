@@ -1,0 +1,77 @@
+behavior "HealthBehavior" {
+    owner "ecs.entity";
+    macro HealthChanged(Current: double, RemainingHealth: double) -> () {
+        exit True;
+        exit False;
+        if (Current > RemainingHealth) {
+            goto True;
+        } else {
+            goto False;
+        }
+    }
+    on Damage as damage(Amount: int = 0, Source: handle<"ecs.entity"> = 0) {
+        if (convert<"To Real">(damage.Amount) > 0) {
+            "Apply Damage"(Current: &component("GAME.GameHealth", "current"), Maximum: &component("GAME.GameHealth", "maximum"), Amount: damage.Amount, Source: damage.Source);
+        } else {
+        }
+    }
+    on Died as died(Source: handle<"ecs.entity"> = 0) {
+        if (cast<double>(&component("GAME.GameHealth", "current")) <= 0) {
+            await "Notify Encounter"();
+            destroy_entity(Entity: self);
+        } else {
+        }
+    }
+    function "Apply Damage"(Current: int = 0, Maximum: int = 0, Amount: int = 0, Source: handle<"ecs.entity"> = 0) -> () {
+        depth_limit 0;
+        value has_gamedash = has_game_dash();
+        value remaining_health: double = (clamp(convert<"To Real">(&local.Current) - clamp(convert<"To Real">(entry.Amount), 0, convert<"To Real">(&local.Current)), 0, convert<"To Real">(entry.Maximum)));
+        value self_2 = engine["Self"]();
+        value self_3 = engine["Self"]();
+        action current_remaininghealth = HealthChanged(Current: plain double = convert<"To Real">(entry.Current), RemainingHealth: plain double = remaining_health);
+        local Current = entry.Current;
+        local "Remaining Health" = remaining_health;
+        after entry {
+            if (convert<"To Real">(entry.Current) > 0) {
+                if (has_gamedash) {
+                    if (cast<double>(&component("GAME.GameDash", "remaining")) > 0) {
+                        return();
+                    } else {
+                        current_remaininghealth();
+                    }
+                } else {
+                    current_remaininghealth();
+                }
+            } else {
+                return();
+            }
+        }
+        after current_remaininghealth.True {
+            await set_game_health_current(Value: convert<"To Integer">(&local."Remaining Health"), Target: 0);
+            await send_event<"Damaged">(Entity: self_2, Amount: int = subtract(A: int = &local.Current, B: int = convert<"To Integer">(&local."Remaining Health")), Source: entry.Source);
+            if (remaining_health <= 0) {
+                await send_event<"Died">(Entity: self_3, Source: entry.Source);
+                return();
+            } else {
+                return();
+            }
+        }
+        after current_remaininghealth.False {
+            return();
+        }
+    }
+    function "Notify Encounter"() -> () {
+        depth_limit 0;
+        value has_gameencountermember = has_game_encounter_member();
+        after entry {
+            if (has_gameencountermember) {
+                foreach (foreach_2 in find_entities_with_component(Component: "GAME.GameEncounter")) {
+                    send_event<"RefreshEncounter">(Entity: foreach_2);
+                }
+                return();
+            } else {
+                return();
+            }
+        }
+    }
+}

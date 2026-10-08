@@ -1,0 +1,23 @@
+/* The Text Editor's header (studio_code.c), in its AreaHeader's controls.
+   For a UI document: Back and Forward through Go to Definition's jumps and
+   the graphs visited, the part (RML or RCSS), the file with its unsaved
+   dot, Find, Vim's mode, the problems' count, which steps to the next, an
+   Invalid chip while the text keeps its last valid version, and the apply
+   mode. For an asset's Code source: its name, Unsaved, Save and the apply
+   mode. */
+body, .code-head { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.code-head > .btn, .code-head > .segmented, .code-head > .segmented .seg { flex: 0 0 auto; }
+.code-parts, .code-apply { display: flex; flex: 0 0 auto; }
+.code-history { display: flex; flex: 0 0 auto; align-items: center; gap: 1dp; margin-right: 4dp; }
+.code-parts .segmented, .code-apply .segmented { flex: 0 0 auto; }
+.code-parts .seg, .code-apply .seg { flex: 0 0 auto; }
+.code-file { display: flex; align-items: center; gap: 6dp; padding: 0dp 6dp; flex: 0 1 auto; min-width: 0dp; white-space: nowrap; color: var(--foreground); }
+.code-file .icon { color: var(--muted-foreground); }
+.code-file .icon, .code-file .dirty-dot { flex: 0 0 auto; }
+.code-file .name { min-width: 0dp; overflow: hidden; text-overflow: ellipsis; }
+.code-runtime, .code-mode { flex: 0 0 auto; white-space: nowrap; }
+.code-runtime { max-width: 100dp; overflow: hidden; text-overflow: ellipsis; }
+/* An asset's source names it in one span, not the UI document's file group. */
+span.code-file { display: block; overflow: hidden; text-overflow: ellipsis; }
+.code-problem { display: flex; align-items: center; gap: 4dp; padding: 0dp 6dp; flex: 0 0 auto; color: var(--destructive); }
+.seg { tab-index: auto; }

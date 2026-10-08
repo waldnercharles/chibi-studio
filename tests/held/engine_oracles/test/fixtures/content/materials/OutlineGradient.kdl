@@ -1,0 +1,415 @@
+version 3
+name "OutlineGradient"
+domain "material"
+id_counter 81
+description "An emissive ring surface. Flash remains the named DamageFlashBehavior override; pulse and ring masking use ShaderMath."
+(array)graphs {
+    - {
+        kind "event"
+        name ""
+        (array)nodes {
+            - {
+                id 29
+                type "Shader Surface Output"
+                x 1280.0
+                y 170.0
+                inputs {
+                    "Base Color" {
+                        default x=1.0 y=1.0 z=1.0
+                    }
+                    Emission {
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                    Roughness 0.65
+                    Normal {
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                    Unlit #true
+                    Height id=80
+                }
+            }
+            - {
+                id 37
+                type "Shader Position"
+                x 0.0
+                y 0.0
+                outputs {
+                    Position {
+                        default x=0.0 y=0.0
+                    }
+                }
+            }
+            - {
+                id 39
+                type "Shader Parameter"
+                reference_name "Radius"
+                outputs {
+                    Value flags=0 group=0 default=35.0
+                }
+            }
+            - {
+                id 41
+                type "Shader Parameter"
+                reference_id 1
+                reference_name "Width"
+                outputs {
+                    Value flags=0 group=0 default=5.0
+                }
+            }
+            - {
+                id 43
+                type "Call Pure Function"
+                x 330.0
+                y 30.0
+                reference_id 102
+                reference_name "Ring Mask"
+                reference_asset "ShaderMath"
+                inputs {
+                    Position {
+                        id 44
+                        declaration_id 104
+                        type "struct"
+                        type_name "ShaderVec2"
+                        default x=0.0 y=0.0
+                    }
+                    Radius id=45 declaration_id=105 type="float" default=35.0
+                    Width id=46 declaration_id=106 type="float" default=3.0
+                }
+                outputs {
+                    Mask id=47 declaration_id=108 type="float"
+                }
+            }
+            - {
+                id 48
+                type "Shader Parameter"
+                reference_id 2
+                reference_name "Color"
+                outputs {
+                    Value {
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 64
+                        group 0
+                        default x=0.05 y=0.6 z=1.0
+                    }
+                }
+            }
+            - {
+                id 50
+                type "Shader Parameter"
+                reference_id 5
+                reference_name "Color B"
+                outputs {
+                    Value {
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 64
+                        group 0
+                        default x=1.0 y=0.1 z=0.45
+                    }
+                }
+            }
+            - {
+                id 52
+                type "Call Pure Function"
+                x 340.0
+                y 420.0
+                reference_name "Horizontal Gradient"
+                inputs {
+                    Position {
+                        id 53
+                        type "struct"
+                        type_name "ShaderVec2"
+                        default x=0.0 y=0.0
+                    }
+                    Color {
+                        id 54
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 64
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                    "Color B" {
+                        id 55
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 64
+                        default x=1.0 y=1.0 z=1.0
+                    }
+                    Width id=56 type="float" default=100.0
+                }
+                outputs {
+                    Color {
+                        id 57
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 64
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                }
+            }
+            - id=58 type="Shader Time"
+            - {
+                id 60
+                type "Shader Parameter"
+                reference_id 3
+                reference_name "Speed"
+                outputs {
+                    Value flags=0 group=0 default=2.0
+                }
+            }
+            - {
+                id 62
+                type "Shader Parameter"
+                reference_id 4
+                reference_name "Flash"
+                outputs {
+                    Value flags=0 group=0
+                }
+            }
+            - {
+                id 64
+                type "Call Pure Function"
+                x 330.0
+                y 890.0
+                reference_id 56
+                reference_name "Pulse"
+                reference_asset "ShaderMath"
+                inputs {
+                    Time id=65 declaration_id=61 type="float"
+                    Speed id=66 declaration_id=62 type="float"
+                }
+                outputs {
+                    Brightness id=67 declaration_id=63 type="float"
+                }
+            }
+            - {
+                id 68
+                type "Shader Add"
+                x 600.0
+                y 830.0
+                inputs {
+                    A flags=0 group=0
+                    B flags=0 group=0 default=0.3
+                }
+                outputs {
+                    Value flags=0 group=0
+                }
+            }
+            - {
+                id 72
+                type "Shader Add"
+                x 860.0
+                y 830.0
+                inputs {
+                    A flags=0 group=0
+                    B flags=0 group=0
+                }
+                outputs {
+                    Value flags=0 group=0
+                }
+            }
+            - {
+                id 76
+                type "Shader Multiply"
+                x 990.0
+                y 440.0
+                inputs {
+                    A {
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 0
+                        group 0
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                    B flags=0 group=0
+                }
+                outputs {
+                    Value {
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 0
+                        group 0
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                }
+            }
+        }
+        (array)edges {
+            - from="37.Position" to="43.Position"
+            - from="37.Position" to="52.Position"
+            - from="39.Value" to="43.Radius"
+            - from="41.Value" to="43.Width"
+            - from="43.Mask" to="29.Opacity"
+            - from="48.Value" to="52.Color"
+            - from="50.Value" to="52.Color B"
+            - from="52.Color" to="29.Base Color"
+            - from="52.Color" to="76.A"
+            - from="58.Value" to="64.Time"
+            - from="60.Value" to="64.Speed"
+            - from="62.Value" to="72.B"
+            - from="64.Brightness" to="68.A"
+            - from="68.Value" to="72.A"
+            - from="72.Value" to="76.B"
+            - from="76.Value" to="29.Emission"
+        }
+    }
+    - {
+        id 1
+        kind "function"
+        name "Horizontal Gradient"
+        entry_id 2
+        return_id 7
+        call_depth_limit 64
+        (array)nodes {
+            - {
+                id 2
+                type "Function Entry"
+                x 0.0
+                y 0.0
+                (array)outputs {
+                    - {
+                        id 3
+                        name "Position"
+                        type "struct"
+                        type_name "ShaderVec2"
+                        kind "data"
+                        default x=0.0 y=0.0
+                    }
+                    - {
+                        id 4
+                        name "Color"
+                        type "struct"
+                        type_name "ShaderVec3"
+                        kind "data"
+                        flags 64
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                    - {
+                        id 5
+                        name "Color B"
+                        type "struct"
+                        type_name "ShaderVec3"
+                        kind "data"
+                        flags 64
+                        default x=1.0 y=1.0 z=1.0
+                    }
+                    - id=6 name="Width" type="float" kind="data" default=100.0
+                }
+            }
+            - {
+                id 7
+                type "Return"
+                x 1460.0
+                y 0.0
+                (array)inputs {
+                    - {
+                        id 8
+                        name "Color"
+                        type "struct"
+                        type_name "ShaderVec3"
+                        kind "data"
+                        flags 64
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                }
+            }
+            - {
+                id 10
+                type "Shader X"
+                x 270.0
+                y 0.0
+                inputs {
+                    Value {
+                        type "struct"
+                        type_name "ShaderVec2"
+                        flags 0
+                        group 0
+                        default x=0.0 y=0.0
+                    }
+                }
+            }
+            - {
+                id 13
+                type "Shader Divide"
+                x 500.0
+                y 0.0
+                inputs {
+                    A flags=0 group=0
+                    B flags=0 group=0 default=100.0
+                }
+                outputs {
+                    Value flags=0 group=0
+                }
+            }
+            - {
+                id 17
+                type "Shader Add"
+                x 730.0
+                y 0.0
+                inputs {
+                    A flags=0 group=0
+                    B flags=0 group=0 default=0.5
+                }
+                outputs {
+                    Value flags=0 group=0
+                }
+            }
+            - {
+                id 21
+                type "Shader Saturate"
+                x 960.0
+                y 0.0
+                inputs {
+                    Value flags=0 group=0
+                }
+                outputs {
+                    Value flags=0 group=0
+                }
+            }
+            - {
+                id 24
+                type "Shader Mix"
+                x 1200.0
+                y 0.0
+                inputs {
+                    A {
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 0
+                        group 0
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                    B {
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 0
+                        group 0
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                    Alpha flags=0 group=0
+                }
+                outputs {
+                    Value {
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 0
+                        group 0
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                }
+            }
+        }
+        (array)edges {
+            - from="2.Position" to="10.Value"
+            - from="2.Color" to="24.A"
+            - from="2.Color B" to="24.B"
+            - from="2.Width" to="13.B"
+            - from="10.Value" to="13.A"
+            - from="13.Value" to="17.A"
+            - from="17.Value" to="21.Value"
+            - from="21.Value" to="24.Alpha"
+            - from="24.Value" to="7.Color"
+        }
+    }
+}

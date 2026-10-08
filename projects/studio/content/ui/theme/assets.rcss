@@ -1,0 +1,53 @@
+/* An asset's tile (projects/studio's Tile, in Assets' grid), after Unity's
+   Project window and Unreal's Content Browser: a thumbnail over a name,
+   with the asset's kind badged in the picture's corner. Until a thumbnail
+   is ready the tile shows its kind's icon, as a skeleton; while a partly
+   loaded one shows, a spinner marks the other corner. The picture is a
+   decorator and the skeleton hides by visibility, so a thumbnail arriving
+   lays nothing out. */
+
+.tile {
+    display: flex; flex-direction: column; box-sizing: border-box; padding: 3dp;
+    border: 1dp transparent; border-radius: var(--r-lg); tab-index: none;
+    transition: background-color 0.11s cubic-out;
+}
+.tile:hover { background-color: var(--accent); }
+.tile[data-selected] { background-color: var(--selected); }
+.tile-art {
+    position: relative; display: block; flex: 1 1 0dp; overflow: hidden;
+    border-radius: var(--r); background-color: var(--muted); pointer-events: none;
+}
+.tile .glyph {
+    position: absolute; left: 0dp; top: 50%; width: 100%; height: 24dp; margin-top: -12dp;
+    line-height: 24dp; text-align: center; font-size: 20dp; color: var(--faint-foreground);
+}
+.tile[data-unresolved] .glyph { color: var(--warning); }
+.tile .picture { position: absolute; left: 0dp; top: 0dp; width: 100%; height: 100%; }
+.tile[data-ready] .glyph { visibility: hidden; }
+.tile .badge {
+    position: absolute; right: 3dp; bottom: 3dp; padding: 2dp; border-radius: 3dp;
+    font-size: 10dp; line-height: 10dp; color: #ffffffd9; background-color: #0000008c;
+}
+.tile:not([data-ready]) .badge { visibility: hidden; }
+/* More of the picture is loading, as a scene's streamed terrain: a spinner
+   on a round chip like the badge's, in the opposite corner. */
+.tile .spin {
+    position: absolute; left: 3dp; bottom: 3dp; width: 14dp; height: 14dp; border-radius: 7dp;
+    font-size: 10dp; line-height: 14dp; text-align: center;
+    color: #ffffffd9; background-color: #0000008c;
+    animation: 0.9s linear infinite tile-spin;
+}
+.tile:not([data-loading]) .spin { display: none; }
+@keyframes tile-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.tile .name {
+    display: block; height: 18dp; line-height: 18dp; padding: 0dp 2dp; text-align: center;
+    font-size: var(--studio-font-11, 11dp); color: var(--foreground); pointer-events: none;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tile[data-selected] .name { color: var(--strong); }
+
+/* Unreal's hover thumbnail: the large preview above the tooltip's text,
+   which keeps to its width. */
+.tooltip[data-image] { width: 256dp; }
+.tooltip .tip-image { display: block; width: 256dp; height: 256dp; margin: 0.28em 0em 0.5em; border-radius: var(--r); }
+.tooltip[data-image] .tip-head span { overflow: hidden; text-overflow: ellipsis; }

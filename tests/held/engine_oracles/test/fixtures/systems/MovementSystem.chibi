@@ -1,0 +1,13 @@
+system "MovementSystem" {
+    owner "ecs.entity";
+    dataflow;
+    value get_gameinput = get_game_input();
+    value get_gamemovement = get_game_movement();
+    value multiply: struct<"CF_V2"> = multiply(A: plain struct<"CF_V2"> = convert<"Unwrap_GameInput">(get_gameinput), B: plain float = convert<"Unwrap_GameMovement">(get_gamemovement));
+    value multiply_2: struct<"CF_V2"> = multiply(A: plain struct<"CF_V2"> = multiply, B: plain float = tick.DeltaSeconds);
+    value get_gametransform = get_game_transform();
+    value add: struct<"CF_V2"> = add(A: plain struct<"CF_V2"> = get_gametransform, B: plain struct<"CF_V2"> = multiply_2);
+    on Tick as tick(DeltaSeconds: float = 0.0) {
+        set_game_transform(Value: add);
+    }
+}

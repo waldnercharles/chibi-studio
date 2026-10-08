@@ -1,0 +1,8 @@
+<section class="panel" data-attrif-data-open="panel.open">
+  <div class="panel-head" data-event-click="panel.open = !panel.open">
+    <span class="icon chev">&#xeab4;</span>
+    <span class="title">{{ panel.title }}</span>
+    <span class="badge override" data-if="panel.badge != ''">{{ panel.badge }}</span>
+  </div>
+  <div class="panel-body" data-if="panel.open"><slot/></div>
+</section>

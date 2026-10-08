@@ -1,0 +1,13 @@
+name "InputEntity"
+components {
+    GAME.GameAppearance antialias=1.0 color=1938931455 height=32.0 width=32.0
+    GAME.GameBody type="Dynamic"
+    GAME.GameCollider category=1 radius=16.0
+    GAME.GameHealth current=100 maximum=100
+    (object)GAME.GameInput
+    GAME.GameMovement speed=180.0
+    (object)GAME.GameOrientation
+    GAME.GameTransform x=320.0 y=180.0
+    (object)GAME.GameVelocity
+}
+(array)behaviors "InputBehavior"

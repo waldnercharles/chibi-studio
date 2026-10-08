@@ -1,0 +1,13 @@
+version 3
+name "RowClicked"
+domain "event"
+id_counter 4
+description "A row was clicked; Key names it, and Shift and Mod (Command on a Mac, Control elsewhere) were held."
+(array)variables {
+    - id=1 name="Key" type="const char *" category="Payload"
+    - id=2 name="Shift" type="bool" category="Payload"
+    - id=3 name="Mod" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

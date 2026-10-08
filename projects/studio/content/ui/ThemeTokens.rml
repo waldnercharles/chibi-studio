@@ -1,0 +1,19 @@
+<div class="panel" data-open="" data-for="section : theme.sections">
+  <div class="panel-head">
+    <span class="title">{{ section.file }}</span>
+    <span class="badge">{{ section.selector }}</span>
+  </div>
+  <div class="panel-body">
+    <div class="prop" data-for="row : section.rows">
+      <div class="label">{{ row.name }}</div>
+      <div class="control">
+        <div class="field text swatched" data-if="row.color">
+          <span class="swatch" data-style-background-color="row.value"/>
+          <input type="text" class="value" data-value-lazy="row.value"/>
+        </div>
+        <use ui="TextField" data-if="!row.color" data-alias-text="row.value"/>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="empty" data-if="theme.sections.size == 0">No theme</div>

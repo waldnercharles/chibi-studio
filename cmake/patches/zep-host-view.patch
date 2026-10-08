@@ -1,0 +1,163 @@
+--- a/include/zep/editor.h
++++ b/include/zep/editor.h
+@@ -385,6 +385,9 @@
+     void SetCommandText(const std::string& strCommand);
+ 
+     std::string GetCommandText() const;
++    // The command line and the window's airline take no room while the
++    // command line is empty and the config hides them.
++    bool CommandRegionHidden() const;
+     const std::vector<std::string>& GetCommandLines()
+     {
+         return m_commandLines;
+--- a/include/zep/window.h
++++ b/include/zep/window.h
+@@ -199,6 +199,16 @@
+ public:
+     // The cursor's cell in display pixels, for a host's IME and popups.
+     void GetCursorInfo(NVec2f& pos, NVec2f& size);
++    // The glyph the pointer rests on as last drawn, for a host's hover;
++    // invalid over no glyph.
++    GlyphIterator GetMouseBufferLocation() const
++    {
++        return m_mouseBufferLocation;
++    }
++    // Lines that do not wrap scroll left by `offset` display pixels; the text
++    // region spans x to y.
++    void SetTextOffsetX(float offset);
++    NVec2f GetTextRegionX() const;
+ 
+ private:
+ 
+@@ -259,6 +269,7 @@
+     long m_maxDisplayLines = 0;
+     int m_defaultLineSize = 0;
+     float m_xPad = 0.0f;
++    float m_textOffsetX = 0.0f; // The horizontal scroll, in pixels
+ 
+     // Tooltips
+     timer m_toolTipTimer; // Timer for when the tip is shown
+--- a/src/editor.cpp
++++ b/src/editor.cpp
+@@ -1061,6 +1061,11 @@
+     }
+ }
+ 
++bool ZepEditor::CommandRegionHidden() const
++{
++    return m_config.autoHideCommandRegion && GetCommandText().empty();
++}
++
+ std::string ZepEditor::GetCommandText() const
+ {
+     std::ostringstream str;
+@@ -1127,7 +1132,7 @@
+ {
+     auto& uiFont = m_pDisplay->GetFont(ZepTextType::UI);
+     auto commandCount = GetCommandLines().size();
+-    const float commandSize = uiFont.GetPixelHeight() * commandCount + DPI_X(textBorder) * 2.0f;
++    const float commandSize = CommandRegionHidden() ? 0.0f : uiFont.GetPixelHeight() * commandCount + DPI_X(textBorder) * 2.0f;
+     auto displaySize = m_editorRegion->rect.Size();
+ 
+     // Regions
+--- a/src/window.cpp
++++ b/src/window.cpp
+@@ -172,7 +172,7 @@
+     auto extra = GetBuffer().GetMode()->GetAirlines(*this);
+ 
+     auto lastSize = m_airlineRegion->fixed_size;
+-    m_airlineRegion->fixed_size = NVec2f(0.0f, float(GetEditor().GetDisplay().GetFont(ZepTextType::UI).GetPixelHeight() * (1 + extra.size())));
++    m_airlineRegion->fixed_size = NVec2f(0.0f, GetEditor().CommandRegionHidden() ? 0.0f : float(GetEditor().GetDisplay().GetFont(ZepTextType::UI).GetPixelHeight() * (1 + extra.size())));
+     if (m_airlineRegion->fixed_size != lastSize)
+     {
+         m_layoutDirty = true;
+@@ -271,7 +271,7 @@
+     m_layoutDirty = true;
+     m_bufferRegion->rect = region;
+ 
+-    m_airlineRegion->fixed_size = NVec2f(0.0f, float(GetEditor().GetDisplay().GetFont(ZepTextType::UI).GetPixelHeight()));
++    m_airlineRegion->fixed_size = NVec2f(0.0f, GetEditor().CommandRegionHidden() ? 0.0f : float(GetEditor().GetDisplay().GetFont(ZepTextType::UI).GetPixelHeight()));
+ 
+     m_defaultLineSize = GetEditor().GetDisplay().GetFont(ZepTextType::Text).GetPixelHeight();
+ }
+@@ -856,7 +856,7 @@
+     auto widgetMargins = DPI_VEC2(GetEditor().GetConfig().widgetMargins);
+     auto underlineHeight = DPI_Y(GetEditor().GetConfig().underlineHeight);
+     auto inlineMargins = DPI_VEC2(GetEditor().GetConfig().inlineWidgetMargins);
+-    auto screenPosX = m_textRegion->rect.Left() + m_xPad;
++    auto screenPosX = m_textRegion->rect.Left() + m_xPad - m_textOffsetX;
+     auto widgetMarkers = m_pBuffer->GetRangeMarkers(RangeMarkerType::Widget);
+     auto itrWidgetMarkers = widgetMarkers.begin();
+     auto tipTimeSeconds = timer_get_elapsed_seconds(m_toolTipTimer);
+@@ -1476,46 +1476,28 @@
+         {
+             m_indicatorRegion->fixed_size = NVec2f(0.0f);
+         }
+-
+-        // When wrapping text, we fit the text to the available window space
+-        if (ZTestFlags(GetWindowFlags(), WindowFlags::WrapText))
+-        {
+-            m_editRegion->flags = RegionFlags::Expanding;
+-            m_editRegion->fixed_size = NVec2f(0.0f);
+ 
+-            // First layout
+-            LayoutRegion(*m_bufferRegion);
+-
+-            // Then update the text alignment
+-            UpdateLineSpans();
+-        }
+-        else
+-        {
+-            // First update the text, since it is always the same size without wrapping
+-            UpdateLineSpans();
+-
+-            // Fix the edit region size at the text size
+-            m_editRegion->flags = RegionFlags::AlignCenter;
+-
+-            // Take into account the extra regions to the sides with padding
+-            m_editRegion->fixed_size = m_textSizePx;
+-            m_editRegion->fixed_size += m_numberRegion->fixed_size;
+-            m_editRegion->fixed_size += m_indicatorRegion->fixed_size;
+-
+-            m_editRegion->fixed_size.x += m_textRegion->padding.x + m_textRegion->padding.y;
+-            m_editRegion->fixed_size.x += m_numberRegion->padding.x + m_numberRegion->padding.y;
+-            m_editRegion->fixed_size.x += m_indicatorRegion->padding.x + m_indicatorRegion->padding.y;
+-
+-            LayoutRegion(*m_bufferRegion);
+-
+-            // Finally, we have to update the line visibility again because the layout has changed!
+-            UpdateVisibleLineRange();
+-        }
++        // The text fits the window's space; a host scrolls lines that do not
++        // wrap sideways (SetTextOffsetX) instead of centering them.
++        m_editRegion->flags = RegionFlags::Expanding;
++        m_editRegion->fixed_size = NVec2f(0.0f);
++        LayoutRegion(*m_bufferRegion);
++        UpdateLineSpans();
+ 
+         m_layoutDirty = false;
+     }
+ }
+ 
++void ZepWindow::SetTextOffsetX(float offset)
++{
++    m_textOffsetX = offset;
++}
++
++NVec2f ZepWindow::GetTextRegionX() const
++{
++    return NVec2f(m_textRegion->rect.Left(), m_textRegion->rect.Right());
++}
++
+ NVec2f ZepWindow::GetSpanPixelRange(SpanInfo& span) const
+ {
+     // Need to take account of the text rect offset
+@@ -1530,7 +1512,7 @@
+ 
+     NVec2f cursorSize;
+     bool found = false;
+-    float xPos = m_textRegion->rect.topLeftPx.x + m_xPad;
++    float xPos = m_textRegion->rect.topLeftPx.x + m_xPad - m_textOffsetX;
+ 
+     int count = 0;
+     for (auto ch : cursorBufferLine.lineCodePoints)

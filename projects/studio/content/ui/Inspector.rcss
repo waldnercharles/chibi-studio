@@ -1,0 +1,59 @@
+/* The UI Inspector (studio_inspect.c; studio_sources.c binds `inspector`).
+   The tree, a List of TreeRows over the window the source shows of every
+   element, and the details scroll apart, side by side in a wide area. */
+body { overflow: hidden; padding: 0dp; }
+.inspector { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display: flex; flex-direction: column; }
+.toolbar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6dp; height: var(--studio-height-30, 30dp); padding: 0dp 6dp;
+  border-bottom: 1dp var(--line);
+}
+.toolbar .targets { flex: 0 0 auto; margin-left: auto; }
+.toolbar .targets .seg { flex: 0 0 auto; }
+.segmented .seg.on { background-color: var(--primary); color: var(--primary-foreground); }
+.panes { flex: 1 1 0dp; display: flex; flex-direction: column; }
+.inspector.wide .panes { flex-direction: row; }
+.inspect-tree { position: relative; flex: 1 1 0dp; }
+.inspect-tree .list { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; height: auto; padding: 0dp 0dp 4dp; }
+.inspect-host { display: block; }
+.details { flex: 1 1 0dp; overflow-y: auto; padding: 6dp 8dp 10dp; border-top: 1dp var(--line); }
+.inspector.wide .details { border-top-width: 0dp; border-left: 1dp var(--line); }
+.note { display: block; padding: 10dp 8dp; color: var(--faint-foreground); text-align: center; }
+.heading { display: flex; align-items: center; gap: 6dp; }
+.heading .title { color: var(--tok-keyword); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.path { display: block; margin-top: 2dp; font-size: var(--studio-font-11, 11dp); color: var(--faint-foreground); word-break: break-all; }
+.source { display: flex; align-items: center; gap: 6dp; margin-top: 6dp; }
+.force { display: flex; align-items: center; gap: 4dp; margin-top: 8dp; }
+.force-label { color: var(--muted-foreground); margin-right: 4dp; }
+.chip { position: relative; display: block; height: var(--studio-height-20, 20dp); }
+.chip input { position: absolute; left: 0dp; top: 0dp; width: 100%; height: 100%; opacity: 0; }
+.chip span {
+  display: block; height: var(--studio-height-20, 20dp); line-height: var(--studio-line-20, 20dp); padding: 0dp 6dp; border-radius: var(--r); font-size: var(--studio-font-11, 11dp);
+  color: var(--muted-foreground); background-color: var(--secondary);
+}
+.chip:hover span { background-color: var(--field-hover); color: var(--foreground); }
+.chip input:checked ~ span { background-color: var(--primary); color: var(--primary-foreground); }
+.pseudo { display: block; margin-top: 4dp; font-size: var(--studio-font-11, 11dp); color: var(--faint-foreground); }
+.tabs { margin-top: 10dp; }
+.pane { display: block; margin-top: 6dp; }
+.pair { display: flex; gap: 8dp; min-height: 18dp; line-height: var(--studio-line-18, 18dp); }
+.pair .name { flex: 0 0 40%; color: var(--tok-name); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pair .value { flex: 1 1 0dp; color: var(--foreground); word-break: break-all; }
+
+/* An Elements tree row: tag#id.class, the ui asset or widget it shows, and
+   its text, in TreeRow's anatomy without an icon or meta. The tree marks
+   the selected row and, while picking, the row the pointer is over in the
+   app. */
+.inspect-row .tree-row { gap: 0dp; border-radius: 0dp; padding-right: 8dp; }
+.inspect-row .icon, .inspect-row .meta { display: none; }
+.inspect-row .twisty { display: block; flex: 0 0 auto; width: 14dp; margin-right: 2dp; text-align: center; }
+.inspect-row .name { flex: 0 0 auto; color: var(--tok-keyword); }
+.inspect-row .trail { flex: 1 1 0dp; min-width: 0dp; overflow: hidden; gap: 0dp; }
+.inspect-row[data-picked] .tree-row { background-color: var(--primary-soft); }
+.inspect-row .tree-row[data-hidden] { opacity: 0.5; }
+.inspect-row .ident { flex: 0 0 auto; color: var(--tok-number); }
+.inspect-row .cls { flex: 0 0 auto; color: var(--tok-name); }
+.inspect-row .widget {
+  flex: 0 0 auto; height: var(--studio-height-14, 14dp); line-height: var(--studio-line-14, 14dp); margin-left: 6dp; padding: 0dp 4dp; border-radius: 3dp;
+  font-size: var(--studio-font-10, 10dp); color: var(--primary-text); background-color: var(--primary-soft);
+}
+.inspect-row .text { flex: 0 1 auto; min-width: 0dp; margin-left: 6dp; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

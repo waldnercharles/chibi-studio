@@ -1,0 +1,8 @@
+/* The scene renders on a dark canvas in every theme, so the chrome over it
+   keeps dark roles in the light themes. Scene.rcss and Canvas.rcss import
+   this; `body:not(.dark)` reads the page body's theme class, which a panel's
+   own rules see as a web page's do. */
+body:not(.dark) .viewport {
+    --foreground: #e8edf5; --muted-foreground: #aeb9ca; --faint-foreground: #aeb9ca; --line: #ffffff10; --accent: #ffffff0f; --press: #ffffff1a;
+    --floating: #282c33ee; --primary-text: #9dbef5; --notice: #1a1612f0; --notice-fg: #ffad66;
+}

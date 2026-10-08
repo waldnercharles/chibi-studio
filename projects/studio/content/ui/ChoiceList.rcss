@@ -1,0 +1,8 @@
+/* A search field over a list of choices (the native <choice-list>, as Base
+   UI's Combobox list and cmdk): typing filters the use's role="option"
+   children by their data-label or .label, Up, Down and the pointer move the
+   highlight, and Enter or a click chooses one, sending change with its
+   value. Wrap options in role="group" with a MenuGroup heading to group
+   them. The palette, pickers, Add Component, editor types and EnumField
+   build on it. */
+body { display: block; }

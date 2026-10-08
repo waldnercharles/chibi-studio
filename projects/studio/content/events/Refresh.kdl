@@ -1,0 +1,8 @@
+version 3
+name "Refresh"
+domain "event"
+id_counter 1
+description "Studio refreshes a panel it shows, after the panel's own events, at each UI refresh: publish what changed, as a panel source syncs. Set UI Data changes nothing when a value is the same."
+(array)graphs {
+    - kind="event" name=""
+}

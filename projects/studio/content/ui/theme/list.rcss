@@ -1,0 +1,4 @@
+/* Virtualized list: the content is as tall as every row; padding places the first
+   emitted row. */
+.vlist { overflow-y: auto; }
+.vlist-content { display: block; position: relative; }

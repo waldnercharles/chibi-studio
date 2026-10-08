@@ -1,0 +1,43 @@
+/* Button: ghost, subtle, primary, outline and danger. Press feedback is immediate. */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6dp;
+    height: var(--h); padding: 0dp 8dp; border-radius: var(--r); white-space: nowrap;
+    color: var(--muted-foreground); background-color: transparent; border: 1dp transparent;
+    tab-index: auto;
+    transition: background-color color 0.11s cubic-out;
+}
+.btn .label { white-space: nowrap; }
+.btn:hover { background-color: var(--accent); color: var(--foreground); }
+.btn:hover .icon { color: var(--foreground); }
+.btn:active, .btn[data-pressed] { background-color: var(--press); color: var(--foreground); transition: none; }
+.btn[data-disabled] { opacity: 0.38; }
+.btn:focus-visible { border-color: var(--ring); background-color: var(--accent); color: var(--foreground); }
+.btn.subtle { background-color: var(--secondary); color: var(--foreground); }
+.btn.subtle:hover { background-color: var(--field-hover); }
+.btn.primary { background-color: var(--primary); color: var(--primary-foreground); }
+.btn.primary .icon { color: var(--primary-foreground); }
+.btn.primary:hover, .btn.primary:active, .btn.primary[data-pressed] { background-color: var(--primary-hover); color: var(--primary-foreground); }
+.btn.outline { border-color: var(--border); color: var(--foreground); }
+.btn.danger { color: var(--destructive); }
+.btn.icon-only { width: var(--h); padding: 0dp; }
+.btn.sm { height: var(--h-sm); font-size: var(--studio-font-11, 11dp); padding: 0dp 6dp; }
+.btn.sm.icon-only { width: var(--h-sm); padding: 0dp; }
+.btn[data-state=on] { background-color: var(--primary-soft); color: var(--foreground); }
+.btn[data-state=on] .icon { color: var(--primary-text); }
+
+/* Toggle group — Blender's expanded enum. */
+.segmented { display: flex; height: var(--h); background-color: var(--secondary); border-radius: var(--r); flex: 1 1 0dp; }
+.segmented .seg {
+    display: block; text-align: center; line-height: var(--h); flex: 1 1 0dp;
+    padding: 0dp 8dp; color: var(--muted-foreground); border: 1dp transparent; border-left-color: var(--edge); white-space: nowrap;
+    transition: background-color 0.11s cubic-out;
+}
+.segmented .seg:first-child { border-left: 0dp; border-radius: 4dp 0dp 0dp 4dp; }
+.segmented .seg:last-child { border-radius: 0dp 4dp 4dp 0dp; }
+.segmented .seg:hover { background-color: var(--field-hover); color: var(--foreground); }
+.segmented .seg[data-pressed] { background-color: var(--primary); color: var(--primary-foreground); }
+.segmented .seg[data-state=on] { background-color: var(--primary); color: var(--primary-foreground); }
+.segmented[data-readonly] { opacity: 0.6; }
+.segmented[data-disabled] { opacity: 0.45; }
+.segmented .seg:focus-visible { border-color: var(--ring); background-color: var(--field-hover); color: var(--foreground); }
+.segmented .seg[data-pressed]:focus-visible { background-color: var(--primary); color: var(--primary-foreground); }

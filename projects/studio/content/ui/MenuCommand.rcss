@@ -1,0 +1,6 @@
+/* A Studio command as a menu item, as the menubar lists them: alias it as
+   data-alias-command="commands.<id>". It shows the command's menu label,
+   its icon, or a check for a toggle, and its shortcut; it is disabled while
+   the command is, and runs it with emit('studio.<id>'). */
+body { display: block; }
+.menu-item { height: var(--menu-row-h); }

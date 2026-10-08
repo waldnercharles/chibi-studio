@@ -1,0 +1,94 @@
+/* Overlay layer: popups, tooltips, toasts, dialogs and the command palette,
+   a document over the others whose body has the page's classes but paints
+   nothing itself. */
+#layer { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; pointer-events: none; z-index: 10; background-color: transparent; }
+.modal-host { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; pointer-events: auto; z-index: 15; }
+.popup {
+    position: absolute; pointer-events: auto; background-color: var(--popover); border: 1dp var(--popover-edge);
+        border-radius: var(--r-lg); padding: 4dp; min-width: 180dp; max-width: 480dp; color: var(--foreground);
+    display: block; z-index: 20; box-shadow: var(--shadow-overlay);
+}
+.popup.struct-editor { min-width: 320dp; }
+.popover {
+    width: 288dp; min-width: 180dp; max-width: 480dp; padding: var(--studio-height-16, 16dp);
+    border: 1dp var(--border); border-radius: var(--radius, 6dp);
+    color: var(--foreground); font-size: var(--studio-font-14, 14dp); line-height: var(--studio-line-20, 20dp);
+}
+.popover .btn { height: var(--studio-height-36, 36dp); padding: 0dp var(--studio-height-16, 16dp); border-radius: var(--r, 4dp); font-size: var(--studio-font-14, 14dp); }
+.popover .btn.sm { height: var(--studio-height-32, 32dp); padding: 0dp var(--studio-height-12, 12dp); font-size: var(--studio-font-14, 14dp); }
+.popover .btn.icon-only { width: var(--studio-height-36, 36dp); padding: 0dp; }
+.popover .btn.sm.icon-only { width: var(--studio-height-32, 32dp); padding: 0dp; }
+.popover .row { gap: 6dp; }
+body.comfortable .popover .btn { height: var(--studio-height-40, 40dp); }
+body.comfortable .popover .btn.sm { height: var(--studio-height-36, 36dp); }
+.popover .btn:focus-visible {
+    border-color: var(--ring);
+    box-shadow: 0dp 0dp 0dp 3dp color-mix(in srgb, var(--ring) 50%, transparent);
+}
+.popup[data-unplaced] { visibility: hidden; }
+/* Authored popovers (ui/popover.c): a closed one lays out and draws nothing;
+   a shown one waits unseen until it is placed. */
+[popover]:not([data-open]) { display: none; }
+[popover][data-unplaced] { visibility: hidden; }
+/* An authored menu taller than the window scrolls, as the kit's do. */
+.popup.menu[popover] { max-height: var(--available-height, none); overflow-y: auto; }
+/* A list's search, as the kit's dropdown has it, and what it filtered out. */
+.choice-list { display: block; }
+.choice-list .field.search { margin: 2dp 2dp 6dp; }
+.choice-results { max-height: var(--dropdown-list-h); overflow-y: auto; }
+.choice-list [data-filtered] { display: none; }
+.choice-empty { display: none; padding: 8dp; color: var(--muted-foreground); }
+.choice-list[data-empty] .choice-empty { display: block; }
+/* A short fade bridges an occasional overlay change without moving its
+   anchor or scroll clip. Exits are faster and input stays available. */
+.popup { opacity: 1; transition: opacity 0.14s cubic-out; }
+.popup[data-starting-style], .popup[data-ending-style] { opacity: 0; }
+.popup[data-ending-style] { transition: opacity 0.1s cubic-out; }
+.menu-item {
+    display: flex; align-items: center; gap: 8dp; height: var(--h); padding: 0dp 8dp 0dp 6dp; border-radius: var(--r);
+    white-space: nowrap; color: var(--foreground);
+}
+.popup.menu > .menu-item, .menu-option, .menu-check { height: var(--menu-row-h); }
+.menu-item .lead { color: var(--muted-foreground); }
+.menu-item .text { display: block; flex: 1 1 auto; overflow: hidden; }
+.menu-item .label { display: block; overflow: hidden; }
+.menu-item .about { display: none; font-size: 12dp; line-height: 16dp; color: var(--faint-foreground); }
+.menu-item[data-described] { height: 44dp; }
+.menu-item[data-described] .about { display: block; }
+.menu-item .kbd { margin-left: 24dp; flex: 0 0 auto; }
+.menu-item .kbd[data-empty] { display: none; }
+.menu-item .chev { color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); }
+.menu-item[data-highlighted] { background-color: var(--primary); color: var(--primary-foreground); }
+.menu-item[data-highlighted] .lead, .menu-item[data-highlighted] .kbd, .menu-item[data-highlighted] .chev,
+.menu-item[data-highlighted] .about { color: var(--primary-foreground); }
+.menu-item[data-disabled] { color: var(--disabled-foreground); }
+.menu-item[data-current] .label, .menu-item[data-current] .lead { color: var(--primary-text); }
+.menu-item[data-current][data-highlighted] .label, .menu-item[data-current][data-highlighted] .lead { color: var(--primary-foreground); }
+.menu-item[data-disabled] .lead, .menu-item[data-disabled] .kbd { color: var(--disabled-foreground); }
+.menu-sep { height: 1dp; margin: 4dp 2dp; background-color: var(--border); }
+.menu-group { height: var(--studio-height-22, 22dp); line-height: var(--studio-line-22, 22dp); display: block; padding: 0dp 6dp; font-size: var(--studio-font-11, 11dp); color: var(--faint-foreground); }
+.menu-note { display: block; padding: 0dp 8dp 6dp; font-size: var(--studio-font-11, 11dp); color: var(--muted-foreground); white-space: nowrap; }
+.dropdown .field.search { margin: 2dp 2dp 6dp; }
+/* Field choices show seven rows. Action menus use compact, font-scaled rows
+   and grow to their content until the viewport requires scrolling. */
+body { --menu-row-h: var(--studio-line-22, 22dp); --dropdown-list-h: 182dp; --dropdown-box-h: 192dp; }
+body.comfortable { --dropdown-list-h: 210dp; --dropdown-box-h: 220dp; }
+body.graph-canvas, body.graph-canvas.comfortable { --dropdown-list-h: 154dp; --dropdown-box-h: 164dp; }
+.dropdown-results, .autocomplete-results { max-height: var(--dropdown-list-h); overflow-y: auto; }
+.popup.menu { overflow-y: auto; }
+.dropdown-empty { display: block; padding: 8dp; color: var(--muted-foreground); }
+
+/* The label and shortcut stay on one line; a description wraps beneath them.
+   The kit sets the font size (kit_popup.c), undoing a canvas's zoom, so the
+   other lengths are in em. */
+.tooltip {
+    position: absolute; pointer-events: none; background-color: var(--tooltip); border: 1dp var(--tooltip-edge); border-radius: 0.36em;
+    padding: 0.36em 0.64em; display: block; color: var(--foreground); line-height: 1.45em;
+    z-index: 40; box-shadow: var(--shadow-tooltip);
+}
+.tip-head { display: flex; align-items: center; gap: 0.73em; white-space: nowrap; }
+.tip-about { display: block; max-width: 23.6em; margin-top: 0.18em; line-height: 1.36em; color: var(--muted-foreground); white-space: normal; }
+.tooltip .kbd { font-size: 1em; color: var(--faint-foreground); }
+.tooltip { opacity: 1; transition: opacity 0.1s cubic-out; }
+.tooltip[data-starting-style] { opacity: 0; }
+.tooltip[data-instant] { transition: none; }

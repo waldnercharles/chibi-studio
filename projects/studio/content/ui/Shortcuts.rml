@@ -1,0 +1,36 @@
+<use ui="Dialog" class="window" data-keys="Escape:Close">
+  <div class="shortcuts">
+    <div class="head">
+      <div class="head-side">
+        <span class="icon">&#xf097b;</span>
+        <span class="head-title">Keyboard Shortcuts</span>
+      </div>
+      <div class="search">
+        <span class="icon lead">&#xea6d;</span>
+        <input type="text" class="search-input" placeholder="Search keys and actions" data-value="shortcuts.query" autofocus/>
+        <span class="clear" data-if="shortcuts.query != ''" data-event-click="shortcuts.query = ''"><span class="icon">&#xea76;</span></span>
+      </div>
+      <div class="head-side end">
+        <span class="btn icon-only close" data-event-click="emit('Close')"><span class="icon">&#xea76;</span></span>
+      </div>
+    </div>
+    <div class="sheet">
+      <div class="section" data-for="group : shortcuts.groups">
+        <div class="heading">{{ group.label }}</div>
+        <div class="binding" data-for="row : group.rows">
+          <span class="action">{{ row.label }}</span>
+          <span class="chords"><span class="chord" data-for="key : row.keys">{{ key }}</span></span>
+        </div>
+      </div>
+      <div class="empty" data-if="shortcuts.matches == 0">
+        <span class="icon empty-icon">&#xea6d;</span>
+        <div class="empty-title">No shortcuts found</div>
+        <div class="empty-hint">Try another word, or clear the search.</div>
+      </div>
+    </div>
+    <div class="foot">
+      <span class="hint">Keys act on the area under the pointer.</span>
+      <span class="btn outline sm" data-event-click="emit('Close'); settings.scope = 'editor'; settings.category = 'keyboard'; settings.query = ''; emit('studio.settings')">Change Shortcuts…</span>
+    </div>
+  </div>
+</use>

@@ -1,0 +1,1 @@
+<label class="check"><input type="checkbox" attrs/><span class="box"><span class="icon">&#xeab2;</span><span class="icon dash">&#xeacc;</span></span><slot/></label>

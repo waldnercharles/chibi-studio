@@ -1,0 +1,12 @@
+version 3
+name "LockClicked"
+domain "event"
+id_counter 3
+description "A row's lock was clicked; Locked is whether its object was locked."
+(array)variables {
+    - id=1 name="Key" type="const char *" category="Payload"
+    - id=2 name="Locked" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

@@ -1,0 +1,19 @@
+/* Base UI Switch: the checkbox takes focus and clicks; the track and thumb
+   follow its checked state. Bind it as a checkbox: data-checked="save.sound". */
+.switch { position: relative; display: inline-block; width: 28dp; height: 16dp; cursor: pointer; }
+.switch input { position: absolute; left: 0dp; top: 0dp; width: 100%; height: 100%; opacity: 0; nav: auto; cursor: pointer; }
+.track {
+  position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; border-radius: 8dp;
+  background-color: color-mix(in srgb, var(--foreground) 20%, transparent); border: 1dp transparent;
+  transition: background-color border-color 0.14s cubic-out;
+}
+.thumb {
+  position: absolute; left: 1dp; top: 1dp; width: 12dp; height: 12dp; border-radius: 6dp;
+  background-color: #ffffff; transition: transform 0.14s cubic-out;
+}
+.switch:hover .track { background-color: color-mix(in srgb, var(--foreground) 28%, transparent); }
+.switch input:checked ~ .track { background-color: var(--primary); }
+.switch:hover input:checked ~ .track { background-color: var(--primary-hover); }
+.switch input:checked ~ .track .thumb { transform: translateX(12dp); }
+.switch input:focus-visible ~ .track { border-color: var(--ring); }
+.switch input:disabled ~ .track { opacity: 0.45; }

@@ -1,0 +1,12 @@
+behavior "HullDamage" {
+    owner "ecs.entity";
+    on Damage as damage(Amount: int = 0, Source: handle<"ecs.entity"> = 0) {
+        &component("GAME.GameHealth", "current") -= damage.Amount;
+        await "WeaponActions"."Spawn Prototype At"(Prototype: "HitEmitter", Transform: &component("GAME.GameTransform"));
+        if (cast<double>(&component("GAME.GameHealth", "current")) <= 0) {
+            await "WeaponActions"."Spawn Prototype At"(Prototype: "DeathEmitter", Transform: &component("GAME.GameTransform"));
+            release_material(Entity: self);
+        } else {
+        }
+    }
+}

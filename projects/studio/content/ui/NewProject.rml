@@ -1,0 +1,16 @@
+<use ui="Dialog" class="new-project" data-keys="Escape:Close">
+  <section class="project-form" role="dialog" aria-modal="true" aria-labelledby="new-project-title">
+    <header class="project-head"><div id="new-project-title" class="project-title">Create a project</div><div class="project-description">Creates an empty project with a Start scene.</div></header>
+    <div class="project-body">
+      <div class="project-name"><label for="new-project-name">Project name</label><div class="field text" data-attrif-data-invalid="new_project.error != ''" data-attrif-data-readonly="new_project.waiting || new_project.confirm_discard"><input id="new-project-name" class="value" type="text" maxlength="127" placeholder="e.g. Sample Project" autofocus data-value="new_project.name" data-keys="Enter:newProject.create" data-attrif-disabled="new_project.waiting || new_project.confirm_discard" aria-describedby="new-project-error"/></div></div>
+      <div id="new-project-error" class="project-error" role="alert" data-if="new_project.error != ''" data-rml="new_project.error_markup"/>
+      <div class="project-pending" role="status" data-if="new_project.waiting">Saving project…</div>
+      <div class="project-confirmation" role="alert" data-if="new_project.confirm_discard"><div class="confirmation-title">Discard unsaved changes?</div><div>Your current edits will be discarded when the new project opens.</div></div>
+    </div>
+    <footer class="project-actions">
+      <button id="new-project-cancel" class="btn outline cancel" data-attrif-data-disabled="new_project.waiting" data-event-click="emit('newProject.cancel')">Cancel</button>
+      <button class="btn primary create" data-if="!new_project.confirm_discard" data-attrif-data-disabled="new_project.waiting" data-event-click="emit('newProject.create')">Create project</button>
+      <button class="btn danger outline discard" data-if="new_project.confirm_discard" data-attrif-data-disabled="new_project.waiting" data-event-click="emit('newProject.discard')">Discard and create</button>
+    </footer>
+  </section>
+</use>

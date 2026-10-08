@@ -1,0 +1,80 @@
+behavior "ArenaDropBehavior" {
+    owner "ecs.entity";
+    value self_2 = engine["Self"]();
+    value self_3 = engine["Self"]();
+    on Begin as begin() {
+        if (cast<double>(&component("GAME.GamePickup", "state")) == 3) {
+            await "Spawn Surface Pulse"(Prototype: "ArenaDeathPulse", Position: &component("GAME.GameTransform"));
+            await "Emit Source Frame"(Position: &component("GAME.GameTransform"), Appearance: &component("GAME.GameGeometry3D"), Material: &component("GAME.GameShader"), Orientation: &component("GAME.GameOrientation"), Visual: &component("GAME.GameVisualTransform"));
+            await set_entity_game_geometry3_d(Entity: self_2, Value: {
+                primitive: 9,
+                width: 5.0,
+                depth: 5.0,
+                height: 0.1,
+                elevation: 5.0
+            });
+            await set_entity_game_shader(Entity: self_3, Value: {
+                material: "ArenaExperience",
+                shape: "",
+                parameters: "",
+                bounds_x: 0.0,
+                bounds_y: 0.0
+            });
+            await set_game_orientation_radians(Value: 0.0, Target: 0);
+            await set_component(Component: "GAME.GameVisualTransform", Entity: 0, Value.pitch: float = 0.0, Value.roll: float = 0.0, Value.scale: float = 1.0);
+            set_game_pickup_state(Value: 0, Target: 0);
+        } else {
+        }
+    }
+    function "Emit Source Frame"(Position: struct<"GameTransform"> = null, Appearance: struct<"GameGeometry3D"> = null, Material: struct<"GameShader"> = null, Orientation: struct<"GameOrientation"> = null, Visual: struct<"GameVisualTransform"> = null) -> () {
+        depth_limit 64;
+        value primitive_part = primitive_part(Appearance: &local.Appearance, Index: 0);
+        value primitive_part_2 = primitive_part(Appearance: &local.Appearance, Index: forloop.Index);
+        value subtract: int = subtract(A: plain int = primitive_part.Count, B: plain int = 1);
+        action forloop = for_loop(FirstIndex: 0, LastIndex: subtract);
+        local Appearance = entry.Appearance;
+        after entry {
+            forloop();
+        }
+        after forloop.Body {
+            "Spawn Source Beam"(Position: entry.Position, Appearance: &local.Appearance, Material: entry.Material, Orientation: entry.Orientation, Visual: entry.Visual, Center: primitive_part_2.Center, "Center Y": primitive_part_2.Elevation, Width: primitive_part_2.Width, Height: primitive_part_2.Height, Depth: primitive_part_2.Depth, Primitive: primitive_part_2.Primitive);
+        }
+        after forloop.Completed {
+            return();
+        }
+    }
+    function "Spawn Surface Pulse"(Prototype: name = "ArenaHitPulse", Position: struct<"GameTransform"> = null) -> () {
+        depth_limit 64;
+        action spawn_prototype = engine["Spawn Prototype"](Prototype: entry.Prototype);
+        after entry {
+            spawn_prototype();
+        }
+        after spawn_prototype {
+            await set_entity_game_transform(Entity: spawn_prototype.Entity, Value: entry.Position);
+            return();
+        }
+    }
+    function "Spawn Source Beam"(Position: struct<"GameTransform"> = null, Appearance: struct<"GameGeometry3D"> = null, Material: struct<"GameShader"> = null, Orientation: struct<"GameOrientation"> = null, Visual: struct<"GameVisualTransform"> = null, Center: struct<"CF_V2"> = null, "Center Y": float = 0.0, Width: float = 0.0, Height: float = 0.0, Depth: float = 0.0, Primitive: int = 0) -> () {
+        depth_limit 64;
+        value transform_visual_offset = transform_visual_offset(Offset: entry.Center, Elevation: entry."Center Y", Heading: entry.Orientation.radians, Visual: entry.Visual);
+        action spawn_prototype = engine["Spawn Prototype"](Prototype: "ArenaEnemyShard");
+        value add: double = add(A: plain double = entry.Position.x, B: plain double = transform_visual_offset.Offset.x);
+        value add_2: double = add(A: plain double = entry.Position.y, B: plain double = transform_visual_offset.Offset.y);
+        value add_3: double = add(A: plain double = entry.Appearance.elevation, B: plain double = transform_visual_offset.Elevation);
+        value multiply: double = multiply(A: plain double = transform_visual_offset.Offset.x, B: plain double = 5.0);
+        value multiply_2: double = multiply(A: plain double = transform_visual_offset.Offset.y, B: plain double = 5.0);
+        local Shard = spawn_prototype.Entity;
+        after entry {
+            spawn_prototype();
+        }
+        after spawn_prototype {
+            await set_component(Component: "GAME.GameTransform", Entity: spawn_prototype.Entity, Value.x: float = add, Value.y: float = add_2);
+            await set_component(Component: "GAME.GameGeometry3D", Entity: spawn_prototype.Entity, Value.primitive: int = entry.Primitive, Value.width: float = entry.Width, Value.depth: float = entry.Depth, Value.height: float = entry.Height, Value.elevation: float = add_3);
+            await set_component(Component: "GAME.GameVelocity", Entity: spawn_prototype.Entity, Value.x: float = multiply, Value.y: float = multiply_2);
+            await set_entity_game_shader(Entity: &local.Shard, Value: entry.Material);
+            await set_entity_game_orientation(Entity: &local.Shard, Value: entry.Orientation);
+            await set_entity_game_visual_transform(Entity: &local.Shard, Value: entry.Visual);
+            return();
+        }
+    }
+}

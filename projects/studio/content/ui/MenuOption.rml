@@ -1,0 +1,1 @@
+<label class="menu-item menu-option" role="menuitemradio"><input type="radio" attrs/><span class="icon lead">&#xeab2;</span><span class="label"><slot/></span></label>

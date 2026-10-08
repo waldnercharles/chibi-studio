@@ -1,0 +1,20 @@
+diff --git a/include/zep/glyph_iterator.h b/include/zep/glyph_iterator.h
+--- a/include/zep/glyph_iterator.h
++++ b/include/zep/glyph_iterator.h
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include <cstdint>
+ #include "zep/mcommon/utf8/core.h"
+ #include "gap_buffer.h"
+ 
+diff --git a/include/zep/splits.h b/include/zep/splits.h
+--- a/include/zep/splits.h
++++ b/include/zep/splits.h
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include <cstdint>
+ #include <algorithm>
+ #include <limits>
+ #include <memory>

@@ -1,0 +1,4 @@
+<div class="prop" data-attr-data-tip="property.tip" data-attr-data-tip-about="property.about" data-attrif-data-overridden="property.overridden">
+  <label class="label" data-attr-for="property.id"><span>{{ property.label }}</span></label>
+  <div class="control"><slot/></div>
+</div>

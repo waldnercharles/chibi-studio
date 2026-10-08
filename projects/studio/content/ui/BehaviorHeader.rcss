@@ -1,0 +1,16 @@
+/* The Behavior header (studio_graph_header.c), in its AreaHeader's
+   controls, as Unreal's graph editor toolbar: Back and Forward through the
+   graphs visited, breadcrumbs of the behavior and the calls entered to reach
+   the open graph, whose crumb picks another graph or renames it in place;
+   then the debug target while the game runs (a ChoiceList of its instances,
+   Follow newest and Break when spawned), the zoom, the Graph menu, Arrange,
+   Find, Frame all and the View menu (GraphView). The crumbs shrink first,
+   ellipsizing their labels. */
+body, .graph-head { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.graph-head > .btn, .graph-head > .readout, .graph-head > .segmented, .graph-head > .segmented .seg { flex: 0 0 auto; }
+/* A call entered and its separator, in the crumbs' row. */
+.caller { display: flex; align-items: center; gap: 2dp; flex: 0 1 auto; min-width: 0dp; }
+.rename { flex: 0 1 160dp; min-width: 60dp; }
+/* Rows 8 dp wider than their content, which the list's scrollbar takes,
+   as the kit's dropdowns size them. */
+#debug-targets .menu-item { padding-right: 16dp; }

@@ -1,0 +1,42 @@
+behavior "OutlinerInput" {
+    owner "ecs.entity";
+    value object_selected = object_selected(Object: rowmenu.Key);
+    action show_ui_popover = engine["Show UI Popover"](Entity: 0, Element: "#outliner-menu", At: rowmenu.Pointer);
+    value not = not(Value: eyeclicked.Hidden);
+    value not_2 = not(Value: lockclicked.Locked);
+    value text_equal = text_equal(A: listdropped.Type, B: "prototype");
+    value selection = selection();
+    on RowClicked as rowclicked(Key: string = "", Shift: bool = false, Mod: bool = false) {
+        select_object(Object: rowclicked.Key, Toggle: rowclicked.Mod, Extend: rowclicked.Shift);
+    }
+    on RowMenu as rowmenu(Key: string = "", Pointer: struct<"CF_V2"> = null) {
+        if (object_selected) {
+            show_ui_popover();
+        } else {
+            await select_object(Object: rowmenu.Key, Toggle: false, Extend: false);
+            show_ui_popover();
+        }
+    }
+    on EyeClicked as eyeclicked(Key: string = "", Hidden: bool = false, Alt: bool = false) {
+        if (eyeclicked.Alt) {
+            isolate_object(Object: eyeclicked.Key);
+        } else {
+            set_object_hidden(Object: eyeclicked.Key, Hidden: not);
+        }
+    }
+    on LockClicked as lockclicked(Key: string = "", Locked: bool = false) {
+        set_object_locked(Object: lockclicked.Key, Locked: not_2);
+    }
+    on RowDropped as rowdropped(Key: string = "", Type: string = "", Payload: string = "") {
+        drop_on_object(Object: rowdropped.Key, Type: rowdropped.Type, Payload: rowdropped.Payload);
+    }
+    on ListDropped as listdropped(Type: string = "", Payload: string = "") {
+        if (text_equal) {
+            add_object(Prototype: listdropped.Payload);
+        } else {
+        }
+    }
+    on SpawnBreak as spawnbreak() {
+        toggle_spawn_break(Prototype: selection.Prototype);
+    }
+}

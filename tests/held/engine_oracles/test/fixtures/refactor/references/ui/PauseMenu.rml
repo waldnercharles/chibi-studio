@@ -1,0 +1,8 @@
+<div id="panel">
+  <div class="title" id="paused">Paused</div>
+  <div class="title" id="cleared">Encounter cleared</div>
+  <div class="title" id="defeated">Defeated</div>
+  <use ui="MenuButton" id="resume" data-event-click="emit('Resume')">Resume<span class="key">Enter</span></use>
+  <use ui="MenuButton" data-event-click="emit('Restart')">Restart<span class="key">R</span></use>
+  <use ui="MenuButton" data-event-click="emit('Quit')">Quit<span class="key">Q</span></use>
+</div>

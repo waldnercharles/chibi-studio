@@ -1,0 +1,46 @@
+<use ui="Dialog" class="collab-dialog" data-keys="Escape:Close">
+  <div class="collaboration">
+    <header class="collab-head">
+      <div class="collab-heading">
+        <span class="icon collab-icon">{{ commands.collaboration.icon }}</span>
+        <div><div class="collab-title">Collaboration</div><div class="collab-subtitle">Share this workspace with an invite.</div></div>
+      </div>
+      <button class="btn icon-only close" data-tip="Close" aria-label="Close collaboration" autofocus data-event-click="emit('Close')"><span class="icon">&#xea76;</span></button>
+    </header>
+    <div class="collab-body">
+      <div class="collab-status" role="status" aria-live="polite" data-class-error="collaboration.error">
+        <span class="status-mark" data-attr-data-state="collaboration.connected ? 'on' : 'off'"/>
+        <span class="status-text">{{ collaboration.status }}</span>
+      </div>
+      <div class="unavailable" data-if="!collaboration.available"><span class="icon">&#xea74;</span><span>Room collaboration is available in the web editor.</span></div>
+      <div class="collab-actions" data-if="collaboration.available &amp;&amp; !collaboration.connected">
+        <section class="action-section">
+          <div class="section-copy"><div class="section-title">Join a room</div><div class="section-hint">Paste an editor or viewer invite link.</div></div>
+          <div class="input-row">
+            <input id="collab-invite" class="collab-input" type="text" autocomplete="off" placeholder="Paste an invite link" aria-label="Room invite link" data-value="collaboration.invite" data-keys="Enter:studio.collaborationJoin" data-attrif-disabled="collaboration.busy"/>
+            <button class="btn primary action-button join" data-attrif-data-disabled="!commands.collaborationJoin.enabled" data-event-click="emit('studio.collaborationJoin')">Join room</button>
+          </div>
+        </section>
+        <section class="action-section">
+          <div class="section-copy"><div class="section-title">Create a room</div><div class="section-hint">Create an isolated shared workspace.</div></div>
+          <div class="input-row"><button class="btn primary action-button host" data-attrif-data-disabled="!commands.collaborationHost.enabled" data-event-click="emit('studio.collaborationHost')">Create room</button><button class="btn ghost token-toggle" data-attrif-data-disabled="collaboration.busy" data-event-click="emit('studio.collaborationToken')">{{ collaboration.token_expanded ? 'Hide admin token' : 'Use admin token' }}</button></div>
+          <div class="token-field" data-if="collaboration.token_expanded"><label for="collab-token">Admin token · optional</label><input id="collab-token" class="collab-input" type="password" autocomplete="off" placeholder="Enter token if required" aria-label="Admin token" data-value="collaboration.token" data-keys="Enter:studio.collaborationHost" data-attrif-disabled="collaboration.busy"/></div>
+        </section>
+      </div>
+      <div class="collab-actions" data-if="collaboration.connected">
+        <section class="participants action-section">
+          <div class="section-title">Participants</div>
+          <div class="section-hint" data-if="!collaboration.has_peers">Just you. Invite someone to work together.</div>
+          <div class="participant-list">
+            <div class="participant" data-for="peer, i : collaboration.peers"><span class="avatar" data-attr-style="'background-color: ' + peer.color"/><span class="participant-name">{{ peer.name }}</span><button class="btn ghost sm follow" data-if="!peer.following" data-event-click="emit('studio.collaborationFollow', i)">Follow</button><button class="btn ghost sm unfollow" data-if="peer.following" data-event-click="emit('studio.collaborationUnfollow')">Stop following</button></div>
+          </div>
+        </section>
+        <section class="action-section invite-section" data-if="collaboration.host">
+          <div class="section-copy"><div class="section-title">Invite people</div><div class="section-hint">Copy a role-specific link to the clipboard.</div></div>
+          <div class="invite-actions"><button class="btn outline" data-attrif-data-disabled="!commands.collaborationInviteEditor.enabled" data-event-click="emit('studio.collaborationInviteEditor')">Copy editor invite</button><button class="btn outline" data-attrif-data-disabled="!commands.collaborationInviteViewer.enabled" data-event-click="emit('studio.collaborationInviteViewer')">Copy viewer invite</button></div>
+        </section>
+        <div class="session-actions"><button class="btn outline leave" data-attrif-data-disabled="!commands.collaborationLeave.enabled" data-event-click="emit('studio.collaborationLeave')">Leave room</button></div>
+      </div>
+    </div>
+  </div>
+</use>

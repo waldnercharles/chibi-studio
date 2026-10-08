@@ -1,0 +1,21 @@
+<div class="workspace" data-attr-data-max="workspace.max" data-class-across="workspace.across" data-style---drawer="(workspace.drawer + 6) + 'dp'" data-style---side="(workspace.side + 6) + 'dp'">
+  <div class="column main" data-if="workspace.max == '' || workspace.max == 'top' || workspace.max == 'bottom' || workspace.max == 'drawer'">
+    <div class="editors" data-if="workspace.max != 'drawer'">
+      <div id="area-top" class="place" data-if="workspace.max != 'bottom'" data-class-fill="workspace.max == 'top'" data-style-width="workspace.top > 0 && workspace.across && workspace.max == '' ? workspace.top + 'dp' : ''" data-style-height="workspace.top > 0 && !workspace.across && workspace.max == '' ? workspace.top + 'dp' : ''"></div>
+      <splitter class="split" data-if="workspace.max == ''" data-attr-axis="workspace.across ? 'x' : 'y'" data-attr-min="workspace.topMin" data-attr-max="workspace.topMax" data-attr-value="workspace.top" data-event-input="emit('workspace.resize', 'main', ev.value)"><div class="grip"></div></splitter>
+      <div id="area-bottom" class="place fill" data-if="workspace.max != 'top'"></div>
+    </div>
+    <div class="drawer" data-if="workspace.max != 'top' && workspace.max != 'bottom'" data-attrif-data-open="workspace.drawerOpen">
+      <splitter class="split" axis="y" min="80" invert data-if="workspace.max == ''" data-attr-max="workspace.drawerMax" data-attr-value="workspace.drawerHeight" data-event-input="emit('workspace.resize', 'drawer', ev.value)"><div class="grip"></div></splitter>
+      <div id="area-drawer" class="place fill"></div>
+    </div>
+  </div>
+  <div class="side" data-if="workspace.max == '' || workspace.max == 'outliner' || workspace.max == 'properties'" data-attrif-data-open="workspace.sideOpen">
+    <splitter class="split" axis="x" min="260" invert data-if="workspace.max == ''" data-attr-max="workspace.sideMax" data-attr-value="workspace.side" data-event-input="emit('workspace.resize', 'side', ev.value)"><div class="grip"></div></splitter>
+    <div class="column">
+      <div id="area-outliner" class="place" data-if="workspace.max != 'properties'" data-class-fill="workspace.max == 'outliner'" data-style-height="workspace.outliner > 0 && workspace.max == '' ? workspace.outliner + 'dp' : ''"></div>
+      <splitter class="split" axis="y" min="80" data-if="workspace.max == ''" data-attr-max="workspace.outlinerMax" data-attr-value="workspace.outliner" data-event-input="emit('workspace.resize', 'outliner', ev.value)"><div class="grip"></div></splitter>
+      <div id="area-properties" class="place fill" data-if="workspace.max != 'outliner'"></div>
+    </div>
+  </div>
+</div>

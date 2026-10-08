@@ -1,0 +1,29 @@
+behavior "AutoWeaponBehavior" {
+    owner "ecs.entity";
+    state Elapsed: float = 0.0;
+    value get_gametransform = get_game_transform();
+    value self_2 = engine["Self"]();
+    value find_nearest_entity = find_nearest_entity(Position: get_gametransform, Radius: 600.0, Categories: 2, Exclude: self_2);
+    value get_gameweapon = get_game_weapon();
+    on Tick as tick() {
+        if (find_nearest_entity.Found) {
+            "Fire Ready Projectiles"(Origin: get_gametransform, Direction: direction_to<"Direction To">(Origin: get_gametransform, Target: find_nearest_entity.Position), Damage: get_gameweapon.Value.damage);
+        } else {
+        }
+    }
+    function "Fire Ready Projectiles"(Origin: struct<"CF_V2"> = null, Direction: struct<"CF_V2"> = null, Damage: int = 0) -> () {
+        depth_limit 64;
+        value elapsed = get_variable<"Elapsed">();
+        value elapsed_3 = get_variable<"Elapsed">();
+        value get_gameweapon = get_game_weapon();
+        value check_firing_interval = "WeaponActions"."Check Firing Interval"(Elapsed: elapsed_3, Cooldown: get_gameweapon.Value.cooldown);
+        after entry {
+            await set_variable<"Elapsed">(Value: float = add(A: float = elapsed, B: float = delta_time()));
+            while (check_firing_interval.Ready) {
+                await set_variable<"Elapsed">(Value: float = check_firing_interval.Remainder);
+                "WeaponActions"."Fire Projectile"(Origin: entry.Origin, Direction: entry.Direction, Damage: entry.Damage, Prototype: "Projectile", Shooter: self);
+            }
+            return();
+        }
+    }
+}

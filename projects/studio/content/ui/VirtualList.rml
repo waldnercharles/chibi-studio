@@ -1,0 +1,5 @@
+<div class="vlist" attrs data-event-scroll="emit('ListScrolled')">
+  <div class="vlist-content" data-style-height="self.total * self.row + 'dp'">
+    <div class="vlist-window" data-style-top="self.first * self.row + 'dp'"><slot/></div>
+  </div>
+</div>

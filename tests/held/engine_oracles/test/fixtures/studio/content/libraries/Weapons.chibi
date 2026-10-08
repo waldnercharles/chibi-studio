@@ -1,0 +1,9 @@
+library "Weapons" {
+    function "Ignore Shooter"(Shooter: handle<"ecs.entity"> = 0, Projectile: handle<"ecs.entity"> = 0) -> () {
+        depth_limit 64;
+        after entry {
+            await set_game_collider_ignore_entity(Value: entry.Shooter, Target: entry.Projectile);
+            return();
+        }
+    }
+}

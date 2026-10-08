@@ -1,0 +1,6 @@
+name "StaticEntity"
+components {
+    GAME.GameAppearance antialias=1.0 color=2173740543 height=32.0 width=32.0
+    GAME.GameHealth current=100 maximum=100
+    GAME.GameTransform x=80.0
+}

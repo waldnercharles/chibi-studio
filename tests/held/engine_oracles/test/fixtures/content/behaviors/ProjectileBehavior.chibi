@@ -1,0 +1,41 @@
+behavior "ProjectileBehavior" {
+    owner "ecs.entity";
+    value get_gameprojectile = get_game_projectile();
+    action set_gameprojectile_age = set_game_projectile_age(Value: add(A: float = get_gameprojectile.Value.age, B: float = delta_time()), Target: 0);
+    value greater_or_equal = greater_or_equal(A: set_gameprojectile_age.Value.age, B: set_gameprojectile_age.Value.lifetime);
+    value get_gamevelocity = get_game_velocity();
+    on Tick as tick() {
+        await "Face Direction"(X: get_gamevelocity.Value.x, Y: get_gamevelocity.Value.y);
+        set_gameprojectile_age();
+    }
+    after set_gameprojectile_age {
+        if (greater_or_equal) {
+            destroy_entity(Entity: self);
+        } else {
+        }
+    }
+    function "Face Direction"(X: float = 0.0, Y: float = 0.0) -> () {
+        depth_limit 64;
+        value has_gameorientation = has_game_orientation();
+        value greater_or_equal = greater_or_equal(A: 0.0, B: "Direction Magnitude"(x: entry.X, y: entry.Y));
+        after entry {
+            if (has_gameorientation) {
+                if (greater_or_equal) {
+                    return();
+                } else {
+                    await set_game_orientation(Value: "DirectionMath"."Direction Orientation"(X: entry.X, Y: entry.Y));
+                    return();
+                }
+            } else {
+                return();
+            }
+        }
+    }
+    pure function "Direction Magnitude"<T0: float, T1: float, T2: float>(x: T0 = 0.0, y: T1 = 0.0) -> (Result: T2 = 0.0) {
+        depth_limit 64;
+        value abs = abs(Value: double = entry.x);
+        value abs_2 = abs(Value: double = entry.y);
+        value add = add(A: double = abs, B: double = abs_2);
+        result Result: float = add;
+    }
+}

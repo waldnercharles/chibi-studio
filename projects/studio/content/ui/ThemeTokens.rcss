@@ -1,0 +1,8 @@
+.panel-head .badge { margin-left: auto; }
+.empty { display: block; padding: 12dp 0dp; color: var(--faint-foreground); text-align: center; }
+/* A color token is text, any CSS color, beside a swatch of it. */
+.swatched .swatch {
+  flex: 0 0 auto; width: 14dp; height: 14dp; margin-left: 4dp;
+  border-radius: 3dp; border: 1dp var(--border);
+}
+.swatched input.value { padding-left: 5dp; }

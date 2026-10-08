@@ -1,0 +1,22 @@
+behavior Branching {
+    elapsed := 0
+    paused := false
+    active := true
+    intensity := 0
+
+    on Tick(dt) {
+        if (!paused && active) {
+            elapsed += dt
+        }
+
+        if (paused || !active) {
+            intensity = 0
+        } else if (elapsed < 1) {
+            intensity = 0.25
+        } else if (elapsed >= 1 && elapsed < 3) {
+            intensity = 0.75
+        } else {
+            intensity = 1
+        }
+    }
+}

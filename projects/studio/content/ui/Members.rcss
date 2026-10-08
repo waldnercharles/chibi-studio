@@ -1,0 +1,20 @@
+/* Members (Unreal's My Blueprint): the open behavior's sections and their
+   members as rows of a List the `members` source windows
+   (studio_members.c). Rows are TreeRows keyed by member, with the
+   selected and the active key aliased from `members_ui`, which also names
+   the row being renamed: a selection re-evaluates those views alone; the
+   open graph's row is active by its own flag. A section row has its
+   count and an add button; a member row its type swatch (the theme's
+   .member-swatch) and use count; F2 or a double click puts a name field
+   in a row's place. */
+body { width: 100%; height: 100%; margin: 0dp; padding: 0dp; overflow: hidden; }
+.members { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; }
+.members > [data-ui=List] { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; }
+#members-list { box-sizing: border-box; padding: 3dp 4dp 8dp; }
+.member-row { display: block; }
+.member-row .tree-row { tab-index: none; }
+[data-section] .name { font-weight: 600; }
+/* A member's use count, which lists its uses in Find. */
+.tree-row .member-uses { height: var(--studio-height-18, 18dp); min-width: 20dp; padding: 0dp 4dp; justify-content: center; color: var(--faint-foreground); font-family: var(--font-numeric); }
+.tree-row .member-uses[data-unused] { color: var(--disabled-foreground); }
+.member-rename .field { height: var(--studio-height-20, 20dp); margin-right: 4dp; }

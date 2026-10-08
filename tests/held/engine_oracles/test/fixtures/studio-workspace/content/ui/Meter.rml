@@ -1,0 +1,1 @@
+<div class="meter"><slot/><progress value="0.5"/></div>

@@ -1,0 +1,3 @@
+<div class="asset-field" attrs>
+  <button class="field select picker" aria-haspopup="listbox" data-attrif-data-placeholder="value == ''"><span class="icon lead">{{ table.icon }}</span><span class="part value">{{ value == '' ? table.none : value }}</span><span class="icon caret">&#xeab4;</span></button>
+</div>

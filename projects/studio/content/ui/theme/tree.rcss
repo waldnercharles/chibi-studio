@@ -1,0 +1,29 @@
+/* Tree rows (Outliner, lists). */
+.tree-row {
+    display: flex; align-items: center; gap: 4dp; height: var(--row); padding-right: 4dp; border-radius: var(--r);
+    color: var(--foreground); white-space: nowrap; border: 1dp transparent;
+}
+.tree-row:hover { background-color: var(--accent); }
+.tree-row[data-selected] { background-color: var(--selected); }
+.tree-row[data-active] { background-color: var(--active-row); }
+.tree-row[data-active] .name { color: var(--strong); }
+/* The rest of a multi-selection sits a step under the active row (Blender's
+   Outliner). */
+.tree-row[data-marked] { background-color: color-mix(in srgb, var(--selected) 55%, transparent); }
+.tree-row:focus-visible { border-color: var(--ring); }
+.tree-row .twisty { width: 14dp; font-size: 11dp; color: var(--faint-foreground); }
+.tree-row .name { flex: 1 1 0dp; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree-row .meta { color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); }
+.tree-row .trail { display: flex; align-items: center; gap: 1dp; }
+.tree-row .toggle { width: 20dp; height: var(--studio-height-18, 18dp); padding: 0dp; }
+.tree-row .toggle .icon { color: var(--faint-foreground); font-size: 13dp; }
+.tree-row .toggle[data-state=off] .icon { color: var(--disabled-foreground); }
+.tree-row .toggle[data-state=on] { background-color: transparent; }
+.tree-row .inline .icon { font-size: 12dp; width: 14dp; color: var(--link); }
+/* The Outliner's eye and lock (Blender's restriction toggles) show while their
+   row is hovered or while they are on; a hidden object's row recedes. */
+.tree-row .view-toggles { display: flex; align-items: center; gap: 1dp; width: 41dp; flex-shrink: 0; }
+.tree-row .view-toggles .toggle { visibility: hidden; }
+.tree-row:hover .view-toggles .toggle, .tree-row .view-toggles .toggle[data-state=on] { visibility: visible; }
+.tree-row .view-toggles .toggle[data-state=on] .icon { color: var(--muted-foreground); }
+.tree-row[data-hidden] > .icon, .tree-row[data-hidden] .name, .tree-row[data-hidden] .inline { opacity: 0.5; }

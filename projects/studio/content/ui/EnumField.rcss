@@ -1,0 +1,16 @@
+/* A named choice as a searchable dropdown anchored to the field, every
+   value listed (Base UI's Select over a Combobox list). Alias the choices
+   as data-alias-table, a table { groups: [{ label, options: [{ value,
+   label, icon }] }] } such as choices.fields.GameBody.type, and the value
+   as data-alias-value; choosing sends change with ev.value, the option's
+   value, as data-event-change="emit('properties.change', row.id, ev.value)".
+   data-mixed shows a dash for several objects' differing values, and
+   data-readonly keeps it shut. */
+body { display: flex; flex: 1 1 0dp; }
+.enum-field { display: flex; flex: 1 1 0dp; min-width: 0dp; }
+.dropdown { min-width: var(--anchor-width, 180dp); }
+.mixed { display: none; }
+.enum-field[data-mixed] .mixed { display: inline; }
+.enum-field[data-mixed] .current { display: none; }
+.enum-field[data-mixed] .field > .value { color: var(--muted-foreground); }
+.enum-field[data-readonly] .field { background-color: transparent; border-color: var(--border); pointer-events: none; tab-index: none; }

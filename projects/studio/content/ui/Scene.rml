@@ -1,0 +1,17 @@
+<div class="viewport">
+  <div class="scene-surface" id="scene-surface"></div>
+  <span class="camera-label" data-for="camera : scene_view.cameras" data-style-transform="camera.at" data-attrif-data-active="camera.active" data-attrif-data-disabled="camera.disabled" data-attrif-data-selected="camera.selected">{{ camera.name }}</span>
+  <div class="view-label" data-if="scene_view.labeled" presence><span class="dim">{{ scene_view.context }}</span></div>
+  <number-flow class="number-flow readout" data-when="scene_view.readout" data-attr-value="scene_view.zoom" grouping="" suffix="%"></number-flow>
+  <span class="badge accent live-badge" data-if="scene_view.session">Live</span>
+  <div class="model-preview" data-if="scene_view.modelPreview">
+    <span class="badge accent">Model · {{ scene_view.model }}</span>
+    <button class="btn sm" data-tip="Frame model" data-event-click="emit('scene.frameModel')"><span class="icon">&#xeb90;</span><span class="label">Frame</span></button>
+  </div>
+  <div class="world-pending" data-if="scene_view.pending" presence><span class="icon spin">&#xeb19;</span><span>Generating world</span></div>
+  <span class="notice" data-if="scene_view.modelError != ''">{{ scene_view.modelError }}</span>
+  <span class="notice" data-if="scene_view.modelSourceError != ''">{{ scene_view.modelSourceError }}</span>
+  <span class="notice" data-if="scene_view.modelParameterError != ''">{{ scene_view.modelParameterError }}</span>
+  <span class="notice" data-if="scene_view.error != ''">{{ scene_view.error }}</span>
+  <span class="notice" data-if="scene_view.error == '' &amp;&amp; scene_view.warning != ''" data-tip="Lighting adjusted" data-attr-data-tip-about="scene_view.warning">Lighting adjusted</span>
+</div>

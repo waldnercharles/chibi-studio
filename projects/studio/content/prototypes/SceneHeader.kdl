@@ -1,0 +1,4 @@
+name "SceneHeader"
+components {
+    GAME.GameUi document="SceneHeader" hidden=#true
+}

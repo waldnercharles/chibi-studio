@@ -1,0 +1,15 @@
+behavior "DamageFlashBehavior" {
+    owner "ecs.entity";
+    value self_2 = engine["Self"]();
+    action set_material_parameter = engine["Set Material Parameter"](Entity: self_2, Name: "Flash", Value: float = 3.0);
+    on Begin as begin() {
+        set_material_parameter();
+    }
+    on Damage as damage(Amount: int = 0, Source: handle<"ecs.entity"> = 0) {
+        set_material_parameter();
+    }
+    after set_material_parameter {
+        await delay(Duration: 0.18);
+        engine["Set Material Parameter"](Entity: self_2, Name: "Flash", Value: float = 0.0);
+    }
+}

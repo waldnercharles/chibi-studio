@@ -1,0 +1,99 @@
+{
+  "content/behaviors/ArenaDropBehavior.chibi": {
+    "purpose": "complex executable source and metadata roundtrip",
+    "sha256": "b2b409a5419b2e1887f9c03fd960878dae881be198f772d1835f13e7a84a0ca2",
+    "source": "content/behaviors/ArenaDropBehavior.chibi"
+  },
+  "content/behaviors/ArenaDropBehavior.chibi.meta": {
+    "purpose": "complex executable source and metadata roundtrip",
+    "sha256": "5302ecfb416b6d993caa5242914e566c3d041b3d8e81f31494ea0ff5246333a6",
+    "source": "content/behaviors/ArenaDropBehavior.chibi.meta"
+  },
+  "content/behaviors/CameraFollow.chibi": {
+    "purpose": "component path typing, persisted source, Tick binding",
+    "sha256": "d4b11ca9e2830ef36afb749ae29340aa8e91b897760d697b41475ab897032058",
+    "source": "projects/arena2d/content/behaviors/CameraFollow.chibi"
+  },
+  "content/behaviors/CameraFollow.chibi.meta": {
+    "purpose": "component path typing, persisted source, Tick binding",
+    "sha256": "067aed59633096169e7d8619e5c94076588bd9fc761b4bee4818ada1e499653e",
+    "source": "projects/arena2d/content/behaviors/CameraFollow.chibi.meta"
+  },
+  "content/behaviors/HealthBehavior.chibi": {
+    "purpose": "damage event math and state mutation",
+    "sha256": "0f1f2581496f8dc917203469840d80f0848695b897d45053a1bb1ddd6331214c",
+    "source": "content/behaviors/HealthBehavior.chibi"
+  },
+  "content/behaviors/HealthBehavior.chibi.meta": {
+    "purpose": "damage event math and state mutation",
+    "sha256": "abf3d8a0a6bb03eb6ac5f1f6d270f95eb2d9da2a2c34c8cf350512b61c80c7ab",
+    "source": "content/behaviors/HealthBehavior.chibi.meta"
+  },
+  "content/behaviors/PlayerEffects.chibi": {
+    "purpose": "prototype symbol and component-context catalog refresh",
+    "sha256": "75e65dcd8a7291c668c02dc3bd3d9ad73a7c3a55678c837edc71b222c66f30e3",
+    "source": "projects/arena2d/content/behaviors/PlayerEffects.chibi"
+  },
+  "content/behaviors/PlayerEffects.chibi.meta": {
+    "purpose": "prototype symbol and component-context catalog refresh",
+    "sha256": "a87a4d6c466a9df809896ead9831b36c0b63f29d713edeff29363810e5b08846",
+    "source": "projects/arena2d/content/behaviors/PlayerEffects.chibi.meta"
+  },
+  "content/behaviors/ProjectileHit.chibi": {
+    "purpose": "contact payload and authored event signature refresh",
+    "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131",
+    "source": "projects/arena2d/content/behaviors/ProjectileHit.chibi"
+  },
+  "content/behaviors/ProjectileHit.chibi.meta": {
+    "purpose": "contact payload and authored event signature refresh",
+    "sha256": "3be30e373e71310e3e6f078f2a3e621a30091d0cfa5723be10251f5c640e1f87",
+    "source": "projects/arena2d/content/behaviors/ProjectileHit.chibi.meta"
+  },
+  "content/behaviors/WatchedPayload.chibi": {
+    "purpose": "batch compilation keeps an unused named event payload available to debugger watches",
+    "sha256": "e55f029a430d561aa34984c96ffda0a357f9717b5b0bf4e3eb902f30d7705761"
+  },
+  "content/events/Damage.kdl": {
+    "purpose": "authored event payload fixture",
+    "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf",
+    "source": "projects/arena2d/content/events/Damage.kdl"
+  },
+  "content/libraries/DirectionMath.chibi": {
+    "purpose": "callable library import and rename",
+    "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321",
+    "source": "projects/arena2d/content/libraries/DirectionMath.chibi"
+  },
+  "content/libraries/DirectionMath.chibi.meta": {
+    "purpose": "callable library import and rename",
+    "sha256": "99279ee363bc8fd0dfa8c7e0ef40aed6d633678983fd636fdcac580e9d4ab611",
+    "source": "projects/arena2d/content/libraries/DirectionMath.chibi.meta"
+  },
+  "content/libraries/WeaponActions.chibi": {
+    "purpose": "callable library dependency and parameter refactoring",
+    "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6",
+    "source": "projects/arena2d/content/libraries/WeaponActions.chibi"
+  },
+  "content/libraries/WeaponActions.chibi.meta": {
+    "purpose": "callable library dependency and parameter refactoring",
+    "sha256": "8e0c20091261eae8609671d0c0fd1a2a03a4b0d33d5612c073564928ba7713fa",
+    "source": "projects/arena2d/content/libraries/WeaponActions.chibi.meta"
+  },
+  "content/prototypes/BoostEmitter.kdl": {
+    "purpose": "minimal prototype symbol and spawned component declarations",
+    "sha256": "dbfbe93b42d42c2e86a5ac889b13f391c9c7940f0998fe365392fc14ee28f76e"
+  },
+  "content/prototypes/MovementEmitter.kdl": {
+    "purpose": "minimal prototype symbol and spawned component declarations",
+    "sha256": "88c77a2e00e7f1f4c24efa115dbc433c121b44eb896172ce30a3200394eadab6"
+  },
+  "content/systems/FreeMotion.chibi": {
+    "purpose": "query bindings, exclusions, schedule dispatch",
+    "sha256": "ca406d1a9675cb97bf2583de96e1266a7abf36ecfac1c0c8b17f53c78b4af859",
+    "source": "projects/arena2d/content/systems/FreeMotion.chibi"
+  },
+  "content/systems/FreeMotion.chibi.meta": {
+    "purpose": "query bindings, exclusions, schedule dispatch",
+    "sha256": "5ead66ed3ad7233d79dc4a33a083cf158462e4f35874245c5244e8ebb550b8d9",
+    "source": "projects/arena2d/content/systems/FreeMotion.chibi.meta"
+  }
+}

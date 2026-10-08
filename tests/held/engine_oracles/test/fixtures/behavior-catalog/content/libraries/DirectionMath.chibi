@@ -1,0 +1,8 @@
+library "DirectionMath" {
+    pure function "Direction Orientation"(X: float = 0.0, Y: float = 0.0) -> (Orientation: struct<"GameOrientation"> = null) {
+        depth_limit 64;
+        value atan2 = atan2(Y: entry.Y, X: entry.X);
+        value make_gameorientation = make_game_orientation(radians: atan2);
+        result Orientation: struct<"GameOrientation"> = make_gameorientation;
+    }
+}

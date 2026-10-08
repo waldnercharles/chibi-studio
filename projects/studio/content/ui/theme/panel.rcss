@@ -1,0 +1,36 @@
+/* Property rows (Blender property split). Child combinators keep these off
+   a row's popovers, whose items have labels too. */
+.prop { display: flex; align-items: center; gap: 10dp; margin-top: var(--gap); }
+.prop > .label {
+    width: 38%; max-width: var(--studio-property-label-max, 160dp); flex: 0 0 auto; height: var(--h); display: flex; align-items: center; justify-content: flex-end;
+    color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.prop > .control { flex: 1 1 0dp; display: flex; align-items: center; gap: 4dp; }
+.prop > .label .hl { background-color: var(--highlight); color: var(--strong); border-radius: 2dp; }
+
+/* Collapsible panel (Blender panel). */
+.panel { display: block; background-color: var(--card); border-radius: var(--r-lg); margin-bottom: 8dp; border: 1dp var(--line); }
+.panel-head {
+    display: flex; align-items: center; gap: 6dp; height: var(--panel-h); padding: 0dp 6dp 0dp 8dp;
+    background-color: var(--panel-head); border-radius: var(--r-lg); color: var(--foreground);
+}
+.panel[data-open] .panel-head { border-radius: 6dp 6dp 0dp 0dp; }
+.panel-head:hover { background-color: var(--panel-head-hover); }
+.panel-head .chev { color: var(--faint-foreground); width: 12dp; font-size: var(--studio-font-11, 11dp); transform: rotate(-90deg); transition: transform 0.14s cubic-out; }
+.panel[data-open] .panel-head .chev { transform: rotate(0deg); }
+.panel-head .title { font-weight: 600; }
+.panel-head .grip { color: var(--disabled-foreground); opacity: 0; font-size: var(--studio-font-12, 12dp); }
+.panel-head:hover .grip { opacity: 1; }
+/* The panel's menu (kit_panel_menu), in the grip's place while the header is hovered. */
+.panel[data-menu] .panel-head .grip { display: none; }
+.panel-head .menu { width: 18dp; line-height: var(--studio-line-18, 18dp); border-radius: var(--r); opacity: 0; cursor: pointer; }
+.panel-head:hover .menu { opacity: 1; }
+.panel-head .menu:hover { background-color: var(--press); color: var(--foreground); }
+.panel-body { display: block; padding: 4dp 10dp 10dp 8dp; }
+
+/* Badge and kbd. */
+.badge { display: inline-block; height: var(--studio-height-16, 16dp); line-height: var(--studio-line-16, 16dp); padding: 0dp 5dp; border-radius: 3dp; font-size: var(--studio-font-10, 10dp); color: var(--muted-foreground); background-color: var(--line); white-space: nowrap; }
+.badge.override { color: var(--override-fg); background-color: var(--override-soft); }
+.badge.accent { color: var(--primary-text); background-color: var(--primary-soft); }
+.kbd { font-size: var(--studio-font-11, 11dp); color: var(--faint-foreground); white-space: nowrap; }
+.kbd-key { display: inline-block; text-align: center; min-width: 18dp; height: var(--studio-height-18, 18dp); line-height: var(--studio-line-18, 18dp); padding: 0dp 4dp; border-radius: 3dp; background-color: var(--line); color: var(--muted-foreground); font-size: var(--studio-font-10, 10dp); }

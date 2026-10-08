@@ -1,0 +1,4 @@
+name "Picker"
+components {
+    GAME.GameUi document="Picker" hidden=#true
+}

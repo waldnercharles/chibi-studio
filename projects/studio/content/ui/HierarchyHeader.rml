@@ -1,0 +1,11 @@
+<span class="designer-mode">Hierarchy</span>
+<div class="field search"><span class="part addon"><span class="icon sm">&#xea6d;</span></span><input type="text" class="part value" id="hierarchy-filter" placeholder="Filter" data-value="hierarchy.query"/></div>
+<button class="btn icon-only add" popovertarget="hierarchy-add" aria-haspopup="menu" data-tip="Add" data-attr-data-tip-about="hierarchy_header.about"><span class="icon">&#xea60;</span></button>
+<use ui="Menu" id="hierarchy-add">
+  <div class="menu-group">Add</div>
+  <use ui="MenuItem" data-for="element : library.elements" data-alias-item="element" data-event-click="emit('library.add', element.markup, element.label)"/>
+  <use ui="MenuSeparator" data-if="!library.none"/>
+  <use ui="Submenu" data-if="!library.none" data-alias-item="library.widget">
+    <use ui="MenuItem" data-for="widget : library.widgets" data-alias-item="widget" data-event-click="emit('library.add', widget.markup, widget.label)"/>
+  </use>
+</use>

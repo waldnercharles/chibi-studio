@@ -1,0 +1,1 @@
+<choice-list class="choice-list" attrs><div class="field search"><span class="part addon"><span class="icon sm">&#xea6d;</span></span><input type="text" class="part value" placeholder="Search options"/></div><div class="choice-results"><slot/></div><div class="choice-empty">No matching options</div></choice-list>

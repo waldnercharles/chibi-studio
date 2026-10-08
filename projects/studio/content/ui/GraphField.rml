@@ -1,0 +1,39 @@
+<div class="graph-field" attrs>
+  <span class="dim" data-when="kind == 'label'">{{ field.text }}</span>
+  <span class="chip graph-source-context" data-when="kind == 'chip'">{{ field.text }}</span>
+  <div class="field text" data-when="kind == 'text'" data-attrif-data-readonly="field.readonly">
+    <input type="text" class="part value" data-attr-id="field.id" data-attr-aria-label="field.label" data-attr-value="field.text" data-attr-placeholder="field.placeholder" data-attrif-readonly="field.readonly" data-keys="Escape:graph_details.cancel" data-event-change="emit('graph_details.change', field.id, ev.value)"/>
+  </div>
+  <div class="field text" data-when="kind == 'edit'">
+    <input type="text" class="part value" autofocus data-attr-id="field.id" data-attr-aria-label="field.label" data-attr-value="field.text" data-attr-placeholder="field.placeholder" data-keys="Escape:graph_details.cancel" data-event-change="emit('graph_details.change', field.id, ev.value)"/>
+  </div>
+  <div class="field text area" data-when="kind == 'area'" data-attrif-data-readonly="field.readonly">
+    <textarea class="part value" data-attr-id="field.id" data-attr-aria-label="field.label" data-attr-rows="field.precision" data-attr-value="field.text" data-attrif-readonly="field.readonly" data-keys="Escape:graph_details.cancel" data-event-change="emit('graph_details.change', field.id, ev.value)"></textarea>
+  </div>
+  <div class="kind" data-when="kind == 'bool'"><use ui="Checkbox" data-attr-id="field.id" data-attr-aria-label="field.label" data-attrif-checked="field.checked" data-attrif-disabled="field.readonly" data-event-change="emit('graph_details.check', field.id, ev.value)"><span class="label" data-if="field.check != ''">{{ field.check }}</span></use></div>
+  <div class="kind" data-when="kind == 'number'"><use ui="NumberField" data-attr-id="field.id" data-attr-aria-label="field.label" data-attr-value="graph_values[field.slot]" data-attr-min="field.min" data-attr-max="field.max" data-attr-step="field.step" data-attr-precision="field.precision" data-attrif-integer="field.integer" data-attrif-float="field.float" data-attrif-readonly="field.readonly" data-event-input="emit('graph_details.input', field.id, ev.value)" data-event-change="emit('graph_details.change', field.id, ev.value, ev.canceled)"></use></div>
+  <div class="kind" data-when="kind == 'vector'"><use ui="VectorField" data-alias-axes="field.axes" data-alias-values="graph_values" data-alias-field="field" data-event-input="emit('graph_details.input', field.id, ev.value, '', ev.name)" data-event-change="emit('graph_details.change', field.id, ev.value, ev.canceled, ev.name)"></use></div>
+  <div class="kind" data-when="kind == 'choice'"><use ui="EnumField" data-alias-table="field.table" data-alias-value="field.value" data-attrif-data-readonly="field.readonly" data-event-click="emit('graph_details.choices', field.id)" data-event-change="emit('graph_details.change', field.id, ev.value)"></use></div>
+  <div class="kind" data-when="kind == 'container'"><use ui="EnumField" data-alias-table="graph_details.containers.table" data-alias-value="field.container" data-attrif-data-readonly="field.readonly" data-event-change="emit('graph_details.change', field.id, ev.value)"></use></div>
+  <div class="color-alpha-row" data-when="kind == 'color'">
+    <use ui="ColorField" data-attr-id="field.id" data-attr-aria-label="field.label" data-attr-value="field.value" data-attrif-readonly="field.readonly" data-event-input="emit('graph_details.input', field.id, ev.value)" data-event-change="emit('graph_details.change', field.id, ev.value, ev.canceled)"></use>
+    <use ui="NumberField" data-if="field.alpha" data-attr-value="graph_values[field.alphaSlot]" min="0" max="1" step="0.01" precision="3" addon="Alpha" data-attrif-readonly="field.readonly" data-event-input="emit('graph_details.input', field.id, ev.value, '', 'alpha')" data-event-change="emit('graph_details.change', field.id, ev.value, ev.canceled, 'alpha')"></use>
+  </div>
+  <div class="kind" data-when="kind == 'asset'"><use ui="AssetField" data-alias-table="field.table" data-alias-value="field.text" data-attr-data-drop="field.drop" data-drop-hint="Assign" data-attr-data-tip="field.problem" data-attrif-data-readonly="field.readonly" data-attrif-data-invalid="field.invalid" data-event-click="emit('palette.pick', field.kind, field.text, field.table.none, 'typed')" data-event-change="emit('graph_details.change', field.id, ev.value)"></use></div>
+  <choice-list virtualized class="source-field" data-when="kind == 'source'" data-attr-aria-setsize="palette.count" data-attr-highlight="palette_ui.highlight" data-event-highlight="emit('palette.highlight', ev.value, ev.pointer)" data-event-change="emit('palette.choose', ev.value)">
+    <div class="field autocomplete" data-attrif-data-open="graph_details_ui.source == field.id">
+      <input type="text" class="part value" role="combobox" aria-autocomplete="list" data-attr-id="field.id" data-attr-aria-label="field.label" data-attr-aria-expanded="graph_details_ui.source == field.id ? 'true' : 'false'" data-attr-value="field.text" data-attr-placeholder="field.placeholder" data-keys="Escape:graph_details.escape Tab:graph_details.tab" data-event-focus="emit('graph_details.source', field.id)" data-event-input="emit('graph_details.query', field.id, ev.value)"/>
+    </div>
+    <div class="popup autocomplete" popover role="listbox">
+      <div class="source-list" data-when="graph_details_ui.source == field.id">
+        <use ui="List" id="palette-list" data-event-scroll="emit('palette.scroll')">
+          <div class="source-row" data-for="row : palette.rows">
+            <div class="menu-group" data-if="row.heading">{{ row.label }}</div>
+            <div class="menu-item" role="option" data-if="!row.heading" data-attr-value="row.place" data-attr-aria-posinset="row.place" data-attrif-data-current="row.current" data-attr-data-tip="row.about == '' ? '' : row.tip" data-attr-data-tip-about="row.about"><span class="icon lead" aria-hidden="true">{{ row.icon }}</span><span class="text"><span class="label" data-rml="row.label"></span></span><span class="detail" data-attrif-data-empty="row.meta == ''">{{ row.meta }}</span></div>
+          </div>
+        </use>
+        <span class="dropdown-empty" data-if="palette.count == 0">No matching options</span>
+      </div>
+    </div>
+  </choice-list>
+</div>

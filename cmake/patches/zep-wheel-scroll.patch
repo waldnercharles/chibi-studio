@@ -1,0 +1,36 @@
+--- a/src/window.cpp
++++ b/src/window.cpp
+@@ -245,12 +245,17 @@
+     }
+     else if (payload->messageId == Msg::MouseWheel)
+     {
+-        /* TBD: From PR #106: this does not work correctly: It scrolls the text off the page
+-        * completely at the bottom
+-        m_textOffsetPx = std::min(m_textSizePx.y, std::max(0.0f, m_textOffsetPx - 5 * stof(payload->str) * GetEditor().GetDisplay().GetFont(ZepTextType::Text).GetPixelHeight()));
+-        UpdateVisibleLineRange();
+-        DisableToolTipTillMove();
+-        */
++        // Scroll by lines as the scroller's buttons do; the cursor then stays
++        // in view, as in Vim.
++        auto& scroller = *m_vScroller;
++        if (m_bufferRegion->rect.Contains(payload->pos) && scroller.vScrollVisiblePercent < 1.0f)
++        {
++            float lines = -std::stof(payload->str) * 3.0f;
++            float position = scroller.vScrollPosition + lines * scroller.vScrollLinePercent;
++            scroller.vScrollPosition = std::max(0.0f, std::min(1.0f - scroller.vScrollVisiblePercent, position));
++            GetEditor().Broadcast(std::make_shared<ZepMessage>(Msg::ComponentChanged, m_vScroller.get()));
++            payload->handled = true;
++        }
+     }
+ }
+ 
+@@ -679,7 +684,8 @@
+         auto& windowLine = *m_windowLines[line];
+         m_textSizePx.x = std::max(m_textSizePx.x, windowLine.lineTextSizePx.x);
+ 
+-        if (windowLine.yOffsetPx < m_textOffsetPx)
++        // A line the scroll offset cuts shows its lower part.
++        if (windowLine.yOffsetPx + windowLine.FullLineHeightPx() <= m_textOffsetPx)
+         {
+             continue;
+         }

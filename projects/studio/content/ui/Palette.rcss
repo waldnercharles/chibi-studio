@@ -1,0 +1,44 @@
+/* The command palette (cmdk's Command.Dialog), mounted over the editor
+   while it is open (studio_palette_view.c, the `palette` source): a search
+   field, a List the source windows over the ranked results, grouped under
+   headings, and the keys' footer. The virtualized <choice-list> sends
+   palette.highlight as Up, Down, PageUp, PageDown, Home, End or the pointer
+   move it (palette_ui.highlight, a variable of its own) and palette.choose
+   as Enter or a click chooses; Escape or a press outside closes it. A
+   result's label marks the query's letters in bold; an asset shows the
+   thumbnail Assets made of it, once cached. Rows are --row-heading, --row
+   or --row-about tall, as the source windows them. */
+body { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display: block; }
+.command-backdrop { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; background-color: var(--backdrop); }
+.command {
+    position: absolute; left: 50%; top: 88dp; width: 600dp; margin-left: -300dp; background-color: var(--popover);
+    border: 1dp var(--popover-edge); border-radius: 8dp; display: block; box-shadow: var(--shadow-overlay);
+}
+.palette-choices { display: block; }
+.cmd-input { display: flex; align-items: center; gap: 8dp; height: 44dp; padding: 0dp 12dp; border-bottom: 1dp var(--border); }
+.cmd-input .icon { font-size: 15dp; color: var(--faint-foreground); }
+.cmd-input input { flex: 1 1 0dp; font-size: var(--studio-font-14, 14dp); height: var(--studio-height-20, 20dp); color: var(--foreground); }
+.command [data-ui=List] { height: auto; }
+#palette-list {
+    height: auto; max-height: 360dp; padding: 4dp 6dp 6dp;
+    --row: var(--studio-height-32, 32dp); --row-heading: var(--studio-height-26, 26dp); --row-about: 42dp;
+}
+.palette-row { display: block; }
+.cmd-group { height: var(--studio-height-26, 26dp); display: block; padding: 10dp 6dp 0dp; font-size: var(--studio-font-11, 11dp); color: var(--faint-foreground); }
+.cmd-item { display: flex; align-items: center; gap: 10dp; height: var(--studio-height-32, 32dp); padding: 0dp 8dp; border-radius: 5dp; color: var(--foreground); }
+.cmd-item .text { display: block; flex: 1 1 0dp; overflow: hidden; }
+.cmd-item .label { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* A description is a muted second line under the label. */
+.cmd-item .about { display: none; font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-14, 14dp); color: var(--faint-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmd-item[data-described] { height: 42dp; }
+.cmd-item[data-described] .about { display: block; }
+.cmd-item .label b { font-weight: 600; color: var(--strong); }
+.cmd-item .meta { color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); white-space: nowrap; }
+.cmd-item[data-highlighted] { background-color: var(--item-selected); }
+.cmd-item .picture { display: none; }
+.cmd-item[data-picture] > .icon { width: 22dp; height: 22dp; }
+.cmd-item[data-picture] .picture { display: block; width: 22dp; height: 22dp; border-radius: 3dp; }
+/* Between the empty List's paddings, as when the rows held it. */
+.cmd-empty { height: 64dp; margin: -6dp 0dp 6dp; line-height: var(--studio-line-64, 64dp); display: block; text-align: center; color: var(--faint-foreground); }
+.cmd-footer { display: flex; align-items: center; gap: 4dp; height: var(--studio-height-32, 32dp); padding: 0dp 12dp; border-top: 1dp var(--border); color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); }
+.cmd-footer .hint { margin-right: 10dp; }

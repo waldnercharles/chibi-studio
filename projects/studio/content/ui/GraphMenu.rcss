@@ -1,0 +1,10 @@
+/* The graph canvas's context menus (studio_graph_menu.c, the `graph_menu`
+   source): a node's, a pin's, a wire's or a comment frame's, at the right
+   click, in a document of its own shown only while it is open, as Unreal's
+   graph context menus are. Its entries are MenuItems with a separator above
+   where one is marked; Select, Alignment, Break Link To and Color open
+   beside their rows. A comment frame's colors are dots in their color, the
+   frame's own in primary. */
+body { display: block; }
+.graph-menu-entry { display: block; }
+.menu-item { height: var(--menu-row-h); }

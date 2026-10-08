@@ -1,0 +1,31 @@
+/* Base UI Select over RmlUi's select, as shadcn's Native Select wraps the
+   browser's: the use's child is the <select> with its options and binding,
+   as <select data-value="save.quality"><option value="low">Low</option>.
+   The trigger shows the chosen option, Enter opens the list, Up and Down
+   choose in it, and a press outside closes it. */
+body { display: flex; }
+.select-root { position: relative; display: flex; min-width: 140dp; }
+select {
+  display: block; flex: 1 1 auto; height: var(--h); padding: 0dp 26dp 0dp 8dp;
+  background-color: var(--secondary); border: 1dp var(--input); border-radius: var(--r);
+  color: var(--foreground); nav: auto; cursor: pointer;
+  transition: background-color 0.11s cubic-out;
+}
+select:hover { background-color: var(--field-hover); }
+select:focus-visible { border-color: var(--ring); }
+select selectvalue { height: var(--text-line); line-height: var(--text-line); white-space: nowrap; }
+select selectarrow { width: 0dp; height: 0dp; }
+.caret {
+  position: absolute; right: 6dp; top: 0dp; height: var(--h); line-height: var(--h);
+  font-size: var(--studio-font-12, 12dp); color: var(--faint-foreground); pointer-events: none;
+}
+select selectbox {
+  margin-top: 4dp; padding: 4dp; max-height: var(--dropdown-box-h, 192dp); overflow-y: auto;
+  background-color: var(--popover); border: 1dp var(--popover-edge); border-radius: var(--r-lg);
+}
+select selectbox option {
+  display: block; height: var(--h); line-height: var(--h); padding: 0dp 8dp;
+  border-radius: var(--r); color: var(--foreground); white-space: nowrap;
+}
+select selectbox option:checked { color: var(--primary-text); font-weight: 600; }
+select selectbox option:hover { background-color: var(--primary); color: var(--primary-foreground); }

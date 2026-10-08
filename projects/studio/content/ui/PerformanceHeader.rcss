@@ -1,0 +1,6 @@
+/* Performance's header (studio_performance.c): its title, and the frame
+   rate and times of the last two seconds, refreshed four times a second
+   as a <live-text>, so they change without layout. */
+body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.perf-title { display: block; line-height: var(--studio-line-16, 16dp); color: var(--foreground); font-weight: 500; margin-left: 2dp; }
+.perf-readout { display: block; line-height: var(--studio-line-16, 16dp); color: var(--muted-foreground); font-family: var(--font-numeric); margin-right: 6dp; }

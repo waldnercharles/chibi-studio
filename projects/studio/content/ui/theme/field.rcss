@@ -1,0 +1,144 @@
+/* Field shell (shadcn Input Group): addon, value, unit, stepper arrows. The
+   native <number-field> and <color-field> (src/ui/controls/controls.h) build
+   their parts and reflect their state as data-*; a color field's picker lives
+   inside it, so part rules use child combinators to stay off the picker's. */
+.field {
+    position: relative; display: flex; align-items: center; height: var(--h); flex: 1 1 0dp;
+    background-color: var(--secondary); border-radius: var(--r); color: var(--foreground); overflow: hidden;
+    border: 1dp var(--input);
+    transition: background-color 0.11s cubic-out;
+}
+.field:hover { background-color: var(--field-hover); }
+.field[data-disabled] { opacity: 0.45; }
+.field[data-readonly] { background-color: transparent; border-color: var(--border); }
+.field[data-readonly] > .step { display: none; }
+.field[data-editing] { background-color: var(--field-edit); border-color: var(--ring); }
+.field[data-invalid] { border-color: var(--destructive); }
+.field[data-scrubbing] { background-color: var(--field-press); }
+.field:focus-visible { border-color: var(--ring); }
+.field.number { tab-index: auto; drag: drag; cursor: ew-resize; }
+.field.number[data-readonly], .field.number[data-disabled] { cursor: arrow; }
+.field.number[data-disabled] { tab-index: none; }
+.field > .fill { position: absolute; left: 0dp; top: 0dp; bottom: 0dp; background-color: var(--fill); pointer-events: none; }
+.field:hover > .fill, .field[data-scrubbing] > .fill { background-color: var(--fill-hover); }
+.field > .mark { position: absolute; left: 0dp; top: 3dp; bottom: 3dp; width: 2dp; border-radius: 1dp; background-color: transparent; }
+.field[data-overridden] > .mark { background-color: var(--override); }
+.field[data-mixed] > .value { color: var(--muted-foreground); }
+.field.color[data-mixed] > .swatch { opacity: 0.35; }
+.field .part { position: relative; display: block; height: var(--text-line); line-height: var(--text-line); }
+.field .addon { padding-left: 7dp; color: var(--faint-foreground); flex: 0 0 auto; }
+.field[data-axis=x] > .addon { color: var(--axis-x); }
+.field[data-axis=y] > .addon { color: var(--axis-y); }
+.field .value {
+    flex: 1 1 0dp; padding: 0dp 7dp; text-align: right;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-numeric);
+}
+.field .unit { padding-right: 7dp; color: var(--faint-foreground); flex: 0 0 auto; margin-left: -4dp; }
+/* RmlUi sizes the insertion caret from line-height. Keep the input hit box
+   full-height and center the shorter text line inside it with padding. */
+.field input.value {
+    height: var(--text-line); line-height: var(--input-line); padding-top: var(--input-pad); padding-bottom: var(--input-pad);
+    cursor: text; font-family: var(--studio-standard-font-family, inter); color: var(--foreground);
+}
+.field.number input.value { font-family: var(--font-numeric); }
+.field input.value selection { background-color: var(--primary); color: var(--primary-foreground); }
+.field .step {
+    position: absolute; top: 0dp; bottom: 0dp; width: 14dp; display: flex; align-items: center; justify-content: center;
+    color: var(--muted-foreground); opacity: 0; transition: opacity 0.11s cubic-out; cursor: arrow;
+}
+.field .step .icon { font-size: 10dp; width: 10dp; }
+.field .step.dec { left: 0dp; }
+.field .step.inc { right: 0dp; }
+.field:hover > .step { opacity: 1; }
+.field[data-slider] > .step, .field[data-editing] > .step, .field[data-scrubbing] > .step { opacity: 0; }
+.field .step:hover { background-color: var(--press); }
+.field.text:focus-within, .field.search:focus-within, .field.autocomplete:focus-within { border-color: var(--ring); }
+.field.text, .field.search, .field.autocomplete { background-color: var(--field-edit); cursor: text; }
+.field.text:hover, .field.search:hover, .field.autocomplete:hover { background-color: var(--input-hover); }
+.field.text .value, .field.search .value, .field.autocomplete .value { text-align: left; font-family: var(--studio-standard-font-family, inter); }
+.field.text input.value, .field.search input.value, .field.autocomplete input.value { width: 100%; padding: var(--input-pad) 7dp; }
+.field.search .addon { padding-left: 6dp; }
+.field.search .addon .icon { color: var(--faint-foreground); }
+.field.search input.value { padding-left: 5dp; }
+.field.area { display: block; height: auto; }
+.field.area textarea.value {
+    display: block; width: 100%; height: auto; padding: 2dp 7dp; line-height: var(--studio-line-16, 16dp); cursor: text;
+    font-family: var(--studio-standard-font-family, inter); color: var(--foreground); text-align: left; white-space: pre-wrap; overflow-y: auto;
+}
+.field.area textarea.value selection { background-color: var(--primary); color: var(--primary-foreground); }
+
+/* Joined vector: components share one control. */
+.joined { display: flex; flex: 1 1 0dp; gap: 1dp; }
+.joined .field { border-radius: 0dp; }
+.joined .field:first-child { border-radius: 4dp 0dp 0dp 4dp; }
+.joined .field:last-child { border-radius: 0dp 4dp 4dp 0dp; }
+
+/* Select trigger. */
+.field.select { justify-content: flex-start; padding: 0dp 4dp 0dp 8dp; gap: 6dp; cursor: arrow; tab-index: auto; }
+.field.select .value { padding: 0dp; text-align: left; font-family: var(--studio-standard-font-family, inter); }
+.field.select .caret { color: var(--faint-foreground); width: 14dp; }
+.field.select[data-open] { background-color: var(--field-edit); }
+
+/* Color field. */
+.field.color { cursor: arrow; tab-index: auto; }
+.field.color:focus-visible { border-color: var(--ring); }
+.field.color[data-disabled] { tab-index: none; }
+.field.color > .swatch { position: absolute; left: 3dp; right: 3dp; top: 3dp; bottom: 3dp; border-radius: 2dp; }
+.field.color > .swatch.none { border: 1dp var(--border); }
+.color-alpha-row { display: flex; align-items: center; gap: 4dp; width: 100%; }
+.color-alpha-row .field.color { flex: 0 0 48dp; }
+
+/* Checkbox. */
+.check { display: inline-flex; align-items: center; gap: 7dp; height: var(--h); color: var(--foreground); tab-index: auto; }
+.check .box {
+    width: 14dp; height: 14dp; border-radius: 3dp; background-color: var(--secondary); border: 1dp var(--input);
+    display: flex; align-items: center; justify-content: center;
+    transition: background-color 0.11s cubic-out;
+}
+.check:hover .box { background-color: var(--field-hover); }
+.check:focus-visible .box { border-color: var(--ring); }
+.check .box .icon { font-size: 11dp; width: 12dp; color: var(--primary-foreground); opacity: 0; }
+.check[data-checked] .box { background-color: var(--primary); border-color: var(--primary); }
+.check[data-checked] .box .icon { opacity: 1; }
+/* Mixed values (Unity's): a dash for several objects' differing values. */
+.check .box .icon.dash { display: none; }
+.check[data-mixed] .box { background-color: var(--primary); border-color: var(--primary); }
+.check[data-mixed] .box .icon { display: none; }
+.check[data-mixed] .box .icon.dash { display: block; opacity: 1; }
+.check[data-disabled], .check[data-readonly] { opacity: 0.5; }
+.check[data-disabled] { tab-index: none; }
+
+/* Asset field (kit_picker): a select trigger that opens a search over assets. */
+.field.select.picker { tab-index: auto; }
+.field.select.picker .lead { color: var(--muted-foreground); width: 14dp; font-size: var(--studio-font-12, 12dp); }
+.field.select.picker[data-placeholder] .value { color: var(--faint-foreground); }
+
+/* The shadcn Input anatomy applies to editable fields in the reusable popover. */
+.popover .field.text, .popover .field.search {
+    height: var(--studio-height-36, 36dp); flex: 0 0 auto; background-color: transparent; border-color: var(--input);
+    border-radius: var(--r, 4dp);
+}
+body.comfortable .popover .field.text, body.comfortable .popover .field.search {
+    height: var(--studio-height-40, 40dp);
+}
+.dark .popover .field.text, .dark .popover .field.search {
+    background-color: color-mix(in srgb, var(--input) 30%, transparent);
+}
+.popover .field.text:hover, .popover .field.search:hover { background-color: var(--input-hover); }
+.dark .popover .field.text:hover, .dark .popover .field.search:hover {
+    background-color: color-mix(in srgb, var(--input) 42%, transparent);
+}
+.popover .field.text input.value, .popover .field.search input.value {
+    width: 100%; height: var(--studio-line-20, 20dp); padding: 0dp var(--studio-height-12, 12dp);
+    background-color: transparent; color: var(--foreground); font-size: var(--studio-font-14, 14dp);
+    line-height: var(--studio-line-20, 20dp); border-radius: var(--r, 4dp);
+}
+.popover .field.text[data-editing], .popover .field.text:focus-within,
+.popover .field.search[data-editing], .popover .field.search:focus-within {
+    background-color: var(--popover); border-color: var(--ring);
+    box-shadow: 0dp 0dp 0dp 3dp color-mix(in srgb, var(--ring) 50%, transparent);
+}
+.dark .popover .field.text[data-editing], .dark .popover .field.text:focus-within,
+.dark .popover .field.search[data-editing], .dark .popover .field.search:focus-within {
+    background-color: color-mix(in srgb, var(--input) 30%, transparent);
+}

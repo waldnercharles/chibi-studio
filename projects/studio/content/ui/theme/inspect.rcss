@@ -1,0 +1,19 @@
+/* The UI Inspector's overlay (kit_inspect.c): DevTools' highlight colors for
+   the margin, border, padding and content boxes, and a label naming the
+   element and its size. While picking, the overlay takes the pointer. */
+.inspect-overlay { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; pointer-events: none; z-index: 40; }
+.inspect-overlay.guides { z-index: 0; }
+.inspect-overlay[data-picking] { pointer-events: auto; cursor: crosshair; }
+/* RmlUi clips only overflowing content unless told always. */
+.inspect-highlight { position: absolute; overflow: hidden; clip: always; pointer-events: none; }
+.inspect-highlight .band { position: absolute; border-color: transparent; }
+.inspect-highlight .band.margin { border-color: #f6b26ba8; }
+.inspect-highlight .band.border { border-color: #ffe599a8; }
+.inspect-highlight .band.padding { border-color: #93c47d8c; }
+.inspect-highlight .band.content { background-color: #6fa8dca8; }
+/* The selection keeps an outline while the Inspector shows it. */
+.inspect-highlight.selected .band.content { background-color: transparent; border: 1dp var(--primary); }
+.inspect-highlight .label {
+    position: absolute; height: var(--studio-height-18, 18dp); line-height: var(--studio-line-16, 16dp); padding: 0dp 6dp; border-radius: 3dp; white-space: nowrap;
+    font-size: var(--studio-font-11, 11dp); color: var(--popover-foreground); background-color: var(--popover); border: 1dp var(--popover-edge);
+}

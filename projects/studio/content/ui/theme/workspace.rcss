@@ -1,0 +1,174 @@
+/* Studio workspace (the kit's studio.rml), ported from
+   docs/prototypes/studio/studio.css. Areas are Blender-style splits, each with
+   a header and an editor type. */
+
+body.studio { width: 100%; height: 100%; margin: 0dp; padding: 0dp; background-color: var(--app); overflow: hidden; }
+
+#app { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display: flex; flex-direction: column; }
+
+/* The top bar is projects/studio's TopBar, and each area's header its
+   AreaHeader. A modified document's dot, as the Text Editor shows it. */
+.dirty-dot { width: 6dp; height: 6dp; border-radius: 3dp; background-color: var(--muted-foreground); }
+
+/* The top bar, the workspace (projects/studio's Workspace) and the status
+   bar are documents of their own over their places in this one
+   (kit_document_begin), and so is each area over its place in the
+   workspace, so a change inside one lays out only that one. A bar's place
+   takes its document's height; an area fills its document. */
+.workspace-place { flex: 1 1 0dp; min-height: 0dp; }
+.bar-place { flex: 0 0 auto; }
+.area { position: relative; display: flex; flex-direction: column; background-color: var(--background); border-radius: var(--r-lg); overflow: hidden; }
+body > .area { height: 100%; }
+/* Editors' controls in their area's header. */
+.area-head .menu-btn { color: var(--foreground); padding: 0dp 6dp; }
+/* Breadcrumbs (studio_graph_nav.c): the behavior, the calls entered and the open graph. */
+.area-head .crumbs { display: flex; align-items: center; gap: 2dp; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; flex: 0 1 auto; min-width: 0dp; }
+.area-head .crumbs .crumb { padding: 0dp 4dp; color: var(--muted-foreground); flex: 0 1 auto; min-width: 0dp; }
+.area-head .crumbs .crumb .icon { flex: 0 0 auto; }
+.area-head .crumbs .crumb .label { min-width: 0dp; overflow: hidden; text-overflow: ellipsis; }
+.area-head .crumbs .crumb.current { color: var(--foreground); }
+.area-head .crumbs .crumb-sep { color: var(--disabled-foreground); font-size: var(--studio-font-10, 10dp); width: 10dp; flex: 0 0 auto; }
+.area-body { flex: 1 1 0dp; position: relative; overflow: hidden; }
+.area-panel { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; overflow-y: auto; padding: 8dp; }
+
+/* Outliner. */
+.outliner { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; overflow-y: auto; padding: 3dp 4dp 8dp; }
+.outliner-empty { position: absolute; left: 0dp; right: 0dp; top: 40dp; color: var(--faint-foreground); text-align: center; pointer-events: none; }
+
+/* The Properties pane's authored shell is styled in Properties.rcss. */
+.identity { display: flex; align-items: center; gap: 8dp; padding: 6dp 4dp 12dp; }
+.identity .glyph { width: 30dp; height: 30dp; flex: 0 0 auto; border-radius: var(--r-lg); background-color: var(--panel-head); display: flex; align-items: center; justify-content: center; }
+.identity .glyph .icon { font-size: 16dp; color: var(--foreground); }
+.identity .who { flex: 1 1 0dp; display: flex; flex-direction: column; gap: 3dp; }
+.identity .who .title { font-size: var(--studio-font-13, 13dp); font-weight: 600; }
+/* The name, a field that reads as the title until hovered or edited (Unity's Inspector). */
+.identity .name-field { display: flex; margin-left: -8dp; }
+.identity .name-field .field.text { height: var(--studio-height-20, 20dp); background-color: transparent; border-color: transparent; }
+.identity .name-field .field.text:hover { background-color: var(--input-hover); border-color: var(--input); }
+.identity .name-field .field.text[data-editing] { background-color: var(--field-edit); border-color: var(--ring); }
+.identity .name-field .field[data-readonly] { border-color: transparent; }
+.identity .name-field input.value { font-size: var(--studio-font-13, 13dp); font-weight: 600; }
+.identity .lineage { display: flex; align-items: center; gap: 4dp; color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); white-space: nowrap; }
+.identity .lineage .btn { height: var(--studio-height-16, 16dp); padding: 0dp 3dp; font-size: var(--studio-font-11, 11dp); color: var(--muted-foreground); gap: 3dp; }
+.identity .lineage .btn .icon { font-size: 10dp; width: 11dp; }
+.prop-empty { padding: 20dp 8dp; color: var(--faint-foreground); text-align: center; }
+.behavior-row { display: flex; align-items: center; gap: 6dp; height: var(--studio-height-26, 26dp); padding: 0dp 4dp 0dp 6dp; border-radius: var(--r); margin-top: 2dp; background-color: var(--secondary); }
+.behavior-row { cursor: pointer; transition: background-color 0.11s cubic-out; }
+.behavior-row:hover { background-color: var(--field-hover); }
+.behavior-row[data-current] { background-color: var(--primary-soft); }
+.behavior-row[data-current] .icon { color: var(--primary-text); }
+.behavior-row .name { flex: 1 1 0dp; }
+.behavior-row .graphs { color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); }
+.add-row { margin-top: 6dp; display: flex; }
+.add-row .btn { flex: 1 1 0dp; }
+
+/* Behavior graph: the canvas is its own zoomed document (graph.rml), shown here. */
+.graph-surface { position: absolute; left: 0dp; top: 0dp; width: 100%; height: 100%; }
+.area-head .readout { color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); font-family: var(--font-numeric); padding: 0dp 4dp; }
+/* A paused run's call stack floats over the canvas's bottom-left corner. */
+.call-stack {
+    position: absolute; left: 8dp; bottom: 8dp; width: 280dp; padding: 4dp; display: flex; flex-direction: column;
+    background-color: var(--floating); border: 1dp var(--line); border-radius: var(--r-lg);
+    opacity: 1; margin-top: 0dp; transition: opacity 0.14s cubic-out;
+}
+.call-stack[data-starting-style], .call-stack[data-ending-style] { opacity: 0; }
+.call-stack[data-ending-style] { transition: opacity 0.1s cubic-out; }
+.call-stack-head { display: flex; align-items: center; gap: 6dp; height: var(--studio-height-20, 20dp); padding: 0dp 6dp; font-size: var(--studio-font-12, 12dp); font-weight: 600; white-space: nowrap; overflow: hidden; }
+.call-stack-head .dim { font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
+.call-stack .tree-row .icon { color: var(--faint-foreground); }
+.call-stack .tree-row[data-selected] .icon { color: var(--warning); }
+
+/* A source that feeds a pin, in Properties (the graph draws its own). */
+.prop .chip { display: block; height: var(--studio-height-18, 18dp); padding: 0dp 6dp; border-radius: 3dp; background-color: var(--field-edit); color: var(--tok-name); font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-18, 18dp); white-space: nowrap; overflow: hidden; }
+
+/* Editors without content yet. */
+/* An empty graph's hint, over the canvas's middle; the canvas keeps the pointer. */
+.graph-empty { position: absolute; left: 0dp; right: 0dp; top: 50%; text-align: center; color: var(--faint-foreground); pointer-events: none; }
+.pending-editor { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display: flex; align-items: center; justify-content: center; color: var(--faint-foreground); background-color: var(--canvas); }
+/* The Behavior area with no graph: the selected object's behaviors to open. */
+.behavior-empty { flex-direction: column; gap: 6dp; padding: 16dp; }
+.behavior-empty .glyph { font-size: 22dp; width: 28dp; line-height: 28dp; color: var(--disabled-foreground); }
+.behavior-empty .title { color: var(--foreground); font-weight: 600; }
+.behavior-choices { display: flex; flex-wrap: wrap; justify-content: center; gap: 6dp; max-width: 480dp; margin-top: 4dp; }
+
+/* Find in the graph (GraphFind) and in the Text Editor (CodeFind): floats
+   over the canvas's or the text's top right, as VS Code's find widget
+   does. */
+.find-widget {
+    position: absolute; top: 8dp; right: 8dp; width: 340dp; display: flex; flex-direction: column; gap: 4dp;
+    padding: 4dp; background-color: var(--popover); border: 1dp var(--popover-edge); border-radius: var(--r-lg);
+    z-index: 5;
+}
+.find-widget-bar { display: flex; align-items: center; gap: 2dp; }
+.find-widget-bar .search { flex: 1 1 0dp; min-width: 0dp; }
+.find-widget-count { display: block; flex: 0 0 auto; padding: 0dp 4dp; line-height: var(--studio-line-16, 16dp); color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); font-family: var(--font-numeric); white-space: nowrap; }
+
+/* The name filter of Assets (AssetsHeader) and of a UI document's Library. */
+.assets-filter { flex: 1 1 0dp; display: flex; max-width: 220dp; margin-left: 4dp; }
+
+/* A member's type swatch, in Members (Members.rcss) and its Properties. */
+.member-swatch { width: 9dp; height: 9dp; flex: 0 0 auto; margin: 0dp 5dp 0dp 3dp; }
+.object-rename .field { height: var(--studio-height-20, 20dp); margin-right: 4dp; }
+/* Apply Overrides to Prototype: a checkbox per overridden field, its value
+   beside it, as the refactor popover's rows. */
+.popup.prototype-apply { width: 320dp; }
+.prototype-field { display: flex; align-items: center; gap: 8dp; height: var(--h); padding: 0dp 8dp 0dp 6dp; white-space: nowrap; }
+.prototype-field .check { flex: 1 1 auto; min-width: 0dp; overflow: hidden; }
+.prototype-field .kbd { flex: 0 0 auto; margin-left: 16dp; color: var(--faint-foreground); font-family: var(--font-numeric); }
+/* Rename and safe delete: the new name, then the assets it rewrites or the
+   uses a delete leaves, as rows shaped like the menu's items. */
+.popup.refactor { width: 300dp; }
+.refactor-field { display: block; padding: 2dp 4dp 4dp; }
+.refactor-field .field { height: var(--studio-height-24, 24dp); }
+.refactor-row { display: flex; align-items: center; gap: 8dp; height: var(--h); padding: 0dp 8dp 0dp 6dp; white-space: nowrap; color: var(--foreground); }
+.refactor-row .lead { color: var(--muted-foreground); }
+.refactor-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.refactor-row .kbd { margin-left: 16dp; flex: 0 0 auto; color: var(--faint-foreground); }
+.type-pick { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; }
+.type-pick .member-swatch { margin: 0dp 4dp; }
+.type-pick .type-button { flex: 1 1 0dp; justify-content: flex-start; overflow: hidden; }
+.param-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4dp; margin-top: var(--gap); }
+.param-name { display: flex; align-items: center; gap: 4dp; flex: 1 0 160dp; min-width: 0dp; }
+.param-name .btn { flex: 0 0 auto; }
+.param-settings { display: flex; align-items: center; gap: 4dp; flex: 1 1 190dp; min-width: 0dp; }
+.param-row .field { flex: 1 1 0dp; }
+.param-settings .type-pick { flex: 1 1 104dp; min-width: 0dp; }
+.param-settings .select { flex: 1 1 78dp; min-width: 0dp; }
+.param-row .param-grip { flex: 0 0 12dp; width: 12dp; font-size: var(--studio-font-12, 12dp); color: var(--disabled-foreground); cursor: grab; }
+.param-row .param-grip:hover { color: var(--muted-foreground); }
+.param { border-radius: 4dp; }
+
+/* UI documents (workstream D). The Text Editor: the part's code editor
+   (kit_code) filling the body, and a status line while the text does not
+   read; its header is CodeHeader. */
+.code-editor { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display: flex; flex-direction: column; background-color: var(--background); }
+.code-editor kit-code { flex: 1 1 0dp; min-height: 0dp; }
+.code-status { display: flex; align-items: center; gap: 6dp; height: var(--studio-height-22, 22dp); flex: 0 0 auto; padding: 0dp 8dp; border-top: 1dp var(--edge); background-color: var(--muted); color: var(--destructive); white-space: nowrap; overflow: hidden; }
+.code-status .message { overflow: hidden; text-overflow: ellipsis; }
+/* Assets ▸ New: the name of the new asset. */
+.popup.new-asset { width: 260dp; }
+.new-asset-field { display: block; padding: 2dp 4dp 4dp; }
+.new-asset-field .field { height: var(--studio-height-24, 24dp); }
+.new-asset-error { display: flex; align-items: center; gap: 8dp; min-height: var(--h); padding: 0dp 8dp 0dp 6dp; color: var(--destructive); }
+
+/* Visual designer (workstream H): the Hierarchy, Details and Library are
+   authored (Hierarchy.rcss, Details.rcss, Library.rcss); the theme keeps
+   their headers' label and the Canvas's outlines. */
+.designer-mode { display: block; flex: 0 0 auto; padding: 0dp 6dp 0dp 2dp; font-weight: 600; color: var(--foreground); white-space: nowrap; }
+/* The Canvas: the element under the pointer, a drop's target and the
+   selection, labeled as UMG labels its selected widget. */
+.inspect-highlight.designer-hover .band.content { background-color: transparent; border: 1dp var(--primary-edge); }
+.inspect-highlight.designer-target .band.content { background-color: var(--primary-soft); border: 1dp var(--primary); }
+.inspect-highlight.selected .label { color: var(--primary-foreground); background-color: var(--primary); border-color: var(--primary); }
+.designer-drop { position: absolute; pointer-events: none; }
+.designer-drop[data-active] { pointer-events: auto; }
+.designer-drop[data-drop-over] { background-color: transparent; }
+/* Workstream Q: where a Canvas drop lands between siblings. */
+.designer-drop-line { position: absolute; pointer-events: none; background-color: var(--primary); border-radius: 1dp; }
+/* The selection's resize handles (Unity UI Builder's): its right and bottom
+   edges and corner. */
+.designer-handle { position: absolute; pointer-events: auto; background-color: var(--primary-foreground); border: 1dp var(--primary); border-radius: 2dp; }
+.designer-handle:hover, .designer-handle[data-active] { background-color: var(--primary); }
+.designer-handle.e { cursor: ew-resize; }
+.designer-handle.s { cursor: ns-resize; }
+.designer-handle.se { cursor: nwse-resize; }

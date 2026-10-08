@@ -1,0 +1,45 @@
+behavior "VirtualList" {
+    owner "ecs.entity";
+    state RowHeight: float = 24.0;
+    state Overscan: int = 6;
+    state ShownFirst: int = -1;
+    state ShownCount: int = -1;
+    value get_ui_scroll = get_ui_scroll(Entity: 0, Element: "#list");
+    value rowheight_2 = get_variable<"RowHeight">();
+    value overscan = get_variable<"Overscan">();
+    value max_0_floor_top_rowheight_overscan = "max(0, floor(Top / RowHeight) - Overscan)"(Top: float = get_ui_scroll."Scroll Top", RowHeight: float = rowheight_2, Overscan: int = overscan);
+    value ceil_max_view_400_rowheight_2_overscan = "ceil(max(View, 400) / RowHeight) + 2 * Overscan"(View: float = get_ui_scroll."View Height", RowHeight: float = rowheight_2, Overscan: int = overscan);
+    value rowheight = get_variable<"RowHeight">();
+    value shownfirst_2 = get_variable<"ShownFirst">();
+    value showncount_2 = get_variable<"ShownCount">();
+    on Tick as tick(DeltaSeconds: float = 0.0) {
+        if (max_0_floor_top_rowheight_overscan != convert<"To Real">(shownfirst_2) || ceil_max_view_400_rowheight_2_overscan != convert<"To Real">(showncount_2)) {
+            await set_variable<"ShownFirst">(Value: convert<"To Integer">(max_0_floor_top_rowheight_overscan));
+            await set_variable<"ShownCount">(Value: convert<"To Integer">(ceil_max_view_400_rowheight_2_overscan));
+            await set_ui_data(Entity: 0, Name: "first", Value: double = max_0_floor_top_rowheight_overscan);
+            await set_ui_data(Entity: 0, Name: "row", Value: float = rowheight);
+            send_event<"ShowRows">(Entity: self, First: int = convert<"To Integer">(max_0_floor_top_rowheight_overscan), Count: int = convert<"To Integer">(ceil_max_view_400_rowheight_2_overscan));
+        } else {
+        }
+    }
+    pure function "max(0, floor(Top / RowHeight) - Overscan)"<T0: float, T1: float, T2: int, T3: double>(Top: T0 = 0.0, RowHeight: T1 = 0.0, Overscan: T2 = 0) -> (Result: T3 = 0.0) {
+        depth_limit 64;
+        value real = real(Value: 0.0);
+        value divide = divide(A: double = entry.Top, B: double = entry.RowHeight);
+        value floor = floor(Value: divide);
+        value subtract = subtract(A: double = floor, B: double = convert<"To Real">(entry.Overscan));
+        value max = max(A: double = real, B: double = subtract);
+        result Result: double = max;
+    }
+    pure function "ceil(max(View, 400) / RowHeight) + 2 * Overscan"<T0: float, T1: float, T2: int, T3: double>(View: T0 = 0.0, RowHeight: T1 = 0.0, Overscan: T2 = 0) -> (Result: T3 = 0.0) {
+        depth_limit 64;
+        value real = real(Value: 400.0);
+        value max = max(A: double = entry.View, B: double = real);
+        value divide = divide(A: double = max, B: double = entry.RowHeight);
+        value ceiling = ceiling(Value: divide);
+        value real_2 = real(Value: 2.0);
+        value multiply = multiply(A: double = real_2, B: double = convert<"To Real">(entry.Overscan));
+        value add = add(A: double = ceiling, B: double = multiply);
+        result Result: double = add;
+    }
+}

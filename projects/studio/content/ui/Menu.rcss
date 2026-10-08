@@ -1,0 +1,11 @@
+/* Base UI's Menu as a popover (ui/popover.c): give it an id and open it with
+   <button popovertarget="id">. Its items are MenuItem, MenuCommand,
+   MenuCheck and MenuOption, with Submenu, MenuGroup and MenuSeparator; the
+   pointer, the arrow keys and typeahead highlight them, and Enter or a click
+   runs one. Where it is written it takes no room. RmlUi places a fixed box
+   against its nearest positioned ancestor, so this one is as wide as a menu
+   may grow, and the menu fits its widest row. Its items are built when it
+   opens and removed once it has closed (data-template, ui/popover.c), so a
+   closed menu holds no elements and binds nothing; data-* bindings written on
+   its use element are cancelled, so put them on an element around it. */
+body { position: absolute; width: 480dp; height: 0dp; }

@@ -1,0 +1,10 @@
+behavior Recharge {
+    charge := 0
+    capacity := 100
+    rate := 12
+
+    on Tick(dt) {
+        gained := rate * dt
+        charge = clamp(charge + gained, 0, capacity)
+    }
+}

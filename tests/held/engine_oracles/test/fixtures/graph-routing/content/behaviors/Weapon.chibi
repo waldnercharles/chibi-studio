@@ -1,0 +1,47 @@
+behavior "Weapon" {
+    owner "ecs.entity";
+    macro AdvanceElapsed(elapsed: ref float, dt: double) -> () {
+        elapsed = cast<float>(cast<double>(elapsed) + dt);
+    }
+    state elapsed: float = 0.125;
+    value self_2 = engine["Self"]();
+    value find_nearest_entity = find_nearest_entity(Position: &component("GAME.GameTransform"), Radius: 2000.0, Categories: 2, Exclude: self_2);
+    action elapsed_dt = AdvanceElapsed(elapsed: ref float = &state.elapsed, dt: double = &delta);
+    value transform_visual_offset = transform_visual_offset(Offset: {
+        x: 16.0,
+        y: 0.0
+    }, Elevation: 0.0, Heading: &component("GAME.GameOrientation", "radians"), Visual: {
+        pitch: 0.0,
+        yaw: 0.0,
+        roll: 0.0,
+        scale: 1.0
+    });
+    value self_3 = engine["Self"]();
+    on Tick as tick(DeltaSeconds: float = 0.0) {
+        if (&component("GAME.GameAim", "manual")) {
+            elapsed_dt();
+        } else {
+            if (find_nearest_entity.Found) {
+                await set_game_aim_direction(Value: convert<"game_transform_to_cf">(direction_to(Origin: &component("GAME.GameTransform"), Target: convert<"game_transform_to_cf">(find_nearest_entity.Position))), Target: 0);
+                elapsed_dt();
+            } else {
+                elapsed_dt();
+            }
+        }
+    }
+    after elapsed_dt {
+        if (&component("GAME.GameAim", "firing")) {
+            while (greater_or_equal(A: &state.elapsed, B: &component("GAME.GameWeapon", "cooldown"))) {
+                await "WeaponActions"."Fire Projectile"(Origin: "position + offset"(position: struct<"CF_V2"> = &component("GAME.GameTransform"), offset: struct<"CF_V2"> = transform_visual_offset.Offset), Direction: &component("GAME.GameAim", "direction"), Damage: &component("GAME.GameWeapon", "damage"), Prototype: "Projectile", Shooter: self_3);
+                &state.elapsed -= cast<double>(&component("GAME.GameWeapon", "cooldown"));
+            }
+        } else {
+            &state.elapsed = min(&state.elapsed, cast<double>(&component("GAME.GameWeapon", "cooldown")));
+        }
+    }
+    pure function "position + offset"<T0: struct<"CF_V2">, T1: struct<"CF_V2">, T2: struct<"CF_V2">>(position: T0 = null, offset: T1 = null) -> (Result: T2 = null) {
+        depth_limit 64;
+        value add = add(A: struct<"CF_V2"> = entry.position, B: struct<"CF_V2"> = entry.offset);
+        result Result: struct<"CF_V2"> = add;
+    }
+}

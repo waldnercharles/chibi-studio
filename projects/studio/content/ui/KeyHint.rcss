@@ -1,0 +1,7 @@
+/* A key hint, as a status bar or a game's button prompt shows one: a mouse
+   icon or a key, and what it does. Repeat it over items with an icon, a key
+   and a label: <use ui="KeyHint" data-for="hint : hints"/>. */
+body { display: flex; align-items: center; gap: 4dp; flex: 0 0 auto; }
+.icon, .kbd-key, .label { flex-shrink: 0; }
+.icon { font-size: 13dp; width: 14dp; color: var(--faint-foreground); }
+.kbd-key { height: var(--studio-height-16, 16dp); min-width: 16dp; }

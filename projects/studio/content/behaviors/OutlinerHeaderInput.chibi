@@ -1,0 +1,20 @@
+behavior "OutlinerHeaderInput" {
+    owner "ecs.entity";
+    value editor_state = editor_state();
+    value scene_info = scene_info();
+    action prototype_choices = engine["Prototype Choices"]();
+    on Refresh as refresh() {
+        prototype_choices();
+    }
+    after prototype_choices {
+        await set_ui_data(Entity: 0, Name: "editable", Value: bool = editor_state.Editable);
+        await set_ui_data(Entity: 0, Name: "filter", Value: string = scene_info.Filter);
+        set_ui_data(Entity: 0, Name: "prototypes", Value: struct<"Choice">[] = prototype_choices.Options);
+    }
+    on FilterTyped as filtertyped(Filter: string = "") {
+        set_object_filter(Filter: filtertyped.Filter);
+    }
+    on AddObject as addobject(Prototype: string = "") {
+        add_object(Prototype: addobject.Prototype);
+    }
+}

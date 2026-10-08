@@ -1,0 +1,5 @@
+name "BoostEmitter"
+components {
+    (object)GAME.GameParticleEmitter
+    (object)GAME.GameTransform
+}

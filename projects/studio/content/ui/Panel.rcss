@@ -1,0 +1,4 @@
+/* A collapsible section, as Properties' components: its head folds it. Alias
+   the panel as data-alias-panel: an object with title, badge and open, which
+   is UI-local, so the head writes it. Its children are its body. */
+body { display: block; }

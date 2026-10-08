@@ -1,0 +1,22 @@
+<div class="output-views">
+  <div class="segmented">
+    <button class="seg" data-attrif-data-pressed="output.view == 0" data-event-click="emit('output.view', 0)">Log</button>
+    <button class="seg" data-attrif-data-pressed="output.view == 1" data-event-click="emit('output.view', 1)">Problems{{ output.problems > 0 ? ' ' + output.problems : '' }}</button>
+    <button class="seg" data-attrif-data-pressed="output.view == 2" data-event-click="emit('output.view', 2)">Runtime{{ output.runtime > 0 ? ' ' + output.runtime : '' }}</button>
+    <button class="seg" data-attrif-data-pressed="output.view == 3" data-event-click="emit('output.view', 3)">Info</button>
+    <button class="seg" data-attrif-data-pressed="output.view == 4" data-event-click="emit('output.view', 4)">Find</button>
+    <button class="seg" data-attrif-data-pressed="output.view == 5" data-event-click="emit('output.view', 5)">Calls</button>
+  </div>
+</div>
+<div class="output-scope" data-if="output.view == 1">
+  <div class="segmented">
+    <button class="seg" data-attrif-data-pressed="output.scope == 0" data-event-click="emit('output.scope', 0)">Asset</button>
+    <button class="seg" data-attrif-data-pressed="output.scope == 1" data-event-click="emit('output.scope', 1)">Project</button>
+  </div>
+</div>
+<button class="btn icon-only" data-if="output.view == 1 &amp;&amp; output.scope == 1" data-tip="Refresh" data-event-click="emit('output.refresh')"><span class="icon">&#xeb37;</span></button>
+<div class="spacer"></div>
+<div class="output-filter">
+  <div class="field search"><span class="part addon"><span class="icon sm">&#xea6d;</span></span><input type="text" class="part value" id="output-filter" placeholder="Filter" data-value="output.filter"/></div>
+</div>
+<button class="btn icon-only" data-attrif-data-disabled="!output.clearable" data-tip="Clear" data-event-click="emit('output.clear')"><span class="icon">&#xea81;</span></button>

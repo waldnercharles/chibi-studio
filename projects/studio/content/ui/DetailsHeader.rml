@@ -1,0 +1,2 @@
+<span class="designer-mode">Details</span>
+<div class="field search"><span class="part addon"><span class="icon sm">&#xea6d;</span></span><input type="text" class="part value" id="details-search" placeholder="Search properties" aria-label="Search properties" data-value="details.query"/></div>

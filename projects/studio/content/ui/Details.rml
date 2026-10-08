@@ -1,0 +1,58 @@
+<div class="designer-details">
+  <div class="prop-scroll">
+    <div class="identity">
+      <div class="glyph"><span class="icon">{{ details.identity.icon }}</span></div>
+      <div class="who">
+        <span class="title">{{ details.identity.title }}</span>
+        <div class="lineage"><span>{{ details.identity.kind }}</span><button class="btn" data-if="details.identity.source != ''" data-tip="Edit Source" data-event-click="emit('details.source')"><span class="icon">&#xea73;</span><span class="label">{{ details.identity.source }}</span></button></div>
+      </div>
+    </div>
+    <span class="designer-hint" data-if="details.hint != ''">{{ details.hint }}</span>
+    <section class="panel" data-for="section : details.sections" data-attr-data-key="section.key" data-attrif-data-open="section.open" data-attrif-data-bindings="section.kind == 'bindings'">
+      <div class="panel-head">
+        <div class="panel-fold" data-event-click="emit('details.fold', section.key)">
+          <span class="icon chev">&#xeab4;</span>
+          <span class="title">{{ section.title }}</span>
+          <span class="spacer"></span>
+          <span class="icon grip">&#xeb04;</span>
+        </div>
+      </div>
+      <div class="panel-body" data-if="section.open">
+        <div class="designer-origin" data-if="section.origin != ''">
+          <span class="within" data-if="section.within != ''">{{ section.within }}</span>
+          <span class="spacer"></span>
+          <button class="btn sm" data-tip="Edit Source" data-event-click="emit('details.openRule', section.rule)"><span class="icon">&#xeb14;</span><span class="label">{{ section.origin }}</span></button>
+        </div>
+        <use ui="PropertyRow" data-for="row : section.rows" data-alias-property="row">
+          <div class="kind" data-when="row.control == 'text'">
+            <div class="field text"><input type="text" class="part value" data-attr-id="row.id" data-attr-aria-label="row.label" data-attr-value="row.text" data-attr-placeholder="row.placeholder" data-keys="Escape:details.cancel" data-event-change="emit('details.text', row.id)"/></div>
+          </div>
+          <div class="kind" data-when="row.control == 'number'"><use ui="NumberField" data-attr-id="row.id" data-attr-aria-label="row.label" data-attr-value="row.number" data-attr-min="row.min" data-attr-max="row.max" data-attr-step="row.step" data-attr-precision="row.precision" data-attr-unit="row.unit" data-attrif-integer="row.integer" data-attrif-slider="row.slider" data-event-input="emit('details.input', row.id, ev.value)" data-event-change="emit('details.change', row.id, ev.value, ev.canceled)"/></div>
+          <div class="kind" data-when="row.control == 'color'"><use ui="ColorField" data-attr-id="row.id" data-attr-aria-label="row.label" data-attr-value="row.color" data-event-input="emit('details.input', row.id, ev.value)" data-event-change="emit('details.change', row.id, ev.value, ev.canceled)"/></div>
+          <div class="kind" data-when="row.control == 'choice'"><use ui="EnumField" data-alias-table="row.table" data-alias-value="row.value" data-event-click="emit('details.choices', row.id)" data-event-change="emit('details.change', row.id, ev.value)"/></div>
+          <div class="kind" data-when="row.control == 'toggle'">
+            <div class="segmented"><button class="seg" data-for="option : row.options" data-attrif-data-pressed="option.pressed" data-attrif-data-last="option.last" data-event-click="emit('details.change', row.id, option.label)">{{ option.label }}</button></div>
+          </div>
+          <div class="kind" data-when="row.control == 'asset'"><use ui="AssetField" data-alias-table="choices.assets.ui" data-alias-value="row.text" data-event-change="emit('details.change', row.id, ev.value)"/></div>
+          <div class="designer-chips" data-when="row.control == 'chips'">
+            <div class="designer-chip" data-for="chip : row.chips"><span class="name">{{ chip.name }}</span><button class="btn sm icon-only" data-tip="Remove class" data-event-click="emit('details.removeClass', chip.name)"><span class="icon">&#xea76;</span></button></div>
+            <button class="btn sm icon-only designer-add" data-event-click="emit('details.add', 'class', section.addTarget)"><span class="icon">&#xea60;</span></button>
+          </div>
+          <button class="btn sm icon-only remove" data-if="row.remove" data-tip="Remove" data-event-click="emit('details.remove', row.id)"><span class="icon">&#xea76;</span></button>
+        </use>
+        <span class="designer-none" data-if="section.none != ''">{{ section.none }}</span>
+        <div class="designer-more" data-if="section.addLabel != ''">
+          <button class="btn sm designer-add" data-event-click="emit('details.add', section.addKind, section.addTarget)"><span class="icon">&#xea60;</span><span class="label">{{ section.addLabel }}</span></button>
+          <button class="btn sm designer-add" data-if="section.extract" data-tip="Move the inline style into a new class rule" data-event-click="emit('details.add', 'extract', section.addTarget)"><span class="icon">&#xeb14;</span><span class="label">Extract to Class</span></button>
+        </div>
+      </div>
+    </section>
+    <span class="designer-none" data-if="details.note != ''">{{ details.note }}</span>
+  </div>
+  <use ui="Menu" id="details-add">
+    <div class="menu-group">{{ details_add.title }}</div>
+    <div class="designer-add-field"><div class="field search"><span class="part addon"><span class="icon sm">&#xea6d;</span></span><input type="text" id="details-add-field" class="part value" data-attr-placeholder="details_add.hint" data-value="details_add.text" data-keys="Enter:details.addEnter"/></div></div>
+    <use ui="MenuSeparator" data-if="details_add.suggestions.size > 0"/>
+    <div class="menu-item" role="menuitem" data-for="entry : details_add.suggestions" data-event-click="emit('details.addPick', entry.label)"><span class="icon lead"></span><span class="text"><span class="label">{{ entry.label }}</span></span></div>
+  </use>
+</div>

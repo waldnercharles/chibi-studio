@@ -1,0 +1,103 @@
+{
+  "content/behaviors/Movement.chibi": {
+    "purpose": "frozen executable graph and metadata for node identities, completions, layout and tab reopen",
+    "sha256": "4f14f158cf83604f1691f31b28ae56a9d5b1abba2aef1be945741a5f878a4426",
+    "source": "projects/arena2d/content/behaviors/Movement.chibi"
+  },
+  "content/behaviors/Movement.chibi.meta": {
+    "purpose": "frozen executable graph and metadata for node identities, completions, layout and tab reopen",
+    "sha256": "c49af8dd0a91a5cf998c8e9c7929fa2d17ce48410fe26cded3529b354b959f82",
+    "source": "projects/arena2d/content/behaviors/Movement.chibi.meta"
+  },
+  "content/behaviors/Weapon.chibi": {
+    "purpose": "frozen executable graph and metadata for node identities, completions, layout and tab reopen",
+    "sha256": "07175c210c1fc4366e54b00b46331e31d80ed4e49808b4362fe6e1e15b140b53",
+    "source": "projects/arena2d/content/behaviors/Weapon.chibi"
+  },
+  "content/behaviors/Weapon.chibi.meta": {
+    "purpose": "frozen executable graph and metadata for node identities, completions, layout and tab reopen",
+    "sha256": "1978344e3128a034de9b105419e8cc68a9927efd1f4498b008ad89a95cce63bf",
+    "source": "projects/arena2d/content/behaviors/Weapon.chibi.meta"
+  },
+  "content/editor/Components.kdl": {
+    "purpose": "reflected component labels and field grouping consumed by graph completion",
+    "sha256": "715ac09169ae07f5af6cbd58a18b7e080cbb152198086dac97ce1ba4921e519b",
+    "source": "projects/arena2d/content/editor/Components.kdl"
+  },
+  "content/libraries/DirectionMath.chibi": {
+    "purpose": "frozen executable graph and metadata for node identities, completions, layout and tab reopen",
+    "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321",
+    "source": "projects/arena2d/content/libraries/DirectionMath.chibi"
+  },
+  "content/libraries/DirectionMath.chibi.meta": {
+    "purpose": "frozen executable graph and metadata for node identities, completions, layout and tab reopen",
+    "sha256": "99279ee363bc8fd0dfa8c7e0ef40aed6d633678983fd636fdcac580e9d4ab611",
+    "source": "projects/arena2d/content/libraries/DirectionMath.chibi.meta"
+  },
+  "content/libraries/WeaponActions.chibi": {
+    "purpose": "frozen executable graph and metadata for node identities, completions, layout and tab reopen",
+    "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6",
+    "source": "projects/arena2d/content/libraries/WeaponActions.chibi"
+  },
+  "content/libraries/WeaponActions.chibi.meta": {
+    "purpose": "frozen executable graph and metadata for node identities, completions, layout and tab reopen",
+    "sha256": "8e0c20091261eae8609671d0c0fd1a2a03a4b0d33d5612c073564928ba7713fa",
+    "source": "projects/arena2d/content/libraries/WeaponActions.chibi.meta"
+  },
+  "content/prototypes/Camera.kdl": {
+    "purpose": "camera overlay without camera choreography",
+    "sha256": "354c4e1410ef0a36f32001f9c26decaaa432787a8378efc1d45e262511e3c51c"
+  },
+  "content/prototypes/Player.kdl": {
+    "purpose": "component context for completion and authoring session with idle weapon",
+    "sha256": "07b8f677156e54a8fcd0cf94f6dfc5d6a0b7960c1587a936ed7e0ca787420c7f"
+  },
+  "content/prototypes/Projectile.kdl": {
+    "purpose": "signature context for frozen callable projectile function; scene does not fire",
+    "sha256": "5f869389167d71f4e5467f6ad64873e6f219ca2908acc8c31e0310ede02569af"
+  },
+  "content/scenarios/Firefight.kdl": {
+    "purpose": "bounded idle replay exercises graph close, stop and reopen lifetime",
+    "sha256": "081b057508fc94fe573a1b18c524a4e955ef1d72861729d0741b06899f51dd84"
+  },
+  "content/scenes/Sandbox.kdl": {
+    "purpose": "two subjects for authoring selection, camera overlays and runtime transitions",
+    "sha256": "fa5cfdbb1f7580a383fd714ef2bed0486520c32ba49a0f6eaa7c83a4a49b34a1"
+  },
+  "content/ui/HUD.rcss": {
+    "purpose": "minimal synthetic widget style",
+    "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+  },
+  "content/ui/HUD.rml": {
+    "purpose": "synthetic designer widget catalog keeps four UI assets and Repair event",
+    "sha256": "ff0e980b989f0982398029ee3d77e087a871612051667f6b2d944ecad1d184be"
+  },
+  "content/ui/MenuButton.rcss": {
+    "purpose": "minimal synthetic widget style",
+    "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+  },
+  "content/ui/MenuButton.rml": {
+    "purpose": "synthetic designer widget catalog keeps four UI assets and Repair event",
+    "sha256": "cb1ff2208354950aebb36584c24cf93d4a38218cee52ff536ec9e1359cb7037b"
+  },
+  "content/ui/Meter.rcss": {
+    "purpose": "minimal synthetic widget style",
+    "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+  },
+  "content/ui/Meter.rml": {
+    "purpose": "synthetic designer widget catalog keeps four UI assets and Repair event",
+    "sha256": "db086141f1adfdc8a967564ff52776add10620b613a54bdaadd36caaf2fd3444"
+  },
+  "content/ui/PauseMenu.rcss": {
+    "purpose": "minimal synthetic widget style",
+    "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+  },
+  "content/ui/PauseMenu.rml": {
+    "purpose": "synthetic designer widget catalog keeps four UI assets and Repair event",
+    "sha256": "8b6c2d10e8bb47935cdc98a29d6d1fea0785f2b7c24ed1c7b58c34f007fea140"
+  },
+  "project.kdl": {
+    "purpose": "synthetic authoring workspace",
+    "sha256": "d4c314ecbb9646858c480a56e938f5992ea6f64514f369f32b787483a584b49e"
+  }
+}

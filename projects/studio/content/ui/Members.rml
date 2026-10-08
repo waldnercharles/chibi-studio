@@ -1,0 +1,21 @@
+<div class="members">
+  <div class="output-empty" data-if="!members.shown">No behavior open</div>
+  <use ui="List" id="members-list" data-if="members.shown" data-event-scroll="emit('members.scroll')">
+    <div class="member-row" data-for="row : members.rows">
+      <use ui="TreeRow" data-if="row.key != members_ui.renaming" data-alias-item="row" data-alias-selection="members_ui.selected" data-alias-active="members_ui.active" data-attrif-data-section="row.parent" data-attr-data-drag="row.drag" data-attr-data-drag-payload="row.key" data-attr-data-drag-label="row.label" data-attr-data-drag-icon="row.icon" data-event-click="emit('members.click', row.key)" data-event-dblclick="emit('members.edit', row.key)" data-event-contextmenu="emit('members.menu', row.key)">
+        <kit-dot class="member-swatch" data-if="row.swatch != ''" data-attr-shape="row.swatch" data-attr-fill="row.color"></kit-dot>
+        <button class="btn sm member-uses" data-if="row.uses != ''" data-attr-data-tip="row.usesTip" data-attrif-data-unused="row.unused" data-event-click="stop(); emit('members.uses', row.key)"><span class="label">{{ row.uses }}</span></button>
+        <button class="btn icon-only toggle" data-if="row.add != ''" data-attr-data-tip="row.add" data-attrif-data-disabled="members.locked" data-event-click="stop(); emit('members.add', row.key)"><span class="icon">&#xea60;</span></button>
+      </use>
+      <div class="tree-row member-rename" data-when="row.key == members_ui.renaming" data-style-padding-left="(24 + row.depth * 14) + 'dp'">
+        <span class="icon">{{ row.icon }}</span>
+        <div class="field text"><input type="text" class="part value" autofocus data-attr-value="row.label" data-keys="Escape:members.cancel" data-event-change="emit('members.renamed', ev.value)" data-event-blur="emit('members.cancel')"/></div>
+      </div>
+    </div>
+  </use>
+  <use ui="Menu" id="member-menu">
+    <use ui="MenuItem" data-for="entry : members_ui.menu" data-alias-item="entry" data-event-click="emit('members.' + entry.id)"></use>
+    <use ui="MenuSeparator"/>
+    <use ui="MenuItem" data-alias-item="members_ui.remove" data-event-click="emit('members.delete')"></use>
+  </use>
+</div>

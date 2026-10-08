@@ -1,0 +1,7 @@
+name "Vault"
+components {
+    GAME.GameAppearance height=1200.0 width=2400.0
+    (object)GAME.GameTransform
+    GAME.GameUi document="Bank"
+}
+(array)behaviors "Teller"

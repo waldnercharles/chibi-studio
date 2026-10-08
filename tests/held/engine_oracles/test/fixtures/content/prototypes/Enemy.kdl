@@ -1,0 +1,13 @@
+name "Enemy"
+components {
+    GAME.GameAppearance border_color=0xffcc00ff border_width=2.0 color=0x140f00ff glow_color=0xffcc0040 glow_radius=6.0 height=28.0 shape="Diamond" width=28.0
+    GAME.GameBody type="Dynamic"
+    GAME.GameCollider category=2 mask=13 radius=12.0
+    GAME.GameHealth current=50 maximum=50
+    GAME.GameMaterial absorption=1.0 border_emission_color=0xffcc00ff border_scene=0xffcc00ff emission_color=0xffcc00ff emission_intensity=0.01 emission_multiplier=0.5 scene=0x140f00ff
+    GAME.GameMovement speed=90.0
+    GAME.GameSdfMotion angular_frequency=4.0 temporal_frequency=3.0
+    GAME.GameTransform x=640.0 y=180.0
+    (object)GAME.GameVelocity
+}
+(array)behaviors "EnemyBehavior" "HealthBehavior"

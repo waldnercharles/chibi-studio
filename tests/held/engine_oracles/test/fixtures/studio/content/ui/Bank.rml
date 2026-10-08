@@ -1,0 +1,1 @@
+<div id="extract" data-event-click="emit('Extract')" data-keys="Escape:Close">Extract</div>

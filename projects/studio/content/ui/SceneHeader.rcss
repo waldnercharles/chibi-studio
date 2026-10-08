@@ -1,0 +1,35 @@
+/* The Scene's controls in its area header (studio_scene.c's `scene`
+   source). Editing a scene: the View menu, then the transform tools and,
+   at the end, snapping joined to its grid increment and Frame, each group a
+   pill of icon buttons as Unreal's and Godot's viewport toolbars group
+   theirs; the active tool is filled, as Blender's toolbar marks it. In the
+   Canvas: Scene › asset crumbs, the screen sizes, the backdrop and the
+   Actions toggle. View Zoom shows only while it magnifies, and always in
+   the Canvas. A guest Studio names what runs. */
+body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.scene-tools, .canvas-tools, .scene-guest { display: flex; align-items: center; gap: 2dp; flex: 0 1 auto; min-width: 0dp; height: 100%; }
+.scene-guest { gap: 6dp; white-space: nowrap; }
+.btn, .canvas-sizes, .canvas-sizes .segmented, .canvas-sizes .seg { flex: 0 0 auto; }
+.crumbs .btn.crumb { flex: 0 1 auto; }
+.seg { tab-index: auto; }
+
+.tool-group, .snap-controls {
+    display: flex; align-items: center; flex: 0 0 auto; gap: 1dp; padding: 1dp;
+    border-radius: var(--r); background-color: var(--secondary);
+}
+.tool-group { margin-left: 4dp; }
+/* The area header's buttons keep its control height (AreaHeader.rcss). */
+.tool-group .btn { width: var(--h-sm); padding: 0dp; }
+.tool-group .btn[data-state=on] { background-color: var(--primary); }
+.tool-group .btn[data-state=on] .icon { color: var(--primary-foreground); }
+.snap-controls .btn { min-width: var(--h-sm); padding: 0dp 6dp; }
+.snap-controls .btn.icon-only { width: var(--h-sm); padding: 0dp; }
+.snap-controls .menu-btn { font-family: var(--font-numeric); }
+.snap-controls .btn[data-state=on] { background-color: var(--primary); }
+.snap-controls .btn[data-state=on] .icon { color: var(--primary-foreground); }
+
+.canvas-sizes { display: flex; margin-left: 6dp; }
+.canvas-actions-toggle { display: flex; align-items: center; gap: 4dp; flex: 0 0 auto; padding: 0dp 6dp 0dp 2dp; }
+.canvas-actions-toggle .btn { gap: 4dp; padding: 0dp 6dp; }
+.canvas-actions-toggle .btn .icon { font-size: 13dp; width: 14dp; }
+.canvas-actions-toggle .count { color: var(--faint-foreground); font-size: 11dp; }

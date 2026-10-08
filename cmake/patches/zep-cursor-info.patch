@@ -1,0 +1,14 @@
+--- a/include/zep/window.h
++++ b/include/zep/window.h
+@@ -196,7 +196,11 @@
+     void DisableToolTipTillMove();
+ 
+     NVec4f ModifyBackgroundColor(ThemeColor color) const;
++public:
++    // The cursor's cell in display pixels, for a host's IME and popups.
+     void GetCursorInfo(NVec2f& pos, NVec2f& size);
++
++private:
+ 
+     void PlaceToolTip(const NVec2f& pos, ToolTipPos location, uint32_t lineGap, const std::shared_ptr<RangeMarker> spMarker);
+ 

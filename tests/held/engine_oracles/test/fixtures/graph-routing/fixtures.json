@@ -1,0 +1,194 @@
+{
+  "content/behaviors/BoostEmitter.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "2b7ea0f8c6458eab778f66cda98389948c2047db6addf385922e73f8a181e34c",
+    "source": "projects/arena2d/content/behaviors/BoostEmitter.chibi"
+  },
+  "content/behaviors/BoostEmitter.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "7b015441611629217d757f276bf6129bdafddc87dd7f25d95a8efe02cc42e2f5",
+    "source": "projects/arena2d/content/behaviors/BoostEmitter.chibi.meta"
+  },
+  "content/behaviors/CameraFollow.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "d4b11ca9e2830ef36afb749ae29340aa8e91b897760d697b41475ab897032058",
+    "source": "projects/arena2d/content/behaviors/CameraFollow.chibi"
+  },
+  "content/behaviors/CameraFollow.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "067aed59633096169e7d8619e5c94076588bd9fc761b4bee4818ada1e499653e",
+    "source": "projects/arena2d/content/behaviors/CameraFollow.chibi.meta"
+  },
+  "content/behaviors/CutMaterial.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "1657178333bb3436adc3f9665cea6a47c3569d853b65fc952e174b643db5ec4f",
+    "source": "projects/arena2d/content/behaviors/CutMaterial.chibi"
+  },
+  "content/behaviors/CutMaterial.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "39353b563c655a49ae829b6d640daa54a563d5a174e92d2e67b32deb380e4845",
+    "source": "projects/arena2d/content/behaviors/CutMaterial.chibi.meta"
+  },
+  "content/behaviors/HudDisplay.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "993d336c7ae4480a569b24e08b58a3e8b3f55a6f3c2650508d6f24775f81f821",
+    "source": "projects/arena2d/content/behaviors/HudDisplay.chibi"
+  },
+  "content/behaviors/HudDisplay.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "e397991409850202b9d254c4cf21361c4f6ef6741e638801560518bbe5907a14",
+    "source": "projects/arena2d/content/behaviors/HudDisplay.chibi.meta"
+  },
+  "content/behaviors/HullDamage.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "cdbfa92bcf31453ebb51e099631a05bcc424367283c778023cef3891f2ffca89",
+    "source": "projects/arena2d/content/behaviors/HullDamage.chibi"
+  },
+  "content/behaviors/HullDamage.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "03be7d4c4f8a6dd7858025caed1d9f20a19fa77365ae623eb7d07fb48d142581",
+    "source": "projects/arena2d/content/behaviors/HullDamage.chibi.meta"
+  },
+  "content/behaviors/MaterialImpactHealth.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "fae9952169c2afff133e46bb296fc4c467333a24eeb23840bd12f8cfe0678530",
+    "source": "projects/arena2d/content/behaviors/MaterialImpactHealth.chibi"
+  },
+  "content/behaviors/MaterialImpactHealth.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "4b65ba2b5d0f65817b22dc8cc1f9d1f91d48b55d41ddd2d9614aec95bdd57ffb",
+    "source": "projects/arena2d/content/behaviors/MaterialImpactHealth.chibi.meta"
+  },
+  "content/behaviors/Movement.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "4f14f158cf83604f1691f31b28ae56a9d5b1abba2aef1be945741a5f878a4426",
+    "source": "projects/arena2d/content/behaviors/Movement.chibi"
+  },
+  "content/behaviors/Movement.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "c49af8dd0a91a5cf998c8e9c7929fa2d17ce48410fe26cded3529b354b959f82",
+    "source": "projects/arena2d/content/behaviors/Movement.chibi.meta"
+  },
+  "content/behaviors/MovementEmitter.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "c20251a648ec523daa94f5deea4f2478c764cf26c82a7436fbef452cb131eaf6",
+    "source": "projects/arena2d/content/behaviors/MovementEmitter.chibi"
+  },
+  "content/behaviors/MovementEmitter.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "e626b3fabaea37986b5710846f40dab7259f71851eed3c393d66ed24f010abc2",
+    "source": "projects/arena2d/content/behaviors/MovementEmitter.chibi.meta"
+  },
+  "content/behaviors/PlayerEffects.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "75e65dcd8a7291c668c02dc3bd3d9ad73a7c3a55678c837edc71b222c66f30e3",
+    "source": "projects/arena2d/content/behaviors/PlayerEffects.chibi"
+  },
+  "content/behaviors/PlayerEffects.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "a87a4d6c466a9df809896ead9831b36c0b63f29d713edeff29363810e5b08846",
+    "source": "projects/arena2d/content/behaviors/PlayerEffects.chibi.meta"
+  },
+  "content/behaviors/ProjectileEffects.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "40f11ec82e65e1fd36994c354dba2035f181d99673adf4b0362b32b513bd63ba",
+    "source": "projects/arena2d/content/behaviors/ProjectileEffects.chibi"
+  },
+  "content/behaviors/ProjectileEffects.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "ae14f3252f6d46033b021c53f0eb89b3c18e4e7350bbfb5295a48dd9fce37ed0",
+    "source": "projects/arena2d/content/behaviors/ProjectileEffects.chibi.meta"
+  },
+  "content/behaviors/ProjectileHit.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131",
+    "source": "projects/arena2d/content/behaviors/ProjectileHit.chibi"
+  },
+  "content/behaviors/ProjectileHit.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "3be30e373e71310e3e6f078f2a3e621a30091d0cfa5723be10251f5c640e1f87",
+    "source": "projects/arena2d/content/behaviors/ProjectileHit.chibi.meta"
+  },
+  "content/behaviors/ProjectileLifecycle.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "fcc649c849fbb61b7ce337be3ea072149a397589ad13e45a84952894ef632b38",
+    "source": "projects/arena2d/content/behaviors/ProjectileLifecycle.chibi"
+  },
+  "content/behaviors/ProjectileLifecycle.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "8534ba3c14648e94e1165dc4367b6731d505f0a713caaea674dc48555cab9115",
+    "source": "projects/arena2d/content/behaviors/ProjectileLifecycle.chibi.meta"
+  },
+  "content/behaviors/Pursuit.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "3c7a4bf572de6814ce0368f1e818d03fc9198f07433ed176038e8110c524a50a",
+    "source": "projects/arena2d/content/behaviors/Pursuit.chibi"
+  },
+  "content/behaviors/Pursuit.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "7463b710ef558d93e43f6bdcac5b4c41337a333e2d0a33a1447493d51106b686",
+    "source": "projects/arena2d/content/behaviors/Pursuit.chibi.meta"
+  },
+  "content/behaviors/SwarmerEffects.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "7f32f3b59e9384132069e198b3674ec887b1677c87d661191502098a12727660",
+    "source": "projects/arena2d/content/behaviors/SwarmerEffects.chibi"
+  },
+  "content/behaviors/SwarmerEffects.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "6a5e83fd0f98bc7b5e01ed61a259efe9c091e430fb9c819554bdb7c6de771e98",
+    "source": "projects/arena2d/content/behaviors/SwarmerEffects.chibi.meta"
+  },
+  "content/behaviors/Weapon.chibi": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "07175c210c1fc4366e54b00b46331e31d80ed4e49808b4362fe6e1e15b140b53",
+    "source": "projects/arena2d/content/behaviors/Weapon.chibi"
+  },
+  "content/behaviors/Weapon.chibi.meta": {
+    "purpose": "frozen graph routing regression corpus; preserves measured layout budgets",
+    "sha256": "1978344e3128a034de9b105419e8cc68a9927efd1f4498b008ad89a95cce63bf",
+    "source": "projects/arena2d/content/behaviors/Weapon.chibi.meta"
+  },
+  "content/events/Damage.kdl": {
+    "purpose": "event signature dependency of routing corpus",
+    "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf",
+    "source": "projects/arena2d/content/events/Damage.kdl"
+  },
+  "content/events/Material Impact.kdl": {
+    "purpose": "event signature dependency of routing corpus",
+    "sha256": "d57898ee3f520364fe2344140d8caa9db4811dc534be90321b40bc25421137d2",
+    "source": "projects/arena2d/content/events/Material Impact.kdl"
+  },
+  "content/libraries/DirectionMath.chibi": {
+    "purpose": "call signature dependency of routing corpus",
+    "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321",
+    "source": "projects/arena2d/content/libraries/DirectionMath.chibi"
+  },
+  "content/libraries/DirectionMath.chibi.meta": {
+    "purpose": "call signature dependency of routing corpus",
+    "sha256": "99279ee363bc8fd0dfa8c7e0ef40aed6d633678983fd636fdcac580e9d4ab611",
+    "source": "projects/arena2d/content/libraries/DirectionMath.chibi.meta"
+  },
+  "content/libraries/WeaponActions.chibi": {
+    "purpose": "call signature dependency of routing corpus",
+    "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6",
+    "source": "projects/arena2d/content/libraries/WeaponActions.chibi"
+  },
+  "content/libraries/WeaponActions.chibi.meta": {
+    "purpose": "call signature dependency of routing corpus",
+    "sha256": "8e0c20091261eae8609671d0c0fd1a2a03a4b0d33d5612c073564928ba7713fa",
+    "source": "projects/arena2d/content/libraries/WeaponActions.chibi.meta"
+  },
+  "content/prototypes/BoostEmitter.kdl": {
+    "purpose": "minimal typed spawn declaration; retains only components needed by routing corpus",
+    "sha256": "dbfbe93b42d42c2e86a5ac889b13f391c9c7940f0998fe365392fc14ee28f76e",
+    "source": "projects/arena2d/content/prototypes/BoostEmitter.kdl",
+    "source_sha256": "86c7f7d24cd23f9643b4b8a576742cd95b7dc9a00cc1ecd38f8b2149ec30331c"
+  },
+  "content/prototypes/MovementEmitter.kdl": {
+    "purpose": "minimal typed spawn declaration; retains only components needed by routing corpus",
+    "sha256": "88c77a2e00e7f1f4c24efa115dbc433c121b44eb896172ce30a3200394eadab6",
+    "source": "projects/arena2d/content/prototypes/MovementEmitter.kdl",
+    "source_sha256": "7f98979b142bce7390e03ce45363b87adc7ff617bc1363bf146ba4f413b5bb01"
+  }
+}

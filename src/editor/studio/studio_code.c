@@ -1,0 +1,2336 @@
+#include "assets/ui_document.h"
+#include "graph/nodes/core_nodes.h"
+/* The Text Editor area (Blender's): code asset source, a UI document's RML
+ * and RCSS, or a stylesheet's RCSS. Code follows the active asset; UI editing
+ * keeps its per-part language service and history. Focusing its text
+ * makes it active again, so Save and Undo follow it. Edits apply across Studio
+ * as they are typed (the code_apply_live preference), or when saved.
+ *
+ * Code intelligence (ui_code.h), after VS Code's editor: syntax errors as the
+ * part parses and RmlUi's warnings once its text rests, as gutter markers and
+ * a count in the header that steps through them; completion as you type and
+ * on Control+Space; a card describing what the pointer rests on; Go to
+ * Definition (F12 or a primary click) and Find References (Shift+F12) into
+ * Output's Find view.
+ *
+ * One history: the document's buffer (ui_buffer.h) keeps it and the code
+ * editors keep none. Typing reaches the buffer as typed text, an accepted
+ * completion as a step of its own, and the undo keys (Z with the primary
+ * modifier, Vim's u and Control+R) step the buffer as Studio's Undo does.
+ * Whatever changes the buffer comes back to the editor as an edit, so its
+ * cursor keeps its place; after an undo it lands on the change. Each open
+ * document part keeps its own code editor, with its cursor, scroll and Vim
+ * state. */
+#include "authoring/graph_expression.h"
+#include "authoring/preview_source.h"
+#include "authoring/source_navigation.h"
+#include "editor/collab/actions_internal.h"
+#include "editor/collab/collab.h"
+#include "editor/studio/studio_graph_internal.h"
+#include "editor/workspace/editor_internal.h"
+#include "graph/document/serialize.h"
+#include "support/array.h"
+#include "support/asset_text.h"
+#include "support/text_file.h"
+#include "support/text_overlay.h"
+#include "support/xalloc.h"
+
+#include <assert.h>
+#include <ctype.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+
+/* Frames before a revealed line is laid out and can scroll into view. */
+#define REVEAL_FRAMES 2
+/* Seconds text rests before RmlUi checks it. */
+#define CHECK_DELAY 0.3
+/* Seconds a scan of the project serves before completion, hover and
+   navigation scan again. */
+#define PROJECT_STALE 2.0
+/* Characters that start completion when typed, as '<' starts a tag. */
+#define COMPLETION_TRIGGERS "<.\"("
+
+static const char *const PART_NAMES[UI_PART_COUNT] = { "rml", "rcss" };
+
+static scene_document_tab *active_asset(studio *s)
+{
+    int at = s->scene->active_tab;
+    if (at < 0 || at >= acount(s->scene->tabs)) {
+        return NULL;
+    }
+    scene_document_tab *tab = &s->scene->tabs[at];
+    if (tab->kind == APP_EDITOR_DOCUMENT_UI || !tab->path) {
+        return NULL;
+    }
+    const char *extension = strrchr(tab->path, '.');
+    return extension && (!strcmp(extension, CODE_ASSET_EXTENSION) ||
+                         !strcmp(extension, DECLARATIVE_ASSET_EXTENSION))
+             ? tab
+             : NULL;
+}
+
+static void capture_asset(studio *s, asset_code *code)
+{
+    for (int i = 0; i < acount(s->scene->tabs); i++) {
+        scene_document_tab *tab = &s->scene->tabs[i];
+        if (!tab->path || strcmp(tab->path, asset_code_path(code))) {
+            continue;
+        }
+        av_value_free(tab->source_state);
+        tab->source_state = asset_code_capture(code);
+        tab->source_dirty = asset_code_dirty(code);
+    }
+}
+
+bool studio_code_replace(studio *s, const char *path, const char *before, const char *text, const char *metadata)
+{
+    bool open = false;
+    for (int i = 0; i < acount(s->scene->tabs); i++) {
+        open |= s->scene->tabs[i].path && !strcmp(s->scene->tabs[i].path, path);
+    }
+    if (!open) {
+        return false;
+    }
+    for (int i = 0; i < acount(s->code.assets); i++) {
+        asset_code *code = s->code.assets[i];
+        if (!strcmp(asset_code_path(code), path) &&
+            asset_code_replace_with_metadata(code, before, text, metadata)) {
+            capture_asset(s, code);
+            asset_index_invalidate(s->scene);
+            return true;
+        }
+    }
+    return false;
+}
+
+static asset_code *asset_context(studio *s, asset_code *code)
+{
+    asset_code_set_source_world(code, s->scene->live, s->scene->content_root);
+    return code;
+}
+
+static const authoring_reference *source_reference(const asset_code *code, int offset)
+{
+    const authoring_navigation *index = asset_code_navigation(code);
+    return index ? authoring_navigation_at(index, asset_code_document(code), offset)
+                 : NULL;
+}
+
+static asset_code *asset_editor(studio *s, scene_document_tab *tab)
+{
+    for (int i = 0; i < acount(s->code.assets); i++) {
+        asset_code *code = s->code.assets[i];
+        if (strcmp(asset_code_path(code), tab->path)) {
+            continue;
+        }
+        if (tab->source_state && !asset_code_has_state(code, tab->source_state)) {
+            asset_code
+                *restored = asset_code_restore(tab->source_state, &s->scene->registry);
+            if (!restored) {
+                studio_report(s, "Could not restore code source draft");
+                return NULL;
+            }
+            asset_code_free(code);
+            s->code.assets[i] = restored;
+            return asset_context(s, restored);
+        }
+        return asset_context(s, code);
+    }
+    char error[256];
+    asset_code *code = tab->source_state
+                         ? asset_code_restore(tab->source_state, &s->scene->registry)
+                         : asset_code_open(tab->path, error, sizeof error);
+    if (!code) {
+        studio_report(s, tab->source_state ? "Could not restore code source draft" : error);
+        return NULL;
+    }
+    asset_code_set_registry(code, &s->scene->registry);
+    apush(s->code.assets, code);
+    asset_context(s, code);
+    capture_asset(s, code);
+    return code;
+}
+
+/* A retained source session belongs to its document, not a temporary graph
+   opened in the same editor (for example a material preview). */
+static bool source_graph_active(const studio *s)
+{
+    const behavior_asset *asset = editor_behavior_asset(s->scene->graph_editor);
+    return asset && s->scene->graph_document_id &&
+           !strcmp(asset->name, s->scene->graph_document_id);
+}
+
+static bool sync_asset_graph(studio *s, asset_code *code)
+{
+    scene_document_tab *tab = active_asset(s);
+    if ((tab && tab->source_only) || !source_graph_active(s)) {
+        return false;
+    }
+    bool pending = asset_code_pending(code);
+    bool changed = asset_code_sync_graph(code, s->scene->graph_editor,
+                                         s->prefs.code_apply_live);
+    bool settled = pending && !asset_code_pending(code) &&
+                   !asset_code_error(code)[0];
+    if (settled || changed) {
+        asset_code_hold_runtime(code, !s->prefs.code_apply_live && asset_code_dirty(code));
+    }
+    snprintf(
+        s->scene->source_preview_hold,
+        sizeof s->scene->source_preview_hold,
+        "%s",
+        asset_code_runtime_held(code) && !s->prefs.code_apply_live
+            ? asset_code_path(code)
+            : ""
+    );
+    return changed;
+}
+
+static void save_asset(studio *s, asset_code *code)
+{
+    scene_document_tab *saving = active_asset(s);
+    if (saving && saving->source_only) {
+        asset_code_time(code, s->time + 0.2);
+        asset_code_validate(code, s->scene->graph_editor);
+    }
+    game_preview_definition *definition = s->scene->definition;
+    if (definition && game_preview_definition_path(definition) &&
+        !strcmp(asset_code_path(code), game_preview_definition_path(definition))) {
+        asset_code_time(code, s->time + 0.2);
+        sync_asset_graph(s, code);
+    }
+    if (s->scene->document.kind == APP_EDITOR_DOCUMENT_SYSTEM && s->scene->system_path &&
+        !strcmp(asset_code_path(code), s->scene->system_path)) {
+        asset_code_time(code, s->time + 0.2);
+        sync_asset_graph(s, code);
+    }
+    char error[256];
+    if (!asset_code_save(code, error, sizeof error)) {
+        studio_error(s, "Could not save", error);
+        return;
+    }
+    capture_asset(s, code);
+    scene_document_tab *tab = active_asset(s);
+    if (tab && tab->source_only) {
+        int result;
+        if (tab->kind == APP_EDITOR_DOCUMENT_SYSTEM) {
+            result = open_system_asset(s->scene, tab->path);
+        } else {
+            const authoring_source *source = asset_code_source(code);
+            if (!source || game_preview_source_apply(
+                               s->scene->live,
+                               tab->path,
+                               asset_code_text(code),
+                               false,
+                               error,
+                               sizeof error
+                           )) {
+                studio_error(s, "Could not open repaired graph", error);
+                return;
+            }
+            const char *name = source->analysis->name;
+            refresh_asset_catalog(s->scene);
+            result = open_behavior_asset(s->scene, name);
+        }
+        if (result != 0) {
+            studio_error(s, "Could not open repaired graph", app_scene_authoring_message(s->scene));
+            return;
+        }
+        tab = active_asset(s);
+        tab->source_only = false;
+        scene_tabs_mark_document_saved(s->scene, tab->kind, s->scene->document.id);
+        asset_index_invalidate(s->scene);
+        studio_behavior_show(s, 2);
+    }
+    if (s->scene->document.kind == APP_EDITOR_DOCUMENT_SYSTEM) {
+        s->scene->source_preview_hold[0] = 0;
+        scene_tabs_sync_current(s->scene);
+        scene_tabs_mark_document_saved(
+            s->scene,
+            APP_EDITOR_DOCUMENT_SYSTEM,
+            s->scene->document.id
+        );
+    }
+    if (definition && game_preview_definition_path(definition) &&
+        !strcmp(asset_code_path(code), game_preview_definition_path(definition))) {
+        definition->unsaved = false;
+        s->scene->source_preview_hold[0] = 0;
+        editor *e = s->scene->graph_editor;
+        av_value_free(e->saved_snapshot);
+        e->saved_snapshot = ed_value_snapshot(e->asset);
+    }
+    kit_toast(s->kit, 0, &(kit_toast_desc){ .type = KIT_TOAST_SUCCESS, .title = "Saved source" });
+}
+
+static scene_document_tab *active_ui(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    scene_document_tab *tab = scene->active_tab >= 0 &&
+                                      scene->active_tab < acount(scene->tabs)
+                                ? &scene->tabs[scene->active_tab]
+                                : NULL;
+    return tab && tab->kind == APP_EDITOR_DOCUMENT_UI ? tab : NULL;
+}
+
+static scene_document_tab *ui_tab(studio *s, const char *path)
+{
+    for (int i = 0; i < acount(s->scene->tabs); i++) {
+        scene_document_tab *tab = &s->scene->tabs[i];
+        if (tab->kind == APP_EDITOR_DOCUMENT_UI && !strcmp(tab->path, path)) {
+            return tab;
+        }
+    }
+    return NULL;
+}
+
+/* The document the Text Editor shows: the active one, else the last shown
+ * while it is open, else the last opened. */
+static scene_document_tab *shown(studio *s)
+{
+    scene_document_tab *tab = active_ui(s);
+    tab = tab ? tab : ui_tab(s, s->code.path);
+    for (int i = acount(s->scene->tabs) - 1; !tab && i >= 0; i--) {
+        if (s->scene->tabs[i].kind == APP_EDITOR_DOCUMENT_UI) {
+            tab = &s->scene->tabs[i];
+        }
+    }
+    return tab;
+}
+
+ui_buffer *studio_ui_buffer(studio *s)
+{
+    scene_document_tab *tab = active_ui(s);
+    return tab ? tab->ui : NULL;
+}
+
+/* ---------- Saving and closing ---------- */
+
+/* The workspace must read disk without a source overlay. Keep the draft's
+   checkpoint until the reload succeeds so an unreadable file loses no edits. */
+app_disk_result studio_code_reload_path(studio *s, const char *path)
+{
+    const char *current = text_overlay_text(path);
+    char *overlay = current ? xstrdup(current) : NULL;
+    if (overlay) {
+        text_overlay_set(path, NULL);
+    }
+    app_disk_result result = app_scene_authoring_reload_path(s->scene, path);
+    if (result != APP_DISK_RELOADED) {
+        if (overlay || text_overlay_text(path)) {
+            text_overlay_set(path, overlay);
+        }
+        for (int i = 0; i < acount(s->code.assets); i++) {
+            asset_code *code = s->code.assets[i];
+            if (!strcmp(asset_code_path(code), path)) {
+                asset_code_adopt_overlay(code);
+            }
+        }
+    }
+    free(overlay);
+    if (result != APP_DISK_RELOADED) {
+        return result;
+    }
+    if (text_overlay_text(path)) {
+        text_overlay_set(path, NULL);
+    }
+    for (int i = acount(s->code.assets) - 1; i >= 0; i--) {
+        if (!strcmp(asset_code_path(s->code.assets[i]), path)) {
+            asset_code_free(s->code.assets[i]);
+            adel(s->code.assets, i);
+        }
+    }
+    for (int i = 0; i < acount(s->scene->tabs); i++) {
+        scene_document_tab *tab = &s->scene->tabs[i];
+        if (!tab->path || strcmp(tab->path, path)) {
+            continue;
+        }
+        av_value_free(tab->source_state);
+        tab->source_state = NULL;
+        tab->source_dirty = false;
+    }
+    return result;
+}
+
+static void save(studio *s, scene_document_tab *tab)
+{
+    if (save_ui_document(s->scene, tab) != 0) {
+        studio_error(s, "Could not save", app_scene_authoring_message(s->scene));
+        return;
+    }
+    char title[160];
+    snprintf(title, sizeof title, "Saved %s", tab->label);
+    kit_toast(s->kit, 0, &(kit_toast_desc){ .type = KIT_TOAST_SUCCESS, .title = title });
+    studio_record(s, KIT_TOAST_SUCCESS, title);
+}
+
+/* A file another program changed since it loaded is saved over only when
+ * asked, as editors ask before overwriting. */
+void studio_code_save(studio *s)
+{
+    scene_document_tab *asset = active_asset(s);
+    if (asset) {
+        asset_code *code = asset_editor(s, asset);
+        if (code) {
+            save_asset(s, code);
+        }
+        return;
+    }
+    scene_document_tab *tab = active_ui(s);
+    assert(tab);
+    if (ui_buffer_on_disk(tab->ui)) {
+        save(s, tab);
+        return;
+    }
+    kit_toast_dismiss(s->kit, s->code.overwrite_toast);
+    snprintf(s->code.overwrite, sizeof s->code.overwrite, "%s", tab->path);
+    s->code.overwrite_toast = kit_toast(
+        s->kit,
+        0,
+        &(kit_toast_desc){ .type = KIT_TOAST_WARNING,
+                           .title = "Changed on disk",
+                           .description = tab->label,
+                           .action = "Save Anyway",
+                           .duration = -1 }
+    );
+}
+
+/* A UI document's tab closes with its text; another discards what its
+   document has unsaved, as reverting it would. */
+static void close_tab(studio *s, int index)
+{
+    if (!scene_tabs_can_close(s->scene, index)) {
+        return;
+    }
+    scene_document_tab *tab = &s->scene->tabs[index];
+    if (tab->kind == APP_EDITOR_DOCUMENT_UI) {
+        scene_tabs_close(s->scene, APP_EDITOR_DOCUMENT_UI, tab->path);
+        return;
+    }
+    for (int i = acount(s->code.assets) - 1; i >= 0; i--) {
+        if (tab->path && !strcmp(asset_code_path(s->code.assets[i]), tab->path)) {
+            /* Remove the live overlay before the tab reloads its disk state. */
+            asset_code_free(s->code.assets[i]);
+            adel(s->code.assets, i);
+        }
+    }
+    scene_tabs_discard(s->scene, index);
+}
+
+void studio_close_tab(studio *s, int index)
+{
+    if (!scene_tabs_can_close(s->scene, index)) {
+        return;
+    }
+    scene_document_tab *tab = &s->scene->tabs[index];
+    if (!scene_tabs_dirty(s->scene, tab)) {
+        close_tab(s, index);
+        return;
+    }
+    char title[160];
+    snprintf(title, sizeof title, "Close %s without saving?", tab->label);
+    kit_toast_desc ask = {
+        .type = KIT_TOAST_WARNING,
+        .title = title,
+        .action = "Close",
+        .duration = 6,
+    };
+    kit_toast_dismiss(s->kit, s->code.close_toast);
+    snprintf(s->code.close, sizeof s->code.close, "%s", tab->key);
+    s->code.close_toast = kit_toast(s->kit, 0, &ask);
+}
+
+static void toast_actions(studio *s)
+{
+    kit *k = s->kit;
+    if (s->code.overwrite_toast && kit_toast_action(k, s->code.overwrite_toast)) {
+        s->code.overwrite_toast = 0;
+        scene_document_tab *tab = ui_tab(s, s->code.overwrite);
+        if (tab) {
+            save(s, tab);
+        }
+    }
+    if (s->code.close_toast && kit_toast_action(k, s->code.close_toast)) {
+        s->code.close_toast = 0;
+        for (int i = 0; i < acount(s->scene->tabs); i++) {
+            if (!strcmp(s->scene->tabs[i].key, s->code.close)) {
+                close_tab(s, i);
+                break;
+            }
+        }
+    }
+}
+
+static int line_offset(const char *text, int line)
+{
+    int at = 0;
+    for (int n = 1; n < line && text[at]; n++) {
+        at += (int)strcspn(text + at, "\n");
+        at += text[at] == '\n';
+    }
+    return at;
+}
+
+/* ---------- Code editors ---------- */
+
+/* The code editor of the tab's shown part, made on first show. */
+static studio_code_editor *part_editor(studio *s, const scene_document_tab *tab)
+{
+    studio_code *c = &s->code;
+    const ui_buffer *b = tab->ui;
+    for (int i = 0; i < acount(c->editors); i++) {
+        if (!strcmp(c->editors[i].path, tab->path) && c->editors[i].part == b->part) {
+            return &c->editors[i];
+        }
+    }
+    studio_code_editor made = {
+        .part = b->part,
+        .editor = kit_code_editor_create(ui_buffer_text(b, b->part)),
+        .synced = xstrdup(ui_buffer_text(b, b->part)),
+    };
+    snprintf(made.path, sizeof made.path, "%s", tab->path);
+    apush(c->editors, made);
+    return &alast(c->editors);
+}
+
+/* Drops the editors of documents that closed. */
+static void prune_editors(studio *s)
+{
+    studio_code *c = &s->code;
+    for (int i = acount(c->assets) - 1; i >= 0; i--) {
+        bool open = false;
+        for (int t = 0; t < acount(s->scene->tabs); t++) {
+            scene_document_tab *tab = &s->scene->tabs[t];
+            if (tab->path && !strcmp(tab->path, asset_code_path(c->assets[i]))) {
+                tab->source_dirty = asset_code_dirty(c->assets[i]);
+                open = true;
+            }
+        }
+        if (!open) {
+            asset_code_free(c->assets[i]);
+            adel(c->assets, i);
+        }
+    }
+    for (int i = acount(c->editors) - 1; i >= 0; i--) {
+        if (ui_tab(s, c->editors[i].path)) {
+            continue;
+        }
+        if (c->editor == c->editors[i].editor) {
+            c->editor = NULL;
+        }
+        kit_code_editor_destroy(c->editors[i].editor);
+        free(c->editors[i].synced);
+        adel(c->editors, i);
+    }
+}
+
+void studio_code_free(studio *s)
+{
+    studio_code *c = &s->code;
+    for (int i = 0; i < acount(c->assets); i++) {
+        asset_code_free(c->assets[i]);
+    }
+    afree(c->assets);
+    for (int i = 0; i < acount(c->editors); i++) {
+        kit_code_editor_destroy(c->editors[i].editor);
+        free(c->editors[i].synced);
+    }
+    afree(c->editors);
+    c->editor = NULL;
+    ui_source_free(c->source);
+    c->source = NULL;
+    afree(c->spans);
+    for (int p = 0; p < UI_PART_COUNT; p++) {
+        ui_code_markers_free(c->markers[p]);
+    }
+    ui_check_messages_free(c->checked);
+    rml_backend_destroy(c->checker);
+    ui_source_project_free(&c->project);
+    ui_code_completions_free(&c->completions);
+    free(c->hover);
+    afree(c->problems.rows);
+    afree(s->ui_project_problems);
+}
+
+/* ---------- Checking ---------- */
+
+/* RmlUi checks the shown document once its text has rested. */
+static void check_shown(studio *s)
+{
+    studio_code *c = &s->code;
+    scene_document_tab *tab = shown(s);
+    if (!tab) {
+        return;
+    }
+    ui_buffer *b = tab->ui;
+    if (!strcmp(c->checked_path, tab->path) && c->checked_revision == b->revision) {
+        return;
+    }
+    if (b->revision != c->check_seen) {
+        c->check_seen = b->revision;
+        c->check_due = s->time + CHECK_DELAY;
+    }
+    if (s->time < c->check_due) {
+        return;
+    }
+    if (!c->checker) {
+        c->checker = rml_backend_create(1280, 720, 1);
+    }
+    ui_check_messages_free(c->checked);
+    c->checked = NULL;
+    c->check_failure[0] = '\0';
+    ui_code_check(
+        b,
+        rml_backend_context(c->checker),
+        &c->checked,
+        c->check_failure,
+        sizeof c->check_failure
+    );
+    snprintf(c->checked_path, sizeof c->checked_path, "%s", tab->path);
+    c->checked_revision = b->revision;
+    c->markers_stale = true;
+}
+
+/* The Text Editor shows the active UI document when it is assigned to an area. */
+static void follow_active(studio *s, const scene_document_tab *active)
+{
+    if (active) {
+        snprintf(s->code.path, sizeof s->code.path, "%s", active->path);
+    }
+}
+
+void studio_code_frame(studio *s)
+{
+    scene_document_tab *tab = active_asset(s);
+    bool behavior = tab && tab->kind == APP_EDITOR_DOCUMENT_BEHAVIOR &&
+                    s->scene->definition &&
+                    game_preview_definition_path(s->scene->definition) &&
+                    !strcmp(tab->path, game_preview_definition_path(s->scene->definition));
+    bool system = tab && tab->kind == APP_EDITOR_DOCUMENT_SYSTEM &&
+                  s->scene->system_path && !strcmp(tab->path, s->scene->system_path);
+    if (behavior || system || (tab && tab->source_only)) {
+        asset_code *code = asset_editor(s, tab);
+        if (code) {
+            asset_code_time(code, s->time);
+        }
+        if (code) {
+            bool pending = asset_code_pending(code);
+            bool changed = false;
+            if (tab->source_only) {
+                asset_code_validate(code, s->scene->graph_editor);
+            } else {
+                changed = sync_asset_graph(s, code);
+            }
+            if (changed || (pending && !asset_code_pending(code))) {
+                capture_asset(s, code);
+                asset_index_invalidate(s->scene);
+            }
+        }
+        if (code && asset_code_pending(code)) {
+            s->ui_schedule.wake = true;
+        }
+    }
+    bool applied = false;
+    for (int i = 0; i < acount(s->scene->tabs); i++) {
+        scene_document_tab *tab = &s->scene->tabs[i];
+        if (tab->kind == APP_EDITOR_DOCUMENT_UI) {
+            applied |= ui_buffer_update(tab->ui, s->time, s->prefs.code_apply_live);
+        }
+    }
+    /* References follow the text that stands in for the files. */
+    if (applied) {
+        asset_index_invalidate(s->scene);
+    }
+    follow_active(s, active_ui(s));
+    prune_editors(s);
+    check_shown(s);
+    toast_actions(s);
+    /* Mouse buttons 4 and 5 over the Text Editor step Back and Forward. */
+    int over = s->hover_area;
+    if (s->nav_button && over >= 0 &&
+        studio_active_layout(s)->editors[over] == STUDIO_EDITOR_CODE) {
+        studio_nav_step(s, s->nav_button);
+        s->nav_button = 0;
+    }
+}
+
+bool studio_code_history(studio *s, bool redo, bool apply)
+{
+    scene_document_tab *tab = active_asset(s);
+    if (!tab || (tab->kind != APP_EDITOR_DOCUMENT_BEHAVIOR &&
+                 tab->kind != APP_EDITOR_DOCUMENT_SYSTEM)) {
+        return false;
+    }
+    asset_code *code = asset_editor(s, tab);
+    if (!code) {
+        return false;
+    }
+    sync_asset_graph(s, code);
+    if (!apply) {
+        return asset_code_can_replay(code, redo);
+    }
+    if (!asset_code_replay(code, redo, s->prefs.code_apply_live)) {
+        return false;
+    }
+    sync_asset_graph(s, code);
+    capture_asset(s, code);
+    return true;
+}
+
+static asset_code *graph_code(const studio *s)
+{
+    if (!source_graph_active(s)) {
+        return NULL;
+    }
+    const char *path = s->scene->document.kind == APP_EDITOR_DOCUMENT_SYSTEM
+                         ? s->scene->system_path
+                     : s->scene->definition
+                         ? game_preview_definition_path(s->scene->definition)
+                         : NULL;
+    for (int i = 0; path && i < acount(s->code.assets); i++) {
+        asset_code *code = s->code.assets[i];
+        if (!strcmp(path, asset_code_path(code))) {
+            return code;
+        }
+    }
+    return NULL;
+}
+
+bool studio_code_graph_readonly(const studio *s)
+{
+    const asset_code *code = graph_code(s);
+    return code && asset_code_graph_blocked(code);
+}
+
+bool studio_code_edit_source(void *user, const authoring_edit_request *request, bool coalesce, char *error, size_t size)
+{
+    studio *s = user;
+    editor *e = sg_graph_editor(s);
+    const authoring_source_presentation *view = editor_presentation(e);
+    scene_document_tab *tab = active_asset(s);
+    asset_code *code = tab && !tab->source_only ? asset_editor(s, tab) : NULL;
+    const authoring_source *source = code ? asset_code_source(code) : NULL;
+    if (!view || !source || !source->valid ||
+        strcmp(authoring_source_presentation_text(view), asset_code_text(code))) {
+        snprintf(error, size, "Apply or repair the source draft before editing this graph");
+        return false;
+    }
+    authoring_edit_result result = { 0 };
+    if (!authoring_source_edit(source->analysis, asset_code_catalog(code), view, request, &result, error, size)) {
+        return false;
+    }
+    source_catalog_edit edit = { .path = asset_code_path(code), .text = result.text };
+    bool accepted = !game_preview_sources_validate(s->scene->live, &edit, 1, error, size);
+    if (accepted) {
+        accepted = asset_code_edit_source(
+            code,
+            authoring_source_presentation_text(view),
+            result.text,
+            result.metadata,
+            coalesce
+        );
+        if (accepted) {
+            capture_asset(s, code);
+            asset_index_invalidate(s->scene);
+            s->ui_schedule.wake = true;
+        } else {
+            snprintf(error, size, "Source changed during the edit");
+        }
+    }
+    authoring_edit_result_free(&result);
+    return accepted;
+}
+
+char *studio_code_expression(const studio *s, const node *n)
+{
+    const editor *e = sg_graph_editor(s);
+    const authoring_source_presentation *view = editor_presentation(e);
+    if (view) {
+        const source_presentation_origin *origin = authoring_source_presentation_origin(
+            view,
+            e->active_graph->graph_id,
+            n->id,
+            0
+        );
+        if (!origin || origin->kind != SOURCE_PRESENTATION_EXPRESSION ||
+            origin->range.start < 0 || origin->range.end <= origin->range.start) {
+            return NULL;
+        }
+        const char *text = authoring_source_presentation_text(view);
+        return strndup(
+            text + origin->range.start,
+            (size_t)(origin->range.end - origin->range.start)
+        );
+    }
+    return graph_expression_display(e->asset, n);
+}
+
+bool studio_code_expression_replace(studio *s, const node *n, const char *text, char *error, size_t size)
+{
+    editor *e = sg_graph_editor(s);
+    const authoring_source_presentation *view = editor_presentation(e);
+    const source_presentation_origin *origin = view
+                                                 ? authoring_source_presentation_origin(
+                                                       view,
+                                                       e->active_graph->graph_id,
+                                                       n->id,
+                                                       0
+                                                   )
+                                                 : NULL;
+    if (!origin || origin->kind != SOURCE_PRESENTATION_EXPRESSION) {
+        snprintf(error, size, "Expression has no source location");
+        return false;
+    }
+    authoring_edit_request request = {
+        .kind = AUTHORING_EDIT_EXPRESSION,
+        .generation = authoring_source_edit_generation(view),
+        .origin = origin->identity,
+        .expression = text,
+    };
+    bool accepted = ed_source_edit(e, &request);
+    snprintf(error, size, "%s", e->connect_error);
+    return accepted;
+}
+
+void studio_code_pin_label(const studio *s, const node *n, const pin_spec *pin, char *out, size_t size)
+{
+    if (n->desc == &NODE_BehaviorExpression &&
+        (!pin->display_name || !pin->display_name[0])) {
+        for (int i = 0; i < n->input_count; i++) {
+            if (pin != &n->input_pins[i]) {
+                continue;
+            }
+            graph_expression_input_name(sg_graph_editor(s)->asset, n, i, out, size);
+            return;
+        }
+    }
+    if (n->desc == &NODE_FunctionEntry &&
+        (!pin->display_name || !pin->display_name[0])) {
+        const behavior_asset *asset = sg_graph_editor(s)->asset;
+        for (int g = 0; g < acount(asset->graphs); g++) {
+            const graph *generated = asset->graphs[g];
+            if (!generated->math_expression || graph_node_by_id(generated, n->id) != n) {
+                continue;
+            }
+            for (int owner = 0; owner < acount(asset->graphs); owner++) {
+                const graph *caller = asset->graphs[owner];
+                for (int at = 0; at < acount(caller->nodes); at++) {
+                    const node *expression = caller->nodes[at];
+                    if (expression->desc != &NODE_BehaviorExpression ||
+                        expression->reference_asset ||
+                        expression->reference_id != generated->graph_id) {
+                        continue;
+                    }
+                    for (int input = 0; input < expression->input_count; input++) {
+                        if (expression->input_pins[input].declaration_id != pin->id) {
+                            continue;
+                        }
+                        graph_expression_input_name(asset, expression, input, out, size);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+    ed_pin_label(n, pin, out, size);
+}
+
+void studio_code_graph_label(const studio *s, const graph *g, char *out, size_t size)
+{
+    const behavior_asset *asset = sg_graph_editor(s)->asset;
+    for (int i = 0; g->math_expression && i < acount(asset->graphs); i++) {
+        const graph *owner = asset->graphs[i];
+        for (int j = 0; j < acount(owner->nodes); j++) {
+            const node *n = owner->nodes[j];
+            if (n->reference_id != g->graph_id || n->reference_asset) {
+                continue;
+            }
+            char *expression = studio_code_expression(s, n);
+            if (expression) {
+                snprintf(out, size, "%s", expression);
+                free(expression);
+                return;
+            }
+        }
+    }
+    snprintf(out, size, "%s", g->name && g->name[0] ? g->name : "Event Graph");
+}
+
+char *studio_code_expression_resolve(const studio *s, const node *n, const char *text, char *error, size_t size)
+{
+    return graph_expression_resolve(sg_graph_editor(s)->asset, n, text, error, size);
+}
+
+int studio_behavior_view(const studio *s)
+{
+    const studio_layout *layout = &s->prefs.layouts[s->prefs.workspace];
+    if (s->maximized >= 0) {
+        return layout->editors[s->maximized] == STUDIO_EDITOR_CODE ? 1 : 0;
+    }
+    bool graph = false, code = false;
+    for (int i = STUDIO_AREA_TOP; i <= STUDIO_AREA_BOTTOM; i++) {
+        graph |= layout->editors[i] == STUDIO_EDITOR_BEHAVIOR;
+        code |= layout->editors[i] == STUDIO_EDITOR_CODE;
+    }
+    return graph && code ? 2 : code ? 1 : 0;
+}
+
+void studio_behavior_show(studio *s, int view)
+{
+    scene_document_tab *tab = active_asset(s);
+    if (tab && tab->source_only) {
+        view = 1;
+    }
+    studio_layout *layout = studio_active_layout(s);
+    int graph_area = -1, code_area = -1;
+    for (int i = STUDIO_AREA_TOP; i <= STUDIO_AREA_BOTTOM; i++) {
+        graph_area = layout->editors[i] == STUDIO_EDITOR_BEHAVIOR ? i : graph_area;
+        code_area = layout->editors[i] == STUDIO_EDITOR_CODE ? i : code_area;
+    }
+    if (view == 2) {
+        graph_area = graph_area >= 0              ? graph_area
+                   : code_area == STUDIO_AREA_TOP ? STUDIO_AREA_BOTTOM
+                                                  : STUDIO_AREA_TOP;
+        code_area = graph_area == STUDIO_AREA_TOP ? STUDIO_AREA_BOTTOM : STUDIO_AREA_TOP;
+        layout->editors[graph_area] = STUDIO_EDITOR_BEHAVIOR;
+        layout->editors[code_area] = STUDIO_EDITOR_CODE;
+        s->maximized = -1;
+        s->focus_area = code_area;
+    } else {
+        int area = view == 1 ? code_area : graph_area;
+        area = area >= 0 ? area : STUDIO_AREA_TOP;
+        layout->editors[area] = view == 1 ? STUDIO_EDITOR_CODE : STUDIO_EDITOR_BEHAVIOR;
+        s->maximized = area;
+        s->focus_area = area;
+    }
+    s->ui_schedule.wake = true;
+}
+
+void studio_code_reveal_node(studio *s, const studio_node_ref *at)
+{
+    scene_document_tab *tab = active_asset(s);
+    if (!tab || !s->scene->graph_document_id ||
+        strcmp(at->asset, s->scene->graph_document_id)) {
+        return;
+    }
+    bool visible = false;
+    for (int i = 0; i < STUDIO_AREA_COUNT; i++) {
+        visible |= studio_active_layout(s)->editors[i] == STUDIO_EDITOR_CODE;
+    }
+    if (!visible) {
+        return;
+    }
+    asset_code *code = asset_editor(s, tab);
+    int start, end;
+    if (code && asset_code_location(code, at->graph_id, at->node_id, &start, &end)) {
+        kit_code_set_cursor(asset_code_editor(code), start);
+    }
+}
+
+/* ---------- Opening ---------- */
+
+bool studio_open_ui_part(studio *s, const char *path, ui_part part, int line)
+{
+    finish_transform_edit(s->scene, false);
+    if (scene_tabs_open_ui(s->scene, path) != 0) {
+        studio_error(s, content_basename(path), app_scene_authoring_message(s->scene));
+        return false;
+    }
+    ui_buffer *b = studio_ui_buffer(s);
+    b->part = ui_buffer_text(b, part) ? part : UI_PART_RCSS;
+    s->code.reveal = line;
+    s->code.reveal_offset = -1;
+    s->code.reveal_wait = REVEAL_FRAMES;
+    studio_show_editor(s, STUDIO_EDITOR_CODE);
+    return true;
+}
+
+bool studio_open_ui_source(studio *s, const char *path, int line)
+{
+    size_t length = strlen(path), extension = strlen(UI_STYLE_EXTENSION);
+    bool styles = length > extension &&
+                  !strcmp(path + length - extension, UI_STYLE_EXTENSION);
+    return studio_open_ui_part(s, path, styles ? UI_PART_RCSS : UI_PART_RML, line);
+}
+
+bool studio_code_open_place(studio *s, const ui_code_place *place)
+{
+    bool authored = false;
+    const reference_index *index = app_scene_authoring_asset_index(s->scene);
+    for (int i = 0; index && i < reference_index_asset_count(index); i++) {
+        const reference_asset *asset = reference_index_asset_at(index, i);
+        if (asset->path && !strcmp(asset->path, place->path) &&
+            asset->kind != REFERENCE_ASSET_UI) {
+            authored = true;
+            if (app_scene_authoring_open_asset(s->scene, i)) {
+                return false;
+            }
+            break;
+        }
+    }
+    for (int i = 0; i < acount(s->scene->tabs); i++) {
+        scene_document_tab *tab = &s->scene->tabs[i];
+        if (tab->kind != APP_EDITOR_DOCUMENT_UI && tab->path &&
+            !strcmp(tab->path, place->path)) {
+            scene_tabs_activate(s->scene, i);
+            asset_code *code = asset_editor(s, tab);
+            if (!code) {
+                return false;
+            }
+            kit_code_set_cursor(asset_code_editor(code), place->offset);
+            studio_show_editor(s, STUDIO_EDITOR_CODE);
+            return true;
+        }
+    }
+    if (authored || !studio_open_ui_part(s, place->path, place->part, place->line)) {
+        return false;
+    }
+    s->code.reveal_offset = place->offset;
+    return true;
+}
+
+/* ---------- Problems (workstream Q) ---------- */
+
+/* Each part's markers, as the Text Editor marks them, as Output's rows: a
+   row opens the start of what its marker spans, or its line. */
+static void add_problems(
+    const ui_buffer *b,
+    const ui_check_message *messages,
+    const char *failure,
+    studio_ui_problem **out
+)
+{
+    for (int p = 0; p < UI_PART_COUNT; p++) {
+        const char *text = ui_buffer_text(b, (ui_part)p);
+        if (!text) {
+            continue;
+        }
+        ui_source *source = ui_source_parse(text, ui_code_language((ui_part)p));
+        kit_code_marker *markers = NULL;
+        ui_code_markers(source, (ui_part)p, messages, failure, &markers);
+        for (int i = 0; i < acount(markers); i++) {
+            const kit_code_marker *m = &markers[i];
+            studio_ui_problem row = { .at = { .part = (ui_part)p,
+                                              .offset = m->end > m->start ? m->start : -1,
+                                              .line = m->line },
+                                      .error = m->severity == KIT_CODE_ERROR };
+            snprintf(row.at.path, sizeof row.at.path, "%s", b->path);
+            snprintf(row.message, sizeof row.message, "%s", m->message);
+            apush(*out, row);
+        }
+        ui_code_markers_free(markers);
+        ui_source_free(source);
+    }
+}
+
+const studio_ui_problem *studio_code_problems(studio *s)
+{
+    studio_code *c = &s->code;
+    scene_document_tab *asset = active_asset(s);
+    if (asset) {
+        asetlen(c->problems.rows, 0);
+        asset_code *code = asset_editor(s, asset);
+        const kit_code_marker *markers = code ? asset_code_markers(code) : NULL;
+        for (int i = 0; i < acount(markers); i++) {
+            const kit_code_marker *m = &markers[i];
+            studio_ui_problem row = { .at = { .offset = m->start, .line = m->line },
+                                      .error = m->severity == KIT_CODE_ERROR };
+            snprintf(row.at.path, sizeof row.at.path, "%s", asset->path);
+            snprintf(row.message, sizeof row.message, "%s", m->message);
+            apush(c->problems.rows, row);
+        }
+        return c->problems.rows;
+    }
+    scene_document_tab *tab = shown(s);
+    if (!tab) {
+        asetlen(c->problems.rows, 0);
+        c->problems.path[0] = '\0';
+        return c->problems.rows;
+    }
+    bool checked = !strcmp(c->checked_path, tab->path);
+    unsigned check = checked ? c->checked_revision : 0;
+    if (!strcmp(c->problems.path, tab->path) &&
+        c->problems.revision == tab->ui->revision && c->problems.checked == check) {
+        return c->problems.rows;
+    }
+    asetlen(c->problems.rows, 0);
+    add_problems(
+        tab->ui,
+        checked ? c->checked : NULL,
+        checked ? c->check_failure : NULL,
+        &c->problems.rows
+    );
+    snprintf(c->problems.path, sizeof c->problems.path, "%s", tab->path);
+    c->problems.revision = tab->ui->revision;
+    c->problems.checked = check;
+    return c->problems.rows;
+}
+
+/* One file of the project: an open document as it stands, else as read. */
+static void file_problems(studio *s, const char *path, studio_ui_problem **out)
+{
+    scene_document_tab *tab = ui_tab(s, path);
+    char error[256] = "";
+    ui_buffer *b = tab ? tab->ui : ui_buffer_open(path, error, sizeof error);
+    if (!b) {
+        studio_ui_problem row = { .at = { .offset = -1, .line = 1 }, .error = true };
+        snprintf(row.at.path, sizeof row.at.path, "%s", path);
+        snprintf(row.message, sizeof row.message, "%s", error);
+        apush(*out, row);
+        return;
+    }
+    ui_check_message *messages = NULL;
+    ui_code_check(b, rml_backend_context(s->code.checker), &messages, error, sizeof error);
+    add_problems(b, messages, error, out);
+    ui_check_messages_free(messages);
+    if (!tab) {
+        ui_buffer_free(b);
+    }
+}
+
+static bool scanned(const ui_source_project *project, const char *path)
+{
+    for (int i = 0; i < acount(project->files); i++) {
+        if (!strcmp(project->files[i].path, path)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* The project's ui assets and stylesheets, then the open documents that
+   lie elsewhere. */
+void studio_code_project_problems(studio *s, studio_ui_problem **out)
+{
+    if (!s->code.checker) {
+        s->code.checker = rml_backend_create(1280, 720, 1);
+    }
+    char root[PATH_MAX];
+    ui_source_project project = { 0 };
+    if (realpath(s->scene->content_root, root)) {
+        ui_source_project_scan(&project, root);
+    }
+    for (int i = 0; i < acount(project.files); i++) {
+        /* A ui asset's .rcss is a part of the document its .rml opens. */
+        char *document = ui_buffer_document(project.files[i].path);
+        if (!strcmp(document, project.files[i].path)) {
+            file_problems(s, document, out);
+        }
+        free(document);
+    }
+    for (int i = 0; i < acount(s->scene->tabs); i++) {
+        const scene_document_tab *tab = &s->scene->tabs[i];
+        if (tab->kind == APP_EDITOR_DOCUMENT_UI && !scanned(&project, tab->path)) {
+            file_problems(s, tab->path, out);
+        }
+    }
+    ui_source_project_free(&project);
+}
+
+/* ---------- Header ---------- */
+
+/* The first problem of a part after `line`, or 0. */
+static int problem_after(const kit_code_marker *markers, int line)
+{
+    for (int i = 0; i < acount(markers); i++) {
+        if (markers[i].line > line) {
+            return markers[i].line;
+        }
+    }
+    return 0;
+}
+
+/* The next problem after the cursor's line, then the other part's first,
+   wrapping to the first. */
+static void next_problem(studio *s, ui_buffer *b)
+{
+    studio_code *c = &s->code;
+    kit_code_editor *e = c->editor;
+    ui_part other = b->part == UI_PART_RML ? UI_PART_RCSS : UI_PART_RML;
+    const char *text = kit_code_text(e, NULL);
+    int cursor = kit_code_cursor(e), line = 1;
+    for (int i = 0; i < cursor && text[i]; i++) {
+        line += text[i] == '\n';
+    }
+    int next = problem_after(c->markers[b->part], line);
+    if (!next && acount(c->markers[other])) {
+        b->part = other;
+        next = c->markers[other][0].line;
+    }
+    s->code.reveal = next ? next : problem_after(c->markers[b->part], 0);
+    s->code.reveal_offset = -1;
+    s->code.reveal_wait = next && b->part == other ? REVEAL_FRAMES : 0;
+}
+
+enum
+{
+    HEADER_EMPTY,
+    HEADER_ASSET, /* an asset's code source */
+    HEADER_DOCUMENT,
+};
+
+void studio_code_header_add(yyjson_mut_doc *doc)
+{
+    static const char *const TEXTS[] = {
+        "title", "backKbd",     "forwardKbd", "icon",    "name",         "path",
+        "vim",   "problemsTip", "error",      "runtime", "runtimeLabel", NULL
+    };
+    static const char *const FLAGS[] = { "dirty",      "live",   "back",
+                                         "forward",    "parts",  "find",
+                                         "behavior",   "rename", "calls",
+                                         "sourceOnly", NULL };
+    static const char *const NUMBERS[] = { "mode",   "part", "problems",
+                                           "errors", "view", NULL };
+    yyjson_mut_val *h = yyjson_mut_obj_add_obj(doc, yyjson_mut_doc_get_root(doc), "code_header");
+    for (const char *const *text = TEXTS; *text; text++) {
+        yyjson_mut_obj_add_strcpy(doc, h, *text, "");
+    }
+    for (const char *const *flag = FLAGS; *flag; flag++) {
+        yyjson_mut_obj_add_bool(doc, h, *flag, false);
+    }
+    for (const char *const *number = NUMBERS; *number; number++) {
+        yyjson_mut_obj_add_int(doc, h, *number, 0);
+    }
+}
+
+/* The document's problems: a count that steps to the next, its tip naming
+   the errors and warnings. */
+static bool show_problems(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *h)
+{
+    const studio_code *c = &s->code;
+    int errors = 0, count = 0;
+    for (int p = 0; c->editor && p < UI_PART_COUNT; p++) {
+        for (int i = 0; i < acount(c->markers[p]); i++) {
+            errors += c->markers[p][i].severity == KIT_CODE_ERROR;
+            count++;
+        }
+    }
+    char tip[64];
+    snprintf(
+        tip,
+        sizeof tip,
+        "%d %s, %d %s \xc2\xb7 Next problem",
+        errors,
+        errors == 1 ? "error" : "errors",
+        count - errors,
+        count - errors == 1 ? "warning" : "warnings"
+    );
+    bool changed = ui_data_put_int(h, "problems", count);
+    changed |= ui_data_put_int(h, "errors", errors);
+    return ui_data_put_text(doc, h, "problemsTip", count ? tip : "") || changed;
+}
+
+/* A UI document: Back and Forward, its part, its file, Find, Vim's mode,
+   its problems and whether it reads. */
+static bool show_document(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *h, const scene_document_tab *tab)
+{
+    const ui_buffer *b = tab->ui;
+    const char *file = b->files[b->part];
+    char glyph[5];
+    studio_glyph(glyph, b->stylesheet ? KIT_ICON_FILE : KIT_ICON_LAYOUT);
+    const char *mode = s->code.editor ? kit_code_mode(s->code.editor) : NULL;
+    bool changed = ui_data_put_bool(h, "back", studio_nav_can_step(s, -1));
+    changed |= ui_data_put_bool(h, "forward", studio_nav_can_step(s, 1));
+    changed |= ui_data_put_text(doc, h, "backKbd", studio_chord(s, "Mod+["));
+    changed |= ui_data_put_text(doc, h, "forwardKbd", studio_chord(s, "Mod+]"));
+    changed |= ui_data_put_bool(h, "parts", !b->stylesheet);
+    changed |= ui_data_put_int(h, "part", b->part);
+    changed |= ui_data_put_text(doc, h, "icon", glyph);
+    changed |= ui_data_put_text(doc, h, "name", content_basename(file));
+    changed |= ui_data_put_text(doc, h, "path", file);
+    changed |= ui_data_put_bool(h, "dirty", ui_buffer_dirty(b));
+    changed |= ui_data_put_bool(h, "find", s->code.find.open);
+    changed |= ui_data_put_text(doc, h, "vim", mode ? mode : "");
+    changed |= ui_data_put_text(doc, h, "error", b->error);
+    return show_problems(s, doc, h) || changed;
+}
+
+/* The shown document's header (CodeHeader.rml), or an asset's source's: its
+   name, whether it is unsaved, and the apply mode. */
+bool studio_code_header_sync(studio *s, const studio_panel_sync *at)
+{
+    yyjson_mut_val *h = at->variable;
+    bool view_changed = ui_data_put_int(h, "view", studio_behavior_view(s));
+    scene_document_tab *asset = active_asset(s);
+    view_changed |= ui_data_put_bool(h, "sourceOnly", asset && asset->source_only);
+    scene_document_tab *tab = asset ? NULL : shown(s);
+    int mode = asset ? HEADER_ASSET : tab ? HEADER_DOCUMENT : HEADER_EMPTY;
+    bool changed = ui_data_put_int(h, "mode", mode) || view_changed;
+    changed |= ui_data_put_bool(h, "live", s->prefs.code_apply_live);
+    if (asset) {
+        asset_code *code = asset_editor(s, asset);
+        changed |= ui_data_put_text(at->doc, h, "title", asset->label);
+        const authoring_reference *
+            reference = code
+                          ? source_reference(code, kit_code_cursor(asset_code_editor(code)))
+                          : NULL;
+        const authoring_navigation *navigation = code ? asset_code_navigation(code)
+                                                      : NULL;
+        changed |= ui_data_put_bool(
+            h,
+            "rename",
+            reference && authoring_navigation_definition(navigation, reference->target)
+        );
+        changed |= ui_data_put_bool(
+            h,
+            "calls",
+            reference &&
+                authoring_navigation_callable(navigation, reference->target).id != 0
+        );
+        changed |= ui_data_put_bool(
+            h,
+            "behavior",
+            asset->kind == APP_EDITOR_DOCUMENT_BEHAVIOR || asset->kind == APP_EDITOR_DOCUMENT_SYSTEM
+        );
+        changed |= ui_data_put_bool(h, "back", studio_nav_can_step(s, -1));
+        changed |= ui_data_put_bool(h, "forward", studio_nav_can_step(s, 1));
+        changed |= ui_data_put_text(at->doc, h, "backKbd", studio_chord(s, "Mod+["));
+        changed |= ui_data_put_text(at->doc, h, "forwardKbd", studio_chord(s, "Mod+]"));
+        changed |= ui_data_put_bool(h, "find", s->code.find.open);
+        const char *vim = code ? kit_code_mode(asset_code_editor(code)) : NULL;
+        changed |= ui_data_put_text(at->doc, h, "vim", vim ? vim : "");
+        changed |= ui_data_put_text(at->doc, h, "error", code ? asset_code_error(code) : "");
+        const char *runtime = "", *runtime_label = "";
+        if (code && (asset->source_only || asset_code_source(code) != NULL)) {
+            if (asset->source_only) {
+                runtime_label = "Source only";
+                runtime = "Fix source errors and Save to open its graph. "
+                          "Existing scene runtime stays unchanged";
+            } else if (asset_code_error(code)[0]) {
+                runtime_label = "Last valid";
+                runtime = "Source errors retain the last valid graph and "
+                          "runtime";
+            } else if (asset_code_pending(code)) {
+                runtime_label = "Compiling";
+                runtime = "The current runtime stays active until this draft "
+                          "compiles";
+            } else if (asset_code_runtime_held(code)) {
+                runtime_label = "On Save";
+                runtime = "Valid source edits wait for Save before updating "
+                          "the runtime";
+            } else if (
+                s->scene->definition && s->scene->definition->dirty &&
+                game_preview_definition_path(s->scene->definition) &&
+                !strcmp(asset->path, game_preview_definition_path(s->scene->definition))
+            ) {
+                runtime_label = "Preview waiting";
+                runtime = s->scene->preview_message[0] ? s->scene->preview_message : "The current runtime stays active until the edited behavior can safely reload";
+            }
+        }
+        changed |= ui_data_put_text(at->doc, h, "runtime", runtime);
+        changed |= ui_data_put_text(at->doc, h, "runtimeLabel", runtime_label);
+        const kit_code_marker *markers = code ? asset_code_markers(code) : NULL;
+        int errors = 0, warnings = 0, notes = 0;
+        for (int i = 0; i < acount(markers); i++) {
+            errors += markers[i].severity == KIT_CODE_ERROR;
+            warnings += markers[i].severity == KIT_CODE_WARNING;
+            notes += markers[i].severity == KIT_CODE_INFO;
+        }
+        char tip[96];
+        snprintf(tip, sizeof tip, "%d errors, %d warnings, %d notes · Next problem", errors, warnings, notes);
+        changed |= ui_data_put_int(h, "problems", acount(markers));
+        changed |= ui_data_put_int(h, "errors", errors);
+        changed |= ui_data_put_text(at->doc, h, "problemsTip", tip);
+        return ui_data_put_bool(h, "dirty", code && asset_code_dirty(code)) || changed;
+    }
+    return tab ? show_document(s, at->doc, h, tab) || changed : changed;
+}
+
+static void open_find(studio_code *c);
+static void asset_calls(studio *s, asset_code *code, int cursor);
+
+void studio_code_header_action(studio *s, const char *action, const ui_activation *a)
+{
+    scene_document_tab *asset = active_asset(s);
+    scene_document_tab *tab = asset ? NULL : shown(s);
+    int value = a->argc ? atoi(a->args[0]) : 0;
+    if (!strcmp(action, "view")) {
+        studio_behavior_show(s, value);
+    } else if (asset && (!strcmp(action, "rename") || !strcmp(action, "calls"))) {
+        asset_code *code = asset_editor(s, asset);
+        if (code) {
+            int offset = kit_code_cursor(asset_code_editor(code));
+            if (!strcmp(action, "rename")) {
+                studio_refactor_source(s, asset_code_path(code), offset);
+            } else {
+                asset_calls(s, code, offset);
+            }
+        }
+    } else if (!strcmp(action, "apply")) {
+        s->prefs.code_apply_live = value == 0;
+        if (s->prefs.code_apply_live) {
+            s->scene->source_preview_hold[0] = 0;
+        }
+    } else if (!strcmp(action, "save") && asset) {
+        asset_code *code = asset_editor(s, asset);
+        if (code) {
+            save_asset(s, code);
+        }
+    } else if (!strcmp(action, "back") || !strcmp(action, "forward")) {
+        studio_nav_step(s, !strcmp(action, "back") ? -1 : 1);
+    } else if (!strcmp(action, "part") && tab && !tab->ui->stylesheet) {
+        tab->ui->part = value ? UI_PART_RCSS : UI_PART_RML;
+    } else if (!strcmp(action, "find") && (tab || asset)) {
+        open_find(&s->code);
+    } else if (!strcmp(action, "nextProblem") && asset) {
+        asset_code *code = asset_editor(s, asset);
+        const kit_code_marker *markers = code ? asset_code_markers(code) : NULL;
+        int cursor = code ? kit_code_cursor(asset_code_editor(code)) : 0;
+        int at = 0;
+        for (int i = 0; i < acount(markers); i++) {
+            if (markers[i].start > cursor) {
+                at = i;
+                break;
+            }
+        }
+        if (acount(markers)) {
+            kit_code_set_cursor(asset_code_editor(code), markers[at].start);
+        }
+    } else if (!strcmp(action, "nextProblem") && tab && s->code.editor) {
+        next_problem(s, tab->ui);
+    }
+}
+
+void studio_code_header(studio *s, int area)
+{
+    studio_ui_area_controls(s, area, "code", "CodeHeader");
+}
+
+/* The editor shows its part as the buffer holds it, the text they then
+   share; after an undo or redo from the editor, its cursor lands on the
+   change. */
+static void follow_text(studio_code *c, studio_code_editor *shown, const char *text)
+{
+    if (ui_code_follow(shown->editor, text, c->replayed)) {
+        c->replayed = false;
+    }
+    if (strcmp(shown->synced, text)) {
+        free(shown->synced);
+        shown->synced = xstrdup(text);
+    }
+}
+
+bool studio_code_collab_apply(
+    studio *s,
+    const char *relative_path,
+    ui_part part,
+    const text_edit *edits,
+    int count,
+    uint64_t base_revision,
+    const char *history_op,
+    bool history
+)
+{
+    if (!s || !relative_path || relative_path[0] == '/' ||
+        base_revision != collab_revision() || part < 0 || part >= UI_PART_COUNT) {
+        return false;
+    }
+    for (const char *p = relative_path; *p;) {
+        const char *end = strchr(p, '/');
+        size_t length = end ? (size_t)(end - p) : strlen(p);
+        if (!length || (length == 1 && p[0] == '.') ||
+            (length == 2 && p[0] == '.' && p[1] == '.')) {
+            return false;
+        }
+        p = end ? end + 1 : p + length;
+    }
+    char path[2048];
+    int length = snprintf(path, sizeof path, "%s/%s", s->project_root, relative_path);
+    if (length < 0 || (size_t)length >= sizeof path) {
+        return false;
+    }
+    scene_document_tab *tab = ui_tab(s, path);
+    if (!tab || !tab->ui) {
+        return false;
+    }
+
+    if (history_op && strcmp(history_op, "type") && strcmp(history_op, "step") &&
+        strcmp(history_op, "undo") && strcmp(history_op, "redo")) {
+        return false;
+    }
+    ui_buffer *b = tab->ui;
+    bool own_echo = history && collab_apply_client() && collab_client() &&
+                    !strcmp(collab_apply_client(), collab_client());
+    if (own_echo && history_op &&
+        (!strcmp(history_op, "undo") || !strcmp(history_op, "redo"))) {
+        bool redo = !strcmp(history_op, "redo");
+        if (!ui_buffer_history_edit_matches(b, redo, part, edits, count)) {
+            return false;
+        }
+        if (redo) {
+            ui_buffer_redo(b);
+        } else {
+            ui_buffer_undo(b);
+        }
+        s->code.replayed = true;
+    } else if (history && history_op && !strcmp(history_op, "type")) {
+        if (!ui_buffer_collab_type(b, part, edits, count, s->time)) {
+            return false;
+        }
+    } else if (!ui_buffer_collab_edit(b, part, edits, count, history)) {
+        return false;
+    }
+
+    for (int i = 0; i < acount(s->code.editors); i++) {
+        studio_code_editor *editor = &s->code.editors[i];
+        if (editor->part == part && !strcmp(editor->path, tab->path)) {
+            follow_text(&s->code, editor, ui_buffer_text(b, part));
+        }
+    }
+    return true;
+}
+
+/* ---------- Language ---------- */
+
+/* The scan of the project around `path`, made again once stale; `keep`
+   serves the last scan of the same project however old, as completion does
+   between keystrokes. */
+static const ui_source_project *project(studio *s, const char *path, bool keep)
+{
+    studio_code *c = &s->code;
+    char root[1024];
+    if (!ui_code_content_root(path, root, sizeof root)) {
+        root[0] = '\0';
+    }
+    bool fresh = !strcmp(root, c->project_root) &&
+                 (keep || s->time - c->project_time < PROJECT_STALE);
+    if (!fresh) {
+        ui_source_project_free(&c->project);
+        if (root[0]) {
+            ui_code_scan(&c->project, root);
+        }
+        snprintf(c->project_root, sizeof c->project_root, "%s", root);
+        c->project_time = s->time;
+    }
+    return &c->project;
+}
+
+/* Parses the editor's text as its part's language when either changed, and
+   highlights it with the parse's spans; true when it parsed. */
+static bool parse_part(studio_code *c, kit_code_editor *e, ui_part part)
+{
+    ui_source_language language = ui_code_language(part);
+    const char *text = kit_code_text(e, NULL);
+    if (c->source && c->source->language == language && !strcmp(c->source->text, text)) {
+        return false;
+    }
+    ui_source_free(c->source);
+    c->source = ui_source_parse(text, language);
+    asetlen(c->spans, 0);
+    for (int i = 0; i < acount(c->source->spans); i++) {
+        const ui_source_span *span = &c->source->spans[i];
+        const char *cls = ui_source_kind_class(span->kind);
+        if (cls) {
+            apush(c->spans, ((kit_code_span){ span->start, span->end, cls }));
+        }
+    }
+    return true;
+}
+
+/* Each part's problems: its syntax errors and, for the document RmlUi last
+   checked, RmlUi's warnings about the part. The shown part is the editor's
+   text, parsed; the other, the buffer's. */
+static void mark_problems(studio_code *c, const scene_document_tab *tab, ui_part shown)
+{
+    bool checked = !strcmp(c->checked_path, tab->path);
+    for (int p = 0; p < UI_PART_COUNT; p++) {
+        const char *text = ui_buffer_text(tab->ui, (ui_part)p);
+        ui_source *other = p != (int)shown && text
+                             ? ui_source_parse(text, ui_code_language((ui_part)p))
+                             : NULL;
+        ui_code_markers_free(c->markers[p]);
+        c->markers[p] = NULL;
+        if (p == (int)shown || other) {
+            ui_code_markers(
+                p == (int)shown ? c->source : other,
+                (ui_part)p,
+                checked ? c->checked : NULL,
+                checked ? c->check_failure : NULL,
+                &c->markers[p]
+            );
+        }
+        ui_source_free(other);
+    }
+    c->markers_stale = false;
+}
+
+/* What the pointer rests on, described once per place. */
+static void describe_hover(studio *s, const ui_buffer *b, kit_code_editor *e)
+{
+    studio_code *c = &s->code;
+    int at = kit_code_hover(e);
+    if (at == c->hover_at && c->source == c->hover_source) {
+        return;
+    }
+    free(c->hover);
+    c->hover = at >= 0 ? ui_code_hover(c->source, at, project(s, b->path, false))
+                       : NULL;
+    c->hover_at = at;
+    c->hover_source = c->source;
+}
+
+/* Parse, problems and hover for the part the editor shows. */
+static void understand(studio *s, const scene_document_tab *tab, kit_code_editor *e, ui_part part)
+{
+    studio_code *c = &s->code;
+    if (parse_part(c, e, part) || c->markers_stale) {
+        mark_problems(c, tab, part);
+    }
+    describe_hover(s, tab->ui, e);
+}
+
+/* The completions at the cursor; the list closes where there are none, or
+   where nothing was typed that asked for them. */
+static void complete(studio *s, const ui_buffer *b, kit_code_editor *e, ui_part part, bool asked)
+{
+    studio_code *c = &s->code;
+    parse_part(c, e, part);
+    ui_code_completions_free(&c->completions);
+    int cursor = kit_code_cursor(e);
+    ui_code_complete(c->source, cursor, project(s, b->path, !asked), &c->completions);
+    int typed = cursor - c->completions.start, count = acount(c->completions.items);
+    bool done = count == 1 && (int)strlen(c->completions.items[0].label) == typed &&
+                !strncmp(
+                    c->source->text + c->completions.start,
+                    c->completions.items[0].label,
+                    (size_t)typed
+                );
+    c->completing = count > 0 && (asked || typed > 0) && !done;
+}
+
+/* A typed character that starts completion: a word's first, or a trigger. */
+static bool starts_completion(const char *text, ui_code_change d)
+{
+    if (d.end != d.start || d.inserted != 1) {
+        return false;
+    }
+    char typed = text[d.start];
+    return isalnum((unsigned char)typed) || typed == '-' ||
+           strchr(COMPLETION_TRIGGERS, typed);
+}
+
+/* ---------- Navigation ---------- */
+
+/* A jump records where it left and where it landed, for Back and Forward. */
+static void go_to_definition(studio *s, const ui_buffer *b, kit_code_editor *e)
+{
+    studio_code *c = &s->code;
+    parse_part(c, e, b->part);
+    int at = kit_code_cursor(e);
+    ui_code_place place;
+    if (ui_code_definition(b, c->source, at, project(s, b->path, false), &place)) {
+        ui_code_place from = { .part = b->part, .offset = at, .line = 1 };
+        snprintf(from.path, sizeof from.path, "%s", b->path);
+        for (int i = 0; i < at; i++) {
+            from.line += c->source->text[i] == '\n';
+        }
+        if (studio_code_open_place(s, &place)) {
+            studio_nav_jump(s, &from, &place);
+        }
+        return;
+    }
+    bool named = ui_source_symbol_at(c->source, at).kind != UI_SYMBOL_NONE;
+    studio_report(s, named ? "No other definition" : "No symbol to go to here");
+}
+
+static const char *symbol_title(const ui_source_symbol *symbol, char *out, size_t size)
+{
+    static const char *const KINDS[] = {
+        [UI_SYMBOL_NONE] = "",          [UI_SYMBOL_WIDGET] = "Widget ",
+        [UI_SYMBOL_VARIABLE] = "",      [UI_SYMBOL_CLASS] = "Class .",
+        [UI_SYMBOL_SAVE_KEY] = "save.",
+    };
+    snprintf(out, size, "%s%s", KINDS[symbol->kind], symbol->name);
+    return out;
+}
+
+/* A Find row for a place: its file and line. */
+static studio_reference place_row(const ui_code_place *place)
+{
+    studio_reference row = { .kind = REFERENCE_ASSET_UI,
+                             .use = place->definition ? "Define" : "Use",
+                             .ui = *place };
+    char *file = ui_buffer_part_file(place->path, place->part);
+    snprintf(row.asset, sizeof row.asset, "%s", content_basename(file));
+    snprintf(row.place, sizeof row.place, "line %d", place->line);
+    free(file);
+    return row;
+}
+
+static void find_references(studio *s, const ui_buffer *b, kit_code_editor *e)
+{
+    studio_code *c = &s->code;
+    parse_part(c, e, b->part);
+    ui_code_place *places = NULL;
+    ui_source_symbol symbol = ui_code_places(
+        b,
+        c->source,
+        kit_code_cursor(e),
+        project(s, b->path, false),
+        &places
+    );
+    if (symbol.kind == UI_SYMBOL_NONE) {
+        studio_report(s, "No symbol to find here");
+        return;
+    }
+    asetlen(s->references, 0);
+    for (int i = 0; i < acount(places); i++) {
+        apush(s->references, place_row(&places[i]));
+    }
+    afree(places);
+    symbol_title(&symbol, s->references_title, sizeof s->references_title);
+    studio_output_find(s);
+}
+
+/* ---------- Body ---------- */
+
+/* Puts the cursor where studio_open_ui_part or a place asked, once laid
+   out, and focuses the editor. Call right after kit_code. */
+static void reveal(studio *s, kit_code_editor *e, const ui_buffer *b)
+{
+    if (!s->code.reveal || s->code.reveal_wait-- > 0) {
+        return;
+    }
+    const char *text = ui_buffer_text(b, b->part);
+    int at = s->code.reveal_offset >= 0 ? s->code.reveal_offset
+                                        : line_offset(text, s->code.reveal);
+    kit_code_set_cursor(e, math_min(at, (int)strlen(text)));
+    kit_focus(s->kit);
+    s->code.reveal = 0;
+    s->code.reveal_offset = -1;
+}
+
+/* ---------- Find (VS Code's find widget) ---------- */
+
+/* Where the next match of `query` starts at or after `from`, wrapping past
+   the end, or -1 without one. Case is ignored, as VS Code's default. */
+static int next_match(const char *text, const char *query, int from)
+{
+    int length = (int)strlen(text);
+    size_t size = strlen(query);
+    for (int i = 0; i < length; i++) {
+        int at = (from + i) % length;
+        if (!strncasecmp(text + at, query, size)) {
+            return at;
+        }
+    }
+    return -1;
+}
+
+/* Where the last match before `from` starts, wrapping past the start. */
+static int previous_match(const char *text, const char *query, int from)
+{
+    int length = (int)strlen(text);
+    size_t size = strlen(query);
+    for (int i = 1; i <= length; i++) {
+        int at = ((from - i) % length + length) % length;
+        if (!strncasecmp(text + at, query, size)) {
+            return at;
+        }
+    }
+    return -1;
+}
+
+/* Counts the matches, and places the shown one among them. */
+static void count_matches(studio_code *c, const char *text)
+{
+    size_t size = strlen(c->find.query);
+    c->find.count = 0;
+    c->find.index = -1;
+    for (const char *at = text; size && *at; at++) {
+        if (!strncasecmp(at, c->find.query, size)) {
+            c->find.index = at - text == c->find.at ? c->find.count : c->find.index;
+            c->find.count++;
+        }
+    }
+}
+
+static void show_match(studio_code *c, kit_code_editor *e, int at)
+{
+    c->find.at = at;
+    if (at >= 0) {
+        kit_code_select(e, at, at + (int)strlen(c->find.query));
+    }
+}
+
+static void step_find(studio_code *c, kit_code_editor *e, const char *text, int direction)
+{
+    if (!c->find.query[0]) {
+        return;
+    }
+    int from = c->find.at >= 0 ? c->find.at : kit_code_cursor(e);
+    show_match(
+        c,
+        e,
+        direction > 0 ? next_match(text, c->find.query, from + (c->find.at >= 0))
+                      : previous_match(text, c->find.query, from)
+    );
+}
+
+static void open_find(studio_code *c)
+{
+    c->find.open = c->find.focus = true;
+    c->find.at = -1;
+}
+
+static void close_find(studio_code *c)
+{
+    c->find.open = false;
+    c->find.refocus = true;
+}
+
+/* A new query shows its first match from the shown one or the cursor, so
+   typing narrows in place; the count follows the text. */
+static void follow_query(studio_code *c, kit_code_editor *e)
+{
+    const char *text = kit_code_text(e, NULL);
+    if (strcmp(c->find.seen, c->find.query)) {
+        snprintf(c->find.seen, sizeof c->find.seen, "%s", c->find.query);
+        int from = c->find.at >= 0 ? c->find.at : kit_code_cursor(e);
+        show_match(c, e, c->find.query[0] ? next_match(text, c->find.query, from) : -1);
+    }
+    count_matches(c, text);
+}
+
+void studio_code_find_add(yyjson_mut_doc *doc)
+{
+    yyjson_mut_val *f = yyjson_mut_obj_add_obj(doc, yyjson_mut_doc_get_root(doc), "code_find");
+    yyjson_mut_obj_add_strcpy(doc, f, "query", "");
+    yyjson_mut_obj_add_strcpy(doc, f, "count", "");
+    yyjson_mut_obj_add_int(doc, f, "total", 0);
+}
+
+/* The query is view state the field binds; C keeps it too, so the matches
+   follow it and it outlasts the field. */
+bool studio_code_find_sync(studio *s, const studio_panel_sync *at)
+{
+    studio_code *c = &s->code;
+    if (!c->find.open) {
+        return false;
+    }
+    yyjson_mut_val *query = yyjson_mut_obj_get(at->variable, "query");
+    if (at->wrote && !at->preview && strcmp(yyjson_mut_get_str(query), c->find.query)) {
+        snprintf(c->find.query, sizeof c->find.query, "%s", yyjson_mut_get_str(query));
+    }
+    if (c->editor && !at->preview) {
+        follow_query(c, c->editor);
+    }
+    char label[32] = "";
+    if (c->find.query[0] && !c->find.count) {
+        snprintf(label, sizeof label, "No results");
+    } else if (c->find.index >= 0) {
+        snprintf(label, sizeof label, "%d/%d", c->find.index + 1, c->find.count);
+    } else if (c->find.count) {
+        snprintf(label, sizeof label, "%d", c->find.count);
+    }
+    bool changed = ui_data_put_text(at->doc, at->variable, "query", c->find.query);
+    changed |= ui_data_put_text(at->doc, at->variable, "count", label);
+    return ui_data_put_int(at->variable, "total", c->find.count) || changed;
+}
+
+/* Enter and Down show the next match, Shift+Enter and Up the previous one,
+   and Escape closes the widget, returning to the text. */
+void studio_code_find_action(studio *s, const char *action, const ui_activation *a)
+{
+    studio_code *c = &s->code;
+    kit_code_editor *e = c->editor;
+    if (!c->find.open || !e) {
+        return;
+    }
+    const char *text = kit_code_text(e, NULL);
+    bool shift = a->modifiers & RML_KM_SHIFT;
+    if (!strcmp(action, "next") || !strcmp(action, "previous")) {
+        step_find(c, e, text, !strcmp(action, "next") ? 1 : -1);
+    } else if (!strcmp(action, "enter")) {
+        step_find(c, e, text, shift ? -1 : 1);
+    } else if (!strcmp(action, "close")) {
+        close_find(c);
+    }
+}
+
+/* The widget over the text's top right (CodeFind.rml). Find (Mod+F) focuses
+   its field, selecting the query, once the field can take focus. */
+static void find_widget(studio *s)
+{
+    studio_code *c = &s->code;
+    kit *k = s->kit;
+    kit_push(k, "find", NULL, "find-widget");
+    rml_element *host = studio_ui_panel(s, "bar", "CodeFind");
+    kit_pop(k);
+    rml_element *field = host && c->find.focus
+                           ? rml_element_by_id(host, "code-find-query")
+                           : NULL;
+    if (field && rml_element_focus(field, true)) {
+        rml_element_select(field);
+        c->find.focus = false;
+    }
+}
+
+/* A chord the editor leaves to Studio runs the command it names, as the
+   shortcuts would if typing had not turned them off; Mod+[ and Mod+] step
+   Back and Forward, as in JetBrains' editors, and Find finds here. */
+static int chord_command(const studio *s, const char *chord)
+{
+    studio_key key;
+    if (!studio_chord_parse(chord, s->mac, &key)) {
+        return -1;
+    }
+    return studio_command_for_key(&s->prefs, key.key, key.mod, STUDIO_EDITOR_CODE, s->mac);
+}
+
+static void run_chord(studio *s, const char *chord)
+{
+    if (!strcmp(chord, "Mod+[") || !strcmp(chord, "Mod+]")) {
+        studio_nav_step(s, chord[4] == ']' ? 1 : -1);
+        return;
+    }
+    int command = chord_command(s, chord);
+    if (command == STUDIO_COMMAND_FIND) {
+        open_find(&s->code);
+    } else if (command >= 0) {
+        studio_command_run(s, command);
+    }
+}
+
+/* Opening shows the bar at the next UI frame, whatever asked for it. */
+void studio_code_find(studio *s)
+{
+    open_find(&s->code);
+    s->ui_schedule.wake = true;
+}
+
+/* The editor's text into the buffer, the undo keys through it, and the
+   buffer back to the editor: one history. Typing composes with what
+   changed the buffer since they last shared its text, as a designer edit
+   in the same frame. Returns what typing changed. */
+static bool project_relative_path(const studio *s, const char *path, char *relative, size_t size)
+{
+    size_t root = strlen(s->project_root);
+    size_t path_length = strlen(path);
+    if (path_length <= root || strncmp(path, s->project_root, root) ||
+        path[root] != '/') {
+        return false;
+    }
+    const char *inside = path + root + 1;
+    if (!inside[0] || strlen(inside) >= size) {
+        return false;
+    }
+    snprintf(relative, size, "%s", inside);
+    return true;
+}
+
+static char *text_action(
+    const studio *s,
+    const ui_buffer *b,
+    ui_part part,
+    const text_edit *edit,
+    const char *history_op
+)
+{
+    char path[1024];
+    if (part < 0 || part >= UI_PART_COUNT ||
+        !project_relative_path(s, b->path, path, sizeof path)) {
+        return NULL;
+    }
+    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_val *root = yyjson_mut_obj(doc);
+    yyjson_mut_doc_set_root(doc, root);
+    yyjson_mut_obj_add_strcpy(doc, root, "family", "text");
+    yyjson_mut_obj_add_strcpy(doc, root, "path", path);
+    yyjson_mut_obj_add_strcpy(doc, root, "part", PART_NAMES[part]);
+    yyjson_mut_obj_add_uint(doc, root, "base_revision", collab_revision());
+    if (history_op) {
+        yyjson_mut_obj_add_strcpy(doc, root, "history_op", history_op);
+    }
+    yyjson_mut_val *edits = yyjson_mut_arr(doc);
+    yyjson_mut_val *item = yyjson_mut_arr_add_obj(doc, edits);
+    yyjson_mut_obj_add_int(doc, item, "start", edit->start);
+    yyjson_mut_obj_add_int(doc, item, "end", edit->end);
+    yyjson_mut_obj_add_strcpy(doc, item, "text", edit->text);
+    yyjson_mut_obj_add_val(doc, root, "edits", edits);
+    char *json = yyjson_mut_write(doc, 0, NULL);
+    yyjson_mut_doc_free(doc);
+    return json;
+}
+
+static collab_action_gate text_action_begin(
+    studio *s,
+    ui_buffer *b,
+    ui_part part,
+    const text_edit *edit,
+    const char *history_op,
+    char **action
+)
+{
+    *action = NULL;
+    if (!collab_active() || collab_replaying()) {
+        return COLLAB_ACTION_APPLY;
+    }
+    *action = text_action(s, b, part, edit, history_op);
+    if (!*action) {
+        return COLLAB_ACTION_REJECT;
+    }
+    return collab_actions_begin(*action);
+}
+
+/* The user's text reaches the buffer only after a proposal has been sent.
+   An editor participant's buffer catches up from the accepted echo. */
+static bool take_edits(studio *s, ui_buffer *b, studio_code_editor *shown, ui_part part, unsigned events)
+{
+    studio_code *c = &s->code;
+    c->replayed = false;
+    bool completed = events & KIT_CODE_COMPLETED;
+    bool typed_completion = false;
+    if (events & (KIT_CODE_CHANGED | KIT_CODE_COMPLETED)) {
+        text_edit edit;
+        ui_code_change change;
+        if (ui_code_prepare(b, part, shown->editor, shown->synced, &change, &edit)) {
+            char *action;
+            const char *history_op = completed ? "step" : "type";
+            collab_action_gate gate = text_action_begin(s, b, part, &edit, history_op, &action);
+            if (gate == COLLAB_ACTION_APPLY) {
+                /* The diff addresses the editor before rebasing onto the buffer.
+                   Following a shorter external edit below moves those bytes. */
+                typed_completion = !completed &&
+                                   starts_completion(kit_code_text(shown->editor, NULL), change);
+                ui_code_record(b, part, shown->editor, shown->synced, s->time, completed);
+                if (action) {
+                    (void)collab_actions_finish(action, true);
+                }
+            } else {
+                follow_text(c, shown, ui_buffer_text(b, part));
+            }
+            free(action);
+            free((char *)edit.text);
+        }
+    }
+    bool redo = events & KIT_CODE_REDO;
+    if (events & (KIT_CODE_UNDO | KIT_CODE_REDO)) {
+        ui_part target_part;
+        const char *target;
+        if (ui_buffer_history_target(b, redo, &target_part, &target)) {
+            text_edit edit;
+            if (ui_code_text_diff(ui_buffer_text(b, target_part), target, &edit)) {
+                const char *history_op = redo ? "redo" : "undo";
+                bool shareable = !collab_active() || collab_replaying() ||
+                                 ui_buffer_history_edit_matches(b, redo, target_part, &edit, 1);
+                if (shareable) {
+                    char *action;
+                    collab_action_gate gate = text_action_begin(s, b, target_part, &edit, history_op, &action);
+                    if (gate == COLLAB_ACTION_APPLY && ui_code_replay(b, redo)) {
+                        c->replayed = true;
+                        if (action) {
+                            (void)collab_actions_finish(action, true);
+                        }
+                        studio_report(s, redo ? "Redo" : "Undo");
+                    } else if (gate != COLLAB_ACTION_APPLY) {
+                        follow_text(c, shown, ui_buffer_text(b, part));
+                    }
+                    free(action);
+                } else {
+                    studio_report(s, "This text history step changes multiple parts");
+                    follow_text(c, shown, ui_buffer_text(b, part));
+                }
+                free((char *)edit.text);
+            }
+        }
+    }
+    follow_text(c, shown, ui_buffer_text(b, part));
+    return typed_completion;
+}
+
+/* Completion starts where typing or Control+Space asks, follows the text
+   and the cursor while it runs, and ends with an accepted item, Escape or
+   an undo. */
+static void follow_completion(
+    studio *s,
+    const ui_buffer *b,
+    kit_code_editor *e,
+    ui_part part,
+    unsigned events,
+    bool typed_completion
+)
+{
+    studio_code *c = &s->code;
+    bool asked = (events & KIT_CODE_SUGGEST) || typed_completion;
+    if (events &
+        (KIT_CODE_COMPLETED | KIT_CODE_DISMISSED | KIT_CODE_UNDO | KIT_CODE_REDO)) {
+        c->completing = false;
+    } else if (asked || (c->completing && (events & (KIT_CODE_CHANGED | KIT_CODE_CURSOR)))) {
+        complete(s, b, e, part, asked);
+    }
+}
+
+static void respond(
+    studio *s,
+    scene_document_tab *tab,
+    studio_code_editor *shown,
+    ui_part part,
+    const kit_code_result *r
+)
+{
+    ui_buffer *b = tab->ui;
+    kit_code_editor *e = shown->editor;
+    unsigned events = r->events;
+    /* Its text in focus makes the document active, so Save and Undo reach it. */
+    if ((r->focused || (events & KIT_CODE_CHANGED)) && tab != active_ui(s)) {
+        scene_tabs_activate(s->scene, (int)(tab - s->scene->tabs));
+    }
+    bool typed_completion = take_edits(s, b, shown, part, events);
+    follow_completion(s, b, e, part, events, typed_completion);
+    if (events & KIT_CODE_SAVED) {
+        studio_save(s);
+    }
+    if (events & KIT_CODE_DEFINITION) {
+        go_to_definition(s, b, e);
+    }
+    if (events & KIT_CODE_REFERENCES) {
+        find_references(s, b, e);
+    }
+    if (events & KIT_CODE_CHORD) {
+        run_chord(s, r->chord);
+    }
+}
+
+static void empty_state(kit *k)
+{
+    kit_push(k, "empty", NULL, "pending-editor");
+    kit_icon(k, "icon", NULL, KIT_ICON_EXPRESSION);
+    kit_label(k, "name", NULL, "Open an asset or stylesheet from Assets");
+    kit_pop(k);
+}
+
+static ui_code_place asset_place(const asset_code *code, int offset)
+{
+    ui_code_place place = { .line = 1, .offset = offset };
+    snprintf(place.path, sizeof place.path, "%s", asset_code_path(code));
+    const char *text = kit_code_text(asset_code_editor((asset_code *)code), NULL);
+    for (int i = 0; i < offset && text[i]; i++) {
+        place.line += text[i] == '\n';
+    }
+    return place;
+}
+
+static void asset_calls(studio *s, asset_code *code, int cursor)
+{
+    studio_calls_source(s, asset_code_path(code), cursor, false);
+}
+
+static ui_code_place source_location(const authoring_navigation *index, authoring_location location)
+{
+    const authoring_document
+        *document = authoring_navigation_document_at(index, location.document);
+    ui_code_place place = { .line = 1, .offset = location.range.start };
+    snprintf(place.path, sizeof place.path, "%s", document->path);
+    const char *text = authoring_navigation_document_text(index, location.document);
+    for (int i = 0; i < place.offset && text[i]; i++) {
+        place.line += text[i] == '\n';
+    }
+    return place;
+}
+
+static bool asset_symbol_definition(studio *s, asset_code *code, int cursor)
+{
+    const authoring_navigation *index = asset_code_navigation(code);
+    const authoring_reference *reference = source_reference(code, cursor);
+    const authoring_reference
+        *definition = reference
+                        ? authoring_navigation_definition(index, reference->target)
+                        : NULL;
+    if (!definition) {
+        return false;
+    }
+    ui_code_place from = asset_place(code, cursor),
+                  to = source_location(index, definition->location);
+    if (!studio_code_open_place(s, &to)) {
+        return false;
+    }
+    studio_nav_jump(s, &from, &to);
+    return true;
+}
+
+static void asset_requests(studio *s, asset_code *code, unsigned events)
+{
+    kit_code_editor *e = asset_code_editor(code);
+    int cursor = kit_code_cursor(e), definition;
+    if (events & KIT_CODE_RENAME) {
+        studio_refactor_source(s, asset_code_path(code), cursor);
+    }
+    if (events & KIT_CODE_CALLS) {
+        asset_calls(s, code, cursor);
+    }
+    if (events & KIT_CODE_DEFINITION) {
+        if (asset_code_definition(code, cursor, &definition)) {
+            ui_code_place from = asset_place(code, cursor),
+                          to = asset_place(code, definition);
+            kit_code_set_cursor(e, definition);
+            studio_nav_jump(s, &from, &to);
+        } else if (!asset_symbol_definition(s, code, cursor)) {
+            studio_report(s, "No definition at this position");
+        }
+    }
+    if (events & KIT_CODE_REFERENCES) {
+        const authoring_navigation *index = asset_code_navigation(code);
+        const authoring_reference *reference = source_reference(code, cursor);
+        asetlen(s->references, 0);
+        for (int i = 0; reference && i < authoring_navigation_reference_count(index);
+             i++) {
+            const authoring_reference *found = authoring_navigation_reference_at(index, i);
+            if (found->kind == AUTHORING_DEFINE ||
+                !authoring_target_equal(found->target, reference->target)) {
+                continue;
+            }
+            ui_code_place place = source_location(index, found->location);
+            apush(s->references, place_row(&place));
+        }
+        snprintf(s->references_title, sizeof s->references_title, "Source references");
+        studio_output_find(s);
+    }
+    if ((events & KIT_CODE_BREAKPOINT) && !asset_code_error(code)[0] &&
+        !active_asset(s)->source_only) {
+        asset_code_time(code, s->time + 0.2);
+        sync_asset_graph(s, code);
+        if (asset_code_error(code)[0]) {
+            return;
+        }
+        uint64_t graph_id, node_id;
+        if (asset_code_breakpoint_at(code, cursor, &graph_id, &node_id)) {
+            editor *editor = s->scene->graph_editor;
+            graph *g = behavior_asset_find_graph(editor->asset, graph_id);
+            node *n = g ? graph_node_by_id(g, node_id) : NULL;
+            if (n && node_behavior_for(n) != NODE_BEHAVIOR_PURE) {
+                ed_snapshot_before(editor);
+                graph_set_breakpoint(g, n, !n->breakpoint);
+                sync_asset_graph(s, code);
+                capture_asset(s, code);
+            }
+        }
+    }
+}
+
+void studio_code_body(studio *s, int)
+{
+    kit *k = s->kit;
+    scene_document_tab *asset = active_asset(s);
+    if (asset) {
+        asset_code *code = asset_editor(s, asset);
+        if (!code) {
+            empty_state(k);
+            return;
+        }
+        kit_push(k, "code", NULL, "code-editor");
+        kit_code_desc preferences = { .vim = s->prefs.code_vim,
+                                      .font_size = s->prefs.code_font_size,
+                                      .font_family = studio_code_font(&s->prefs),
+                                      .mac = s->mac,
+                                      .no_wrap = !s->prefs.code_wrap };
+        const reference_index *index = app_scene_authoring_asset_index(s->scene);
+        const char **names = NULL;
+        for (int i = 0; index && i < reference_index_asset_count(index); i++) {
+            const reference_asset *reference = reference_index_asset_at(index, i);
+            if (reference->name) {
+                apush(names, reference->name);
+            }
+        }
+        asset_code_set_names(code, names, acount(names));
+        afree(names);
+        s->code.editor = asset_code_editor(code);
+        snprintf(s->code.editor_path, sizeof s->code.editor_path, "%s", asset->path);
+        bool paused_here = s->pause.active && s->scene->graph_document_id &&
+                           !strcmp(s->pause.at.asset, s->scene->graph_document_id);
+        asset_code_execution(
+            code,
+            paused_here ? s->pause.at.graph_id : 0,
+            paused_here ? s->pause.at.node_id : 0
+        );
+        kit_code_result
+            r = asset_code_draw(code, k, "text", &preferences, s->prefs.code_apply_live);
+        if (s->code.find.refocus) {
+            kit_focus(k);
+            s->code.find.refocus = false;
+        }
+        asset_requests(s, code, r.events);
+        if (s->code.find.open) {
+            find_widget(s);
+        }
+        if (r.events &
+            (KIT_CODE_CHANGED | KIT_CODE_UNDO | KIT_CODE_REDO | KIT_CODE_CURSOR)) {
+            capture_asset(s, code);
+        }
+        bool chord = r.events & KIT_CODE_CHORD;
+        if ((r.events & KIT_CODE_SAVED) ||
+            (chord && chord_command(s, r.chord) == STUDIO_COMMAND_SAVE)) {
+            save_asset(s, code);
+        }
+        if (asset_code_error(code)[0]) {
+            kit_push(k, "status", NULL, "code-status");
+            kit_icon(k, "icon", NULL, KIT_ICON_ERROR);
+            kit_label(k, "message", "message", asset_code_error(code));
+            kit_pop(k);
+        } else if (asset_code_pending(code)) {
+            kit_push(k, "status", NULL, "code-status");
+            kit_label(k, "message", "message", "Checking source…");
+            kit_pop(k);
+        }
+        kit_pop(k);
+        if (chord && chord_command(s, r.chord) != STUDIO_COMMAND_SAVE) {
+            run_chord(s, r.chord);
+        }
+        return;
+    }
+    studio_code *c = &s->code;
+    scene_document_tab *tab = shown(s);
+    if (!tab) {
+        c->editor = NULL;
+        empty_state(k);
+        return;
+    }
+    ui_buffer *b = tab->ui;
+    kit_push(k, "code", NULL, "code-editor");
+    ui_part part = b->part;
+    studio_code_editor *shown_editor = part_editor(s, tab);
+    kit_code_editor *e = shown_editor->editor;
+    /* An editor coming into view catches up with its part; the one in view
+       may hold typing that kit_code has yet to report. */
+    if (e != c->editor) {
+        follow_text(c, shown_editor, ui_buffer_text(b, part));
+        c->editor = e;
+        snprintf(c->editor_path, sizeof c->editor_path, "%s", tab->path);
+        c->editor_part = part;
+    }
+    understand(s, tab, e, part);
+    kit_code_desc desc = {
+        .vim = s->prefs.code_vim,
+        .font_size = s->prefs.code_font_size,
+        .font_family = studio_code_font(&s->prefs),
+        .mac = s->mac,
+        .spans = c->spans,
+        .span_count = acount(c->spans),
+        .markers = c->markers[part],
+        .marker_count = acount(c->markers[part]),
+        .completions = c->completing ? c->completions.items : NULL,
+        .completion_count = c->completing ? acount(c->completions.items) : 0,
+        .completion_start = c->completions.start,
+        .history = true,
+        .no_wrap = !s->prefs.code_wrap,
+        .hover = c->hover,
+    };
+    kit_code_result r = kit_code(k, "text", e, &desc);
+    if (c->find.refocus) {
+        kit_focus(k);
+        c->find.refocus = false;
+    }
+    reveal(s, e, b);
+    if (c->find.open) {
+        find_widget(s);
+    }
+    if (b->error[0]) {
+        kit_push(k, "status", NULL, "code-status");
+        kit_icon(k, "icon", NULL, KIT_ICON_ERROR);
+        kit_label(k, "message", "message", b->error);
+        kit_pop(k);
+    }
+    respond(s, tab, shown_editor, part, &r);
+    kit_pop(k);
+}

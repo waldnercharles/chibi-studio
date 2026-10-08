@@ -1,0 +1,34 @@
+version 3
+name "MaterialIslands"
+domain "field"
+id_counter 56
+(array)graphs {
+    - {
+        kind "event"
+        name ""
+        (array)nodes {
+            - id=45 type="Field X"
+            - id=47 type="Field Y"
+            - {
+                id 49
+                type "Call Pure Function"
+                reference_id 1
+                reference_name "Islands"
+                reference_asset "FieldShapes"
+                inputs {
+                    X id=50 declaration_id=6 type="float"
+                    Y id=51 declaration_id=7 type="float"
+                }
+                outputs {
+                    Value id=52 declaration_id=8 type="float"
+                }
+            }
+            - id=53 type="Field Output"
+        }
+        (array)edges {
+            - from="45.Value" to="49.X"
+            - from="47.Value" to="49.Y"
+            - from="49.Value" to="53.Value"
+        }
+    }
+}

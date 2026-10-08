@@ -1,0 +1,82 @@
+/* The Settings page: Editor and Project tabs, a category sidebar with
+   search, and a row per setting (studio_sources.c's `settings`). */
+.settings { display: flex; flex-direction: column; flex: 1 1 auto; }
+.head {
+  display: flex; align-items: center; flex: 0 0 auto; height: var(--panel-h); padding: 0dp 12dp 0dp 16dp;
+  border-bottom: 1dp var(--line);
+}
+.head-side { display: flex; align-items: center; gap: 8dp; flex: 1 1 0dp; }
+.head-side.end { justify-content: flex-end; }
+.head-title { font-size: var(--studio-font-13, 13dp); font-weight: 600; color: var(--foreground); }
+.head input { nav: horizontal; }
+.body { display: flex; flex: 1 1 0dp; }
+.aside {
+  display: flex; flex-direction: column; gap: 10dp; flex: 0 0 auto; width: 216dp; padding: 12dp 10dp;
+  background-color: var(--rail); border-right: 1dp var(--line);
+}
+.search { position: relative; display: flex; }
+.search .lead {
+  position: absolute; left: 7dp; top: 0dp; height: var(--h); line-height: var(--h); font-size: var(--studio-font-13, 13dp);
+  color: var(--faint-foreground); pointer-events: none;
+}
+.search-input {
+  display: block; flex: 1 1 auto; height: var(--h); padding: var(--input-pad) 24dp var(--input-pad) 27dp;
+  line-height: var(--input-line); color: var(--foreground); cursor: text; nav: vertical;
+  background-color: var(--field-edit); border: 1dp var(--border); border-radius: var(--r);
+}
+.search-input:hover { background-color: var(--input-hover); }
+.search-input:focus { border-color: var(--ring); }
+.search-input:placeholder-shown { color: var(--faint-foreground); }
+.search-input selection { background-color: var(--primary); color: var(--primary-foreground); }
+.search .clear {
+  position: absolute; right: 3dp; top: 50%; margin-top: -8dp; width: 16dp; height: 16dp; line-height: 16dp;
+  text-align: center; border-radius: 3dp; cursor: pointer;
+  transform: translateY(-50%);
+}
+.search .clear .icon { font-size: 12dp; width: 16dp; line-height: 16dp; }
+.search .clear:hover { background-color: var(--press); }
+.searching .nav-item input:checked ~ .nav-face { background-color: transparent; }
+.aside-foot { margin-top: auto; padding: 0dp 8dp; font-size: var(--studio-font-12, 12dp); line-height: var(--studio-line-18, 18dp); color: var(--muted-foreground); }
+.main { flex: 1 1 0dp; overflow-y: auto; padding: 16dp 24dp 24dp 24dp; }
+.page-head { display: flex; align-items: center; gap: 8dp; height: var(--panel-h); margin: 0dp 0dp 6dp 16dp; }
+.page-title { font-size: var(--studio-font-16, 16dp); line-height: var(--studio-line-20, 20dp); font-weight: 600; color: var(--foreground); }
+.row-slot { display: block; }
+.group {
+  margin: 18dp 0dp 4dp 16dp; padding-bottom: 4dp; font-size: var(--studio-font-12, 12dp); line-height: var(--studio-line-18, 18dp);
+  font-weight: 600; color: var(--muted-foreground); border-bottom: 1dp var(--line);
+}
+.range { display: flex; align-items: center; gap: 10dp; }
+/* A text setting is outlined as the search is, on the page's own fill, and
+   has a width a select's content gives it. */
+.text-control { display: flex; width: 180dp; }
+.text-control .field { border-color: var(--border); }
+/* The number sits before its slider, so controls end in one column and
+   Up and Down move straight between them. */
+.readout { width: 24dp; text-align: right; font-family: var(--font-numeric); color: var(--muted-foreground); }
+.keys { display: flex; align-items: center; gap: 4dp; }
+.key {
+  min-width: 20dp; height: var(--studio-height-20, 20dp); line-height: var(--studio-line-19, 19dp); padding: 0dp 6dp; text-align: center; font-size: var(--studio-font-11, 11dp);
+  color: var(--foreground); background-color: var(--secondary); border-radius: 4dp;
+  border-bottom: 1dp color-mix(in srgb, var(--foreground) 14%, transparent); font-family: "JetBrains Mono";
+}
+.keys .none { color: var(--faint-foreground); }
+.empty { display: flex; flex-direction: column; align-items: center; gap: 6dp; padding: 56dp 0dp; }
+.empty-icon { font-size: var(--studio-font-28, 28dp); line-height: var(--studio-line-32, 32dp); width: var(--studio-height-32, 32dp); color: var(--disabled-foreground); }
+.empty-title { font-size: var(--studio-font-13, 13dp); font-weight: 600; color: var(--foreground); }
+.empty-hint { color: var(--muted-foreground); margin-bottom: 8dp; }
+
+.shortcut { display: flex; flex-direction: column; align-items: flex-end; gap: 4dp; max-width: 300dp; }
+.shortcut .keys { flex-wrap: wrap; justify-content: flex-end; }
+.shortcut-context, .shortcut-aliases { font-size: var(--studio-font-11, 11dp); color: var(--faint-foreground); }
+.shortcut-aliases { font-family: var(--font-numeric); }
+.shortcut-conflict { display: flex; align-items: center; gap: 4dp; font-size: var(--studio-font-11, 11dp); color: var(--warning); }
+.shortcut-conflict .icon { font-size: var(--studio-font-12, 12dp); }
+/* The conflict count searches for them. */
+.badge.warning { color: var(--warning); background-color: color-mix(in srgb, var(--warning) 16%, transparent); cursor: pointer; }
+.recording { color: var(--primary); }
+
+/* Keep descriptions and controls readable in narrow or magnified windows. */
+@media (max-width: 1000dp) {
+  .aside { width: 180dp; }
+  .main { padding: 12dp 16dp 20dp; }
+}

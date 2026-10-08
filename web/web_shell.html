@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Chibi Studio</title>
+  <style>
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #080b11; }
+    #canvas { display: block; width: 100%; height: 100%; border: 0; outline: none; touch-action: none; }
+    #status {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+      box-sizing: border-box; max-width: calc(100% - 32px); margin: 0; padding: 12px 18px;
+      border: 1px solid #303746; border-radius: 8px; background: #101620;
+      color: #d9e1ed; font: 14px/1.5 system-ui, sans-serif; text-align: center;
+      overflow-wrap: anywhere; pointer-events: none;
+    }
+    #status[data-error] { border-color: #9d4b55; color: #ffd9dd; }
+    #status button {
+      margin-left: 12px; padding: 2px 10px; border: 1px solid #303746; border-radius: 6px;
+      background: #1b2330; color: inherit; font: inherit; cursor: pointer; pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" tabindex="0" aria-label="Chibi Studio"></canvas>
+  <p id="status" role="status" aria-live="polite">Loading Chibi...</p>
+  <noscript>JavaScript is required to run Chibi.</noscript>
+  <script>
+    var Module = (() => {
+      const canvas = document.getElementById('canvas');
+      const status = document.getElementById('status');
+      let lastError = '';
+      const showError = message => {
+        status.dataset.error = '';
+        status.textContent = String(message);
+        status.hidden = false;
+      };
+      // Once Chibi stops, offer the actions a workspace script provides, e.g. exporting its project.
+      const showStopped = message => {
+        showError(message);
+        for (const [label, run] of Module['recovery'] || []) {
+          const button = document.createElement('button');
+          button.textContent = label;
+          button.onclick = run;
+          status.append(button);
+        }
+      };
+      // A trackpad pinch arrives as a wheel with Ctrl held, or in Safari as gesture events.
+      // Both become the pinch SDL reports natively, and the page itself never zooms.
+      const pinch = scale => Module['_studio_web_pinch']?.(scale);
+      let gestureScale = 0; // Safari's scale so far in its gesture; 0 outside one
+      window.addEventListener('wheel', event => {
+        if (!event.ctrlKey) return;
+        event.preventDefault();
+        // A mouse wheel turned with Ctrl held steps 100 px or a line a notch: SDL
+        // takes it as a wheel, which magnifies as Command with the wheel does.
+        // A pinch arrives in smaller pixel steps (FEEL_PINCH_MAX_PX).
+        if (!gestureScale && (event.deltaMode || Math.abs(event.deltaY) >= 50)) return;
+        event.stopPropagation(); // SDL would take it for a plain wheel
+        if (gestureScale) return;
+        // Chrome sends a pinch as 100 * ln(scale) pixels.
+        pinch(Math.exp(-event.deltaY / 100));
+      }, { capture: true, passive: false });
+      for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+        window.addEventListener(type, event => {
+          event.preventDefault();
+          if (gestureScale) pinch(event.scale / gestureScale);
+          gestureScale = type === 'gestureend' ? 0 : event.scale;
+        }, { capture: true, passive: false });
+      }
+      canvas.addEventListener('contextmenu', event => event.preventDefault());
+      canvas.addEventListener('pointerdown', () => canvas.focus());
+      canvas.addEventListener('webglcontextlost', event => {
+        event.preventDefault();
+        showError('Graphics context lost. Reload this page to continue.');
+      });
+      window.addEventListener('error', event => {
+        showStopped(event.message || 'Could not load Chibi. Reload this page to retry.');
+      }, true);
+      window.addEventListener('unhandledrejection', event => showStopped(event.reason));
+      return {
+        canvas,
+        showError,
+        showStopped,
+        print: (...args) => console.log(...args),
+        printErr: (...args) => {
+          lastError = args.join(' ');
+          console.error(...args);
+        },
+        setStatus: text => {
+          if ('error' in status.dataset) return;
+          const progress = text.match(/\((\d+)\/(\d+)\)/);
+          if (progress) text = `Loading Chibi... ${Math.floor(100 * progress[1] / progress[2])}%`;
+          status.textContent = text;
+          status.hidden = !text;
+        },
+        onAbort: reason => showStopped(lastError || `Could not run Chibi: ${reason}`),
+        onExit: code => {
+          if (code) showStopped(lastError || `Chibi stopped with error ${code}.`);
+        }
+      };
+    })();
+  </script>
+  {{{ SCRIPT }}}
+</body>
+</html>

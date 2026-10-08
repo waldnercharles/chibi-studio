@@ -1,0 +1,3 @@
+/* The ui bench's List of TreeRows over ten thousand rows
+   (test/editor/ui_bench.c, case 8); Studio never shows it. */
+body { display: block; height: 100%; }

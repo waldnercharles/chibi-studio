@@ -1,0 +1,1053 @@
+{
+  "assets/asset_source.h": [
+    "src/editor/documents/asset_code.h",
+    "src/editor/studio/studio_sources.c",
+    "src/editor/workspace/asset_refactor_source.c",
+    "src/editor/workspace/scene_authoring.c"
+  ],
+  "assets/call_hierarchy.h": [
+    "src/editor/studio/studio_calls.c"
+  ],
+  "assets/field_parameters.h": [
+    "src/editor/studio/studio_thumbnail_kinds.c"
+  ],
+  "assets/model_export.h": [
+    "src/editor/workspace/model_preview.h"
+  ],
+  "assets/new_asset.h": [
+    "src/editor/documents/scene_prototype_actions.c",
+    "src/editor/documents/ui_buffer.c",
+    "src/editor/studio/studio_internal.h"
+  ],
+  "assets/physics_settings.h": [
+    "src/editor/documents/scene_history.c"
+  ],
+  "assets/project.h": [
+    "src/editor/studio/studio_internal.h",
+    "src/editor/studio/studio_projects.c",
+    "src/editor/studio/studio_sources.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/application.c"
+  ],
+  "assets/prototype.h": [
+    "src/editor/documents/asset_code.h",
+    "src/editor/documents/component_properties.h",
+    "src/editor/documents/scene_retention.c",
+    "src/editor/documents/scene_retention.h",
+    "src/editor/workspace/application.c",
+    "src/editor/workspace/asset_index.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_tabs.c"
+  ],
+  "assets/prototype_instance.h": [
+    "src/editor/workspace/scene_internal.h"
+  ],
+  "assets/refactor.h": [
+    "src/editor/studio/studio_refactor.c",
+    "src/editor/workspace/asset_refactor.c"
+  ],
+  "assets/reference_adapters.h": [
+    "src/editor/studio/studio_find.c",
+    "src/editor/studio/studio_graph_header.c",
+    "src/editor/workspace/asset_index.c"
+  ],
+  "assets/scenario_document.h": [
+    "src/editor/workspace/scenario_playback.c",
+    "src/editor/workspace/scene_internal.h"
+  ],
+  "assets/scene_document.h": [
+    "src/editor/documents/asset_code.c",
+    "src/editor/documents/scene_document.c",
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/asset_index.c",
+    "src/editor/workspace/asset_refactor_source.c",
+    "src/editor/workspace/scene_actors.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_checkpoint.c",
+    "src/editor/workspace/scene_internal.h"
+  ],
+  "assets/ui_document.h": [
+    "src/editor/documents/ui_buffer.c",
+    "src/editor/documents/ui_code.c",
+    "src/editor/studio/studio_canvas.c",
+    "src/editor/studio/studio_code.c",
+    "src/editor/studio/studio_designer.c",
+    "src/editor/studio/studio_inspect.c",
+    "src/editor/studio/studio_output.c",
+    "src/editor/studio/studio_pick.c",
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/workspace/asset_index.c",
+    "src/editor/workspace/game_presentation.c",
+    "src/editor/workspace/scene_tabs.c"
+  ],
+  "assets/ui_events.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_graph_edit.c",
+    "src/editor/workspace/editor.c"
+  ],
+  "assets/ui_source.h": [
+    "src/editor/documents/ui_buffer.c",
+    "src/editor/documents/ui_code.h",
+    "src/editor/documents/ui_design.h",
+    "src/editor/studio/studio_internal.h"
+  ],
+  "authoring/application_catalog.h": [
+    "src/studio_registry.c"
+  ],
+  "authoring/behavior_loader.h": [
+    "src/editor/documents/scene_document.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_tabs.c"
+  ],
+  "authoring/component_presentation.h": [
+    "src/editor/studio/studio_internal.h"
+  ],
+  "authoring/engine_preview.h": [
+    "src/editor/workspace/application.c"
+  ],
+  "authoring/graph_catalog.h": [
+    "src/studio_registry.c"
+  ],
+  "authoring/graph_expression.h": [
+    "src/editor/studio/studio_code.c"
+  ],
+  "authoring/image_prepare.h": [
+    "src/editor/workspace/application.c"
+  ],
+  "authoring/material_prepare.h": [
+    "src/editor/workspace/scene_actors.c",
+    "src/editor/workspace/scene_runtime.c"
+  ],
+  "authoring/mesh_prepare.h": [
+    "src/editor/workspace/application.c"
+  ],
+  "authoring/native_prototype.h": [
+    "src/editor/documents/scene_prototypes.c",
+    "src/editor/workspace/model_preview.c"
+  ],
+  "authoring/preview.h": [
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/application.c",
+    "src/editor/workspace/scene_authoring.h"
+  ],
+  "authoring/preview_runtime.h": [
+    "src/editor/studio/studio_debug.c",
+    "src/editor/studio/studio_sources.c"
+  ],
+  "authoring/preview_source.h": [
+    "src/editor/documents/asset_code.h",
+    "src/editor/documents/scene_disk.c",
+    "src/editor/documents/scene_document.c",
+    "src/editor/documents/scene_documents.c",
+    "src/editor/studio/studio_code.c",
+    "src/editor/studio/studio_debug.c",
+    "src/editor/studio/studio_output.c",
+    "src/editor/studio/studio_refactor.c",
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/asset_index.c",
+    "src/editor/workspace/asset_refactor.c",
+    "src/editor/workspace/asset_refactor_source.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_checkpoint.c",
+    "src/editor/workspace/scene_debug.h",
+    "src/editor/workspace/scene_tabs.c"
+  ],
+  "authoring/prototype_prepare.h": [
+    "src/editor/documents/scene_prototypes.c",
+    "src/editor/workspace/scene_checkpoint.c"
+  ],
+  "authoring/prototype_preview.h": [
+    "src/editor/studio/studio_sources.c",
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_internal.h"
+  ],
+  "authoring/reference_index.h": [
+    "src/editor/studio/studio_graph_details.c",
+    "src/editor/studio/studio_graph_literals.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_thumbnails.h",
+    "src/editor/workspace/asset_index.h",
+    "src/editor/workspace/asset_refactor.h",
+    "src/editor/workspace/scene_asset_drop.c"
+  ],
+  "authoring/shader_prepare.h": [
+    "src/editor/workspace/application.c"
+  ],
+  "authoring/source_catalog.h": [
+    "src/editor/workspace/scene_internal.h"
+  ],
+  "authoring/source_edit.h": [
+    "src/editor/workspace/editor.h"
+  ],
+  "authoring/source_format.h": [
+    "src/editor/documents/scene_documents.c",
+    "src/editor/workspace/scene_authoring.c"
+  ],
+  "authoring/source_intelligence.h": [
+    "src/editor/documents/asset_code.c"
+  ],
+  "authoring/source_metadata.h": [
+    "src/editor/documents/scene_documents.c",
+    "src/editor/workspace/asset_refactor.c",
+    "src/editor/workspace/scene_authoring.c"
+  ],
+  "authoring/source_navigation.h": [
+    "src/editor/documents/asset_code.h",
+    "src/editor/studio/studio_calls.c",
+    "src/editor/studio/studio_code.c",
+    "src/editor/workspace/asset_index.c",
+    "src/editor/workspace/asset_refactor.h"
+  ],
+  "authoring/source_prepare.h": [
+    "src/editor/workspace/application.c"
+  ],
+  "authoring/source_presentation.h": [
+    "src/editor/documents/asset_code.h",
+    "src/editor/documents/scene_disk.c",
+    "src/editor/documents/scene_documents.c",
+    "src/editor/graph/eval_view.h",
+    "src/editor/studio/studio_debug.c",
+    "src/editor/workspace/application.c",
+    "src/editor/workspace/asset_refactor_source.c",
+    "src/editor/workspace/editor_internal.h",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_checkpoint.c"
+  ],
+  "authoring/source_references.h": [
+    "src/editor/workspace/asset_index.c"
+  ],
+  "authoring/source_rename.h": [
+    "src/editor/studio/studio_refactor.c",
+    "src/editor/workspace/asset_refactor_source.c"
+  ],
+  "authoring/studio_project.h": [
+    "src/editor/workspace/application.c"
+  ],
+  "authoring/studio_schema.h": [
+    "src/editor/documents/preview.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_nodes.h",
+    "src/editor/workspace/application.c",
+    "src/studio_registry.c"
+  ],
+  "authoring/ui_check.h": [
+    "src/editor/documents/ui_code.h",
+    "src/editor/studio/studio_designer_edit.c"
+  ],
+  "authoring/ui_events_adapter.h": [
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/game_presentation.c",
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "authoring/ui_loader.h": [
+    "src/editor/studio/studio_canvas.c",
+    "src/editor/studio/studio_host.c",
+    "src/editor/studio/studio_sources.c",
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/game_presentation.c",
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "capabilities/catalog.h": [
+    "src/editor/graph/eval_view.c",
+    "src/editor/graph/flow.c"
+  ],
+  "ecs/ecs.h": [
+    "src/editor/documents/scene_history.h",
+    "src/editor/studio/studio_graph_values.c"
+  ],
+  "execution/backend.h": [
+    "src/editor/documents/asset_code.c",
+    "src/editor/documents/scene_documents.c"
+  ],
+  "execution/inspection.h": [
+    "src/editor/graph/eval_view.h",
+    "src/editor/workspace/editor.h",
+    "src/editor/workspace/scene_debug.h"
+  ],
+  "execution/status.h": [
+    "src/editor/studio/studio_debug.c",
+    "src/editor/workspace/application.c",
+    "src/editor/workspace/game_presentation.c",
+    "src/editor/workspace/scene_runtime.c"
+  ],
+  "graph/authoring/align.h": [
+    "src/editor/studio/studio_graph_internal.h"
+  ],
+  "graph/authoring/arrange.h": [
+    "src/editor/studio/studio_internal.h"
+  ],
+  "graph/authoring/arrange_path.h": [
+    "src/editor/ui/kit_wire_shape.c"
+  ],
+  "graph/authoring/asset_edit.h": [
+    "src/editor/documents/commands.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_graph_pins.c",
+    "src/editor/studio/studio_member_properties.c",
+    "src/editor/studio/studio_members.c"
+  ],
+  "graph/authoring/describe.h": [
+    "src/editor/graph/search.h",
+    "src/editor/studio/studio_graph_draw.c"
+  ],
+  "graph/authoring/expand.h": [
+    "src/editor/studio/studio_graph.c",
+    "src/editor/studio/studio_graph_edit.c"
+  ],
+  "graph/authoring/find.h": [
+    "src/editor/studio/studio_graph_find.c"
+  ],
+  "graph/authoring/graph_edit.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/documents/commands.c",
+    "src/editor/documents/mutations.c",
+    "src/editor/graph/input_bindings.c",
+    "src/editor/graph/pins.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_debug.c",
+    "src/editor/studio/studio_graph.c",
+    "src/editor/studio/studio_graph_draw.c",
+    "src/editor/studio/studio_graph_edit.c",
+    "src/editor/studio/studio_graph_find.c",
+    "src/editor/studio/studio_graph_input.c",
+    "src/editor/studio/studio_graph_layout.c",
+    "src/editor/studio/studio_graph_literals.c",
+    "src/editor/studio/studio_graph_pins.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_graph_values.c",
+    "src/editor/studio/studio_output.c",
+    "src/editor/studio/studio_palette.c",
+    "src/editor/studio/studio_thumbnail_graph.c"
+  ],
+  "graph/authoring/layout.h": [
+    "src/editor/graph/input_bindings.c",
+    "src/editor/graph/pins.c",
+    "src/editor/studio/studio_graph_internal.h",
+    "src/editor/studio/studio_graph_view.c",
+    "src/editor/studio/studio_thumbnail_graph.c"
+  ],
+  "graph/authoring/linked.h": [
+    "src/editor/studio/studio_graph_edit.c"
+  ],
+  "graph/authoring/local_edit.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/studio/studio_graph_pins.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_graph_values.c"
+  ],
+  "graph/authoring/optimize.h": [
+    "src/editor/graph/input_bindings.c",
+    "src/editor/studio/studio_graph_pins.c"
+  ],
+  "graph/authoring/pin_edit.h": [
+    "src/editor/studio/studio_graph.c",
+    "src/editor/studio/studio_graph_layout.c",
+    "src/editor/studio/studio_graph_pins.c"
+  ],
+  "graph/compiler/validation.h": [
+    "src/editor/documents/commands.c",
+    "src/editor/documents/mutations.c",
+    "src/editor/studio/studio_output.c",
+    "src/editor/studio/studio_refactor.c",
+    "src/editor/workspace/editor.c",
+    "src/editor/workspace/scene_authoring.c"
+  ],
+  "graph/document/events.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_calls.c",
+    "src/editor/studio/studio_definition.c",
+    "src/editor/studio/studio_refactor.c",
+    "src/editor/workspace/editor.h"
+  ],
+  "graph/document/extract.h": [
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_graph.c",
+    "src/editor/studio/studio_graph_edit.c"
+  ],
+  "graph/document/graph_signature.h": [
+    "src/editor/studio/studio_graph_pins.c",
+    "src/editor/studio/studio_members_internal.h"
+  ],
+  "graph/document/library.h": [
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_debug.c",
+    "src/editor/studio/studio_graph_edit.c"
+  ],
+  "graph/document/problems.h": [
+    "src/editor/documents/navigation.c",
+    "src/editor/documents/preview.c",
+    "src/editor/studio/studio_output.c"
+  ],
+  "graph/document/serialize.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/documents/asset_code.c",
+    "src/editor/documents/commands.c",
+    "src/editor/documents/document.c",
+    "src/editor/documents/mutations.c",
+    "src/editor/documents/navigation.c",
+    "src/editor/documents/preview.c",
+    "src/editor/documents/scene_disk.c",
+    "src/editor/documents/scene_document.c",
+    "src/editor/documents/scene_documents.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_code.c",
+    "src/editor/studio/studio_graph_edit.c",
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/application.c",
+    "src/editor/workspace/asset_index.c",
+    "src/editor/workspace/editor.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_checkpoint.c",
+    "src/editor/workspace/scene_tabs.c"
+  ],
+  "graph/model/behavior_asset.h": [
+    "src/editor/graph/search.h",
+    "src/editor/workspace/editor.h"
+  ],
+  "graph/model/graph.h": [
+    "src/editor/graph/eval_view.h",
+    "src/editor/studio/studio_thumbnails.h"
+  ],
+  "graph/model/local.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/graph/input_bindings.c",
+    "src/editor/graph/pins.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_graph_draw.c",
+    "src/editor/studio/studio_graph_edit.c",
+    "src/editor/studio/studio_graph_layout.c",
+    "src/editor/studio/studio_graph_literals.c",
+    "src/editor/studio/studio_graph_pins.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_graph_values.c",
+    "src/editor/studio/studio_members_internal.h"
+  ],
+  "graph/model/node.h": [
+    "src/editor/ui/choices.h",
+    "src/editor/ui/labels.h"
+  ],
+  "graph/model/pin_conv.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/documents/mutations.c",
+    "src/editor/graph/pins.c",
+    "src/editor/studio/studio_graph_layout.c",
+    "src/editor/studio/studio_graph_literals.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_graph_values.c",
+    "src/editor/studio/studio_member_properties.c"
+  ],
+  "graph/model/reactive_presentation.h": [
+    "src/editor/studio/studio_graph.c"
+  ],
+  "graph/model/registry.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/collab/actions_scene.c",
+    "src/editor/documents/mutations.c",
+    "src/editor/documents/navigation.c",
+    "src/editor/documents/scene_history.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_find.c",
+    "src/editor/studio/studio_graph_edit.c",
+    "src/editor/studio/studio_graph_literals.c",
+    "src/editor/studio/studio_graph_live.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_graph_values.c",
+    "src/editor/studio/studio_member_properties.c",
+    "src/editor/studio/studio_properties.c",
+    "src/editor/studio/studio_properties_view.c",
+    "src/editor/ui/choices.c",
+    "src/editor/workspace/application.c",
+    "src/editor/workspace/editor.c",
+    "src/editor/workspace/scene_authoring.c"
+  ],
+  "graph/model/value_copy.h": [
+    "src/editor/collab/actions_graph.c"
+  ],
+  "graph/modeling/model_authoring.h": [
+    "src/editor/studio/studio_graph_properties.c"
+  ],
+  "graph/nodes/behavior_expression.h": [
+    "src/editor/graph/presentation.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_graph.c",
+    "src/editor/studio/studio_graph_draw.c",
+    "src/editor/studio/studio_graph_edit.c",
+    "src/editor/studio/studio_graph_layout.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_graph_values.c",
+    "src/editor/workspace/editor.h"
+  ],
+  "graph/nodes/component_nodes.h": [
+    "src/editor/documents/preview.c",
+    "src/editor/graph/pins.c",
+    "src/editor/graph/presentation.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_definition.c",
+    "src/editor/studio/studio_find.c",
+    "src/editor/studio/studio_graph_layout.c",
+    "src/editor/studio/studio_graph_pins.c",
+    "src/editor/workspace/scene_authoring.c"
+  ],
+  "graph/nodes/conv_nodes.h": [
+    "src/editor/documents/mutations.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_graph_edit.c",
+    "src/editor/studio/studio_graph_values.c"
+  ],
+  "graph/nodes/core_nodes.h": [
+    "src/editor/documents/commands.c",
+    "src/editor/documents/mutations.c",
+    "src/editor/documents/navigation.c",
+    "src/editor/graph/pins.c",
+    "src/editor/graph/presentation.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_code.c",
+    "src/editor/studio/studio_debug.c",
+    "src/editor/studio/studio_find.c",
+    "src/editor/studio/studio_graph.c",
+    "src/editor/studio/studio_graph_draw.c",
+    "src/editor/studio/studio_graph_layout.c",
+    "src/editor/studio/studio_graph_pins.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_graph_values.c"
+  ],
+  "graph/nodes/fmt_nodes.h": [
+    "src/editor/studio/studio_graph_layout.c"
+  ],
+  "graph/nodes/studio_nodes.h": [
+    "src/editor/documents/preview.c",
+    "src/editor/graph/search.c"
+  ],
+  "graph/shader/shader_graph.h": [
+    "src/editor/documents/commands.c",
+    "src/editor/documents/scene_documents.c",
+    "src/editor/graph/pins.c",
+    "src/editor/graph/search.c",
+    "src/editor/studio/studio_graph_layout.c",
+    "src/editor/studio/studio_graph_literals.c",
+    "src/editor/workspace/scene_authoring.c"
+  ],
+  "platform/cute.h": [
+    "src/editor/rmlui/kit_internal.h",
+    "src/editor/studio/studio_canvas.c",
+    "src/editor/studio/studio_graph.c",
+    "src/editor/studio/studio_graph_edit.c",
+    "src/editor/studio/studio_graph_input.c",
+    "src/editor/studio/studio_graph_layout.c",
+    "src/editor/studio/studio_host.c",
+    "src/editor/studio/studio_prefs.c",
+    "src/editor/studio/studio_thumbnail_graph.c",
+    "src/editor/studio/studio_thumbnails.h",
+    "src/editor/workspace/application.c",
+    "src/editor/workspace/game_presentation.c",
+    "src/editor/workspace/scene_gizmo.c",
+    "src/editor/workspace/scene_overlays.c",
+    "src/editor/workspace/scene_viewport.c",
+    "src/editor/workspace/scene_world_preview.c",
+    "src/editor/workspace/viewport.c",
+    "src/host/main.c"
+  ],
+  "render/appearance_geometry.h": [
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "render/arena3d.h": [
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "render/audio.h": [
+    "src/editor/workspace/game_presentation.c"
+  ],
+  "render/field_image.h": [
+    "src/editor/studio/studio_thumbnail_kinds.c"
+  ],
+  "render/geometry_2d.h": [
+    "src/editor/workspace/model_preview.c",
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "render/grid_2d.h": [
+    "src/editor/workspace/scene_gizmo.c",
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "render/mesh_surface.h": [
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "render/scene_renderer.h": [
+    "src/editor/studio/studio_performance.c",
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/workspace/application.c",
+    "src/editor/workspace/model_preview.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_internal.h"
+  ],
+  "render/screenshot.h": [
+    "src/editor/workspace/application.c"
+  ],
+  "render/sdf_motion.h": [
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "render/sdf_shapes.h": [
+    "src/editor/workspace/scene_authoring.h"
+  ],
+  "render/shader_catalog.h": [
+    "src/editor/studio/studio_thumbnails.c",
+    "src/editor/workspace/model_preview.h",
+    "src/editor/workspace/scene_runtime.c",
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "render/shader_dir.h": [
+    "src/host/main.c"
+  ],
+  "render/shader_images.h": [
+    "src/editor/studio/studio_model.c",
+    "src/editor/workspace/application.c"
+  ],
+  "render/shader_preview.h": [
+    "src/editor/studio/studio_thumbnail_kinds.c"
+  ],
+  "render/ui.h": [
+    "src/editor/studio/studio_internal.h",
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/game_presentation.c",
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "render/viewport.h": [
+    "src/editor/workspace/viewport.h"
+  ],
+  "runtime/behaviors/entities.h": [
+    "src/editor/workspace/scene_authoring.c"
+  ],
+  "runtime/behaviors/source.h": [
+    "src/editor/workspace/scene_debug.h"
+  ],
+  "runtime/camera.h": [
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/workspace/game_presentation.c",
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "runtime/component_catalog.h": [
+    "src/editor/collab/actions_scene.c",
+    "src/editor/documents/component_properties.c",
+    "src/editor/documents/scene_document.c",
+    "src/editor/documents/scene_documents.c",
+    "src/editor/documents/scene_history.c",
+    "src/editor/documents/scene_prototypes.c",
+    "src/editor/graph/input_bindings.c",
+    "src/editor/studio/studio_graph_values.c",
+    "src/editor/studio/studio_properties.c",
+    "src/editor/studio/studio_properties_view.c",
+    "src/editor/studio/studio_sources.c",
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/application.c",
+    "src/editor/workspace/asset_refactor_source.c",
+    "src/editor/workspace/game_presentation.c",
+    "src/editor/workspace/model_preview.c",
+    "src/editor/workspace/scene_actors.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_checkpoint.c",
+    "src/editor/workspace/scene_gizmo.c",
+    "src/editor/workspace/scene_overlays.c",
+    "src/editor/workspace/scene_runtime.c",
+    "src/editor/workspace/scene_viewport.c",
+    "src/editor/workspace/scene_world_preview.c",
+    "src/studio_registry.c"
+  ],
+  "runtime/components.h": [
+    "src/editor/documents/scene_history.h",
+    "src/editor/ui/choices.c",
+    "src/editor/workspace/input.h"
+  ],
+  "runtime/engine.h": [
+    "src/editor/workspace/application.c",
+    "src/editor/workspace/checkpoint.h",
+    "src/editor/workspace/gameplay_input.h",
+    "src/editor/workspace/scene_authoring.h",
+    "src/editor/workspace/scene_gizmo.h"
+  ],
+  "runtime/material_field.h": [
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/studio/studio_thumbnails.c"
+  ],
+  "runtime/materials.h": [
+    "src/editor/studio/studio_thumbnail_kinds.c"
+  ],
+  "runtime/models/model_inspection.h": [
+    "src/editor/studio/studio_model.c"
+  ],
+  "runtime/save.h": [
+    "src/editor/studio/studio_internal.h",
+    "src/editor/workspace/scenario_playback.c",
+    "src/editor/workspace/scene_view.c"
+  ],
+  "runtime/scenes/physics_settings.h": [
+    "src/editor/documents/scene_history.h",
+    "src/editor/workspace/scene_authoring.h"
+  ],
+  "runtime/visual_transform.h": [
+    "src/editor/workspace/model_preview.c"
+  ],
+  "support/arena.h": [
+    "src/editor/studio/studio_graph_literals.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_member_properties.c"
+  ],
+  "support/array.h": [
+    "src/editor/collab/actions_scene.c",
+    "src/editor/collab/collab.c",
+    "src/editor/documents/asset_code.c",
+    "src/editor/documents/scene_disk.c",
+    "src/editor/documents/scene_history.c",
+    "src/editor/documents/scene_prototype_actions.c",
+    "src/editor/documents/scene_retention.c",
+    "src/editor/documents/ui_buffer.c",
+    "src/editor/documents/ui_code.c",
+    "src/editor/documents/ui_design.c",
+    "src/editor/graph/presentation.c",
+    "src/editor/rmlui/kit_internal.h",
+    "src/editor/studio/studio_assets.c",
+    "src/editor/studio/studio_calls.c",
+    "src/editor/studio/studio_canvas.c",
+    "src/editor/studio/studio_code.c",
+    "src/editor/studio/studio_collab.c",
+    "src/editor/studio/studio_debug.c",
+    "src/editor/studio/studio_designer.c",
+    "src/editor/studio/studio_designer_details.c",
+    "src/editor/studio/studio_designer_edit.c",
+    "src/editor/studio/studio_designer_hierarchy.c",
+    "src/editor/studio/studio_designer_library.c",
+    "src/editor/studio/studio_disk.c",
+    "src/editor/studio/studio_find.c",
+    "src/editor/studio/studio_graph.c",
+    "src/editor/studio/studio_graph_details.c",
+    "src/editor/studio/studio_graph_draw.c",
+    "src/editor/studio/studio_graph_edit.c",
+    "src/editor/studio/studio_graph_find.c",
+    "src/editor/studio/studio_graph_header.c",
+    "src/editor/studio/studio_graph_input.c",
+    "src/editor/studio/studio_graph_layout.c",
+    "src/editor/studio/studio_graph_literals.c",
+    "src/editor/studio/studio_graph_live.c",
+    "src/editor/studio/studio_graph_menu.c",
+    "src/editor/studio/studio_graph_nav.c",
+    "src/editor/studio/studio_graph_pins.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_graph_values.c",
+    "src/editor/studio/studio_graph_view.c",
+    "src/editor/studio/studio_host.c",
+    "src/editor/studio/studio_inspect.c",
+    "src/editor/studio/studio_member_properties.c",
+    "src/editor/studio/studio_members.c",
+    "src/editor/studio/studio_model.c",
+    "src/editor/studio/studio_node_calls.c",
+    "src/editor/studio/studio_outliner.c",
+    "src/editor/studio/studio_output.c",
+    "src/editor/studio/studio_palette.c",
+    "src/editor/studio/studio_palette_view.c",
+    "src/editor/studio/studio_performance.c",
+    "src/editor/studio/studio_pick.c",
+    "src/editor/studio/studio_projects.c",
+    "src/editor/studio/studio_properties.c",
+    "src/editor/studio/studio_properties_view.c",
+    "src/editor/studio/studio_prototype_actions.c",
+    "src/editor/studio/studio_refactor.c",
+    "src/editor/studio/studio_scene.c",
+    "src/editor/studio/studio_shell.c",
+    "src/editor/studio/studio_sources.c",
+    "src/editor/studio/studio_thumbnail_cache.c",
+    "src/editor/studio/studio_thumbnail_graph.c",
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/studio/studio_thumbnails.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/ui/kit_wire_shape.c",
+    "src/editor/workspace/asset_index.c",
+    "src/editor/workspace/asset_refactor.c",
+    "src/editor/workspace/asset_refactor_source.c",
+    "src/editor/workspace/checkpoint.h",
+    "src/editor/workspace/model_preview.c",
+    "src/editor/workspace/scenario_playback.c",
+    "src/editor/workspace/scene_asset_drop.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_gizmo.c",
+    "src/editor/workspace/scene_tabs.c",
+    "src/editor/workspace/scene_view.c",
+    "src/editor/workspace/tree_watch.c",
+    "src/editor/workspace/viewport.c"
+  ],
+  "support/asset_json.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/collab/actions_scene.c",
+    "src/editor/documents/document.c",
+    "src/editor/documents/scene_history.c",
+    "src/editor/documents/scene_prototypes.c",
+    "src/editor/workspace/scenario_playback.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_checkpoint.c"
+  ],
+  "support/asset_text.h": [
+    "src/editor/documents/asset_code.c",
+    "src/editor/documents/scene_disk.c",
+    "src/editor/documents/scene_document.c",
+    "src/editor/documents/scene_documents.c",
+    "src/editor/documents/scene_prototype_actions.c",
+    "src/editor/studio/studio_assets.c",
+    "src/editor/studio/studio_canvas.c",
+    "src/editor/studio/studio_code.c",
+    "src/editor/studio/studio_pick.c",
+    "src/editor/studio/studio_sources.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/asset_index.c",
+    "src/editor/workspace/asset_refactor_source.c",
+    "src/editor/workspace/scenario_playback.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_checkpoint.c",
+    "src/editor/workspace/scene_tabs.c"
+  ],
+  "support/asset_value.h": [
+    "src/editor/documents/document.c",
+    "src/editor/documents/scene_history.h",
+    "src/editor/documents/scene_retention.c",
+    "src/editor/workspace/editor_internal.h"
+  ],
+  "support/code_completion.h": [
+    "src/editor/ui/kit.h"
+  ],
+  "support/file_io.h": [
+    "src/editor/documents/asset_code.c",
+    "src/editor/documents/ui_buffer.c",
+    "src/editor/studio/studio_thumbnails.c"
+  ],
+  "support/file_watch.h": [
+    "src/editor/studio/studio_internal.h"
+  ],
+  "support/math.h": [
+    "src/editor/graph/flow_visual.c",
+    "src/editor/rmlui/kit_code.c",
+    "src/editor/rmlui/kit_command.c",
+    "src/editor/rmlui/kit_controls.c",
+    "src/editor/rmlui/kit_motion.c",
+    "src/editor/rmlui/kit_popup.c",
+    "src/editor/rmlui/kit_toast.c",
+    "src/editor/rmlui/kit_wires.c"
+  ],
+  "support/number_expr.h": [
+    "src/editor/studio/studio_graph_values.c"
+  ],
+  "support/rcss.h": [
+    "src/editor/documents/ui_buffer.c",
+    "src/editor/studio/studio_sources.c"
+  ],
+  "support/resources.h": [
+    "src/editor/rmlui/kit.c",
+    "src/editor/studio/studio_internal.h",
+    "src/host/main.c"
+  ],
+  "support/text_edit.h": [
+    "src/editor/documents/asset_code.c",
+    "src/editor/documents/ui_buffer.h",
+    "src/editor/rmlui/kit_code.c"
+  ],
+  "support/text_file.h": [
+    "src/editor/studio/studio_code.c",
+    "src/editor/studio/studio_graph_edit.c",
+    "src/editor/studio/studio_prefs.c",
+    "src/editor/studio/studio_shell.c",
+    "src/editor/studio/studio_sources.c",
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/asset_index.c",
+    "src/editor/workspace/scenario_playback.c",
+    "src/editor/workspace/scene_authoring.c"
+  ],
+  "support/text_overlay.h": [
+    "src/editor/documents/asset_code.c",
+    "src/editor/documents/ui_buffer.c",
+    "src/editor/studio/studio_code.c",
+    "src/editor/studio/studio_designer.c",
+    "src/editor/studio/studio_thumbnails.c",
+    "src/editor/workspace/scene_checkpoint.c"
+  ],
+  "support/text_rank.h": [
+    "src/editor/rmlui/kit_command.c",
+    "src/editor/studio/studio_palette_view.c"
+  ],
+  "support/text_search.h": [
+    "src/editor/graph/search.c",
+    "src/editor/rmlui/kit_code.c",
+    "src/editor/rmlui/kit_command.c",
+    "src/editor/studio/studio_palette_view.c"
+  ],
+  "support/ui_style.h": [
+    "src/editor/rmlui/kit.c",
+    "src/editor/studio/studio_inspect.c"
+  ],
+  "support/xalloc.h": [
+    "src/diagnostics/frame_log.c",
+    "src/editor/collab/actions_scene.c",
+    "src/editor/collab/collab.c",
+    "src/editor/documents/asset_code.c",
+    "src/editor/documents/document.c",
+    "src/editor/documents/scene_disk.c",
+    "src/editor/documents/scene_history.c",
+    "src/editor/documents/scene_prototype_actions.c",
+    "src/editor/documents/scene_retention.c",
+    "src/editor/documents/ui_buffer.c",
+    "src/editor/documents/ui_code.c",
+    "src/editor/documents/ui_design.c",
+    "src/editor/graph/eval_view.c",
+    "src/editor/graph/flow.c",
+    "src/editor/rmlui/kit.c",
+    "src/editor/rmlui/kit_code.c",
+    "src/editor/rmlui/kit_command.c",
+    "src/editor/rmlui/kit_controls.c",
+    "src/editor/rmlui/kit_drag.c",
+    "src/editor/rmlui/kit_popup.c",
+    "src/editor/rmlui/kit_wires.c",
+    "src/editor/studio/studio_assets.c",
+    "src/editor/studio/studio_canvas.c",
+    "src/editor/studio/studio_code.c",
+    "src/editor/studio/studio_collab.c",
+    "src/editor/studio/studio_designer.c",
+    "src/editor/studio/studio_designer_details.c",
+    "src/editor/studio/studio_designer_edit.c",
+    "src/editor/studio/studio_designer_hierarchy.c",
+    "src/editor/studio/studio_disk.c",
+    "src/editor/studio/studio_graph_edit.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_host.c",
+    "src/editor/studio/studio_inspect.c",
+    "src/editor/studio/studio_model.c",
+    "src/editor/studio/studio_performance.c",
+    "src/editor/studio/studio_projects.c",
+    "src/editor/studio/studio_properties.c",
+    "src/editor/studio/studio_refactor.c",
+    "src/editor/studio/studio_shell.c",
+    "src/editor/studio/studio_sources.c",
+    "src/editor/studio/studio_thumbnail_cache.c",
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/studio/studio_thumbnails.c",
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/application.c",
+    "src/editor/workspace/asset_refactor.c",
+    "src/editor/workspace/asset_refactor_source.c",
+    "src/editor/workspace/editor.c",
+    "src/editor/workspace/game_presentation.c",
+    "src/editor/workspace/model_preview.c",
+    "src/editor/workspace/scenario_playback.c",
+    "src/editor/workspace/scene_asset_drop.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_debug.c",
+    "src/editor/workspace/scene_tabs.c",
+    "src/editor/workspace/scene_view.c",
+    "src/editor/workspace/tree_watch.c",
+    "src/host/main.c"
+  ],
+  "types/array.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/documents/scene_history.c",
+    "src/editor/documents/scene_prototype_actions.c",
+    "src/editor/studio/studio_graph_literals.c",
+    "src/editor/studio/studio_graph_pins.c",
+    "src/editor/studio/studio_node_calls.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_runtime.c"
+  ],
+  "types/type.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/collab/actions_scene.c",
+    "src/editor/documents/scene_history.c",
+    "src/editor/studio/studio_graph_literals.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_runtime.c"
+  ],
+  "types/value_document.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/collab/actions_scene.c",
+    "src/editor/documents/scene_history.c",
+    "src/editor/documents/scene_prototypes.c",
+    "src/editor/workspace/scene_authoring.c"
+  ],
+  "types/value_format.h": [
+    "src/editor/graph/eval_view.c",
+    "src/editor/studio/studio_graph_values.c",
+    "src/editor/studio/studio_properties.c",
+    "src/editor/studio/studio_properties_view.c",
+    "src/editor/studio/studio_prototype_actions.c",
+    "src/editor/workspace/scene_authoring.c"
+  ],
+  "ui/controls/controls.h": [
+    "src/editor/rmlui/kit_controls.c",
+    "src/editor/rmlui/kit_internal.h",
+    "src/editor/rmlui/kit_number.c",
+    "src/editor/studio/studio_performance.c"
+  ],
+  "ui/drag.h": [
+    "src/editor/rmlui/kit_internal.h",
+    "src/editor/studio/studio_designer_hierarchy.c",
+    "src/editor/studio/studio_properties_view.c",
+    "src/editor/studio/studio_ui.c"
+  ],
+  "ui/iframe.h": [
+    "src/editor/rmlui/kit.c"
+  ],
+  "ui/input_feel.h": [
+    "src/editor/rmlui/kit_internal.h",
+    "src/editor/studio/studio_graph_input.c",
+    "src/editor/studio/studio_host.c",
+    "src/editor/studio/studio_scene.c"
+  ],
+  "ui/list.h": [
+    "src/editor/rmlui/kit_internal.h",
+    "src/editor/studio/studio_canvas.c",
+    "src/editor/studio/studio_designer_hierarchy.c",
+    "src/editor/studio/studio_designer_internal.h",
+    "src/editor/studio/studio_graph_find.c",
+    "src/editor/studio/studio_inspect.c",
+    "src/editor/studio/studio_internal.h",
+    "src/editor/studio/studio_members.c",
+    "src/editor/studio/studio_palette_view.c"
+  ],
+  "ui/motion.h": [
+    "src/editor/rmlui/kit_internal.h"
+  ],
+  "ui/popover.h": [
+    "src/editor/rmlui/kit.c",
+    "src/editor/rmlui/kit_popup.c",
+    "src/editor/studio/studio_assets.c",
+    "src/editor/studio/studio_designer_details.c",
+    "src/editor/studio/studio_designer_hierarchy.c",
+    "src/editor/studio/studio_graph_details.c",
+    "src/editor/studio/studio_graph_menu.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_members.c",
+    "src/editor/studio/studio_palette_view.c",
+    "src/editor/studio/studio_properties.c",
+    "src/editor/studio/studio_refactor.c",
+    "src/editor/studio/studio_shell.c"
+  ],
+  "ui/rml.h": [
+    "src/editor/documents/ui_code.c",
+    "src/editor/rmlui/kit_internal.h",
+    "src/editor/studio/studio_graph_draw.c",
+    "src/editor/studio/studio_settings.c"
+  ],
+  "ui/rml_backend.h": [
+    "src/editor/studio/studio_internal.h",
+    "src/editor/studio/studio_model.c",
+    "src/editor/workspace/viewport.c"
+  ],
+  "yyjson.h": [
+    "src/editor/collab/actions.c",
+    "src/editor/collab/actions_graph.c"
+  ]
+}

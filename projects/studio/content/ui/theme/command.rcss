@@ -1,0 +1,14 @@
+/* Color picker popover: vertex gradients need no shader support. */
+.popup.picker { width: 232dp; padding: 8dp; }
+.picker .sv { position: relative; height: 150dp; border-radius: 4dp; drag: drag; cursor: crosshair; }
+.picker .sv-white { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; border-radius: 4dp; decorator: horizontal-gradient(#ffffffff #ffffff00); }
+.picker .sv-black { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; border-radius: 4dp; decorator: vertical-gradient(#00000000 #000000ff); }
+.picker .sv .puck { position: absolute; width: 10dp; height: 10dp; margin: -5dp 0dp 0dp -5dp; border-radius: 5dp; border: 2dp #ffffff; }
+.picker .hue { position: relative; display: flex; height: 12dp; border-radius: 3dp; margin-top: 8dp; drag: drag; }
+.picker .hue-seg { flex: 1 1 0dp; height: 100%; }
+.picker .hue .puck { position: absolute; top: 0dp; bottom: 0dp; width: 4dp; margin-left: -2dp; background-color: #ffffff; border-radius: 1dp; }
+.picker .hexrow { margin-top: 8dp; }
+.picker .hexrow input.value { width: 100%; font-family: var(--font-numeric); }
+.picker .hexrow[data-invalid] { border-color: var(--destructive); }
+.picker .prop { margin-top: 8dp; }
+.picker .prop .label { width: 60dp; justify-content: flex-start; }

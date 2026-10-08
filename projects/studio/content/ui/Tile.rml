@@ -1,0 +1,9 @@
+<div class="tile" data-attrif-data-ready="tile.image != ''" data-attrif-data-loading="tile.loading" data-attrif-data-selected="tile.selected || (tile.key + '' != '' && tile.key + '' == selection + '')" data-attrif-data-unresolved="tile.unresolved">
+  <div class="tile-art">
+    <span class="icon glyph">{{ tile.icon }}</span>
+    <span class="picture" data-style-decorator="tile.image == '' ? 'none' : 'image(' + tile.image + ')'"/>
+    <span class="icon badge">{{ tile.badge }}</span>
+    <span class="icon spin">&#xeb19;</span>
+  </div>
+  <span class="name">{{ tile.label }}</span>
+</div>

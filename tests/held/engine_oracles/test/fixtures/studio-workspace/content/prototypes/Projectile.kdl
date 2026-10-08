@@ -1,0 +1,8 @@
+name "Projectile"
+components {
+    (object)GAME.GameTransform
+    (object)GAME.GameVelocity
+    (object)GAME.GameOrientation
+    (object)GAME.GameCollider
+    (object)GAME.GameProjectile
+}

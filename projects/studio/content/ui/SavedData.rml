@@ -1,0 +1,6 @@
+<div class="caption">{{ world.title }}</div>
+<div class="prop" data-for="row : world.saved">
+  <div class="label">{{ row.key }}</div>
+  <div class="control"><use ui="TextField" data-alias-text="row.value"/></div>
+</div>
+<div class="empty" data-if="world.saved.size == 0">No saved keys</div>

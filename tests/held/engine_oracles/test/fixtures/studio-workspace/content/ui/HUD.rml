@@ -1,0 +1,1 @@
+<div id="hud"><use ui="Meter"/><button id="repair" data-event-click="emit('Repair')">Repair</button></div>

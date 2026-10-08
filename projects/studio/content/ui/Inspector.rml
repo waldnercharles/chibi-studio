@@ -1,0 +1,64 @@
+<div class="inspector" data-class-wide="inspector.wide">
+  <div class="toolbar">
+    <button class="btn sm pick" data-attr-data-state="inspector.picking ? 'on' : 'off'" data-event-click="emit('studio.inspectElement')"><span class="icon sm">&#xf01bf;</span><span class="label">Pick</span></button>
+    <span class="kbd">{{ inspector.shortcut }}</span>
+    <div class="segmented targets">
+      <span class="seg" data-class-on="inspector.target == 'studio'" data-event-click="inspector.target = 'studio'">Studio</span>
+      <span class="seg" data-if="inspector.graph" data-class-on="inspector.target == 'graph'" data-event-click="inspector.target = 'graph'">Graph</span>
+      <span class="seg" data-if="inspector.game" data-class-on="inspector.target == 'game'" data-event-click="inspector.target = 'game'">Game</span>
+    </div>
+  </div>
+  <div class="panes">
+    <div class="inspect-tree">
+      <use ui="List" id="inspector-list" data-event-scroll="emit('inspector.scroll')">
+        <div class="inspect-host" data-for="row : inspector_tree.rows">
+          <use ui="TreeRow" class="inspect-row" data-alias-item="row" data-alias-selection="inspector_ui.selected" data-attr-data-inspect-row="row.key" data-attrif-data-picked="row.key != '' && row.key == inspector_ui.picked" data-event-click="emit('inspector.click', row.key, row.open ? 1 : 0)">
+            <span class="ident" data-if="row.id != ''">{{ row.id }}</span>
+            <span class="cls" data-if="row.classes != ''">{{ row.classes }}</span>
+            <span class="widget" data-if="row.widget != ''">{{ row.widget }}</span>
+            <span class="text" data-if="row.text != ''">"{{ row.text }}"</span>
+          </use>
+        </div>
+      </use>
+    </div>
+    <div class="details">
+      <div class="note" data-if="!inspector.selection">Pick an element ({{ inspector.shortcut }}) or choose one in the tree.</div>
+      <div data-if="inspector.selection">
+        <div class="heading">
+          <span class="title">{{ inspector.title }}</span>
+          <span class="badge" data-if="inspector.detached">Removed</span>
+        </div>
+        <div class="path">{{ inspector.path }}</div>
+        <div class="source" data-if="inspector.source != ''">
+          <span class="badge" data-class-accent="!inspector.native">{{ inspector.source }}</span>
+          <button class="btn sm" data-if="inspector.editable" data-event-click="inspector.action = 'source'"><span class="icon sm">&#xea73;</span><span class="label">Edit Source</span></button>
+        </div>
+        <use ui="BoxModel"/>
+        <div class="force">
+          <span class="force-label">Force</span>
+          <label class="chip"><input type="checkbox" data-checked="inspector.force.hover"/><span>:hover</span></label>
+          <label class="chip"><input type="checkbox" data-checked="inspector.force.active"/><span>:active</span></label>
+          <label class="chip"><input type="checkbox" data-checked="inspector.force.focus"/><span>:focus</span></label>
+          <label class="chip"><input type="checkbox" data-checked="inspector.force.checked"/><span>:checked</span></label>
+        </div>
+        <div class="pseudo" data-if="inspector.pseudo != ''">Set: {{ inspector.pseudo }}</div>
+        <div class="segmented tabs">
+          <span class="seg" data-class-on="inspector.tab == 'styles'" data-event-click="inspector.tab = 'styles'">Styles</span>
+          <span class="seg" data-class-on="inspector.tab == 'computed'" data-event-click="inspector.tab = 'computed'">Computed</span>
+          <span class="seg" data-class-on="inspector.tab == 'attributes'" data-event-click="inspector.tab = 'attributes'">Attributes</span>
+        </div>
+        <div class="pane" data-if="inspector.tab == 'styles'">
+          <use ui="StyleRule" data-for="line, i : inspector.styles"/>
+          <div class="note" data-if="inspector.styles.size == 0">No styles</div>
+        </div>
+        <div class="pane" data-if="inspector.tab == 'computed'">
+          <div class="pair" data-for="p : inspector.computed"><span class="name">{{ p.name }}</span><span class="value">{{ p.value }}</span></div>
+        </div>
+        <div class="pane" data-if="inspector.tab == 'attributes'">
+          <div class="pair" data-for="p : inspector.attributes"><span class="name">{{ p.name }}</span><span class="value">{{ p.value }}</span></div>
+          <div class="note" data-if="inspector.attributes.size == 0">No attributes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

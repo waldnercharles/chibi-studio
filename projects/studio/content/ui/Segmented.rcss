@@ -1,0 +1,22 @@
+/* Base UI Radio Group as a segmented control, Blender's expanded enum. Each
+   option is <label><input type="radio" data-checked="save.key" value="v"/>
+   <span class="face">Label</span></label>; the radio takes focus, Left and
+   Right move between options, and Enter or Space chooses. */
+body { display: flex; }
+.segmented-control {
+  display: flex; height: var(--h); padding: 2dp; gap: 2dp;
+  background-color: var(--secondary); border-radius: var(--r);
+}
+label { position: relative; display: flex; flex: 1 1 auto; cursor: pointer; }
+input { position: absolute; left: 0dp; top: 0dp; width: 100%; height: 100%; opacity: 0; nav: auto; cursor: pointer; }
+.face {
+  display: flex; align-items: center; justify-content: center; flex: 1 1 auto;
+  padding: 0dp 10dp; border-radius: 3dp; border: 1dp transparent; white-space: nowrap;
+  color: var(--muted-foreground); transition: background-color color 0.11s cubic-out;
+}
+label:hover .face { color: var(--foreground); background-color: var(--field-hover); }
+input:checked ~ .face, label:hover input:checked ~ .face {
+  background-color: var(--primary); color: var(--primary-foreground);
+}
+input:focus-visible ~ .face { border-color: var(--ring); }
+input:checked:focus-visible ~ .face { border-color: var(--primary-foreground); }

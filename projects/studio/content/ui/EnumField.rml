@@ -1,0 +1,11 @@
+<div class="enum-field" attrs>
+  <button class="field select" popovertarget="choices" aria-haspopup="listbox"><span class="part value"><span class="mixed">&#x2014;</span><span class="current" data-for="group : table.groups"><span data-for="option : group.options" data-if="option.value == value">{{ option.label }}</span></span></span><span class="icon caret">&#xeab4;</span></button>
+  <div class="popup dropdown" popover data-template id="choices">
+    <use ui="ChoiceList">
+      <div role="group" data-for="group : table.groups">
+        <use ui="MenuGroup" data-if="group.label != ''" data-alias-group="group"/>
+        <div class="menu-item" role="option" data-for="option : group.options" data-attr-value="option.value" data-attr-data-label="option.label" data-attrif-data-current="option.value == value"><span class="icon lead">{{ option.icon }}</span><span class="text"><span class="label">{{ option.label }}</span></span></div>
+      </div>
+    </use>
+  </div>
+</div>

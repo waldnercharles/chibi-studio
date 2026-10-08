@@ -1,0 +1,27 @@
+<div class="output">
+  <div class="find-head" data-if="output.head.title != ''">
+    <span class="icon">{{ output.head.icon }}</span>
+    <span class="find-title">{{ output.head.title }}</span>
+    <span class="find-count" data-if="output.view == 4">{{ output.head.count }}</span>
+    <span class="spacer" data-if="output.view == 5"></span>
+    <div class="output-scope" data-if="output.view == 5">
+      <div class="segmented">
+        <button class="seg" data-attrif-data-pressed="!output.callees" data-event-click="emit('output.direction', 0)">Callers</button>
+        <button class="seg" data-attrif-data-pressed="output.callees" data-event-click="emit('output.direction', 1)">Callees</button>
+      </div>
+    </div>
+  </div>
+  <div class="output-list" data-class-find-list="output.view >= 4" data-class-lines="output.view < 4">
+    <use ui="List" id="output-list" data-event-scroll="emit('output.scroll')">
+      <div class="output-log" data-for="row : output_rows.lines" data-style-transform="row.offset" data-rml="row.rml"></div>
+      <div class="output-row" data-for="row : output_rows.entries" data-style-transform="row.offset" data-attr-data-kind="row.kind" data-class-located="row.at != ''" data-event-click="emit('output.click', row.key)">
+        <span class="icon kind">{{ row.icon }}</span>
+        <span class="output-at" data-if="row.at != ''">{{ row.at }}</span>
+        <span class="output-line" data-rml="row.rml"></span>
+        <span class="badge output-count" data-if="row.count != ''">{{ row.count }}</span>
+      </div>
+      <use ui="TreeRow" class="output-item" data-for="row : output_rows.items" data-alias-item="row" data-style-transform="row.offset" data-event-click="emit('output.click', row.key)" data-event-dblclick="emit('output.open', row.key)"></use>
+    </use>
+  </div>
+  <div class="output-empty" data-if="output_rows.empty != ''">{{ output_rows.empty }}</div>
+</div>

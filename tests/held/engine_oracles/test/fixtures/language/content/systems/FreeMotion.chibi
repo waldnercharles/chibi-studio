@@ -1,0 +1,3 @@
+system FreeMotion(position: Transform, velocity: Velocity, appearance: Appearance) without Collider, Body {
+    position += velocity * dt;
+}

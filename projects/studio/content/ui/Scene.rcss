@@ -1,0 +1,42 @@
+/* The Scene area (studio_scene.c): the scene's surface, native in
+   #scene-surface, where the pointer, gizmos and camera stay in C, and over
+   it what the `scene_view` source shows: each camera frame's name over its
+   top-left corner, moved by a transform as the camera pans so nothing lays
+   out, the label naming the scene and selection, the camera's zoom, Live
+   while a session runs, the generated world's progress and the notice line.
+   A guest Studio fills the surface and shows none of them. The scene keeps
+   dark roles in every theme (theme/viewport.rcss). */
+@import "theme/viewport.rcss";
+body.area-panel { padding: 0dp; overflow: hidden; }
+.viewport { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; background-color: var(--viewport); }
+.scene-surface { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; }
+.surface { position: absolute; left: 0dp; top: 0dp; width: 100%; height: 100%; }
+.camera-label {
+    position: absolute; left: 0dp; top: 0dp; margin: 4dp 0dp 0dp 6dp; padding: 0dp 5dp; border-radius: var(--r);
+    background-color: var(--floating); color: var(--muted-foreground);
+    font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-16, 16dp);
+    white-space: nowrap; pointer-events: none;
+}
+.camera-label[data-active], .camera-label[data-selected] { color: var(--foreground); }
+.camera-label[data-disabled] { opacity: 0.6; }
+/* It leaves the game's view to its HUD while a session runs. */
+.view-label {
+    position: absolute; left: 12dp; bottom: 10dp; color: var(--foreground); font-size: var(--studio-font-11, 11dp);
+    pointer-events: none; opacity: 1; transition: opacity 0.14s cubic-out;
+}
+.view-label .dim { display: block; }
+.view-label[data-starting-style], .view-label[data-ending-style] { opacity: 0; }
+.readout { position: absolute; right: 10dp; bottom: 8dp; color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); font-family: var(--font-numeric); pointer-events: none; }
+.live-badge { position: absolute; left: 12dp; bottom: 10dp; }
+.model-preview { position: absolute; top: 8dp; left: 12dp; display: flex; align-items: center; gap: 6dp; }
+.notice { position: absolute; left: 12dp; right: 12dp; bottom: 36dp; padding: 6dp 8dp; border-radius: var(--r); background-color: var(--notice); color: var(--notice-fg); white-space: normal; }
+.world-pending {
+    position: absolute; right: 10dp; top: 8dp; display: flex; align-items: center; gap: 5dp;
+    height: var(--studio-height-20, 20dp); padding: 0dp 8dp; border-radius: var(--r);
+    background-color: var(--floating); color: var(--muted-foreground);
+    font-size: var(--studio-font-11, 11dp); white-space: nowrap; pointer-events: none;
+    opacity: 1; transition: opacity 0.14s cubic-out;
+}
+.world-pending[data-starting-style], .world-pending[data-ending-style] { opacity: 0; }
+.world-pending .spin { font-size: 12dp; animation: 0.9s linear infinite world-spin; }
+@keyframes world-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

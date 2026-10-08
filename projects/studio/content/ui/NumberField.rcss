@@ -1,0 +1,8 @@
+/* The native <number-field> (src/ui/controls/controls.h) in the field theme:
+   drag to scrub, click to type a value or an expression, arrows and steppers
+   step. Bind it one way and send intents from its events:
+   data-attr-value="n.value" data-event-input="emit('panel.input', ev.value)"
+   data-event-change="emit('panel.change', ev.value)". Input runs while a
+   gesture does and change once when it commits, with ev.canceled after
+   Escape. */
+body { display: flex; flex: 1 1 0dp; }

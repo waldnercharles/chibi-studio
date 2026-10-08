@@ -1,0 +1,5 @@
+behavior MovementEmitter {
+    bind self.ParticleEmitter.Active =
+        !self.ParticleEmitter.Parent.ActionBinding.Pressed &&
+        length(self.ParticleEmitter.Parent.Input.Move) > 0.1
+}

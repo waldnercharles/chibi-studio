@@ -1,0 +1,4 @@
+name "TrailEmitter"
+components {
+    (object)GAME.GameParticleEmitter
+}

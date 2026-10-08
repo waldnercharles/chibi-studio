@@ -1,0 +1,1 @@
+Module['collabConfig'] = Object.assign(@CHIBI_COLLAB_CONFIG@, Module['collabConfig'] || {});

@@ -1,0 +1,7 @@
+/* The name a New asset command asks for (studio_assets.c, the
+   `asset_menus` source's naming): a popover under Assets' New button, or
+   at the pointer when no Assets header shows, with the kind's free default
+   name selected. Enter or Create makes the asset and opens it; a name that
+   is invalid or taken says why and asks again. Its look is the theme's
+   .new-asset. */
+body { display: block; }

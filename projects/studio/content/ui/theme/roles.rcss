@@ -1,0 +1,135 @@
+/* The editor's roles beyond shadcn's, derived from the palette so a pasted
+   theme carries through. Mixes that differ in the dark palette repeat under
+   .dark; status, override and code colors are the editor's own. */
+body, .dark {
+    /* Surfaces: quiet chrome, clear content, opaque fields and overlays. */
+    --font-ui: var(--studio-standard-font-family, geist);
+    --font-numeric: var(--studio-numeric-font-family, GeistNumeric);
+    --font-code: var(--studio-code-font-family, jetbrains mono);
+    /* The backdrop the areas float on, a step darker than them. */
+    --app: #e2e5ea;
+    --edge: var(--border);
+    --rail: var(--muted);
+    --panel-head: var(--card);
+    --panel-head-hover: var(--muted);
+    --field-hover: color-mix(in srgb, var(--foreground) 5%, var(--secondary));
+    --field-press: color-mix(in srgb, var(--secondary) 92%, #000);
+    --field-edit: var(--popover);
+    --input-hover: color-mix(in srgb, var(--foreground) 3%, var(--popover));
+    --canvas: var(--popover);
+    --viewport: #1e1e20;
+    --floating: color-mix(in srgb, var(--popover) 90%, transparent);
+    --tooltip: var(--foreground);
+    --tooltip-edge: var(--foreground);
+    --backdrop: #00000033;
+    /* Elevation: a soft drop and a tight contact shadow lift overlays off
+       the areas; tooltips sit lower. */
+    --shadow-overlay: 0dp 8dp 24dp -4dp #0000002e, 0dp 1dp 2dp 0dp #0000001f;
+    --shadow-tooltip: 0dp 2dp 8dp -2dp #00000029, 0dp 1dp 1dp 0dp #0000001a;
+    /* Lines. */
+    --line: color-mix(in srgb, var(--border) 72%, transparent);
+    --popover-edge: var(--border);
+    /* Text. */
+    --faint-foreground: var(--muted-foreground);
+    --disabled-foreground: color-mix(in srgb, var(--muted-foreground) 50%, var(--background));
+    --strong: var(--foreground);
+    --primary-text: var(--primary);
+    --link: var(--primary);
+    /* Primary-tinted states. */
+    --primary-hover: color-mix(in srgb, #000 12%, var(--primary));
+    --primary-soft: color-mix(in srgb, var(--primary) 15%, transparent);
+    --primary-edge: color-mix(in srgb, var(--primary) 67%, transparent);
+    --primary-wash: color-mix(in srgb, var(--primary) 27%, transparent);
+    /* A fill bar tints the field behind its value, not a selection. */
+    --fill: color-mix(in srgb, var(--primary) 16%, var(--secondary));
+    --fill-hover: color-mix(in srgb, var(--primary) 26%, var(--secondary));
+    --selected: color-mix(in oklab, var(--primary) 19%, var(--popover));
+    --active-row: var(--selected);
+    /* Foreground-tinted states. */
+    --press: color-mix(in srgb, var(--foreground) 9%, transparent);
+    --item-selected: color-mix(in srgb, var(--foreground) 5%, transparent);
+    --scrollbar: color-mix(in srgb, var(--foreground) 15%, transparent);
+    --scrollbar-hover: color-mix(in srgb, var(--foreground) 25%, transparent);
+    /* Status, overrides and search. */
+    --warning: #915b0c;
+    --success: #28733b;
+    --override: #0e9494;
+    --override-fg: #086e68;
+    --override-soft: #0e94941f;
+    --highlight: #e8b64a66;
+    --notice: #fff4e5f0;
+    --notice-fg: #9a4d00;
+    --axis-x: #c2413b;
+    --axis-y: #3f8f2f;
+    /* Code tokens (highlight.c). */
+    --tok-number: #08754d;
+    --tok-string: #a31515;
+    --tok-keyword: #9900bd;
+    --tok-name: #0451a5;
+    --tok-path: #2f5fa8;
+    --tok-punct: #606673;
+    /* Metrics; body.comfortable scales controls, not text. */
+    --h: 26dp;
+    --topbar-h: 40dp;
+    --text-line: 24dp; /* inner hit height of a bordered control */
+    --input-line: 16dp; --input-pad: 4dp;
+    --h-sm: 22dp;
+    --row: 26dp;
+    --gap: 2dp;
+    --header-h: 32dp;
+    --status-h: var(--studio-height-28, 28dp);
+    --panel-h: var(--studio-height-30, 30dp);
+    --r: 4dp;
+    --r-lg: var(--radius);
+}
+.dark {
+    --app: #121316;
+    --edge: var(--border);
+    --floating: color-mix(in srgb, var(--card) 90%, transparent);
+    --tooltip: color-mix(in srgb, var(--popover) 60%, #000);
+    --tooltip-edge: #333338;
+    --backdrop: #0000004d;
+    --shadow-overlay: 0dp 8dp 24dp -4dp #00000073, 0dp 1dp 2dp 0dp #00000059;
+    --shadow-tooltip: 0dp 2dp 8dp -2dp #00000066, 0dp 1dp 1dp 0dp #0000004d;
+    --faint-foreground: var(--muted-foreground);
+    --disabled-foreground: color-mix(in srgb, var(--muted-foreground) 37%, var(--background));
+    --strong: var(--foreground);
+    --primary-text: #a8c6f5;
+    --link: #a8c6f5;
+    --primary-soft: color-mix(in srgb, var(--primary) 23%, transparent);
+    --primary-wash: color-mix(in srgb, var(--primary) 33%, transparent);
+    --fill: color-mix(in srgb, var(--primary) 26%, var(--secondary));
+    --fill-hover: color-mix(in srgb, var(--primary) 38%, var(--secondary));
+    --selected: color-mix(in oklab, var(--primary) 27%, var(--popover));
+    --active-row: var(--selected);
+    --press: color-mix(in srgb, var(--foreground) 10%, transparent);
+    --item-selected: color-mix(in srgb, var(--foreground) 7%, transparent);
+    --scrollbar: color-mix(in srgb, var(--foreground) 12%, transparent);
+    --scrollbar-hover: color-mix(in srgb, var(--foreground) 20%, transparent);
+    --warning: #d9a53d;
+    --success: #75bd78;
+    --override: #19b6b6;
+    --override-fg: #7fe0d4;
+    --override-soft: #3db4a61f;
+    --highlight: #d9a53d44;
+    --notice: #1a1612f0;
+    --notice-fg: #ffad66;
+    --axis-x: #e0727a;
+    --axis-y: #82c46b;
+    --tok-number: #b5cea8;
+    --tok-string: #dfaa91;
+    --tok-keyword: #daa3d5;
+    --tok-name: #9cdcfe;
+    --tok-path: #8fb4ee;
+    --tok-punct: var(--muted-foreground);
+}
+body.comfortable { --h: 30dp; --topbar-h: 44dp; --text-line: 28dp; --input-line: 16dp; --input-pad: 6dp; --h-sm: 26dp; --row: 30dp; --gap: 3dp; --header-h: 36dp; --status-h: var(--studio-height-30, 30dp); --panel-h: var(--studio-height-34, 34dp); }
+body:not(.dark) .tooltip { color: #fafafa; }
+body:not(.dark) .tooltip .kbd { color: #a1a1aa; }
+body:not(.dark) .tooltip .tip-about { color: #d4d4d8; }
+/* next-themes: a palette change must not animate element by element. */
+body.theme-switching * { transition: none; }
+
+@media (theme: reduced-motion) {
+    * { transition: none; }
+}

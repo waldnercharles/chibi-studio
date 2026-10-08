@@ -1,0 +1,20 @@
+/* A reference to an asset as a field that opens Studio's asset picker
+   (Picker.rml) under it, as the kit's asset picker did: none, then the
+   project's assets of a kind, ranked as typed. Alias the kind's table as
+   data-alias-table, such as choices.assets.prototype ({ label, icon, none
+   }), where none labels choosing none, and the asset's name as
+   data-alias-value; open the picker on click with
+   emit('palette.pick', kind, value, none[, 'typed']), where 'typed' offers
+   a name no asset has yet, and choosing sends the field change with
+   ev.value, the name, or "" for none. As a drop target (data-drop,
+   ui/drag.h) it lights up while an asset of its kind drags and shows
+   data-drop-preview's name in primary; data-readonly keeps it shut and
+   data-invalid marks a name no asset has. */
+body { display: flex; flex: 1 1 0dp; }
+.asset-field { display: flex; flex: 1 1 0dp; min-width: 0dp; }
+.asset-field[data-drop-over] { background-color: transparent; }
+.asset-field[data-drop-accept] .field.picker { border-color: var(--primary-edge); }
+.asset-field[data-drop-over] .field.picker { border-color: var(--primary); background-color: var(--primary-soft); }
+.asset-field[data-drop-preview] .field.picker .value { color: var(--primary); }
+.asset-field[data-readonly] .field { background-color: transparent; border-color: var(--border); pointer-events: none; tab-index: none; }
+.asset-field[data-invalid] .field { border-color: var(--destructive); }

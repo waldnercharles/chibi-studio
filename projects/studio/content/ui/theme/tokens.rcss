@@ -1,0 +1,44 @@
+/* The palette, in shadcn/ui's tokens: light on :root, dark on .dark. A shadcn
+   theme's two variable blocks paste over these, and the editor's roles
+   (roles.rcss) follow them. */
+:root {
+    --radius: 6dp;
+    --background: #fafbfc;
+    --foreground: #1f2228;
+    --card: #ffffff;
+    --card-foreground: #1f2228;
+    --popover: #ffffff;
+    --popover-foreground: #1f2228;
+    --primary: #2f62c0;
+    --primary-foreground: #fcfdff;
+    --secondary: #ebeef2;
+    --secondary-foreground: #1f2228;
+    --muted: #f1f3f6;
+    --muted-foreground: #535d6c;
+    --accent: #0000000a;
+    --accent-foreground: #1f2228;
+    --destructive: #b42332;
+    --border: #d0d5dd;
+    --input: #d0d5dd;
+    --ring: #2f62c0;
+}
+.dark {
+    --background: #1c1d21;
+    --foreground: #e6e8ec;
+    --card: #24262b;
+    --card-foreground: #e6e8ec;
+    --popover: #222428;
+    --popover-foreground: #e6e8ec;
+    --primary: #4471c4;
+    --primary-foreground: #fcfdff;
+    --secondary: #2c2f35;
+    --secondary-foreground: #e6e8ec;
+    --muted: #18191c;
+    --muted-foreground: #a6acb7;
+    --accent: #ffffff0d;
+    --accent-foreground: #e6e8ec;
+    --destructive: #ff9aa3;
+    --border: #3a3e46;
+    --input: #3a3e46;
+    --ring: #8fb0ec;
+}

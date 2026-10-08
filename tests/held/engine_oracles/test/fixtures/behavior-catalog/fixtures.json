@@ -1,0 +1,62 @@
+{
+  "content/events/CollectExperience.kdl": {
+    "purpose": "shared runtime test signature and exact linked callable contract",
+    "sha256": "bde027f8b22b0c27244d854464656916b91c1fe8990814ff8b9c6dc657d25fb5",
+    "source": "content/events/CollectExperience.kdl"
+  },
+  "content/events/Damage.kdl": {
+    "purpose": "shared runtime test signature and exact linked callable contract",
+    "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf",
+    "source": "content/events/Damage.kdl"
+  },
+  "content/events/Damaged.kdl": {
+    "purpose": "shared runtime test signature and exact linked callable contract",
+    "sha256": "c15780843c895e8e5a6cc6f49360c8b7d10684ba3bf6b08e82925d20cc8a3789",
+    "source": "content/events/Damaged.kdl"
+  },
+  "content/events/Died.kdl": {
+    "purpose": "shared runtime test signature and exact linked callable contract",
+    "sha256": "a657074520b482981fa4ed753dc6fe8c08e6a93b41b20193ac32a04850504ce9",
+    "source": "content/events/Died.kdl"
+  },
+  "content/events/RefreshEncounter.kdl": {
+    "purpose": "shared runtime test signature and exact linked callable contract",
+    "sha256": "6a4e38e5560a51fdf4d64659e8608f5e36d320325b0673c80e99da93a68d6e93",
+    "source": "content/events/RefreshEncounter.kdl"
+  },
+  "content/libraries/DirectionMath.chibi": {
+    "purpose": "shared runtime test signature and exact linked callable contract",
+    "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321",
+    "source": "content/libraries/DirectionMath.chibi"
+  },
+  "content/libraries/DirectionMath.chibi.meta": {
+    "purpose": "shared runtime test signature and exact linked callable contract",
+    "sha256": "99279ee363bc8fd0dfa8c7e0ef40aed6d633678983fd636fdcac580e9d4ab611",
+    "source": "content/libraries/DirectionMath.chibi.meta"
+  },
+  "content/libraries/MovementActions.chibi": {
+    "purpose": "shared runtime test signature and exact linked callable contract",
+    "sha256": "0e8bc6d946c51d743a492f16ae86c048ae4af519527c5bff2df9e148940df8de",
+    "source": "content/libraries/MovementActions.chibi"
+  },
+  "content/libraries/MovementActions.chibi.meta": {
+    "purpose": "shared runtime test signature and exact linked callable contract",
+    "sha256": "b68e2a66c3d7eda715520a93eaab838e8733a8fd2f6818347b505557e6595404",
+    "source": "content/libraries/MovementActions.chibi.meta"
+  },
+  "content/libraries/WeaponActions.chibi": {
+    "purpose": "shared runtime test signature and exact linked callable contract",
+    "sha256": "0e2588c5583c6a518db82db5f33398a1a5135b8a96b7b280db8ee1a79423f79d",
+    "source": "content/libraries/WeaponActions.chibi"
+  },
+  "content/libraries/WeaponActions.chibi.meta": {
+    "purpose": "shared runtime test signature and exact linked callable contract",
+    "sha256": "54aad801de7a595e97f52fefefd863cd58ed0ed544c98124630686fff28a9bde",
+    "source": "content/libraries/WeaponActions.chibi.meta"
+  },
+  "content/shader-libraries/ShaderMath.kdl": {
+    "purpose": "shared runtime test signature and exact linked callable contract",
+    "sha256": "40b0f0e65b56c3765bb267c407212991f7226c0a980c396aac585846b82685b4",
+    "source": "content/shader-libraries/ShaderMath.kdl"
+  }
+}

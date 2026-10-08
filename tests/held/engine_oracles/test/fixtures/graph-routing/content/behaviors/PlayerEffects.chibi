@@ -1,0 +1,8 @@
+behavior PlayerEffects {
+    on Begin {
+        movement := await spawn(MovementEmitter);
+        movement.ParticleEmitter.Parent = self;
+        boost := await spawn(BoostEmitter);
+        boost.ParticleEmitter.Parent = self;
+    }
+}

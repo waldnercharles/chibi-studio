@@ -1,0 +1,13 @@
+/* An asset's tile, as Assets' grid shows one: its picture over its name,
+   its kind badged in the picture's corner, and until the picture is ready
+   its kind's icon as a skeleton, with a spinner while more of it loads.
+   Alias it as data-alias-tile: an object with key, label, icon and badge
+   (glyphs), image (a texture source such as kit:thumb:..., "" until one is
+   ready, drawn as a decorator so its arrival lays nothing out), loading,
+   selected and unresolved. A panel whose selection changes often keeps it
+   out of its tiles, as TreeRow's do: alias the selected key as
+   data-alias-selection, from a variable of its own, which the tile
+   compares with tile.key. Size the use; the tile fills it. Its look is the
+   theme's .tile (theme/assets.rcss). */
+body { display: block; }
+.tile { width: 100%; height: 100%; }

@@ -1,0 +1,13 @@
+version 1
+name "Sandbox"
+(array)entities {
+    - name="First" prototype="Swarmer" {
+        (array)behaviors "Pursuit"
+    }
+    - name="Second" prototype="Player" {
+        (array)behaviors "Pursuit"
+    }
+    - name="Third" prototype="Player" {
+        (array)behaviors "Pursuit"
+    }
+}

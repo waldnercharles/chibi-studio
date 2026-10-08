@@ -1,0 +1,12 @@
+version 3
+name "ShowRows"
+domain "event"
+id_counter 3
+description "A virtual list's rows in view changed: show Count rows from First."
+(array)variables {
+    - id=1 name="First" type="int" category="Payload"
+    - id=2 name="Count" type="int" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

@@ -1,0 +1,3 @@
+/* NumberFlow and Torph are native elements that lay themselves out
+   (src/ui/motion.h): the theme sets only the digits' face and line. */
+number-flow { font-family: var(--font-numeric); line-height: var(--studio-line-16, 16dp); }

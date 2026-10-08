@@ -1,0 +1,41 @@
+/* Details (studio_designer_details.c), as Unity UI Builder's Inspector and
+   UMG's Details: the selected element's identity, then a collapsible panel
+   for its attributes, its data bindings, its inline style and each rule of
+   the document's RCSS that matches it, a row a property, each value in the
+   control its type calls for. With nothing selected it lists every rule.
+   The `details` source writes the panels; the Add popover is shared by every
+   Add button and takes its text from `details_add`. */
+body, body.area-panel { width: 100%; height: 100%; margin: 0dp; padding: 0dp; overflow: hidden; }
+.designer-details { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display: flex; }
+.prop-scroll { flex: 1 1 0dp; overflow-y: auto; padding: 8dp 8dp 16dp; }
+/* A row's one control, as its kind builds it. */
+.kind { display: flex; flex: 1 1 0dp; }
+/* RmlUi gives :focus to a focused element's ancestors too, as :focus-within. */
+.field.text:focus { background-color: var(--field-edit); border-color: var(--ring); }
+/* A panel's head folds it. */
+.panel-fold { display: flex; align-items: center; gap: 6dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.prop .remove { flex: 0 0 auto; opacity: 0; transition: opacity 0.11s cubic-out; }
+.prop:hover .remove { opacity: 1; }
+.designer-chips { display: flex; flex: 1 1 0dp; flex-wrap: wrap; align-items: center; gap: 4dp; min-height: var(--h); }
+.designer-chip { display: flex; align-items: center; height: var(--studio-height-20, 20dp); padding: 0dp 1dp 0dp 7dp; border-radius: 10dp; background-color: var(--secondary); color: var(--foreground); white-space: nowrap; }
+.designer-chip .btn { height: 16dp; border-radius: 8dp; }
+.designer-chip .btn .icon { font-size: 10dp; color: var(--muted-foreground); }
+.designer-chips .designer-add { height: 20dp; border-radius: 10dp; }
+/* Data bindings are code, small and in the link color. The theme's rule also
+   set the mono font family, which a later field rule always overrode, so it
+   is left out to keep what the panel always showed. */
+[data-bindings] .field .value { font-size: var(--studio-mono-font-11, 11dp); color: var(--link); }
+.designer-more { display: flex; margin-top: 6dp; }
+.designer-more .btn { flex: 1 1 0dp; justify-content: center; color: var(--muted-foreground); }
+.designer-origin { display: flex; align-items: center; gap: 6dp; height: var(--studio-height-20, 20dp); font-size: var(--studio-font-11, 11dp); color: var(--faint-foreground); }
+.designer-origin .within { color: var(--muted-foreground); white-space: nowrap; }
+.designer-origin .spacer { flex: 1 1 0dp; }
+.designer-origin .btn { height: var(--studio-height-18, 18dp); padding: 0dp 4dp; gap: 3dp; font-size: var(--studio-font-11, 11dp); color: var(--muted-foreground); font-family: var(--font-numeric); }
+.designer-origin .btn .icon { font-size: 10dp; width: 11dp; }
+/* data-for leaves its template last among the segments, so :last-child
+   names none of them: the options say which is the last. */
+.segmented .seg[data-last] { border-radius: 0dp 4dp 4dp 0dp; }
+.designer-none, .designer-hint { display: block; padding: 6dp 4dp; font-size: var(--studio-font-11, 11dp); color: var(--faint-foreground); }
+#details-add { width: 240dp; }
+.designer-add-field { display: block; padding: 2dp 4dp 4dp; }
+.designer-add-field .field { height: var(--studio-height-24, 24dp); }

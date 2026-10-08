@@ -1,0 +1,7 @@
+<div class="field search">
+  <span class="part addon"><span class="icon sm">&#xea6d;</span></span>
+  <input type="text" class="part value" id="search" placeholder="Search properties" aria-label="Search properties" data-value="properties.query" data-keys="Escape:properties.clear"/>
+</div>
+<span class="badge" data-if="properties.readonly" data-tip="Stop playing to edit prototypes">Read-only</span>
+<span class="badge accent" data-if="properties.live" data-tip="Changes made while playing revert when you stop">Live</span>
+<button class="btn" data-if="properties.live" data-attrif-data-disabled="!commands.keepChanges.enabled" data-attr-data-tip="commands.keepChanges.label" data-attr-data-kbd="commands.keepChanges.shortcut" data-attr-data-tip-about="properties.keepTip" data-event-click="emit('studio.keepChanges')"><span class="icon">&#xf0931;</span><span class="label">Keep</span></button>

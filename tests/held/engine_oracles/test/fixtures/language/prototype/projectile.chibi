@@ -1,0 +1,11 @@
+behavior Projectile {
+    elapsed := 0
+    lifetime := 3
+
+    on Tick(dt) {
+        elapsed += dt
+        if (elapsed >= lifetime) {
+            destroy(self)
+        }
+    }
+}

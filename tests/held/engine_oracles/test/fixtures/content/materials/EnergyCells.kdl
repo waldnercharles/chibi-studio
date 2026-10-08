@@ -1,0 +1,232 @@
+version 3
+name "EnergyCells"
+domain "material"
+id_counter 49
+description "Scrolling cyan cell lines on a dark surface. Scroll Speed controls UV motion, Tiling sets repetition, and Intensity controls emission. Edit Color Ramp to recolor the energy."
+(array)graphs {
+    - {
+        kind "event"
+        name ""
+        (array)nodes {
+            - {
+                id 2
+                type "Shader Time"
+                outputs {
+                    Value id=1
+                }
+            }
+            - {
+                id 4
+                type "Shader Parameter"
+                reference_id 1
+                reference_name "Scroll Speed"
+                outputs {
+                    Value {
+                        id 3
+                        type "struct"
+                        type_name "ShaderVec2"
+                        flags 0
+                        group 0
+                        default x=0.06 y=-0.03
+                    }
+                }
+            }
+            - {
+                id 8
+                type "Shader Multiply"
+                inputs {
+                    A id=5 flags=0 group=0
+                    B {
+                        type "struct"
+                        type_name "ShaderVec2"
+                        flags 0
+                        group 0
+                        default x=0.0 y=0.0
+                    }
+                }
+                outputs {
+                    Value {
+                        type "struct"
+                        type_name "ShaderVec2"
+                        flags 0
+                        group 0
+                        default x=0.0 y=0.0
+                    }
+                }
+            }
+            - {
+                id 10
+                type "Shader Parameter"
+                reference_id 2
+                reference_name "Tiling"
+                outputs {
+                    Value {
+                        id 9
+                        type "struct"
+                        type_name "ShaderVec2"
+                        flags 0
+                        group 0
+                        default x=1.5 y=1.5
+                    }
+                }
+            }
+            - {
+                id 16
+                type "Shader Mapping"
+                x 515.0
+                y 20.0
+                inputs {
+                    Position id=11
+                    Offset {
+                        default x=0.0 y=0.0
+                    }
+                    Rotation 45.0
+                    Scale {
+                        default x=1.0 y=1.0
+                    }
+                }
+                outputs {
+                    Value {
+                        default x=0.0 y=0.0
+                    }
+                }
+            }
+            - {
+                id 24
+                type "Shader Image Texture"
+                x 800.0
+                y 20.0
+                inputs {
+                    UV id=17
+                    Image "test/fixtures/content/textures/EnergyCells.png"
+                    "Color Space" 1
+                }
+                outputs {
+                    Color {
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                    Alpha 1.0
+                }
+            }
+            - {
+                id 27
+                type "Shader X"
+                x 1095.0
+                y 20.0
+                inputs {
+                    Value {
+                        id 25
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 0
+                        group 0
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                }
+            }
+            - {
+                id 33
+                type "Shader Color Ramp"
+                x 1315.0
+                y 20.0
+                inputs {
+                    Factor id=28
+                    Stops {
+                        (array)default {
+                            - {
+                                Position 0.0
+                                Color x=0.001 y=0.004 z=0.008 w=1.0
+                            }
+                            - {
+                                Position 0.28
+                                Color x=0.003 y=0.025 z=0.04 w=1.0
+                            }
+                            - {
+                                Position 0.72
+                                Color x=0.005 y=0.38 z=0.65 w=1.0
+                            }
+                            - {
+                                Position 1.0
+                                Color x=0.12 y=0.85 z=1.2 w=1.0
+                            }
+                        }
+                    }
+                    Interpolation 2
+                }
+                outputs {
+                    Color {
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                    Alpha 1.0
+                }
+            }
+            - {
+                id 35
+                type "Shader Parameter"
+                reference_name "Intensity"
+                outputs {
+                    Value id=34 flags=0 group=0 default=1.6
+                }
+            }
+            - {
+                id 39
+                type "Shader Multiply"
+                x 1620.0
+                y 180.0
+                inputs {
+                    A {
+                        id 36
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 0
+                        group 0
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                    B flags=0 group=0 default=1.0
+                }
+                outputs {
+                    Value {
+                        type "struct"
+                        type_name "ShaderVec3"
+                        flags 0
+                        group 0
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                }
+            }
+            - {
+                id 47
+                type "Shader Surface Output"
+                x 1900.0
+                y 20.0
+                inputs {
+                    "Base Color" {
+                        id 40
+                        default x=1.0 y=1.0 z=1.0
+                    }
+                    Emission {
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                    Roughness 0.7
+                    Normal {
+                        default x=0.0 y=0.0 z=0.0
+                    }
+                    Height id=48
+                }
+            }
+        }
+        (array)edges {
+            - from="2.Value" to="8.A"
+            - from="4.Value" to="8.B"
+            - from="8.Value" to="16.Offset"
+            - from="10.Value" to="16.Scale"
+            - from="16.Value" to="24.UV"
+            - from="24.Color" to="27.Value"
+            - from="27.Value" to="33.Factor"
+            - from="33.Color" to="39.A"
+            - from="33.Color" to="47.Base Color"
+            - from="35.Value" to="39.B"
+            - from="39.Value" to="47.Emission"
+        }
+    }
+}

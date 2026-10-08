@@ -1,0 +1,178 @@
+<div class="properties">
+  <nav class="prop-tabs">
+    <div class="tab" data-for="tab : properties.tabs">
+      <div class="tab-sep" data-if="tab.sep"></div>
+      <button class="btn icon-only" data-attr-data-state="tab.on ? 'on' : 'off'" data-attr-data-tip="tab.tip" data-tip-side="right" data-event-click="emit('properties.tab', tab.id)"><span class="icon">{{ tab.icon }}</span></button>
+    </div>
+  </nav>
+  <div class="prop-scroll" data-if="properties.view != 'graph'">
+    <div class="identity" data-when="properties.identity.kind == 'object'">
+      <div class="glyph"><span class="icon">{{ properties.identity.icon }}</span></div>
+      <div class="who">
+        <div class="name-field">
+          <div class="field text" data-attrif-data-readonly="properties.identity.locked" data-tip="Name" data-attr-data-kbd="properties.identity.kbd" data-attr-data-tip-about="properties.identity.why">
+            <input type="text" class="part value" id="name" aria-label="Name" data-attr-value="properties.identity.name" data-attrif-readonly="properties.identity.locked" data-keys="Escape:properties.cancel" data-event-change="emit('properties.rename', ev.value)"/>
+          </div>
+        </div>
+        <div class="lineage">
+          <span>{{ properties.identity.of }}</span>
+          <button class="btn" data-tip="Open prototype" data-event-click="emit('properties.openPrototype')"><span class="icon">&#xf01a7;</span><span class="label">{{ properties.identity.prototype }}</span></button>
+          <button class="btn icon-only" data-if="properties.identity.placed" popovertarget="prototype-actions" aria-haspopup="menu" data-tip="Prototype actions" data-attrif-data-disabled="!properties.identity.actions"><span class="icon">&#xea7c;</span></button>
+          <use ui="Menu" id="prototype-actions">
+            <use ui="MenuCommand" data-alias-command="commands.applyOverrides"/>
+            <use ui="MenuCommand" data-alias-command="commands.saveAsPrototype"/>
+          </use>
+        </div>
+      </div>
+    </div>
+    <div class="identity" data-when="properties.identity.kind == 'selection'">
+      <div class="glyph"><span class="icon">&#xf0135;</span></div>
+      <div class="who">
+        <span class="title">{{ properties.identity.name }}</span>
+        <div class="lineage prototypes">
+          <button class="btn" data-for="chip : properties.identity.chips" data-tip="Select only these" data-event-click="emit('properties.narrow', chip.name)"><span class="icon">{{ chip.icon }}</span><span class="label">{{ chip.label }}</span></button>
+        </div>
+      </div>
+    </div>
+    <div class="identity" data-when="properties.identity.kind == 'prototype'">
+      <div class="glyph"><span class="icon">{{ properties.identity.icon }}</span></div>
+      <div class="who">
+        <div class="row"><span class="title">{{ properties.identity.name }}</span><span class="badge accent">Prototype</span></div>
+        <span class="lineage">{{ properties.identity.of }}</span>
+      </div>
+    </div>
+    <span class="prop-note" data-if="properties.note != ''">{{ properties.note }}</span>
+    <section class="panel" data-for="panel : properties.panels" data-if="panel.shown" data-attr-data-key="panel.key" data-attrif-data-open="panel.open" data-attrif-data-menu="panel.menu">
+      <div class="panel-head" data-event-contextmenu="emit('properties.panelMenu', panel.key)">
+        <div class="panel-fold" data-event-click="emit('properties.fold', panel.key)">
+          <span class="icon chev">&#xeab4;</span>
+          <span class="title">{{ panel.title }}</span>
+          <span class="badge override" data-if="panel.badge != ''">{{ panel.badge }}</span>
+          <span class="spacer"></span>
+          <span class="icon grip">&#xeb04;</span>
+        </div>
+        <span class="icon menu" data-if="panel.menu" data-tip="More" data-event-click="emit('properties.panelMenu', panel.key)">&#xea7c;</span>
+      </div>
+      <div class="panel-body" data-if="panel.open">
+        <use ui="PropertyRow" data-for="row : panel.rows" data-if="row.shown" data-alias-property="row" data-event-contextmenu="emit('properties.menu', row.id)">
+          <div class="kind" data-when="row.control == 'number'"><use ui="NumberField" data-attr-id="row.id" data-attr-aria-label="row.label" data-attr-value="propertyValues[row.slot]" data-attr-min="row.min" data-attr-max="row.max" data-attr-step="row.step" data-attr-precision="row.precision" data-attr-unit="row.unit" data-attrif-integer="row.integer" data-attrif-float="row.float" data-attrif-slider="row.slider" data-attrif-mixed="row.mixed" data-attrif-readonly="row.readonly" data-attrif-invalid="row.invalid" data-attrif-data-overridden="row.overridden" data-event-input="emit('properties.input', row.id, ev.value)" data-event-change="emit('properties.change', row.id, ev.value, ev.canceled)"/></div>
+          <div class="kind" data-when="row.control == 'vector'"><use ui="VectorField" data-alias-axes="row.axes" data-alias-values="propertyValues" data-alias-field="row" data-event-input="emit('properties.input', row.id, ev.value, ev.name)" data-event-change="emit('properties.change', row.id, ev.value, ev.canceled, ev.name)"/></div>
+          <div class="kind" data-when="row.control == 'bool'"><use ui="Checkbox" data-attr-id="row.id" data-attr-aria-label="row.label" data-attrif-checked="row.checked" data-attrif-data-mixed="row.mixed" data-attrif-disabled="row.readonly" data-event-change="emit('properties.check', row.id, ev.value)"/></div>
+          <div class="kind" data-when="row.control == 'choice'"><use ui="EnumField" data-alias-table="row.table" data-alias-value="row.value" data-attrif-data-mixed="row.mixed" data-attrif-data-readonly="row.readonly" data-event-click="emit('properties.choices', row.id)" data-event-change="emit('properties.change', row.id, ev.value)"/></div>
+          <div class="kind" data-when="row.control == 'color'"><use ui="ColorField" data-attr-id="row.id" data-attr-aria-label="row.label" data-attr-value="row.value" data-attrif-mixed="row.mixed" data-attrif-readonly="row.readonly" data-attrif-data-overridden="row.overridden" data-event-input="emit('properties.input', row.id, ev.value)" data-event-change="emit('properties.change', row.id, ev.value, ev.canceled)"/></div>
+          <div class="kind" data-when="row.control == 'text'">
+            <div class="field text" data-attrif-data-readonly="row.readonly" data-attrif-data-mixed="row.mixed" data-attrif-data-overridden="row.overridden">
+              <input type="text" class="part value" data-attr-id="row.id" data-attr-aria-label="row.label" data-attr-value="row.text" data-attr-placeholder="row.mixed ? '&#x2014;' : ''" data-attrif-readonly="row.readonly" data-keys="Escape:properties.cancel" data-event-change="emit('properties.change', row.id, ev.value)"/>
+            </div>
+          </div>
+          <div class="kind" data-when="row.control == 'asset'"><use ui="AssetField" data-alias-table="row.table" data-alias-value="row.text" data-attr-data-row="row.id" data-attr-data-drop="row.drop" data-drop-hint="Assign" data-attr-data-tip="row.problem" data-attrif-data-drop-preview="row.preview" data-attrif-data-readonly="row.readonly" data-attrif-data-invalid="row.invalid" data-event-click="emit('palette.pick', row.kind, row.text, row.table.none, 'typed')" data-event-change="emit('properties.change', row.id, ev.value)" data-event-drop="emit('properties.drop', row.id, ev.payload)"/></div>
+          <span class="muted" data-when="row.control == 'label'">{{ row.text }}</span>
+        </use>
+      </div>
+    </section>
+    <section class="panel" data-when="properties.behaviors.shown" data-attrif-data-open="properties.behaviors.open">
+      <div class="panel-head">
+        <div class="panel-fold" data-event-click="emit('properties.fold', 'behaviors')">
+          <span class="icon chev">&#xeab4;</span>
+          <span class="title">Behaviors</span>
+          <span class="spacer"></span>
+          <span class="icon grip">&#xeb04;</span>
+        </div>
+      </div>
+      <div class="panel-body" data-if="properties.behaviors.open">
+        <div class="behavior-row" data-for="behavior : properties.behaviors.rows" data-attrif-data-current="behavior.open">
+          <div class="behavior-open" data-event-click="emit('properties.openBehavior', behavior.name)"><span class="icon">&#xebb9;</span><span class="name">{{ behavior.name }}</span></div>
+          <button class="btn sm icon-only" data-tip="Detach" data-attr-data-tip-about="properties.behaviors.why" data-attrif-data-disabled="properties.behaviors.locked" data-event-click="emit('properties.detach', behavior.name)"><span class="icon">&#xea76;</span></button>
+        </div>
+        <div class="add-row">
+          <button class="btn subtle" popovertarget="attach-behavior" aria-haspopup="menu" data-attr-data-tip="properties.behaviors.why" data-attrif-data-disabled="properties.behaviors.locked"><span class="icon">&#xea60;</span><span class="label">Attach Behavior</span></button>
+          <use ui="Menu" id="attach-behavior">
+            <use ui="MenuItem" data-for="asset : properties.behaviors.assets" data-alias-item="asset" data-event-click="emit('properties.attach', asset.label)"/>
+          </use>
+        </div>
+      </div>
+    </section>
+    <div class="add-row" data-if="properties.add.shown">
+      <button class="btn subtle" data-attr-data-tip="properties.add.why" data-attrif-data-disabled="properties.add.locked" data-event-click="emit('studio.addComponent')"><span class="icon">&#xea60;</span><span class="label">Add Component</span></button>
+    </div>
+    <span class="prop-empty" data-if="properties.view == 'empty'">Select an object to edit its properties</span>
+  </div>
+  <div class="prop-scroll" data-if="properties.view == 'graph'">
+    <div id="graph-native"></div>
+    <div class="identity" data-if="graph_details.identity.name != ''">
+      <div class="glyph"><span class="icon">{{ graph_details.identity.icon }}</span></div>
+      <div class="who"><span class="title">{{ graph_details.identity.name }}</span><div class="lineage"><span>{{ graph_details.identity.of }}</span></div></div>
+    </div>
+    <span class="prop-empty" data-if="graph_details.empty != ''">{{ graph_details.empty }}</span>
+    <section class="panel" data-for="panel : graph_details.panels" data-if="panel.shown" data-attrif-data-open="panel.open">
+      <div class="panel-head">
+        <div class="panel-fold" data-event-click="emit('graph_details.fold', panel.key)">
+          <span class="icon chev">&#xeab4;</span>
+          <span class="title">{{ panel.title }}</span>
+          <span class="spacer"></span>
+          <span class="icon grip">&#xeb04;</span>
+        </div>
+      </div>
+      <div class="panel-body" data-if="panel.open">
+        <div class="graph-row" data-for="row : panel.rows" data-if="row.shown">
+          <use ui="PropertyRow" data-when="row.control != 'expression' && row.control != 'param'" data-alias-property="row">
+            <div class="kind" data-when="row.control != 'type' && row.control != 'struct' && row.control != 'array'"><use ui="GraphField" data-alias-field="row" data-alias-kind="row.control"></use></div>
+            <div class="type-pick" data-when="row.control == 'type'"><kit-dot class="member-swatch" data-attr-shape="row.swatch" data-attr-fill="row.color"></kit-dot><button class="btn subtle type-button" data-attrif-data-disabled="row.readonly" data-event-click="emit('graph_details.type', row.id)"><span class="label">{{ row.type }}</span></button></div>
+            <div class="kind" data-when="row.control == 'struct' || row.control == 'array'">
+              <button class="btn sm" popovertarget="values" data-attr-data-tip="row.control == 'struct' ? row.name : ''" data-attrif-data-disabled="row.readonly"><span class="icon">{{ row.control == 'struct' ? '&#xf0a66;' : '&#xeb86;' }}</span><span class="label">{{ row.text }}</span></button>
+              <div class="popup popover menu" popover data-template id="values">
+                <span class="muted" data-if="row.control == 'struct'">{{ row.name }}</span>
+                <div class="graph-sub" data-for="sub : row.sub">
+                  <span class="muted graph-sub-heading" data-if="sub.heading">{{ sub.label }}</span>
+                  <use ui="PropertyRow" data-if="!sub.heading" data-alias-property="sub">
+                    <use ui="GraphField" data-alias-field="sub" data-alias-kind="sub.control"></use>
+                    <button class="btn sm icon-only" data-if="sub.removable" data-tip="Remove item" data-attrif-data-disabled="row.readonly" data-event-click="emit('graph_details.remove', sub.id)"><span class="icon">&#xea81;</span></button>
+                  </use>
+                  <button class="btn sm icon-only graph-sub-remove" data-if="sub.heading && sub.removable" data-tip="Remove item" data-attrif-data-disabled="row.readonly" data-event-click="emit('graph_details.remove', sub.id)"><span class="icon">&#xea81;</span></button>
+                </div>
+                <button class="btn subtle sm" data-if="row.control == 'array'" data-attrif-data-disabled="row.readonly || !row.removable" data-event-click="emit('graph_details.add', row.id)"><span class="icon">&#xea60;</span><span class="label">Add item</span></button>
+              </div>
+            </div>
+            <div class="popup popover graph-inline-values" popover data-template>
+              <span class="graph-inline-heading">Inline inputs</span>
+              <div class="graph-inline-part" data-for="sub : row.sub">
+                <span class="graph-inline-title" data-if="sub.heading">{{ sub.label }}</span>
+                <div class="graph-inline-row" data-if="!sub.heading"><span class="graph-inline-label">{{ sub.label }}</span><use ui="GraphField" data-alias-field="sub" data-alias-kind="sub.control"></use></div>
+              </div>
+            </div>
+          </use>
+          <div class="graph-expression" data-when="row.control == 'expression'">
+            <div class="field text" data-attrif-data-readonly="row.readonly"><input type="text" class="part value" data-attr-id="row.id" aria-label="Expression" data-attr-value="row.text" data-attr-placeholder="row.placeholder" data-attrif-readonly="row.readonly" data-keys="Escape:graph_details.cancel" data-event-change="emit('graph_details.change', row.id, ev.value)"/></div>
+            <span class="notice" data-if="row.error != ''">{{ row.error }}</span>
+          </div>
+          <div class="param" data-when="row.control == 'param'" data-attr-data-drop="row.drop" data-event-drop="emit('graph_details.reorder', row.id, ev.payload)">
+            <div class="param-row">
+              <div class="param-name">
+                <span class="icon param-grip" data-attr-data-drag="row.drop" data-attr-data-drag-payload="row.id" data-attr-data-drag-label="row.name">&#xeb04;</span>
+                <div class="field text" data-attrif-data-readonly="row.readonly"><input type="text" class="part value" aria-label="Name" data-attr-value="row.name" data-attrif-readonly="row.readonly" data-keys="Escape:graph_details.cancel" data-event-change="emit('graph_details.rename', row.id, ev.value)"/></div>
+                <button class="btn icon-only" data-tip="Remove" data-attrif-data-disabled="row.readonly" data-event-click="emit('graph_details.remove', row.id)"><span class="icon">&#xea81;</span></button>
+              </div>
+              <div class="param-settings">
+                <div class="type-pick"><kit-dot class="member-swatch" data-attr-shape="row.swatch" data-attr-fill="row.color"></kit-dot><button class="btn subtle type-button" data-attrif-data-disabled="row.readonly" data-event-click="emit('graph_details.type', row.id)"><span class="label">{{ row.type }}</span></button></div>
+                <use ui="EnumField" data-alias-table="graph_details.containers.table" data-alias-value="row.container" data-attrif-data-readonly="row.readonly || row.fixed" data-event-change="emit('graph_details.container', row.id, ev.value)"></use>
+              </div>
+            </div>
+            <div class="prop" data-when="row.def != ''">
+              <label class="label"><span>Default</span></label>
+              <div class="control"><use ui="GraphField" data-alias-field="row" data-alias-kind="row.def"></use></div>
+            </div>
+          </div>
+        </div>
+        <div class="add-row" data-if="panel.add != ''"><button class="btn subtle" data-attrif-data-disabled="panel.addOff" data-event-click="emit('graph_details.addPin', panel.addId)"><span class="icon">&#xea60;</span><span class="label">{{ panel.add }}</span></button></div>
+      </div>
+    </section>
+  </div>
+  <use ui="Menu" id="field-menu">
+    <use ui="MenuItem" data-alias-item="properties.fieldMenu.reset" data-event-click="emit('properties.reset')"/>
+    <use ui="MenuItem" data-alias-item="properties.fieldMenu.apply" data-event-click="emit('properties.apply')"/>
+  </use>
+  <use ui="Menu" id="component-menu">
+    <div class="menu-group">{{ properties.componentMenu.title }}</div>
+    <div class="menu-item" role="menuitem" data-attrif-data-disabled="properties.componentMenu.disabled" data-attrif-data-described="properties.componentMenu.about != ''" data-event-click="emit('properties.componentAction')"><span class="icon lead">{{ properties.componentMenu.icon }}</span><span class="text"><span class="label">{{ properties.componentMenu.label }}</span><span class="about">{{ properties.componentMenu.about }}</span></span></div>
+  </use>
+</div>

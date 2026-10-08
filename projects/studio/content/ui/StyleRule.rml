@@ -1,0 +1,8 @@
+<div class="ancestor" data-if="line.ancestor">{{ line.selector }}</div>
+<div class="rule" data-if="line.heading && !line.ancestor">
+  <span class="selector">{{ line.selector }}</span>
+  <span class="origin" data-class-link="line.linked" data-event-click="inspector.rule = i">{{ line.origin }}</span>
+</div>
+<div class="declaration" data-if="!line.heading">
+  <span class="name">{{ line.name }}</span><span class="colon">:</span><span class="value">{{ line.value }}</span>
+</div>

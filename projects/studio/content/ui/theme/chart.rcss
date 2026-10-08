@@ -1,0 +1,7 @@
+/* Charts (Liveline): <line-chart> (src/ui/controls) draws its first series
+   in `color` and the grid in `border-color`, and places its labels. */
+line-chart { display: block; position: relative; color: var(--primary-text); border-color: var(--line); border-width: 0dp; }
+.chart-tick { position: absolute; left: 4dp; font-size: var(--studio-font-10, 10dp); line-height: var(--studio-line-14, 14dp); color: var(--faint-foreground); pointer-events: none; font-family: var(--font-numeric); }
+.chart-badge { position: absolute; right: 4dp; height: var(--studio-height-18, 18dp); line-height: var(--studio-line-18, 18dp); padding: 0dp 6dp; border-radius: 9dp; background-color: var(--primary); color: var(--primary-foreground); font-size: var(--studio-font-10, 10dp); font-family: var(--font-numeric); pointer-events: none; }
+.chart-hover { position: absolute; top: 4dp; height: var(--studio-height-18, 18dp); line-height: var(--studio-line-18, 18dp); padding: 0dp 6dp; border-radius: var(--r); background-color: var(--tooltip); border: 1dp var(--tooltip-edge); color: var(--foreground); font-size: var(--studio-font-10, 10dp); font-family: var(--font-numeric); pointer-events: none; }
+body:not(.dark) .chart-hover { color: #fafafa; }

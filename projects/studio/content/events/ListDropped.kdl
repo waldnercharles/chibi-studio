@@ -1,0 +1,12 @@
+version 3
+name "ListDropped"
+domain "event"
+id_counter 3
+description "A drag of Type carrying Payload was dropped on a list, past its rows."
+(array)variables {
+    - id=1 name="Type" type="const char *" category="Payload"
+    - id=2 name="Payload" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

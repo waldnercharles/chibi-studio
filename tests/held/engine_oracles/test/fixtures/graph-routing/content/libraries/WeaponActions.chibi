@@ -1,0 +1,32 @@
+library "WeaponActions" {
+    function "Spawn Prototype At"(Prototype: name = "", Transform: struct<"GameTransform"> = null) -> (Entity: handle<"ecs.entity"> = 0) {
+        depth_limit 64;
+        action spawn_prototype = engine["Spawn Prototype"](Prototype: entry.Prototype);
+        result Entity: handle<"ecs.entity"> = spawn_prototype.Entity;
+        after entry {
+            spawn_prototype();
+        }
+        after spawn_prototype {
+            await set_entity_game_transform(Entity: spawn_prototype.Entity, Value: convert<"game_transform_to_cf">(entry.Transform));
+            return();
+        }
+    }
+    function "Fire Projectile"(Origin: struct<"CF_V2"> = null, Direction: struct<"CF_V2"> = null, Damage: int = 0, Prototype: name = "Projectile", Shooter: handle<"ecs.entity"> = 0) -> (Entity: handle<"ecs.entity"> = 0) {
+        depth_limit 64;
+        value getentity_gameprojectile = get_entity_game_projectile(Entity: spawn_prototype_at.Entity);
+        value normalize_vector_2 = vec2_norm(Value: entry.Direction);
+        value multiply: struct<"CF_V2"> = multiply(A: plain struct<"CF_V2"> = normalize_vector_2.Result, B: plain float = getentity_gameprojectile.Value.speed);
+        action spawn_prototype_at = "Spawn Prototype At"(Prototype: entry.Prototype, Transform: convert<"game_transform_to_cf">(entry.Origin));
+        result Entity: handle<"ecs.entity"> = spawn_prototype_at.Entity;
+        after entry {
+            spawn_prototype_at();
+        }
+        after spawn_prototype_at {
+            await set_entity_game_velocity(Entity: spawn_prototype_at.Entity, Value: multiply);
+            await set_entity_game_orientation(Entity: spawn_prototype_at.Entity, Value: "DirectionMath"."Direction Orientation"(X: normalize_vector_2.Result.x, Y: normalize_vector_2.Result.y));
+            await set_game_projectile_damage(Value: entry.Damage, Target: spawn_prototype_at.Entity);
+            await set_game_collider_ignore_entity(Value: entry.Shooter, Target: spawn_prototype_at.Entity);
+            return();
+        }
+    }
+}

@@ -1,0 +1,2 @@
+/* A line between groups of menu items. */
+body { display: block; }

@@ -1,0 +1,15 @@
+.new-project .dialog-panel { width: 420dp; max-width: 94%; padding: 0dp; overflow: hidden; }
+.project-form { display: flex; flex-direction: column; color: var(--foreground); }
+.project-head { padding: 18dp 20dp 14dp; border-bottom: 1dp var(--line); }
+.project-title { font-size: var(--studio-font-16, 16dp); line-height: var(--studio-line-22, 22dp); font-weight: 600; }
+.project-description { margin-top: 4dp; color: var(--muted-foreground); white-space: normal; }
+.project-body { display: flex; flex-direction: column; gap: 12dp; padding: 18dp 20dp; }
+.project-name { display: flex; flex-direction: column; gap: 7dp; }
+.project-name label { display: block; font-weight: 500; }
+.project-name .field { flex: 0 0 auto; }
+.project-name .field[data-invalid] { border-color: var(--destructive); }
+.project-error { color: var(--destructive); white-space: normal; }
+.project-pending { color: var(--muted-foreground); }
+.project-confirmation { display: flex; flex-direction: column; gap: 4dp; padding: 12dp; border: 1dp var(--border); border-radius: var(--r); background-color: var(--muted); white-space: normal; }
+.confirmation-title { font-weight: 600; color: var(--foreground); }
+.project-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8dp; padding: 14dp 20dp; border-top: 1dp var(--line); }

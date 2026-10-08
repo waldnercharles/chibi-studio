@@ -1,0 +1,4 @@
+name "Palette"
+components {
+    GAME.GameUi document="Palette" hidden=#true
+}

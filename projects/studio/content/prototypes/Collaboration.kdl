@@ -1,0 +1,5 @@
+name "Collaboration"
+components {
+    GAME.GameUi document="Collaboration" hidden=#true
+}
+(array)behaviors "Dismiss" "NavKeys"

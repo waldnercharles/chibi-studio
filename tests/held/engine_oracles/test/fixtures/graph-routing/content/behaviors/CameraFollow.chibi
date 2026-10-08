@@ -1,0 +1,6 @@
+behavior CameraFollow {
+    value player: handle<"ecs.entity"> = get_global_variable(Name: "Player");
+    on Tick(dt) {
+        self.Transform += (player.Transform - self.Transform) * (1 - exp(-6 * dt));
+    }
+}

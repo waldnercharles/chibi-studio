@@ -1,0 +1,42 @@
+/* Output's views (studio_output.c): Find's and Calls' head, then a List of
+   the view's rows, all at the list's top and each moved to its row by a
+   translateY the source writes, so a row keeps its element and markup while
+   the window scrolls or the log's oldest lines drop, and moving one lays
+   nothing out. The rows' look is below, with the height density sets;
+   .tree-row is the theme's (theme/tree.rcss). */
+/* The area's panel host scrolls and pads; Output's List scrolls instead. */
+body.area-panel { padding: 0dp; overflow: hidden; }
+.output { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; }
+.output-list { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; font-family: var(--font-numeric); }
+.output-list.find-list { top: 24dp; }
+.output-list .list { box-sizing: border-box; padding: 2dp 0dp 6dp; }
+.output-list.find-list .list { padding: 2dp 4dp 6dp; }
+.output-row, .output-log, .output-item { position: absolute; left: 0dp; top: 0dp; right: 0dp; }
+/* A log line, or a row with its kind's icon, where it happened, the message
+   and a repeat count. Density sets their height, which the lines' List takes
+   as its --row. */
+.output-list.lines { --row: var(--studio-height-20, 20dp); }
+body.comfortable .output-list.lines { --row: var(--studio-height-24, 24dp); }
+.output-row, .output-log { display: block; height: var(--studio-height-20, 20dp); line-height: var(--studio-line-20, 20dp); padding: 0dp 10dp; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.output-row { display: flex; align-items: center; gap: 6dp; }
+body.comfortable .output-row, body.comfortable .output-log { height: var(--studio-height-24, 24dp); line-height: var(--studio-line-24, 24dp); }
+.output-row .kind { font-size: var(--studio-font-12, 12dp); width: 14dp; flex: 0 0 auto; }
+.output-row .output-line { display: block; flex: 1 1 0dp; padding: 0dp; overflow: hidden; text-overflow: ellipsis; }
+.output-row[data-kind=error] .kind { color: var(--destructive); }
+.output-row[data-kind=warning] .kind { color: var(--warning); }
+.output-row[data-kind=success] .kind { color: var(--success); }
+.output-row[data-kind=info] .kind { color: var(--faint-foreground); }
+.output-row:hover, .output-log:hover { background-color: var(--accent); }
+/* Rows at a node open it: where, muted, then the message and a repeat count. */
+.output-row.located { cursor: pointer; }
+.output-row .output-at { display: block; flex: 0 0 auto; color: var(--faint-foreground); white-space: nowrap; }
+.output-row .output-count { flex: 0 0 auto; font-family: var(--font-numeric); }
+.output-empty { position: absolute; left: 0dp; right: 0dp; top: 45%; text-align: center; color: var(--faint-foreground); pointer-events: none; }
+/* What the references are to, or what the calls trace from; Calls' direction trails. */
+.find-head { position: absolute; left: 0dp; top: 0dp; right: 0dp; height: var(--studio-height-24, 24dp); display: flex; align-items: center; gap: 6dp; padding: 0dp 10dp; border-bottom: 1dp var(--line); }
+.find-head .icon { color: var(--faint-foreground); font-size: 12dp; width: 14dp; }
+.find-title { display: block; line-height: var(--studio-line-16, 16dp); color: var(--foreground); font-weight: 600; white-space: nowrap; }
+.find-count { display: block; line-height: var(--studio-line-16, 16dp); color: var(--faint-foreground); font-family: var(--font-numeric); }
+.output-scope { display: flex; flex: 0 0 auto; margin-left: 6dp; }
+.output-scope .segmented, .output-scope .seg { flex: 0 0 auto; }
+.seg { tab-index: auto; }

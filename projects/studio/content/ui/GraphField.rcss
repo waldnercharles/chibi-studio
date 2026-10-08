@@ -1,0 +1,22 @@
+/* One value of a graph row in Properties' Node and Member tabs
+   (studio_graph_details.c): the control its kind names, aliased as
+   data-alias-kind, over the row aliased as data-alias-field. A source field
+   (kind source) is one editable field with type-aware completion, Base UI's
+   Combobox: typing a literal offers it as a constant, typing a property path
+   browses the fields that fit, and the list under the field is the palette's
+   rows, which C ranks and windows (studio_graph_values.c). Its controls send
+   graph_details.input and change with the row's id. */
+body { display: flex; flex: 1 1 0dp; min-width: 0dp; }
+.graph-field { display: flex; flex: 1 1 0dp; min-width: 0dp; align-items: center; gap: 4dp; }
+/* A kind's one control, as its row's kind builds it. */
+.kind { display: flex; flex: 1 1 0dp; min-width: 0dp; }
+.source-field { display: flex; flex: 1 1 0dp; min-width: 0dp; }
+.source-field .field { flex: 1 1 0dp; }
+.popup.autocomplete { min-width: var(--anchor-width, 180dp); }
+.source-list { display: block; }
+.source-row { display: block; }
+#palette-list {
+    height: auto; max-height: 140dp;
+    --row: var(--autocomplete-row-h); --row-heading: var(--autocomplete-row-h); --row-about: var(--autocomplete-row-h);
+}
+.source-field [data-ui=List] { height: auto; }

@@ -1,0 +1,20 @@
+<header class="area-head" data-class-maximized="area.maximized" data-class-live="area.live">
+  <div id="editor-type">
+    <button class="btn icon-only editor-type" popovertarget="editor-types" aria-haspopup="menu" data-attr-data-tip="area.title"><span class="icon">{{ area.icon }}</span></button>
+    <use ui="Menu" id="editor-types">
+      <div data-for="group, g : choices.editors.groups">
+        <use ui="MenuSeparator" data-if="g > 0"/>
+        <use ui="MenuGroup" data-alias-group="group"/>
+        <use ui="MenuItem" data-for="type : group.options" data-if="!area.drawer || type.drawer" data-alias-item="type" data-attrif-data-current="area.editor == type.value" data-event-click="emit('editor.type', area.index, type.value)"/>
+        <use ui="MenuItem" data-for="panel : choices.panels.tools" data-if="group.tools" data-alias-item="panel" data-attrif-data-current="area.panel == panel.value" data-event-click="emit('editor.panel', area.index, panel.value)"/>
+      </div>
+      <use ui="MenuSeparator" data-if="choices.panels.others.size > 0"/>
+      <use ui="Submenu" data-if="choices.panels.others.size > 0" data-alias-item="choices.panels">
+        <use ui="MenuItem" data-for="panel : choices.panels.others" data-alias-item="panel" data-attrif-data-current="area.panel == panel.value" data-event-click="emit('editor.panel', area.index, panel.value)"/>
+      </use>
+    </use>
+  </div>
+  <div id="controls"/>
+  <button class="btn icon-only maximize" data-attr-data-tip="area.maximized ? 'Restore Area' : commands.maximize.label" data-attr-data-kbd="commands.maximize.shortcut" data-event-click="emit('studio.maximize', area.index)"><span class="icon" data-if="!area.maximized">&#xeb4c;</span><span class="icon" data-if="area.maximized">&#xeb4d;</span></button>
+  <button class="btn icon-only close" data-if="area.drawer" data-attr-data-tip="commands.closeDrawer.label" data-event-click="emit('studio.closeDrawer')"><span class="icon">&#xea76;</span></button>
+</header>

@@ -1,0 +1,4 @@
+name "Player"
+components {
+    (object)GAME.GameTransform
+}

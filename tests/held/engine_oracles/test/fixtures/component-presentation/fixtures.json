@@ -1,0 +1,11 @@
+{
+  "content/editor/Components.kdl": {
+    "purpose": "component tab/icon presentation table",
+    "sha256": "715ac09169ae07f5af6cbd58a18b7e080cbb152198086dac97ce1ba4921e519b",
+    "source": "projects/arena2d/content/editor/Components.kdl"
+  },
+  "content/prototypes/InspectorSubject.kdl": {
+    "purpose": "synthetic object with component choices used by presentation checks",
+    "sha256": "2892c9913a0e36b9e190075fb1cc324e44d42b95da7cf374965c6b3fbb968446"
+  }
+}

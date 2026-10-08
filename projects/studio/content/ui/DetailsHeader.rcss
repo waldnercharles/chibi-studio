@@ -1,0 +1,7 @@
+/* Details' header controls (studio_designer_details.c), in its AreaHeader:
+   the search, two-way bound to details.query, which filters the rows of
+   every panel as Properties' search does. */
+body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.field.search { min-width: 0dp; }
+/* RmlUi gives :focus to a focused element's ancestors too, as :focus-within. */
+.field.search:focus { background-color: var(--field-edit); border-color: var(--ring); }

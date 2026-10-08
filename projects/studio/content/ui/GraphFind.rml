@@ -1,0 +1,12 @@
+<div class="find-widget-bar">
+  <div class="field search"><span class="part addon"><span class="icon sm">&#xea6d;</span></span><input type="text" class="part value" id="graph-find-query" placeholder="Find" autofocus="" data-value="graph_find.query" data-keys="Enter:graph_find.enter Escape:graph_find.close Up:graph_find.previous Down:graph_find.next"/></div>
+  <span class="find-widget-count">{{ graph_find.count }}</span>
+  <button class="btn icon-only" data-tip="Previous" data-kbd="&#x2191;" data-attrif-data-disabled="graph_find.total == 0" data-event-click="emit('graph_find.previous')"><span class="icon">&#xeab7;</span></button>
+  <button class="btn icon-only" data-tip="Next" data-kbd="&#x2193;" data-attrif-data-disabled="graph_find.total == 0" data-event-click="emit('graph_find.next')"><span class="icon">&#xeab4;</span></button>
+  <button class="btn icon-only" data-tip="Close" data-kbd="Esc" data-event-click="emit('graph_find.close')"><span class="icon">&#xea76;</span></button>
+</div>
+<div class="graph-find-list" data-if="graph_find.total > 0" data-style-height="graph_find.height">
+  <use ui="List" id="graph-find-list" data-event-scroll="emit('graph_find.scroll')">
+    <use ui="TreeRow" data-for="row : graph_find.rows" data-alias-item="row" data-alias-selection="graph_find.none" data-alias-active="graph_find.none" data-event-click="emit('graph_find.jump', row.key)"></use>
+  </use>
+</div>

@@ -1,0 +1,28 @@
+behavior "WavePulseBehavior" {
+    owner "ecs.entity";
+    state Age: float = 0.0;
+    value age = get_variable<"Age">();
+    value delta_time = delta_time();
+    value add: double = add(A: plain double = age, B: plain double = delta_time);
+    action age_2 = set_variable<"Age">(Value: float = add);
+    value divide: double = divide(A: plain double = age_2.Value, B: plain double = 0.8);
+    value greater_or_equal = greater_or_equal(A: divide, B: 1.0);
+    value multiply: double = multiply(A: plain double = 336.0, B: plain double = divide);
+    value add_2: double = add(A: plain double = 24.0, B: plain double = multiply);
+    value subtract: double = subtract(A: plain double = add_2, B: plain double = 28.0);
+    value max: double = max(A: plain double = 0.0, B: plain double = subtract);
+    value subtract_2: double = subtract(A: plain double = 1.0, B: plain double = divide);
+    value multiply_2: double = multiply(A: plain double = 0.65, B: plain double = subtract_2);
+    on Tick as tick() {
+        age_2();
+    }
+    after age_2 {
+        if (greater_or_equal) {
+            destroy_entity(Entity: self);
+        } else {
+            await set_game_surface_influence_radius(Value: add_2, Target: 0);
+            await set_game_surface_influence_inner_radius(Value: max, Target: 0);
+            set_game_surface_influence_strength(Value: multiply_2, Target: 0);
+        }
+    }
+}

@@ -1,0 +1,12 @@
+/* Joined axes: one NumberField per axis, in one control, each addon colored
+   by its key. Alias the axes as data-alias-axes, each with key, label,
+   value, step, precision, min, max, unit, slider, mixed and overridden, and
+   the field as data-alias-field for its id (the first axis's; the others
+   add .key), label, readonly and float. Each axis's input and change carry
+   its key as ev.name: data-event-change="emit('panel.change', row.id,
+   ev.value, ev.canceled, ev.name)". */
+body { display: flex; flex: 1 1 0dp; }
+/* The data-for's template stays hidden after the last axis. */
+.joined .field { border-radius: 0dp; }
+.joined .field:first-child { border-radius: 4dp 0dp 0dp 4dp; }
+.joined .field:nth-last-child(2) { border-radius: 0dp 4dp 4dp 0dp; }

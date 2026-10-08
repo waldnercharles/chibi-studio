@@ -1,0 +1,19 @@
+/* An asset picker (studio_pick.c over the `palette` source,
+   studio_palette_view.c): a searchable list under the field that opened
+   it, as the kit's asset picker hung, in a document of its own shown only
+   while it is open. It lists none, the kind's assets and, where a field
+   takes a name no asset has yet, the name typed; the current asset is in
+   primary and highlighted as it opens. The List the source windows holds
+   group headings, rows and described rows, --row-heading, --row and
+   --row-about tall; keys and the pointer move the highlight through the
+   virtualized <choice-list>, and the field hears change with the name
+   chosen. Escape, a press outside or the field again closes it. */
+body { display: block; }
+.dropdown { min-width: var(--anchor-width, 180dp); }
+.asset-picker [data-ui=List] { height: auto; }
+#palette-list {
+    height: auto; max-height: var(--dropdown-list-h);
+    --row: var(--h); --row-heading: var(--studio-height-22, 22dp); --row-about: 44dp;
+}
+.picker-row { display: block; }
+.picker-empty { display: block; padding: 8dp; color: var(--muted-foreground); }

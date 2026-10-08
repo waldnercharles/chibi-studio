@@ -1,0 +1,9 @@
+/* Properties' header controls, in its area header (studio_properties.c
+   mounts it there): the search, which filters fields across every panel
+   and Escape clears, and while the scene runs a Live badge and Keep
+   (Unreal's Keep Simulation Changes), or Read-only for a prototype. */
+body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.field.search { min-width: 0dp; }
+/* RmlUi gives :focus to a focused element's ancestors too, as :focus-within. */
+.field.search:focus { background-color: var(--field-edit); border-color: var(--ring); }
+.badge, .btn { flex: 0 0 auto; }

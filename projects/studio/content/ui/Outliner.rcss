@@ -1,0 +1,24 @@
+/* The Outliner, as Blender's Outliner and Unity's Hierarchy: the scene as a
+   root row with its object count, then a row per object the object filter
+   shows, in a List the host windows (data-list-rows) and whose rows the
+   Outliner's behaviors fill as self.rows (OutlinerRows, over the editor
+   nodes of studio_nodes.c). A row selects on click, with Mod and Shift
+   for several; double-click or F2 renames it in place; its eye and lock show
+   while it is hovered or while they are on; it takes behaviors and the
+   assets its fields name, and the list takes prototypes. The list is one
+   Tab stop, and while the keyboard holds it the active row shows the focus
+   ring and Studio's keys act on it. */
+body { overflow: hidden; padding: 0dp; }
+.outliner-panel { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; }
+.list {
+  position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; height: auto; padding: 3dp 4dp 8dp;
+  tab-index: auto;
+}
+.outliner-row { display: block; }
+/* The eye and lock take the row's whole height, so a press anywhere in
+   their column toggles instead of selecting the row. */
+.tree-row .trail, .view-toggles { align-self: stretch; }
+.view-toggles .toggle { align-self: stretch; height: auto; tab-index: none; }
+.list:focus-visible .tree-row[data-active] { border-color: var(--ring); }
+/* The name's field starts where a row's icon does, past the twisty's room. */
+.object-rename { padding-left: 38dp; }

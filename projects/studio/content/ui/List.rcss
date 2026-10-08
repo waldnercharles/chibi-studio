@@ -1,0 +1,10 @@
+/* A virtualized list for a C panel source, as react-virtuoso draws one: a
+   scroller, a spacer as tall as every row, and in it the window of rows
+   the source shows, after the padding ui_list_window (src/ui/list.h) gives
+   the spacer. Give it an id, so the source finds it, and
+   data-event-scroll, so a scroll wakes the source; its rows are one
+   data-for over an array the source keeps at one length, each row --row
+   tall, so scrolling only changes their values. */
+body { display: block; height: 100%; }
+.list { display: block; overflow-y: auto; height: 100%; }
+.list-spacer { display: block; position: relative; box-sizing: border-box; }

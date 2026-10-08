@@ -1,0 +1,27 @@
+<div class="statusbar" data-class-live="editor.playing">
+  <div class="hints"><use ui="KeyHint" data-for="hint : editor.hints"/></div>
+  <div class="report-area"><div class="report" data-if="editor.reporting" presence><span class="icon">&#xeab2;</span><morph-text>{{ editor.report }}</morph-text></div></div>
+  <div class="drawers">
+    <button class="btn sm toggle-drawer" data-attr-data-tip="commands.toggleAssets.menu" data-attr-data-kbd="commands.toggleAssets.shortcut" data-attr-data-state="commands.toggleAssets.checked ? 'on' : 'off'" data-event-click="emit('studio.toggleAssets')"><span class="icon">{{ commands.toggleAssets.icon }}</span><span class="label">{{ commands.toggleAssets.menu }}</span></button>
+    <button class="btn sm toggle-drawer" data-attr-data-tip="commands.toggleOutput.menu" data-attr-data-kbd="commands.toggleOutput.shortcut" data-attr-data-state="commands.toggleOutput.checked ? 'on' : 'off'" data-event-click="emit('studio.toggleOutput')"><span class="icon">{{ commands.toggleOutput.icon }}</span><span class="label">{{ commands.toggleOutput.menu }}</span></button>
+    <button class="btn sm toggle-drawer" data-attr-data-tip="commands.togglePerformance.menu" data-attr-data-kbd="commands.togglePerformance.shortcut" data-attr-data-state="commands.togglePerformance.checked ? 'on' : 'off'" data-event-click="emit('studio.togglePerformance')"><span class="icon">{{ commands.togglePerformance.icon }}</span><span class="label">{{ commands.togglePerformance.menu }}</span></button>
+  </div>
+  <div class="stats">
+    <span class="strong">{{ editor.scene }}</span>
+    <span data-class-strong="editor.selection != ''">{{ editor.selection != '' ? editor.selection : 'No selection' }}</span>
+    <span class="count objects">Objects <number-flow data-attr-value="editor.selected"/>/<number-flow data-attr-value="editor.objects"/></span>
+    <span class="count speed strong" data-if="editor.speed != ''" data-attr-data-tip="commands.normalSpeed.label" data-attr-data-kbd="commands.normalSpeed.shortcut" data-event-click="emit('studio.normalSpeed')">{{ editor.speed }}</span>
+    <span class="count hidden-objects" data-if="editor.hidden > 0" data-attr-data-tip="commands.showAll.label" data-attr-data-kbd="commands.showAll.shortcut" data-event-click="emit('studio.showAll')"><number-flow data-attr-value="editor.hidden"/> hidden</span>
+  </div>
+  <div id="ui-scale">
+    <button class="btn sm ui-scale" popovertarget="scale-menu" aria-haspopup="menu" data-tip="UI Scale"><span class="label">{{ shell.scale.label }}</span></button>
+    <use ui="Menu" id="scale-menu">
+      <use ui="MenuGroup">UI Scale</use>
+      <use ui="MenuCommand" data-alias-command="commands.zoomIn"/>
+      <use ui="MenuCommand" data-alias-command="commands.zoomOut"/>
+      <use ui="MenuCommand" data-alias-command="commands.zoomReset"/>
+      <use ui="MenuSeparator"/>
+      <use ui="MenuItem" data-for="preset, i : shell.scale.presets" data-alias-item="preset" data-event-click="emit('shell.scale', i)"/>
+    </use>
+  </div>
+</div>

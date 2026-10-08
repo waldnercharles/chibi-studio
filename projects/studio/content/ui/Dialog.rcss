@@ -1,0 +1,27 @@
+/* A modal dialog: a backdrop whose press emits Close, and a panel holding
+   the use's children. class="window" makes it nearly window-sized, as a
+   preferences window, with the children filling it. Both fade in. */
+body {
+  position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp;
+  display: flex; overflow: auto;
+}
+.dialog-backdrop {
+  position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; background-color: #0000008c;
+  animation: 0.14s cubic-out 1 dialog-fade;
+}
+.dialog-panel {
+  position: relative; margin: auto; padding: 12dp; color: var(--foreground); background-color: var(--popover);
+  border: 1dp var(--popover-edge); border-radius: var(--r-lg); box-shadow: var(--shadow-overlay);
+  animation: 0.14s cubic-out 1 dialog-fade;
+}
+body.window .dialog-panel {
+  display: flex; flex-direction: column; width: 88%; max-width: 1000dp; height: 86%; max-height: 720dp;
+  min-width: 560dp; min-height: 360dp; padding: 0dp; overflow: hidden;
+}
+@keyframes dialog-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (theme: reduced-motion) {
+  .dialog-backdrop, .dialog-panel { animation: none; }
+}

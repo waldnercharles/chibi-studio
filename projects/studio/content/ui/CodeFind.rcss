@@ -1,0 +1,8 @@
+/* Find in the Text Editor (studio_code.c), over the text's top right in
+   the theme's .find-widget, as VS Code's find widget: the query, which
+   shows its first match from the cursor as it is typed, the match count,
+   Previous and Next (Shift+Enter and Enter, Up and Down) and Close
+   (Escape, back to the text). */
+body { display: flex; flex-direction: column; gap: 4dp; }
+/* A focused query shows as the kit's field did while editing. */
+.field.search:focus-within { background-color: var(--field-edit); }

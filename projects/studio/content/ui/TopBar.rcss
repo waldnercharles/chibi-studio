@@ -1,0 +1,151 @@
+/* Studio's top bar (studio_shell.c hosts it; studio_sources.c binds
+   `editor` and `commands`, and studio_shell.c `menubar` and `shell`): the
+   brand, the menubar, the layout menu, the document tabs, the transport with
+   the play target's menu, a paused run's steps and the playback speed's
+   menu, Settings and Search. Each button runs its command with
+   emit('studio.<id>'), and a tab's with the tab's index. */
+body { flex: 0 0 auto; }
+.app-chrome { display: flex; flex-direction: column; flex: 0 0 auto; }
+// The transport stays clear of the tabs as the window narrows.
+.spacer { min-width: 12dp; }
+.topbar {
+  height: var(--topbar-h); display: flex; align-items: center; gap: 3dp; padding: 0dp 8dp;
+  background-color: var(--app);
+}
+.brand {
+  width: 22dp; height: 22dp; display: flex; align-items: center; justify-content: center;
+  margin-right: 4dp; flex-shrink: 0;
+}
+.mark { width: 11dp; height: 11dp; border-radius: 3dp; background-color: var(--primary); transform: rotate(45deg); }
+.menus { display: flex; flex: 0 0 auto; }
+// A menubar trigger stays pressed while its menu is open.
+.menus .trigger[data-popup-open] { background-color: var(--press); color: var(--foreground); transition: none; }
+.btn { flex-shrink: 0; }
+.trigger { color: var(--foreground); padding: 0dp 7dp; }
+#layout { display: flex; align-items: center; flex: 0 0 auto; }
+// The side pane's toggle shows its state by the icon alone, as VS Code's layout toggles do.
+.btn.side-pane[data-state=on] { background-color: transparent; }
+.btn.side-pane[data-state=on] .icon { color: var(--foreground); }
+.btn.side-pane[data-state=off] .icon { color: var(--muted-foreground); }
+.sep { width: 1dp; height: 14dp; background-color: var(--border); margin: 0dp 6dp; flex-shrink: 0; }
+// Documents occupy their own row so the toolbar keeps every action in reach.
+.doc-tabs {
+  --tab-hover: color-mix(in srgb, var(--foreground) 5%, var(--app));
+  --tab-close-hover: color-mix(in srgb, var(--foreground) 9%, var(--app));
+  --tab-active-close-hover: color-mix(in srgb, var(--foreground) 9%, var(--background));
+  display: flex; align-items: center; gap: 4dp; height: var(--header-h); flex: 0 0 auto;
+  padding: 0dp 6dp 4dp;
+  background-color: var(--app);
+}
+.doc-tab-list {
+  display: flex; align-items: center; gap: 2dp; height: 100%; flex: 1 1 0dp;
+  min-width: 0dp; overflow-x: auto; overflow-y: hidden;
+}
+.doc-tab-list scrollbarhorizontal { height: 0dp; }
+// Equal tab widths keep document names and hover actions in predictable places.
+.doc-tab {
+  position: relative; display: flex; align-items: center; flex: 0 0 180dp;
+  box-sizing: border-box; width: 180dp;
+  height: 100%; padding: 0dp 2dp 0dp 0dp; color: var(--muted-foreground);
+  border-radius: var(--r-lg);
+  &:hover { color: var(--foreground); background-color: var(--tab-hover); }
+  &[data-state=on] { background-color: var(--background); color: var(--foreground); }
+  &[data-state=on] .face .icon { color: var(--primary-text); }
+  &[data-pinned] .doc-pin { color: var(--primary-text); opacity: 1; }
+}
+.doc-tab .face {
+  position: relative; flex: 1 1 0dp; min-width: 0dp; justify-content: flex-start;
+  gap: 6dp; height: 100%; padding: 0dp 6dp 0dp 8dp;
+  transition: none;
+}
+.doc-tab .face > .icon { flex: 0 0 auto; }
+.doc-tab .face:hover { background-color: transparent; }
+.doc-tab .face:focus-visible { background-color: transparent; }
+.doc-tab[data-state=on] .face { color: var(--foreground); }
+.face .label {
+  position: relative; display: block; flex: 1 1 0dp; min-width: 0dp;
+  overflow: hidden; white-space: nowrap;
+}
+.doc-title-fade {
+  position: absolute; right: 0dp; top: 0dp; width: 16dp; height: 100%;
+  pointer-events: none; decorator: horizontal-gradient(#00000000 var(--app));
+}
+.doc-tab:hover .doc-title-fade { decorator: horizontal-gradient(#00000000 var(--tab-hover)); }
+.doc-tab[data-state=on] .doc-title-fade { decorator: horizontal-gradient(#00000000 var(--background)); }
+.dirty-dot { flex: 0 0 auto; width: 6dp; height: 6dp; border-radius: 3dp; background-color: var(--muted-foreground); }
+.doc-tab .doc-pin, .doc-tab .doc-close { width: 22dp; height: 22dp; flex: 0 0 auto; }
+.doc-tab .doc-close {
+  position: absolute; right: 2dp; top: 50%; margin-top: -11dp;
+  opacity: 0; pointer-events: none; background-color: transparent; transition: none;
+}
+.doc-tab .doc-close[data-disabled] { opacity: 0; }
+.doc-close > .icon { position: relative; z-index: 1; }
+// Cover the title through the button's transparent border and rounded corners.
+.doc-close-cover {
+  position: absolute; left: -1dp; right: -1dp; top: -1dp; bottom: -1dp;
+  pointer-events: none; background-color: var(--app);
+}
+.doc-tab:hover .doc-close-cover { background-color: var(--tab-hover); }
+.doc-tab[data-state=on] .doc-close-cover { background-color: var(--background); }
+.doc-close-highlight {
+  position: absolute; left: -1dp; right: -1dp; top: -1dp; bottom: -1dp;
+  box-sizing: border-box; border: 1dp transparent; border-radius: var(--r);
+  pointer-events: none;
+}
+.doc-close:focus-visible .doc-close-highlight { border-color: var(--ring); }
+.doc-close-fade {
+  position: absolute; left: -16dp; top: 0dp; width: 16dp; height: 100%;
+  pointer-events: none; decorator: horizontal-gradient(#00000000 var(--app));
+}
+.doc-tab:hover .doc-close-fade { decorator: horizontal-gradient(#00000000 var(--tab-hover)); }
+.doc-tab[data-state=on] .doc-close-fade { decorator: horizontal-gradient(#00000000 var(--background)); }
+.doc-tab:hover .doc-close, .doc-tab .doc-close:focus-visible { opacity: 1; pointer-events: auto; }
+.doc-tab .doc-close:hover { background-color: transparent; }
+.doc-tab .doc-close:hover .doc-close-highlight { background-color: var(--tab-close-hover); }
+.doc-tab[data-state=on] .doc-close:hover .doc-close-highlight { background-color: var(--tab-active-close-hover); }
+.doc-tab:hover .doc-close[data-disabled] { opacity: 1; }
+.doc-close[data-disabled] .icon { opacity: 0; }
+.doc-tab:hover .doc-close[data-disabled] .icon, .doc-close[data-disabled]:focus-visible .icon { opacity: 0.38; }
+.open-tabs { flex: 0 0 auto; }
+#open-tabs-menu { min-width: 220dp; max-width: 360dp; }
+#open-tabs-menu .label { display: block; overflow: hidden; text-overflow: ellipsis; }
+.transport { display: flex; align-items: center; gap: 4dp; flex: 0 0 auto; }
+#play-target { display: flex; flex: 0 0 auto; }
+.target { width: 168dp; overflow: hidden; }
+.target .label { display: block; flex: 1 1 0dp; min-width: 0dp; overflow: hidden; white-space: nowrap; }
+.target .icon { flex: 0 0 auto; }
+.group { display: flex; background-color: var(--secondary); border-radius: var(--r); }
+.group .btn { border-radius: 0dp; width: var(--h); padding: 0dp; }
+.group .btn[data-state=on] { background-color: var(--selected); color: var(--foreground); }
+.group .btn[data-state=on] .icon { color: var(--primary-text); }
+#debug-steps { display: flex; }
+#speed { display: flex; flex: 0 0 auto; }
+// The speed keeps its width as it steps, so the centered transport stays put,
+// and reads as on, as Play does, while it is not 1x.
+.speed { min-width: 54dp; font-family: var(--font-numeric); }
+.speed[data-state=on] { background-color: var(--selected); color: var(--primary-text); }
+// Search narrows before anything else but the tabs.
+.search-trigger {
+  flex: 0 4 220dp; min-width: 28dp; width: 220dp; overflow: hidden; justify-content: flex-start;
+  padding: 0dp 6dp 0dp 7dp; background-color: var(--field-edit); color: var(--faint-foreground);
+  &:hover { background-color: var(--input-hover); color: var(--muted-foreground); }
+  .label { flex: 1 1 0dp; }
+}
+
+@media (max-width: 1200dp) {
+  .collaboration-trigger {
+    width: var(--h); padding: 0dp; justify-content: center;
+  }
+  .collaboration-trigger .label { display: none; }
+  .target { width: 140dp; }
+  .search-trigger {
+    flex: 0 0 auto; width: var(--h); min-width: var(--h);
+    padding: 0dp; justify-content: center;
+  }
+  .search-trigger .label, .search-trigger .kbd { display: none; }
+}
+
+@media (max-width: 900dp) {
+  #layout, #layout + .sep { display: none; }
+  .target { width: 120dp; }
+}

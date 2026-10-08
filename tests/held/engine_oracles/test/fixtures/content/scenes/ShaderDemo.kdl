@@ -1,0 +1,26 @@
+version 1
+name "Shader Demo"
+(array)entities {
+    - {
+        name "Animated emission"
+        prototype "ShaderRing"
+        components {
+            GameTransform x=220.0 y=300.0
+        }
+        (array)behaviors "DamageFlashBehavior"
+    }
+    - {
+        name "Color gradient"
+        prototype "ShaderGradient"
+        components {
+            GameTransform x=400.0 y=300.0
+        }
+    }
+    - {
+        name "Smooth union"
+        prototype "ShaderUnion"
+        components {
+            GameTransform x=580.0 y=300.0
+        }
+    }
+}

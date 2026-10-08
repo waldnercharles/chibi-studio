@@ -1,0 +1,6 @@
+/* The Hierarchy's header controls (studio_designer_hierarchy.c), in its
+   AreaHeader: the filter, two-way bound to hierarchy.query as the area's
+   view state, and Add, a menu of the Library's elements and widgets that adds
+   into the selection or after it. */
+body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.add { flex: 0 0 auto; }

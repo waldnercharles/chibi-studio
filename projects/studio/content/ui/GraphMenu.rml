@@ -1,0 +1,14 @@
+<use ui="Menu" id="graph-menu">
+  <use ui="MenuGroup" data-if="graph_menu.group.label != ''" data-alias-group="graph_menu.group"/>
+  <div class="graph-menu-entry" data-for="entry : graph_menu.items">
+    <use ui="MenuSeparator" data-if="entry.sep"/>
+    <use ui="MenuItem" data-when="!entry.sub" data-alias-item="entry" data-attrif-data-current="entry.current" data-event-click="emit('graph_menu.run', entry.key)"></use>
+    <use ui="Submenu" data-when="entry.sub" data-alias-item="entry">
+      <div class="graph-menu-entry" data-for="child : entry.items">
+        <use ui="MenuSeparator" data-if="child.sep"/>
+        <use ui="MenuItem" data-when="child.swatch == ''" data-alias-item="child" data-attrif-data-current="child.current" data-event-click="emit('graph_menu.run', child.key)"></use>
+        <div class="menu-item" role="menuitem" data-when="child.swatch != ''" data-attrif-data-disabled="child.disabled" data-attrif-data-current="child.current" data-event-click="emit('graph_menu.run', child.key)"><span class="icon lead" data-style-color="child.swatch">{{ child.icon }}</span><span class="text"><span class="label">{{ child.label }}</span></span></div>
+      </div>
+    </use>
+  </div>
+</use>

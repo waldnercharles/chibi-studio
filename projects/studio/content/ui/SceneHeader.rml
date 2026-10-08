@@ -1,0 +1,66 @@
+<div class="scene-guest" data-when="scene.mode == 1"><span>Studio</span><span class="dim">Running this project's working copy</span></div>
+<div class="scene-tools" data-when="scene.mode == 0">
+  <button class="btn menu-btn" popovertarget="scene-view" aria-haspopup="menu"><span class="label">View</span></button>
+  <use ui="Menu" id="scene-view">
+    <use ui="MenuCommand" data-alias-command="commands.frame"/>
+    <use ui="MenuCommand" data-alias-command="commands.resetCamera"/>
+    <use ui="MenuCommand" data-alias-command="commands.viewThroughCamera"/>
+    <use ui="MenuSeparator"/>
+    <use ui="MenuGroup">Show</use>
+    <use ui="MenuCommand" data-alias-command="commands.toggleGrid"/>
+    <use ui="MenuCommand" data-alias-command="commands.showGeneratedWorld"/>
+    <use ui="MenuCommand" data-alias-command="commands.showLighting"/>
+    <use ui="MenuCommand" data-alias-command="commands.showFog"/>
+    <use ui="MenuCommand" data-alias-command="commands.showCameraFrames"/>
+    <use ui="MenuSeparator"/>
+    <use ui="MenuGroup">View Zoom</use>
+    <use ui="MenuItem" data-for="zoom, i : scene.zooms" data-alias-item="zoom" data-event-click="emit('scene.zoom', i)"></use>
+  </use>
+  <div class="tool-group">
+    <button class="btn icon-only" data-attr-data-state="commands.selectTool.checked ? 'on' : ''" data-attr-data-tip="commands.selectTool.menu" data-attr-data-kbd="commands.selectTool.shortcut" data-event-click="emit('studio.selectTool')"><span class="icon">{{ commands.selectTool.icon }}</span></button>
+    <button class="btn icon-only" data-attr-data-state="commands.moveTool.checked ? 'on' : ''" data-attr-data-tip="commands.moveTool.menu" data-attr-data-kbd="commands.moveTool.shortcut" data-event-click="emit('studio.moveTool')"><span class="icon">{{ commands.moveTool.icon }}</span></button>
+    <button class="btn icon-only" data-attr-data-state="commands.rotateTool.checked ? 'on' : ''" data-attr-data-tip="commands.rotateTool.menu" data-attr-data-kbd="commands.rotateTool.shortcut" data-event-click="emit('studio.rotateTool')"><span class="icon">{{ commands.rotateTool.icon }}</span></button>
+    <button class="btn icon-only" data-attr-data-state="commands.scaleTool.checked ? 'on' : ''" data-attr-data-tip="commands.scaleTool.menu" data-attr-data-kbd="commands.scaleTool.shortcut" data-event-click="emit('studio.scaleTool')"><span class="icon">{{ commands.scaleTool.icon }}</span></button>
+  </div>
+</div>
+<div class="canvas-tools" data-when="scene.mode == 2">
+  <div class="crumbs">
+    <button class="btn crumb" data-tip="Back to the scene" data-event-click="emit('canvas.back')"><span class="icon">&#xebd2;</span><span class="label">Scene</span></button>
+    <span class="icon crumb-sep">&#xeab6;</span>
+    <button class="btn crumb current" popovertarget="canvas-asset" aria-haspopup="menu"><span class="icon">&#xebeb;</span><span class="label">{{ canvas.asset }}</span></button>
+    <use ui="Menu" id="canvas-asset">
+      <use ui="MenuGroup">Used by</use>
+      <use ui="MenuItem" data-for="user, i : canvas.used" data-alias-item="user" data-event-click="emit('canvas.used', i)"></use>
+      <use ui="MenuItem" data-if="canvas.used.size == 0" data-alias-item="canvas.unused"/>
+      <use ui="MenuSeparator"/>
+      <use ui="Submenu" data-alias-item="canvas.preview">
+        <use ui="MenuItem" data-for="ui, i : canvas.previews" data-alias-item="ui" data-attrif-data-current="ui.current" data-event-click="emit('canvas.preview', i)"></use>
+      </use>
+    </use>
+  </div>
+  <div class="canvas-sizes">
+    <div class="segmented">
+      <button class="seg" data-for="label, i : canvas.sizes" data-attrif-data-pressed="canvas.size == i" data-event-click="emit('canvas.size', i)">{{ label }}</button>
+    </div>
+  </div>
+  <button class="btn icon-only" data-attr-data-tip="canvas.light ? 'Light backdrop' : 'Dark backdrop'" data-event-click="emit('canvas.backdrop')"><span class="icon" data-if="canvas.light">&#xf0599;</span><span class="icon" data-if="!canvas.light">&#xf0594;</span></button>
+  <div class="canvas-actions-toggle">
+    <button class="btn sm canvas-actions-button" data-tip="Show or hide UI events" data-attr-data-state="canvas.open ? 'on' : ''" data-event-click="emit('canvas.actions')"><span class="icon">&#xea86;</span><span class="label">Actions</span></button>
+    <number-flow class="number-flow count" data-attr-value="canvas.total"></number-flow>
+  </div>
+</div>
+<div class="spacer"></div>
+<button class="btn menu-btn" data-if="scene.zoomShown" popovertarget="scene-zoom" aria-haspopup="menu" data-tip="View Zoom" data-attr-data-kbd="scene.zoomKbd"><span class="label">{{ scene.zoom }}</span></button>
+<use ui="Menu" id="scene-zoom">
+  <use ui="MenuGroup">View Zoom</use>
+  <use ui="MenuItem" data-for="zoom, i : scene.zooms" data-alias-item="zoom" data-event-click="emit('scene.zoom', i)"></use>
+</use>
+<div class="snap-controls" data-if="scene.mode == 0">
+  <button class="btn icon-only" data-attr-data-state="commands.toggleSnap.checked ? 'on' : ''" data-attr-data-tip="commands.toggleSnap.label" data-attr-data-kbd="commands.toggleSnap.shortcut" data-event-click="emit('studio.toggleSnap')"><span class="icon">{{ commands.toggleSnap.icon }}</span></button>
+  <button class="btn menu-btn" popovertarget="scene-increment" aria-haspopup="menu" data-tip="Grid Increment"><span class="label">{{ scene.increment }}</span></button>
+  <use ui="Menu" id="scene-increment">
+    <use ui="MenuGroup">Grid Increment</use>
+    <use ui="MenuItem" data-for="step, i : scene.increments" data-alias-item="step" data-event-click="emit('scene.increment', i)"></use>
+  </use>
+</div>
+<button class="btn icon-only" data-if="scene.mode == 0" data-attr-data-tip="commands.frame.label" data-attr-data-kbd="commands.frame.shortcut" data-attrif-data-disabled="!commands.frame.enabled" data-event-click="emit('studio.frame')"><span class="icon">{{ commands.frame.icon }}</span></button>

@@ -1,0 +1,110 @@
+<div class="gallery">
+  <div class="menu-group">Menu</div>
+  <div class="sample">
+    <button class="btn" popovertarget="gallery-menu" aria-haspopup="menu"><span class="label">Edit</span></button>
+    <use ui="Menu" id="gallery-menu">
+      <use ui="MenuCommand" data-alias-command="commands.undo"/>
+      <use ui="MenuCommand" data-alias-command="commands.redo"/>
+      <use ui="MenuSeparator"/>
+      <use ui="MenuCheck" data-checked="save.galleryChecked">Snap to grid</use>
+      <use ui="MenuSeparator"/>
+      <use ui="Submenu" data-alias-item="choices.panels">
+        <use ui="MenuItem" data-for="panel : choices.panels.others" data-alias-item="panel"/>
+      </use>
+    </use>
+  </div>
+  <div class="menu-group">EnumField</div>
+  <div class="sample"><use ui="EnumField" data-alias-table="choices.fields.GameBody.type" data-alias-value="save.galleryBody" data-event-change="save.galleryBody = ev.value * 1"/></div>
+  <div class="menu-group">AssetField</div>
+  <div class="sample"><use ui="AssetField" data-alias-table="choices.assets.prototype" data-alias-value="save.galleryAsset" data-event-click="emit('palette.pick', 'prototype', save.galleryAsset, 'None')" data-event-change="save.galleryAsset = ev.value"/></div>
+  <div class="menu-group">MenuOption</div>
+  <use ui="MenuOption" value="first">First</use>
+  <use ui="MenuOption" value="second">Second</use>
+  <div class="menu-sep"/>
+  <div class="menu-group">MenuCheck</div>
+  <use ui="MenuCheck">Check</use>
+  <div class="menu-sep"/>
+  <div class="menu-group">Switch</div>
+  <div class="sample"><use ui="Switch"/><use ui="Switch" checked=""/></div>
+  <div class="menu-group">Segmented</div>
+  <div class="sample">
+    <use ui="Segmented">
+      <label><input type="radio" name="size" value="small"/><span class="face">Small</span></label>
+      <label><input type="radio" name="size" value="medium" checked=""/><span class="face">Medium</span></label>
+      <label><input type="radio" name="size" value="large"/><span class="face">Large</span></label>
+    </use>
+  </div>
+  <div class="menu-group">Select</div>
+  <div class="sample">
+    <use ui="Select">
+      <select>
+        <option value="low">Low</option>
+        <option value="high" selected="">High</option>
+        <option value="ultra">Ultra</option>
+      </select>
+    </use>
+  </div>
+  <div class="menu-group">Slider</div>
+  <div class="sample"><use ui="Slider" min="0" max="10" step="1" value="4"/></div>
+  <div class="menu-group">NumberField</div>
+  <div class="sample">
+    <use ui="NumberField" step="0.5" precision="2" unit="m" data-attr-value="save.galleryNumber == '' ? 12.5 : save.galleryNumber" data-event-change="save.galleryNumber = ev.value"/>
+    <use ui="NumberField" min="0" max="1" step="0.05" precision="2" slider="" data-attr-value="save.galleryRatio == '' ? 0.4 : save.galleryRatio" data-event-input="save.galleryRatio = ev.value"/>
+  </div>
+  <div class="menu-group">ColorField</div>
+  <div class="sample">
+    <use ui="ColorField" data-attr-value="save.galleryColor == '' ? '#3b82f6ff' : save.galleryColor" data-event-input="save.galleryColor = ev.value"/>
+  </div>
+  <div class="menu-group">Checkbox</div>
+  <div class="sample"><use ui="Checkbox" data-checked="save.galleryChecked">Snap to grid</use></div>
+  <div class="menu-group">Splitter</div>
+  <div class="sample split-sample">
+    <span class="split-pane" data-style-width="(save.gallerySplit == '' ? 90 : save.gallerySplit) + 'dp'"/>
+    <use ui="Splitter" axis="x" min="40" max="180" data-attr-value="save.gallerySplit == '' ? 90 : save.gallerySplit" data-event-input="save.gallerySplit = ev.value"/>
+    <span class="split-pane rest"/>
+  </div>
+  <div class="menu-group">SidebarNav</div>
+  <use ui="SidebarNav">
+    <label class="nav-item"><input type="radio" name="page" value="audio" checked=""/><span class="nav-face"><span class="icon">&#xf03d8;</span><span class="label">Display</span></span></label>
+    <label class="nav-item"><input type="radio" name="page" value="video"/><span class="nav-face"><span class="icon">&#xf097b;</span><span class="label">Controls</span><span class="dot"/></span></label>
+    <label class="nav-item"><input type="radio" name="page" value="game"/><span class="nav-face"><span class="icon">&#xf0297;</span><span class="label">Gameplay</span><span class="count">3</span></span></label>
+  </use>
+  <div class="menu-group">NumberFlow</div>
+  <div class="sample">
+    <use ui="Slider" min="0" max="2000" step="125" data-value="save.galleryCount"/>
+    <number-flow data-attr-value="save.galleryCount == '' ? 0 : save.galleryCount" grouping=""/>
+  </div>
+  <div class="menu-group">MorphText</div>
+  <div class="sample">
+    <use ui="Segmented">
+      <label><input type="radio" data-checked="save.galleryWord" value="Play"/><span class="face">Play</span></label>
+      <label><input type="radio" data-checked="save.galleryWord" value="Pause"/><span class="face">Pause</span></label>
+      <label><input type="radio" data-checked="save.galleryWord" value="Stop"/><span class="face">Stop</span></label>
+    </use>
+    <morph-text>{{ save.galleryWord == '' ? 'Play' : save.galleryWord }}</morph-text>
+  </div>
+  <div class="menu-group">VirtualList</div>
+  <div class="sample list-sample">
+    <use ui="VirtualList" id="list">
+      <div class="list-row" data-for="row, i : self.rows">Row {{ self.first + i + 1 }} of {{ self.total }}</div>
+    </use>
+  </div>
+  <div class="menu-group">List</div>
+  <div class="sample assets-sample">
+    <use ui="List" id="gallery-assets" data-event-scroll="emit('gallery.scroll')">
+      <use ui="TreeRow" data-for="row : gallery.assets" data-alias-item="row" data-attr-data-drag="row.drag" data-attr-data-drag-payload="row.name" data-attr-data-drag-icon="row.icon"></use>
+    </use>
+  </div>
+  <div class="menu-group">TreeRow drop zones</div>
+  <div class="bin" data-drop="prototype behavior material shape field system ui" data-drop-hint="Collect" data-event-drop="emit('gallery.drop', ev.type, ev.payload, -1, ev.zone)">
+    <div class="bin-empty" data-if="gallery.bin.size == 0">Drop assets here</div>
+    <use ui="TreeRow" data-for="row, i : gallery.bin" data-alias-item="row" data-drop="prototype behavior material shape field system ui" data-drop-zones="list" data-drop-hint="Insert" data-event-drop="emit('gallery.drop', ev.type, ev.payload, i, ev.zone)"></use>
+  </div>
+  <div class="menu-group">Tile</div>
+  <div class="sample tiles">
+    <use ui="Tile" class="tile-sample" data-for="row : gallery.bin" data-alias-tile="row" data-attr-data-drag="row.drag" data-attr-data-drag-payload="row.name" data-attr-data-drag-icon="row.icon"></use>
+    <span class="bin-empty" data-if="gallery.bin.size == 0">Collected assets show here</span>
+  </div>
+  <div class="menu-group">Presence</div>
+  <div class="sample"><use ui="Switch" data-checked="save.galleryShown"/><span class="shown" data-if="save.galleryShown" presence>Shown</span></div>
+</div>

@@ -1,0 +1,17 @@
+<div class="perf">
+  <span class="perf-heading">Frame</span>
+  <line-chart class="perf-chart" series="perf:frame" reference="16.7" unit="ms" precision="1" fill="" data-attrif-live="performance.live"></line-chart>
+  <span class="perf-heading">Simulation</span>
+  <line-chart class="perf-chart" data-if="performance.running" series="perf:behavior perf:physics perf:systems perf:rendering" unit="ms" precision="2" data-attrif-live="performance.live"></line-chart>
+  <div class="perf-legend" data-if="performance.running">
+    <div class="perf-key"><div class="perf-dot behavior"></div><span>Behavior</span></div>
+    <div class="perf-key"><div class="perf-dot physics"></div><span>Physics</span></div>
+    <div class="perf-key"><div class="perf-dot systems"></div><span>Systems</span></div>
+    <div class="perf-key"><div class="perf-dot rendering"></div><span>Rendering</span></div>
+  </div>
+  <span class="perf-idle" data-if="!performance.running">Not running</span>
+  <span class="perf-heading" data-if="performance.lighting">Scene GPU and lighting</span>
+  <span class="perf-status" data-if="performance.lighting">{{ performance.lightingText }}</span>
+  <line-chart class="perf-chart" data-if="performance.lighting &amp;&amp; performance.gpu" series="perf:gpu" unit="ms" precision="2" data-attr-reference="performance.budget" data-attrif-live="performance.live"></line-chart>
+  <span class="perf-status" data-if="performance.lighting &amp;&amp; !performance.gpu">This GPU reports no timestamps</span>
+</div>

@@ -1,0 +1,26 @@
+<div class="hierarchy-panel">
+  <use ui="List" id="hierarchy-list" data-drop="ui" data-event-drop="emit('hierarchy.drop', '', ev.payload, ev.zone)" data-event-scroll="emit('hierarchy.scroll')">
+    <use ui="TreeRow" class="hierarchy-root" data-if="view.root" data-alias-item="hierarchy.root" data-alias-selection="hierarchy_ui.selected" data-alias-active="hierarchy_ui.selected" data-drop="ui" data-attr-data-element="hierarchy.root.key" data-attr-data-carry-zone="hierarchy_carry.target == hierarchy.root.key ? hierarchy_carry.place : ''" data-event-drop="emit('hierarchy.drop', hierarchy.root.key, ev.payload, ev.zone); stop()" data-event-click="emit('hierarchy.click', hierarchy.root.key)" data-event-contextmenu="emit('hierarchy.menu', hierarchy.root.key)"></use>
+    <div class="hierarchy-row" data-for="row : view.rows">
+      <use ui="TreeRow" data-alias-item="row" data-alias-selection="hierarchy_ui.selected" data-alias-active="hierarchy_ui.selected" data-drag="ui" data-drop="ui" data-attr-data-drop-zones="row.zones" data-attr-data-element="row.key" data-attr-data-drag-payload="row.payload" data-attr-data-drag-label="row.label" data-attr-data-drag-icon="row.icon" data-attr-data-carry-zone="hierarchy_carry.target == row.key ? hierarchy_carry.place : ''" data-attrif-data-dragging="hierarchy_carry.element == row.key" data-event-drop="emit('hierarchy.drop', row.key, ev.payload, ev.zone); stop()" data-event-click="emit('hierarchy.click', row.key)" data-event-dblclick="emit('hierarchy.open', row.key)" data-event-contextmenu="emit('hierarchy.menu', row.key)"><span class="icon bound" data-if="row.bound" data-tip="Bound to data">&#xf0339;</span></use>
+    </div>
+  </use>
+  <div class="outliner-empty" data-if="hierarchy.empty != ''">{{ hierarchy.empty }}</div>
+  <use ui="Menu" id="hierarchy-menu">
+    <div class="menu-group">{{ hierarchy_ui.menu.label }}</div>
+    <use ui="Submenu" data-alias-item="hierarchy_ui.menu.add">
+      <use ui="MenuItem" data-for="element : library.elements" data-alias-item="element" data-event-click="emit('library.add', element.markup, element.label)"/>
+      <use ui="MenuSeparator" data-if="!library.none"/>
+      <use ui="Submenu" data-if="!library.none" data-alias-item="library.widget">
+        <use ui="MenuItem" data-for="widget : library.widgets" data-alias-item="widget" data-event-click="emit('library.add', widget.markup, widget.label)"/>
+      </use>
+    </use>
+    <use ui="MenuItem" data-if="hierarchy_ui.menu.element" data-alias-item="hierarchy_ui.menu.duplicate" data-event-click="emit('hierarchy.duplicate')"/>
+    <use ui="MenuItem" data-if="hierarchy_ui.menu.element" data-alias-item="hierarchy_ui.menu.wrap" data-event-click="emit('hierarchy.wrap')"/>
+    <use ui="MenuSeparator" data-if="hierarchy_ui.menu.element"/>
+    <use ui="MenuItem" data-if="hierarchy_ui.menu.element" data-alias-item="hierarchy_ui.menu.source" data-event-click="emit('hierarchy.source')"/>
+    <use ui="MenuItem" data-if="hierarchy_ui.menu.widget" data-alias-item="hierarchy_ui.menu.openWidget" data-event-click="emit('hierarchy.widget')"/>
+    <use ui="MenuSeparator" data-if="hierarchy_ui.menu.element"/>
+    <use ui="MenuItem" data-if="hierarchy_ui.menu.element" data-alias-item="hierarchy_ui.menu.delete" data-event-click="emit('hierarchy.delete')"/>
+  </use>
+</div>

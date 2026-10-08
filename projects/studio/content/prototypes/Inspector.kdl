@@ -1,0 +1,4 @@
+name "Inspector"
+components {
+    GAME.GameUi document="Inspector" hidden=#true
+}

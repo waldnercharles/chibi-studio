@@ -1,0 +1,19 @@
+<div class="command-backdrop" data-event-mousedown="emit('palette.close')"></div>
+<div class="command">
+  <choice-list virtualized class="palette-choices" data-attr-aria-setsize="palette.count" data-attr-highlight="palette_ui.highlight" data-event-highlight="emit('palette.highlight', ev.value, ev.pointer)" data-event-change="emit('palette.choose', ev.value)">
+    <div class="cmd-input"><span class="icon">&#xea6d;</span><input type="text" id="palette-search" data-attr-placeholder="palette.placeholder" data-keys="Escape:palette.close" data-event-input="emit('palette.query', ev.value)"/></div>
+    <use ui="List" id="palette-list" data-event-scroll="emit('palette.scroll')">
+      <div class="palette-row" data-for="row : palette.rows">
+        <div class="cmd-group" data-if="row.heading">{{ row.label }}</div>
+        <div class="cmd-item" role="option" data-if="!row.heading" data-attr-value="row.place" data-attr-aria-posinset="row.place" data-attrif-data-described="row.about != ''" data-attrif-data-picture="row.image != ''">
+          <span class="icon">{{ row.image == '' ? row.icon : '' }}<span class="picture" data-style-decorator="row.image == '' ? 'none' : 'image(' + row.image + ')'"></span></span>
+          <div class="text"><span class="label" data-rml="row.label"></span><span class="about">{{ row.about }}</span></div>
+          <span class="meta">{{ row.meta }}</span>
+          <span class="kbd">{{ row.shortcut }}</span>
+        </div>
+      </div>
+    </use>
+    <div class="cmd-empty" data-if="palette.count == 0">{{ palette.empty }}</div>
+  </choice-list>
+  <div class="cmd-footer"><span class="kbd-key">&#x2191;</span><span class="kbd-key">&#x2193;</span><span class="hint">Navigate</span><span class="kbd-key">&#x21b5;</span><span class="hint">Open</span><span class="spacer"></span><span class="kbd-key">esc</span><span class="hint">Close</span></div>
+</div>

@@ -1,0 +1,12 @@
+--- a/src/window.cpp
++++ b/src/window.cpp
+@@ -1058,7 +1058,8 @@
+                 digitCol = m_pBuffer->GetTheme().GetColor(ThemeColor::CursorNormal);
+             }
+ 
+-            if (m_numberRegion->rect.Width() > 0)
++            // A wrapped line numbers its first row only.
++            if (m_numberRegion->rect.Width() > 0 && !lineInfo.isSplitContinuation)
+             {
+                 // Numbers
+                 display.SetClipRect(m_numberRegion->rect);

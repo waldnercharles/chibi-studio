@@ -1,0 +1,8 @@
+name "Binding"
+components {
+    GAME.GameActionBinding action="Dash" source="Aim Stick"
+    GAME.GameDrive {
+        acceleration 5.0
+        target x=3.0 y=4.0
+    }
+}

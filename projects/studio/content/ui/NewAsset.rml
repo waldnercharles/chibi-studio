@@ -1,0 +1,7 @@
+<div class="popup menu new-asset" popover id="new-asset-name">
+  <use ui="MenuGroup" data-alias-group="asset_menus.naming"/>
+  <div class="new-asset-field"><div class="field text"><input type="text" class="part value" placeholder="Name" data-value="asset_menus.naming.name" data-keys="Enter:asset_menus.create" data-event-focus="emit('asset_menus.select')"/></div></div>
+  <div class="new-asset-error" data-if="asset_menus.naming.error != ''"><span class="icon">&#xea6c;</span><span class="label">{{ asset_menus.naming.error }}</span></div>
+  <use ui="MenuSeparator"/>
+  <use ui="MenuItem" data-alias-item="asset_menus.naming.button" data-event-click="emit('asset_menus.create')"/>
+</div>

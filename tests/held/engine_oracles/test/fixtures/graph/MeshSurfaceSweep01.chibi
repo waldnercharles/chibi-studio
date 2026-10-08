@@ -1,0 +1,10 @@
+behavior "MeshSurfaceSweep01" {
+    owner "ecs.entity";
+    state elapsed: float = 0.0;
+    on Tick as tick(DeltaSeconds: float = 0.0) {
+        &state.elapsed += cast<double>(&delta);
+        &component("GAME.GameOrientation", "radians") = cast<double>(&state.elapsed) * 0.5235987756;
+        &component("GAME.GameVisualTransform", "pitch") = 0.5235987756 * sin(cast<double>(&state.elapsed) * 0.7853981634);
+        &component("GAME.GameVisualTransform", "roll") = 0.5235987756 * sin(cast<double>(&state.elapsed) * 1.0471975512);
+    }
+}

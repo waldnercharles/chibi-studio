@@ -1,0 +1,8 @@
+<div class="setting" data-class-modified="setting.modified">
+  <div class="setting-text">
+    <div class="setting-label"><span class="setting-dot"/>{{ setting.label }}</div>
+    <div class="setting-description">{{ setting.description }}</div>
+  </div>
+  <div class="setting-control"><slot/></div>
+  <span class="btn icon-only sm setting-reset" data-event-click="setting.value = setting.default"><span class="icon">&#xeae2;</span></span>
+</div>

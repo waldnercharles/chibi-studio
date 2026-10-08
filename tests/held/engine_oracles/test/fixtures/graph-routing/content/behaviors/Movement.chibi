@@ -1,0 +1,15 @@
+behavior "Movement" {
+    owner "ecs.entity";
+    on Tick as tick(DeltaSeconds: float = 0.0) {
+        &component("GAME.GameOrientation", "radians") = atan2(&component("GAME.GameAim", "direction").y, &component("GAME.GameAim", "direction").x);
+        if (&component("GAME.GameActionBinding", "pressed")) {
+            &component("GAME.GameDrive", "target") = direction(cast<double>(&component("GAME.GameOrientation", "radians"))) * cast<double>(&component("GAME.GameMovement", "speed")) * 2;
+        } else {
+            if (length(&component("GAME.GameInput", "move")) > 0.1) {
+                &component("GAME.GameDrive", "target") = &component("GAME.GameInput", "move") * cast<double>(&component("GAME.GameMovement", "speed"));
+            } else {
+                &component("GAME.GameDrive", "target") = vec2(0, 0);
+            }
+        }
+    }
+}

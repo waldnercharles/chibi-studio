@@ -1,0 +1,4 @@
+name "Properties"
+components {
+    GAME.GameUi document="Properties" hidden=#true
+}

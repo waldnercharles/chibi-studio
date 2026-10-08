@@ -1,0 +1,6 @@
+behavior "Dismiss" {
+    owner "ecs.entity";
+    on Close as close() {
+        set_game_ui_hidden(Value: true, Target: 0);
+    }
+}

@@ -1,0 +1,129 @@
+/* Code tokens (Shiki classes). */
+.tok-number { color: var(--tok-number); }
+.tok-string { color: var(--tok-string); }
+.tok-keyword { color: var(--tok-keyword); }
+.tok-name { color: var(--tok-name); }
+.tok-path { color: var(--tok-path); }
+.tok-punct { color: var(--tok-punct); }
+.tok-muted { color: var(--faint-foreground); }
+.tok-error { color: var(--destructive); }
+.tok-warning { color: var(--warning); }
+
+/* Refined ui tokens (ui_source_kind_class): a span's second class overrides
+   its first, so these follow the base classes. After VS Code's Light+ and
+   Dark+. */
+body {
+    --tok-tag: #800000; --tok-attribute: #e50000; --tok-selector: #800000;
+    --tok-property: #e50000; --tok-variable: #001080; --tok-binding: #795e26;
+}
+.dark {
+    --tok-tag: #569cd6; --tok-attribute: #9cdcfe; --tok-selector: #d7ba7d;
+    --tok-property: #9cdcfe; --tok-variable: #4fc1ff; --tok-binding: #dcdcaa;
+}
+.tok-tag { color: var(--tok-tag); }
+.tok-attribute { color: var(--tok-attribute); }
+.tok-selector { color: var(--tok-selector); }
+.tok-property { color: var(--tok-property); }
+.tok-variable { color: var(--tok-variable); }
+.tok-binding { color: var(--tok-binding); }
+
+/* The code editor (kit_code). Zep draws it; each hidden swatch hands one of
+   its roles the color set here, and the tok-* classes above color the tokens. */
+kit-code {
+    display: block; position: relative; overflow: hidden; cursor: text;
+    tab-index: auto; drag: drag; font-family: var(--studio-code-font-family, jetbrains mono);
+}
+kit-code > span { visibility: hidden; position: absolute; width: 0dp; height: 0dp; }
+kit-code .zep-text { color: var(--foreground); }
+kit-code .zep-background { color: var(--canvas); }
+kit-code .zep-gutter { color: var(--canvas); }
+kit-code .zep-line-number { color: var(--faint-foreground); }
+kit-code .zep-line-number-active { color: var(--muted-foreground); }
+kit-code .zep-cursor { color: var(--foreground); }
+kit-code .zep-cursor-insert { color: var(--foreground); }
+kit-code .zep-selection { color: var(--primary-wash); }
+kit-code .zep-cursor-line { color: var(--item-selected); }
+/* Zep also marks the glyph under the pointer in the status color. */
+kit-code .zep-status { color: transparent; }
+kit-code .zep-mode { color: var(--primary); }
+kit-code .zep-whitespace { color: var(--line); }
+kit-code .zep-scrollbar-track { color: transparent; }
+kit-code .zep-scrollbar { color: var(--scrollbar); }
+kit-code .zep-scrollbar-hover { color: var(--scrollbar-hover); }
+kit-code .zep-tip-border { color: var(--tooltip-edge); }
+kit-code .zep-flash { color: var(--highlight); }
+kit-code .zep-info { color: var(--primary); }
+
+/* Completion surfaces share compact rows and keep names, types and matches distinct. */
+body { --autocomplete-row-h: var(--studio-mono-line-20, 20dp); }
+.code-completions {
+    position: absolute; pointer-events: auto; background-color: var(--popover); border: 1dp var(--popover-edge);
+    width: 420dp; max-width: 420dp; display: block; z-index: 20;
+    overflow-x: hidden; overflow-y: auto;
+}
+.code-completions, .popup.autocomplete {
+    padding: 3dp; border-radius: 4dp;
+    border-color: color-mix(in srgb, var(--foreground) 16%, var(--popover));
+    font-family: var(--studio-code-font-family, jetbrains mono);
+    font-size: var(--studio-mono-font-12, 12dp);
+}
+.code-completion, .popup.autocomplete .menu-item {
+    display: flex; align-items: center; height: var(--autocomplete-row-h);
+    gap: 6dp; padding: 0dp 5dp; border-radius: 2dp;
+    white-space: nowrap; color: var(--foreground);
+}
+.code-completion .detail, .popup.autocomplete .detail {
+    margin-left: auto; padding-left: 8dp; flex: 1 1 0dp; min-width: 0dp;
+    overflow: hidden; text-overflow: ellipsis;
+    font-family: var(--studio-code-font-family, jetbrains mono); color: var(--tok-keyword);
+}
+.popup.autocomplete .menu-group { height: var(--autocomplete-row-h); line-height: var(--autocomplete-row-h); font-family: var(--studio-standard-font-family, inter); }
+.code-completion[data-highlighted],
+.popup.autocomplete .menu-item[data-highlighted] { background-color: var(--accent); color: var(--foreground); }
+.popup.autocomplete .menu-item .lead,
+.popup.autocomplete .menu-item[data-highlighted] .lead { color: var(--primary-text); }
+.code-completion[data-highlighted] .detail,
+.popup.autocomplete .menu-item[data-highlighted] .detail { color: var(--tok-keyword); }
+.code-completion .lead { color: var(--primary-text); flex: 0 0 auto; }
+.code-completion .label, .popup.autocomplete .label {
+    display: block; flex: 0 0 auto; min-width: 0dp; max-width: 260dp;
+    overflow: hidden; text-overflow: ellipsis;
+}
+.code-completion .detail[data-empty], .popup.autocomplete .detail[data-empty] { display: none; }
+.popup.autocomplete { transition: none; overflow-y: auto; }
+.code-completion b, .code-completion[data-highlighted] b,
+.popup.autocomplete .label b,
+.popup.autocomplete .menu-item[data-highlighted] .label b { color: var(--primary-text); }
+/* Graph field completion keeps wheel and keyboard scrolling without scrollbar chrome. */
+.popup.autocomplete scrollbarvertical { width: 0dp; margin-left: 0dp; visibility: hidden; }
+.popup.autocomplete scrollbarhorizontal { height: 0dp; visibility: hidden; }
+.field.autocomplete[data-open] .value { font-family: var(--studio-code-font-family, jetbrains mono); }
+
+/* The hover card: the diagnostics of the line under the resting pointer, then
+   what the pointer rests on. It lives in the overlay layer, so it never clips
+   at the editor's edge, and fades as the kit's tooltips do. */
+.code-hover {
+    position: absolute; pointer-events: none; display: block; z-index: 30; max-width: 520dp;
+    background-color: var(--popover); border: 1dp var(--popover-edge); border-radius: var(--r-lg);
+    padding: 6dp 8dp; color: var(--foreground); font-size: var(--studio-mono-font-12, 12dp); line-height: var(--studio-mono-line-17, 17dp);
+}
+.code-hover { opacity: 1; transition: opacity 0.1s cubic-out; }
+.code-hover[data-starting-style], .code-hover[data-ending-style] { opacity: 0; }
+.code-hover-problem { display: flex; align-items: flex-start; gap: 6dp; }
+.code-hover-problem + .code-hover-problem { margin-top: 4dp; }
+.code-hover-problem .icon { flex: 0 0 auto; line-height: var(--studio-mono-line-17, 17dp); color: var(--primary); }
+.code-hover-problem[data-severity="error"] .icon { color: var(--destructive); }
+.code-hover-problem[data-severity="warning"] .icon { color: var(--warning); }
+.code-hover-problem .message { flex: 1 1 auto; white-space: normal; }
+.code-hover-title { display: block; font-family: var(--studio-code-font-family, jetbrains mono); white-space: nowrap; }
+.code-hover-problem + .code-hover-title { margin-top: 6dp; padding-top: 6dp; border-top: 1dp var(--line); }
+.code-hover-line { display: block; font-family: var(--studio-code-font-family, jetbrains mono); font-size: var(--studio-mono-font-11, 11dp); color: var(--muted-foreground); white-space: nowrap; }
+
+/* The Text Editor's header: Vim's mode, and the count of problems, which
+   steps to the next. */
+.code-mode {
+    flex: 0 0 auto; margin-right: 4dp; padding: 0dp 5dp; border: 1dp var(--line); border-radius: var(--r);
+    font-family: var(--studio-code-font-family, jetbrains mono); font-size: var(--studio-mono-font-10, 10dp); line-height: var(--studio-mono-line-16, 16dp); color: var(--muted-foreground);
+}
+.code-problems .icon { color: var(--warning); }
+.code-problems.errors .icon { color: var(--destructive); }

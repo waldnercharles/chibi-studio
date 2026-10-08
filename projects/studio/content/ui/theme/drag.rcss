@@ -1,0 +1,23 @@
+/* Drag and drop (dnd-kit): the overlay follows the pointer; targets light up. */
+.drag-overlay {
+    position: absolute; display: flex; align-items: center; gap: 6dp; height: var(--studio-height-24, 24dp); padding: 0dp 8dp;
+    background-color: var(--popover); border: 1dp var(--popover-edge); border-radius: var(--r); color: var(--foreground);
+    pointer-events: none; z-index: 45; white-space: nowrap; opacity: 0.92;
+    transition: opacity 0.12s cubic-out;
+}
+.drag-overlay[data-starting-style], .drag-overlay[data-ending-style] { opacity: 0; }
+.drag-overlay .text { display: flex; flex-direction: column; }
+.drag-overlay .label { display: block; line-height: var(--studio-line-16, 16dp); }
+/* What a drop does where the pointer is: a second line. */
+.drag-overlay .hint { display: none; font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-14, 14dp); color: var(--muted-foreground); }
+.drag-overlay[data-hint] { height: auto; padding: 4dp 8dp; }
+.drag-overlay[data-hint] .hint { display: block; }
+.drag-overlay[data-over] { border-color: var(--primary); }
+[data-dragging] { opacity: 0.5; }
+/* Fields and rows that take the dragged asset (studio_drop.c), then the one
+   under the pointer. */
+.field.picker[data-drop-accept], .tree-row[data-drop-accept] { border-color: var(--primary-edge); }
+[data-drop-over] { background-color: var(--primary-soft); }
+.tree-row[data-drop-over] { border-color: var(--primary); }
+.field.picker[data-drop-over] { border-color: var(--primary); background-color: var(--primary-soft); }
+.field.select.picker[data-drop-preview] .value { color: var(--primary); }

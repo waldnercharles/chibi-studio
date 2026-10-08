@@ -1,0 +1,6 @@
+behavior "CutMaterial" {
+    owner "ecs.entity";
+    on Tick as tick(DeltaSeconds: float = 0.0) {
+        damage_material(Entity: self, Point: convert<"game_transform_to_cf">(get_game_transform()), Radius: 24.0, Energy: 1.0, Cause: 0, Source: 0);
+    }
+}

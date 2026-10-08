@@ -1,0 +1,16 @@
+<div class="assets" data-attrif-data-grid="assets.grid">
+  <use ui="List" id="assets-list" data-event-scroll="emit('assets.scroll')" data-style---tile-width="assets.tileWidth" data-style---tile-height="assets.tileHeight">
+    <use ui="TreeRow" data-for="row : assets.rows" data-if="row.shown" data-alias-item="row" data-style-top="row.top" data-alias-selection="asset_view.selected" data-attr-data-asset="row.key" data-attrif-data-unused="row.unused" data-attrif-data-unresolved="row.unresolved" data-attr-data-drag="row.drag" data-attr-data-drag-payload="row.label" data-attr-data-drag-icon="row.icon" data-event-click="emit('assets.click', row.key, row.kind)" data-event-dblclick="emit('assets.open', row.key)" data-event-contextmenu="emit('assets.menu', row.key)"></use>
+    <div class="assets-line" data-for="line : assets.lines" data-if="line.shown" data-style-top="line.top">
+      <use ui="Tile" data-for="cell : line.tiles" data-if="cell.shown" data-alias-tile="cell" data-alias-selection="asset_view.selected" data-attr-data-asset="cell.key" data-attr-data-tip="cell.label" data-attr-data-tip-about="cell.about" data-attr-data-tip-image="asset_view.preview.id == cell.key ? asset_view.preview.image : cell.image" data-attr-data-drag="cell.drag" data-attr-data-drag-payload="cell.label" data-attr-data-drag-icon="cell.icon" data-event-click="emit('assets.click', cell.key, -1)" data-event-dblclick="emit('assets.open', cell.key)" data-event-contextmenu="emit('assets.menu', cell.key)"></use>
+    </div>
+  </use>
+  <div class="output-empty" data-if="assets.empty != ''">{{ assets.empty }}</div>
+  <use ui="Menu" id="asset-menu">
+    <use ui="MenuGroup" data-alias-group="asset_menus.row"/>
+    <div data-for="entry : asset_menus.row.items">
+      <use ui="MenuSeparator" data-if="entry.separator"/>
+      <use ui="MenuItem" data-alias-item="entry" data-event-click="emit('assets.' + entry.action, asset_menus.row.key)"/>
+    </div>
+  </use>
+</div>

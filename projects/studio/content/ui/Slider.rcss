@@ -1,0 +1,20 @@
+/* Base UI Slider over RmlUi's range input (shadcn's anatomy): a track, the
+   range filled up to the value, and a thumb. Left and Right step it; bind it
+   as an input: data-value="save.volume" min="0" max="1" step="0.1". Keep
+   min and max fixed: a range input clamps its value when they change. */
+body { display: flex; align-items: center; }
+.slider { display: block; width: 140dp; height: 16dp; nav: auto; cursor: pointer; }
+.slider slidertrack {
+  margin-top: 6dp; height: 4dp; border-radius: 2dp;
+  background-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+/* The range sits on the track: its height and offset follow the track's. */
+.slider sliderprogress { border-radius: 2dp; background-color: var(--primary); }
+.slider sliderbar {
+  width: 14dp; height: 14dp; margin-top: 1dp; margin-left: -7dp; margin-right: -7dp;
+  border-radius: 7dp; background-color: #ffffff; border: 1dp var(--primary);
+  transition: border-color 0.11s cubic-out;
+}
+.slider sliderbar:hover, .slider sliderbar:active { border-color: var(--primary-hover); }
+.slider:focus-visible sliderbar { border: 2dp var(--ring); }
+.slider sliderarrowdec, .slider sliderarrowinc { width: 0dp; height: 0dp; }

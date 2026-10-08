@@ -1,0 +1,2 @@
+<div class="dialog-backdrop" data-event-click="emit('Close')"/>
+<div class="dialog-panel"><slot/></div>

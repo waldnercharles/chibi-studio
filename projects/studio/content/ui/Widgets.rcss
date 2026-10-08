@@ -1,0 +1,24 @@
+.gallery { display: block; width: 240dp; }
+.sample { display: flex; align-items: center; gap: 8dp; padding: 2dp 6dp 8dp; color: var(--foreground); }
+// Presence: in from its starting style, out through its ending style.
+.shown {
+  transition: opacity 0.14s cubic-out;
+  &[data-starting-style], &[data-ending-style] { opacity: 0; }
+}
+// A splitter between two panes it resizes.
+.split-sample { height: 40dp; gap: 0dp; }
+.split-pane { display: block; height: 100%; border-radius: 4dp; background-color: var(--secondary); }
+.split-pane.rest { flex: 1 1 0dp; }
+// Ten thousand rows, of which only those in view exist (WidgetGallery).
+.list-sample { display: block; height: 160dp; }
+.list-row { height: var(--studio-height-24, 24dp); line-height: var(--studio-line-24, 24dp); padding: 0dp 6dp; color: var(--foreground); }
+// The project's assets as a List of TreeRows a C source windows, dragged
+// as Assets drags them; Collected takes drops before or after its rows, and
+// shows them as Tiles too (studio_gallery.c).
+.assets-sample { display: block; height: 160dp; padding: 0dp 2dp 8dp; }
+.bin { display: block; min-height: 40dp; margin: 0dp 6dp 8dp; padding: 2dp; border: 1dp var(--edge); border-radius: var(--r); }
+.bin[data-drop-accept] { border-color: var(--primary-edge); }
+.bin[data-drop-over] { border-color: var(--primary); }
+.bin-empty { display: block; padding: 8dp 6dp; color: var(--muted-foreground); text-align: center; }
+.tiles { flex-wrap: wrap; align-items: flex-start; }
+.tile-sample { width: 72dp; height: 90dp; }

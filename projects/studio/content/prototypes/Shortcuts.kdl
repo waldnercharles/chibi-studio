@@ -1,0 +1,5 @@
+name "Shortcuts"
+components {
+    GAME.GameUi document="Shortcuts" hidden=#true
+}
+(array)behaviors "Dismiss"

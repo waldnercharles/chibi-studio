@@ -1,0 +1,4 @@
+name "HierarchyHeader"
+components {
+    GAME.GameUi document="HierarchyHeader" hidden=#true
+}

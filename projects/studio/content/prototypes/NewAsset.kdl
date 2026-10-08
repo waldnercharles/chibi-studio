@@ -1,0 +1,4 @@
+name "NewAsset"
+components {
+    GAME.GameUi document="NewAsset" hidden=#true
+}

@@ -1,0 +1,13 @@
+version 3
+name "RowDropped"
+domain "event"
+id_counter 4
+description "A drag of Type carrying Payload was dropped on the row Key names."
+(array)variables {
+    - id=1 name="Key" type="const char *" category="Payload"
+    - id=2 name="Type" type="const char *" category="Payload"
+    - id=3 name="Payload" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

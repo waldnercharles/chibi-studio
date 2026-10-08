@@ -1,0 +1,27 @@
+/* The Studio scene's page, and so the editor's theme: shadcn/ui's tokens,
+   the editor's roles derived from them, and the control styles every Studio
+   document shares, in import order. Ported from
+   docs/prototypes/studio/kit.css; differences from the web source: dp units,
+   seconds for durations, named tweens, borders without a style keyword, and
+   no outline. Documents size and paint their own body. */
+@import "theme/base.rcss";
+@import "theme/tokens.rcss";
+@import "theme/roles.rcss";
+@import "theme/presets.rcss";
+@import "theme/button.rcss";
+@import "theme/field.rcss";
+@import "theme/panel.rcss";
+@import "theme/popup.rcss";
+@import "theme/command.rcss";
+@import "theme/tree.rcss";
+@import "theme/toast.rcss";
+@import "theme/motion.rcss";
+@import "theme/list.rcss";
+@import "theme/code.rcss";
+@import "theme/drag.rcss";
+@import "theme/chart.rcss";
+@import "theme/inspect.rcss";
+@import "theme/workspace.rcss";
+@import "theme/assets.rcss";
+@import "Properties.rcss";
+@import "theme/graph.rcss";
