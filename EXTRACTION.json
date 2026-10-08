@@ -24,7 +24,7 @@
     "web/web_isolation.js"
   ],
   "consumer_owned_sha256": {
-    "CMakeLists.txt": "9488b15ac4bebe701362aa9f8ae7cb69112a793aebf5321a9ff19db36adf9c1a",
+    "CMakeLists.txt": "3e6549224d170ce6211b1bee71ea4fd6aeab8626d024a2a236f063ad92836047",
     "README.md": "66e07900cf1923e1b440b6bdcf4122d4032865461beaffd5dc122566720560d9",
     "cmake/studio_sources.cmake": "23dfa85f83c5e09686796c3978dc33152eccbc43725e0b2c96276bad060053e4",
     "cmake/studio_web.cmake": "9921623e5079a0d52137ee859b0592835c02c539c4e597d78f3c7d887cd41167",
@@ -32,9 +32,9 @@
     "projects/starter/project.kdl": "3f992f48cb8fad33b17510c61c36812fe8e8b518daf8f1c863e76a32d3d1d5a7",
     "src/editor/documents/asset_code.c": "d1318ed2ee591c8a0963d2409eb0c8916baea1d9d2b8cb7857d47ee8002cd9ba",
     "src/editor/studio/studio_graph_view.c": "ad58c019dee6b310fa9bd5984c69138ea7411620d79705cfe8194222e07f0512",
-    "src/editor/studio/studio_ui.c": "7e11dd999f5c6136583fd8d4ad735abb6ed528a3a4f711460290596751922b33",
-    "src/editor/workspace/application.c": "d5801500186eb3a618c186c2fef75df413257656876038902ec22e61d7cf460f",
-    "src/editor/workspace/scene_authoring.c": "2f005000059f2fc5b3ab96b3736d903e1447568b9e2f01e1ad63230dc20093ff",
+    "src/editor/studio/studio_ui.c": "3eade738076be581c6962039b8cf96d08d3e6ffdbf743a6a6ba963a80c9d46c0",
+    "src/editor/workspace/application.c": "37a75dc12b296a97164d950a82ac383a75f0208d074a4bc2455652f80c21fae7",
+    "src/editor/workspace/scene_authoring.c": "e4fafd93d75b903212a8af4694167efb1ab8d47feef8b10ee0dcf819213a3b79",
     "src/host/main.c": "156eeb22888eed437138d67098f0ebc2ff7993202f93d54716c7ab4b350eae15",
     "src/studio_registry.c": "3d698e421481a27a1b202616c477f54d53490784bae2eb5af540c25d04e952d9",
     "src/studio_registry.h": "1564e009edc86187dc69157862038e7adbccd33f90cc7d777ccabdc17165b66b",
@@ -1859,7 +1859,7 @@
       "source_path": "src/editor/documents/scene_disk.c"
     },
     "src/editor/documents/scene_document.c": {
-      "consumer_sha256": "98dcf951fd9aa56b582ff9de36ddfe2bf0ae0ea22b64f16179bbc1d9bb2762de",
+      "consumer_sha256": "5aa1bf41071acbf7c694a5d862b8b4c3759e6e1fbaba91362deb369301f6de05",
       "current_source_sha256": "98dcf951fd9aa56b582ff9de36ddfe2bf0ae0ea22b64f16179bbc1d9bb2762de",
       "sha256": "f85160094ed7aec755eaa8f5db4dc40000de7e786cb3ad8e501822b7e76acffb",
       "source_path": "src/editor/documents/scene_document.c"
@@ -1871,7 +1871,7 @@
       "source_path": "src/editor/documents/scene_documents.c"
     },
     "src/editor/documents/scene_history.c": {
-      "consumer_sha256": "c4d1eb0517f158231bd435974e3f127a011630df89d1057fb59d1bb6a81ef523",
+      "consumer_sha256": "1046d429619c406b3450f425b2ede51182ce129fcc497649604d8ab756af8086",
       "current_source_sha256": "c4d1eb0517f158231bd435974e3f127a011630df89d1057fb59d1bb6a81ef523",
       "sha256": "c4d1eb0517f158231bd435974e3f127a011630df89d1057fb59d1bb6a81ef523",
       "source_path": "src/editor/documents/scene_history.c"
@@ -1973,7 +1973,7 @@
       "source_path": "src/editor/graph/flow_visual.h"
     },
     "src/editor/graph/input_bindings.c": {
-      "consumer_sha256": "11242ba76342d8976ae83a104cb96ab03219a81cd4ff4bc437174c023cacf74b",
+      "consumer_sha256": "ca1d6f6a78b56dbab883cec9ba38f409d774c6f778d25c32da98372832055258",
       "current_source_sha256": "11242ba76342d8976ae83a104cb96ab03219a81cd4ff4bc437174c023cacf74b",
       "sha256": "17017962e3db4b24720cf692cad42172b004064f73ac7f7328c829ba3b3431ee",
       "source_path": "src/editor/graph/input_bindings.c"
@@ -2333,7 +2333,7 @@
       "source_path": "src/editor/studio/studio_graph_properties.c"
     },
     "src/editor/studio/studio_graph_values.c": {
-      "consumer_sha256": "741fd7736678afc5b6dc17902d468a95f6e748961b91a42f8b68e5e473647f02",
+      "consumer_sha256": "8e3473b167726c37d3df398b46a8c0087118dae1c947757690089aef3d9fd3db",
       "current_source_sha256": "741fd7736678afc5b6dc17902d468a95f6e748961b91a42f8b68e5e473647f02",
       "sha256": "1346be855e518fb3d7db152181a1d95613da0eb42d2879849ced9b5b0f634c3b",
       "source_path": "src/editor/studio/studio_graph_values.c"
@@ -2519,7 +2519,7 @@
       "source_path": "src/editor/studio/studio_shell.c"
     },
     "src/editor/studio/studio_sources.c": {
-      "consumer_sha256": "3163175f127f6aec6a68be24efe77791ed9ed640daf72819e281de90b0cad483",
+      "consumer_sha256": "35b96bc8c3d720fee3879b7e97ab14d14169a65532d5dd66771b4edc5bd4d054",
       "current_source_sha256": "3163175f127f6aec6a68be24efe77791ed9ed640daf72819e281de90b0cad483",
       "sha256": "ad4f609f80a5ab1986f04d7783f422602cd37d5407ae488a1b0deae07a86fb8c",
       "source_path": "src/editor/studio/studio_sources.c"
@@ -2537,7 +2537,7 @@
       "source_path": "src/editor/studio/studio_thumbnail_graph.c"
     },
     "src/editor/studio/studio_thumbnail_kinds.c": {
-      "consumer_sha256": "57e900a68a4bcd7d664deb04d1b05cd171babf9a531f910a0344048dd0a4c4a7",
+      "consumer_sha256": "ffd4c3bba1ea1bbe60e7db9f8a1c32d395182358132a733a8faf6f50db446cc5",
       "current_source_sha256": "57e900a68a4bcd7d664deb04d1b05cd171babf9a531f910a0344048dd0a4c4a7",
       "sha256": "d492c713ea44c06137f187bc0ea31926e56cf2461014bbf2825e6a8f38dc24c7",
       "source_path": "src/editor/studio/studio_thumbnail_kinds.c"
@@ -2561,7 +2561,7 @@
           "\"editor/workspace/tree_watch.h\""
         ]
       ],
-      "consumer_sha256": "7e11dd999f5c6136583fd8d4ad735abb6ed528a3a4f711460290596751922b33",
+      "consumer_sha256": "3eade738076be581c6962039b8cf96d08d3e6ffdbf743a6a6ba963a80c9d46c0",
       "current_source_sha256": "4cc012974e9fb688f8ecaf94c80661d34e38a780341636777eda9caa59a010d9",
       "sha256": "262e7451d439607c4a6409da7aa56f473c19dec23546088992f0487ffe91a637",
       "source_path": "src/editor/studio/studio_ui.c"
@@ -2633,7 +2633,7 @@
       "source_path": "src/editor/ui/labels.h"
     },
     "src/editor/workspace/application.c": {
-      "consumer_sha256": "d5801500186eb3a618c186c2fef75df413257656876038902ec22e61d7cf460f",
+      "consumer_sha256": "37a75dc12b296a97164d950a82ac383a75f0208d074a4bc2455652f80c21fae7",
       "current_source_sha256": "e316a252094df626c49efa43ded1c5dd6b6fcf363dce59a5d6bb9dd3ebcc85cf",
       "sha256": "5e104920f3b8e7ad9f5182af5e8b5dbed048e2dd98b0b62e3f9ac664bd7be991",
       "source_path": "src/editor/workspace/application.c"
@@ -2669,7 +2669,7 @@
       "source_path": "src/editor/workspace/asset_refactor_internal.h"
     },
     "src/editor/workspace/asset_refactor_source.c": {
-      "consumer_sha256": "297574428bd85a14e28443e999b347f3083670e10d356d7b4bf51d78a1c65128",
+      "consumer_sha256": "33116ffbe29dbc15b7b07b20875f128e0fc44aa3e9f17ad3582a5dfe573315f4",
       "current_source_sha256": "297574428bd85a14e28443e999b347f3083670e10d356d7b4bf51d78a1c65128",
       "sha256": "297574428bd85a14e28443e999b347f3083670e10d356d7b4bf51d78a1c65128",
       "source_path": "src/editor/workspace/asset_refactor_source.c"
@@ -2765,7 +2765,7 @@
       "source_path": "src/editor/workspace/scenario_playback.h"
     },
     "src/editor/workspace/scene_actors.c": {
-      "consumer_sha256": "9ca880f393fd1fba61077bb6a52647105586c0ac18c6d007282a0672604e22db",
+      "consumer_sha256": "ebe6ea2d9760c593ab285d301e7320f5625b50c2f8665b4d91750664e4117c98",
       "current_source_sha256": "9ca880f393fd1fba61077bb6a52647105586c0ac18c6d007282a0672604e22db",
       "sha256": "3723b1a07058a05b99e5bfc683ecfbc4c6b1292e2b781c5cf3e37d57d1587a75",
       "source_path": "src/editor/workspace/scene_actors.c"
@@ -2777,7 +2777,7 @@
       "source_path": "src/editor/workspace/scene_asset_drop.c"
     },
     "src/editor/workspace/scene_authoring.c": {
-      "consumer_sha256": "2f005000059f2fc5b3ab96b3736d903e1447568b9e2f01e1ad63230dc20093ff",
+      "consumer_sha256": "e4fafd93d75b903212a8af4694167efb1ab8d47feef8b10ee0dcf819213a3b79",
       "current_source_sha256": "b60c6ff2f94a8a5733efdb4ec8fe811f89d0d02e8d1635b0ec68dc73588f9612",
       "sha256": "0e6389b4bfcaf9c1f64637bf80918284091122a81e90e2efa2c77e99f36c1421",
       "source_path": "src/editor/workspace/scene_authoring.c"
@@ -2789,7 +2789,7 @@
       "source_path": "src/editor/workspace/scene_authoring.h"
     },
     "src/editor/workspace/scene_checkpoint.c": {
-      "consumer_sha256": "522d8bca7bdbc2d4229fdeacb30168ef853fc55e2689ded5ecb7c123d26e9ab1",
+      "consumer_sha256": "bbe9680e77adcaa51e4a4ba15d778aaf19b1bf52eca6dd4977654f3b79b9373a",
       "current_source_sha256": "522d8bca7bdbc2d4229fdeacb30168ef853fc55e2689ded5ecb7c123d26e9ab1",
       "sha256": "0b434962bc22b22f9ade6028b2bf923afb4d150e85f282e61d2b7c313209031a",
       "source_path": "src/editor/workspace/scene_checkpoint.c"

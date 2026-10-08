@@ -5,7 +5,7 @@
 #include "authoring/source_rename.h"
 #include "editor/workspace/asset_refactor_internal.h"
 #include "editor/workspace/scene_internal.h"
-#include "runtime/component_catalog.h"
+#include "runtime/declared_components.h"
 #include "support/array.h"
 #include "support/asset_text.h"
 #include "support/xalloc.h"
@@ -145,8 +145,7 @@ static bool source_attachments(
             afree(names);
             text = valid ? game_scene_document_save(
                                document,
-                               (ecs_component_catalog){ GAME_REGISTRY_COMPONENTS,
-                                                        GAME_REGISTRY_COMPONENT_COUNT }
+                               project_components()
                            )
                          : NULL;
             game_scene_document_free(document);

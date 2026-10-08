@@ -18,7 +18,7 @@
 #include "editor/documents/component_properties.h"
 #include "editor/studio/studio_internal.h"
 #include "authoring/preview_runtime.h"
-#include "runtime/component_catalog.h"
+#include "runtime/declared_components.h"
 #include "authoring/prototype_preview.h"
 #include "support/array.h"
 #include "support/asset_text.h"
@@ -2297,8 +2297,9 @@ static void add_choices(yyjson_mut_doc *doc)
 {
     yyjson_mut_val *choices = yyjson_mut_obj_add_obj(doc, yyjson_mut_doc_get_root(doc), "choices");
     yyjson_mut_val *fields = yyjson_mut_obj_add_obj(doc, choices, "fields");
-    for (int c = 0; c < GAME_REGISTRY_COMPONENT_COUNT; c++) {
-        add_field_choices(doc, fields, GAME_REGISTRY_COMPONENTS[c]);
+    ecs_component_catalog project = project_components();
+    for (int c = 0; c < project.component_count; c++) {
+        add_field_choices(doc, fields, project.components[c]);
     }
     yyjson_mut_val *assets = yyjson_mut_obj_add_obj(doc, choices, "assets");
     for (int kind = 0; kind < REFERENCE_ASSET_KIND_COUNT; kind++) {

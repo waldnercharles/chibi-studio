@@ -4,6 +4,7 @@
 #include "editor/collab/collab.h"
 #include "editor/workspace/scene_internal.h"
 #include "runtime/component_catalog.h"
+#include "runtime/declared_components.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -807,8 +808,7 @@ char *scene_copy_selection(app_scene_authoring *scene)
     char *text = !result && acount(document->entities)
                    ? game_scene_document_save(
                          document,
-                         (ecs_component_catalog){ GAME_REGISTRY_COMPONENTS,
-                                                  GAME_REGISTRY_COMPONENT_COUNT }
+                         project_components()
                      )
                    : NULL;
     game_scene_document_free(document);

@@ -4,7 +4,7 @@
 #include "authoring/preview_source.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
-#include "runtime/component_catalog.h"
+#include "runtime/declared_components.h"
 #include "support/asset_text.h"
 
 #include <assert.h>
@@ -104,8 +104,7 @@ av_value *scene_authoring_scene_value(app_scene_authoring *scene)
     av_value *value = document
                         ? game_scene_document_to_value(
                               document,
-                              (ecs_component_catalog){ GAME_REGISTRY_COMPONENTS,
-                                                       GAME_REGISTRY_COMPONENT_COUNT }
+                              project_components()
                           )
                         : NULL;
     game_scene_document_free(document);

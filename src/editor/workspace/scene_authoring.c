@@ -28,6 +28,7 @@
 #include "render/sdf_motion.h"
 #include "runtime/behaviors/entities.h"
 #include "runtime/component_catalog.h"
+#include "runtime/declared_components.h"
 #include "support/array.h"
 #include "support/asset_json.h"
 #include "support/asset_text.h"
@@ -371,12 +372,8 @@ int save_content_file(app_scene_authoring *scene, const char *path, const char *
 
 game_prototype_registry app_component_registry(void)
 {
-    return (game_prototype_registry){
-        GAME_REGISTRY_COMPONENTS,
-        GAME_REGISTRY_COMPONENT_COUNT,
-        NULL,
-        NULL,
-    };
+    ecs_component_catalog project = project_components();
+    return (game_prototype_registry){ project.components, project.component_count };
 }
 
 int restore_retained_components(app_scene_authoring *scene, scene_actor *actor, const game_prototype *prototype);
@@ -532,8 +529,9 @@ static bool format_entity_value(const pin_value *value, uint64_t owner, char *bu
 
 const ecs_component_desc *resolve_system_component(const char *name, void *)
 {
-    for (int i = 0; i < GAME_REGISTRY_COMPONENT_COUNT; i++) {
-        const ecs_component_desc *component = GAME_REGISTRY_COMPONENTS[i];
+    ecs_component_catalog project = project_components();
+    for (int i = 0; i < project.component_count; i++) {
+        const ecs_component_desc *component = project.components[i];
         if (strcmp(component->name, name) == 0 ||
             (component->key && strcmp(component->key, name) == 0)) {
             return component;
@@ -544,8 +542,9 @@ const ecs_component_desc *resolve_system_component(const char *name, void *)
 
 const char *system_component_name(ecs_component_id id, void *)
 {
-    for (int i = 0; i < GAME_REGISTRY_COMPONENT_COUNT; i++) {
-        const ecs_component_desc *component = GAME_REGISTRY_COMPONENTS[i];
+    ecs_component_catalog project = project_components();
+    for (int i = 0; i < project.component_count; i++) {
+        const ecs_component_desc *component = project.components[i];
         if (component->id == id) {
             return component->key ? component->key : component->name;
         }
