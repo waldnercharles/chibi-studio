@@ -755,6 +755,10 @@ void *chibi_application_create(int argc, char **argv, const char *checkpoint, ch
                 snprintf(error, error_size, "--fixed-dt requires a positive number of seconds");
                 return NULL;
             }
+        } else if (strcmp(argv[i], "--checkpoint") == 0 || strcmp(argv[i], "--fps") == 0) {
+            i++;
+        } else if (argv[i][0] != '-' && !project_path) {
+            project_path = argv[i];
         }
     }
     if (screenshot_path && frames == 0) {
@@ -771,6 +775,11 @@ void *chibi_application_create(int argc, char **argv, const char *checkpoint, ch
         project_path = saved_project;
         scene_path = NULL;
     }
+    /* Without a project, open the one the working directory is inside. */
+    char *found = project_path ? NULL : chibi_project_find(".");
+    if (found) {
+        project_path = found;
+    }
     app_loop *loop = xmalloc(sizeof *loop);
     *loop = (app_loop){ .frames = frames,
                         .screenshot_path = screenshot_path,
@@ -779,6 +788,7 @@ void *chibi_application_create(int argc, char **argv, const char *checkpoint, ch
                         .fixed_dt = fixed_dt };
     bool opened = open_workspace(loop, project_path, scene_path, play, error, error_size);
     yyjson_doc_free(saved);
+    free(found);
     if (!opened) {
         free(loop);
         return NULL;
