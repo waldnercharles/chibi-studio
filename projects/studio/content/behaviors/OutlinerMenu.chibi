@@ -3,8 +3,8 @@ behavior "OutlinerMenu" {
     value editor_state = editor_state();
     value selection = selection();
     value editor_state_2 = editor_state();
-    value count_1 = (convert<"To Real">(&local.Count) == 1);
-    action set_ui_data_8 = set_ui_data(Entity: 0, Name: "menu.actor", Value: bool = (convert<"To Real">(&local.Count) > 0));
+    value count_1 = (convert<"To Real">(local.Count) == 1);
+    action set_ui_data_8 = set_ui_data(Entity: 0, Name: "menu.actor", Value: bool = (convert<"To Real">(local.Count) > 0));
     value string_2 = engine["String"](Value: "Break When Spawned");
     value string_3 = engine["String"](Value: "");
     value string_4 = engine["String"](Value: "");
@@ -26,7 +26,7 @@ behavior "OutlinerMenu" {
             await set_ui_data(Entity: 0, Name: "menu.label", Value: string = selection.Name);
             set_ui_data_8();
         } else {
-            await set_ui_data(Entity: 0, Name: "menu.label", Value: string = format_text(Format: "{} objects", Arg0: int = &local.Count));
+            await set_ui_data(Entity: 0, Name: "menu.label", Value: string = format_text(Format: "{} objects", Arg0: int = local.Count));
             set_ui_data_8();
         }
     }

@@ -4,14 +4,14 @@ behavior "OutlinerRows" {
     state Count: int = 0;
     state Collapsed: bool = false;
     state ShownOpen: bool = true;
-    action scene_objects = engine["Scene Objects"](First: convert<"To Integer">("max(First - 1, 0)"(First: int = &state.First)), Count: convert<"To Integer">("Count - 1 + step(1, First)"(Count: int = &state.Count, First: int = &state.First)));
+    action scene_objects = engine["Scene Objects"](First: convert<"To Integer">("max(First - 1, 0)"(First: int = state.First)), Count: convert<"To Integer">("Count - 1 + step(1, First)"(Count: int = state.Count, First: int = state.First)));
     value scene_info = scene_info();
-    value not = not(Value: &state.Collapsed);
-    value shown_0 = (convert<"To Real">(&local.Shown) > 0);
+    value not = not(Value: state.Collapsed);
+    value shown_0 = (convert<"To Real">(local.Shown) > 0);
     action branch_3 = engine["Branch"](Condition: shown_0);
     value text_equal = text_equal(A: scene_info.Filter, B: "");
-    value not_2 = not(Value: &state.Collapsed);
-    value open_shownopen_open_shownopen = ((rootclicked.Open && !&state.ShownOpen) || (!rootclicked.Open && &state.ShownOpen));
+    value not_2 = not(Value: state.Collapsed);
+    value open_shownopen_open_shownopen = ((rootclicked.Open && !state.ShownOpen) || (!rootclicked.Open && state.ShownOpen));
     value not_3 = not(Value: rootclicked.Open);
     value string_2 = engine["String"](Value: "");
     value integer = integer(Value: 0);
@@ -35,18 +35,18 @@ behavior "OutlinerRows" {
         scene_objects();
     }
     after scene_objects {
-        await set_ui_data(Entity: 0, Name: "rootShown", Value: bool = (cast<double>(&state.First) == 0));
-        await set_ui_data(Entity: 0, Name: "count", Value: int = &local.Shown);
+        await set_ui_data(Entity: 0, Name: "rootShown", Value: bool = (cast<double>(state.First) == 0));
+        await set_ui_data(Entity: 0, Name: "count", Value: int = local.Shown);
         await set_ui_data(Entity: 0, Name: "root.label", Value: string = scene_info.Title);
         await set_ui_data(Entity: 0, Name: "root.open", Value: bool = not);
         await set_variable<"ShownOpen">(Value: bool = not);
-        if (&state.Collapsed) {
+        if (state.Collapsed) {
             await set_ui_data(Entity: 0, Name: "rows", Value: struct<"SceneObjectRow">[] = clear(Array: struct<"SceneObjectRow">[] = scene_objects.Rows));
             await set_ui_data(Entity: 0, Name: "total", Value: int = integer_2);
             branch_3();
         } else {
             await set_ui_data(Entity: 0, Name: "rows", Value: struct<"SceneObjectRow">[] = scene_objects.Rows);
-            await set_ui_data(Entity: 0, Name: "total", Value: double = "1 + Shown"(Shown: int = &local.Shown));
+            await set_ui_data(Entity: 0, Name: "total", Value: double = "1 + Shown"(Shown: int = local.Shown));
             branch_3();
         }
     }
@@ -88,7 +88,7 @@ behavior "OutlinerRows" {
         value subtract = subtract(A: double = convert<"To Real">(entry), B: double = real);
         value real_2 = real(Value: 0.0);
         value max = max(A: double = subtract, B: double = real_2);
-        result Result: double = max;
+        return max
     }
     pure function "Count - 1 + step(1, First)"<T0: int, T1: int, T2: double>(Count: T0 = 0, First: T1 = 0) -> (Result: T2 = 0.0) {
         depth_limit 64;
@@ -97,18 +97,18 @@ behavior "OutlinerRows" {
         value real_2 = real(Value: 1.0);
         value step = step(Value: convert<"To Real">(entry.First), Edge: real_2);
         value add = add(A: double = subtract, B: double = step);
-        result Result: double = add;
+        return add
     }
     pure function "1 + Shown"<T0: int, T1: double>(Shown: T0 = 0) -> (Result: T1 = 0.0) {
         depth_limit 64;
         value real = real(Value: 1.0);
         value add = add(A: double = real, B: double = convert<"To Real">(entry));
-        result Result: double = add;
+        return add
     }
     pure function "Row + 1"<T0: int, T1: double>(Row: T0 = 0) -> (Result: T1 = 0.0) {
         depth_limit 64;
         value real = real(Value: 1.0);
         value add = add(A: double = convert<"To Real">(entry), B: double = real);
-        result Result: double = add;
+        return add
     }
 }
