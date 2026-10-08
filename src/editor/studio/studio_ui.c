@@ -372,9 +372,9 @@ studio_ui *studio_ui_new(studio *s, const char *project_root, char *error, size_
     size_t length = strlen(project_root) + sizeof "/content";
     ui->content_root = xmalloc(length);
     snprintf(ui->content_root, length, "%s/content", project_root);
-    ecs_component_catalog project = project_components();
-    ui->registry = (game_prototype_registry){ .components = project.components,
-                                              .component_count = project.component_count };
+    ecs_component_catalog components = project_components();
+    ui->registry = (game_prototype_registry){ .components = components.components,
+                                              .component_count = components.component_count };
     ui->listener = rml_listener_create(on_event, ui);
     if (!open_world(s, ui, error, size)) {
         studio_ui_free(ui);

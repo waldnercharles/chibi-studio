@@ -32,7 +32,7 @@
     "projects/starter/project.kdl": "3f992f48cb8fad33b17510c61c36812fe8e8b518daf8f1c863e76a32d3d1d5a7",
     "src/editor/documents/asset_code.c": "d1318ed2ee591c8a0963d2409eb0c8916baea1d9d2b8cb7857d47ee8002cd9ba",
     "src/editor/studio/studio_graph_view.c": "ad58c019dee6b310fa9bd5984c69138ea7411620d79705cfe8194222e07f0512",
-    "src/editor/studio/studio_ui.c": "3eade738076be581c6962039b8cf96d08d3e6ffdbf743a6a6ba963a80c9d46c0",
+    "src/editor/studio/studio_ui.c": "ffa30575fd8e6c653566ad8e1a375923f02fd7c3ee8f68fcbb42305e774fffaa",
     "src/editor/workspace/application.c": "37a75dc12b296a97164d950a82ac383a75f0208d074a4bc2455652f80c21fae7",
     "src/editor/workspace/scene_authoring.c": "e4fafd93d75b903212a8af4694167efb1ab8d47feef8b10ee0dcf819213a3b79",
     "src/host/main.c": "156eeb22888eed437138d67098f0ebc2ff7993202f93d54716c7ab4b350eae15",
@@ -2561,7 +2561,7 @@
           "\"editor/workspace/tree_watch.h\""
         ]
       ],
-      "consumer_sha256": "3eade738076be581c6962039b8cf96d08d3e6ffdbf743a6a6ba963a80c9d46c0",
+      "consumer_sha256": "ffa30575fd8e6c653566ad8e1a375923f02fd7c3ee8f68fcbb42305e774fffaa",
       "current_source_sha256": "4cc012974e9fb688f8ecaf94c80661d34e38a780341636777eda9caa59a010d9",
       "sha256": "262e7451d439607c4a6409da7aa56f473c19dec23546088992f0487ffe91a637",
       "source_path": "src/editor/studio/studio_ui.c"
