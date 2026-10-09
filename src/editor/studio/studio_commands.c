@@ -7,6 +7,7 @@
 #include "editor/collab/collab.h"
 #include "editor/studio/studio_internal.h"
 
+#include <SDL3/SDL_events.h>
 #include <string.h>
 
 typedef struct
@@ -756,6 +757,14 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                                        "instance create",
                                            .icon = KIT_ICON_ADD,
                                            .phase = SHORTCUT_EDITOR },
+    /* The window's close button, as a command: Studio asks first while edits
+       are unsaved. The browser has no Quit. */
+    [STUDIO_COMMAND_QUIT] = { .id = "quit",
+                              .label = "Quit",
+                              .chord = "Mod+Q",
+                              .context = "Global",
+                              .keywords = "exit close window",
+                              .phase = SHORTCUT_EARLY },
 };
 
 const char *studio_command_default_chord(studio_command command)
@@ -1132,6 +1141,11 @@ static bool enabled_with(studio *s, studio_command command, int argument)
             return studio_active_layout(s)->drawer_open;
         case STUDIO_COMMAND_SAVE: return studio_active_dirty(s);
         case STUDIO_COMMAND_RELOAD: return editable;
+#ifdef __EMSCRIPTEN__
+        case STUDIO_COMMAND_QUIT: return false;
+#else
+        case STUDIO_COMMAND_QUIT: return !s->hosted;
+#endif
         case STUDIO_COMMAND_UNDO:
             return editable && studio_can_replay(s, false);
         case STUDIO_COMMAND_REDO: return editable && studio_can_replay(s, true);
@@ -1280,6 +1294,9 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
             break;
         case STUDIO_COMMAND_SAVE: studio_save(s); break;
         case STUDIO_COMMAND_RELOAD: studio_reload(s); break;
+        case STUDIO_COMMAND_QUIT:
+            SDL_PushEvent(&(SDL_Event){ .type = SDL_EVENT_QUIT });
+            break;
         case STUDIO_COMMAND_UNDO: studio_history(s, false); break;
         case STUDIO_COMMAND_REDO: studio_history(s, true); break;
         case STUDIO_COMMAND_DUPLICATE: studio_duplicate(s); break;

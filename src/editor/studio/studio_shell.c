@@ -1810,6 +1810,40 @@ static void reveal_document(studio *s)
     studio_show_editor(s, target);
 }
 
+/* The window names the active document and the project, the document marked
+   while it has unsaved edits as its tab is, as VS Code's title does: "● Level
+   — Celeste — Chibi Studio". A guest's window is its host's. */
+static void window_title(studio *s)
+{
+    if (s->hosted) {
+        return;
+    }
+    app_scene_authoring *scene = s->scene;
+    const scene_document_tab *tab = scene->active_tab >= 0 &&
+                                            scene->active_tab < acount(scene->tabs)
+                                      ? &scene->tabs[scene->active_tab]
+                                      : NULL;
+    char document[128];
+    const char *label = tab ? tab->label
+                            : studio_scene_title(scene, document, sizeof document);
+    bool dirty = tab ? scene_tabs_dirty(scene, tab) : scene->scene_dirty;
+    const char *project = s->project.name;
+    char title[sizeof s->window_title];
+    snprintf(
+        title,
+        sizeof title,
+        "%s%s%s%s \xe2\x80\x94 Chibi Studio",
+        dirty ? "\xe2\x97\x8f " : "",
+        label,
+        project ? " \xe2\x80\x94 " : "",
+        project ? project : ""
+    );
+    if (strcmp(title, s->window_title)) {
+        snprintf(s->window_title, sizeof s->window_title, "%s", title);
+        cf_app_set_title(title);
+    }
+}
+
 void studio_emit(studio *s)
 {
     sync_presentation(s);
@@ -1838,4 +1872,5 @@ void studio_emit(studio *s)
     studio_component_toast(s);
     studio_keep_toast(s);
     studio_new_project_frame(s);
+    window_title(s);
 }
