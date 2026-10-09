@@ -98,6 +98,14 @@ void studio_refactor_source(studio *s, const char *path, int offset)
     r->mode = STUDIO_REFACTOR_RENAME;
     r->opening = true;
     r->source_offset = offset;
+    kit_rect c = { 0 };
+    if (kit_wants_text(s->kit, &c) && c.h > 0) { /* hang below the caret */
+        float ratio = studio_pixel_ratio(s), *box = r->anchor;
+        box[0] = c.x * ratio;
+        box[1] = c.y * ratio;
+        box[2] = (c.w > 0 ? c.w : 1) * ratio;
+        box[3] = c.h * ratio;
+    }
     snprintf(r->source_path, sizeof r->source_path, "%s", path);
     snprintf(r->title, sizeof r->title, "%s", name ? name : "");
     snprintf(r->name, sizeof r->name, "%s", name ? name : "");
