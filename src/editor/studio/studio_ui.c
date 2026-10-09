@@ -499,6 +499,13 @@ static void dispatch(studio *s, ecs_entity entity, const ui_activation *a)
     render_ui_host host = authoring_ui_events(live);
     if (!ui_activation_send(&host, entity, a, s->mac ? RML_KM_META : RML_KM_CTRL)) {
         report_error(s, a->event, "declares a payload a UI event cannot carry");
+        return;
+    }
+    const char *failure = host.failure ? host.failure(host.context) : "";
+    if (failure[0]) {
+        char message[512];
+        snprintf(message, sizeof message, "failed: %s", failure);
+        report_error(s, a->event, message);
     }
 }
 

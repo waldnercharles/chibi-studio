@@ -427,14 +427,17 @@ bool studio_scene_view_sync(studio *s, const studio_panel_sync *at)
 {
     bool scene = !s->guest, session = scene && runtime_session(s->scene);
     bool editing = scene && !session;
+    /* The scene, then the active object, as the Canvas's crumbs read. */
     char title[128], context[256];
     scene_actor *actor = selected_actor(s->scene);
+    studio_scene_title(s->scene, title, sizeof title);
     snprintf(
         context,
         sizeof context,
-        "(%s) %s",
-        studio_scene_title(s->scene, title, sizeof title),
-        actor ? actor->name : "-"
+        "%s%s%s",
+        title,
+        actor ? " \xe2\x80\xba " : "",
+        actor ? actor->name : ""
     );
     bool changed = show_cameras(s, at, editing);
     changed |= ui_data_put_bool(at->variable, "labeled", editing);
@@ -541,4 +544,27 @@ void studio_scene_tools(studio *s)
         s->status[0] = '\0';
         s->scene_status = false;
     }
+}
+
+const char *studio_scene_cursor(const studio *s)
+{
+    const app_scene_authoring *scene = s->scene;
+    if (s->guest || studio_previewed_ui(s)) {
+        return NULL;
+    }
+    /* The camera pans while playing too, with Alt held (render/viewport.c). */
+    bool pans = s->surface.down[2] &&
+                (!scene->runtime_playing || (s->mods & SDL_KMOD_ALT));
+    if (pans) {
+        return "move";
+    }
+    if (!scene_can_move(scene)) {
+        return NULL;
+    }
+    if (scene->gizmo.active != SCENE_GIZMO_NONE) {
+        return scene_gizmo_cursor(scene);
+    }
+    /* A marquee, or a paused run's object dragged, over the gizmo leaves it be. */
+    bool idle = !scene->marquee && !scene->dragging_actor;
+    return idle && s->surface.hovered ? scene_gizmo_cursor(scene) : NULL;
 }
