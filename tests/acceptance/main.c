@@ -19,9 +19,9 @@ static int frames, edits, undos, redos;
 static bool callback_ok = true;
 static const char counter_bytes[] =
     "behavior Counter {\n"
-    "    state count: int = 1;\n"
+    "    state count: int = 1\n"
     "    on Tick {\n"
-    "        count = count + 1;\n"
+    "        count = count + 1\n"
     "    }\n"
     "}\n";
 
