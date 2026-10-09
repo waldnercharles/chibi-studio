@@ -3,39 +3,19 @@ behavior "VirtualList" {
     state Overscan: int = 6
     state ShownFirst: int = -1
     state ShownCount: int = -1
-    value get_ui_scroll = get_ui_scroll(Element: "#list")
-    value rowheight_2 = get_variable<"RowHeight">()
-    value overscan = get_variable<"Overscan">()
-    value max_0_floor_top_rowheight_overscan = "max(0, floor(Top / RowHeight) - Overscan)"(get_ui_scroll."Scroll Top", rowheight_2, overscan)
-    value ceil_max_view_400_rowheight_2_overscan = "ceil(max(View, 400) / RowHeight) + 2 * Overscan"(get_ui_scroll."View Height", rowheight_2, overscan)
-    value rowheight = get_variable<"RowHeight">()
-    value shownfirst_2 = get_variable<"ShownFirst">()
-    value showncount_2 = get_variable<"ShownCount">()
     on Tick {
-        if max_0_floor_top_rowheight_overscan != convert<"To Real">(shownfirst_2) || ceil_max_view_400_rowheight_2_overscan != convert<"To Real">(showncount_2) {
-            await set_variable<"ShownFirst">(convert<"To Integer">(max_0_floor_top_rowheight_overscan))
-            await set_variable<"ShownCount">(convert<"To Integer">(ceil_max_view_400_rowheight_2_overscan))
-            await set_ui_data(Name: "first", Value: max_0_floor_top_rowheight_overscan)
-            await set_ui_data(Name: "row", Value: rowheight)
-            send_event<"ShowRows">(self, convert<"To Integer">(max_0_floor_top_rowheight_overscan), convert<"To Integer">(ceil_max_view_400_rowheight_2_overscan))
+        if "max(0, floor(Top / RowHeight) - Overscan)"(get_ui_scroll(Element: "#list")."Scroll Top", get_variable<"RowHeight">(), get_variable<"Overscan">()) != convert<"To Real">(get_variable<"ShownFirst">()) || "ceil(max(View, 400) / RowHeight) + 2 * Overscan"(get_ui_scroll(Element: "#list")."View Height", get_variable<"RowHeight">(), get_variable<"Overscan">()) != convert<"To Real">(get_variable<"ShownCount">()) {
+            await set_variable<"ShownFirst">(convert<"To Integer">("max(0, floor(Top / RowHeight) - Overscan)"(get_ui_scroll(Element: "#list")."Scroll Top", get_variable<"RowHeight">(), get_variable<"Overscan">())))
+            await set_variable<"ShownCount">(convert<"To Integer">("ceil(max(View, 400) / RowHeight) + 2 * Overscan"(get_ui_scroll(Element: "#list")."View Height", get_variable<"RowHeight">(), get_variable<"Overscan">())))
+            await set_ui_data(Name: "first", Value: "max(0, floor(Top / RowHeight) - Overscan)"(get_ui_scroll(Element: "#list")."Scroll Top", get_variable<"RowHeight">(), get_variable<"Overscan">()))
+            await set_ui_data(Name: "row", Value: get_variable<"RowHeight">())
+            send_event<"ShowRows">(self, convert<"To Integer">("max(0, floor(Top / RowHeight) - Overscan)"(get_ui_scroll(Element: "#list")."Scroll Top", get_variable<"RowHeight">(), get_variable<"Overscan">())), convert<"To Integer">("ceil(max(View, 400) / RowHeight) + 2 * Overscan"(get_ui_scroll(Element: "#list")."View Height", get_variable<"RowHeight">(), get_variable<"Overscan">())))
         }
     }
     pure function "max(0, floor(Top / RowHeight) - Overscan)"<T0: float, T1: float, T2: int, T3: double>(Top: T0 = 0.0, RowHeight: T1 = 0.0, Overscan: T2 = 0) -> (Result: T3 = 0.0) {
-        value real = real(0.0)
-        value divide = divide(entry.Top, entry.RowHeight)
-        value floor = floor(divide)
-        value subtract = subtract(floor, convert<"To Real">(entry.Overscan))
-        value max = max(real, subtract)
-        return max
+        return max(real(0.0), subtract(floor(divide(entry.Top, entry.RowHeight)), convert<"To Real">(entry.Overscan)))
     }
     pure function "ceil(max(View, 400) / RowHeight) + 2 * Overscan"<T0: float, T1: float, T2: int, T3: double>(View: T0 = 0.0, RowHeight: T1 = 0.0, Overscan: T2 = 0) -> (Result: T3 = 0.0) {
-        value real = real(400.0)
-        value max = max(entry.View, real)
-        value divide = divide(max, entry.RowHeight)
-        value ceiling = ceiling(divide)
-        value real_2 = real(2.0)
-        value multiply = multiply(real_2, convert<"To Real">(entry.Overscan))
-        value add = add(ceiling, multiply)
-        return add
+        return add(ceiling(divide(max(entry.View, real(400.0)), entry.RowHeight)), multiply(real(2.0), convert<"To Real">(entry.Overscan)))
     }
 }
