@@ -5,7 +5,12 @@
       <use ui="Tile" data-for="cell : line.tiles" data-if="cell.shown" data-alias-tile="cell" data-alias-selection="asset_view.selected" data-attr-data-asset="cell.key" data-attr-data-tip="cell.label" data-attr-data-tip-about="cell.about" data-attr-data-tip-image="asset_view.preview.id == cell.key ? asset_view.preview.image : cell.image" data-attr-data-drag="cell.drag" data-attr-data-drag-payload="cell.label" data-attr-data-drag-icon="cell.icon" data-event-click="emit('assets.click', cell.key, -1)" data-event-dblclick="emit('assets.open', cell.key)" data-event-contextmenu="emit('assets.menu', cell.key)"></use>
     </div>
   </use>
-  <div class="output-empty" data-if="assets.empty != ''">{{ assets.empty }}</div>
+  <div class="assets-empty" data-if="assets.empty != ''">
+    <span class="icon empty-icon">&#xea6d;</span>
+    <div class="empty-title">{{ assets.empty }}</div>
+    <div class="empty-hint">Clear the filters to see every asset.</div>
+    <button class="btn outline" data-event-click="emit('assets.clearFilter')"><span class="label">Clear Filters</span></button>
+  </div>
   <use ui="Menu" id="asset-menu">
     <use ui="MenuGroup" data-alias-group="asset_menus.row"/>
     <div data-for="entry : asset_menus.row.items">

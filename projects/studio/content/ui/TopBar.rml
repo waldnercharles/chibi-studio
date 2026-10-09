@@ -38,6 +38,7 @@
         <use ui="MenuCommand" data-alias-command="commands.closeTab"/>
         <use ui="MenuItem" data-if="menubar.web" data-alias-item="menubar.items.importProject" data-event-click="emit('menubar.importProject')"/>
         <use ui="MenuItem" data-if="menubar.web" data-alias-item="menubar.items.exportProject" data-event-click="emit('menubar.exportProject')"/>
+        <use ui="MenuCommand" data-if="!menubar.web" data-alias-command="commands.exportGame"/>
         <use ui="MenuSeparator"/>
         <use ui="MenuCommand" data-alias-command="commands.settings"/>
       </use>

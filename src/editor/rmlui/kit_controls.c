@@ -612,7 +612,6 @@ bool kit_panel_begin(kit *k, const char *key, const char *title, const char *bad
         w->label_el = raw(w->head_el, "span", "title", NULL);
         w->badge_el = raw(w->head_el, "span", "badge override", NULL);
         raw(w->head_el, "span", "spacer", NULL);
-        raw_icon(w->head_el, "grip", KIT_ICON_GRIP);
         w->open = default_open;
     }
     if (str_set(&w->label, title)) {
