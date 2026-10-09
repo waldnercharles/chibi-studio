@@ -1,6 +1,6 @@
 /* Studio's status bar (studio_shell.c hosts it; studio_sources.c binds
    `editor` and `commands`): the hovered area's key hints, the last
-   operation's report, the drawer toggles, which run and read their
+   operation's report (a warning when it kept something from happening), the drawer toggles, which run and read their
    commands, the scene's stats and UI Scale's menu (`shell.scale`). The report comes and goes with presence and morphs with
    <morph-text>; the counts roll with <number-flow>. */
 body { flex: 0 0 auto; }
@@ -20,6 +20,7 @@ body { flex: 0 0 auto; }
   display: flex; align-items: center; gap: 6dp; color: var(--foreground); transition: opacity 0.2s cubic-out;
   &[data-starting-style], &[data-ending-style] { opacity: 0; }
   .icon { color: var(--success); font-size: 12dp; }
+  &.warning .icon { color: var(--warning); }
 }
 .drawers { display: flex; align-items: center; gap: 2dp; flex-shrink: 0; }
 .toggle-drawer {

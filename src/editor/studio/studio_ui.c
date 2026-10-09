@@ -70,6 +70,7 @@ struct studio_ui
     uint64_t stamp, revision;
     uint64_t ui_seen, save_seen, panels_seen;
     uint64_t prefs_seen; /* the settings revision Studio's preferences match */
+    char **errors;       /* those reported, until the sources change */
 };
 
 /* The mount rooted at `root`, or NULL. */
@@ -186,10 +187,25 @@ static bool launch(studio_ui *ui, char *error, size_t size)
     return ok;
 }
 
+static void forget_errors(studio_ui *ui)
+{
+    for (int i = 0; i < acount(ui->errors); i++) {
+        free(ui->errors[i]);
+    }
+    afree(ui->errors);
+}
+
+/* Reports each error once until the sources change, as a panel's (report). */
 static void report_error(studio *s, const char *path, const char *message)
 {
     char error[1024];
     snprintf(error, sizeof error, "%s %s", path, message);
+    for (int i = 0; i < acount(s->ui->errors); i++) {
+        if (!strcmp(s->ui->errors[i], error)) {
+            return;
+        }
+    }
+    apush(s->ui->errors, xstrdup(error));
     kit_toast(s->kit, 0, &(kit_toast_desc){ .type = KIT_TOAST_ERROR, .title = "Studio UI", .description = error });
     studio_record(s, KIT_TOAST_ERROR, error);
 }
@@ -233,11 +249,13 @@ static void reload_sources(studio *s, const source_catalog_edit *edits, int coun
         report_error(s, s->ui->content_root, message);
         return;
     }
+    forget_errors(s->ui);
     refresh_all(s->ui);
 }
 
 static void free_world(studio_ui *ui)
 {
+    forget_errors(ui);
     for (int i = 0; i < acount(ui->panels); i++) {
         free(ui->panels[i].name);
         ui_mount_free(ui->panels[i].mount);

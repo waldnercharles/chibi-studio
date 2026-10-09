@@ -1,6 +1,6 @@
 <div class="statusbar" data-class-live="editor.playing">
   <div class="hints"><use ui="KeyHint" data-for="hint : editor.hints"/></div>
-  <div class="report-area"><div class="report" data-if="editor.reporting" presence><span class="icon">&#xeab2;</span><morph-text>{{ editor.report }}</morph-text></div></div>
+  <div class="report-area"><div class="report" data-if="editor.reporting" data-class-warning="editor.warning" presence><span class="icon" data-if="!editor.warning">&#xeab2;</span><span class="icon" data-if="editor.warning">&#xea6c;</span><morph-text>{{ editor.report }}</morph-text></div></div>
   <div class="drawers">
     <button class="btn sm toggle-drawer" data-attr-data-tip="commands.toggleAssets.menu" data-attr-data-kbd="commands.toggleAssets.shortcut" data-attr-data-state="commands.toggleAssets.checked ? 'on' : 'off'" data-event-click="emit('studio.toggleAssets')"><span class="icon">{{ commands.toggleAssets.icon }}</span><span class="label">{{ commands.toggleAssets.menu }}</span></button>
     <button class="btn sm toggle-drawer" data-attr-data-tip="commands.toggleOutput.menu" data-attr-data-kbd="commands.toggleOutput.shortcut" data-attr-data-state="commands.toggleOutput.checked ? 'on' : 'off'" data-event-click="emit('studio.toggleOutput')"><span class="icon">{{ commands.toggleOutput.icon }}</span><span class="label">{{ commands.toggleOutput.menu }}</span></button>
