@@ -466,6 +466,7 @@ int scene_authoring_load_value(app_scene_authoring *scene, av_value *value, cons
         "Loaded scene from %s.",
         scene->scene_path ? scene->scene_path : "checkpoint"
     );
+    scene_notice(scene);
     return 0;
 }
 
@@ -504,6 +505,11 @@ int app_scene_authoring_load(app_scene_authoring *scene, const char *path)
 const char *app_scene_authoring_message(const app_scene_authoring *scene)
 {
     return scene ? scene->message : NULL;
+}
+
+void scene_notice(app_scene_authoring *scene)
+{
+    snprintf(scene->notice, sizeof scene->notice, "%s", scene->message);
 }
 
 app_editor_document_context app_scene_authoring_document(const app_scene_authoring *scene)

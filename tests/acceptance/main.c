@@ -136,9 +136,11 @@ static bool input_map_reloads(studio *s)
 }
 
 /* A report of what kept an edit from happening shows as a warning, and the
- * next report clears it. */
+ * next report clears it; the scene's successes, such as opening Counter, do
+ * not. */
 static bool reports_warn(studio *s)
 {
+    REQUIRE(!strcmp(s->status, "Editing behavior asset Counter.") && !s->status_warning);
     studio_warn(s, "Could not duplicate");
     REQUIRE(s->status_warning && !strcmp(s->status, "Could not duplicate"));
     studio_report(s, "Duplicated");

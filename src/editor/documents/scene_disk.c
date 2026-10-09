@@ -101,6 +101,7 @@ static app_disk_result add_definition(app_scene_authoring *scene, const char *pa
         );
     }
     snprintf(scene->message, sizeof scene->message, "Added %s.", definition->name);
+    scene_notice(scene);
     return APP_DISK_RELOADED;
 }
 
@@ -153,6 +154,9 @@ static app_disk_result sync_system(app_scene_authoring *scene, const char *path,
             content_basename(path),
             error
         );
+        if (!status) {
+            scene_notice(scene);
+        }
         return status ? APP_DISK_FAILED : APP_DISK_RELOADED;
     }
     free(json);
@@ -268,6 +272,7 @@ static app_disk_result sync_scene(app_scene_authoring *scene, const char *path, 
     tab->selected_entity = 0;
     tab->selected = -1;
     snprintf(scene->message, sizeof scene->message, "Reloaded %s.", content_basename(path));
+    scene_notice(scene);
     return APP_DISK_RELOADED;
 }
 
@@ -287,6 +292,9 @@ static app_disk_result sync_input_map(app_scene_authoring *scene, const char *pa
         content_basename(path),
         error
     );
+    if (!status) {
+        scene_notice(scene);
+    }
     return status ? APP_DISK_FAILED : APP_DISK_RELOADED;
 }
 
