@@ -19,7 +19,7 @@
   <button class="btn icon-only" data-if="code_header.rename" data-tip="Rename symbol" data-kbd="F2" data-event-click="emit('code_header.rename')"><span class="icon">&#xea73;</span></button>
   <button class="btn icon-only" data-if="code_header.calls" data-tip="Call hierarchy" data-kbd="Shift+Alt+H" data-event-click="emit('code_header.calls')"><span class="icon">&#xeb92;</span></button>
   <span class="code-mode" data-if="code_header.vim != ''" data-tip="Vim mode">{{ code_header.vim }}</span>
-  <button class="btn sm code-problems" data-if="code_header.problems > 0" data-class-errors="code_header.errors > 0" data-attr-data-tip="code_header.problemsTip" data-event-click="emit('code_header.nextProblem')"><span class="icon">{{ code_header.errors > 0 ? '&#xea87;' : '&#xea6c;' }}</span><morph-text class="label">{{ code_header.problems }}</morph-text></button>
+  <button class="btn sm code-problems" data-if="code_header.problems > 0" data-class-errors="code_header.errors > 0" data-attr-data-tip="code_header.problemsTip" data-event-click="emit('code_header.nextProblem')"><span class="icon">{{ code_header.errors > 0 ? '&#xea87;' : '&#xea6c;' }}</span><span class="label">{{ code_header.problems }}</span></button>
   <div class="code-problem" data-if="code_header.error != ''"><span class="icon">&#xea87;</span><span data-tip="Keeps the last valid version" data-attr-data-tip-about="code_header.error">Invalid</span></div>
   <button class="btn icon-only" data-tip="Save source" data-event-click="emit('code_header.save')"><span class="icon">&#xeb4b;</span></button>
   <div class="segmented" data-tip="Apply edits" data-tip-about="Live applies each valid edit as you type; On Save waits for the file">
@@ -46,7 +46,7 @@
   <div class="spacer"></div>
   <button class="btn icon-only" data-tip="Find" data-attr-data-kbd="commands.find.shortcut" data-attr-data-state="code_header.find ? 'on' : ''" data-event-click="emit('code_header.find')"><span class="icon">&#xea6d;</span></button>
   <span class="code-mode" data-if="code_header.vim != ''" data-tip="Vim mode">{{ code_header.vim }}</span>
-  <button class="btn sm code-problems" data-if="code_header.problems > 0" data-class-errors="code_header.errors > 0" data-attr-data-tip="code_header.problemsTip" data-event-click="emit('code_header.nextProblem')"><span class="icon">{{ code_header.errors > 0 ? '&#xea87;' : '&#xea6c;' }}</span><morph-text class="label">{{ code_header.problems }}</morph-text></button>
+  <button class="btn sm code-problems" data-if="code_header.problems > 0" data-class-errors="code_header.errors > 0" data-attr-data-tip="code_header.problemsTip" data-event-click="emit('code_header.nextProblem')"><span class="icon">{{ code_header.errors > 0 ? '&#xea87;' : '&#xea6c;' }}</span><span class="label">{{ code_header.problems }}</span></button>
   <div class="code-problem" data-if="code_header.error != ''"><span class="icon">&#xea87;</span><span data-tip="Keeps the last valid version" data-attr-data-tip-about="code_header.error">Invalid</span></div>
   <div class="code-apply">
     <div class="segmented" data-tip="Apply edits" data-tip-about="Live applies each valid edit as you type; On Save waits for the file">

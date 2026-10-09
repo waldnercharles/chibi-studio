@@ -35,15 +35,15 @@ editor_choice editor_choice_at(const editor_choices *choices, int index)
     if (!strcmp(choices->enumeration->name, "GameControl")) {
         if (value->value == GAME_CONTROL_NONE) {
             choice.icon = KIT_ICON_CLOSE;
-        } else if (value->value == GAME_CONTROL_MOUSE_LEFT || value->value == GAME_CONTROL_MOUSE_RIGHT) {
-            choice.group = "Mouse";
-            choice.icon = KIT_ICON_MOUSE;
-        } else if (value->value >= GAME_CONTROL_PAD_A && value->value <= GAME_CONTROL_AIM_STICK) {
-            choice.group = "Controller";
-            choice.icon = KIT_ICON_GAMEPAD;
-        } else if (value->value >= GAME_CONTROL_SPACE && value->value <= GAME_CONTROL_Z) {
-            choice.group = "Keyboard";
-            choice.icon = KIT_ICON_KEYBOARD;
+        } else if (value->value < GAME_CONTROL_SPACE) {
+          choice.group = "Mouse";
+          choice.icon = KIT_ICON_MOUSE;
+        } else if (value->value < GAME_CONTROL_PAD_A) {
+          choice.group = "Keyboard";
+          choice.icon = KIT_ICON_KEYBOARD;
+        } else {
+          choice.group = "Controller";
+          choice.icon = KIT_ICON_GAMEPAD;
         }
     }
     return choice;

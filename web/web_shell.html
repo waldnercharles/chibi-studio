@@ -79,6 +79,12 @@
         showStopped(event.message || 'Could not load Chibi. Reload this page to retry.');
       }, true);
       window.addEventListener('unhandledrejection', event => showStopped(event.reason));
+      // Studio sets chibiUnsaved while a document has unsaved edits; the browser then asks before leaving.
+      window.addEventListener('beforeunload', event => {
+        if (!Module['chibiUnsaved']) return;
+        event.preventDefault();
+        event.returnValue = true;
+      });
       return {
         canvas,
         showError,
