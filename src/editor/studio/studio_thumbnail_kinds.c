@@ -714,11 +714,7 @@ const char *studio_thumb_stage(studio *s)
 
 static game_prototype_preview_scene_entity entity_of(const game_prototype *prototype)
 {
-    return (game_prototype_preview_scene_entity){
-        .prototype = prototype,
-        .behaviors = (const char *const *)prototype->graphs,
-        .behavior_count = acount(prototype->graphs)
-    };
+    return (game_prototype_preview_scene_entity){ .prototype = prototype };
 }
 
 /* One instance on the project's stage, fitted to the square, which spans at
@@ -817,7 +813,8 @@ static game_prototype_preview_scene_entity *scene_entities(studio *s, const game
                 .prototype = asset->prototype,
                 .components = e->components,
                 .behaviors = (const char *const *)e->behaviors,
-                .behavior_count = acount(e->behaviors) })
+                .behavior_count = acount(e->behaviors),
+                .own_behaviors = e->own_behaviors })
         );
     }
     return entities;

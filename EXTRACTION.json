@@ -32,7 +32,7 @@
     "projects/starter/project.kdl": "3f992f48cb8fad33b17510c61c36812fe8e8b518daf8f1c863e76a32d3d1d5a7",
     "src/editor/documents/asset_code.c": "d1318ed2ee591c8a0963d2409eb0c8916baea1d9d2b8cb7857d47ee8002cd9ba",
     "src/editor/studio/studio_graph_view.c": "ad58c019dee6b310fa9bd5984c69138ea7411620d79705cfe8194222e07f0512",
-    "src/editor/studio/studio_ui.c": "ffa30575fd8e6c653566ad8e1a375923f02fd7c3ee8f68fcbb42305e774fffaa",
+    "src/editor/studio/studio_ui.c": "3b4479352575021a678a82fc41d1b4f36be5e39e5d03cb5615a2e30a9a94a244",
     "src/editor/workspace/application.c": "37a75dc12b296a97164d950a82ac383a75f0208d074a4bc2455652f80c21fae7",
     "src/editor/workspace/scene_authoring.c": "e4fafd93d75b903212a8af4694167efb1ab8d47feef8b10ee0dcf819213a3b79",
     "src/host/main.c": "156eeb22888eed437138d67098f0ebc2ff7993202f93d54716c7ab4b350eae15",
@@ -1859,7 +1859,7 @@
       "source_path": "src/editor/documents/scene_disk.c"
     },
     "src/editor/documents/scene_document.c": {
-      "consumer_sha256": "5aa1bf41071acbf7c694a5d862b8b4c3759e6e1fbaba91362deb369301f6de05",
+      "consumer_sha256": "c4fa2ff259a0211bb688212c073c99f72e05c7bb6dc748e917da57121c443624",
       "current_source_sha256": "98dcf951fd9aa56b582ff9de36ddfe2bf0ae0ea22b64f16179bbc1d9bb2762de",
       "sha256": "f85160094ed7aec755eaa8f5db4dc40000de7e786cb3ad8e501822b7e76acffb",
       "source_path": "src/editor/documents/scene_document.c"
@@ -2537,7 +2537,7 @@
       "source_path": "src/editor/studio/studio_thumbnail_graph.c"
     },
     "src/editor/studio/studio_thumbnail_kinds.c": {
-      "consumer_sha256": "ffd4c3bba1ea1bbe60e7db9f8a1c32d395182358132a733a8faf6f50db446cc5",
+      "consumer_sha256": "bc7fbe3e4bb80bec6fedc443a5e0aaa9e7eaf7487f9b716045b3afdd6eb60bfb",
       "current_source_sha256": "57e900a68a4bcd7d664deb04d1b05cd171babf9a531f910a0344048dd0a4c4a7",
       "sha256": "d492c713ea44c06137f187bc0ea31926e56cf2461014bbf2825e6a8f38dc24c7",
       "source_path": "src/editor/studio/studio_thumbnail_kinds.c"
@@ -2561,7 +2561,7 @@
           "\"editor/workspace/tree_watch.h\""
         ]
       ],
-      "consumer_sha256": "ffa30575fd8e6c653566ad8e1a375923f02fd7c3ee8f68fcbb42305e774fffaa",
+      "consumer_sha256": "3b4479352575021a678a82fc41d1b4f36be5e39e5d03cb5615a2e30a9a94a244",
       "current_source_sha256": "4cc012974e9fb688f8ecaf94c80661d34e38a780341636777eda9caa59a010d9",
       "sha256": "262e7451d439607c4a6409da7aa56f473c19dec23546088992f0487ffe91a637",
       "source_path": "src/editor/studio/studio_ui.c"
