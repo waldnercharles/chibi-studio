@@ -29,7 +29,8 @@
           <use ui="MenuCommand" data-alias-command="commands.newStylesheet"/>
         </use>
         <use ui="MenuCommand" data-alias-command="commands.search"/>
-        <use ui="Submenu" data-if="menubar.projects.size > 0" data-alias-item="menubar.items.openProject">
+        <use ui="MenuCommand" data-if="commands.openProject.enabled" data-alias-command="commands.openProject"/>
+        <use ui="Submenu" data-if="menubar.projects.size > 0" data-alias-item="menubar.items.openRecent">
           <use ui="MenuItem" data-for="project, i : menubar.projects" data-alias-item="project" data-event-click="emit('menubar.openProject', i)"/>
         </use>
         <use ui="MenuSeparator"/>
