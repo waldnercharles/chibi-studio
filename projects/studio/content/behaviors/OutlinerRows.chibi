@@ -8,7 +8,6 @@ behavior "OutlinerRows" {
     value scene_info = scene_info();
     value not = not(Value: &state.Collapsed);
     value shown_0 = (convert<"To Real">(&local.Shown) > 0);
-    action branch_3 = engine["Branch"](Condition: shown_0);
     value text_equal = text_equal(A: scene_info.Filter, B: "");
     value not_2 = not(Value: &state.Collapsed);
     value open_shownopen_open_shownopen = ((rootclicked.Open && !&state.ShownOpen) || (!rootclicked.Open && &state.ShownOpen));
@@ -43,21 +42,18 @@ behavior "OutlinerRows" {
         if (&state.Collapsed) {
             await set_ui_data(Entity: 0, Name: "rows", Value: struct<"SceneObjectRow">[] = clear(Array: struct<"SceneObjectRow">[] = scene_objects.Rows));
             await set_ui_data(Entity: 0, Name: "total", Value: int = integer_2);
-            branch_3();
         } else {
             await set_ui_data(Entity: 0, Name: "rows", Value: struct<"SceneObjectRow">[] = scene_objects.Rows);
             await set_ui_data(Entity: 0, Name: "total", Value: double = "1 + Shown"(Shown: int = &local.Shown));
-            branch_3();
         }
-    }
-    after branch_3.True {
-        set_ui_data(Entity: 0, Name: "notice", Value: string = string_3);
-    }
-    after branch_3.False {
-        if (text_equal) {
-            set_ui_data(Entity: 0, Name: "notice", Value: string = string_4);
+        if (shown_0) {
+            set_ui_data(Entity: 0, Name: "notice", Value: string = string_3);
         } else {
-            set_ui_data(Entity: 0, Name: "notice", Value: string = string_5);
+            if (text_equal) {
+                set_ui_data(Entity: 0, Name: "notice", Value: string = string_4);
+            } else {
+                set_ui_data(Entity: 0, Name: "notice", Value: string = string_5);
+            }
         }
     }
     on FoldRoot as foldroot() {
