@@ -32,7 +32,7 @@
     "projects/starter/project.kdl": "0a3087b3588937c4a1139feb173b4b1641fb6c9253cf8bdb2b28a4cc6da18e88",
     "src/editor/documents/asset_code.c": "d1318ed2ee591c8a0963d2409eb0c8916baea1d9d2b8cb7857d47ee8002cd9ba",
     "src/editor/studio/studio_graph_view.c": "ad58c019dee6b310fa9bd5984c69138ea7411620d79705cfe8194222e07f0512",
-    "src/editor/studio/studio_ui.c": "7e11dd999f5c6136583fd8d4ad735abb6ed528a3a4f711460290596751922b33",
+    "src/editor/studio/studio_ui.c": "e44f383df3d5c44fc503bb5ae70c966f3f8b644a2e109311e9d965bc9d41bcf6",
     "src/editor/workspace/application.c": "a9b895403905aa41adaca36d14fb466634ca5c6529d4a56c2a35f0b5ff00c036",
     "src/editor/workspace/scene_authoring.c": "2f005000059f2fc5b3ab96b3736d903e1447568b9e2f01e1ad63230dc20093ff",
     "src/host/main.c": "630a2c8c60275e4146833e768e6483820a29b8a31065780eca095245478bbca1",
@@ -1859,7 +1859,7 @@
       "source_path": "src/editor/documents/scene_disk.c"
     },
     "src/editor/documents/scene_document.c": {
-      "consumer_sha256": "98dcf951fd9aa56b582ff9de36ddfe2bf0ae0ea22b64f16179bbc1d9bb2762de",
+      "consumer_sha256": "20a4291f37d63d5759a7db5625f9d9b0143cdd9ade53fba27f31abad1b7c8ea3",
       "current_source_sha256": "98dcf951fd9aa56b582ff9de36ddfe2bf0ae0ea22b64f16179bbc1d9bb2762de",
       "sha256": "f85160094ed7aec755eaa8f5db4dc40000de7e786cb3ad8e501822b7e76acffb",
       "source_path": "src/editor/documents/scene_document.c"
@@ -2537,7 +2537,7 @@
       "source_path": "src/editor/studio/studio_thumbnail_graph.c"
     },
     "src/editor/studio/studio_thumbnail_kinds.c": {
-      "consumer_sha256": "57e900a68a4bcd7d664deb04d1b05cd171babf9a531f910a0344048dd0a4c4a7",
+      "consumer_sha256": "472456d758f59e7840ba2fa9553137eb84c4c3372dbc9c034a88f37e1aadf22f",
       "current_source_sha256": "57e900a68a4bcd7d664deb04d1b05cd171babf9a531f910a0344048dd0a4c4a7",
       "sha256": "d492c713ea44c06137f187bc0ea31926e56cf2461014bbf2825e6a8f38dc24c7",
       "source_path": "src/editor/studio/studio_thumbnail_kinds.c"
@@ -2561,7 +2561,7 @@
           "\"editor/workspace/tree_watch.h\""
         ]
       ],
-      "consumer_sha256": "7e11dd999f5c6136583fd8d4ad735abb6ed528a3a4f711460290596751922b33",
+      "consumer_sha256": "e44f383df3d5c44fc503bb5ae70c966f3f8b644a2e109311e9d965bc9d41bcf6",
       "current_source_sha256": "4cc012974e9fb688f8ecaf94c80661d34e38a780341636777eda9caa59a010d9",
       "sha256": "262e7451d439607c4a6409da7aa56f473c19dec23546088992f0487ffe91a637",
       "source_path": "src/editor/studio/studio_ui.c"
@@ -2825,7 +2825,7 @@
           "\"editor/workspace/tree_watch.h\""
         ]
       ],
-      "consumer_sha256": "f602952bb87e8f25d9666774cda7c3ce9fa32f90bc52378e662652ac81b28979",
+      "consumer_sha256": "9e89c7be0deea5b95cca08ae87460bf9258528ee51d358ebedc589229bb7f1c9",
       "current_source_sha256": "93345eaf41711cf406a6263f27024a9fa1c875e7d92d97926750cb1d33ffb0eb",
       "sha256": "7aedf7279fffcd4c7def1ae879505521def3a81e56d828081c46f436f43ec3ed",
       "source_path": "src/editor/workspace/scene_internal.h"

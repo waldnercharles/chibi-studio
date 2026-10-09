@@ -172,7 +172,8 @@ static bool launch(studio_ui *ui, char *error, size_t size)
                 .prototype = prototype,
                 .components = e->components,
                 .behaviors = (const char *const *)e->behaviors,
-                .behavior_count = acount(e->behaviors) })
+                .behavior_count = acount(e->behaviors),
+                .own_behaviors = e->own_behaviors })
         );
         apush(ui->panels, ((panel){ .name = xstrdup(e->name), .index = i }));
     }
