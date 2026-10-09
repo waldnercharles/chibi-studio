@@ -41,7 +41,7 @@
     "tests/acceptance/README.md": "b78ecdc6324f3e5b0108c09ce3def525945447db6713c829936a8a50d92d152a",
     "tests/acceptance/application.c": "99f312f466e3abe43d30a47094f1dd03fa0a27672244eb0960ed4dc5e316ab3c",
     "tests/acceptance/host.c": "79336a3b1fe8ad01ff2df59fa77c0fcd71ef3e019ea67282c1af1400df36a033",
-    "tests/acceptance/main.c": "eeb21f1d062698f6b548a3d9d8945c6574fa0750d82932e449a81e477afa6ec1",
+    "tests/acceptance/main.c": "bbe729408a8ede7a4cb00f3ce476499e7a80381b8795a3c504cf7772ce749854",
     "tests/acceptance/project/content/behaviors/Counter.chibi": "ab072105e163873d9d414fdf1cbc35f48a28a8b874139531ea61c3c581ac57cd",
     "tests/acceptance/project/content/scenes/Start.kdl": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b",
     "tests/acceptance/project/project.kdl": "0a3087b3588937c4a1139feb173b4b1641fb6c9253cf8bdb2b28a4cc6da18e88",
