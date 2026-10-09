@@ -410,6 +410,8 @@ char **instance_behavior_names(app_scene_authoring *scene, ecs_entity entity);
 scene_prototype_asset *previewed_prototype(app_scene_authoring *scene);
 
 bool prototype_has_component_id(const game_prototype *prototype, ecs_component_id id);
+/* The registry's component `name`, or NULL. */
+const ecs_component_desc *component_descriptor(const app_scene_authoring *scene, const char *name);
 /* The live world and the prototype preview spawn the prototype as it is now. */
 int register_prototype_hosts(app_scene_authoring *scene, const game_prototype *prototype);
 

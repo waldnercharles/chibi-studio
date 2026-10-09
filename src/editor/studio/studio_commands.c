@@ -348,7 +348,7 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                        .label = "Add Component\xe2\x80\xa6",
                                        .context = "Properties",
                                        .contexts = EDITOR_BIT(STUDIO_EDITOR_PROPERTIES),
-                                       .keywords = "prototype attach",
+                                       .keywords = "prototype object attach",
                                        .icon = KIT_ICON_ADD,
                                        .phase = SHORTCUT_EDITOR },
     /* Unreal's Keep Simulation Changes, and its K. */
@@ -1229,9 +1229,7 @@ static bool enabled_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_RENAME:
             return editable && selection && !studio_designer_active(s);
         case STUDIO_COMMAND_ADD_COMPONENT:
-            return editable &&
-                   s->scene->document.kind == APP_EDITOR_DOCUMENT_PROTOTYPE &&
-                   selected_prototype(s->scene);
+            return editable && studio_can_add_component(s);
         case STUDIO_COMMAND_KEEP_CHANGES:
             return studio_live(s) && selection &&
                    selected_scene_entity(s->scene).slot;

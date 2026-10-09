@@ -1,5 +1,6 @@
 #include "assets/scene_document.h"
 #include "authoring/material_prepare.h"
+#include "authoring/native_prototype.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/collab/collab.h"
 #include "editor/workspace/scene_internal.h"
@@ -180,8 +181,15 @@ void remove_selected(app_scene_authoring *scene)
 }
 
 /* The object's components and behaviors, spawning as an instance of the
-   prototype whose identity is `identity`. */
-static av_value *actor_state_as(app_scene_authoring *scene, const scene_actor *actor, const char *identity)
+   prototype whose identity is `identity`, with `change` added with its
+   defaults or removed, unless NULL. */
+static av_value *actor_state_with(
+    app_scene_authoring *scene,
+    const scene_actor *actor,
+    const char *identity,
+    const ecs_component_desc *change,
+    bool add
+)
 {
     game_prototype *state = game_prototype_capture_entity(
         actor->name,
@@ -194,6 +202,13 @@ static av_value *actor_state_as(app_scene_authoring *scene, const scene_actor *a
     }
     free(state->identity);
     state->identity = xstrdup(identity);
+    int changed = !change ? 0
+                : add ? game_prototype_add_native_component(state, change)
+                      : game_prototype_remove_component(state, change->name);
+    if (changed != 0) {
+        game_prototype_free(state);
+        return NULL;
+    }
     game_source_registry *sources = scene->live->runtime->sources;
     for (int i = 0; i < game_source_attachment_count(sources); i++) {
         game_source_attachment_info info = game_source_attachment_at(sources, i);
@@ -208,6 +223,11 @@ static av_value *actor_state_as(app_scene_authoring *scene, const scene_actor *a
     av_value *value = game_prototype_to_value(state);
     game_prototype_free(state);
     return value;
+}
+
+static av_value *actor_state_as(app_scene_authoring *scene, const scene_actor *actor, const char *identity)
+{
+    return actor_state_with(scene, actor, identity, NULL, false);
 }
 
 static av_value *capture_actor_state(app_scene_authoring *scene, const scene_actor *actor)
@@ -593,11 +613,18 @@ int app_scene_authoring_duplicate_instance(app_scene_authoring *scene)
     return result;
 }
 
-int scene_repoint_actor(app_scene_authoring *scene, int index, const char *prototype)
+/* Removes the object at `index` and adds it back as `state`, an instance of
+   `prototype` (`base`), keeping its name, place, identity and retained
+   components, as one Undo step. Takes `base` and `state`. */
+static int replace_actor(
+    app_scene_authoring *scene,
+    int index,
+    const char *prototype,
+    av_value *base,
+    av_value *state
+)
 {
-    scene_prototype_asset *asset = find_prototype(scene, prototype);
     scene_actor *actor = &scene->actors[index];
-    assert(asset && strcmp(actor->prototype_name, prototype));
     scene_actor_edit removed = {
         .index = index,
         .identity = actor->identity,
@@ -608,9 +635,9 @@ int scene_repoint_actor(app_scene_authoring *scene, int index, const char *proto
         .retained = scene_retention_save(actor->retained),
     };
     scene_actor_edit added = removed;
-    added.prototype_name = prototype;
-    added.base = game_prototype_to_value(asset->prototype);
-    added.state = actor_state_as(scene, actor, asset->prototype->identity);
+    added.prototype_name = xstrdup(prototype);
+    added.base = base;
+    added.state = state;
     added.created = true;
     ecs_entity old = actor->entity, entity = { 0 };
     int result = removed.state && added.state ? remove_actor_at(scene, index) : -1;
@@ -629,12 +656,84 @@ int scene_repoint_actor(app_scene_authoring *scene, int index, const char *proto
     }
     free((char *)removed.name);
     free((char *)removed.prototype_name);
+    free((char *)added.prototype_name);
     av_value_free(removed.base);
     av_value_free(removed.state);
     av_value_free(removed.retained);
     av_value_free(added.base);
     av_value_free(added.state);
     return result;
+}
+
+int scene_repoint_actor(app_scene_authoring *scene, int index, const char *prototype)
+{
+    scene_prototype_asset *asset = find_prototype(scene, prototype);
+    scene_actor *actor = &scene->actors[index];
+    assert(asset && strcmp(actor->prototype_name, prototype));
+    return replace_actor(
+        scene,
+        index,
+        prototype,
+        game_prototype_to_value(asset->prototype),
+        actor_state_as(scene, actor, asset->prototype->identity)
+    );
+}
+
+static int edit_instance_component(app_scene_authoring *scene, const ecs_component_desc *desc, bool add)
+{
+    int index = scene->selected;
+    scene_actor *actor = &scene->actors[index];
+    return replace_actor(
+        scene,
+        index,
+        actor->prototype_name,
+        game_prototype_to_value(actor->base),
+        actor_state_with(scene, actor, actor->base->identity, desc, add)
+    );
+}
+
+static int collab_instance_component(app_scene_authoring *scene, const char *component_name, bool add)
+{
+    scene_actor *actor = selected_actor(scene);
+    const ecs_component_desc *desc = component_descriptor(scene, component_name);
+    if (!actor || !actor->identity || !desc ||
+        ecs_component_has(scene->world, actor->entity, desc->id) == add ||
+        (!add && prototype_has_component_id(actor->base, desc->id))) {
+        return -1;
+    }
+    finish_transform_edit(scene, false);
+    finish_property_edit(scene);
+    yyjson_mut_doc *action_doc = NULL;
+    yyjson_mut_val *action_root = scene_action_root(
+        scene,
+        add ? "instance.component_add" : "instance.component_remove",
+        &action_doc
+    );
+    yyjson_mut_obj_add_uint(action_doc, action_root, "actor", actor->identity);
+    yyjson_mut_obj_add_strcpy(action_doc, action_root, "component", component_name);
+    char *action = scene_action_write(action_doc);
+    collab_action_gate gate = action ? scene_action_begin(scene, action)
+                                     : COLLAB_ACTION_REJECT;
+    if (gate != COLLAB_ACTION_APPLY) {
+        free(action);
+        return gate == COLLAB_ACTION_PENDING ? 1 : -1;
+    }
+    int result = scene->runtime_snapshot_valid
+                   ? -1
+                   : edit_instance_component(scene, desc, add);
+    scene_action_finish(scene, action, result == 0);
+    free(action);
+    return result;
+}
+
+int app_scene_authoring_add_instance_component(app_scene_authoring *scene, const char *component_name)
+{
+    return collab_instance_component(scene, component_name, true);
+}
+
+int app_scene_authoring_remove_instance_component(app_scene_authoring *scene, const char *component_name)
+{
+    return collab_instance_component(scene, component_name, false);
 }
 
 /* The selected objects' identities, in scene order. The caller frees the
