@@ -560,7 +560,7 @@
     "src/editor/workspace/scene_authoring.c",
     "src/editor/workspace/scene_viewport.c"
   ],
-  "render/arena3d.h": [
+  "render/scene3d.h": [
     "src/editor/workspace/scene_viewport.c"
   ],
   "render/audio.h": [

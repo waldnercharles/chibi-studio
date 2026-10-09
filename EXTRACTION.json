@@ -2537,7 +2537,7 @@
       "source_path": "src/editor/studio/studio_thumbnail_graph.c"
     },
     "src/editor/studio/studio_thumbnail_kinds.c": {
-      "consumer_sha256": "57e900a68a4bcd7d664deb04d1b05cd171babf9a531f910a0344048dd0a4c4a7",
+      "consumer_sha256": "7610ee52b520d090cf20eb8e339b566ae54c4bef51a13ff4341d6e756e5529d4",
       "current_source_sha256": "57e900a68a4bcd7d664deb04d1b05cd171babf9a531f910a0344048dd0a4c4a7",
       "sha256": "d492c713ea44c06137f187bc0ea31926e56cf2461014bbf2825e6a8f38dc24c7",
       "source_path": "src/editor/studio/studio_thumbnail_kinds.c"
@@ -2699,7 +2699,7 @@
       "source_path": "src/editor/workspace/editor_internal.h"
     },
     "src/editor/workspace/game_presentation.c": {
-      "consumer_sha256": "3b56b5276ecfe1e134cbcb0651f0b5aa19a3f78e5fbff453ac2915c6e73e613b",
+      "consumer_sha256": "ee68d3177bf427f113634125bec27d8921e587149464e7be7278faa42ca86034",
       "current_source_sha256": "3b56b5276ecfe1e134cbcb0651f0b5aa19a3f78e5fbff453ac2915c6e73e613b",
       "sha256": "3eb29545b2b34e6d802b801a55c36ad86d9488da09451ba5f8034cfa18940f19",
       "source_path": "src/editor/workspace/game_presentation.c"
@@ -2855,7 +2855,7 @@
       "source_path": "src/editor/workspace/scene_view.c"
     },
     "src/editor/workspace/scene_viewport.c": {
-      "consumer_sha256": "f2a2f0d495ea6a286f1dfd898f3904d55eedfdb9093f9ef79d9f16115503a482",
+      "consumer_sha256": "43960734cdacc5113c3b3b0864776de784ac70cffc6ccb439dc1d72b0e244a20",
       "current_source_sha256": "f2a2f0d495ea6a286f1dfd898f3904d55eedfdb9093f9ef79d9f16115503a482",
       "sha256": "c487c7af89a66c3beb36270f2751356d3c5429ccccef8268ef518557da7a5210",
       "source_path": "src/editor/workspace/scene_viewport.c"

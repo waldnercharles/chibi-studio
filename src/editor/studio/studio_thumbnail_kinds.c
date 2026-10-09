@@ -664,13 +664,13 @@ static bool draw_world(thumb_view *view, game_prototype_preview *preview, CF_Can
     );
     bool drawn;
     if (engine_viewport_perspective(view->viewport)) {
-        render_arena_camera arena;
-        engine_viewport_get_arena_camera(view->viewport, &arena);
+        render_scene3d_camera camera3d;
+        engine_viewport_get_camera3d(view->viewport, &camera3d);
         drawn = app_scene_renderer_draw3d(
             view->renderer,
             world,
             particles,
-            &arena,
+            &camera3d,
             view->viewport,
             runtime,
             (render_skip){ 0 }

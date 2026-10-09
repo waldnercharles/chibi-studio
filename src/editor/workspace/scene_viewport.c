@@ -6,7 +6,7 @@
 #include "editor/workspace/scene_internal.h"
 #include "platform/cute.h"
 #include "render/appearance_geometry.h"
-#include "render/arena3d.h"
+#include "render/scene3d.h"
 #include "render/geometry_2d.h"
 #include "render/grid_2d.h"
 #include "render/mesh_surface.h"
@@ -31,10 +31,10 @@ static float actor_orientation(const ecs_world *world, ecs_entity entity)
     return orientation ? -orientation->radians : 0;
 }
 
-static render_arena_camera arena_camera(engine_viewport *viewport)
+static render_scene3d_camera camera3d(engine_viewport *viewport)
 {
-    render_arena_camera camera;
-    engine_viewport_get_arena_camera(viewport, &camera);
+    render_scene3d_camera camera;
+    engine_viewport_get_camera3d(viewport, &camera);
     return camera;
 }
 
@@ -127,7 +127,7 @@ static bool fit_arena_view(engine_viewport *viewport, ecs_world *world, const ec
     while (ecs_query_next(&query, &entity)) {
         CF_V3 corners[8];
         if (!fits(only, count, entity) ||
-            !render_arena_entity_bounds(world, entity, corners)) {
+            !render_scene3d_entity_bounds(world, entity, corners)) {
             continue;
         }
         for (int i = 0; i < 8; i++) {
@@ -138,7 +138,7 @@ static bool fit_arena_view(engine_viewport *viewport, ecs_world *world, const ec
     if (acount(points)) {
         engine_viewport_camera camera;
         engine_viewport_get_camera(viewport, &camera);
-        CF_Aabb fit = render_arena_fit(
+        CF_Aabb fit = render_scene3d_fit(
             points,
             acount(points),
             camera.span_width / camera.span_height
@@ -294,9 +294,9 @@ static bool selection_bounds(
 {
     if (engine_viewport_perspective(viewport)) {
         CF_V3 corners[8];
-        render_arena_camera camera = arena_camera(viewport);
-        return render_arena_entity_bounds(scene->world, entity, corners) &&
-               render_arena_screen_bounds(&camera, corners, bounds);
+        render_scene3d_camera camera = camera3d(viewport);
+        return render_scene3d_entity_bounds(scene->world, entity, corners) &&
+               render_scene3d_screen_bounds(&camera, corners, bounds);
     }
     if (!visual_bounds(scene->world, entity, false, bounds)) {
         return false;
@@ -383,8 +383,8 @@ static ecs_entity pick_pointer(
     if (!engine_viewport_perspective(viewport)) {
         return pick_scene_entity(scene, pointer->world_x, pointer->world_y, unpickable);
     }
-    render_arena_camera camera = arena_camera(viewport);
-    return render_arena_pick(
+    render_scene3d_camera camera = camera3d(viewport);
+    return render_scene3d_pick(
         scene->world,
         &camera,
         (CF_V2){ pointer->ndc_x, pointer->ndc_y },
@@ -540,16 +540,6 @@ int app_scene_authoring_draw_viewport(app_scene_authoring *scene, engine_viewpor
         perspective = !model && GAME_GameGeometry3D_has(world, entity);
     }
     engine_viewport_set_perspective(viewport, perspective);
-    bool camera_session = !preview && scene->runtime_snapshot_valid;
-    if (perspective && camera_session) {
-        /* Renderer simulation time advances on Play and freezes on Pause. */
-        engine_viewport_set_arena_showcase(
-            viewport,
-            app_scene_renderer_time(scene->renderer)
-        );
-    } else {
-        engine_viewport_clear_arena_camera(viewport);
-    }
     /* Prototype records are append-only; indices survive array reallocations. */
     int camera_target = model   ? -2
                       : preview ? (int)(prototype - scene->prototypes) + 1
@@ -625,7 +615,6 @@ int app_scene_authoring_draw_viewport(app_scene_authoring *scene, engine_viewpor
         );
         if (authored > 0) {
             engine_viewport_set_view(viewport, &view);
-            engine_viewport_clear_arena_camera(viewport);
         }
         if (authored < 0) {
             snprintf(scene->message, sizeof scene->message, "GameCamera requires one active camera with positive spans.");
@@ -773,7 +762,7 @@ static unsigned selection_color(const app_scene_authoring *scene, int i)
 /* An object's bounding box, projected and drawn as its twelve edges. */
 static void draw_arena_box(
     ecs_world *world,
-    const render_arena_camera *camera,
+    const render_scene3d_camera *camera,
     const engine_viewport_camera *frame,
     ecs_entity entity,
     float stroke,
@@ -781,12 +770,12 @@ static void draw_arena_box(
 )
 {
     CF_V3 bounds[8];
-    if (!render_arena_entity_bounds(world, entity, bounds)) {
+    if (!render_scene3d_entity_bounds(world, entity, bounds)) {
         return;
     }
     CF_V2 corners[8];
     for (int j = 0; j < 8; j++) {
-        CF_V3 projected = render_arena_project(camera, bounds[j]);
+        CF_V3 projected = render_scene3d_project(camera, bounds[j]);
         corners[j] = canvas_point(frame, (CF_V2){ projected.x, projected.y });
     }
     cf_draw_push_color(packed_color(color));
@@ -803,7 +792,7 @@ static void draw_arena_box(
 static void draw_arena_selection(
     app_scene_authoring *scene,
     ecs_world *world,
-    const render_arena_camera *camera,
+    const render_scene3d_camera *camera,
     render_skip hidden
 )
 {
@@ -901,7 +890,7 @@ void app_scene_authoring_render(void *user)
     );
     render_skip hidden = scene_view_skip(scene, APP_SCENE_VIEW_HIDDEN, &scene->view_hidden);
     if (scene->render_viewport && engine_viewport_perspective(scene->render_viewport)) {
-        render_arena_camera camera = arena_camera(scene->render_viewport);
+        render_scene3d_camera camera = camera3d(scene->render_viewport);
         app_scene_renderer_draw3d(
             scene->renderer,
             world,

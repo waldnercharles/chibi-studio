@@ -32,19 +32,15 @@ struct app_game_presentation
     bool interactive;
     bool render_failed;
     render_audio *audio;
-    /* Explicit presentation time; it advances while playing and freezes paused. */
-    double showcase_time;
-    double showcase_last_time;
-    bool showcase_time_started;
     char ui_error[256]; /* the last UI asset error reported */
     bool text_input; /* SDL delivers typed text for a focused game text field */
     char lighting_warning[512]; /* the last lighting adjustment reported */
 };
 
-static render_arena_camera game_camera(const app_game_presentation *game)
+static render_scene3d_camera game_camera(const app_game_presentation *game)
 {
-    render_arena_camera camera;
-    engine_viewport_get_arena_camera(game->viewport, &camera);
+    render_scene3d_camera camera;
+    engine_viewport_get_camera3d(game->viewport, &camera);
     return camera;
 }
 
@@ -53,7 +49,7 @@ static void render_game(void *user)
     app_game_presentation *game = user;
     app_scene_authoring *scene = game->scene;
     if (scene->perspective) {
-        render_arena_camera camera = game_camera(game);
+        render_scene3d_camera camera = game_camera(game);
         game->render_failed = !app_scene_renderer_draw3d(
             scene->renderer,
             scene->world,
@@ -166,7 +162,6 @@ void app_game_presentation_free(app_game_presentation *game)
         if (game->text_input) {
             cf_input_disable_ime();
         }
-        engine_viewport_clear_arena_camera(game->viewport);
         engine_viewport_set_render_callback(game->viewport, NULL, NULL);
         render_audio_free(game->audio);
         free(game);
@@ -182,8 +177,8 @@ static bool mouse_target(const app_game_presentation *game, CF_V2 *target)
     }
     CF_V2 ndc = { mouse.x * 2 / size.x - 1, 1 - mouse.y * 2 / size.y };
     if (game->scene->perspective) {
-        render_arena_camera camera = game_camera(game);
-        return render_arena_ground(&camera, ndc, target);
+        render_scene3d_camera camera = game_camera(game);
+        return render_scene3d_ground(&camera, ndc, target);
     }
     engine_viewport_camera frame;
     engine_viewport_get_camera(game->viewport, &frame);
@@ -194,11 +189,7 @@ static bool mouse_target(const app_game_presentation *game, CF_V2 *target)
 
 static int command(app_game_presentation *game, app_runtime_command command)
 {
-    int result = app_scene_authoring_runtime_command(game->scene, APP_RUNTIME_SCENE, command);
-    if (result == 0 && command == APP_RUNTIME_RESTART) {
-        game->showcase_time = 0;
-    }
-    return result;
+    return app_scene_authoring_runtime_command(game->scene, APP_RUNTIME_SCENE, command);
 }
 
 static int encounter_status(ecs_world *world)
@@ -307,12 +298,6 @@ int app_game_presentation_frame(app_game_presentation *game, double now)
     bool playing = engine_is_playing(game->scene->runtime);
     /* A replay plays on unattended, restarting when it finishes. */
     bool replaying = app_scenario_replaying(game->scene);
-    if (!game->showcase_time_started) {
-        game->showcase_time_started = true;
-    } else if (playing && now > game->showcase_last_time) {
-        game->showcase_time += now - game->showcase_last_time;
-    }
-    game->showcase_last_time = now;
     if (playing && finished(status) && !replaying) {
         if (command(game, APP_RUNTIME_PAUSE) != 0) {
             return -1;
@@ -355,11 +340,6 @@ int app_game_presentation_frame(app_game_presentation *game, double now)
     }
     if (authored_camera) {
         engine_viewport_set_view(game->viewport, &authored_view);
-        engine_viewport_clear_arena_camera(game->viewport);
-    } else if (game->scene->perspective) {
-        engine_viewport_set_arena_showcase(game->viewport, (float)game->showcase_time);
-    } else {
-        engine_viewport_clear_arena_camera(game->viewport);
     }
     engine_set_focus(game->scene->runtime, playing && focused ? ENGINE_FOCUS_VIEWPORT : ENGINE_FOCUS_NONE);
     CF_V2 target;
