@@ -175,7 +175,6 @@ typedef struct
 struct app_scene_authoring
 {
     char source_preview_hold[1024]; /* On Save source edits still update the authored graph. */
-    app_sdf_shapes shapes;
     app_scene_renderer *renderer;
     engine_viewport *render_viewport;
     bool perspective;

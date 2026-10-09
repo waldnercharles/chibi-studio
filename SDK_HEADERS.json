@@ -596,13 +596,6 @@
   "render/screenshot.h": [
     "src/editor/workspace/application.c"
   ],
-  "render/sdf_motion.h": [
-    "src/editor/workspace/scene_authoring.c",
-    "src/editor/workspace/scene_viewport.c"
-  ],
-  "render/sdf_shapes.h": [
-    "src/editor/workspace/scene_authoring.h"
-  ],
   "render/shader_catalog.h": [
     "src/editor/studio/studio_thumbnails.c",
     "src/editor/workspace/model_preview.h",
