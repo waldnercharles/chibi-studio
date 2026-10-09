@@ -116,6 +116,7 @@ typedef enum
     STUDIO_COMMAND_STOP,
     STUDIO_COMMAND_STEP,
     STUDIO_COMMAND_RECORD_GAMEPLAY,
+    STUDIO_COMMAND_EXPORT_GAME,
     STUDIO_COMMAND_DENSITY,
     STUDIO_COMMAND_MOTION,
     STUDIO_COMMAND_THEME,
@@ -211,6 +212,7 @@ typedef enum
 } studio_command;
 
 #define STUDIO_CHORD_SIZE 64
+#define STUDIO_EXPORT_PATH_MAX 1024
 
 /* Workspace presets (Blender's workspaces): each arranges the areas for a
  * task, and switching one never touches documents, selection or playback. */
@@ -670,7 +672,8 @@ typedef struct
 typedef struct
 {
     studio_refactor_mode mode;
-    bool opening;        /* show the popover at the pointer this frame */
+    bool opening;        /* show the popover this frame */
+    float anchor[4];     /* the box it opens under; at the pointer when empty */
     bool mounted;        /* its document showed last frame */
     bool source_project; /* exported source declarations use the project plan */
     reference_symbol symbol;
@@ -968,6 +971,12 @@ struct studio
     int discard_project; /* the project that toast opens */
     int quit_toast;      /* toast confirming Quit discards unsaved changes */
     char window_title[320]; /* as last set */
+    struct
+    {
+        struct SDL_Process *process; /* the running `chibi export`, or NULL */
+        char folder[STUDIO_EXPORT_PATH_MAX]; /* where exports and their log go */
+        int toast; /* its progress, then its result */
+    } export_game;
     rml_backend *backend;
     kit *kit;
     studio_ui *ui; /* NULL when the Studio project could not load */
@@ -1864,6 +1873,13 @@ void studio_runtime(studio *s, app_runtime_command command);
    play as a scenarios asset. */
 void studio_record_gameplay(studio *s);
 void studio_replay_scenario(studio *s, const char *name);
+/* Export Game (studio_export.c): runs `chibi export` into the project's
+   .chibi/export and reports it in a toast; the poll follows it each frame and
+   shows the folder when the toast's action is pressed. */
+bool studio_export_available(const studio *s);
+void studio_export_game(studio *s);
+void studio_export_poll(studio *s);
+void studio_export_free(studio *s);
 /* A scene run, a preview or a guest Studio is running. */
 bool studio_session(const studio *s);
 /* Play in the Studio project runs Studio itself, as the project's game: a

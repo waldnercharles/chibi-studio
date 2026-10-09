@@ -84,7 +84,12 @@
 .field.color:focus-visible { border-color: var(--ring); }
 .field.color[data-disabled] { tab-index: none; }
 .field.color > .swatch { position: absolute; left: 3dp; right: 3dp; top: 3dp; bottom: 3dp; border-radius: 2dp; }
-.field.color > .swatch.none { border: 1dp var(--border); }
+/* No color (zero alpha, which reflected fields read as their default): the
+   "no fill" slash of Figma and Photoshop, so it never reads as an empty box. */
+.field.color > .swatch.none {
+    border: 1dp var(--border);
+    decorator: linear-gradient(to bottom right, #00000000 46%, var(--faint-foreground) 47%, var(--faint-foreground) 53%, #00000000 54%);
+}
 .color-alpha-row { display: flex; align-items: center; gap: 4dp; width: 100%; }
 .color-alpha-row .field.color { flex: 0 0 48dp; }
 

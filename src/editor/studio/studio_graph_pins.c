@@ -139,7 +139,7 @@ static void reset_pin(studio *s, node *n, int p)
                                                             .pin_index = p,
                                                             .value = &reset } }
             )) {
-            sg_show_error(s, e->connect_error);
+            sg_show_error(s, "Can't reset the value", e->connect_error);
         }
         return;
     }
