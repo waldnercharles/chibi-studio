@@ -1,5 +1,5 @@
 behavior "Dismiss" {
     on Close {
-        set_game_ui_hidden(true)
+        self.Ui.hidden = true
     }
 }
