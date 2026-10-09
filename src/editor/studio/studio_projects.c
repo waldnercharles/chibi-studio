@@ -43,6 +43,11 @@ EM_JS(char *, web_create_project, (const char *name, int version), {
     return stringToNewUTF8(typeof result == 'string' ? result : JSON.stringify(result));
 })
 
+/* The page asks before it unloads while this is set (web_shell.html). */
+EM_JS(void, web_set_unsaved, (bool unsaved), {
+    Module['chibiUnsaved'] = unsaved;
+})
+
 EM_JS(void, web_remember_project, (const char *root), {
     if (typeof Module['chibiRememberProject'] == 'function') {
         Module['chibiRememberProject'](UTF8ToString(root));
@@ -159,30 +164,89 @@ static void request(studio *s, int index)
     s->open_project = xstrdup(s->projects[index].root);
 }
 
+/* The unsaved documents by name, as "Level", "Level and Player" or "Level,
+   Player and 2 more", so a confirmation says what it would lose. */
+static void unsaved_names(studio *s, char *out, size_t size)
+{
+    app_scene_authoring *scene = s->scene;
+    const char *names[2] = { 0 };
+    int count = 0;
+    for (int i = 0; i < acount(scene->tabs); i++) {
+        if (scene_tabs_dirty(scene, &scene->tabs[i])) {
+            if (count < 2) {
+                names[count] = scene->tabs[i].label;
+            }
+            count++;
+        }
+    }
+    char title[128];
+    if (!count) {
+        names[count++] = studio_scene_title(scene, title, sizeof title);
+    }
+    if (count == 1) {
+        snprintf(out, size, "%s", names[0]);
+    } else if (count == 2) {
+        snprintf(out, size, "%s and %s", names[0], names[1]);
+    } else {
+        snprintf(out, size, "%s, %s and %d more", names[0], names[1], count - 2);
+    }
+}
+
+/* Asks before an action that would discard unsaved edits, naming them, with
+   `action` on the toast's button, as closing a tab asks. */
+static int confirm_discard(studio *s, int toast, const char *verb, const char *action)
+{
+    char names[256];
+    unsaved_names(s, names, sizeof names);
+    char title[448];
+    snprintf(title, sizeof title, "%s without saving %s?", verb, names);
+    return kit_toast(
+        s->kit,
+        toast,
+        &(kit_toast_desc){ .type = KIT_TOAST_WARNING,
+                           .title = title,
+                           .action = action,
+                           .duration = -1 }
+    );
+}
+
 void studio_open_project(studio *s, int index)
 {
     if (!studio_unsaved(s)) {
         request(s, index);
         return;
     }
-    kit_toast_dismiss(s->kit, s->discard_toast);
+    char verb[160];
+    snprintf(verb, sizeof verb, "Open %s", s->projects[index].name);
     s->discard_project = index;
-    s->discard_toast = kit_toast(
-        s->kit,
-        0,
-        &(kit_toast_desc){ .type = KIT_TOAST_WARNING,
-                           .title = "Unsaved changes",
-                           .action = "Discard",
-                           .duration = -1 }
-    );
+    s->discard_toast = confirm_discard(s, s->discard_toast, verb, "Open");
 }
 
 void studio_projects_frame(studio *s)
 {
+#ifdef __EMSCRIPTEN__
+    web_set_unsaved(studio_unsaved(s));
+#endif
     if (s->discard_toast && kit_toast_action(s->kit, s->discard_toast)) {
         s->discard_toast = 0;
         request(s, s->discard_project);
     }
+}
+
+bool studio_quit(studio *s, bool requested)
+{
+    if (s->quit_toast && kit_toast_action(s->kit, s->quit_toast)) {
+        s->quit_toast = 0;
+        return true;
+    }
+    if (!requested) {
+        return false;
+    }
+    if (!studio_unsaved(s)) {
+        return true;
+    }
+    s->quit_toast = confirm_discard(s, s->quit_toast, "Quit", "Quit");
+    return false;
 }
 
 static bool named(const char *name)

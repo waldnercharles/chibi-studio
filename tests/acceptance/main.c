@@ -107,6 +107,19 @@ static bool check_counter(studio *s, int expected, bool dirty, const node **lite
     return true;
 }
 
+/* With Counter unsaved, the title marks it and quitting asks once, in a toast
+ * that a repeated request updates in place. */
+static bool quit_asks(studio *s)
+{
+    REQUIRE(!strncmp(s->window_title, "\xe2\x97\x8f ", 4));
+    REQUIRE(strstr(s->window_title, "Counter"));
+    REQUIRE(!studio_quit(s, false) && !s->quit_toast);
+    REQUIRE(!studio_quit(s, true) && s->quit_toast);
+    int toast = s->quit_toast;
+    REQUIRE(!studio_quit(s, true) && s->quit_toast == toast);
+    return true;
+}
+
 static bool source_edit_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -131,6 +144,8 @@ static bool source_edit_frame(void *state)
         REQUIRE(studio_code_history(s, false, true));
         undos++;
         REQUIRE(check_counter(s, 1, false, NULL));
+        /* Nothing unsaved: quitting needs no confirmation. */
+        REQUIRE(studio_quit(s, true));
     } else if (frames == 3) {
         REQUIRE(check_counter(s, 1, false, NULL));
         REQUIRE(studio_code_history(s, true, true));
@@ -140,6 +155,7 @@ static bool source_edit_frame(void *state)
         REQUIRE(check_counter(s, 2, true, NULL));
         REQUIRE(studio_editor_shown(s, STUDIO_EDITOR_BEHAVIOR));
         REQUIRE(studio_editor_shown(s, STUDIO_EDITOR_CODE));
+        REQUIRE(quit_asks(s));
     }
     return true;
 }

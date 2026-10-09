@@ -40,6 +40,8 @@
         <use ui="MenuItem" data-if="menubar.web" data-alias-item="menubar.items.exportProject" data-event-click="emit('menubar.exportProject')"/>
         <use ui="MenuSeparator"/>
         <use ui="MenuCommand" data-alias-command="commands.settings"/>
+        <use ui="MenuSeparator" data-if="commands.quit.enabled"/>
+        <use ui="MenuCommand" data-if="commands.quit.enabled" data-alias-command="commands.quit"/>
       </use>
       <button class="btn trigger" popovertarget="menu-edit" aria-haspopup="menu"><span class="label">Edit</span></button>
       <use ui="Menu" id="menu-edit">

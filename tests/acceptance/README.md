@@ -7,8 +7,10 @@ this directory's `project`. Preferences and thumbnail cache are pinned inside th
 disposable project; initial Counter bytes are checked before and after. It opens Counter through the normal document loader,
 then runs four hidden fixed-dt frames. It calls the production graph expression
 commit handler once, applies real undo and redo, and checks current source,
-resolved state initializer, owned projection and dirty/history state. The final
-frame renders both graph and code views before normal host shutdown. This proves
+resolved state initializer, owned projection and dirty/history state. With
+nothing unsaved, quitting needs no confirmation; with Counter unsaved, the window
+title marks it and a quit request asks once, in a toast a repeated request updates.
+The final frame renders both graph and code views before normal host shutdown. This proves
 consumer edit-handler integration and UI rendering; it does not hit-test pointer
 input. No source save, scenario, playback or screenshot occurs.
 

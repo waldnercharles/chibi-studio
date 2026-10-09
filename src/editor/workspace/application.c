@@ -50,6 +50,20 @@
 #define APP_IDLE_FRAME 0.25
 #define APP_DEFAULT_SCREENSHOT_FRAMES 3
 
+/* Closing the window, or the platform's Quit, reaches Studio as a request
+   rather than ending the loop, so it can ask about unsaved edits first. Set
+   where SDL queues the event, read by the frame. */
+static SDL_AtomicInt quit_requested;
+
+static bool SDLCALL hold_quit(void *, SDL_Event *event)
+{
+    if (event->type != SDL_EVENT_QUIT) {
+        return true;
+    }
+    SDL_SetAtomicInt(&quit_requested, 1);
+    return false;
+}
+
 typedef struct
 {
     editor *graph_editor;
@@ -75,6 +89,7 @@ typedef struct
     char *local_workspace;
     bool collab_initialized;
     bool destroying;
+    bool keeps_workspace; /* --checkpoint restores unsaved edits, so closing never asks */
     double log_start_ms, log_last_ms, log_dropped_seconds;
     uint64_t log_simulation_steps;
 } app_loop;
@@ -698,6 +713,7 @@ void *chibi_application_create(int argc, char **argv, const char *checkpoint, ch
     int frames = 0;
     int headless = 0;
     bool play = false;
+    bool keeps_workspace = false;
     double fixed_dt = 0;
     const char *scene_path = NULL;
     const char *project_path = NULL;
@@ -755,7 +771,10 @@ void *chibi_application_create(int argc, char **argv, const char *checkpoint, ch
                 snprintf(error, error_size, "--fixed-dt requires a positive number of seconds");
                 return NULL;
             }
-        } else if (strcmp(argv[i], "--checkpoint") == 0 || strcmp(argv[i], "--fps") == 0) {
+        } else if (strcmp(argv[i], "--checkpoint") == 0) {
+            keeps_workspace = true;
+            i++;
+        } else if (strcmp(argv[i], "--fps") == 0) {
             i++;
         } else if (argv[i][0] != '-' && !project_path) {
             project_path = argv[i];
@@ -785,7 +804,8 @@ void *chibi_application_create(int argc, char **argv, const char *checkpoint, ch
                         .screenshot_path = screenshot_path,
                         .show_graph = open && screenshot_path,
                         .headless = headless,
-                        .fixed_dt = fixed_dt };
+                        .fixed_dt = fixed_dt,
+                        .keeps_workspace = keeps_workspace };
     bool opened = open_workspace(loop, project_path, scene_path, play, error, error_size);
     yyjson_doc_free(saved);
     free(found);
@@ -888,6 +908,9 @@ void chibi_application_activate(void *state)
                                      .presence = app_collab_presence,
                                      .closed = app_collab_closed });
         loop->collab_initialized = true;
+        if (!loop->keeps_workspace) {
+            SDL_SetEventFilter(hold_quit, NULL);
+        }
     }
 }
 
@@ -897,6 +920,13 @@ int chibi_application_frame(void *state)
     int finished = app_frame(loop);
     if (finished < 0) {
         return -1;
+    }
+    bool quit = SDL_SetAtomicInt(&quit_requested, 0);
+    if (quit) {
+        loop->next_frame_ms = 0; /* its confirmation shows at once */
+    }
+    if (!loop->game && studio_quit(loop->studio, quit)) {
+        cf_app_signal_shutdown();
     }
     char *project = loop->game ? NULL : studio_take_project(loop->studio);
     if (project) {

@@ -257,6 +257,8 @@ if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
         projectOpenStatus = 'pending';
         sync().then(() => {
             projectOpenStatus = 'done';
+            // Studio already asked before discarding unsaved edits.
+            Module['chibiUnsaved'] = false;
             location.search = search;
         }).catch(error => {
             projectOpenStatus = `error:${error.message || error}`;

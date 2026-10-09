@@ -23,6 +23,10 @@ void studio_frame(studio *s, double delta_seconds);
 double studio_idle_time(studio *s);
 /* The project root the user chose to open, owned by the caller, or NULL. */
 char *studio_take_project(studio *s);
+/* Call once a frame, `requested` when the user asked to close Studio. True
+ * once Studio may close: at once without unsaved edits, else after a toast
+ * naming them is confirmed. */
+bool studio_quit(studio *s, bool requested);
 /* Shows an error that stays until dismissed. */
 void studio_error(studio *s, const char *title, const char *message);
 /* Fills the workspace with the graph canvas without changing saved preferences. */
