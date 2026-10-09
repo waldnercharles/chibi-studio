@@ -12,6 +12,9 @@ frame renders both graph and code views before normal host shutdown. This proves
 consumer edit-handler integration and UI rendering; it does not hit-test pointer
 input. No source save, scenario, playback or screenshot occurs.
 
+`studio-acceptance --scene-cursors` needs no project or renderer. It checks the
+cursor each Scene gizmo part asks for, a resize handle's as its box turns.
+
 Execution requires explicit root coordination and independent admission under the
 60-second GPU policy. Merely building this target does not run it. A whole UI
 suite is not implied. The vendored pico_unit header preserves its upstream license

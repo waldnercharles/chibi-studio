@@ -38,10 +38,10 @@
     "src/host/main.c": "156eeb22888eed437138d67098f0ebc2ff7993202f93d54716c7ab4b350eae15",
     "src/studio_registry.c": "3d698e421481a27a1b202616c477f54d53490784bae2eb5af540c25d04e952d9",
     "src/studio_registry.h": "1564e009edc86187dc69157862038e7adbccd33f90cc7d777ccabdc17165b66b",
-    "tests/acceptance/README.md": "b78ecdc6324f3e5b0108c09ce3def525945447db6713c829936a8a50d92d152a",
+    "tests/acceptance/README.md": "95c8e839ecc20cec91ebb69b186a23713c5dafc80eb93f31235d8791d986ccd1",
     "tests/acceptance/application.c": "99f312f466e3abe43d30a47094f1dd03fa0a27672244eb0960ed4dc5e316ab3c",
     "tests/acceptance/host.c": "79336a3b1fe8ad01ff2df59fa77c0fcd71ef3e019ea67282c1af1400df36a033",
-    "tests/acceptance/main.c": "eeb21f1d062698f6b548a3d9d8945c6574fa0750d82932e449a81e477afa6ec1",
+    "tests/acceptance/main.c": "b19451bf279f954f1d67a63626f5420660d6cc5416df212d4d3428d45ca7c084",
     "tests/acceptance/project/content/behaviors/Counter.chibi": "24559d58ded20e0658f68858e78b7750679c7a48513b4920d109703a7a087289",
     "tests/acceptance/project/content/scenes/Start.kdl": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b",
     "tests/acceptance/project/project.kdl": "3f992f48cb8fad33b17510c61c36812fe8e8b518daf8f1c863e76a32d3d1d5a7",
@@ -2351,7 +2351,7 @@
           "        fprintf(stderr, \"Studio UI: %s\\n\", s->page.error);\n        studio_error(s, \"Studio UI\", s->page.error);"
         ]
       ],
-      "consumer_sha256": "937c40fc72803b3b8a8c89e91bd132f18d262326d1f86333ec86ce042c2bece6",
+      "consumer_sha256": "e0faabb69c9c04c567da0dd5a97c337acdf602cd4832d832f1ee0a6cd1dd077d",
       "current_source_sha256": "4db01dfa4c90272a5d0a0deb7e3cb46b23f2e2e24986c38029e1b2d137264374",
       "sha256": "37bf9d494b1f81971417da1e762d8748f64ecf596e30a6334f39305df658a5d6",
       "source_path": "src/editor/studio/studio_host.c"
@@ -2363,7 +2363,7 @@
       "source_path": "src/editor/studio/studio_inspect.c"
     },
     "src/editor/studio/studio_internal.h": {
-      "consumer_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
+      "consumer_sha256": "13169bea9e605e25dd957f1107ae27fa1f80404ae6fa38829dd9b64eeb22f05c",
       "current_source_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
       "sha256": "a01a22cf19a858e983159029166fe7d9086a883aa6e864bfa9a359b78048a1e6",
       "source_path": "src/editor/studio/studio_internal.h"
@@ -2501,7 +2501,7 @@
       "source_path": "src/editor/studio/studio_refactor.c"
     },
     "src/editor/studio/studio_scene.c": {
-      "consumer_sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
+      "consumer_sha256": "eceea298299c3b0f3315179b27742755219c7e5e0ccdb52bc3a374551f70ae69",
       "current_source_sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "source_path": "src/editor/studio/studio_scene.c"
@@ -2807,13 +2807,13 @@
       "source_path": "src/editor/workspace/scene_debug.h"
     },
     "src/editor/workspace/scene_gizmo.c": {
-      "consumer_sha256": "d5169b852ed4f14906f72e71a02c3ae67da8655b51fc678f2666a243819e4483",
+      "consumer_sha256": "a5bba61a834e1340e560d1ca731816ddc3e26afd947b4c3179fcfa5ec5f18650",
       "current_source_sha256": "d5169b852ed4f14906f72e71a02c3ae67da8655b51fc678f2666a243819e4483",
       "sha256": "d5169b852ed4f14906f72e71a02c3ae67da8655b51fc678f2666a243819e4483",
       "source_path": "src/editor/workspace/scene_gizmo.c"
     },
     "src/editor/workspace/scene_gizmo.h": {
-      "consumer_sha256": "0e46bb27044d1fa98f416d6148c6b87d41b2ad6ab6c9a36763d216a5e7c57c3d",
+      "consumer_sha256": "56ecb35f01eed6ac2311dbe337d191b0f51b04babf84a19268782fff1ce87960",
       "current_source_sha256": "0e46bb27044d1fa98f416d6148c6b87d41b2ad6ab6c9a36763d216a5e7c57c3d",
       "sha256": "0e46bb27044d1fa98f416d6148c6b87d41b2ad6ab6c9a36763d216a5e7c57c3d",
       "source_path": "src/editor/workspace/scene_gizmo.h"

@@ -542,3 +542,26 @@ void studio_scene_tools(studio *s)
         s->scene_status = false;
     }
 }
+
+const char *studio_scene_cursor(const studio *s)
+{
+    const app_scene_authoring *scene = s->scene;
+    if (s->guest || studio_previewed_ui(s)) {
+        return NULL;
+    }
+    /* The camera pans while playing too, with Alt held (render/viewport.c). */
+    bool pans = s->surface.down[2] &&
+                (!scene->runtime_playing || (s->mods & SDL_KMOD_ALT));
+    if (pans) {
+        return "move";
+    }
+    if (!scene_can_move(scene)) {
+        return NULL;
+    }
+    if (scene->gizmo.active != SCENE_GIZMO_NONE) {
+        return scene_gizmo_cursor(scene);
+    }
+    /* A marquee, or a paused run's object dragged, over the gizmo leaves it be. */
+    bool idle = !scene->marquee && !scene->dragging_actor;
+    return idle && s->surface.hovered ? scene_gizmo_cursor(scene) : NULL;
+}

@@ -662,8 +662,10 @@ static const char *cursor_name(studio *s)
         return cursor_name(s->guest);
     }
     const char *graph = studio_graph_cursor(s);
+    const char *scene = studio_scene_cursor(s);
     return kit_dragging(s->kit, NULL) ? "move"
          : graph                      ? graph
+         : scene                      ? scene
                                       : rml_backend_cursor(s->backend);
 }
 
