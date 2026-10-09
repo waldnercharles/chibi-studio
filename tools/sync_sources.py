@@ -35,9 +35,6 @@ def sync(source, studio):
         if name not in owned:
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(data)
-        record['consumer_sha256'] = checksum(destination.read_bytes())
-    for name in set(manifest['consumer_owned_sha256']) | owned:
-        manifest['consumer_owned_sha256'][name] = checksum((studio / name).read_bytes())
     manifest['missing_current_sources'] = []
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
     headers = {}
