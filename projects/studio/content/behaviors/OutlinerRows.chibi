@@ -5,7 +5,8 @@ behavior "OutlinerRows" {
     state Collapsed: bool = false;
     state ShownOpen: bool = true;
     action scene_objects = engine["Scene Objects"](First: convert<"To Integer">("max(First - 1, 0)"(First: int = state.First)), Count: convert<"To Integer">("Count - 1 + step(1, First)"(Count: int = state.Count, First: int = state.First)));
-    action branch_3 = engine["Branch"](Condition: (convert<"To Real">(scene_objects.Shown) > 0));
+    action branch_3 = engine["Branch"](Condition: (convert<"To Real">(local.Shown) > 0));
+    local Shown = scene_objects.Shown;
     on Begin as begin() {
         await set_ui_data(Entity: 0, Name: "root.icon", Value: string = engine["String"](Value: ""));
         await set_ui_data(Entity: 0, Name: "root.parent", Value: bool = engine["Bool"](Value: true));
@@ -20,7 +21,7 @@ behavior "OutlinerRows" {
     }
     after scene_objects {
         await set_ui_data(Entity: 0, Name: "rootShown", Value: bool = (cast<double>(state.First) == 0));
-        await set_ui_data(Entity: 0, Name: "count", Value: int = scene_objects.Shown);
+        await set_ui_data(Entity: 0, Name: "count", Value: int = local.Shown);
         await set_ui_data(Entity: 0, Name: "root.label", Value: string = scene_info().Title);
         await set_ui_data(Entity: 0, Name: "root.open", Value: bool = not(Value: state.Collapsed));
         await set_variable<"ShownOpen">(Value: bool = not(Value: state.Collapsed));
@@ -30,7 +31,7 @@ behavior "OutlinerRows" {
             branch_3();
         } else {
             await set_ui_data(Entity: 0, Name: "rows", Value: struct<"SceneObjectRow">[] = scene_objects.Rows);
-            await set_ui_data(Entity: 0, Name: "total", Value: double = "1 + Shown"(Shown: int = scene_objects.Shown));
+            await set_ui_data(Entity: 0, Name: "total", Value: double = "1 + Shown"(Shown: int = local.Shown));
             branch_3();
         }
     }
