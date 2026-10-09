@@ -1785,15 +1785,14 @@ static void inspector_action(studio *s, const char *action, const ui_activation 
 /* ---------- Editor (workstreams J and T) ---------- */
 
 /* `editor`, what the editor's authored chrome shows (studio_status): for
- * the status bar, `hints`, a list of {icon, key, label}, report and
- * reporting, scene, selection, objects, speed ("" at 1×) and playing; for
- * the top bar, `tabs`, a list of {label, path, icon, dirty, active,
- * closable}, and paused; and
- * `areas`, an {index, drawer, maximized, live, editor, panel, icon, title}
- * per area, which each AreaHeader binds as `area`: its editor type menu
- * runs emit('editor.type', area.index, type) and emit('editor.panel',
- * area.index, name). Values change only when they differ, so bindings
- * update in place, and items a list sheds wait in `spare`. */
+ * the status bar, `hints`, a list of {icon, key, label}, report,
+ * reporting and warning, scene, selection, objects, speed ("" at 1×) and
+ * playing; for the top bar, `tabs`, a list of {label, path, icon, dirty,
+ * active, closable}, and paused; and `areas`, an {index, drawer, maximized,
+ * live, editor, panel, icon, title} per area, which each AreaHeader binds as
+ * `area`: its editor type menu runs emit('editor.type', area.index, type) and
+ * emit('editor.panel', area.index, name). Values change only when they differ,
+ * so bindings update in place, and items a list sheds wait in `spare`. */
 
 /* Reports show for three seconds, then fade (DESIGN.md). */
 #define REPORT_SECONDS 3.0
@@ -1808,7 +1807,7 @@ static const char *const TAB_FLAGS[] = { "dirty",    "active",   "closable",
                                          "disabled", NULL };
 static const item_shape TAB = { TAB_TEXTS, TAB_FLAGS };
 static const char *const STATUS_TEXTS[] = { "report", "scene", "selection", "speed", NULL };
-static const char *const STATUS_FLAGS[] = { "reporting", "playing", "paused", NULL };
+static const char *const STATUS_FLAGS[] = { "reporting", "warning", "playing", "paused", NULL };
 static const char *const AREA_TEXTS[] = { "panel", "icon", "title", NULL };
 
 static void add_areas(yyjson_mut_doc *doc, yyjson_mut_val *editor)
@@ -1922,7 +1921,10 @@ bool studio_status_show(yyjson_mut_doc *doc, const studio_status *status)
     for (int t = 0; STATUS_TEXTS[t]; t++) {
         changed |= ui_data_put_text(doc, editor, STATUS_TEXTS[t], texts[t] ? texts[t] : "");
     }
-    const bool flags[] = { status->reporting, status->playing, status->paused };
+    const bool flags[] = { status->reporting,
+                           status->warning,
+                           status->playing,
+                           status->paused };
     for (int f = 0; STATUS_FLAGS[f]; f++) {
         changed |= ui_data_put_bool(editor, STATUS_FLAGS[f], flags[f]);
     }
@@ -2094,6 +2096,7 @@ static bool sync_editor(studio *s, const studio_panel_sync *at)
     studio_status status = {
         .report = s->status,
         .reporting = s->status[0] && s->time - s->status_time < REPORT_SECONDS,
+        .warning = s->status_warning,
         .scene = studio_scene_title(s->scene, title, sizeof title),
         .selection = actor ? actor->name : spawned_selection(s->scene),
         .selected = scene_selection_count(s->scene) +

@@ -107,6 +107,17 @@ static bool check_counter(studio *s, int expected, bool dirty, const node **lite
     return true;
 }
 
+/* A report of what kept an edit from happening shows as a warning, and the
+ * next report clears it. */
+static bool reports_warn(studio *s)
+{
+    studio_warn(s, "Could not duplicate");
+    REQUIRE(s->status_warning && !strcmp(s->status, "Could not duplicate"));
+    studio_report(s, "Duplicated");
+    REQUIRE(!s->status_warning);
+    return true;
+}
+
 static bool source_edit_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -114,6 +125,7 @@ static bool source_edit_frame(void *state)
     frames++;
     REQUIRE(frames <= 4);
     if (frames == 1) {
+        REQUIRE(reports_warn(s));
         const node *literal = NULL;
         REQUIRE(check_counter(s, 1, false, &literal));
         s->prefs.code_apply_live = true;

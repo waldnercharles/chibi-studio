@@ -1129,6 +1129,7 @@ struct studio
     int undo_toast;   /* toast offering Undo for undo_toast_group */
     uint64_t undo_toast_group;
     char status[256];
+    bool status_warning;    /* the report is a problem, not a result */
     char seen_message[256]; /* last authoring message reported */
     double status_time;
     double time;
@@ -1493,6 +1494,8 @@ void studio_ui_new_project(studio *s);
 /* Shell. */
 void studio_emit(studio *s);
 void studio_report(studio *s, const char *message);
+/* Reports what kept an operation from happening. */
+void studio_warn(studio *s, const char *message);
 /* Runs this frame's keys as commands, on the area under the pointer
  * (Blender). With `field`, a focused text field keeps every key but the
  * primary-modifier chords it edits no text with. */
@@ -2429,6 +2432,7 @@ typedef struct studio_status
     int hint_count;
     const char *report;    /* the last operation */
     bool reporting;        /* while the report shows, three seconds */
+    bool warning;          /* the report is studio_warn's */
     const char *scene;     /* the scene's title */
     const char *selection; /* the active object, "" for none */
     int selected;          /* how many objects are selected */

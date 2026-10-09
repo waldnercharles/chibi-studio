@@ -32,16 +32,16 @@
     "projects/starter/project.kdl": "3f992f48cb8fad33b17510c61c36812fe8e8b518daf8f1c863e76a32d3d1d5a7",
     "src/editor/documents/asset_code.c": "d1318ed2ee591c8a0963d2409eb0c8916baea1d9d2b8cb7857d47ee8002cd9ba",
     "src/editor/studio/studio_graph_view.c": "ad58c019dee6b310fa9bd5984c69138ea7411620d79705cfe8194222e07f0512",
-    "src/editor/studio/studio_ui.c": "7e11dd999f5c6136583fd8d4ad735abb6ed528a3a4f711460290596751922b33",
+    "src/editor/studio/studio_ui.c": "a04723aeee24e926b7b227b3d4376e8088077f70cf27a5ca7b26e20d85c6d466",
     "src/editor/workspace/application.c": "d5801500186eb3a618c186c2fef75df413257656876038902ec22e61d7cf460f",
     "src/editor/workspace/scene_authoring.c": "2f005000059f2fc5b3ab96b3736d903e1447568b9e2f01e1ad63230dc20093ff",
     "src/host/main.c": "156eeb22888eed437138d67098f0ebc2ff7993202f93d54716c7ab4b350eae15",
     "src/studio_registry.c": "3d698e421481a27a1b202616c477f54d53490784bae2eb5af540c25d04e952d9",
     "src/studio_registry.h": "1564e009edc86187dc69157862038e7adbccd33f90cc7d777ccabdc17165b66b",
-    "tests/acceptance/README.md": "b78ecdc6324f3e5b0108c09ce3def525945447db6713c829936a8a50d92d152a",
+    "tests/acceptance/README.md": "0759faf6b2a4797cfb31e0cb84a0de90ab5992850866cb23c92a32888192ef77",
     "tests/acceptance/application.c": "99f312f466e3abe43d30a47094f1dd03fa0a27672244eb0960ed4dc5e316ab3c",
     "tests/acceptance/host.c": "79336a3b1fe8ad01ff2df59fa77c0fcd71ef3e019ea67282c1af1400df36a033",
-    "tests/acceptance/main.c": "eeb21f1d062698f6b548a3d9d8945c6574fa0750d82932e449a81e477afa6ec1",
+    "tests/acceptance/main.c": "eb1e68f74cafd70cf124555586804f41a8c40678a45f5f9c243ad90ef6138ecb",
     "tests/acceptance/project/content/behaviors/Counter.chibi": "24559d58ded20e0658f68858e78b7750679c7a48513b4920d109703a7a087289",
     "tests/acceptance/project/content/scenes/Start.kdl": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b",
     "tests/acceptance/project/project.kdl": "3f992f48cb8fad33b17510c61c36812fe8e8b518daf8f1c863e76a32d3d1d5a7",
@@ -1367,13 +1367,13 @@
       "source_path": "projects/studio/content/ui/Splitter.rml"
     },
     "projects/studio/content/ui/StatusBar.rcss": {
-      "consumer_sha256": "7e16612dfc97885b16d012d0cf13e2887c4e5cc7ff33b7987833cc42670cb931",
+      "consumer_sha256": "a71dec4f836ea6492986c177dd27527232e921626c84f012e2d2e9718692be32",
       "current_source_sha256": "7e16612dfc97885b16d012d0cf13e2887c4e5cc7ff33b7987833cc42670cb931",
       "sha256": "7e16612dfc97885b16d012d0cf13e2887c4e5cc7ff33b7987833cc42670cb931",
       "source_path": "projects/studio/content/ui/StatusBar.rcss"
     },
     "projects/studio/content/ui/StatusBar.rml": {
-      "consumer_sha256": "8361466b13997a1579957929b914d2e621b85d36a634075681fc5b73cd3b4804",
+      "consumer_sha256": "dbfedb930b3e035f2e0701b4a5470f188467afc3103f759fef819d28227162ef",
       "current_source_sha256": "8361466b13997a1579957929b914d2e621b85d36a634075681fc5b73cd3b4804",
       "sha256": "8361466b13997a1579957929b914d2e621b85d36a634075681fc5b73cd3b4804",
       "source_path": "projects/studio/content/ui/StatusBar.rml"
@@ -1463,7 +1463,7 @@
       "source_path": "projects/studio/content/ui/Tile.rml"
     },
     "projects/studio/content/ui/TopBar.rcss": {
-      "consumer_sha256": "fd9683b3f7bbfdda05c9fbbfa681253c9ccb481df60b3e573242bc80d403ed00",
+      "consumer_sha256": "a22cc977d491bdf2ceae4065ddcae5b359324e8448b88f4f6a6eeee103baec3a",
       "current_source_sha256": "fd9683b3f7bbfdda05c9fbbfa681253c9ccb481df60b3e573242bc80d403ed00",
       "sha256": "fd9683b3f7bbfdda05c9fbbfa681253c9ccb481df60b3e573242bc80d403ed00",
       "source_path": "projects/studio/content/ui/TopBar.rcss"
@@ -2363,7 +2363,7 @@
       "source_path": "src/editor/studio/studio_inspect.c"
     },
     "src/editor/studio/studio_internal.h": {
-      "consumer_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
+      "consumer_sha256": "c28d51f3cca88f259ebbebe4cdefa7a11edcf0b494511e48bc8d66dcbc936abc",
       "current_source_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
       "sha256": "a01a22cf19a858e983159029166fe7d9086a883aa6e864bfa9a359b78048a1e6",
       "source_path": "src/editor/studio/studio_internal.h"
@@ -2501,7 +2501,7 @@
       "source_path": "src/editor/studio/studio_refactor.c"
     },
     "src/editor/studio/studio_scene.c": {
-      "consumer_sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
+      "consumer_sha256": "94268c1abe1403bb31c385a96f5e5317e3264e7616f5b25dc697f8f726123d9a",
       "current_source_sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "source_path": "src/editor/studio/studio_scene.c"
@@ -2513,13 +2513,13 @@
       "source_path": "src/editor/studio/studio_settings.c"
     },
     "src/editor/studio/studio_shell.c": {
-      "consumer_sha256": "e38ecbf7677c5f74f7fcafc5199412171781a5fd8eac038a7923a1327142499c",
+      "consumer_sha256": "ebe804d44ba1f792af3ae5ff1ebb6f78b362266470278bf6b1b0c261f26214a2",
       "current_source_sha256": "e38ecbf7677c5f74f7fcafc5199412171781a5fd8eac038a7923a1327142499c",
       "sha256": "e38ecbf7677c5f74f7fcafc5199412171781a5fd8eac038a7923a1327142499c",
       "source_path": "src/editor/studio/studio_shell.c"
     },
     "src/editor/studio/studio_sources.c": {
-      "consumer_sha256": "3163175f127f6aec6a68be24efe77791ed9ed640daf72819e281de90b0cad483",
+      "consumer_sha256": "7dc3568b30f7f37fa1bf6451ba36817631f80231eed16877b9d64caab055bf48",
       "current_source_sha256": "3163175f127f6aec6a68be24efe77791ed9ed640daf72819e281de90b0cad483",
       "sha256": "ad4f609f80a5ab1986f04d7783f422602cd37d5407ae488a1b0deae07a86fb8c",
       "source_path": "src/editor/studio/studio_sources.c"
@@ -2561,7 +2561,7 @@
           "\"editor/workspace/tree_watch.h\""
         ]
       ],
-      "consumer_sha256": "7e11dd999f5c6136583fd8d4ad735abb6ed528a3a4f711460290596751922b33",
+      "consumer_sha256": "a04723aeee24e926b7b227b3d4376e8088077f70cf27a5ca7b26e20d85c6d466",
       "current_source_sha256": "4cc012974e9fb688f8ecaf94c80661d34e38a780341636777eda9caa59a010d9",
       "sha256": "262e7451d439607c4a6409da7aa56f473c19dec23546088992f0487ffe91a637",
       "source_path": "src/editor/studio/studio_ui.c"
