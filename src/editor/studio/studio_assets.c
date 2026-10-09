@@ -3,13 +3,14 @@
  * size slider's smallest step, as a list grouped by kind (Unity's one-column
  * view). projects/studio's Assets shows either as a window of one List over
  * the `assets` source, and AssetsHeader the filters, the size and New. A
- * click selects, the arrows move the selection, and Enter or a double-click
- * opens the asset. Prototypes drag into the Scene or the Outliner to place
- * an instance; behaviors drag onto an Outliner row to attach, and assets
- * fields name onto those fields (studio_drop.c). Resting on a tile shows a
- * large preview, as Unreal's Content Browser does. New makes an asset of any
- * kind Studio indexes and opens it, asking for its name in NewAsset (the
- * `asset_menus` source, with the row menu and New's kinds). */
+ * click selects, the arrows move the selection, Enter or a double-click
+ * opens the asset, and F2 and Delete rename and delete it. Prototypes drag
+ * into the Scene or the Outliner to place an instance; behaviors drag onto
+ * an Outliner row to attach, and assets fields name onto those fields
+ * (studio_drop.c). Resting on a tile shows a large preview, as Unreal's
+ * Content Browser does. New makes an asset of any kind Studio indexes and
+ * opens it, asking for its name in NewAsset (the `asset_menus` source, with
+ * the row menu and New's kinds). */
 #include "editor/studio/studio_internal.h"
 #include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/asset_index.h"
@@ -19,7 +20,6 @@
 #include "ui/popover.h"
 
 #include <assert.h>
-#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,24 +75,6 @@ uint32_t studio_asset_kind_icon(int kind)
 const char *studio_asset_kind_label(int kind)
 {
     return KIND_LABELS[kind];
-}
-
-static bool contains(const char *text, const char *filter)
-{
-    if (!filter[0]) {
-        return true;
-    }
-    for (const char *t = text; *t; t++) {
-        const char *a = t, *b = filter;
-        while (*a && *b && tolower((unsigned char)*a) == tolower((unsigned char)*b)) {
-            a++;
-            b++;
-        }
-        if (!*b) {
-            return true;
-        }
-    }
-    return false;
 }
 
 static bool grid_view(const studio *s)
@@ -215,7 +197,7 @@ static struct studio_assets_cache *asset_rows(studio *s, const reference_index *
         const reference_asset *asset = reference_index_asset_at(index, id);
         int kind = (int)asset->kind;
         if ((s->assets_kind >= 0 && kind != s->assets_kind) ||
-            !contains(asset->name, s->assets_filter)) {
+            !studio_matches(s->assets_filter, asset->name)) {
             continue;
         }
         cache->totals[kind]++;
@@ -350,12 +332,25 @@ static void open_asset(studio *s, int asset)
     }
 }
 
+/* The selected asset while the view shows it, or -1: a filter or a
+   collapsed group hides the selection from the keys too. */
+static int selected_asset(studio *s)
+{
+    const struct studio_assets_cache *cache = s->assets_cache;
+    if (!cache || cache->index != app_scene_authoring_asset_index(s->scene) ||
+        cache->revision != s->scene->asset_index_revision) {
+        return -1;
+    }
+    int *shown = shown_assets(s, cache);
+    int at = selected_position(s, cache->index, shown);
+    int asset = at < 0 ? -1 : shown[at];
+    afree(shown);
+    return asset;
+}
+
 static bool open_selection(studio *s)
 {
-    const reference_index *index = app_scene_authoring_asset_index(s->scene);
-    int asset = s->assets_selected[0]
-                  ? reference_index_find_name(index, (reference_asset_kind)s->assets_selected_kind, s->assets_selected)
-                  : -1;
+    int asset = selected_asset(s);
     if (asset < 0) {
         return false;
     }
@@ -387,8 +382,49 @@ static bool navigation_key(studio *s, SDL_Keycode key)
     }
 }
 
-/* Navigation acts on the selection; F2 and Delete on the asset under the
-   pointer. */
+/* The element with `id` in Studio's documents, or NULL. */
+static rml_element *element_by_id(studio *s, const char *id)
+{
+    rml_context *context = rml_backend_context(s->backend);
+    for (int i = 0; i < rml_context_document_count(context); i++) {
+        rml_element *found = rml_element_by_id(rml_context_document(context, i), id);
+        if (found) {
+            return found;
+        }
+    }
+    return NULL;
+}
+
+/* Hidden slots keep the asset they last showed, so the one shown is the
+   match with a size. */
+#define MAX_SLOTS 8
+
+/* What F2 or Delete asks opens under the asset's tile or row, which the
+   keys acted on, rather than at the pointer; at the pointer when the asset
+   is scrolled out of view. */
+static void anchor_popover(studio *s, int asset)
+{
+    rml_element *list = element_by_id(s, LIST_ID), *slots[MAX_SLOTS];
+    char selector[32];
+    snprintf(selector, sizeof selector, "[data-asset='%d']", asset);
+    int count = list ? rml_element_query_selector_all(list, selector, slots, MAX_SLOTS)
+                     : 0;
+    for (int i = 0; i < count && i < MAX_SLOTS; i++) {
+        rml_vec2 at = rml_element_absolute_offset(slots[i], RML_BOX_BORDER);
+        rml_vec2 size = rml_element_box_size(slots[i], RML_BOX_BORDER);
+        if (size.x > 0) {
+            float *box = s->refactor.anchor;
+            box[0] = at.x;
+            box[1] = at.y;
+            box[2] = size.x;
+            box[3] = size.y;
+            return;
+        }
+    }
+}
+
+/* Keys act on the selection, as they do in the Outliner and the graph, so
+   where the pointer rests never picks what F2 renames or Delete removes. */
 bool studio_assets_key(studio *s, SDL_Keycode key, SDL_Keymod mod)
 {
     if (studio_designer_active(s) || studio_primary(s, mod) ||
@@ -398,18 +434,19 @@ bool studio_assets_key(studio *s, SDL_Keycode key, SDL_Keymod mod)
     if (navigation_key(s, key)) {
         return true;
     }
-    if (s->assets_hover < 0) {
+    int asset = selected_asset(s);
+    if (asset < 0) {
         return false;
     }
-    if (key == SDLK_F2) {
-        studio_refactor_rename_asset(s, s->assets_hover);
-        return true;
+    switch (key) {
+        case SDLK_F2: studio_refactor_rename_asset(s, asset); break;
+        case SDLK_X:
+        case SDLK_DELETE:
+        case SDLK_BACKSPACE: studio_refactor_delete_asset(s, asset); break;
+        default: return false;
     }
-    if (key == SDLK_X || key == SDLK_DELETE || key == SDLK_BACKSPACE) {
-        studio_refactor_delete_asset(s, s->assets_hover);
-        return true;
-    }
-    return false;
+    anchor_popover(s, asset);
+    return true;
 }
 
 /* ---------- New assets ---------- */
@@ -773,19 +810,6 @@ static bool show_entries(yyjson_mut_doc *doc, yyjson_mut_val *items, const entry
     return changed;
 }
 
-/* The element with `id` in Studio's documents, or NULL. */
-static rml_element *element_by_id(studio *s, const char *id)
-{
-    rml_context *context = rml_backend_context(s->backend);
-    for (int i = 0; i < rml_context_document_count(context); i++) {
-        rml_element *found = rml_element_by_id(rml_context_document(context, i), id);
-        if (found) {
-            return found;
-        }
-    }
-    return NULL;
-}
-
 /* ---------- The `assets` source: Assets and AssetsHeader ---------- */
 
 /* The kind filter's choices, a table as EnumField lists one: All, then
@@ -801,7 +825,9 @@ static void add_kinds(yyjson_mut_doc *doc, yyjson_mut_val *assets)
         yyjson_mut_val *option = yyjson_mut_arr_add_obj(doc, options);
         yyjson_mut_obj_add_int(doc, option, "value", kind);
         yyjson_mut_obj_add_str(doc, option, "label", kind < 0 ? "All" : KIND_LABELS[kind]);
-        yyjson_mut_obj_add_str(doc, option, "icon", "");
+        char icon[5] = "";
+        studio_glyph(icon, kind < 0 ? KIT_ICON_ASSETS : KIND_ICONS[kind]);
+        yyjson_mut_obj_add_strcpy(doc, option, "icon", icon);
     }
 }
 
@@ -1202,10 +1228,9 @@ bool studio_assets_sync(studio *s, const studio_panel_sync *at)
     changed |= show_header(s, at->doc, at->variable);
     changed |= grid_view(s) ? show_grid(s, at, cache, list, reveal)
                             : show_list(s, at, cache, list, reveal);
-    int count = index ? reference_index_asset_count(index) : 0;
-    const char *empty = acount(cache->tiles) ? ""
-                      : count                ? "No matches"
-                                             : "No assets";
+    /* A project always has its start scene, so only filters empty the view. */
+    bool filtered = s->assets_filter[0] || s->assets_kind >= 0;
+    const char *empty = filtered && !acount(cache->tiles) ? "No assets match" : "";
     return ui_data_put_text(at->doc, at->variable, "empty", empty) || changed;
 }
 
@@ -1304,7 +1329,8 @@ static void click(studio *s, const reference_asset *asset, int kind)
 
 /* What the panel's rows, tiles, menus and header controls ask for:
  * click (asset, kind), open, menu, preview, references, spawnBreak, rename
- * and delete (asset), kind (-1 for all), tile (the size) and scroll. */
+ * and delete (asset), kind (-1 for all), tile (the size), clearFilter and
+ * scroll. */
 void studio_assets_action(studio *s, const char *action, const ui_activation *a)
 {
     int id = a->argc ? atoi(a->args[0]) : -1;
@@ -1319,6 +1345,9 @@ void studio_assets_action(studio *s, const char *action, const ui_activation *a)
                                                              : tile;
     } else if (!strcmp(action, "click")) {
         click(s, asset, a->argc > 1 ? atoi(a->args[1]) : -1);
+    } else if (!strcmp(action, "clearFilter")) {
+        s->assets_filter[0] = '\0';
+        s->assets_kind = -1;
     }
     if (!asset) {
         return;

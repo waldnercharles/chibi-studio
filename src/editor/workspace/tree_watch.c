@@ -12,7 +12,10 @@
 
 static long long modified_ns(const struct stat *info)
 {
-#ifdef __APPLE__
+#if defined(_WIN32)
+    /* The Windows runtime stats whole seconds. */
+    return (long long)info->st_mtime * 1000000000LL;
+#elif defined(__APPLE__)
     return (long long)info->st_mtimespec.tv_sec * 1000000000LL +
            info->st_mtimespec.tv_nsec;
 #else

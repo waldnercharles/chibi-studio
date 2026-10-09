@@ -279,6 +279,13 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                                      "input",
                                          .icon = KIT_ICON_RECORD,
                                          .phase = SHORTCUT_EDITOR },
+    [STUDIO_COMMAND_EXPORT_GAME] = { .id = "exportGame",
+                                     .label = "Export Game",
+                                     .context = "Global",
+                                     .keywords = "build ship package release "
+                                                 "app desktop",
+                                     .icon = KIT_ICON_PACKAGE,
+                                     .phase = SHORTCUT_EDITOR },
     [STUDIO_COMMAND_DENSITY] = { .id = "density",
                                  .label = "Comfortable Density",
                                  .context = "Global",
@@ -1207,6 +1214,7 @@ static bool enabled_with(studio *s, studio_command command, int argument)
             return studio_collab_available() && collab_active() && collab_is_host();
         case STUDIO_COMMAND_RECORD_GAMEPLAY:
             return !s->hosted && !s->guest && s->scene->scene_path;
+        case STUDIO_COMMAND_EXPORT_GAME: return studio_export_available(s);
         case STUDIO_COMMAND_RENAME:
             return editable && selection && !studio_designer_active(s);
         case STUDIO_COMMAND_ADD_COMPONENT:
@@ -1336,6 +1344,7 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_FASTER: studio_speed_step(s, 1); break;
         case STUDIO_COMMAND_NORMAL_SPEED: studio_speed_step(s, 0); break;
         case STUDIO_COMMAND_RECORD_GAMEPLAY: studio_record_gameplay(s); break;
+        case STUDIO_COMMAND_EXPORT_GAME: studio_export_game(s); break;
         case STUDIO_COMMAND_SELECT_PREVIOUS:
             studio_step_selection(s, -1, false);
             break;
