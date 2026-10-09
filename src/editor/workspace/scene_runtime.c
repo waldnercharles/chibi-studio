@@ -465,7 +465,12 @@ int app_scene_authoring_runtime_command(
                 *playing = false;
                 *step = false;
                 engine_set_playing(scene->runtime, false);
-                snprintf(scene->message, sizeof scene->message, "Scene Begin failed. Stop to return to editing.");
+                snprintf(
+                    scene->message,
+                    sizeof scene->message,
+                    "Scene Begin failed: %s. Stop to return to editing.",
+                    game_source_error(scene->live->runtime->sources)
+                );
                 return -1;
             }
         }
@@ -497,7 +502,12 @@ int app_scene_authoring_runtime_command(
         }
         scene->live->runtime->deferred = false;
         if (game_source_begin(scene->live->runtime->sources, scene->live->runtime->now, scene->live->runtime->delta) != 0) {
-            snprintf(scene->message, sizeof scene->message, "Scene Begin failed. Stop to return to editing.");
+            snprintf(
+                scene->message,
+                sizeof scene->message,
+                "Scene Begin failed: %s. Stop to return to editing.",
+                game_source_error(scene->live->runtime->sources)
+            );
             return -1;
         }
         *playing = true;

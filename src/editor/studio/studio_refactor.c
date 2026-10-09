@@ -98,7 +98,14 @@ void studio_refactor_source(studio *s, const char *path, int offset)
     r->mode = STUDIO_REFACTOR_RENAME;
     r->opening = true;
     r->source_offset = offset;
-    kit_wants_text(s->kit, &r->caret);
+    kit_rect c = { 0 };
+    if (kit_wants_text(s->kit, &c) && c.h > 0) { /* hang below the caret */
+        float ratio = studio_pixel_ratio(s), *box = r->anchor;
+        box[0] = c.x * ratio;
+        box[1] = c.y * ratio;
+        box[2] = (c.w > 0 ? c.w : 1) * ratio;
+        box[3] = c.h * ratio;
+    }
     snprintf(r->source_path, sizeof r->source_path, "%s", path);
     snprintf(r->title, sizeof r->title, "%s", name ? name : "");
     snprintf(r->name, sizeof r->name, "%s", name ? name : "");
@@ -602,23 +609,19 @@ void studio_refactor_action(studio *s, const char *action, const ui_activation *
     }
 }
 
-/* Shows the popover below the renamed source's caret, else at the pointer,
-   its name field focused with the name selected, as the kit's popover
-   opened. */
+/* Shows the popover under its anchor, else at the pointer, its name field
+   focused with the name selected, as the kit's popover opened. */
 static void show(studio *s, rml_element *popover)
 {
     studio_refactor *r = &s->refactor;
     float ratio = studio_pixel_ratio(s);
-    kit_rect c = r->caret;
-    popover_show(
-        popover,
-        c.h > 0
-            ? &(popover_anchor){ .side = POPOVER_BELOW,
-                                 .box = { c.x * ratio, c.y * ratio, c.w * ratio, c.h * ratio } }
-            : &(popover_anchor){
-                  .side = POPOVER_POINT,
-                  .box = { s->in.mouse_x * ratio, s->in.mouse_y * ratio, 0, 0 } }
-    );
+    popover_anchor at = { .side = POPOVER_POINT,
+                          .box = { s->in.mouse_x * ratio, s->in.mouse_y * ratio, 0, 0 } };
+    if (r->anchor[2] > 0) {
+        at = (popover_anchor){ .side = POPOVER_BELOW, .keyboard = true };
+        memcpy(at.box, r->anchor, sizeof at.box);
+    }
+    popover_show(popover, &at);
     rml_element *field = rml_element_query_selector(popover, "#" NAME_ID);
     if (field && r->mode == STUDIO_REFACTOR_RENAME) {
         rml_element_set_value(field, r->name);

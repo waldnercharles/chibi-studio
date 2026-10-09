@@ -190,7 +190,8 @@ bool sg_connect_pins(studio *s, node *a, int a_kind, int a_pin, node *b, int b_k
 bool sg_reconnect_pins(studio *s, node *to, int pin);
 bool sg_pins_compatible(const node *a, int a_kind, int a_pin, const node *b, int b_kind, int b_pin);
 int sg_body_target(const graph *gr, const node *from, int kind, int pin, const node *to);
-void sg_show_error(studio *s, const char *message);
+/* A warning toast for an edit the graph refused, recorded in Output. */
+void sg_show_error(studio *s, const char *title, const char *message);
 void sg_select_only(editor *e, node *n);
 void sg_delete_selection(studio *s);
 void sg_copy_selection(studio *s);

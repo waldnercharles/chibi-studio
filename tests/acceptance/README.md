@@ -19,6 +19,14 @@ platform does, a few frames apart. The source must gain only whitespace: Enter
 types newlines and never accepts a completion nobody asked for. It runs twelve
 hidden frames and saves nothing.
 
+`studio-acceptance --export-game --project-root PATH` accepts another disposable
+copy. Its first hidden frame runs the Export Game command, which needs the SDK's
+`chibi`, `chibi-compile` and `chibi-player` that the build copies beside it. The
+second frame waits for the exporter to exit, and the third frame's own poll
+reports it. It checks that the command is disabled while the export runs, that
+Studio reports the export, and that the reported folder holds the compiled game.
+Showing the folder is not exercised.
+
 Execution requires explicit root coordination and independent admission under the
 60-second GPU policy. Merely building this target does not run it. A whole UI
 suite is not implied. The vendored pico_unit header preserves its upstream license
