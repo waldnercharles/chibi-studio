@@ -19,10 +19,7 @@
 .panel-head .chev { color: var(--faint-foreground); width: 12dp; font-size: var(--studio-font-11, 11dp); transform: rotate(-90deg); transition: transform 0.14s cubic-out; }
 .panel[data-open] .panel-head .chev { transform: rotate(0deg); }
 .panel-head .title { font-weight: 600; }
-.panel-head .grip { color: var(--disabled-foreground); opacity: 0; font-size: var(--studio-font-12, 12dp); }
-.panel-head:hover .grip { opacity: 1; }
-/* The panel's menu (kit_panel_menu), in the grip's place while the header is hovered. */
-.panel[data-menu] .panel-head .grip { display: none; }
+/* The panel's menu (kit_panel_menu), while the header is hovered. */
 .panel-head .menu { width: 18dp; line-height: var(--studio-line-18, 18dp); border-radius: var(--r); opacity: 0; cursor: pointer; }
 .panel-head:hover .menu { opacity: 1; }
 .panel-head .menu:hover { background-color: var(--press); color: var(--foreground); }

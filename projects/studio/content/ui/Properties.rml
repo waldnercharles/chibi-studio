@@ -49,7 +49,6 @@
           <span class="title">{{ panel.title }}</span>
           <span class="badge override" data-if="panel.badge != ''">{{ panel.badge }}</span>
           <span class="spacer"></span>
-          <span class="icon grip">&#xeb04;</span>
         </div>
         <span class="icon menu" data-if="panel.menu" data-tip="More" data-event-click="emit('properties.panelMenu', panel.key)">&#xea7c;</span>
       </div>
@@ -76,7 +75,6 @@
           <span class="icon chev">&#xeab4;</span>
           <span class="title">Behaviors</span>
           <span class="spacer"></span>
-          <span class="icon grip">&#xeb04;</span>
         </div>
       </div>
       <div class="panel-body" data-if="properties.behaviors.open">
@@ -110,7 +108,6 @@
           <span class="icon chev">&#xeab4;</span>
           <span class="title">{{ panel.title }}</span>
           <span class="spacer"></span>
-          <span class="icon grip">&#xeb04;</span>
         </div>
       </div>
       <div class="panel-body" data-if="panel.open">
