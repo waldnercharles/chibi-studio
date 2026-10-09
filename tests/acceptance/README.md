@@ -19,6 +19,9 @@ platform does, a few frames apart. The source must gain only whitespace: Enter
 types newlines and never accepts a completion nobody asked for. It runs twelve
 hidden frames and saves nothing.
 
+`studio-acceptance --scene-cursors` needs no project or renderer. It checks the
+cursor each Scene gizmo part asks for, a resize handle's as its box turns.
+
 `studio-acceptance --export-game --project-root PATH` accepts another disposable
 copy. Its first hidden frame runs the Export Game command, which needs the SDK's
 `chibi`, `chibi-compile` and `chibi-player` that the build copies beside it. The

@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CC: clang-18
+  CXX: clang++-18
+  XDG_RUNTIME_DIR: /tmp/chibi-runtime
+  SDL_AUDIODRIVER: dummy
+
+jobs:
+  studio:
+    name: Build and startup against engine main
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: chibi-studio
+      - name: Require engine checkout access
+        env:
+          TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Add a CHIBI_ENGINE_TOKEN secret that can read waldnercharles/chibi."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          repository: waldnercharles/chibi
+          token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
+          path: chibi
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 libclang-18-dev ninja-build xvfb \
+            libgl1-mesa-dev libvulkan1 mesa-vulkan-drivers libx11-dev libxcursor-dev \
+            libxext-dev libxi-dev libxrandr-dev libxss-dev libxtst-dev \
+            libwayland-dev libxkbcommon-dev libasound2-dev libpulse-dev
+          python3 -m venv /tmp/cmake
+          /tmp/cmake/bin/pip install 'cmake>=4.2,<5'
+          echo /tmp/cmake/bin >> "$GITHUB_PATH"
+          mkdir -m 700 -p "$XDG_RUNTIME_DIR"
+      - name: Identify dependency sources
+        id: deps
+        working-directory: chibi
+        run: echo "key=$(python3 tools/fetchcontent_cache.py fingerprint --source-dir .)" >> "$GITHUB_OUTPUT"
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/chibi-fetchcontent
+            ~/.cache/chibi-dependency-packages
+          key: studio-deps-${{ runner.os }}-clang18-${{ steps.deps.outputs.key }}
+      - name: Package the engine SDK
+        working-directory: chibi
+        run: make package-sdk SDK_PREFIX=dist/sdk LIBCLANG_ROOT=/usr/lib/llvm-18
+      - name: Build Studio against the packaged SDK
+        working-directory: chibi
+        run: make studio-build STUDIO_SOURCE="$GITHUB_WORKSPACE/chibi-studio" STUDIO_SDK_PREFIX=dist/sdk
+      - name: Two hidden Studio frames
+        working-directory: chibi
+        shell: bash
+        run: |
+          timeout 60 xvfb-run -a build-studio/bin/chibi-dev \
+            --project-root ../chibi-studio/projects/starter --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee studio.log
+          ! grep -E 'Studio UI:|runtime frame failed|Could not initialize' studio.log
