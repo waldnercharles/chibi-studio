@@ -182,7 +182,9 @@ static uint64_t file_stat(const char *path)
     if (stat(path, &info) != 0) {
         return 0;
     }
-#ifdef __APPLE__
+#if defined(_WIN32)
+    uint64_t nanoseconds = 0; /* the Windows runtime stats whole seconds */
+#elif defined(__APPLE__)
     uint64_t nanoseconds = (uint64_t)info.st_mtimespec.tv_nsec;
 #else
     uint64_t nanoseconds = (uint64_t)info.st_mtim.tv_nsec;

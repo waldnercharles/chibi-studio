@@ -427,14 +427,17 @@ bool studio_scene_view_sync(studio *s, const studio_panel_sync *at)
 {
     bool scene = !s->guest, session = scene && runtime_session(s->scene);
     bool editing = scene && !session;
+    /* The scene, then the active object, as the Canvas's crumbs read. */
     char title[128], context[256];
     scene_actor *actor = selected_actor(s->scene);
+    studio_scene_title(s->scene, title, sizeof title);
     snprintf(
         context,
         sizeof context,
-        "(%s) %s",
-        studio_scene_title(s->scene, title, sizeof title),
-        actor ? actor->name : "-"
+        "%s%s%s",
+        title,
+        actor ? " \xe2\x80\xba " : "",
+        actor ? actor->name : ""
     );
     bool changed = show_cameras(s, at, editing);
     changed |= ui_data_put_bool(at->variable, "labeled", editing);

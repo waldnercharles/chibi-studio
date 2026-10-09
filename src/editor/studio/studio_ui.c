@@ -197,7 +197,7 @@ static void forget_errors(studio_ui *ui)
 static void report_error(studio *s, const char *path, const char *message)
 {
     char error[1024];
-    snprintf(error, sizeof error, "%s: %s", path, message);
+    snprintf(error, sizeof error, "%s %s", path, message);
     for (int i = 0; i < acount(s->ui->errors); i++) {
         if (!strcmp(s->ui->errors[i], error)) {
             return;
@@ -512,14 +512,16 @@ static void dispatch(studio *s, ecs_entity entity, const ui_activation *a)
 {
     game_preview_world *live = game_prototype_preview_live(s->ui->world);
     render_ui_host host = authoring_ui_events(live);
-    if (ui_activation_send(&host, entity, a, s->mac ? RML_KM_META : RML_KM_CTRL)) {
+    if (!ui_activation_send(&host, entity, a, s->mac ? RML_KM_META : RML_KM_CTRL)) {
+        report_error(s, a->event, "declares a payload a UI event cannot carry");
         return;
     }
-    /* A behavior that failed left its error. A payload the event cannot carry
-       fails before any behavior runs, leaving the last run's error: empty
-       unless that run failed too, which ui_activation_send cannot tell. */
-    const char *error = game_source_error(live->runtime->sources);
-    report_error(s, a->event, error[0] ? error : "its payload cannot travel in a UI event");
+    const char *failure = host.failure ? host.failure(host.context) : "";
+    if (failure[0]) {
+        char message[512];
+        snprintf(message, sizeof message, "failed: %s", failure);
+        report_error(s, a->event, message);
+    }
 }
 
 /* Runs the events behaviors sent each other meanwhile (Send Event), so a

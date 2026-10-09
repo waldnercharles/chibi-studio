@@ -13,6 +13,14 @@ frame renders both graph and code views before normal host shutdown. This proves
 consumer edit-handler integration and UI rendering; it does not hit-test pointer
 input. No source save, scenario, playback or screenshot occurs.
 
+`studio-acceptance --export-game --project-root PATH` accepts another disposable
+copy. Its first hidden frame runs the Export Game command, which needs the SDK's
+`chibi`, `chibi-compile` and `chibi-player` that the build copies beside it. The
+second frame waits for the exporter to exit, and the third frame's own poll
+reports it. It checks that the command is disabled while the export runs, that
+Studio reports the export, and that the reported folder holds the compiled game.
+Showing the folder is not exercised.
+
 Execution requires explicit root coordination and independent admission under the
 60-second GPU policy. Merely building this target does not run it. A whole UI
 suite is not implied. The vendored pico_unit header preserves its upstream license

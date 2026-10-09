@@ -955,7 +955,7 @@ static void model_node_properties(studio *s, editor *e, graph *gr, node *n, bool
                         shader_error error = { 0 };
                         if (model_instance_anchor(gr, n, target, anchor->reference_name, &error) <
                             0) {
-                            sg_show_error(s, error.message);
+                            sg_show_error(s, "Can't expose the anchor", error.message);
                         }
                     } else {
                         graph_remove_pin(gr, n, true, output);
@@ -998,7 +998,11 @@ static void model_node_properties(studio *s, editor *e, graph *gr, node *n, bool
                         if (override) {
                             if (model_instance_override(gr, n, target, parameter.name, &error) <
                                 0) {
-                                sg_show_error(s, error.message);
+                                sg_show_error(
+                                    s,
+                                    "Can't override the parameter",
+                                    error.message
+                                );
                             }
                         } else {
                             graph_remove_pin(gr, n, false, pin);
@@ -1138,7 +1142,7 @@ bool sg_set_node_disabled(studio *s, node *n, bool disabled)
         const source_presentation_origin *
             origin = authoring_source_presentation_origin(view, gr->graph_id, n->id, 0);
         if (!origin) {
-            sg_show_error(s, "Node has no source declaration");
+            sg_show_error(s, disabled ? "Can't disable the node" : "Can't enable the node", "Node has no source declaration");
             return false;
         }
         bool changed = ed_source_edit(
@@ -1149,7 +1153,7 @@ bool sg_set_node_disabled(studio *s, node *n, bool disabled)
                                        .disabled = disabled }
         );
         if (!changed) {
-            sg_show_error(s, e->connect_error);
+            sg_show_error(s, disabled ? "Can't disable the node" : "Can't enable the node", e->connect_error);
             s->graph.details.redraw = true;
         }
         return changed;
@@ -1598,7 +1602,7 @@ static void edit_inline_expression(studio *s, const ui_activation *a)
     if (sg_set_expression_source(s, expression, a->args[1]) == 0) {
         g->input_edit_pin = g->input_edit_node = 0;
     } else if (g->expression_error[0]) {
-        sg_show_error(s, g->expression_error);
+        sg_show_error(s, "Can't use this expression", g->expression_error);
     }
 }
 

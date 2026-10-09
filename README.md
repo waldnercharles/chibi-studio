@@ -18,6 +18,11 @@ python3 /absolute/path/to/pinned/chibi-sdk/share/chibi/tools/package_studio.py -
   --sdk /absolute/path/to/pinned/chibi-sdk --output /absolute/path/to/studio-package
 ```
 
+On Windows, install the SDK with `cmake --install` from a Windows engine build
+(see the engine README) and configure with the same clang and
+`-DCMAKE_PREFIX_PATH`; the build writes `build/bin/chibi-dev.exe` with the
+SDK's UTF-8 manifest.
+
 The native build writes `build/bin/chibi-dev`. `chibi-dev PROJECT` opens a
 project directory or its `project.kdl`; without one it opens the project that
 contains the working directory. The SDK's `chibi PROJECT` plays the same project.
