@@ -83,13 +83,13 @@ jobs:
             --project-root build-studio/share/chibi/studio --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee own.log
           ! grep -E 'Studio UI:|runtime frame failed|Could not initialize|Could not load graph asset' own.log
       - name: Installed Studio opens the project it starts in
-        working-directory: chibi-studio/projects/starter
         shell: bash
         run: |
           prefix="$RUNNER_TEMP/chibi"
-          cmake --install "$GITHUB_WORKSPACE/chibi/build-studio" --prefix "$prefix"
-          cmake --install "$GITHUB_WORKSPACE/chibi/build-studio" --prefix "$prefix" --component sdk_tools
+          make -C chibi sdk-install SDK_PREFIX="$prefix" LIBCLANG_ROOT=/usr/lib/llvm-18
+          make -C chibi-studio install PREFIX="$prefix"
           export PATH="$prefix/bin:$PATH"
+          cd chibi-studio/projects/starter
           timeout 60 xvfb-run -a chibi-dev --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee "$RUNNER_TEMP/installed.log"
           chibi export . --output "$RUNNER_TEMP/export"
           ! grep -E 'Studio UI:|runtime frame failed|Could not initialize' "$RUNNER_TEMP/installed.log"
