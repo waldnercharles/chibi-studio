@@ -6,9 +6,11 @@
 #include "support/array.h"
 #include "support/file_io.h"
 
+#include <SDL3/SDL_process.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 studio *studio_acceptance_studio(void *);
 int studio_acceptance_host_main(int, char **);
@@ -17,6 +19,8 @@ static const char *project;
 static const char *executable;
 static int frames, edits, undos, redos;
 static bool callback_ok = true;
+static enum { SOURCE_EDIT, EXPORT_GAME } mode;
+static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
     "behavior Counter {\n"
     "    state count: int = 1;\n"
@@ -144,9 +148,45 @@ static bool source_edit_frame(void *state)
     return true;
 }
 
+#define EXPORTED "Exported game: "
+
+/* Frame 1 runs Export Game; frame 2 waits for the exporter to exit; frame 3's
+ * poll, in the host's own frame, reports it. */
+static bool export_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= 3);
+    if (frames == 1) {
+        REQUIRE(studio_command_enabled(s, STUDIO_COMMAND_EXPORT_GAME));
+        studio_command_run(s, STUDIO_COMMAND_EXPORT_GAME);
+        if (!s->export_game.process) {
+            fprintf(stderr, "Studio export acceptance: %s\n", alast(s->records).text);
+        }
+        REQUIRE(s->export_game.process);
+        REQUIRE(!studio_command_enabled(s, STUDIO_COMMAND_EXPORT_GAME));
+    } else if (frames == 2) {
+        REQUIRE(SDL_WaitProcess(s->export_game.process, true, NULL));
+    } else {
+        REQUIRE(!s->export_game.process);
+        const char *last = alast(s->records).text;
+        if (strncmp(last, EXPORTED, strlen(EXPORTED))) {
+            fprintf(stderr, "Studio export acceptance: %s\n", last);
+        }
+        REQUIRE(!strncmp(last, EXPORTED, strlen(EXPORTED)));
+        snprintf(exported, sizeof exported, "%s", last + strlen(EXPORTED));
+        REQUIRE(studio_command_enabled(s, STUDIO_COMMAND_EXPORT_GAME));
+    }
+    return true;
+}
+
 bool studio_acceptance_frame(void *state)
 {
-    callback_ok = source_edit_frame(state);
+    switch (mode) {
+        case SOURCE_EDIT: callback_ok = source_edit_frame(state); break;
+        case EXPORT_GAME: callback_ok = export_frame(state); break;
+    }
     return callback_ok;
 }
 
@@ -165,11 +205,31 @@ TEST_CASE(source_graph_edit_undo_redo)
     return true;
 }
 
+TEST_CASE(export_game)
+{
+    char *args[] = { (char *)executable, "--headless", "--frames", "3",
+                     "--fixed-dt", "0.016666666666666666", "--project-root",
+                     (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == 3);
+    char artifact[1100];
+#ifdef __APPLE__
+    snprintf(artifact, sizeof artifact, "%s/Contents/Resources/game.chibip", exported);
+#else
+    snprintf(artifact, sizeof artifact, "%s/data/game.chibip", exported);
+#endif
+    struct stat info;
+    REQUIRE(stat(artifact, &info) == 0 && info.st_size > 0);
+    printf("Studio export accepted: %s\n", artifact);
+    return true;
+}
+
 int main(int argc, char **argv)
 {
-    if (argc != 4 || strcmp(argv[1], "--source-edit") ||
-        strcmp(argv[2], "--project-root")) {
-        fprintf(stderr, "Usage: studio-acceptance --source-edit --project-root PATH\n");
+    bool source_edit = argc == 4 && !strcmp(argv[1], "--source-edit");
+    bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
+    if ((!source_edit && !exporting) || strcmp(argv[2], "--project-root")) {
+        fprintf(stderr, "Usage: studio-acceptance --source-edit|--export-game --project-root PATH\n");
         return 2;
     }
     executable = argv[0];
@@ -184,7 +244,12 @@ int main(int argc, char **argv)
         return 2;
     }
     pu_display_time(true);
-    RUN_TEST_CASE(source_graph_edit_undo_redo);
+    mode = source_edit ? SOURCE_EDIT : EXPORT_GAME;
+    if (source_edit) {
+        RUN_TEST_CASE(source_graph_edit_undo_redo);
+    } else {
+        RUN_TEST_CASE(export_game);
+    }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;
 }

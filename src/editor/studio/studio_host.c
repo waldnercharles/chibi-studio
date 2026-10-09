@@ -1056,6 +1056,7 @@ void studio_free(studio *s)
         editor_set_source_edit_handler(s->scene->graph_editor, NULL, NULL);
         release_window(s);
     }
+    studio_export_free(s);
     free(s->tab_menu_key);
     afree(s->events);
     afree(s->bound.bindings);
@@ -1265,6 +1266,7 @@ static void run(studio *s, double delta_seconds, float width, float height)
     bool authored = studio_ui_tick(s);
     share_project_prefs(s);
     studio_debug_frame(s);
+    studio_export_poll(s);
     bool update_ui = host_ui_due(s, input, authored);
     /* The Scene and its tools read the surface every frame, but only an emit
        refreshes it: a click or a wheel turn reaches them in its own frame. */
