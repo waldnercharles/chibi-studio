@@ -13,6 +13,9 @@ frame renders both graph and code views before normal host shutdown. This proves
 consumer edit-handler integration and UI rendering; it does not hit-test pointer
 input. No source save, scenario, playback or screenshot occurs.
 
+`studio-acceptance --scene-cursors` needs no project or renderer. It checks the
+cursor each Scene gizmo part asks for, a resize handle's as its box turns.
+
 `studio-acceptance --export-game --project-root PATH` accepts another disposable
 copy. Its first hidden frame runs the Export Game command, which needs the SDK's
 `chibi`, `chibi-compile` and `chibi-player` that the build copies beside it. The
