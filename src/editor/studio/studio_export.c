@@ -12,14 +12,18 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef _WIN32
+#define LAUNCHER "chibi.exe"
+#else
 #define LAUNCHER "chibi"
+#endif
 /* Where exports and their log go, inside the project's own build folder. */
 #define EXPORT_FOLDER ".chibi/export"
 #define EXPORT_LOG "export.log"
 #define EXPORTED_PREFIX "Exported "
 #define FAILED_PREFIX "Export failed: "
 #define EXPORT_NAME_MAX 256
-#define EXPORT_URL_MAX (3 * STUDIO_EXPORT_PATH_MAX + sizeof "file://")
+#define EXPORT_URL_MAX (3 * STUDIO_EXPORT_PATH_MAX + sizeof "file:///")
 
 #define FORMAT(buffer, ...)                                                    \
     do {                                                                       \
@@ -178,11 +182,15 @@ static void finish(studio *s, int code)
 static void show_folder(studio *s)
 {
     static const char HEX[] = "0123456789ABCDEF";
+#ifdef _WIN32
+    char url[EXPORT_URL_MAX] = "file:///"; /* then the drive, as C: */
+#else
     char url[EXPORT_URL_MAX] = "file://";
+#endif
     char *out = url + strlen(url);
     for (const unsigned char *c = (const unsigned char *)s->export_game.folder; *c;
          c++) {
-        if (strchr("-._~/", *c) || (*c >= '0' && *c <= '9') ||
+        if (strchr("-._~/:", *c) || (*c >= '0' && *c <= '9') ||
             ((*c | 0x20) >= 'a' && (*c | 0x20) <= 'z')) {
             *out++ = (char)*c;
             continue;

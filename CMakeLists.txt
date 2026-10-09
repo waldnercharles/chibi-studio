@@ -95,6 +95,11 @@ if(EMSCRIPTEN)
 else()
 # `chibi-dev PROJECT` opens Studio; `chibi PROJECT` plays.
 set_target_properties(chibi-studio PROPERTIES OUTPUT_NAME chibi-dev)
+if(WIN32)
+    # The SDK's manifest makes the runtime's file names UTF-8.
+    enable_language(RC)
+    target_sources(chibi-studio PRIVATE "${Chibi_RESOURCE_DIR}/windows/chibi.rc")
+endif()
 # Build and installed hosts use the same executable-relative Studio layout.
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/share/chibi")
 foreach(resource shaders licenses)
