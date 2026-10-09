@@ -1,9 +1,8 @@
 behavior "NewProjectKeys" {
-    owner "ecs.entity";
-    on ConfirmDiscard as confirmdiscard() {
-        move_ui_focus(Entity: 0, Element: "#new-project-cancel", Step: 1);
+    on ConfirmDiscard {
+        move_ui_focus(Element: "#new-project-cancel", Step: 1)
     }
-    on InvalidName as invalidname() {
-        move_ui_focus(Entity: 0, Element: "#new-project-name", Step: 1);
+    on InvalidName {
+        move_ui_focus(Element: "#new-project-name", Step: 1)
     }
 }
