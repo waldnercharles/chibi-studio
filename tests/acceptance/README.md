@@ -4,14 +4,23 @@ Build with `-DCHIBI_STUDIO_BUILD_ACCEPTANCE=ON` against an installed SDK.
 
 `studio-acceptance --source-edit --project-root PATH` accepts a disposable copy of
 this directory's `project`. Preferences and thumbnail cache are pinned inside that
-disposable project; initial Counter bytes are checked before and after. It checks that a failure reports as a warning until the next report. It opens
-Counter through the normal document loader,
+disposable project; initial Counter bytes are checked before and after. It checks that the project remembered last leads the recent projects, once, and that
+Open Project refuses a folder without a manifest. It checks that a failure reports as a warning until the next report. It opens Counter through the normal document loader,
 then runs four hidden fixed-dt frames. It calls the production graph expression
 commit handler once, applies real undo and redo, and checks current source,
-resolved state initializer, owned projection and dirty/history state. The final
-frame renders both graph and code views before normal host shutdown. This proves
+resolved state initializer, owned projection and dirty/history state. With
+nothing unsaved, quitting needs no confirmation; with Counter unsaved, the window
+title marks it and a quit request asks once, in a toast a repeated request updates.
+The final frame renders both graph and code views before normal host shutdown. This proves
 consumer edit-handler integration and UI rendering; it does not hit-test pointer
 input. No source save, scenario, playback or screenshot occurs.
+
+`studio-acceptance --code-keys --project-root PATH` takes another disposable copy.
+It shows Counter in the Text Editor, focuses it and places the cursor after the
+event's closing brace, then queues two Enter key presses through SDL, as the
+platform does, a few frames apart. The source must gain only whitespace: Enter
+types newlines and never accepts a completion nobody asked for. It runs twelve
+hidden frames and saves nothing.
 
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.

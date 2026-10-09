@@ -23,6 +23,18 @@ void studio_frame(studio *s, double delta_seconds);
 double studio_idle_time(studio *s);
 /* The project root the user chose to open, owned by the caller, or NULL. */
 char *studio_take_project(studio *s);
+/* Call once a frame, `requested` when the user asked to close Studio. True
+ * once Studio may close: at once without unsaved edits, else after a toast
+ * naming them is confirmed. */
+bool studio_quit(studio *s, bool requested);
+#ifndef __EMSCRIPTEN__
+/* The project roots Studio opened before, most recent first, owned
+ * (support/array.h). */
+char **studio_recent_projects();
+void studio_recent_projects_free(char **roots);
+/* Puts `root` first among them; only projects a person opens belong there. */
+void studio_remember_project(const char *root);
+#endif
 /* Shows an error that stays until dismissed. */
 void studio_error(studio *s, const char *title, const char *message);
 /* Fills the workspace with the graph canvas without changing saved preferences. */
