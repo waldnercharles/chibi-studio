@@ -2,7 +2,6 @@
 #define CHIBI_APP_SCENE_AUTHORING_H
 #include "authoring/preview.h"
 #include "editor/workspace/viewport.h"
-#include "render/sdf_shapes.h"
 #include "runtime/engine.h"
 #include "runtime/scenes/physics_settings.h"
 
