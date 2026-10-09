@@ -623,13 +623,13 @@
       "source_path": "projects/studio/content/ui/AssetField.rml"
     },
     "projects/studio/content/ui/Assets.rcss": {
-      "consumer_sha256": "358e7289062150e23337eb030c9ea350b2351fada6ac89d85f750d5368a5b554",
+      "consumer_sha256": "6ec47f6a3b2e74d462d19c6da6d11eda4e37c8e3b8ad157e8d79eea97612d2de",
       "current_source_sha256": "358e7289062150e23337eb030c9ea350b2351fada6ac89d85f750d5368a5b554",
       "sha256": "358e7289062150e23337eb030c9ea350b2351fada6ac89d85f750d5368a5b554",
       "source_path": "projects/studio/content/ui/Assets.rcss"
     },
     "projects/studio/content/ui/Assets.rml": {
-      "consumer_sha256": "74be88f6432cbdc4828b9fd57cec081ecb2bbcf1b9999d7d600d46ff6e752506",
+      "consumer_sha256": "eb7d95c2f3aea8137a33c62ecc7b011a7f8b80c1412b9ca02fde635e8f9584e0",
       "current_source_sha256": "74be88f6432cbdc4828b9fd57cec081ecb2bbcf1b9999d7d600d46ff6e752506",
       "sha256": "74be88f6432cbdc4828b9fd57cec081ecb2bbcf1b9999d7d600d46ff6e752506",
       "source_path": "projects/studio/content/ui/Assets.rml"
@@ -2117,7 +2117,7 @@
       "source_path": "src/editor/studio/studio.h"
     },
     "src/editor/studio/studio_assets.c": {
-      "consumer_sha256": "e2310a729d11e1610c6855db20d8d5c10f6aec28e2260b4bfaa8f7cee3f6ac66",
+      "consumer_sha256": "04b0a58e2993b2ff32ada0ee66d0e2f5ff85fc23247d785b96b7e8ee67e2b1c0",
       "current_source_sha256": "e2310a729d11e1610c6855db20d8d5c10f6aec28e2260b4bfaa8f7cee3f6ac66",
       "sha256": "e2310a729d11e1610c6855db20d8d5c10f6aec28e2260b4bfaa8f7cee3f6ac66",
       "source_path": "src/editor/studio/studio_assets.c"
@@ -2363,7 +2363,7 @@
       "source_path": "src/editor/studio/studio_inspect.c"
     },
     "src/editor/studio/studio_internal.h": {
-      "consumer_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
+      "consumer_sha256": "021bae20682ac6ebd71bb2c3f2a80e6ec530871ac4bce7e3a492af880af90cda",
       "current_source_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
       "sha256": "a01a22cf19a858e983159029166fe7d9086a883aa6e864bfa9a359b78048a1e6",
       "source_path": "src/editor/studio/studio_internal.h"
@@ -2495,7 +2495,7 @@
       "source_path": "src/editor/studio/studio_prototype_actions.c"
     },
     "src/editor/studio/studio_refactor.c": {
-      "consumer_sha256": "86ca21a29ce092333dc2f80f310cddf4ab081178fb015eafde0aae69ef20123b",
+      "consumer_sha256": "535ec2581990ddf2f186bb69e5b929c31d5f2eb91eba220626cb0cbe3d529f60",
       "current_source_sha256": "86ca21a29ce092333dc2f80f310cddf4ab081178fb015eafde0aae69ef20123b",
       "sha256": "dcee74b599fe89f84b22d7e25e1ad6f5672f97cd6ce96f4a02575a6618b245fe",
       "source_path": "src/editor/studio/studio_refactor.c"
