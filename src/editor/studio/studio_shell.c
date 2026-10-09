@@ -36,11 +36,30 @@ static const uint32_t EDITOR_ICONS[STUDIO_EDITOR_COUNT] = {
     KIT_ICON_LAYOUT,
 };
 
-void studio_report(studio *s, const char *message)
+static void report(studio *s, kit_toast_type kind, const char *message)
 {
     snprintf(s->status, sizeof s->status, "%s", message);
+    s->status_warning = kind == KIT_TOAST_WARNING;
     s->status_time = s->time;
-    studio_record(s, KIT_TOAST_INFO, message);
+    studio_record(s, kind, message);
+}
+
+void studio_report(studio *s, const char *message)
+{
+    report(s, KIT_TOAST_INFO, message);
+}
+
+void studio_warn(studio *s, const char *message)
+{
+    report(s, KIT_TOAST_WARNING, message);
+}
+
+/* Reports why an edit failed: the scene's reason, which follow_messages then
+   need not repeat, else `fallback`. */
+static void warn_failure(studio *s, const char *fallback)
+{
+    snprintf(s->seen_message, sizeof s->seen_message, "%s", s->scene->message);
+    studio_warn(s, s->seen_message[0] ? s->seen_message : fallback);
 }
 
 const char *studio_scene_title(const app_scene_authoring *scene, char *out, size_t size)
@@ -466,7 +485,7 @@ void studio_duplicate(studio *s)
     }
     float step = s->prefs.scene_increment;
     if (scene_duplicate_selection(scene, (GameTransform){ step, step }) != 0) {
-        studio_report(s, scene->message[0] ? scene->message : "Could not duplicate");
+        warn_failure(s, "Could not duplicate");
         return;
     }
     char title[160];
@@ -677,7 +696,7 @@ void studio_add_object(studio *s, const char *prototype)
     }
     finish_transform_edit(s->scene, false);
     if (app_scene_authoring_add_instance(s->scene, prototype) != 0) {
-        studio_report(s, s->scene->message[0] ? s->scene->message : "Could not add object");
+        warn_failure(s, "Could not add object");
     }
 }
 
@@ -1684,7 +1703,7 @@ static void workspace(studio *s)
 
 /* ---------- Status bar ---------- */
 
-/* Authoring messages report like any other operation. */
+/* Authoring messages say what kept an edit from happening. */
 static void follow_messages(studio *s)
 {
     if (!strcmp(s->scene->message, s->seen_message)) {
@@ -1692,7 +1711,7 @@ static void follow_messages(studio *s)
     }
     snprintf(s->seen_message, sizeof s->seen_message, "%s", s->scene->message);
     if (s->seen_message[0]) {
-        studio_report(s, s->seen_message);
+        studio_warn(s, s->seen_message);
     }
 }
 

@@ -3,6 +3,7 @@
 #include "assets/physics_settings.h"
 #include "graph/model/registry.h"
 #include "runtime/component_catalog.h"
+#include "runtime/declared_components.h"
 #include "support/array.h"
 #include "support/asset_json.h"
 #include "support/xalloc.h"
@@ -730,9 +731,10 @@ static bool history_read_position(av_value *array, double *values)
 
 static const ecs_component_desc *history_component(const char *name)
 {
-    for (int i = 0; name && i < GAME_REGISTRY_COMPONENT_COUNT; i++) {
-        if (!strcmp(name, GAME_REGISTRY_COMPONENTS[i]->name)) {
-            return GAME_REGISTRY_COMPONENTS[i];
+    ecs_component_catalog project = project_components();
+    for (int i = 0; name && i < project.component_count; i++) {
+        if (!strcmp(name, project.components[i]->name)) {
+            return project.components[i];
         }
     }
     return NULL;
@@ -933,9 +935,10 @@ static av_value *history_edits(av_doc *doc, const scene_edit *edits)
         for (int j = 0; j < acount(edit->fields); j++) {
             const scene_field_edit *field = &edit->fields[j];
             const ecs_component_desc *component = NULL;
-            for (int k = 0; k < GAME_REGISTRY_COMPONENT_COUNT; k++) {
-                if (GAME_REGISTRY_COMPONENTS[k]->id == field->component) {
-                    component = GAME_REGISTRY_COMPONENTS[k];
+            ecs_component_catalog project = project_components();
+            for (int k = 0; k < project.component_count; k++) {
+                if (project.components[k]->id == field->component) {
+                    component = project.components[k];
                 }
             }
             assert(

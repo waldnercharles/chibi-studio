@@ -532,6 +532,7 @@ void studio_scene_tools(studio *s)
     /* A gesture's change shows live and is reported once it is recorded. */
     if (gesture && g->status[0]) {
         snprintf(s->status, sizeof s->status, "%s", g->status);
+        s->status_warning = false;
         s->status_time = s->time;
         s->scene_status = true;
     }
