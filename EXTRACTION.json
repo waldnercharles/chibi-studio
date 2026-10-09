@@ -2579,7 +2579,7 @@
       "source_path": "src/editor/text/zep_bridge.h"
     },
     "src/editor/ui/choices.c": {
-      "consumer_sha256": "445249cccfbeca102738e53ca9bc1c0081b39b431ae2b39421901bb44dc24638",
+      "consumer_sha256": "a8678bcb1a96ac8f01b3d7be70c3849eeb93c3be9bb2cc0f481a336aa93b0e70",
       "current_source_sha256": "445249cccfbeca102738e53ca9bc1c0081b39b431ae2b39421901bb44dc24638",
       "sha256": "445249cccfbeca102738e53ca9bc1c0081b39b431ae2b39421901bb44dc24638",
       "source_path": "src/editor/ui/choices.c"
@@ -2723,7 +2723,7 @@
       "source_path": "src/editor/workspace/gameplay_input.h"
     },
     "src/editor/workspace/input.c": {
-      "consumer_sha256": "2b310b7ad55f540077772995d538c3b8d6e18a96d4c529dd13b7ebe9d267ef2f",
+      "consumer_sha256": "ce22de273dc8718ae98efa5a722266832714c3fe8a9a0e521c4666eb8bd71377",
       "current_source_sha256": "2b310b7ad55f540077772995d538c3b8d6e18a96d4c529dd13b7ebe9d267ef2f",
       "sha256": "2b310b7ad55f540077772995d538c3b8d6e18a96d4c529dd13b7ebe9d267ef2f",
       "source_path": "src/editor/workspace/input.c"
