@@ -86,7 +86,9 @@ jobs:
         shell: bash
         run: |
           prefix="$RUNNER_TEMP/chibi"
+          # What the engine's `make install` does, from the SDK built above.
           make -C chibi sdk-install SDK_PREFIX="$prefix" LIBCLANG_ROOT=/usr/lib/llvm-18
+          cp chibi/dist/sdk/share/chibi/engine.json "$prefix/share/chibi/"
           make -C chibi-studio install PREFIX="$prefix"
           export PATH="$prefix/bin:$PATH"
           cd chibi-studio/projects/starter
