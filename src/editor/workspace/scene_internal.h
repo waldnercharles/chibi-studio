@@ -29,6 +29,7 @@ typedef struct
     game_prototype *runtime_snapshot;
     game_prototype *restored_state;
     scene_retained_component *retained;
+    bool own_behaviors; /* the scene lists its behaviors instead of the prototype's */
     bool marked;
 } scene_actor;
 
