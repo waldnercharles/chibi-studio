@@ -1236,6 +1236,9 @@ bool studio_key_pressed(const studio *s, SDL_Keycode key);
  * snapping and the grid from the preferences, the held modifiers and a
  * gesture's keys, and the gesture's change in the status bar. */
 void studio_scene_tools(studio *s);
+/* The cursor over the edited Scene: the gizmo part's under the pointer or
+ * dragged, or Move while the middle button pans; NULL for the default. */
+const char *studio_scene_cursor(const studio *s);
 /* The grid increment preset `step` places from the current one, which it
  * keeps at either end. */
 float studio_grid_increment(const studio *s, int step);
