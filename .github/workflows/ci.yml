@@ -75,3 +75,10 @@ jobs:
           timeout 60 xvfb-run -a build-studio/bin/chibi-dev \
             --project-root ../chibi-studio/projects/starter --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee studio.log
           ! grep -E 'Studio UI:|runtime frame failed|Could not initialize' studio.log
+      - name: Two hidden frames of Studio's own project
+        working-directory: chibi
+        shell: bash
+        run: |
+          timeout 60 xvfb-run -a build-studio/bin/chibi-dev \
+            --project-root build-studio/share/chibi/studio --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee own.log
+          ! grep -E 'Studio UI:|runtime frame failed|Could not initialize|Could not load graph asset' own.log

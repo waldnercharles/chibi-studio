@@ -5,6 +5,7 @@
 #include "assets/scene_document.h"
 #include "authoring/prototype_preview.h"
 #include "authoring/source_catalog.h"
+#include "authoring/studio_schema.h"
 #include "editor/documents/scene_history.h"
 #include "editor/documents/scene_retention.h"
 #include "editor/documents/ui_buffer.h"
@@ -217,6 +218,8 @@ struct app_scene_authoring
     char *content_root;
     char *ui;         /* the scene's root ui document, or NULL for default_ui */
     char *default_ui; /* the project's, or NULL */
+    bool studio_project; /* Studio's own project, whose behaviors call the editor nodes */
+    studio_node_service studio_nodes; /* those calls' service, run by the window's Studio */
     tree_watch disk;  /* declarative content files as last loaded or saved */
     tree_watch code_disk;
     tree_watch code_metadata_disk;
@@ -641,6 +644,14 @@ typedef struct
 bool scene_same_file(const char *a, const char *b);
 void scene_disk_note(app_scene_authoring *scene, const char *path);
 void scene_disk_follow(app_scene_authoring *scene, const scene_move *moves, int count);
+/* In Studio's own project, prepares `world` with the editor nodes and binds
+   their service; otherwise does nothing. */
+int scene_attach_studio_nodes(
+    app_scene_authoring *scene,
+    game_preview_world *world,
+    char *error,
+    size_t size
+);
 
 /* ---------- Editor view state (scene_view.c) ---------- */
 
