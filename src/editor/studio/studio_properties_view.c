@@ -1021,8 +1021,9 @@ static void component_panel(view *v, scene_actor *actor, const ecs_component_des
     if (overrides) {
         snprintf(badge, sizeof badge, "%d", overrides);
     }
-    /* A component its prototype lacks is the object's own. */
-    if (component == &added) {
+    /* An authored object's component its prototype lacks is its own. */
+    bool own = component == &added && actor->identity && !studio_live(s);
+    if (own) {
         snprintf(badge, sizeof badge, "Added");
     }
     const char *key = properties_panel_key(desc->name);
@@ -1034,8 +1035,8 @@ static void component_panel(view *v, scene_actor *actor, const ecs_component_des
                      /* While the scene runs, an authored object's component
                         menu keeps its values alone; else it removes a
                         component the object added. */
-                     .menu = actor->identity &&
-                             (studio_live(s) || component == &added) };
+                     .menu = (studio_live(s) && actor->identity) ||
+                             (own && !properties_multi(s, actor)) };
     rows r = next_panel(v, &d);
     const void *data = ecs_component_data_const(s->scene->world, actor->entity, desc->id);
     for (int i = 0; d.open && i < desc->type->field_count; i++) {

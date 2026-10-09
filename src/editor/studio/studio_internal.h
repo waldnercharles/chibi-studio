@@ -2596,11 +2596,11 @@ void studio_rename_object(studio *s);
 /* Names the object `entity` authors, as one Undo step; a refused name
  * toasts why. */
 void studio_rename_commit(studio *s, uint64_t entity, const char *name);
-/* Add Component (Unity's Inspector): the palette lists the components the
- * open prototype lacks, by the Properties tab each shows in, the current
- * tab's first. */
 /* Whether Properties shows a prototype, or one placed object, to add to. */
 bool studio_can_add_component(studio *s);
+/* Add Component (Unity's Inspector): the palette lists the components the
+ * prototype or object lacks, by the Properties tab each shows in, the
+ * current tab's first. */
 void studio_add_component_open(studio *s);
 void studio_component_entries(studio *s, studio_palette_entry **entries);
 void studio_component_choose(studio *s, const studio_palette_entry *entry);

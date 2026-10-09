@@ -303,9 +303,10 @@ void app_scene_authoring_set_actor_view(app_scene_authoring *scene, int actor, u
 typedef struct game_save game_save;
 game_save *app_scene_authoring_view_store(app_scene_authoring *scene);
 /* Adds a component with its defaults to the selected object, overriding its
- * prototype, or removes one it added, as one Undo step. -1 when the object
- * has the component (or lacks it, or its prototype has it, for remove), was
- * spawned while playing, or the scene runs. */
+ * prototype, or removes one it added, as one Undo step. 1 while a
+ * collaboration host decides; -1 when the object has the component (or
+ * lacks it, or its prototype has it, for remove), was spawned while
+ * playing, or the scene runs. */
 int app_scene_authoring_add_instance_component(app_scene_authoring *scene, const char *component_name);
 int app_scene_authoring_remove_instance_component(app_scene_authoring *scene, const char *component_name);
 int app_scene_authoring_set_instance_behavior(

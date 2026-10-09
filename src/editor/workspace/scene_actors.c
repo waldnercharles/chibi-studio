@@ -474,6 +474,7 @@ int app_scene_authoring_delete_instance(app_scene_authoring *scene)
                               .prototype_name = prototype,
                               .base = base,
                               .state = state,
+                              .own_behaviors = actor->own_behaviors,
                               .retained = retained };
     int result = remove_actor_at(scene, scene->selected);
     if (!result) {
@@ -530,7 +531,8 @@ static int restore_actor(app_scene_authoring *scene, const scene_actor_edit *edi
                           .name = xstrdup(edit->name),
                           .prototype_name = xstrdup(edit->prototype_name),
                           .base = base,
-                          .restored_state = state };
+                          .restored_state = state,
+                          .own_behaviors = edit->own_behaviors };
     if (scene_retention_load(edit->retained, &actor.retained) != 0) {
         destroy_actor_entity(scene, *entity);
         free_actor(&actor);
@@ -615,7 +617,10 @@ int app_scene_authoring_duplicate_instance(app_scene_authoring *scene)
 
 /* Removes the object at `index` and adds it back as `state`, an instance of
    `prototype` (`base`), keeping its name, place, identity and retained
-   components, as one Undo step. Takes `base` and `state`. */
+   components, and its behaviors list while its prototype stays, as one
+   Undo step. Takes `base` and `state`;
+   `prototype` may be the object's own, which removing it frees, so it is
+   copied first. */
 static int replace_actor(
     app_scene_authoring *scene,
     int index,
@@ -632,6 +637,7 @@ static int replace_actor(
         .prototype_name = xstrdup(actor->prototype_name),
         .base = game_prototype_to_value(actor->base),
         .state = capture_actor_state(scene, actor),
+        .own_behaviors = actor->own_behaviors,
         .retained = scene_retention_save(actor->retained),
     };
     scene_actor_edit added = removed;
@@ -639,6 +645,9 @@ static int replace_actor(
     added.base = base;
     added.state = state;
     added.created = true;
+    /* A new prototype's instance follows its behaviors. */
+    added.own_behaviors = removed.own_behaviors &&
+                          !strcmp(added.prototype_name, removed.prototype_name);
     ecs_entity old = actor->entity, entity = { 0 };
     int result = removed.state && added.state ? remove_actor_at(scene, index) : -1;
     if (result == 0 && restore_actor(scene, &added, &entity) != 0) {
@@ -646,11 +655,13 @@ static int replace_actor(
         assert(result == 0);
         result = -1;
     }
-    if (result == 0) {
+    if (result == 0 && collab_record_history()) {
         scene_history_begin_group(scene->history);
         scene_history_push_actor(scene->history, old, &removed);
         scene_history_push_actor(scene->history, entity, &added);
         scene_history_end_group(scene->history);
+    }
+    if (result == 0) {
         scene->scene_dirty = true;
         asset_index_invalidate(scene);
     }

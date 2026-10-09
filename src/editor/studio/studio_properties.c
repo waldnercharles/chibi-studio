@@ -1044,35 +1044,38 @@ void studio_add_component_open(studio *s)
     );
     studio_palette_open(s, STUDIO_PALETTE_COMPONENTS, "Search components");
 }
-/* -1 when nothing took it, with why in Studio's error. */
-static int add_to_target(studio *s, const ecs_component_desc *desc, const char **target)
+
+/* Adds to the target and names it in `target`: 0, 1 while a collaboration
+   host decides, or -1 with why in Studio's error. */
+static int add_to_target(studio *s, const ecs_component_desc *desc, char target[128])
 {
     app_scene_authoring *scene = s->scene;
     if (!s->components.object) {
-        *target = s->components.prototype;
-        if (app_scene_authoring_add_prototype_component(scene, *target, desc->name) == 0) {
-            return 0;
+        snprintf(target, 128, "%s", s->components.prototype);
+        int added = app_scene_authoring_add_prototype_component(scene, target, desc->name);
+        if (added < 0) {
+            studio_error(s, "Could not add component", scene->prototype_message);
         }
-        studio_error(s, "Could not add component", scene->prototype_message);
-        return -1;
+        return added;
     }
     scene_actor *actor = scene_actor_by_identity(scene, s->components.object);
     if (!actor) {
         return -1;
     }
     select_instance(scene, (int)(actor - scene->actors));
-    *target = actor->name;
-    if (app_scene_authoring_add_instance_component(scene, desc->name) == 0) {
-        return 0;
+    /* Adding replaces the object, and its name with it. */
+    snprintf(target, 128, "%s", actor->name);
+    int added = app_scene_authoring_add_instance_component(scene, desc->name);
+    if (added < 0) {
+        studio_error(s, "Could not add component", scene->message);
     }
-    studio_error(s, "Could not add component", scene->message);
-    return -1;
+    return added;
 }
 
 static void add_component(studio *s, const ecs_component_desc *desc)
 {
-    const char *target = NULL;
-    if (!studio_editable(s) || add_to_target(s, desc, &target) != 0) {
+    char target[128];
+    if (!studio_editable(s) || add_to_target(s, desc, target) != 0) {
         return;
     }
     char label[128], report[320];
@@ -1188,8 +1191,11 @@ static void remove_object_component(studio *s, const scene_actor *actor)
     char label[128], title[320];
     editor_component_label(name, label, sizeof label);
     snprintf(title, sizeof title, "Removed %s from %s", label, actor->name);
-    if (app_scene_authoring_remove_instance_component(s->scene, name) != 0) {
+    int removed = app_scene_authoring_remove_instance_component(s->scene, name);
+    if (removed < 0) {
         studio_error(s, "Could not remove component", s->scene->message);
+    }
+    if (removed != 0) {
         return;
     }
     removed_toast(s, title);
@@ -1209,6 +1215,14 @@ static bool removal_current(studio *s)
     return asset && acount(asset->undo) && alast(asset->undo) == s->components.step;
 }
 
+static int undo_removal(studio *s)
+{
+    if (s->components.scene_step) {
+        return replay_scene_edit(s->scene, false);
+    }
+    return prototype_undo(s->scene);
+}
+
 void studio_component_toast(studio *s)
 {
     int toast = s->components.toast;
@@ -1218,10 +1232,7 @@ void studio_component_toast(studio *s)
     bool current = removal_current(s);
     if (kit_toast_action(s->kit, toast)) {
         s->components.toast = 0;
-        int undone = !current || !studio_editable(s) ? -1
-                   : s->components.scene_step ? replay_scene_edit(s->scene, false)
-                                              : prototype_undo(s->scene);
-        if (undone == 0) {
+        if (current && studio_editable(s) && undo_removal(s) == 0) {
             studio_report(s, "Undo");
         }
         return;
@@ -1244,7 +1255,7 @@ static void component_action(studio *s)
         remove_component(s, subject.asset);
         return;
     }
-    if (subject.actor && !subject.locked) {
+    if (subject.actor && !subject.locked && !subject.multi && !studio_live(s)) {
         remove_object_component(s, subject.actor);
         return;
     }
@@ -1379,12 +1390,15 @@ static void component_menu(studio *s, const char *key, const ui_activation *a)
         const ecs_component_desc *d = s->scene->registry.components[i];
         desc = !strcmp(properties_panel_key(d->name), key) ? d : desc;
     }
+    if (!desc) {
+        return;
+    }
     game_prototype_component added;
-    bool menu = subject.asset ||
-                (subject.actor && subject.actor->identity &&
-                 (studio_live(s) ||
-                  properties_base(subject.actor, desc, &added) == &added));
-    if (!desc || !menu) {
+    bool own = subject.actor && !subject.multi &&
+               properties_base(subject.actor, desc, &added) == &added;
+    bool menu = subject.asset || (subject.actor && subject.actor->identity &&
+                                  (studio_live(s) || own));
+    if (!menu) {
         return;
     }
     snprintf(s->components.menu, sizeof s->components.menu, "%s", desc->name);

@@ -64,6 +64,7 @@ typedef struct
     av_value *base;
     av_value *state;
     bool created;
+    bool own_behaviors; /* the scene lists its behaviors */
     av_value *retained;
 } scene_actor_edit;
 
