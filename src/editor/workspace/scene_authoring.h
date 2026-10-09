@@ -16,6 +16,8 @@ const char *app_scene_authoring_page(const app_scene_authoring *scene);
 void app_scene_authoring_set_ui(app_scene_authoring *scene, const char *ui);
 /* The project's default root ui document; NULL for none. */
 void app_scene_authoring_set_default_ui(app_scene_authoring *scene, const char *ui);
+/* The project is Studio's own: its worlds take the editor nodes. */
+void app_scene_authoring_set_studio_project(app_scene_authoring *scene);
 typedef struct editor editor;
 typedef const char *(*app_scene_prototype_resolve_fn)(const char *name, void *user);
 

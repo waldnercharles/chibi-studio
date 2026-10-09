@@ -1,6 +1,7 @@
 #include "authoring/ui_loader.h"
 #include "diagnostics/tracy.h"
 #include "editor/studio/studio_internal.h"
+#include "editor/studio/studio_nodes.h"
 #include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/editor.h"
 #include "editor/workspace/editor_internal.h"
@@ -975,6 +976,8 @@ studio *studio_new(app_scene_authoring *scene, engine_viewport *viewport, const 
 {
     studio *s = create(scene, viewport, project_root, NULL);
     editor_set_source_edit_handler(scene->graph_editor, studio_code_edit_source, s);
+    /* Studio's own project runs Studio's behaviors, whose nodes act here. */
+    scene->studio_nodes = (studio_node_service){ s, studio_node_run };
 #ifdef __EMSCRIPTEN__
     web_studio = s;
     web_keep_chords();
@@ -1056,6 +1059,7 @@ void studio_free(studio *s)
     studio_free(s->guest);
     if (!s->hosted) {
         editor_set_source_edit_handler(s->scene->graph_editor, NULL, NULL);
+        s->scene->studio_nodes = (studio_node_service){ 0 };
         release_window(s);
     }
     studio_export_free(s);
