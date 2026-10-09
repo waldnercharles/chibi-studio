@@ -698,7 +698,7 @@ typedef struct
 /* The open project's editor/Components.kdl, re-read when it changes. */
 typedef struct
 {
-    component_presentation hints; /* the last valid file; empty while it is missing */
+    component_presentation hints; /* the last valid file; empty (the engine's) while it is missing */
     file_watch watch;
 } studio_presentation;
 

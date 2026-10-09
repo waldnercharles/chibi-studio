@@ -425,7 +425,7 @@ typedef struct number_shape
     const char *unit;
 } number_shape;
 
-/* An authored range draws a slider; an authored unit follows the value. */
+/* A presented range draws a slider; a presented unit follows the value. */
 static void number_hints(
     const studio *s,
     const ecs_component_desc *desc,
@@ -433,25 +433,22 @@ static void number_hints(
     number_shape *d
 )
 {
-    const presented_field *hint = component_presentation_field(
+    field_hint hint = component_presentation_field(
         &s->presentation.hints,
         desc,
         (int)(field - desc->type->fields)
     );
-    if (!hint) {
-        return;
-    }
-    if (hint->min < hint->max) {
-        d->min = hint->min;
-        d->max = hint->max;
+    if (hint.min < hint.max) {
+        d->min = hint.min;
+        d->max = hint.max;
         d->slider = true;
         if (!d->integer) {
             d->step = 0.01;
             d->precision = 3;
         }
     }
-    if (hint->unit) {
-        d->unit = hint->unit;
+    if (hint.unit) {
+        d->unit = hint.unit;
     }
 }
 
