@@ -122,6 +122,9 @@ typedef struct
 /* The Scene outlines an object a dragged asset would land on in the kit's
    drop color, a bright primary, beside the orange selection. */
 #define SCENE_DROP_COLOR 0x5B8DEFFFu
+/* The object a click would select, half the active selection's orange, as
+   Figma and Unreal outline what the pointer rests on. */
+#define SCENE_HOVER_COLOR 0xFFA53A80u
 
 typedef struct
 {
@@ -284,6 +287,7 @@ struct app_scene_authoring
     CF_V2 marquee_start; /* Normalized viewport coordinates. */
     CF_V2 marquee_end;
     float selection_scale;
+    ecs_entity hovered; /* what a click would select, outlined while idle */
     unsigned asset_index_editor_revision;
     unsigned asset_index_system_revision;
     unsigned system_runtime_editor_revision;

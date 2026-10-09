@@ -61,6 +61,7 @@ set(STUDIO_SOURCES
     src/editor/studio/studio_designer_values.c
     src/editor/studio/studio_disk.c
     src/editor/studio/studio_drop.c
+    src/editor/studio/studio_export.c
     src/editor/studio/studio_find.c
     src/editor/studio/studio_gallery.c
     src/editor/studio/studio_graph.c

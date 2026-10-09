@@ -116,6 +116,7 @@ typedef enum
     STUDIO_COMMAND_STOP,
     STUDIO_COMMAND_STEP,
     STUDIO_COMMAND_RECORD_GAMEPLAY,
+    STUDIO_COMMAND_EXPORT_GAME,
     STUDIO_COMMAND_DENSITY,
     STUDIO_COMMAND_MOTION,
     STUDIO_COMMAND_THEME,
@@ -208,6 +209,7 @@ typedef enum
 } studio_command;
 
 #define STUDIO_CHORD_SIZE 64
+#define STUDIO_EXPORT_PATH_MAX 1024
 
 /* Workspace presets (Blender's workspaces): each arranges the areas for a
  * task, and switching one never touches documents, selection or playback. */
@@ -667,7 +669,8 @@ typedef struct
 typedef struct
 {
     studio_refactor_mode mode;
-    bool opening;        /* show the popover at the pointer this frame */
+    bool opening;        /* show the popover this frame */
+    float anchor[4];     /* the box it opens under; at the pointer when empty */
     bool mounted;        /* its document showed last frame */
     bool source_project; /* exported source declarations use the project plan */
     reference_symbol symbol;
@@ -963,6 +966,12 @@ struct studio
     studio_disk_toast *disk_toasts; /* files that changed on disk under unsaved edits */
     int discard_toast;   /* toast confirming unsaved changes are discarded */
     int discard_project; /* the project that toast opens */
+    struct
+    {
+        struct SDL_Process *process; /* the running `chibi export`, or NULL */
+        char folder[STUDIO_EXPORT_PATH_MAX]; /* where exports and their log go */
+        int toast; /* its progress, then its result */
+    } export_game;
     rml_backend *backend;
     kit *kit;
     studio_ui *ui; /* NULL when the Studio project could not load */
@@ -1227,6 +1236,9 @@ bool studio_key_pressed(const studio *s, SDL_Keycode key);
  * snapping and the grid from the preferences, the held modifiers and a
  * gesture's keys, and the gesture's change in the status bar. */
 void studio_scene_tools(studio *s);
+/* The cursor over the edited Scene: the gizmo part's under the pointer or
+ * dragged, or Move while the middle button pans; NULL for the default. */
+const char *studio_scene_cursor(const studio *s);
 /* The grid increment preset `step` places from the current one, which it
  * keeps at either end. */
 float studio_grid_increment(const studio *s, int step);
@@ -1851,6 +1863,13 @@ void studio_runtime(studio *s, app_runtime_command command);
    play as a scenarios asset. */
 void studio_record_gameplay(studio *s);
 void studio_replay_scenario(studio *s, const char *name);
+/* Export Game (studio_export.c): runs `chibi export` into the project's
+   .chibi/export and reports it in a toast; the poll follows it each frame and
+   shows the folder when the toast's action is pressed. */
+bool studio_export_available(const studio *s);
+void studio_export_game(studio *s);
+void studio_export_poll(studio *s);
+void studio_export_free(studio *s);
 /* A scene run, a preview or a guest Studio is running. */
 bool studio_session(const studio *s);
 /* Play in the Studio project runs Studio itself, as the project's game: a

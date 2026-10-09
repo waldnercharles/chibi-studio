@@ -219,6 +219,26 @@ static void emit_watch(studio *s, node *n, bool input, int p, const pin_parts *p
     kit_pop(k);
 }
 
+static const studio_node_problem *problem_of(const studio_graph *g, uint64_t id)
+{
+    for (int i = 0; i < acount(g->problems); i++) {
+        if (g->problems[i].node == id) {
+            return &g->problems[i];
+        }
+    }
+    return NULL;
+}
+
+/* An unused node recedes unless a problem draws attention to it or it is being
+   worked on: selected, or offered to a dragged wire. */
+static bool node_dim(studio *s, node *n)
+{
+    studio_graph *g = &s->graph;
+    return sg_is_unused(g, n->id) && !problem_of(g, n->id) &&
+           !ed_node_selected(sg_graph_editor(s), n) &&
+           g->gesture != STUDIO_GRAPH_LINK;
+}
+
 /* One pin: a row, half an execution row, or a socket in the title. Input
    labels share one width per node so the editors line up; compact nodes and
    title pins go unlabeled. */
@@ -239,10 +259,11 @@ static void emit_pin(studio *s, node *n, int kind, int p, const char *cls, float
     bool source = link_from == n && g->link_kind == kind && g->link_pin == p;
     bool fits = link_from &&
                 sg_pins_compatible(link_from, g->link_kind, g->link_pin, n, kind, p);
-    /* While a wire is dragged, sockets it can't reach recede (imgui-node-editor). */
-    float alpha = link_from && !source && !fits         ? 0.2f
-                : sg_is_unused(g, n->id) || n->disabled ? 0.45f
-                                                        : 1;
+    /* While a wire is dragged, sockets it can't reach recede (imgui-node-editor).
+       Sockets are geometry, so a faded node's opacity misses them. */
+    float alpha = link_from && !source && !fits ? 0.2f
+                : node_dim(s, n) || n->disabled ? 0.45f
+                                                : 1;
     kit_push(k, key, NULL, cls);
     kit_flag(k, "data-hover", hovered);
     if (!input || !(parts.spec->flags & PIN_FLAG_SETTING)) {
@@ -546,16 +567,6 @@ static void collect_problems(studio *s)
     }
 }
 
-static const studio_node_problem *problem_of(const studio_graph *g, uint64_t id)
-{
-    for (int i = 0; i < acount(g->problems); i++) {
-        if (g->problems[i].node == id) {
-            return &g->problems[i];
-        }
-    }
-    return NULL;
-}
-
 static bool paused_at(const studio *s, const node *n)
 {
     const studio_node_ref *at = &s->pause.at;
@@ -609,8 +620,7 @@ static void emit_node(studio *s, node *n)
     kit_flag(k, "data-selected", ed_node_selected(e, n));
     kit_flag(k, "data-active", e->front_node == n && ed_node_selected(e, n) && acount(e->selected) > 1);
     kit_flag(k, "data-disabled", n->disabled != 0);
-    /* A problem draws attention, so its node never recedes. */
-    kit_flag(k, "data-dim", sg_is_unused(g, n->id) && !problem);
+    kit_flag(k, "data-dim", node_dim(s, n));
     kit_flag(k, "data-breakpoint", n->breakpoint != 0);
     kit_flag(k, "data-error", problem && problem->error);
     kit_flag(k, "data-warning", problem && !problem->error);
@@ -672,7 +682,7 @@ static void emit_wires(studio *s)
     int *via_first = NULL;
     asetlen(g->wire_edges, 0);
     sg_update_routes(s);
-    bool focus = acount(e->selected) > 0 || g->hover_node;
+    bool focus = acount(e->selected) > 0 || g->hover_node || g->hover_edge >= 0;
     for (int i = 0; i < acount(gr->edges); i++) {
         const edge *ed = &gr->edges[i];
         if (g->gesture == STUDIO_GRAPH_LINK && ed->to_id == g->link_pickup_node &&

@@ -14,7 +14,6 @@
           <span class="icon chev">&#xeab4;</span>
           <span class="title">{{ section.title }}</span>
           <span class="spacer"></span>
-          <span class="icon grip">&#xeb04;</span>
         </div>
       </div>
       <div class="panel-body" data-if="section.open">
