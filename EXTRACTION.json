@@ -2837,7 +2837,7 @@
       "source_path": "src/editor/workspace/scene_overlays.c"
     },
     "src/editor/workspace/scene_runtime.c": {
-      "consumer_sha256": "c13c72958fa5e50bbf97919ac212f5a41a824d69aedc5d89fa9d9ce37ab7e77d",
+      "consumer_sha256": "31c430a9f8caf0b60b97f324e53098ee823a37500fa9f8ffd049cc357abcb56a",
       "current_source_sha256": "c13c72958fa5e50bbf97919ac212f5a41a824d69aedc5d89fa9d9ce37ab7e77d",
       "sha256": "6046e226fe5e17ded4a1c01e38cf220faaafa6bd91c9e6d669f5bbecb53f4c91",
       "source_path": "src/editor/workspace/scene_runtime.c"
