@@ -1,11 +1,10 @@
 behavior "NavKeys" {
-    owner "ecs.entity";
-    on NavNext as navnext() {
-        await move_ui_focus(Entity: 0, Element: ".nav-item input", Step: 1);
-        click_ui_element(Entity: 0, Element: ".nav-item input:focus");
+    on NavNext {
+        await move_ui_focus(Element: ".nav-item input", Step: 1)
+        click_ui_element(Element: ".nav-item input:focus")
     }
-    on NavPrevious as navprevious() {
-        await move_ui_focus(Entity: 0, Element: ".nav-item input", Step: -1);
-        click_ui_element(Entity: 0, Element: ".nav-item input:focus");
+    on NavPrevious {
+        await move_ui_focus(Element: ".nav-item input", Step: -1)
+        click_ui_element(Element: ".nav-item input:focus")
     }
 }
