@@ -1,7 +1,6 @@
 behavior "OutlinerMenu" {
     owner "ecs.entity";
-    action set_ui_data_8 = set_ui_data(Entity: 0, Name: "menu.actor", Value: bool = (convert<"To Real">(local.Count) > 0));
-    local Count = selection().Count;
+    action set_ui_data_8 = set_ui_data(Entity: 0, Name: "menu.actor", Value: bool = (convert<"To Real">(selection().Count) > 0));
     on Begin as begin() {
         await set_ui_data(Entity: 0, Name: "menu.spawnBreak.label", Value: string = engine["String"](Value: "Break When Spawned"));
         await set_ui_data(Entity: 0, Name: "menu.spawnBreak.icon", Value: string = engine["String"](Value: ""));
@@ -13,11 +12,12 @@ behavior "OutlinerMenu" {
         }
     }
     on Refresh as refresh() {
-        if ((convert<"To Real">(local.Count) == 1)) {
+        Count := selection().Count
+        if ((convert<"To Real">(Count) == 1)) {
             await set_ui_data(Entity: 0, Name: "menu.label", Value: string = selection().Name);
             set_ui_data_8();
         } else {
-            await set_ui_data(Entity: 0, Name: "menu.label", Value: string = format_text(Format: "{} objects", Arg0: int = local.Count));
+            await set_ui_data(Entity: 0, Name: "menu.label", Value: string = format_text(Format: "{} objects", Arg0: int = Count));
             set_ui_data_8();
         }
     }
