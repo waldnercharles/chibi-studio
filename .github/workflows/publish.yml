@@ -113,7 +113,7 @@ jobs:
       - name: Build Studio against the installed SDK
         run: |
           emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/sdk"
+            -DChibi_DIR="$GITHUB_WORKSPACE/sdk/lib/cmake/Chibi"
           cmake --build build-web --target chibi-studio --parallel 2
           cmake --install build-web --prefix "$GITHUB_WORKSPACE/site"
       - name: Package the reusable editor and its version
