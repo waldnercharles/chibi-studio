@@ -319,8 +319,13 @@ struct app_scene_authoring
     unsigned scenario_seed;         /* of the recording */
     av_value *scenario_saved_state; /* progress the recording started from, owned */
     char message[256];
+    char notice[256]; /* the message, when it reports a success rather than a problem */
     char prototype_message[256];
 };
+
+/* Marks the message just written as a success, which Studio reports plainly,
+   not as a problem. */
+void scene_notice(app_scene_authoring *scene);
 
 /* Document I/O is shared by disk commands and saved workspace checkpoints. */
 /* The open scene as saving would write it, leaving an edit in progress open,

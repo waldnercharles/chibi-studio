@@ -1703,16 +1703,22 @@ static void workspace(studio *s)
 
 /* ---------- Status bar ---------- */
 
-/* Authoring messages say what kept an edit from happening. */
+/* Authoring messages report a success, which the scene marks as its notice,
+   or what kept an edit from happening, which shows as a warning. */
 static void follow_messages(studio *s)
 {
     if (!strcmp(s->scene->message, s->seen_message)) {
         return;
     }
     snprintf(s->seen_message, sizeof s->seen_message, "%s", s->scene->message);
-    if (s->seen_message[0]) {
-        studio_warn(s, s->seen_message);
+    if (!s->seen_message[0]) {
+        return;
     }
+    if (!strcmp(s->seen_message, s->scene->notice)) {
+        studio_report(s, s->seen_message);
+        return;
+    }
+    studio_warn(s, s->seen_message);
 }
 
 /* The status bar is authored: projects/studio's StatusBar binds `editor`,
