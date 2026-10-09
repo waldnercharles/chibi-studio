@@ -6,7 +6,7 @@
 #include "editor/workspace/checkpoint.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
-#include "runtime/component_catalog.h"
+#include "runtime/declared_components.h"
 #include "support/asset_json.h"
 #include "support/asset_text.h"
 #include "support/text_overlay.h"
@@ -156,9 +156,10 @@ static bool checkpoint_read_values(yyjson_val *array, av_value ***out)
 
 static const ecs_component_desc *resolve_component(const char *name, void *)
 {
-    for (int i = 0; name && i < GAME_REGISTRY_COMPONENT_COUNT; i++) {
-        if (!strcmp(name, GAME_REGISTRY_COMPONENTS[i]->name)) {
-            return GAME_REGISTRY_COMPONENTS[i];
+    ecs_component_catalog project = project_components();
+    for (int i = 0; name && i < project.component_count; i++) {
+        if (!strcmp(name, project.components[i]->name)) {
+            return project.components[i];
         }
     }
     return NULL;
@@ -166,9 +167,10 @@ static const ecs_component_desc *resolve_component(const char *name, void *)
 
 static const char *component_name(ecs_component_id id, void *)
 {
-    for (int i = 0; i < GAME_REGISTRY_COMPONENT_COUNT; i++) {
-        if (GAME_REGISTRY_COMPONENTS[i]->id == id) {
-            return GAME_REGISTRY_COMPONENTS[i]->name;
+    ecs_component_catalog project = project_components();
+    for (int i = 0; i < project.component_count; i++) {
+        if (project.components[i]->id == id) {
+            return project.components[i]->name;
         }
     }
     return NULL;
@@ -856,7 +858,7 @@ static bool restore_scene(app_scene_authoring *scene, yyjson_val *root, yyjson_v
     }
     av_value *rebased = game_scene_document_to_value(
         document,
-        (ecs_component_catalog){ GAME_REGISTRY_COMPONENTS, GAME_REGISTRY_COMPONENT_COUNT }
+        project_components()
     );
     restored = rebased && scene_authoring_load_value(
                               scene,

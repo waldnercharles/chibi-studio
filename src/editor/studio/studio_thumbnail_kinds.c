@@ -35,6 +35,7 @@
 #include "render/ui.h"
 #include "runtime/camera.h"
 #include "runtime/component_catalog.h"
+#include "runtime/declared_components.h"
 #include "runtime/material_field.h"
 #include "runtime/materials.h"
 #include "support/array.h"
@@ -1119,8 +1120,7 @@ static char *unsaved_scene_text(studio *s, const char *path)
     game_scene_document *scene = unsaved_scene(s, path);
     char *text = scene ? game_scene_document_save(
                              scene,
-                             (ecs_component_catalog){ GAME_REGISTRY_COMPONENTS,
-                                                      GAME_REGISTRY_COMPONENT_COUNT }
+                             project_components()
                          )
                        : NULL;
     game_scene_document_free(scene);

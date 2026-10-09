@@ -2,6 +2,8 @@
 
 #include "assets/project.h"
 #include "assets/prototype.h"
+#include "authoring/application_catalog.h"
+#include "authoring/component_declarations.h"
 #include "authoring/engine_preview.h"
 #include "authoring/image_prepare.h"
 #include "authoring/mesh_prepare.h"
@@ -74,6 +76,7 @@ typedef struct
     game_preview_definition *placeholder; /* owned, never registered as execution */
     engine_viewport *viewport;
     app_scene_authoring *authoring;
+    declared_components *declared; /* the open project's, or NULL */
     app_game_presentation *game;
     studio *studio;
     int frames;
@@ -110,6 +113,7 @@ static void close_workspace_state(app_loop *loop, bool clear_renderer)
         authoring_shader_catalog_clear();
     }
     ecs_world_free(loop->world);
+    declared_components_free(loop->declared);
     engine_viewport_free(loop->viewport);
     free(loop->project_root);
     loop->game = NULL;
@@ -119,6 +123,7 @@ static void close_workspace_state(app_loop *loop, bool clear_renderer)
     loop->graph_editor = NULL;
     loop->placeholder = NULL;
     loop->world = NULL;
+    loop->declared = NULL;
     loop->viewport = NULL;
     loop->project_root = NULL;
 }
@@ -286,6 +291,21 @@ static int open_graph(
     return 0;
 }
 
+/* Installs the components the project declares in content/components. */
+static bool load_declared(const char *content, declared_components **out, char *error, size_t size)
+{
+    native_capabilities *native = authoring_application_catalog_new(true, error, size);
+    bool loaded = native && authoring_component_declarations_load(
+                                content,
+                                native_capabilities_catalog(native),
+                                out,
+                                error,
+                                size
+                            );
+    native_capabilities_free(native);
+    return loaded;
+}
+
 /* Opens `project_path` at `scene_path` (NULL for its start scene) into the
  * loop's world, runtime, authoring and viewport. */
 static bool open_workspace(
@@ -298,6 +318,7 @@ static bool open_workspace(
 )
 {
     chibi_project project = { 0 };
+    declared_components *declared = NULL;
     if (chibi_project_open(&project, project_path, error, error_size) != 0) {
         return false;
     }
@@ -315,8 +336,10 @@ static bool open_workspace(
 
     /* The host owns shader setup; image sources must precede graph registration. */
     if (!render_image_mount_content(project.content, error, error_size)
-        || !authoring_mesh_mount_content(project.content, error, error_size)) {
+        || !authoring_mesh_mount_content(project.content, error, error_size)
+        || !load_declared(project.content, &declared, error, error_size)) {
         free(resolved_scene);
+        declared_components_free(declared);
         chibi_project_free(&project);
         return false;
     }
@@ -332,6 +355,7 @@ static bool open_workspace(
                  source->diagnostic_count ? source->diagnostics[0].message : "invalid source");
         authoring_source_free(source);
         free(resolved_scene);
+        declared_components_free(declared);
         chibi_project_free(&project);
         return false;
     }
@@ -364,6 +388,7 @@ static bool open_workspace(
         ecs_world_free(world);
         engine_viewport_free(viewport);
         free(resolved_scene);
+        declared_components_free(declared);
         chibi_project_free(&project);
         return false;
     }
@@ -400,6 +425,7 @@ static bool open_workspace(
         ecs_world_free(world);
         engine_viewport_free(viewport);
         free(resolved_scene);
+        declared_components_free(declared);
         chibi_project_free(&project);
         return false;
     }
@@ -418,6 +444,7 @@ static bool open_workspace(
     loop->placeholder = definition;
     loop->viewport = viewport;
     loop->authoring = authoring;
+    loop->declared = declared;
     loop->project_root = root;
     return true;
 }
@@ -431,6 +458,7 @@ static void app_workspace_take(app_loop *loop, app_loop *candidate)
     loop->placeholder = candidate->placeholder;
     loop->viewport = candidate->viewport;
     loop->authoring = candidate->authoring;
+    loop->declared = candidate->declared;
     loop->project_root = candidate->project_root;
     loop->studio = candidate->studio;
     candidate->graph_editor = NULL;
@@ -440,6 +468,7 @@ static void app_workspace_take(app_loop *loop, app_loop *candidate)
     candidate->placeholder = NULL;
     candidate->viewport = NULL;
     candidate->authoring = NULL;
+    candidate->declared = NULL;
     candidate->project_root = NULL;
     candidate->studio = NULL;
 }

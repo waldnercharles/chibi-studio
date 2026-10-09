@@ -18,6 +18,7 @@
 #include "graph/document/serialize.h"
 #include "render/ui.h"
 #include "runtime/component_catalog.h"
+#include "runtime/declared_components.h"
 #include "support/array.h"
 #include "support/asset_text.h"
 #include "support/text_file.h"
@@ -372,8 +373,9 @@ studio_ui *studio_ui_new(studio *s, const char *project_root, char *error, size_
     size_t length = strlen(project_root) + sizeof "/content";
     ui->content_root = xmalloc(length);
     snprintf(ui->content_root, length, "%s/content", project_root);
-    ui->registry = (game_prototype_registry){ .components = GAME_REGISTRY_COMPONENTS,
-                                              .component_count = GAME_REGISTRY_COMPONENT_COUNT };
+    ecs_component_catalog components = project_components();
+    ui->registry = (game_prototype_registry){ .components = components.components,
+                                              .component_count = components.component_count };
     ui->listener = rml_listener_create(on_event, ui);
     if (!open_world(s, ui, error, size)) {
         studio_ui_free(ui);
