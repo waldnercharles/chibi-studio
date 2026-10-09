@@ -2501,7 +2501,7 @@
       "source_path": "src/editor/studio/studio_refactor.c"
     },
     "src/editor/studio/studio_scene.c": {
-      "consumer_sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
+      "consumer_sha256": "c01b08fc0c55296688936c7b8acbc1c33b1e62c6bea8ffc60f95e4f9bc045f98",
       "current_source_sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "source_path": "src/editor/studio/studio_scene.c"
@@ -2825,7 +2825,7 @@
           "\"editor/workspace/tree_watch.h\""
         ]
       ],
-      "consumer_sha256": "f602952bb87e8f25d9666774cda7c3ce9fa32f90bc52378e662652ac81b28979",
+      "consumer_sha256": "baf33133489d797d557765a893ad0606dd524c11c653fc367f890fcd6d0c800b",
       "current_source_sha256": "93345eaf41711cf406a6263f27024a9fa1c875e7d92d97926750cb1d33ffb0eb",
       "sha256": "7aedf7279fffcd4c7def1ae879505521def3a81e56d828081c46f436f43ec3ed",
       "source_path": "src/editor/workspace/scene_internal.h"
@@ -2855,7 +2855,7 @@
       "source_path": "src/editor/workspace/scene_view.c"
     },
     "src/editor/workspace/scene_viewport.c": {
-      "consumer_sha256": "f2a2f0d495ea6a286f1dfd898f3904d55eedfdb9093f9ef79d9f16115503a482",
+      "consumer_sha256": "ddb2bbd4fcdffc8df8a3d6af03d6d26f16c55aff0c5395ef9dbc9e91587e891e",
       "current_source_sha256": "f2a2f0d495ea6a286f1dfd898f3904d55eedfdb9093f9ef79d9f16115503a482",
       "sha256": "c487c7af89a66c3beb36270f2751356d3c5429ccccef8268ef518557da7a5210",
       "source_path": "src/editor/workspace/scene_viewport.c"
