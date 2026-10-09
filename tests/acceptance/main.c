@@ -135,6 +135,17 @@ static bool input_map_reloads(studio *s)
     return true;
 }
 
+/* A report of what kept an edit from happening shows as a warning, and the
+ * next report clears it. */
+static bool reports_warn(studio *s)
+{
+    studio_warn(s, "Could not duplicate");
+    REQUIRE(s->status_warning && !strcmp(s->status, "Could not duplicate"));
+    studio_report(s, "Duplicated");
+    REQUIRE(!s->status_warning);
+    return true;
+}
+
 /* With Counter unsaved, the title marks it and quitting asks once, in a toast
  * that a repeated request updates in place. */
 static bool quit_asks(studio *s)
@@ -183,6 +194,7 @@ static bool source_edit_frame(void *state)
     REQUIRE(frames <= 4);
     if (frames == 1) {
         REQUIRE(projects_open(s));
+        REQUIRE(reports_warn(s));
         const node *literal = NULL;
         REQUIRE(check_counter(s, 1, false, &literal));
         s->prefs.code_apply_live = true;

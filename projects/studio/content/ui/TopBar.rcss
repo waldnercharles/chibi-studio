@@ -116,8 +116,9 @@ body { flex: 0 0 auto; }
 .target .icon { flex: 0 0 auto; }
 .group { display: flex; background-color: var(--secondary); border-radius: var(--r); }
 .group .btn { border-radius: 0dp; width: var(--h); padding: 0dp; }
-.group .btn[data-state=on] { background-color: var(--selected); color: var(--foreground); }
-.group .btn[data-state=on] .icon { color: var(--primary-text); }
+// A running scene fills Play, as the Scene header's active tool, so play mode reads at a glance.
+.group .btn[data-state=on] { background-color: var(--primary); color: var(--primary-foreground); }
+.group .btn[data-state=on] .icon { color: var(--primary-foreground); }
 #debug-steps { display: flex; }
 #speed { display: flex; flex: 0 0 auto; }
 // The speed keeps its width as it steps, so the centered transport stays put,

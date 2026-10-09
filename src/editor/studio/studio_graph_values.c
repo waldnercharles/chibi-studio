@@ -14,7 +14,7 @@
 #include "graph/model/registry.h"
 #include "graph/nodes/behavior_expression.h"
 #include "graph/nodes/conv_nodes.h"
-#include "runtime/component_catalog.h"
+#include "runtime/declared_components.h"
 #include "support/array.h"
 #include "support/number_expr.h"
 
@@ -478,8 +478,9 @@ static bool component_query_separator(
     }
 
     int visible_matches = 0;
-    for (int i = 0; i < GAME_REGISTRY_COMPONENT_COUNT; i++) {
-        const ecs_component_desc *candidate = GAME_REGISTRY_COMPONENTS[i];
+    ecs_component_catalog project = project_components();
+    for (int i = 0; i < project.component_count; i++) {
+        const ecs_component_desc *candidate = project.components[i];
         if (!candidate || !candidate->name) {
             continue;
         }
@@ -737,8 +738,9 @@ static void add_sources(
         }
 
         if (target_spec->container == PIN_CONTAINER_SINGLE) {
-            for (int i = 0; i < GAME_REGISTRY_COMPONENT_COUNT; i++) {
-                const ecs_component_desc *component = GAME_REGISTRY_COMPONENTS[i];
+            ecs_component_catalog project = project_components();
+            for (int i = 0; i < project.component_count; i++) {
+                const ecs_component_desc *component = project.components[i];
                 if (!component || !component->type || !component->key) {
                     continue;
                 }
