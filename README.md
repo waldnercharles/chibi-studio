@@ -43,6 +43,13 @@ The executable resolves that tree relative to itself; `CHIBI_RESOURCE_DIR` can
 explicitly select a different engine resource root. It does not require the SDK
 installation used during compilation to remain at its original path.
 
+`cmake --install build --prefix PREFIX` installs `chibi-dev` and its resources.
+Adding `--component sdk_tools` in a second install puts the SDK's `chibi`,
+`chibi-compile` and `chibi-player` beside it, which Export Game runs. With
+`PREFIX/bin` on `PATH`, `chibi-dev` then opens the project in the working
+directory. The engine's `make install` builds and runs both installs; packages
+leave the SDK tools out.
+
 The standalone application has compiled and linked against an installed SDK.
 Two hidden startup frames passed. A separately compiled acceptance target passed
 four hidden frames with one real source edit, undo back to the clean original,
