@@ -43,6 +43,13 @@ The executable resolves that tree relative to itself; `CHIBI_RESOURCE_DIR` can
 explicitly select a different engine resource root. It does not require the SDK
 installation used during compilation to remain at its original path.
 
+To use Studio in any project, install the engine SDK first (`make install` in
+the engine checkout), then run `make install` here. It builds a Release Studio
+against the SDK in `PREFIX` (default `~/.local`) and installs `chibi-dev` into
+`PREFIX/bin`, beside the SDK's `chibi`, which Export Game runs. With
+`PREFIX/bin` on `PATH`, `chibi-dev` opens the project in the working directory.
+On Windows, run the Makefile's three CMake commands directly.
+
 The standalone application has compiled and linked against an installed SDK.
 Two hidden startup frames passed. A separately compiled acceptance target passed
 four hidden frames with one real source edit, undo back to the clean original,
