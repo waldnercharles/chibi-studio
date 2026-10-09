@@ -357,8 +357,7 @@ int main(int argc, char **argv)
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     if ((!source_edit && !code_keys && !exporting) || strcmp(argv[2], "--project-root")) {
         fprintf(stderr, "Usage: studio-acceptance --source-edit|--code-keys|--export-game "
-                        "--project-root PATH | --scene-cursors
-");
+                        "--project-root PATH | --scene-cursors\n");
         return 2;
     }
     executable = argv[0];
