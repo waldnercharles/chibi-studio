@@ -676,6 +676,7 @@ void scene_gizmo_drag_object(app_scene_authoring *scene, int index, const engine
     drag_frame(scene, pointer);
 }
 
+/* The part under canvas point `at`, with the box's angle for its cursor. */
 static int hovered_part(app_scene_authoring *scene, CF_V2 at, float pixel)
 {
     if (scene->gizmo.in.tool == SCENE_TOOL_SELECT) {
@@ -683,9 +684,11 @@ static int hovered_part(app_scene_authoring *scene, CF_V2 at, float pixel)
     }
     scene_gizmo_target *targets = selection_targets(scene);
     gizmo_frame frame;
-    int part = frame_of(targets, &frame)
-                 ? part_at(scene->gizmo.in.tool, &frame, at, pixel)
-                 : SCENE_GIZMO_NONE;
+    int part = SCENE_GIZMO_NONE;
+    if (frame_of(targets, &frame)) {
+        part = part_at(scene->gizmo.in.tool, &frame, at, pixel);
+        scene->gizmo.tilt = frame.angle;
+    }
     afree(targets);
     return part;
 }
@@ -744,6 +747,33 @@ bool scene_gizmo_pointer(app_scene_authoring *scene, engine_viewport *viewport, 
     scene_gizmo_begin(scene, g->hover, at);
     drag_frame(scene, pointer);
     return true;
+}
+
+const char *scene_gizmo_part_cursor(int part, float angle)
+{
+    switch (part) {
+        case SCENE_GIZMO_NONE: return NULL;
+        case SCENE_GIZMO_FREE: return "move";
+        case SCENE_GIZMO_AXIS_X: return "ew-resize";
+        case SCENE_GIZMO_AXIS_Y: return "ns-resize";
+        case SCENE_GIZMO_RING: return "pointer";
+        default: break;
+    }
+    /* The handle's side of the box, on screen, to the nearest 45 degrees. */
+    static const char *const RESIZE[] = { "ew-resize", "nesw-resize", "ns-resize", "nwse-resize" };
+    int handle = part - SCENE_GIZMO_HANDLE;
+    assert(handle >= 0 && handle < 8);
+    CF_V2 out = rotated((CF_V2){ HANDLE_SIDES[handle][0], HANDLE_SIDES[handle][1] }, angle);
+    int octant = (int)lroundf(atan2f(out.y, out.x) / (CF_PI / 4));
+    return RESIZE[(octant % 4 + 4) % 4];
+}
+
+const char *scene_gizmo_cursor(const app_scene_authoring *scene)
+{
+    const scene_gizmo *g = &scene->gizmo;
+    return g->active != SCENE_GIZMO_NONE
+             ? scene_gizmo_part_cursor(g->active, g->angle)
+             : scene_gizmo_part_cursor(g->hover, g->tilt);
 }
 
 /* ---------- Drawing ---------- */

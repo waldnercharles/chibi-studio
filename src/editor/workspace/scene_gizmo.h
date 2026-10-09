@@ -81,6 +81,7 @@ typedef struct
     CF_V2 grip; /* the dragged handle less the pointer, box units */
     float turn; /* the rotation so far, canvas radians */
     float last; /* the pointer's angle about the pivot last frame */
+    float tilt; /* the gizmo box's angle when last hovered */
     bool dirty; /* the scene's dirty state when the gesture began */
     scene_gizmo_target *targets; /* array */
     scene_gizmo_field *fields;   /* array */
@@ -117,6 +118,12 @@ float scene_gizmo_grid(const app_scene_authoring *scene);
 /* The tool's gizmo over the selection in a 2D view, and a modal move's
    constraint. */
 void scene_gizmo_draw(app_scene_authoring *scene);
+/* The cursor, as RCSS names it, for gizmo `part` on a box turned by
+   `angle`: Move's four arrows, an axis's or a handle's resize direction and
+   the ring's hand; NULL for none. */
+const char *scene_gizmo_part_cursor(int part, float angle);
+/* The cursor for the part dragged, else hovered, or NULL. */
+const char *scene_gizmo_cursor(const app_scene_authoring *scene);
 /* `value` at the nearest multiple of `increment`. */
 float scene_snap(float value, float increment);
 

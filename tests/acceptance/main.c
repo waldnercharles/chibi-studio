@@ -268,12 +268,41 @@ TEST_CASE(export_game)
     return true;
 }
 
+/* A gizmo part's cursor: the move square's, the axes', the ring's, and a
+   resize handle's direction as the box turns. */
+TEST_CASE(scene_gizmo_cursors)
+{
+    REQUIRE(!scene_gizmo_part_cursor(SCENE_GIZMO_NONE, 0));
+    REQUIRE(!strcmp(scene_gizmo_part_cursor(SCENE_GIZMO_FREE, 0), "move"));
+    REQUIRE(!strcmp(scene_gizmo_part_cursor(SCENE_GIZMO_AXIS_X, 0), "ew-resize"));
+    REQUIRE(!strcmp(scene_gizmo_part_cursor(SCENE_GIZMO_AXIS_Y, 0), "ns-resize"));
+    REQUIRE(!strcmp(scene_gizmo_part_cursor(SCENE_GIZMO_RING, 0), "pointer"));
+    /* Handles run counterclockwise from the bottom left, in Y-up canvas units. */
+    static const char *const upright[4] = { "nesw-resize", "ns-resize",
+                                            "nwse-resize", "ew-resize" };
+    static const char *const quarter[4] = { "nwse-resize", "ew-resize",
+                                            "nesw-resize", "ns-resize" };
+    for (int h = 0; h < 8; h++) {
+        const char *turned = scene_gizmo_part_cursor(SCENE_GIZMO_HANDLE + h, CF_PI / 2);
+        const char *flipped = scene_gizmo_part_cursor(SCENE_GIZMO_HANDLE + h, -CF_PI);
+        REQUIRE(!strcmp(scene_gizmo_part_cursor(SCENE_GIZMO_HANDLE + h, 0), upright[h % 4]));
+        REQUIRE(!strcmp(turned, quarter[h % 4]));
+        REQUIRE(!strcmp(flipped, upright[h % 4]));
+    }
+    return true;
+}
+
 int main(int argc, char **argv)
 {
+    if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
+        RUN_TEST_CASE(scene_gizmo_cursors);
+        pu_print_stats();
+        return pu_test_failed() ? 1 : 0;
+    }
     bool source_edit = argc == 4 && !strcmp(argv[1], "--source-edit");
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     if ((!source_edit && !exporting) || strcmp(argv[2], "--project-root")) {
-        fprintf(stderr, "Usage: studio-acceptance --source-edit|--export-game --project-root PATH\n");
+        fprintf(stderr, "Usage: studio-acceptance --source-edit|--export-game --project-root PATH | --scene-cursors\n");
         return 2;
     }
     executable = argv[0];
