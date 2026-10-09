@@ -68,6 +68,7 @@ enum
     KIT_ICON_HISTORY = 0xea82,      /* nf-cod-history */
     KIT_ICON_PIN = 0xf0931,         /* nf-md-pin_outline */
     KIT_ICON_EXTERNAL = 0xeb14,     /* nf-cod-link_external */
+    KIT_ICON_PACKAGE = 0xeb29,      /* nf-cod-package */
     KIT_ICON_RESET = 0xeae2,        /* nf-cod-discard */
     KIT_ICON_COPY = 0xebcc,         /* nf-cod-copy */
     KIT_ICON_CLIPBOARD = 0xf018f,   /* nf-md-content_copy */
