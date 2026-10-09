@@ -1394,7 +1394,7 @@ void sg_emit_expression_editor(studio *s, kit *k, node *expression, uint64_t own
             state->input_edit_kit = NULL;
             state->input_edit_focus = false;
         } else if (state->expression_error[0]) {
-            sg_show_error(s, state->expression_error);
+            sg_show_error(s, "Can't use this expression", state->expression_error);
         }
     }
     if (state->input_edit_focus) {
@@ -1681,7 +1681,7 @@ void sg_emit_graph_input(studio *s, kit *k, node *n, int p)
                 if (sg_set_expression_source(s, source, query) == 0) {
                     kit_autocomplete_close(k, "source-edit");
                 } else if (s->graph.expression_error[0]) {
-                    sg_show_error(s, s->graph.expression_error);
+                    sg_show_error(s, "Can't use this expression", s->graph.expression_error);
                 }
             }
         }
@@ -1850,7 +1850,7 @@ void studio_graph_source_choose(studio *s, const studio_palette_entry *entry)
         node *expression = sg_node_by_id(s, choice.node_id);
         if (expression && sg_set_expression_source(s, expression, choice.label) != 0 &&
             g->expression_error[0]) {
-            sg_show_error(s, g->expression_error);
+            sg_show_error(s, "Can't use this expression", g->expression_error);
         }
         return;
     }
