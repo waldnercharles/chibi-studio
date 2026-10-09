@@ -293,6 +293,8 @@ static void end_link(studio *s, graph_hit hit)
             } else {
                 sg_connect_pins(s, from, g->link_kind, g->link_pin, to, hit.kind, hit.pin);
             }
+        } else if (to != from || hit.pin != g->link_pin) {
+            sg_show_error(s, "Can't connect", "A wire joins an output to an input");
         }
         return;
     }
@@ -312,6 +314,8 @@ static void end_link(studio *s, graph_hit hit)
                     target
                 );
             }
+        } else {
+            sg_show_error(s, "Can't connect", "This node has no pin that fits the wire");
         }
         return;
     }
@@ -674,7 +678,11 @@ static void release(studio *s, graph_hit hit)
                             insert_pins(s, lone, g->insert_edge, &in, &out) &&
                             ed_insert_on_wire(e, g->insert_edge, lone, in, out);
             if (offered && !inserted) {
-                sg_show_error(s, e->connect_error[0] ? e->connect_error : "Can't insert the node here");
+                sg_show_error(
+                    s,
+                    "Can't insert the node",
+                    e->connect_error[0] ? e->connect_error : "This node does not fit the wire"
+                );
             }
             if (moved || inserted) {
                 ed_commit_snapshot(e);
@@ -1032,6 +1040,9 @@ void sg_shortcuts(studio *s)
         SDL_Keycode key = s->keys[i].key;
         bool mod = studio_primary(s, s->keys[i].mod);
         bool shift = s->keys[i].mod & SDL_KMOD_SHIFT;
+        bool bare = !(
+            s->keys[i].mod & (SDL_KMOD_CTRL | SDL_KMOD_GUI | SDL_KMOD_ALT | SDL_KMOD_SHIFT)
+        );
         if (s->keys[i].repeat) {
             continue; /* a held key acts once */
         }
@@ -1090,7 +1101,7 @@ void sg_shortcuts(studio *s)
             sg_paste(s);
         } else if (mod && key == SDLK_G && !sg_graph_readonly(s) && acount(e->selected)) {
             sg_collapse(s, GRAPH_FUNCTION);
-        } else if ((shift && key == SDLK_A) || key == SDLK_TAB) {
+        } else if ((shift && key == SDLK_A) || (bare && key == SDLK_TAB)) {
             if (!sg_graph_readonly(s)) {
                 g->spawn_pending = true;
                 g->spawn_x = g->world_x;

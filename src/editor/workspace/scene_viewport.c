@@ -486,6 +486,14 @@ static void edit_scene_pointer(app_scene_authoring *scene, engine_viewport *view
         return;
     }
     if (!scene->marquee) {
+        ecs_entity picked = pointer.hovered && !pointer.down &&
+                                    scene->gizmo.hover == SCENE_GIZMO_NONE
+                              ? pick_pointer(scene, viewport, &pointer, unpickable)
+                              : (ecs_entity){ 0 };
+        /* What a press selects or moves (above): an object with a position. */
+        if (picked.slot && GAME_GameTransform_has(scene->world, picked)) {
+            scene->hovered = picked;
+        }
         return;
     }
     scene->marquee_end = (CF_V2){ pointer.ndc_x, pointer.ndc_y };
@@ -634,6 +642,9 @@ int app_scene_authoring_draw_viewport(app_scene_authoring *scene, engine_viewpor
     scene_field_previews_apply(scene);
     int drawn = engine_viewport_draw(viewport, &controls);
     scene_field_previews_clear(scene);
+    /* The pointer's frame below picks it again for the next draw, if it
+       still rests on one. */
+    scene->hovered = (ecs_entity){ 0 };
     if (model) {
         scene_model_preview_pointer(scene, viewport);
     } else {
@@ -738,6 +749,15 @@ static void draw_appearance(
     cf_draw_pop_color();
 }
 
+/* Whether the object under the pointer shows its hover outline: while the
+   scene is edited, not under a dragged asset's drop outline. */
+static bool hover_shown(const app_scene_authoring *scene, const ecs_world *world, render_skip hidden)
+{
+    return scene->hovered.slot && world == scene->world &&
+           scene_can_move(scene) && !acount(scene->field_previews) &&
+           !render_skip_has(hidden, scene->hovered);
+}
+
 static CF_V2 canvas_point(const engine_viewport_camera *frame, CF_V2 ndc)
 {
     return (CF_V2){ frame->center_x + ndc.x * frame->span_width * 0.5f,
@@ -810,6 +830,9 @@ static void draw_arena_selection(
     engine_viewport_camera frame;
     engine_viewport_get_camera(scene->render_viewport, &frame);
     float stroke = scene->selection_scale > 0 ? scene->selection_scale * 0.5f : 0.5f;
+    if (hover_shown(scene, world, hidden)) {
+        draw_arena_box(world, camera, &frame, scene->hovered, stroke, SCENE_HOVER_COLOR);
+    }
     for (int i = -1; i < acount(scene->actors); i++) {
         ecs_entity entity = i < 0 ? scene->runtime_selected : scene->actors[i].entity;
         bool selected = i < 0 ? entity.slot != 0 : scene_instance_selected(scene, i);
@@ -1002,6 +1025,10 @@ void app_scene_authoring_render(void *user)
     /* Overlays keep a pixel's antialiasing at any camera zoom. */
     float pixel = scene->selection_scale > 0 ? scene->selection_scale : 1;
     cf_draw_push_shape_aa(SCENE_OVERLAY_AA * pixel * cf_app_get_pixel_scale());
+    /* Under the selection's outline, which covers it on a selected object. */
+    if (hover_shown(scene, world, hidden)) {
+        outline_object(world, scene->hovered, pixel, 3, SCENE_HOVER_COLOR);
+    }
     for (int selection = -1; selection < acount(scene->actors); selection++) {
         ecs_entity selected = selection < 0 ? scene->runtime_selected
                                             : scene->actors[selection].entity;
