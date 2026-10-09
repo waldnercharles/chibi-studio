@@ -114,7 +114,8 @@ static void jump(studio *s, int index)
     studio_reveal_node(s, hit->graph_id, hit->node_id);
 }
 
-/* Steps through the results in the graph, wrapping at either end. */
+/* Steps through the results in the graph, wrapping at either end. A step
+   keeps the zoom and pans only to bring an off-screen result into view. */
 static void step(studio *s, int direction)
 {
     int count = acount(s->graph.find.hits), current = s->graph.find.current;
@@ -123,6 +124,7 @@ static void step(studio *s, int direction)
     }
     int next = current < 0 ? (direction > 0 ? 0 : count - 1) : current + direction;
     jump(s, (next + count) % count);
+    s->graph.reveal_frame = false;
 }
 
 /* Closing gives the keyboard back to the graph's area. */

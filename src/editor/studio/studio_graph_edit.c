@@ -77,15 +77,9 @@ void sg_frame_selection(studio *s)
     );
 }
 
-void sg_show_error(studio *s, const char *message)
+void sg_show_error(studio *s, const char *title, const char *message)
 {
-    kit_toast(
-        s->kit,
-        0,
-        &(kit_toast_desc){ .type = KIT_TOAST_WARNING,
-                           .title = "Can't connect",
-                           .description = message }
-    );
+    kit_toast(s->kit, 0, &(kit_toast_desc){ .type = KIT_TOAST_WARNING, .title = title, .description = message });
     studio_record(s, KIT_TOAST_WARNING, message);
 }
 
@@ -104,7 +98,7 @@ static bool sg_connect_pins_direct(studio *s, node *a, int a_kind, int a_pin, no
     } else {
         ed_cancel_snapshot(e);
         if (e->connect_error[0]) {
-            sg_show_error(s, e->connect_error);
+            sg_show_error(s, "Can't connect", e->connect_error);
         }
     }
     return connected;
@@ -147,7 +141,7 @@ bool sg_reconnect_pins(studio *s, node *to, int pin)
     }
     if (g->link_kind != ED_PIN_OUTPUT || from->id != g->link_node ||
         from_pin != g->link_pin) {
-        sg_show_error(s, "This connection changed while you were dragging");
+        sg_show_error(s, "Can't connect", "This connection changed while you were dragging");
         return false;
     }
     if (to == old && pin == old_pin) {
@@ -156,7 +150,7 @@ bool sg_reconnect_pins(studio *s, node *to, int pin)
     if (e->presentation) {
         bool changed = graph_collab_reconnect_apply(e, from, from_pin, old, old_pin, to, pin);
         if (!changed && e->connect_error[0]) {
-            sg_show_error(s, e->connect_error);
+            sg_show_error(s, "Can't connect", e->connect_error);
         }
         return changed;
     }
@@ -171,7 +165,7 @@ bool sg_reconnect_pins(studio *s, node *to, int pin)
     ed_clear_connect_error(e);
     bool changed = graph_collab_reconnect_apply(e, from, from_pin, old, old_pin, to, pin);
     if (!changed) {
-        sg_show_error(s, e->connect_error[0] ? e->connect_error : "These pins cannot be connected");
+        sg_show_error(s, "Can't connect", e->connect_error[0] ? e->connect_error : "These pins cannot be connected");
     }
     bool published = action ? collab_actions_finish(action, changed) : true;
     free(action);
@@ -1077,7 +1071,7 @@ void studio_graph_palette_choose(studio *s, const studio_palette_entry *entry)
     if (e->presentation &&
         strcmp(s->add_menu.matches[entry->index].desc->name, "Comment Box")) {
         if (!ed_source_spawn_match(e, &s->add_menu.matches[entry->index]) && e->connect_error[0]) {
-            sg_show_error(s, e->connect_error);
+            sg_show_error(s, "Can't add the node", e->connect_error);
         }
     } else {
         n = ed_spawn_match_at(e, &s->add_menu.matches[entry->index], g->spawn_x, g->spawn_y);
