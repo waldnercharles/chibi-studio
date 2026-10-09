@@ -29,7 +29,8 @@
           <use ui="MenuCommand" data-alias-command="commands.newStylesheet"/>
         </use>
         <use ui="MenuCommand" data-alias-command="commands.search"/>
-        <use ui="Submenu" data-if="menubar.projects.size > 0" data-alias-item="menubar.items.openProject">
+        <use ui="MenuCommand" data-if="commands.openProject.enabled" data-alias-command="commands.openProject"/>
+        <use ui="Submenu" data-if="menubar.projects.size > 0" data-alias-item="menubar.items.openRecent">
           <use ui="MenuItem" data-for="project, i : menubar.projects" data-alias-item="project" data-event-click="emit('menubar.openProject', i)"/>
         </use>
         <use ui="MenuSeparator"/>
@@ -41,6 +42,8 @@
         <use ui="MenuCommand" data-if="!menubar.web" data-alias-command="commands.exportGame"/>
         <use ui="MenuSeparator"/>
         <use ui="MenuCommand" data-alias-command="commands.settings"/>
+        <use ui="MenuSeparator" data-if="commands.quit.enabled"/>
+        <use ui="MenuCommand" data-if="commands.quit.enabled" data-alias-command="commands.quit"/>
       </use>
       <button class="btn trigger" popovertarget="menu-edit" aria-haspopup="menu"><span class="label">Edit</span></button>
       <use ui="Menu" id="menu-edit">

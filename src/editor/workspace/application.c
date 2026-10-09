@@ -1,19 +1,20 @@
-#include "authoring/engine_preview.h"
 #include "chibi/application.h"
 
 #include "assets/project.h"
 #include "assets/prototype.h"
 #include "authoring/application_catalog.h"
 #include "authoring/component_declarations.h"
+#include "authoring/engine_preview.h"
+#include "authoring/image_prepare.h"
+#include "authoring/mesh_prepare.h"
 #include "authoring/preview.h"
+#include "authoring/shader_prepare.h"
 #include "authoring/source_prepare.h"
 #include "authoring/source_presentation.h"
-#include "authoring/shader_prepare.h"
 #include "authoring/studio_project.h"
 #include "authoring/studio_schema.h"
 #include "diagnostics/frame_log.h"
 #include "diagnostics/tracy.h"
-#include "execution/status.h"
 #include "editor/collab/actions.h"
 #include "editor/collab/collab.h"
 #include "editor/collab/workspace.h"
@@ -25,16 +26,16 @@
 #include "editor/workspace/scenario_playback.h"
 #include "editor/workspace/scene_authoring.h"
 #include "editor/workspace/viewport.h"
+#include "execution/status.h"
 #include "graph/document/serialize.h"
 #include "graph/model/registry.h"
 #include "platform/cute.h"
 #include "render/scene_renderer.h"
 #include "render/screenshot.h"
 #include "render/shader_images.h"
-#include "authoring/image_prepare.h"
-#include "authoring/mesh_prepare.h"
 #include "runtime/component_catalog.h"
 #include "runtime/engine.h"
+#include "support/array.h"
 #include "support/xalloc.h"
 
 #include <SDL3/SDL_events.h>
@@ -51,6 +52,20 @@
    and notices still come round. */
 #define APP_IDLE_FRAME 0.25
 #define APP_DEFAULT_SCREENSHOT_FRAMES 3
+
+/* Closing the window, or the platform's Quit, reaches Studio as a request
+   rather than ending the loop, so it can ask about unsaved edits first. Set
+   where SDL queues the event, read by the frame. */
+static SDL_AtomicInt quit_requested;
+
+static bool SDLCALL hold_quit(void *, SDL_Event *event)
+{
+    if (event->type != SDL_EVENT_QUIT) {
+        return true;
+    }
+    SDL_SetAtomicInt(&quit_requested, 1);
+    return false;
+}
 
 typedef struct
 {
@@ -78,6 +93,7 @@ typedef struct
     char *local_workspace;
     bool collab_initialized;
     bool destroying;
+    bool keeps_workspace; /* --checkpoint restores unsaved edits, so closing never asks */
     double log_start_ms, log_last_ms, log_dropped_seconds;
     uint64_t log_simulation_steps;
 } app_loop;
@@ -708,6 +724,11 @@ static void open_project(app_loop *loop, const char *path)
     studio_free(loop->studio);
     close_workspace(loop);
     bool opened = open_workspace(loop, path, NULL, false, error, sizeof error);
+#ifndef __EMSCRIPTEN__
+    if (opened) {
+        studio_remember_project(loop->project_root);
+    }
+#endif
     if (!opened) {
         char unused[512];
         bool restored = open_workspace(loop, previous, NULL, false, unused, sizeof unused);
@@ -721,12 +742,29 @@ static void open_project(app_loop *loop, const char *path)
     }
 }
 
+#ifndef __EMSCRIPTEN__
+/* The most recent of `roots` that still opens, or NULL. */
+static const char *openable(char **roots)
+{
+    for (int i = 0; i < acount(roots); i++) {
+        chibi_project project = { 0 };
+        char error[256];
+        if (chibi_project_open(&project, roots[i], error, sizeof error) == 0) {
+            chibi_project_free(&project);
+            return roots[i];
+        }
+    }
+    return NULL;
+}
+#endif
+
 void *chibi_application_create(int argc, char **argv, const char *checkpoint, char *error, size_t error_size)
 {
     snprintf(error, error_size, "Could not initialize application");
     int frames = 0;
     int headless = 0;
     bool play = false;
+    bool keeps_workspace = false;
     double fixed_dt = 0;
     const char *scene_path = NULL;
     const char *project_path = NULL;
@@ -784,7 +822,10 @@ void *chibi_application_create(int argc, char **argv, const char *checkpoint, ch
                 snprintf(error, error_size, "--fixed-dt requires a positive number of seconds");
                 return NULL;
             }
-        } else if (strcmp(argv[i], "--checkpoint") == 0 || strcmp(argv[i], "--fps") == 0) {
+        } else if (strcmp(argv[i], "--checkpoint") == 0) {
+            keeps_workspace = true;
+            i++;
+        } else if (strcmp(argv[i], "--fps") == 0) {
             i++;
         } else if (argv[i][0] != '-' && !project_path) {
             project_path = argv[i];
@@ -804,20 +845,40 @@ void *chibi_application_create(int argc, char **argv, const char *checkpoint, ch
         project_path = saved_project;
         scene_path = NULL;
     }
-    /* Without a project, open the one the working directory is inside. */
+    /* Without a project, open the one the working directory is inside, else
+       the one opened last. */
     char *found = project_path ? NULL : chibi_project_find(".");
     if (found) {
         project_path = found;
     }
+#ifndef __EMSCRIPTEN__
+    /* Only a person's launch reopens or remembers a project; captures and
+       bounded runs leave both alone. */
+    bool interactive = !headless && !frames && !screenshot_path;
+    char **recent = project_path || !interactive ? NULL : studio_recent_projects();
+    project_path = project_path ? project_path : openable(recent);
+    if (!project_path) {
+        snprintf(error, error_size, "No project to open. Start Studio inside a project folder, or pass one: chibi-dev PATH");
+        yyjson_doc_free(saved);
+        return NULL;
+    }
+#endif
     app_loop *loop = xmalloc(sizeof *loop);
     *loop = (app_loop){ .frames = frames,
                         .screenshot_path = screenshot_path,
                         .show_graph = open && screenshot_path,
                         .headless = headless,
-                        .fixed_dt = fixed_dt };
+                        .fixed_dt = fixed_dt,
+                        .keeps_workspace = keeps_workspace };
     bool opened = open_workspace(loop, project_path, scene_path, play, error, error_size);
     yyjson_doc_free(saved);
     free(found);
+#ifndef __EMSCRIPTEN__
+    studio_recent_projects_free(recent);
+    if (opened && interactive) {
+        studio_remember_project(loop->project_root);
+    }
+#endif
     if (!opened) {
         free(loop);
         return NULL;
@@ -917,6 +978,9 @@ void chibi_application_activate(void *state)
                                      .presence = app_collab_presence,
                                      .closed = app_collab_closed });
         loop->collab_initialized = true;
+        if (!loop->keeps_workspace) {
+            SDL_SetEventFilter(hold_quit, NULL);
+        }
     }
 }
 
@@ -926,6 +990,13 @@ int chibi_application_frame(void *state)
     int finished = app_frame(loop);
     if (finished < 0) {
         return -1;
+    }
+    bool quit = SDL_SetAtomicInt(&quit_requested, 0);
+    if (quit) {
+        loop->next_frame_ms = 0; /* its confirmation shows at once */
+    }
+    if (!loop->game && studio_quit(loop->studio, quit)) {
+        cf_app_signal_shutdown();
     }
     char *project = loop->game ? NULL : studio_take_project(loop->studio);
     if (project) {

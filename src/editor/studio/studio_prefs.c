@@ -5,13 +5,15 @@
  * settings table (studio_settings.c); the area layout is kept here. */
 #include "editor/studio/studio_internal.h"
 #include "platform/cute.h"
+#include "support/array.h"
 #include "support/text_file.h"
-#include <yyjson.h>
+#include "support/xalloc.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <yyjson.h>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -471,13 +473,10 @@ char *studio_prefs_write(const studio_prefs *p, const char *saved)
     return json;
 }
 
-bool studio_prefs_save(const studio_prefs *p)
+static bool write_json(const char *json)
 {
-    char *saved = read_json();
-    char *json = studio_prefs_write(p, saved);
-    free(saved);
 #ifdef __EMSCRIPTEN__
-    bool ok = prefs_write_browser(json);
+    return prefs_write_browser(json);
 #else
     char path[1024];
     FILE *file = prefs_path(path, sizeof path) ? fopen(path, "wb") : NULL;
@@ -485,10 +484,95 @@ bool studio_prefs_save(const studio_prefs *p)
     if (file) {
         ok &= fclose(file) == 0;
     }
+    return ok;
 #endif
+}
+
+bool studio_prefs_save(const studio_prefs *p)
+{
+    char *saved = read_json();
+    char *json = studio_prefs_write(p, saved);
+    free(saved);
+    bool ok = write_json(json);
     free(json);
     return ok;
 }
+
+#ifndef __EMSCRIPTEN__
+#define STUDIO_RECENT_PROJECTS 10
+
+static yyjson_doc *read_doc()
+{
+    char *json = read_json();
+    yyjson_doc *doc = json ? yyjson_read(json, strlen(json), 0) : NULL;
+    free(json);
+    return doc;
+}
+
+/* The roots under "recentProjects", which studio_prefs_write keeps as it
+   keeps any member it does not know. */
+static char **recent_in(yyjson_doc *doc)
+{
+    char **roots = NULL;
+    size_t i, count;
+    yyjson_val *root;
+    yyjson_val *recent = yyjson_obj_get(yyjson_doc_get_root(doc), "recentProjects");
+    yyjson_arr_foreach(recent, i, count, root)
+    {
+        if (yyjson_is_str(root) && acount(roots) < STUDIO_RECENT_PROJECTS) {
+            apush(roots, xstrdup(yyjson_get_str(root)));
+        }
+    }
+    return roots;
+}
+
+char **studio_recent_projects()
+{
+    yyjson_doc *doc = read_doc();
+    char **roots = recent_in(doc);
+    yyjson_doc_free(doc);
+    return roots;
+}
+
+void studio_recent_projects_free(char **roots)
+{
+    for (int i = 0; i < acount(roots); i++) {
+        free(roots[i]);
+    }
+    afree(roots);
+}
+
+void studio_remember_project(const char *root)
+{
+    yyjson_doc *saved = read_doc();
+    char **roots = recent_in(saved);
+    yyjson_mut_doc *doc = yyjson_is_obj(yyjson_doc_get_root(saved))
+                            ? yyjson_doc_mut_copy(saved, NULL)
+                            : yyjson_mut_doc_new(NULL);
+    yyjson_doc_free(saved);
+    yyjson_mut_val *object = yyjson_mut_doc_get_root(doc);
+    if (!object) {
+        object = yyjson_mut_obj(doc);
+        yyjson_mut_doc_set_root(doc, object);
+    }
+    yyjson_mut_obj_remove_key(object, "recentProjects");
+    yyjson_mut_val *recent = yyjson_mut_obj_add_arr(doc, object, "recentProjects");
+    yyjson_mut_arr_add_strcpy(doc, recent, root);
+    for (int i = 0;
+         i < acount(roots) && yyjson_mut_arr_size(recent) < STUDIO_RECENT_PROJECTS;
+         i++) {
+        if (strcmp(roots[i], root)) {
+            yyjson_mut_arr_add_strcpy(doc, recent, roots[i]);
+        }
+    }
+    studio_recent_projects_free(roots);
+    char *json = yyjson_mut_write(doc, YYJSON_WRITE_PRETTY, NULL);
+    yyjson_mut_doc_free(doc);
+    assert(json);
+    write_json(json);
+    free(json);
+}
+#endif
 
 bool studio_prefs_open_scene_view(game_save *store)
 {
