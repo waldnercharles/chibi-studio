@@ -12,7 +12,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef _WIN32
+#define LAUNCHER "chibi.exe"
+#else
 #define LAUNCHER "chibi"
+#endif
 /* Where exports and their log go, inside the project's own build folder. */
 #define EXPORT_FOLDER ".chibi/export"
 #define EXPORT_LOG "export.log"
