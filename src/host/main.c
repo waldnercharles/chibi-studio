@@ -1,12 +1,13 @@
 #include "chibi/application.h"
-#include "studio_registry.h"
 #include "host/stacktrace.h"
 #include "platform/cute.h"
 #include "render/shader_dir.h"
 #include "state_file.h"
+#include "studio_registry.h"
 #include "support/resources.h"
 #include "support/xalloc.h"
 
+#include <SDL3/SDL_messagebox.h>
 #include <imgui/dcimgui.h>
 #include <signal.h>
 #include <stdio.h>
@@ -254,6 +255,16 @@ int main(int argc, char **argv)
         fprintf(stderr, "Studio application initialization failed: %s\n", error[0] ? error : "no application detail");
 #ifdef __EMSCRIPTEN__
         web_startup_error(error);
+#else
+        /* Launched from a desktop, stderr shows nobody. */
+        if (!hidden && !option(argc, argv, "--frames") && !isatty(STDERR_FILENO)) {
+            SDL_ShowSimpleMessageBox(
+                SDL_MESSAGEBOX_ERROR,
+                "Chibi Studio could not start",
+                error[0] ? error : "no application detail",
+                NULL
+            );
+        }
 #endif
         free(window_path);
         cf_destroy_app();

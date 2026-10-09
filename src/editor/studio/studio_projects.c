@@ -1,8 +1,10 @@
-/* The projects Studio opens: the workspace's own and those in its projects
- * directory. Opening one rebuilds the editor, so the application takes the
- * chosen root after the frame. */
+/* The projects Studio opens: those opened recently, most recent first, then
+ * the workspace's own and those in its projects directory, and any folder
+ * File ▸ Open Project… picks. Opening one rebuilds the editor, so the
+ * application takes the chosen root after the frame. */
 #include "assets/project.h"
 #include "editor/studio/studio_internal.h"
+#include "platform/cute.h"
 #include "support/array.h"
 #include "support/xalloc.h"
 
@@ -14,6 +16,11 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <yyjson.h>
+#ifndef __EMSCRIPTEN__
+#include <SDL3/SDL_atomic.h>
+#include <SDL3/SDL_dialog.h>
+#include <SDL3/SDL_error.h>
+#endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
@@ -76,11 +83,22 @@ static void add_web_projects(studio *s)
 
 static bool create_project(studio *s);
 
+static int project_index(const studio *s, const char *root)
+{
+    for (int i = 0; i < acount(s->projects); i++) {
+        if (!strcmp(s->projects[i].root, root)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 static void add_project(studio *s, const char *manifest)
 {
     chibi_project project = { 0 };
     char error[256];
-    if (chibi_project_open(&project, manifest, error, sizeof error) == 0) {
+    if (chibi_project_open(&project, manifest, error, sizeof error) == 0 &&
+        project_index(s, project.root) < 0) {
         apush(
             s->projects,
             ((studio_project){ .root = xstrdup(project.root),
@@ -103,7 +121,14 @@ void studio_projects_load(studio *s)
         qsort(s->projects, acount(s->projects), sizeof *s->projects, compare_names);
         return;
     }
+#else
+    char **recent = studio_recent_projects();
+    for (int i = 0; i < acount(recent); i++) {
+        add_project(s, recent[i]);
+    }
+    studio_recent_projects_free(recent);
 #endif
+    int recents = acount(s->projects);
     const char *workspace = resource_workspace();
     if (!workspace) {
         char manifest[4096];
@@ -134,7 +159,7 @@ void studio_projects_load(studio *s)
     if (dir) {
         closedir(dir);
     }
-    qsort(s->projects, acount(s->projects), sizeof *s->projects, compare_names);
+    qsort(s->projects + recents, acount(s->projects) - recents, sizeof *s->projects, compare_names);
 }
 
 void studio_projects_free(studio *s)
@@ -222,10 +247,97 @@ void studio_open_project(studio *s, int index)
     s->discard_toast = confirm_discard(s, s->discard_toast, verb, "Open");
 }
 
+#ifndef __EMSCRIPTEN__
+/* The folder dialog answers on a thread of its own; the frame takes what it
+   left, each owned. */
+static void *picked_folder, *picker_error;
+
+static void SDLCALL folder_picked(void *, const char *const *folders, int)
+{
+    if (!folders) {
+        free(SDL_SetAtomicPointer(&picker_error, xstrdup(SDL_GetError())));
+        return;
+    }
+    if (folders[0]) {
+        free(SDL_SetAtomicPointer(&picked_folder, xstrdup(folders[0])));
+    }
+}
+
+void studio_pick_project()
+{
+    SDL_ShowOpenFolderDialog(folder_picked, NULL, cf_app_get_window(), NULL, false);
+}
+
+static void fail(studio *s, const char *title, const char *error)
+{
+    kit_toast(s->kit, 0, &(kit_toast_desc){ .type = KIT_TOAST_ERROR, .title = title, .description = error });
+}
+
+static bool open_folder(chibi_project *project, const char *folder, char *error, size_t size)
+{
+    char manifest[4096];
+    snprintf(manifest, sizeof manifest, "%s/" CHIBI_PROJECT_MANIFEST, folder);
+    struct stat info;
+    if (stat(manifest, &info) != 0) {
+        const char *slash = strrchr(folder, '/');
+        snprintf(
+            error,
+            size,
+            "%s has no " CHIBI_PROJECT_MANIFEST ".",
+            slash && slash[1] ? slash + 1 : folder
+        );
+        return false;
+    }
+    return chibi_project_open(project, manifest, error, size) == 0;
+}
+
+void studio_open_project_folder(studio *s, const char *folder)
+{
+    chibi_project project = { 0 };
+    char error[512];
+    if (!open_folder(&project, folder, error, sizeof error)) {
+        fail(s, "Could not open the project", error);
+        return;
+    }
+    int index = project_index(s, project.root);
+    if (index < 0) {
+        apush(
+            s->projects,
+            ((studio_project){ .root = xstrdup(project.root),
+                               .name = xstrdup(project.name) })
+        );
+        index = acount(s->projects) - 1;
+    }
+    chibi_project_free(&project);
+    if (!studio_project_current(s, index)) {
+        studio_open_project(s, index);
+    }
+}
+
+static void take_picked(studio *s)
+{
+    char *error = SDL_SetAtomicPointer(&picker_error, NULL);
+    if (error) {
+        fail(s, "Could not show the folder picker", error);
+        free(error);
+    }
+    char *folder = SDL_SetAtomicPointer(&picked_folder, NULL);
+    if (folder) {
+        studio_open_project_folder(s, folder);
+        free(folder);
+    }
+}
+#endif
+
 void studio_projects_frame(studio *s)
 {
 #ifdef __EMSCRIPTEN__
     web_set_unsaved(studio_unsaved(s));
+#else
+    /* The window's own Studio opens projects, not a guest's. */
+    if (!s->hosted) {
+        take_picked(s);
+    }
 #endif
     if (s->discard_toast && kit_toast_action(s->kit, s->discard_toast)) {
         s->discard_toast = 0;

@@ -4,7 +4,8 @@ Build with `-DCHIBI_STUDIO_BUILD_ACCEPTANCE=ON` against an installed SDK.
 
 `studio-acceptance --source-edit --project-root PATH` accepts a disposable copy of
 this directory's `project`. Preferences and thumbnail cache are pinned inside that
-disposable project; initial Counter bytes are checked before and after. It opens Counter through the normal document loader,
+disposable project; initial Counter bytes are checked before and after. It checks that the project remembered last leads the recent projects, once, and that
+Open Project refuses a folder without a manifest. It opens Counter through the normal document loader,
 then runs four hidden fixed-dt frames. It calls the production graph expression
 commit handler once, applies real undo and redo, and checks current source,
 resolved state initializer, owned projection and dirty/history state. With

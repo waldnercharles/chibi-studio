@@ -889,7 +889,11 @@ static const struct
 } MENU_ITEMS[] = {
     { "newMenu", "New", 0 },
     { "project", "Project", KIT_ICON_FOLDER },
-    { "openProject", "Open Project", KIT_ICON_FOLDER },
+#ifdef __EMSCRIPTEN__
+    { "openRecent", "Open Project", KIT_ICON_FOLDER },
+#else
+    { "openRecent", "Open Recent", KIT_ICON_FOLDER },
+#endif
     { "importProject", "Import Project", 0 },
     { "exportProject", "Export Project", 0 },
     { "add", "Add", KIT_ICON_ADD },
@@ -942,7 +946,7 @@ static void web_project(studio *s, bool import)
 #endif
 }
 
-/* The workspace's projects, the open one checked and disabled. */
+/* The recent and workspace projects, the open one checked and disabled. */
 static bool show_projects(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *projects)
 {
     bool changed = items_fit(doc, projects, acount(s->projects));

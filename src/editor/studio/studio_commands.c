@@ -750,6 +750,15 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                                        "instance create",
                                            .icon = KIT_ICON_ADD,
                                            .phase = SHORTCUT_EDITOR },
+    /* Any project folder, through the platform's dialog. The browser keeps
+       its projects itself. */
+    [STUDIO_COMMAND_OPEN_PROJECT] = { .id = "openProject",
+                                      .label = "Open Project\xe2\x80\xa6",
+                                      .chord = "Mod+O",
+                                      .context = "Global",
+                                      .keywords = "folder load",
+                                      .icon = KIT_ICON_FOLDER,
+                                      .phase = SHORTCUT_EARLY },
     /* The window's close button, as a command: Studio asks first while edits
        are unsaved. The browser has no Quit. */
     [STUDIO_COMMAND_QUIT] = { .id = "quit",
@@ -1135,8 +1144,10 @@ static bool enabled_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_SAVE: return studio_active_dirty(s);
         case STUDIO_COMMAND_RELOAD: return editable;
 #ifdef __EMSCRIPTEN__
+        case STUDIO_COMMAND_OPEN_PROJECT:
         case STUDIO_COMMAND_QUIT: return false;
 #else
+        case STUDIO_COMMAND_OPEN_PROJECT:
         case STUDIO_COMMAND_QUIT: return !s->hosted;
 #endif
         case STUDIO_COMMAND_UNDO:
@@ -1286,6 +1297,11 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
             break;
         case STUDIO_COMMAND_SAVE: studio_save(s); break;
         case STUDIO_COMMAND_RELOAD: studio_reload(s); break;
+        case STUDIO_COMMAND_OPEN_PROJECT:
+#ifndef __EMSCRIPTEN__
+            studio_pick_project();
+#endif
+            break;
         case STUDIO_COMMAND_QUIT:
             SDL_PushEvent(&(SDL_Event){ .type = SDL_EVENT_QUIT });
             break;

@@ -1,17 +1,18 @@
-#include "authoring/engine_preview.h"
 #include "chibi/application.h"
 
 #include "assets/project.h"
 #include "assets/prototype.h"
+#include "authoring/engine_preview.h"
+#include "authoring/image_prepare.h"
+#include "authoring/mesh_prepare.h"
 #include "authoring/preview.h"
+#include "authoring/shader_prepare.h"
 #include "authoring/source_prepare.h"
 #include "authoring/source_presentation.h"
-#include "authoring/shader_prepare.h"
 #include "authoring/studio_project.h"
 #include "authoring/studio_schema.h"
 #include "diagnostics/frame_log.h"
 #include "diagnostics/tracy.h"
-#include "execution/status.h"
 #include "editor/collab/actions.h"
 #include "editor/collab/collab.h"
 #include "editor/collab/workspace.h"
@@ -23,16 +24,16 @@
 #include "editor/workspace/scenario_playback.h"
 #include "editor/workspace/scene_authoring.h"
 #include "editor/workspace/viewport.h"
+#include "execution/status.h"
 #include "graph/document/serialize.h"
 #include "graph/model/registry.h"
 #include "platform/cute.h"
 #include "render/scene_renderer.h"
 #include "render/screenshot.h"
 #include "render/shader_images.h"
-#include "authoring/image_prepare.h"
-#include "authoring/mesh_prepare.h"
 #include "runtime/component_catalog.h"
 #include "runtime/engine.h"
+#include "support/array.h"
 #include "support/xalloc.h"
 
 #include <SDL3/SDL_events.h>
@@ -694,6 +695,11 @@ static void open_project(app_loop *loop, const char *path)
     studio_free(loop->studio);
     close_workspace(loop);
     bool opened = open_workspace(loop, path, NULL, false, error, sizeof error);
+#ifndef __EMSCRIPTEN__
+    if (opened) {
+        studio_remember_project(loop->project_root);
+    }
+#endif
     if (!opened) {
         char unused[512];
         bool restored = open_workspace(loop, previous, NULL, false, unused, sizeof unused);
@@ -706,6 +712,22 @@ static void open_project(app_loop *loop, const char *path)
         studio_error(loop->studio, "Could not open project", error);
     }
 }
+
+#ifndef __EMSCRIPTEN__
+/* The most recent of `roots` that still opens, or NULL. */
+static const char *openable(char **roots)
+{
+    for (int i = 0; i < acount(roots); i++) {
+        chibi_project project = { 0 };
+        char error[256];
+        if (chibi_project_open(&project, roots[i], error, sizeof error) == 0) {
+            chibi_project_free(&project);
+            return roots[i];
+        }
+    }
+    return NULL;
+}
+#endif
 
 void *chibi_application_create(int argc, char **argv, const char *checkpoint, char *error, size_t error_size)
 {
@@ -794,11 +816,24 @@ void *chibi_application_create(int argc, char **argv, const char *checkpoint, ch
         project_path = saved_project;
         scene_path = NULL;
     }
-    /* Without a project, open the one the working directory is inside. */
+    /* Without a project, open the one the working directory is inside, else
+       the one opened last. */
     char *found = project_path ? NULL : chibi_project_find(".");
     if (found) {
         project_path = found;
     }
+#ifndef __EMSCRIPTEN__
+    /* Only a person's launch reopens or remembers a project; captures and
+       bounded runs leave both alone. */
+    bool interactive = !headless && !frames && !screenshot_path;
+    char **recent = project_path || !interactive ? NULL : studio_recent_projects();
+    project_path = project_path ? project_path : openable(recent);
+    if (!project_path) {
+        snprintf(error, error_size, "No project to open. Start Studio inside a project folder, or pass one: chibi-dev PATH");
+        yyjson_doc_free(saved);
+        return NULL;
+    }
+#endif
     app_loop *loop = xmalloc(sizeof *loop);
     *loop = (app_loop){ .frames = frames,
                         .screenshot_path = screenshot_path,
@@ -809,6 +844,12 @@ void *chibi_application_create(int argc, char **argv, const char *checkpoint, ch
     bool opened = open_workspace(loop, project_path, scene_path, play, error, error_size);
     yyjson_doc_free(saved);
     free(found);
+#ifndef __EMSCRIPTEN__
+    studio_recent_projects_free(recent);
+    if (opened && interactive) {
+        studio_remember_project(loop->project_root);
+    }
+#endif
     if (!opened) {
         free(loop);
         return NULL;

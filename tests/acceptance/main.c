@@ -120,6 +120,33 @@ static bool quit_asks(studio *s)
     return true;
 }
 
+/* The project remembered last comes first among the recent ones, once; a
+ * folder without a manifest, or the open project itself, opens nothing. */
+static bool recent_order(const char *first, const char *second)
+{
+    char **recent = studio_recent_projects();
+    bool ordered = acount(recent) == 2 && !strcmp(recent[0], first) &&
+                   !strcmp(recent[1], second);
+    studio_recent_projects_free(recent);
+    return ordered;
+}
+
+static bool projects_open(studio *s)
+{
+    studio_remember_project("/elsewhere");
+    studio_remember_project(s->project_root);
+    REQUIRE(recent_order(s->project_root, "/elsewhere"));
+    studio_remember_project("/elsewhere");
+    REQUIRE(recent_order("/elsewhere", s->project_root));
+    char content[1024];
+    int length = snprintf(content, sizeof content, "%s/content", s->project_root);
+    REQUIRE(length > 0 && (size_t)length < sizeof content);
+    studio_open_project_folder(s, content);
+    studio_open_project_folder(s, s->project_root);
+    REQUIRE(!s->open_project && !s->discard_toast);
+    return true;
+}
+
 static bool source_edit_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -127,6 +154,7 @@ static bool source_edit_frame(void *state)
     frames++;
     REQUIRE(frames <= 4);
     if (frames == 1) {
+        REQUIRE(projects_open(s));
         const node *literal = NULL;
         REQUIRE(check_counter(s, 1, false, &literal));
         s->prefs.code_apply_live = true;
