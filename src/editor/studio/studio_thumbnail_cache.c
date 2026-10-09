@@ -19,6 +19,9 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
+#ifdef _WIN32
+#include <sys/utime.h>
+#endif
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -60,7 +63,10 @@ static int64_t now()
 
 static int64_t modified(const struct stat *info)
 {
-#ifdef __APPLE__
+#if defined(_WIN32)
+    /* The Windows runtime stats whole seconds. */
+    return nanoseconds((struct timespec){ .tv_sec = info->st_mtime });
+#elif defined(__APPLE__)
     return nanoseconds(info->st_mtimespec);
 #else
     return nanoseconds(info->st_mtim);
@@ -244,7 +250,11 @@ bool studio_thumb_disk_load(studio_thumb_disk *d, uint64_t key, CF_Canvas canvas
             side * side * (int)sizeof *image.pix
         );
         e->used = now();
+#ifdef _WIN32
+        utime(path, NULL);
+#else
         utimensat(AT_FDCWD, path, NULL, 0);
+#endif
     }
     if (decoded) {
         cf_image_free(&image);

@@ -601,17 +601,19 @@ void studio_refactor_action(studio *s, const char *action, const ui_activation *
     }
 }
 
-/* Shows the popover at the pointer, its name field focused with the name
-   selected, as the kit's popover opened. */
+/* Shows the popover under its anchor, else at the pointer, its name field
+   focused with the name selected, as the kit's popover opened. */
 static void show(studio *s, rml_element *popover)
 {
     studio_refactor *r = &s->refactor;
     float ratio = studio_pixel_ratio(s);
-    popover_show(
-        popover,
-        &(popover_anchor){ .side = POPOVER_POINT,
-                           .box = { s->in.mouse_x * ratio, s->in.mouse_y * ratio, 0, 0 } }
-    );
+    popover_anchor at = { .side = POPOVER_POINT,
+                          .box = { s->in.mouse_x * ratio, s->in.mouse_y * ratio, 0, 0 } };
+    if (r->anchor[2] > 0) {
+        at = (popover_anchor){ .side = POPOVER_BELOW, .keyboard = true };
+        memcpy(at.box, r->anchor, sizeof at.box);
+    }
+    popover_show(popover, &at);
     rml_element *field = rml_element_query_selector(popover, "#" NAME_ID);
     if (field && r->mode == STUDIO_REFACTOR_RENAME) {
         rml_element_set_value(field, r->name);

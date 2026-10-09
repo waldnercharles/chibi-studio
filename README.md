@@ -7,7 +7,8 @@ and native runtime implementations remain in their owning SDK packages.
 
 `EXTRACTION.json` records every copied source's original path and SHA-256 hash.
 The original files are held in the engine repository through installed-consumer
-acceptance. Preserved test oracles live in `tests/held/engine_oracles`. There is no remote.
+acceptance. Preserved test oracles live in `tests/held/engine_oracles`. Agent and contributor
+rules are in `AGENTS.md`.
 
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
@@ -17,6 +18,11 @@ cmake --build build
 python3 /absolute/path/to/pinned/chibi-sdk/share/chibi/tools/package_studio.py --build build \
   --sdk /absolute/path/to/pinned/chibi-sdk --output /absolute/path/to/studio-package
 ```
+
+On Windows, install the SDK with `cmake --install` from a Windows engine build
+(see the engine README) and configure with the same clang and
+`-DCMAKE_PREFIX_PATH`; the build writes `build/bin/chibi-dev.exe` with the
+SDK's UTF-8 manifest.
 
 The native build writes `build/bin/chibi-dev`. `chibi-dev PROJECT` opens a
 project directory or its `project.kdl`; without one it opens the project that
