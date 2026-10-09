@@ -623,13 +623,13 @@
       "source_path": "projects/studio/content/ui/AssetField.rml"
     },
     "projects/studio/content/ui/Assets.rcss": {
-      "consumer_sha256": "358e7289062150e23337eb030c9ea350b2351fada6ac89d85f750d5368a5b554",
+      "consumer_sha256": "6ec47f6a3b2e74d462d19c6da6d11eda4e37c8e3b8ad157e8d79eea97612d2de",
       "current_source_sha256": "358e7289062150e23337eb030c9ea350b2351fada6ac89d85f750d5368a5b554",
       "sha256": "358e7289062150e23337eb030c9ea350b2351fada6ac89d85f750d5368a5b554",
       "source_path": "projects/studio/content/ui/Assets.rcss"
     },
     "projects/studio/content/ui/Assets.rml": {
-      "consumer_sha256": "74be88f6432cbdc4828b9fd57cec081ecb2bbcf1b9999d7d600d46ff6e752506",
+      "consumer_sha256": "eb7d95c2f3aea8137a33c62ecc7b011a7f8b80c1412b9ca02fde635e8f9584e0",
       "current_source_sha256": "74be88f6432cbdc4828b9fd57cec081ecb2bbcf1b9999d7d600d46ff6e752506",
       "sha256": "74be88f6432cbdc4828b9fd57cec081ecb2bbcf1b9999d7d600d46ff6e752506",
       "source_path": "projects/studio/content/ui/Assets.rml"
@@ -761,7 +761,7 @@
       "source_path": "projects/studio/content/ui/Details.rcss"
     },
     "projects/studio/content/ui/Details.rml": {
-      "consumer_sha256": "1edf5f9b44802119f48d35de9bd68793168c19b1331e5f09d11aeb967d571580",
+      "consumer_sha256": "5423f866c09619833f90be9c295345de88e4447ab3766ac678f44f2f5f975f0c",
       "current_source_sha256": "1edf5f9b44802119f48d35de9bd68793168c19b1331e5f09d11aeb967d571580",
       "sha256": "1edf5f9b44802119f48d35de9bd68793168c19b1331e5f09d11aeb967d571580",
       "source_path": "projects/studio/content/ui/Details.rml"
@@ -1193,7 +1193,7 @@
       "source_path": "projects/studio/content/ui/Properties.rcss"
     },
     "projects/studio/content/ui/Properties.rml": {
-      "consumer_sha256": "545dc7a0778a9870485f1e2273300dcda4bf07e297bf13b78b65be8c44d026f4",
+      "consumer_sha256": "deb64a37125bff7fd1bc1fd85c8c31e89877f172a18a6b2c2b71ed696c30c8f0",
       "current_source_sha256": "545dc7a0778a9870485f1e2273300dcda4bf07e297bf13b78b65be8c44d026f4",
       "sha256": "545dc7a0778a9870485f1e2273300dcda4bf07e297bf13b78b65be8c44d026f4",
       "source_path": "projects/studio/content/ui/Properties.rml"
@@ -1601,7 +1601,7 @@
       "source_path": "projects/studio/content/ui/theme/drag.rcss"
     },
     "projects/studio/content/ui/theme/field.rcss": {
-      "consumer_sha256": "48d5a3b191c5996cddfc04d0013c1b3b6955be56347a5ddff12fac8ac065ad87",
+      "consumer_sha256": "e9de5357d2b3d36cf46ceaa88ff0eeb9966c1e89bfabb437062d0cf3ce7472dd",
       "current_source_sha256": "48d5a3b191c5996cddfc04d0013c1b3b6955be56347a5ddff12fac8ac065ad87",
       "sha256": "48d5a3b191c5996cddfc04d0013c1b3b6955be56347a5ddff12fac8ac065ad87",
       "source_path": "projects/studio/content/ui/theme/field.rcss"
@@ -1631,7 +1631,7 @@
       "source_path": "projects/studio/content/ui/theme/motion.rcss"
     },
     "projects/studio/content/ui/theme/panel.rcss": {
-      "consumer_sha256": "5a9a95b7403e608de8d987710a7b512291994c8825a4e4c5241b5f0ad902ccac",
+      "consumer_sha256": "5a9426b048b9dadfcf6802aefae542e0738c14960ca389a2c97233e1ab23756c",
       "current_source_sha256": "5a9a95b7403e608de8d987710a7b512291994c8825a4e4c5241b5f0ad902ccac",
       "sha256": "5a9a95b7403e608de8d987710a7b512291994c8825a4e4c5241b5f0ad902ccac",
       "source_path": "projects/studio/content/ui/theme/panel.rcss"
@@ -2027,7 +2027,7 @@
       "source_path": "src/editor/rmlui/kit_command.c"
     },
     "src/editor/rmlui/kit_controls.c": {
-      "consumer_sha256": "4cb32d7c39a75d021f7e91830a6b1625282c9472f209b542ddbe154d262fcc3b",
+      "consumer_sha256": "43ad88c1d82aaed41506bf35cc1cfff1319fd9521e5d6e8e69d3286c200f35b7",
       "current_source_sha256": "4cb32d7c39a75d021f7e91830a6b1625282c9472f209b542ddbe154d262fcc3b",
       "sha256": "4cb32d7c39a75d021f7e91830a6b1625282c9472f209b542ddbe154d262fcc3b",
       "source_path": "src/editor/rmlui/kit_controls.c"
@@ -2117,7 +2117,7 @@
       "source_path": "src/editor/studio/studio.h"
     },
     "src/editor/studio/studio_assets.c": {
-      "consumer_sha256": "e2310a729d11e1610c6855db20d8d5c10f6aec28e2260b4bfaa8f7cee3f6ac66",
+      "consumer_sha256": "04b0a58e2993b2ff32ada0ee66d0e2f5ff85fc23247d785b96b7e8ee67e2b1c0",
       "current_source_sha256": "e2310a729d11e1610c6855db20d8d5c10f6aec28e2260b4bfaa8f7cee3f6ac66",
       "sha256": "e2310a729d11e1610c6855db20d8d5c10f6aec28e2260b4bfaa8f7cee3f6ac66",
       "source_path": "src/editor/studio/studio_assets.c"
@@ -2363,7 +2363,7 @@
       "source_path": "src/editor/studio/studio_inspect.c"
     },
     "src/editor/studio/studio_internal.h": {
-      "consumer_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
+      "consumer_sha256": "021bae20682ac6ebd71bb2c3f2a80e6ec530871ac4bce7e3a492af880af90cda",
       "current_source_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
       "sha256": "a01a22cf19a858e983159029166fe7d9086a883aa6e864bfa9a359b78048a1e6",
       "source_path": "src/editor/studio/studio_internal.h"
@@ -2495,7 +2495,7 @@
       "source_path": "src/editor/studio/studio_prototype_actions.c"
     },
     "src/editor/studio/studio_refactor.c": {
-      "consumer_sha256": "86ca21a29ce092333dc2f80f310cddf4ab081178fb015eafde0aae69ef20123b",
+      "consumer_sha256": "535ec2581990ddf2f186bb69e5b929c31d5f2eb91eba220626cb0cbe3d529f60",
       "current_source_sha256": "86ca21a29ce092333dc2f80f310cddf4ab081178fb015eafde0aae69ef20123b",
       "sha256": "dcee74b599fe89f84b22d7e25e1ad6f5672f97cd6ce96f4a02575a6618b245fe",
       "source_path": "src/editor/studio/studio_refactor.c"
@@ -2609,7 +2609,7 @@
       "source_path": "src/editor/ui/kit.h"
     },
     "src/editor/ui/kit_icons.h": {
-      "consumer_sha256": "d48b0fd19d34495e5d0f0f9dff1848213fbc440ab3b0aad4afc32645cdcd73a3",
+      "consumer_sha256": "62a5a0f85fdb78631d7202faa676b7f2c8d89586facc5869ae3054a1f9990d0f",
       "current_source_sha256": "d48b0fd19d34495e5d0f0f9dff1848213fbc440ab3b0aad4afc32645cdcd73a3",
       "sha256": "d48b0fd19d34495e5d0f0f9dff1848213fbc440ab3b0aad4afc32645cdcd73a3",
       "source_path": "src/editor/ui/kit_icons.h"

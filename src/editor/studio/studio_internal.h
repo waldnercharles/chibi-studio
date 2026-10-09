@@ -669,7 +669,8 @@ typedef struct
 typedef struct
 {
     studio_refactor_mode mode;
-    bool opening;        /* show the popover at the pointer this frame */
+    bool opening;        /* show the popover this frame */
+    float anchor[4];     /* the box it opens under; at the pointer when empty */
     bool mounted;        /* its document showed last frame */
     bool source_project; /* exported source declarations use the project plan */
     reference_symbol symbol;

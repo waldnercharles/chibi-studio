@@ -17,7 +17,6 @@ enum
     KIT_ICON_BACK = 0xea9b,         /* nf-cod-arrow_left */
     KIT_ICON_FORWARD = 0xea9c,      /* nf-cod-arrow_right */
     KIT_ICON_MORE = 0xea7c,         /* nf-cod-ellipsis */
-    KIT_ICON_GRIP = 0xeb04,         /* nf-cod-gripper */
     KIT_ICON_PLAY = 0xf040a,        /* nf-md-play */
     KIT_ICON_PAUSE = 0xf03e4,       /* nf-md-pause */
     KIT_ICON_STOP = 0xf04db,        /* nf-md-stop */
