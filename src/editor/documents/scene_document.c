@@ -28,6 +28,21 @@ void scene_document_name(const app_scene_authoring *scene, char *name, size_t si
     }
 }
 
+static bool same_names(const char **names, char **graphs)
+{
+    if (acount(names) != acount(graphs)) {
+        return false;
+    }
+    for (int i = 0; i < acount(names); i++) {
+        if (strcmp(names[i], graphs[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/* An actor keeps its prototype's behaviors until the scene lists its own or
+   its behaviors differ from the prototype's. */
 int scene_document_add_actor(app_scene_authoring *scene, game_scene_document *document, const scene_actor *actor)
 {
     game_preview_runtime *runtime = scene->live->runtime;
@@ -50,13 +65,10 @@ int scene_document_add_actor(app_scene_authoring *scene, game_scene_document *do
         }
     }
     int index = acount(document->entities);
-    int result = game_scene_document_add_entity(
-        document,
-        actor->name,
-        actor->prototype_name,
-        names,
-        acount(names)
-    );
+    int result = game_scene_document_add_entity(document, actor->name, actor->prototype_name);
+    if (result == 0 && (actor->own_behaviors || !same_names(names, actor->base->graphs))) {
+        result = game_scene_document_set_entity_behaviors(document, index, names, acount(names));
+    }
     afree(names);
     if (result == 0) {
         av_value *components = snapshot
@@ -369,6 +381,10 @@ int scene_spawn_entity(app_scene_authoring *scene, const game_scene_entity *enti
         apply_components_value(scene, actor->entity, entity->components) != 0 ||
         restore_retained_components(scene, actor, actor->base) != 0) {
         return -1;
+    }
+    actor->own_behaviors = entity->own_behaviors;
+    if (!entity->own_behaviors) {
+        return 0;
     }
     game_preview_runtime *runtime = scene->live->runtime;
     game_source_registry *behaviors = runtime->sources;

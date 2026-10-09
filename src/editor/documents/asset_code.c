@@ -8,12 +8,13 @@
 #include "graph/document/serialize.h"
 #include "support/array.h"
 #include "support/asset_text.h"
-#include "support/text_edit.h"
 #include "support/file_io.h"
+#include "support/text_edit.h"
 #include "support/text_overlay.h"
 #include "support/xalloc.h"
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -59,7 +60,7 @@ struct asset_code
     uintptr_t state_identity;
     unsigned long long overlay_revision;
 };
-static void complete(asset_code *);
+static void complete(asset_code *, bool);
 static void understand_with_metadata(asset_code *, const char *, const char *);
 static void understand(asset_code *, const char *);
 static void valid_overlay(asset_code *, bool);
@@ -1393,7 +1394,9 @@ static code_completion_kind completion_kind(authoring_completion_kind kind)
     assert(false);
     return CODE_COMPLETE_UNKNOWN;
 }
-static void complete(asset_code *c)
+/* The completions at the cursor; the list stays closed where nothing was
+   typed that asked for them, and closes once the word is complete. */
+static void complete(asset_code *c, bool asked)
 {
     asset_source_completions_free(&c->completions);
     authoring_completions_free(&c->source_completions);
@@ -1430,7 +1433,27 @@ static void complete(asset_code *c)
             apush(c->items, ((kit_code_completion){ s->label, s->detail, s->insert, s->kind }));
         }
     }
-    c->completing = acount(c->items) > 0;
+    int start = c->native_view ? c->source_completions.range.start
+                               : c->completions.start;
+    int typed = kit_code_cursor(c->editor) - start, count = acount(c->items);
+    bool done = count == 1 && (int)strlen(c->items[0].label) == typed &&
+                !strncmp(c->text + start, c->items[0].label, (size_t)typed);
+    c->completing = count > 0 && (asked || typed > 0) && !done;
+}
+
+/* One character typed at the cursor that starts completion: a word's
+   character, a member's dot or a quoted name. */
+static bool starts_completion(const char *before, const char *after, int cursor)
+{
+    size_t length = strlen(before);
+    if (cursor < 1 || strlen(after) != length + 1 ||
+        strncmp(before, after, (size_t)cursor - 1) ||
+        strcmp(before + cursor - 1, after + cursor)) {
+        return false;
+    }
+    char typed = after[cursor - 1];
+    return isalnum((unsigned char)typed) || typed == '_' || typed == '.' ||
+           typed == '"';
 }
 
 kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const kit_code_desc *preferences, bool live)
@@ -1498,33 +1521,30 @@ kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const ki
     kit_code_result result = kit_code(k, key, c->editor, &desc);
     afree(shown_markers);
     afree(shown_spans);
+    bool asked = result.events & KIT_CODE_SUGGEST;
     if (result.events & KIT_CODE_CHANGED) {
         char *text = edited_text(c);
         /* A programmatic follow also changes the widget revision. */
         if (strcmp(text, c->text)) {
+            asked |= !(result.events & KIT_CODE_COMPLETED) &&
+                     starts_completion(c->text, text, kit_code_cursor(c->editor));
             understand(c, text);
             record(c, text);
             c->apply_due = c->time + 0.2;
             valid_overlay(c, live);
-            if (!(result.events & KIT_CODE_COMPLETED)) {
-                complete(c);
-            }
         } else {
             result.events &= ~KIT_CODE_CHANGED;
         }
         free(text);
     }
-    if (result.events & KIT_CODE_SUGGEST) {
-        complete(c);
-    }
-    if (result.events & (KIT_CODE_COMPLETED | KIT_CODE_DISMISSED)) {
-        c->completing = false;
-    }
     if (result.events & (KIT_CODE_UNDO | KIT_CODE_REDO)) {
         asset_code_replay(c, result.events & KIT_CODE_REDO, live);
     }
-    if (result.events & KIT_CODE_CURSOR && c->completing) {
-        complete(c);
+    if (result.events &
+        (KIT_CODE_COMPLETED | KIT_CODE_DISMISSED | KIT_CODE_UNDO | KIT_CODE_REDO)) {
+        c->completing = false;
+    } else if (asked || (c->completing && result.events & (KIT_CODE_CHANGED | KIT_CODE_CURSOR))) {
+        complete(c, asked);
     }
     return result;
 }

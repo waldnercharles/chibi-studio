@@ -6,7 +6,9 @@
 #include "support/array.h"
 #include "support/file_io.h"
 
+#include <SDL3/SDL_events.h>
 #include <SDL3/SDL_process.h>
+#include <SDL3/SDL_video.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,9 +19,9 @@ int studio_acceptance_host_main(int, char **);
 
 static const char *project;
 static const char *executable;
-static int frames, edits, undos, redos;
+static int frames, edits, undos, redos, keys;
 static bool callback_ok = true;
-static enum { SOURCE_EDIT, EXPORT_GAME } mode;
+static enum { SOURCE_EDIT, CODE_KEYS, EXPORT_GAME } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
     "behavior Counter {\n"
@@ -111,6 +113,46 @@ static bool check_counter(studio *s, int expected, bool dirty, const node **lite
     return true;
 }
 
+/* With Counter unsaved, the title marks it and quitting asks once, in a toast
+ * that a repeated request updates in place. */
+static bool quit_asks(studio *s)
+{
+    REQUIRE(!strncmp(s->window_title, "\xe2\x97\x8f ", 4));
+    REQUIRE(strstr(s->window_title, "Counter"));
+    REQUIRE(!studio_quit(s, false) && !s->quit_toast);
+    REQUIRE(!studio_quit(s, true) && s->quit_toast);
+    int toast = s->quit_toast;
+    REQUIRE(!studio_quit(s, true) && s->quit_toast == toast);
+    return true;
+}
+
+/* The project remembered last comes first among the recent ones, once; a
+ * folder without a manifest, or the open project itself, opens nothing. */
+static bool recent_order(const char *first, const char *second)
+{
+    char **recent = studio_recent_projects();
+    bool ordered = acount(recent) == 2 && !strcmp(recent[0], first) &&
+                   !strcmp(recent[1], second);
+    studio_recent_projects_free(recent);
+    return ordered;
+}
+
+static bool projects_open(studio *s)
+{
+    studio_remember_project("/elsewhere");
+    studio_remember_project(s->project_root);
+    REQUIRE(recent_order(s->project_root, "/elsewhere"));
+    studio_remember_project("/elsewhere");
+    REQUIRE(recent_order("/elsewhere", s->project_root));
+    char content[1024];
+    int length = snprintf(content, sizeof content, "%s/content", s->project_root);
+    REQUIRE(length > 0 && (size_t)length < sizeof content);
+    studio_open_project_folder(s, content);
+    studio_open_project_folder(s, s->project_root);
+    REQUIRE(!s->open_project && !s->discard_toast);
+    return true;
+}
+
 static bool source_edit_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -118,6 +160,7 @@ static bool source_edit_frame(void *state)
     frames++;
     REQUIRE(frames <= 4);
     if (frames == 1) {
+        REQUIRE(projects_open(s));
         const node *literal = NULL;
         REQUIRE(check_counter(s, 1, false, &literal));
         s->prefs.code_apply_live = true;
@@ -135,6 +178,8 @@ static bool source_edit_frame(void *state)
         REQUIRE(studio_code_history(s, false, true));
         undos++;
         REQUIRE(check_counter(s, 1, false, NULL));
+        /* Nothing unsaved: quitting needs no confirmation. */
+        REQUIRE(studio_quit(s, true));
     } else if (frames == 3) {
         REQUIRE(check_counter(s, 1, false, NULL));
         REQUIRE(studio_code_history(s, true, true));
@@ -144,6 +189,85 @@ static bool source_edit_frame(void *state)
         REQUIRE(check_counter(s, 2, true, NULL));
         REQUIRE(studio_editor_shown(s, STUDIO_EDITOR_BEHAVIOR));
         REQUIRE(studio_editor_shown(s, STUDIO_EDITOR_CODE));
+        REQUIRE(quit_asks(s));
+    }
+    return true;
+}
+
+/* The Text Editor settles before the keys, which leave frames between them
+   for the completion list to open. */
+#define KEY_FRAMES 12
+#define TEXT(x) #x
+#define FRAMES_TEXT(x) TEXT(x)
+
+/* Queues a key press and release for the window, as the platform would. */
+static bool press_key(SDL_Keycode key)
+{
+    int count = 0;
+    SDL_Window **windows = SDL_GetWindows(&count);
+    SDL_WindowID window = count ? SDL_GetWindowID(windows[0]) : 0;
+    SDL_free(windows);
+    REQUIRE(window);
+    for (int down = 1; down >= 0; down--) {
+        SDL_Event e = { .key = { .type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP,
+                                 .windowID = window,
+                                 .key = key,
+                                 .scancode = SDL_GetScancodeFromKey(key, NULL),
+                                 .down = down } };
+        REQUIRE(SDL_PushEvent(&e));
+    }
+    return true;
+}
+
+/* Counter's source editor, whether or not its text currently reads. */
+static asset_code *counter_code(studio *s)
+{
+    for (int i = 0; i < acount(s->code.assets); i++) {
+        if (strstr(asset_code_path(s->code.assets[i]), "Counter.chibi")) {
+            return s->code.assets[i];
+        }
+    }
+    return NULL;
+}
+
+static bool same_without_space(const char *a, const char *b)
+{
+    for (;; a++, b++) {
+        a += strspn(a, " \n");
+        b += strspn(b, " \n");
+        if (*a != *b) {
+            return false;
+        }
+        if (!*a) {
+            return true;
+        }
+    }
+}
+
+/* Enter on an empty line types newlines; it never accepts a completion the
+   user did not ask for. */
+static bool code_keys_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= KEY_FRAMES);
+    asset_code *code = counter_code(s);
+    REQUIRE(code);
+    if (frames == 1) {
+        studio_show_editor(s, STUDIO_EDITOR_CODE);
+    } else if (frames == KEY_FRAMES - 8) {
+        s->code.find.refocus = true;
+        const char *close = strstr(asset_code_text(code), "    }\n}");
+        REQUIRE(close);
+        kit_code_set_cursor(asset_code_editor(code), (int)(close - asset_code_text(code)) + 5);
+    } else if (frames == KEY_FRAMES - 6 || frames == KEY_FRAMES - 3) {
+        REQUIRE(press_key(SDLK_RETURN));
+        keys++;
+    } else if (frames == KEY_FRAMES) {
+        const char *text = asset_code_text(code);
+        REQUIRE(strlen(text) > strlen(counter_bytes) + 1);
+        REQUIRE(same_without_space(text, counter_bytes));
     }
     return true;
 }
@@ -185,6 +309,7 @@ bool studio_acceptance_frame(void *state)
 {
     switch (mode) {
         case SOURCE_EDIT: callback_ok = source_edit_frame(state); break;
+        case CODE_KEYS: callback_ok = code_keys_frame(state); break;
         case EXPORT_GAME: callback_ok = export_frame(state); break;
     }
     return callback_ok;
@@ -202,6 +327,22 @@ TEST_CASE(source_graph_edit_undo_redo)
     REQUIRE(frames == 4 && edits == 1 && undos == 1 && redos == 1);
     printf("Studio source edit accepted: frames=%d edits=%d undo=%d redo=%d\n",
            frames, edits, undos, redos);
+    return true;
+}
+
+TEST_CASE(code_enter_types_newlines)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(KEY_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok);
+    REQUIRE(unchanged_source());
+    REQUIRE(frames == KEY_FRAMES && keys == 2);
+    printf("Studio code keys accepted: frames=%d keys=%d\n", frames, keys);
     return true;
 }
 
@@ -224,12 +365,43 @@ TEST_CASE(export_game)
     return true;
 }
 
+/* A gizmo part's cursor: the move square's, the axes', the ring's, and a
+   resize handle's direction as the box turns. */
+TEST_CASE(scene_gizmo_cursors)
+{
+    REQUIRE(!scene_gizmo_part_cursor(SCENE_GIZMO_NONE, 0));
+    REQUIRE(!strcmp(scene_gizmo_part_cursor(SCENE_GIZMO_FREE, 0), "move"));
+    REQUIRE(!strcmp(scene_gizmo_part_cursor(SCENE_GIZMO_AXIS_X, 0), "ew-resize"));
+    REQUIRE(!strcmp(scene_gizmo_part_cursor(SCENE_GIZMO_AXIS_Y, 0), "ns-resize"));
+    REQUIRE(!strcmp(scene_gizmo_part_cursor(SCENE_GIZMO_RING, 0), "pointer"));
+    /* Handles run counterclockwise from the bottom left, in Y-up canvas units. */
+    static const char *const upright[4] = { "nesw-resize", "ns-resize",
+                                            "nwse-resize", "ew-resize" };
+    static const char *const quarter[4] = { "nwse-resize", "ew-resize",
+                                            "nesw-resize", "ns-resize" };
+    for (int h = 0; h < 8; h++) {
+        const char *turned = scene_gizmo_part_cursor(SCENE_GIZMO_HANDLE + h, CF_PI / 2);
+        const char *flipped = scene_gizmo_part_cursor(SCENE_GIZMO_HANDLE + h, -CF_PI);
+        REQUIRE(!strcmp(scene_gizmo_part_cursor(SCENE_GIZMO_HANDLE + h, 0), upright[h % 4]));
+        REQUIRE(!strcmp(turned, quarter[h % 4]));
+        REQUIRE(!strcmp(flipped, upright[h % 4]));
+    }
+    return true;
+}
+
 int main(int argc, char **argv)
 {
+    if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
+        RUN_TEST_CASE(scene_gizmo_cursors);
+        pu_print_stats();
+        return pu_test_failed() ? 1 : 0;
+    }
     bool source_edit = argc == 4 && !strcmp(argv[1], "--source-edit");
+    bool code_keys = argc == 4 && !strcmp(argv[1], "--code-keys");
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
-    if ((!source_edit && !exporting) || strcmp(argv[2], "--project-root")) {
-        fprintf(stderr, "Usage: studio-acceptance --source-edit|--export-game --project-root PATH\n");
+    if ((!source_edit && !code_keys && !exporting) || strcmp(argv[2], "--project-root")) {
+        fprintf(stderr, "Usage: studio-acceptance --source-edit|--code-keys|--export-game "
+                        "--project-root PATH | --scene-cursors\n");
         return 2;
     }
     executable = argv[0];
@@ -244,11 +416,11 @@ int main(int argc, char **argv)
         return 2;
     }
     pu_display_time(true);
-    mode = source_edit ? SOURCE_EDIT : EXPORT_GAME;
-    if (source_edit) {
-        RUN_TEST_CASE(source_graph_edit_undo_redo);
-    } else {
-        RUN_TEST_CASE(export_game);
+    mode = source_edit ? SOURCE_EDIT : code_keys ? CODE_KEYS : EXPORT_GAME;
+    switch (mode) {
+        case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
+        case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
+        case EXPORT_GAME: RUN_TEST_CASE(export_game); break;
     }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;

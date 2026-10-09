@@ -205,6 +205,9 @@ typedef enum
     /* Prototype actions on the selected instance (studio_prototype_actions.c) */
     STUDIO_COMMAND_APPLY_OVERRIDES,
     STUDIO_COMMAND_SAVE_AS_PROTOTYPE,
+    /* Opening and closing, which ask first about unsaved edits (studio_projects.c) */
+    STUDIO_COMMAND_OPEN_PROJECT,
+    STUDIO_COMMAND_QUIT,
     STUDIO_COMMAND_COUNT,
 } studio_command;
 
@@ -966,6 +969,8 @@ struct studio
     studio_disk_toast *disk_toasts; /* files that changed on disk under unsaved edits */
     int discard_toast;   /* toast confirming unsaved changes are discarded */
     int discard_project; /* the project that toast opens */
+    int quit_toast;      /* toast confirming Quit discards unsaved changes */
+    char window_title[320]; /* as last set */
     struct
     {
         struct SDL_Process *process; /* the running `chibi export`, or NULL */
@@ -1236,6 +1241,9 @@ bool studio_key_pressed(const studio *s, SDL_Keycode key);
  * snapping and the grid from the preferences, the held modifiers and a
  * gesture's keys, and the gesture's change in the status bar. */
 void studio_scene_tools(studio *s);
+/* The cursor over the edited Scene: the gizmo part's under the pointer or
+ * dragged, or Move while the middle button pans; NULL for the default. */
+const char *studio_scene_cursor(const studio *s);
 /* The grid increment preset `step` places from the current one, which it
  * keeps at either end. */
 float studio_grid_increment(const studio *s, int step);
@@ -1493,6 +1501,14 @@ void studio_projects_free(studio *s);
 bool studio_project_current(const studio *s, int index);
 /* Opens projects[index] after the frame, once unsaved changes are discarded. */
 void studio_open_project(studio *s, int index);
+#ifndef __EMSCRIPTEN__
+/* Asks for a project folder in the platform's dialog, then opens it. */
+void studio_pick_project();
+/* Opens the project in `folder`, or says why it cannot. */
+void studio_open_project_folder(studio *s, const char *folder);
+#endif
+/* Opens a project once its discard is confirmed; on the web, also tells the
+   page whether leaving would lose edits. */
 void studio_projects_frame(studio *s);
 void studio_new_project_frame(studio *s);
 void studio_new_project_open(studio *s);
