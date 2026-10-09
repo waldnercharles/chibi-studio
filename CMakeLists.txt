@@ -93,6 +93,8 @@ set_target_properties(chibi-studio PROPERTIES LINKER_LANGUAGE CXX
 if(EMSCRIPTEN)
     include(cmake/studio_web.cmake)
 else()
+# `chibi-dev PROJECT` opens Studio; `chibi PROJECT` plays.
+set_target_properties(chibi-studio PROPERTIES OUTPUT_NAME chibi-dev)
 # Build and installed hosts use the same executable-relative Studio layout.
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/share/chibi")
 foreach(resource shaders licenses)

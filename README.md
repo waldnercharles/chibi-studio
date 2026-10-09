@@ -18,6 +18,10 @@ python3 /absolute/path/to/pinned/chibi-sdk/share/chibi/tools/package_studio.py -
   --sdk /absolute/path/to/pinned/chibi-sdk --output /absolute/path/to/studio-package
 ```
 
+The native build writes `build/bin/chibi-dev`. `chibi-dev PROJECT` opens a
+project directory or its `project.kdl`; without one it opens the project that
+contains the working directory. The SDK's `chibi PROJECT` plays the same project.
+
 Distribution configuration records the SDK package ID and manifest checksum.
 Packaging verifies the complete SDK inventory, current compiled inputs and link
 dependencies before installing Studio and its resources. The package contains

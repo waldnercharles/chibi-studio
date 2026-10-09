@@ -163,7 +163,7 @@ int main(int argc, char **argv)
     }
     if (flag(argc, argv, "--help")) {
         puts(
-            "chibi [--headless] [--frames N] [--fps N] [--screenshot "
+            "chibi-dev [PROJECT] [--headless] [--frames N] [--fps N] [--screenshot "
             "PATH]\n"
             "             [--play [--scenario NAME]] [--project-root "
             "PATH|--project PATH] "
@@ -172,6 +172,8 @@ int main(int argc, char **argv)
             "             [--open ASSET [--graph NAME]]\n"
             "             [--checkpoint PATH]\n"
             "             [--engine-info]\n"
+            "PROJECT is a project directory or its project.kdl; by default, the\n"
+            "project containing the working directory.\n"
             "Play: Escape pauses, Enter resumes, R restarts, Q quits while "
             "paused."
         );
