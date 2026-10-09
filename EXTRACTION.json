@@ -24,12 +24,12 @@
     "web/web_isolation.js"
   ],
   "consumer_owned_sha256": {
-    "CMakeLists.txt": "e7be419cf916646acba679e22decebe521f73841c01fa18e7e8b5be1024ce406",
+    "CMakeLists.txt": "52fa6b52fb7c21f6e22ab9d21d035985ff9eb0e333e184d4c88d30cd31176857",
     "README.md": "674d6b48d6b664083e759034782707ab03a2e350a3b3d9dcfa9bcb03de8a1411",
     "cmake/studio_sources.cmake": "23dfa85f83c5e09686796c3978dc33152eccbc43725e0b2c96276bad060053e4",
     "cmake/studio_web.cmake": "9921623e5079a0d52137ee859b0592835c02c539c4e597d78f3c7d887cd41167",
     "projects/starter/content/scenes/Start.kdl": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b",
-    "projects/starter/project.kdl": "0a3087b3588937c4a1139feb173b4b1641fb6c9253cf8bdb2b28a4cc6da18e88",
+    "projects/starter/project.kdl": "114f20b60f5f041de3946d617a8f376ac4ac57f2fa6babf9453d8c38c57d1ee6",
     "src/editor/documents/asset_code.c": "d1318ed2ee591c8a0963d2409eb0c8916baea1d9d2b8cb7857d47ee8002cd9ba",
     "src/editor/studio/studio_graph_view.c": "ad58c019dee6b310fa9bd5984c69138ea7411620d79705cfe8194222e07f0512",
     "src/editor/studio/studio_ui.c": "e44f383df3d5c44fc503bb5ae70c966f3f8b644a2e109311e9d965bc9d41bcf6",
@@ -41,10 +41,10 @@
     "tests/acceptance/README.md": "b78ecdc6324f3e5b0108c09ce3def525945447db6713c829936a8a50d92d152a",
     "tests/acceptance/application.c": "99f312f466e3abe43d30a47094f1dd03fa0a27672244eb0960ed4dc5e316ab3c",
     "tests/acceptance/host.c": "79336a3b1fe8ad01ff2df59fa77c0fcd71ef3e019ea67282c1af1400df36a033",
-    "tests/acceptance/main.c": "bbe729408a8ede7a4cb00f3ce476499e7a80381b8795a3c504cf7772ce749854",
+    "tests/acceptance/main.c": "f785fa7ff9696ef0ef74cf7d5c5ff03d0b9c96f44471d3514a324b9fa30031d3",
     "tests/acceptance/project/content/behaviors/Counter.chibi": "ab072105e163873d9d414fdf1cbc35f48a28a8b874139531ea61c3c581ac57cd",
     "tests/acceptance/project/content/scenes/Start.kdl": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b",
-    "tests/acceptance/project/project.kdl": "0a3087b3588937c4a1139feb173b4b1641fb6c9253cf8bdb2b28a4cc6da18e88",
+    "tests/acceptance/project/project.kdl": "114f20b60f5f041de3946d617a8f376ac4ac57f2fa6babf9453d8c38c57d1ee6",
     "tests/acceptance/vendor/pico_unit.h": "ae1c93c155941afbd914f2c7a1fb2128d72aafcc05bddf3ddb0bb6f72eef22b8",
     "tools/serve_web.py": "8bab3c348fb7281248e9fc34aff4b56803f9a51c6dcf83798775c2ec65b041fc",
     "tools/sync_sources.py": "b49a519cfc1cb7a7c0bb01d24b0b592bbf3df63bfeb751bd2b9d46f89e688dc0",
@@ -1685,7 +1685,7 @@
       "source_path": "projects/studio/content/ui/theme/workspace.rcss"
     },
     "projects/studio/project.kdl": {
-      "consumer_sha256": "4036c43aa6c17dfbc3d383de7fd4489abd5fe666b8bd1682437d4cc724a397cc",
+      "consumer_sha256": "33ea08e01a5bbc5cc47da5f1f0ef771d80b1d1ae9436e8816d5174d255e2c3aa",
       "current_source_sha256": "4036c43aa6c17dfbc3d383de7fd4489abd5fe666b8bd1682437d4cc724a397cc",
       "sha256": "4036c43aa6c17dfbc3d383de7fd4489abd5fe666b8bd1682437d4cc724a397cc",
       "source_path": "projects/studio/project.kdl"
@@ -1853,7 +1853,7 @@
       "source_path": "src/editor/documents/preview.c"
     },
     "src/editor/documents/scene_disk.c": {
-      "consumer_sha256": "cebdb7244e864964e2326578bf167aaf294aa2f2d5cd610f5edfa39c2615a483",
+      "consumer_sha256": "2409335e6f2518a165e2cdd6b3e7fdf56735cedbaa1088f9da22d12ebb5ad590",
       "current_source_sha256": "cebdb7244e864964e2326578bf167aaf294aa2f2d5cd610f5edfa39c2615a483",
       "sha256": "c615608c34b9b6fc0396a626ffaff93a5c76a8f95abc1856abb585cc3f6ae0aa",
       "source_path": "src/editor/documents/scene_disk.c"

@@ -2,6 +2,9 @@
 #include "vendor/pico_unit.h"
 #include "editor/studio/studio_internal.h"
 #include "editor/documents/asset_code.h"
+#include "editor/workspace/scene_internal.h"
+#include "assets/input_map.h"
+#include "authoring/preview_source.h"
 #include "authoring/source_presentation.h"
 #include "support/array.h"
 #include "support/file_io.h"
@@ -107,6 +110,25 @@ static bool check_counter(studio *s, int expected, bool dirty, const node **lite
     return true;
 }
 
+/* A changed input map republishes sources with its actions. */
+static bool input_map_reloads(studio *s)
+{
+    char *path = content_path_join(s->scene->content_root, INPUT_MAP_FILE);
+    FILE *file = fopen(path, "wb");
+    REQUIRE(file);
+    fputs("Jump {\n    (array)sources \"Space\"\n}\n", file);
+    fclose(file);
+    app_disk_result result = app_scene_authoring_reload_path(s->scene, path);
+    remove(path);
+    free(path);
+    REQUIRE(result == APP_DISK_RELOADED);
+    const authoring_sources *sources = game_preview_sources_working(s->scene->live);
+    REQUIRE(sources);
+    const script_catalog *catalog = authoring_sources_catalog(sources);
+    REQUIRE(script_catalog_find_capability(catalog, "Jump", SCRIPT_CAPABILITY_EVENT) >= 0);
+    return true;
+}
+
 static bool source_edit_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -140,6 +162,7 @@ static bool source_edit_frame(void *state)
         REQUIRE(check_counter(s, 2, true, NULL));
         REQUIRE(studio_editor_shown(s, STUDIO_EDITOR_BEHAVIOR));
         REQUIRE(studio_editor_shown(s, STUDIO_EDITOR_CODE));
+        REQUIRE(input_map_reloads(s));
     }
     return true;
 }
