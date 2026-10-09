@@ -87,3 +87,20 @@ worker/isolation support and can accept an explicit `serial-url` query parameter
 The serial and worker archives must each come from their matching SDK build.
 The serial browser product has compiled and linked against the pinned Emscripten
 SDK. Browser interaction and the threaded product remain unverified.
+
+## Automatic browser distribution
+
+`.github/workflows/publish.yml` builds the serial editor against the newest
+complete engine release, using its installed web SDK and Emscripten 6.0.10.
+Changes to browser build inputs on `main` publish automatically. A daily check
+also picks up new engine packages and skips compilation when the published
+Studio/engine pair is unchanged. Pull requests build without deploying.
+
+The public distribution is at
+<https://waldnercharles.github.io/chibi-studio/>. Its `studio.json` identifies
+both repository commits and the SHA-256 of an editor archive named for those
+commits. Game repositories download that archive and the matching engine export
+package during deployment; they do not compile the editor or engine. The archive
+contains `chibi-studio.html`, its JavaScript, WASM and data files, and the serial
+bootstrap, all at its root. Games can host those files under their own `/dev/`
+route with their published project sources.

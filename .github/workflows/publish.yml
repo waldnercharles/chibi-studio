@@ -1,0 +1,156 @@
+name: Publish reusable web editor
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "include/**"
+      - "projects/**"
+      - "web/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/publish.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "include/**"
+      - "projects/**"
+      - "web/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/publish.yml"
+  schedule:
+    - cron: "23 6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-editor-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  EMSDK_VERSION: 6.0.10
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      engine: ${{ steps.version.outputs.engine }}
+      build: ${{ steps.version.outputs.build }}
+    steps:
+      - name: Select a complete engine package
+        id: version
+        env:
+          GH_TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
+          STUDIO: ${{ github.sha }}
+        shell: bash
+        run: |
+          test -n "$GH_TOKEN"
+          # Engine releases are prereleases, so the /latest endpoint excludes them.
+          tag=$(gh api 'repos/waldnercharles/chibi/releases?per_page=100' | python3 -c '
+          import json, re, sys
+          required = {"chibi-web-sdk.tar.gz", "chibi-export-linux-x64.tar.gz", "SHA256SUMS", "build.json"}
+          releases = json.load(sys.stdin)
+          tags = [r["tag_name"] for r in releases if not r["draft"]
+                  and re.fullmatch(r"engine-[0-9a-f]{40}", r["tag_name"])
+                  and required <= {a["name"] for a in r["assets"] if a["state"] == "uploaded"}]
+          if not tags:
+              sys.exit("No complete engine release is available")
+          print(tags[0])')
+          engine=${tag#engine-}
+          echo "engine=$engine" >> "$GITHUB_OUTPUT"
+          build=true
+          if [ "$GITHUB_REF" = refs/heads/main ]; then
+            if curl --fail --silent --show-error --retry 3 \
+                https://waldnercharles.github.io/chibi-studio/studio.json -o published.json; then
+              if python3 -c 'import json,sys; p=json.load(open("published.json")); sys.exit(not (p.get("format")==1 and p.get("engine")==sys.argv[1] and p.get("studio")==sys.argv[2]))' "$engine" "$STUDIO"; then
+                build=false
+              fi
+            fi
+          fi
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+
+  editor:
+    needs: version
+    if: needs.version.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Download and verify the installed web SDK
+        env:
+          GH_TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
+          ENGINE: ${{ needs.version.outputs.engine }}
+        shell: bash
+        run: |
+          mkdir packages sdk
+          gh release download "engine-$ENGINE" --repo waldnercharles/chibi \
+            --pattern chibi-web-sdk.tar.gz --pattern SHA256SUMS --pattern build.json --dir packages
+          cd packages
+          # Verify only the downloaded members of the shared checksum manifest.
+          awk '$2 == "chibi-web-sdk.tar.gz" || $2 == "build.json"' SHA256SUMS > selected-sums
+          test "$(wc -l < selected-sums)" -eq 2
+          sha256sum --check selected-sums
+          python3 -c 'import json,os; p=json.load(open("build.json")); assert p["format"] == 1 and p["engine_sha"] == os.environ["ENGINE"] and p["emsdk_version"] == os.environ["EMSDK_VERSION"] and p["platform"] == "ubuntu-24.04-x64" and p["web_threads"] is False'
+          tar -xzf chibi-web-sdk.tar.gz -C ../sdk
+      - name: Install CMake and Ninja
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build
+          python3 -m venv /tmp/cmake
+          /tmp/cmake/bin/pip install 'cmake>=4.2,<5'
+          echo /tmp/cmake/bin >> "$GITHUB_PATH"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: ${{ env.EMSDK_VERSION }}
+      - name: Build Studio against the installed SDK
+        run: |
+          emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/sdk"
+          cmake --build build-web --target chibi-studio --parallel 2
+          cmake --install build-web --prefix "$GITHUB_WORKSPACE/site"
+      - name: Package the reusable editor and its version
+        env:
+          ENGINE: ${{ needs.version.outputs.engine }}
+          STUDIO: ${{ github.sha }}
+        run: |
+          tar -czf "site/editor-$STUDIO-$ENGINE.tar.gz" -C site \
+            chibi-studio.html chibi-studio.js chibi-studio.wasm chibi-studio.data chibi-default.js
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path("site")
+          archive = f'editor-{os.environ["STUDIO"]}-{os.environ["ENGINE"]}.tar.gz'
+          manifest = dict(format=1, engine=os.environ["ENGINE"], studio=os.environ["STUDIO"],
+                          archive=archive, sha256=hashlib.sha256((root / archive).read_bytes()).hexdigest())
+          (root / "studio.json").write_text(json.dumps(manifest, indent=2) + "\n")
+          (root / "index.html").write_text('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=chibi-studio.html"><a href="chibi-studio.html">Open Chibi Studio</a>\n')
+          (root / ".nojekyll").touch()
+          PY
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+          retention-days: 1
+
+  deploy:
+    needs: editor
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the reusable editor
+        id: deployment
+        uses: actions/deploy-pages@v4

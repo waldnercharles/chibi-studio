@@ -5,6 +5,14 @@
  * exports and into Output. Native only: the browser Studio has no SDK to run. */
 #include "editor/studio/studio_internal.h"
 
+#ifdef __EMSCRIPTEN__
+bool studio_export_available(const studio *)
+{ return false; }
+
+void studio_export_game(studio *) {}
+void studio_export_poll(studio *) {}
+void studio_export_free(studio *) {}
+#else
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_misc.h>
 #include <SDL3/SDL_process.h>
@@ -33,13 +41,8 @@
 
 bool studio_export_available(const studio *s)
 {
-#ifdef __EMSCRIPTEN__
-    (void)s;
-    return false;
-#else
     return !s->hosted && !s->guest && !s->own_project && s->project_root &&
            !s->export_game.process;
-#endif
 }
 
 /* The launcher beside Studio, as a development build copies it, else the one
@@ -222,3 +225,4 @@ void studio_export_free(studio *s)
 {
     SDL_DestroyProcess(s->export_game.process);
 }
+#endif
