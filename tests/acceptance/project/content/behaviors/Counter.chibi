@@ -1,6 +1,6 @@
 behavior Counter {
-    state count: int = 1;
+    state count: int = 1
     on Tick {
-        count = count + 1;
+        count = count + 1
     }
 }
