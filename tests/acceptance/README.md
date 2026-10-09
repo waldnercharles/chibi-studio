@@ -12,6 +12,13 @@ frame renders both graph and code views before normal host shutdown. This proves
 consumer edit-handler integration and UI rendering; it does not hit-test pointer
 input. No source save, scenario, playback or screenshot occurs.
 
+`studio-acceptance --code-keys --project-root PATH` takes another disposable copy.
+It shows Counter in the Text Editor, focuses it and places the cursor after the
+event's closing brace, then queues two Enter key presses through SDL, as the
+platform does, a few frames apart. The source must gain only whitespace: Enter
+types newlines and never accepts a completion nobody asked for. It runs twelve
+hidden frames and saves nothing.
+
 Execution requires explicit root coordination and independent admission under the
 60-second GPU policy. Merely building this target does not run it. A whole UI
 suite is not implied. The vendored pico_unit header preserves its upstream license

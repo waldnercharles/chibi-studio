@@ -1,11 +1,13 @@
 #define PICO_UNIT_IMPLEMENTATION
-#include "vendor/pico_unit.h"
-#include "editor/studio/studio_internal.h"
-#include "editor/documents/asset_code.h"
 #include "authoring/source_presentation.h"
+#include "editor/documents/asset_code.h"
+#include "editor/studio/studio_internal.h"
 #include "support/array.h"
 #include "support/file_io.h"
+#include "vendor/pico_unit.h"
 
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_video.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,9 +15,16 @@
 studio *studio_acceptance_studio(void *);
 int studio_acceptance_host_main(int, char **);
 
+typedef enum
+{
+    ACCEPT_SOURCE_EDIT,
+    ACCEPT_CODE_KEYS,
+} acceptance;
+
+static acceptance selected;
 static const char *project;
 static const char *executable;
-static int frames, edits, undos, redos;
+static int frames, edits, undos, redos, keys;
 static bool callback_ok = true;
 static const char counter_bytes[] =
     "behavior Counter {\n"
@@ -144,9 +153,90 @@ static bool source_edit_frame(void *state)
     return true;
 }
 
+/* The Text Editor settles before the keys, which leave frames between them
+   for the completion list to open. */
+#define KEY_FRAMES 12
+#define TEXT(x) #x
+#define FRAMES_TEXT(x) TEXT(x)
+
+/* Queues a key press and release for the window, as the platform would. */
+static bool press_key(SDL_Keycode key)
+{
+    int count = 0;
+    SDL_Window **windows = SDL_GetWindows(&count);
+    SDL_WindowID window = count ? SDL_GetWindowID(windows[0]) : 0;
+    SDL_free(windows);
+    REQUIRE(window);
+    for (int down = 1; down >= 0; down--) {
+        SDL_Event e = { .key = { .type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP,
+                                 .windowID = window,
+                                 .key = key,
+                                 .scancode = SDL_GetScancodeFromKey(key, NULL),
+                                 .down = down } };
+        REQUIRE(SDL_PushEvent(&e));
+    }
+    return true;
+}
+
+/* Counter's source editor, whether or not its text currently reads. */
+static asset_code *counter_code(studio *s)
+{
+    for (int i = 0; i < acount(s->code.assets); i++) {
+        if (strstr(asset_code_path(s->code.assets[i]), "Counter.chibi")) {
+            return s->code.assets[i];
+        }
+    }
+    return NULL;
+}
+
+static bool same_without_space(const char *a, const char *b)
+{
+    for (;; a++, b++) {
+        a += strspn(a, " \n");
+        b += strspn(b, " \n");
+        if (*a != *b) {
+            return false;
+        }
+        if (!*a) {
+            return true;
+        }
+    }
+}
+
+/* Enter on an empty line types newlines; it never accepts a completion the
+   user did not ask for. */
+static bool code_keys_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= KEY_FRAMES);
+    asset_code *code = counter_code(s);
+    REQUIRE(code);
+    if (frames == 1) {
+        studio_show_editor(s, STUDIO_EDITOR_CODE);
+    } else if (frames == KEY_FRAMES - 8) {
+        s->code.find.refocus = true;
+        const char *close = strstr(asset_code_text(code), "    }\n}");
+        REQUIRE(close);
+        kit_code_set_cursor(asset_code_editor(code), (int)(close - asset_code_text(code)) + 5);
+    } else if (frames == KEY_FRAMES - 6 || frames == KEY_FRAMES - 3) {
+        REQUIRE(press_key(SDLK_RETURN));
+        keys++;
+    } else if (frames == KEY_FRAMES) {
+        const char *text = asset_code_text(code);
+        REQUIRE(strlen(text) > strlen(counter_bytes) + 1);
+        REQUIRE(same_without_space(text, counter_bytes));
+    }
+    return true;
+}
+
 bool studio_acceptance_frame(void *state)
 {
-    callback_ok = source_edit_frame(state);
+    switch (selected) {
+        case ACCEPT_SOURCE_EDIT: callback_ok = source_edit_frame(state); break;
+        case ACCEPT_CODE_KEYS: callback_ok = code_keys_frame(state); break;
+    }
     return callback_ok;
 }
 
@@ -165,13 +255,31 @@ TEST_CASE(source_graph_edit_undo_redo)
     return true;
 }
 
+TEST_CASE(code_enter_types_newlines)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(KEY_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok);
+    REQUIRE(unchanged_source());
+    REQUIRE(frames == KEY_FRAMES && keys == 2);
+    printf("Studio code keys accepted: frames=%d keys=%d\n", frames, keys);
+    return true;
+}
+
 int main(int argc, char **argv)
 {
-    if (argc != 4 || strcmp(argv[1], "--source-edit") ||
+    bool code_keys = argc == 4 && !strcmp(argv[1], "--code-keys");
+    if (argc != 4 || (strcmp(argv[1], "--source-edit") && !code_keys) ||
         strcmp(argv[2], "--project-root")) {
-        fprintf(stderr, "Usage: studio-acceptance --source-edit --project-root PATH\n");
+        fprintf(stderr, "Usage: studio-acceptance --source-edit|--code-keys --project-root PATH\n");
         return 2;
     }
+    selected = code_keys ? ACCEPT_CODE_KEYS : ACCEPT_SOURCE_EDIT;
     executable = argv[0];
     project = argv[3];
     char prefs[1024], cache[1024];
@@ -184,7 +292,12 @@ int main(int argc, char **argv)
         return 2;
     }
     pu_display_time(true);
-    RUN_TEST_CASE(source_graph_edit_undo_redo);
+    switch (selected) {
+        case ACCEPT_SOURCE_EDIT:
+            RUN_TEST_CASE(source_graph_edit_undo_redo);
+            break;
+        case ACCEPT_CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
+    }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;
 }

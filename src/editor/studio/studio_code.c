@@ -1328,7 +1328,17 @@ bool studio_code_header_sync(studio *s, const studio_panel_sync *at)
             notes += markers[i].severity == KIT_CODE_INFO;
         }
         char tip[96];
-        snprintf(tip, sizeof tip, "%d errors, %d warnings, %d notes · Next problem", errors, warnings, notes);
+        snprintf(
+            tip,
+            sizeof tip,
+            "%d error%s, %d warning%s, %d note%s · Next problem",
+            errors,
+            errors == 1 ? "" : "s",
+            warnings,
+            warnings == 1 ? "" : "s",
+            notes,
+            notes == 1 ? "" : "s"
+        );
         changed |= ui_data_put_int(h, "problems", acount(markers));
         changed |= ui_data_put_int(h, "errors", errors);
         changed |= ui_data_put_text(at->doc, h, "problemsTip", tip);
@@ -2150,6 +2160,39 @@ static bool asset_symbol_definition(studio *s, asset_code *code, int cursor)
     return true;
 }
 
+/* Output ▸ Find lists the uses of the symbol at the cursor, titled by its name. */
+static void asset_references(studio *s, asset_code *code, int cursor)
+{
+    const authoring_navigation *index = asset_code_navigation(code);
+    const authoring_reference *reference = source_reference(code, cursor);
+    if (!reference) {
+        studio_report(s, "No symbol to find here");
+        return;
+    }
+    asetlen(s->references, 0);
+    for (int i = 0; i < authoring_navigation_reference_count(index); i++) {
+        const authoring_reference *found = authoring_navigation_reference_at(index, i);
+        if (found->kind == AUTHORING_DEFINE ||
+            !authoring_target_equal(found->target, reference->target)) {
+            continue;
+        }
+        ui_code_place place = source_location(index, found->location);
+        apush(s->references, place_row(&place));
+    }
+    const char *name = authoring_navigation_name(index, reference->target);
+    script_range range = reference->location.range;
+    snprintf(
+        s->references_title,
+        sizeof s->references_title,
+        "%.*s",
+        name ? (int)strlen(name) : range.end - range.start,
+        name ? name
+             : authoring_navigation_document_text(index, reference->location.document) +
+                   range.start
+    );
+    studio_output_find(s);
+}
+
 static void asset_requests(studio *s, asset_code *code, unsigned events)
 {
     kit_code_editor *e = asset_code_editor(code);
@@ -2171,21 +2214,7 @@ static void asset_requests(studio *s, asset_code *code, unsigned events)
         }
     }
     if (events & KIT_CODE_REFERENCES) {
-        const authoring_navigation *index = asset_code_navigation(code);
-        const authoring_reference *reference = source_reference(code, cursor);
-        asetlen(s->references, 0);
-        for (int i = 0; reference && i < authoring_navigation_reference_count(index);
-             i++) {
-            const authoring_reference *found = authoring_navigation_reference_at(index, i);
-            if (found->kind == AUTHORING_DEFINE ||
-                !authoring_target_equal(found->target, reference->target)) {
-                continue;
-            }
-            ui_code_place place = source_location(index, found->location);
-            apush(s->references, place_row(&place));
-        }
-        snprintf(s->references_title, sizeof s->references_title, "Source references");
-        studio_output_find(s);
+        asset_references(s, code, cursor);
     }
     if ((events & KIT_CODE_BREAKPOINT) && !asset_code_error(code)[0] &&
         !active_asset(s)->source_only) {
@@ -2267,10 +2296,6 @@ void studio_code_body(studio *s, int)
             kit_push(k, "status", NULL, "code-status");
             kit_icon(k, "icon", NULL, KIT_ICON_ERROR);
             kit_label(k, "message", "message", asset_code_error(code));
-            kit_pop(k);
-        } else if (asset_code_pending(code)) {
-            kit_push(k, "status", NULL, "code-status");
-            kit_label(k, "message", "message", "Checking source…");
             kit_pop(k);
         }
         kit_pop(k);

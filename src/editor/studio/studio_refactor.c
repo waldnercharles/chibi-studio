@@ -98,6 +98,7 @@ void studio_refactor_source(studio *s, const char *path, int offset)
     r->mode = STUDIO_REFACTOR_RENAME;
     r->opening = true;
     r->source_offset = offset;
+    kit_wants_text(s->kit, &r->caret);
     snprintf(r->source_path, sizeof r->source_path, "%s", path);
     snprintf(r->title, sizeof r->title, "%s", name ? name : "");
     snprintf(r->name, sizeof r->name, "%s", name ? name : "");
@@ -601,16 +602,22 @@ void studio_refactor_action(studio *s, const char *action, const ui_activation *
     }
 }
 
-/* Shows the popover at the pointer, its name field focused with the name
-   selected, as the kit's popover opened. */
+/* Shows the popover below the renamed source's caret, else at the pointer,
+   its name field focused with the name selected, as the kit's popover
+   opened. */
 static void show(studio *s, rml_element *popover)
 {
     studio_refactor *r = &s->refactor;
     float ratio = studio_pixel_ratio(s);
+    kit_rect c = r->caret;
     popover_show(
         popover,
-        &(popover_anchor){ .side = POPOVER_POINT,
-                           .box = { s->in.mouse_x * ratio, s->in.mouse_y * ratio, 0, 0 } }
+        c.h > 0
+            ? &(popover_anchor){ .side = POPOVER_BELOW,
+                                 .box = { c.x * ratio, c.y * ratio, c.w * ratio, c.h * ratio } }
+            : &(popover_anchor){
+                  .side = POPOVER_POINT,
+                  .box = { s->in.mouse_x * ratio, s->in.mouse_y * ratio, 0, 0 } }
     );
     rml_element *field = rml_element_query_selector(popover, "#" NAME_ID);
     if (field && r->mode == STUDIO_REFACTOR_RENAME) {

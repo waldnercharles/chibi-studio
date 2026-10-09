@@ -679,6 +679,7 @@ typedef struct
     char planned[128];
     char source_path[PATH_MAX];
     int source_offset;
+    kit_rect caret; /* dp; a source rename hangs below the caret, else the pointer */
     char *source_before, *source_after, *source_metadata;
     struct app_refactor *plan; /* renames to `planned` */
     char error[192];
