@@ -25,7 +25,6 @@
 #include "graph/shader/shader_graph.h"
 #include "render/appearance_geometry.h"
 #include "render/scene_renderer.h"
-#include "render/sdf_motion.h"
 #include "runtime/behaviors/entities.h"
 #include "runtime/component_catalog.h"
 #include "runtime/declared_components.h"

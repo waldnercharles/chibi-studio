@@ -1,16 +1,15 @@
-#include "authoring/ui_loader.h"
 #include "authoring/ui_events_adapter.h"
-#include "editor/workspace/viewport.h"
+#include "authoring/ui_loader.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/workspace/model_preview.h"
 #include "editor/workspace/scene_internal.h"
+#include "editor/workspace/viewport.h"
 #include "platform/cute.h"
 #include "render/appearance_geometry.h"
-#include "render/scene3d.h"
 #include "render/geometry_2d.h"
 #include "render/grid_2d.h"
 #include "render/mesh_surface.h"
-#include "render/sdf_motion.h"
+#include "render/scene3d.h"
 #include "render/shader_catalog.h"
 #include "render/ui.h"
 #include "runtime/camera.h"
@@ -43,7 +42,6 @@ static bool appearance_bounds(
     const GameAppearance *appearance,
     const GameShader *shader,
     float radians,
-    const GameSdfMotion *motion,
     bool effects,
     CF_Aabb *out
 )
@@ -62,9 +60,6 @@ static bool appearance_bounds(
         return false;
     }
     float padding = 0;
-    if (motion && !game_sdf_motion_padding(motion, &padding)) {
-        return false;
-    }
     if (effects) {
         if (isfinite(appearance->glow_radius) && appearance->glow_radius > 0) {
             padding += appearance->glow_radius;
@@ -97,7 +92,6 @@ static bool visual_bounds(const ecs_world *world, ecs_entity entity, bool effect
                              appearance,
                              GAME_GameShader_get_const(world, entity),
                              actor_orientation(world, entity),
-                             GAME_GameSdfMotion_get_const(world, entity),
                              effects,
                              bounds
                          );
@@ -236,7 +230,6 @@ ecs_entity pick_scene_entity(app_scene_authoring *scene, float x, float y, rende
             const GameTransform *transform = GAME_GameTransform_get_const(scene->world, entity);
             CF_Aabb bounds;
             float radians = actor_orientation(scene->world, entity);
-            const GameSdfMotion *motion = GAME_GameSdfMotion_get_const(scene->world, entity);
             CF_V2 local;
             const GameShader *shader = GAME_GameShader_get_const(scene->world, entity);
             bool custom_shape = shader &&
@@ -245,13 +238,12 @@ ecs_entity pick_scene_entity(app_scene_authoring *scene, float x, float y, rende
             if (selectable.shape == GAME_SHAPE_STROKED_CHEVRON) {
                 selectable.shape = GAME_SHAPE_CHEVRON;
             }
-            if (!appearance_bounds(transform, appearance, shader, radians, motion, false, &bounds) ||
+            if (!appearance_bounds(transform, appearance, shader, radians, false, &bounds) ||
                 !game_appearance_rotate_point(
                     (CF_V2){ x - transform->x, y + transform->y },
                     -radians,
                     &local
                 ) ||
-                (motion && !game_sdf_motion_warp(motion, local, &local)) ||
                 !(custom_shape ? render_shader_contains(
                                      shader,
                                      scene->world,
@@ -664,13 +656,7 @@ static void draw_particles(const game_particles *particles)
     }
 }
 
-static void draw_appearance(
-    app_sdf_shapes shapes,
-    const GameAppearance *appearance,
-    const GameTransform *transform,
-    float radians,
-    const GameSdfMotion *motion
-)
+static void draw_appearance(const GameAppearance *appearance, const GameTransform *transform, float radians)
 {
     CF_V2 center = { transform->x, -transform->y };
     float width = appearance->width * 0.5f;
@@ -684,13 +670,6 @@ static void draw_appearance(
     cf_draw_push_color(packed_color(appearance->color));
     cf_draw_push_interior_border(packed_color(appearance->border_color), border);
     cf_draw_push_glow(packed_color(appearance->glow_color), glow);
-    if (motion && (motion->amplitude > 0 || motion->pluck_amplitude > 0.01f) &&
-        app_sdf_shapes_draw(shapes, appearance, transform, radians, motion)) {
-        cf_draw_pop_glow();
-        cf_draw_pop_outline();
-        cf_draw_pop_color();
-        return;
-    }
     switch (appearance->shape) {
         case GAME_SHAPE_CIRCLE:
             cf_draw_circle_fill2(center, width < height ? width : height);
@@ -848,7 +827,6 @@ static void outline_object(ecs_world *world, ecs_entity entity, float pixel, flo
             appearance,
             GAME_GameShader_get_const(world, entity),
             actor_orientation(world, entity),
-            GAME_GameSdfMotion_get_const(world, entity),
             false,
             &bounds
         )) {
@@ -959,13 +937,11 @@ void app_scene_authoring_render(void *user)
         const GameAppearance *appearance = GAME_GameAppearance_get_const(world, entity);
         CF_Aabb bounds;
         float radians = actor_orientation(world, entity);
-        const GameSdfMotion *motion = GAME_GameSdfMotion_get_const(world, entity);
         if (!appearance_bounds(
                 transform,
                 appearance,
                 GAME_GameShader_get_const(world, entity),
                 radians,
-                motion,
                 false,
                 &bounds
             )) {
@@ -979,10 +955,7 @@ void app_scene_authoring_render(void *user)
                 visible.border_color = material->border_scene;
                 visible.glow_radius = 0;
             }
-            if (!scene->shapes.id) {
-                scene->shapes = app_sdf_shapes_init();
-            }
-            draw_appearance(scene->shapes, &visible, transform, radians, motion);
+            draw_appearance(&visible, transform, radians);
         }
     }
     ecs_query_end(&query);

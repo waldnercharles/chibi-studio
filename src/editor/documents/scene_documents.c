@@ -337,6 +337,7 @@ int open_behavior_asset(app_scene_authoring *scene, const char *asset_name)
         behavior_domain_name(scene->definition->working->domain),
         asset_name
     );
+    scene_notice(scene);
     return 0;
 }
 
@@ -573,6 +574,9 @@ int reload_behavior_from_disk(app_scene_authoring *scene, const char *asset_name
             source_path,
             error
         );
+        if (!applied) {
+            scene_notice(scene);
+        }
         free(source_path);
         free(name);
         return opened;
@@ -653,6 +657,7 @@ int reload_behavior_from_disk(app_scene_authoring *scene, const char *asset_name
         );
     } else {
         snprintf(scene->message, sizeof scene->message, "Reloaded %s.", path);
+        scene_notice(scene);
     }
     return 0;
 }
@@ -707,6 +712,7 @@ int reload_prototype_asset(app_scene_authoring *scene, scene_prototype_asset *as
     asset->dirty = 0;
     clear_prototype_history(asset);
     snprintf(scene->message, sizeof scene->message, "Reloaded %s.", asset->path);
+    scene_notice(scene);
     return 0;
 }
 
@@ -728,6 +734,7 @@ int reload_ui_document(app_scene_authoring *scene, scene_document_tab *tab)
         return -1;
     }
     snprintf(scene->message, sizeof scene->message, "Reloaded %s.", tab->label);
+    scene_notice(scene);
     return 0;
 }
 
@@ -919,6 +926,7 @@ static int save_as_active_document(app_scene_authoring *scene)
                 "Saved %s.",
                 definition->name
             );
+            scene_notice(scene);
         }
     }
     free(path);
@@ -964,6 +972,7 @@ int save_behavior_document(app_scene_authoring *scene)
             "Saved %s.",
             scene->definition->name
         );
+        scene_notice(scene);
     }
     return saved;
 }

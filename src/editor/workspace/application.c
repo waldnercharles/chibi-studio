@@ -406,6 +406,9 @@ static bool open_workspace(
     );
     if (authoring) {
         app_scene_authoring_set_default_ui(authoring, project.ui);
+        if (studio_project_is(project.root)) {
+            app_scene_authoring_set_studio_project(authoring);
+        }
     }
     bool scene_ready = authoring &&
                        app_scene_authoring_load_content(authoring) == 0 &&
