@@ -2,10 +2,11 @@
  * GameCamera frames (Blender's camera frames, Unreal's camera frustums), the
  * selected GameFog grid's extent, and View Through Camera (Blender's
  * Numpad 0), which frames the view on a camera's span and dims the rest. */
-#include "editor/workspace/viewport.h"
 #include "editor/workspace/scene_internal.h"
+#include "editor/workspace/viewport.h"
 #include "platform/cute.h"
 #include "runtime/component_catalog.h"
+#include "runtime/transform_propagation.h"
 
 #include <math.h>
 
@@ -33,12 +34,12 @@ static CF_Color packed(unsigned color)
 static bool camera_view(const ecs_world *world, ecs_entity entity, engine_viewport_view *out)
 {
     const GameCamera *camera = GAME_GameCamera_get_const(world, entity);
-    const GameTransform *position = GAME_GameTransform_get_const(world, entity);
-    if (!camera || !position) {
+    if (!camera || !GAME_GameTransform_get_const(world, entity)) {
         return false;
     }
-    *out = (engine_viewport_view){ position->x + camera->offset.x,
-                                   -position->y - camera->offset.y,
+    CF_V2 position = game_transform_world_2d(world, entity).position;
+    *out = (engine_viewport_view){ position.x + camera->offset.x,
+                                   -position.y - camera->offset.y,
                                    camera->width,
                                    camera->height,
                                    camera->focal_distance };

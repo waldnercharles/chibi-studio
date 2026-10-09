@@ -22,6 +22,16 @@ platform does, a few frames apart. The source must gain only whitespace: Enter
 types newlines and never accepts a completion nobody asked for. It runs twelve
 hidden frames and saves nothing.
 
+`studio-acceptance --scene-hierarchy --project-root PATH` takes another
+disposable copy. Its first hidden frame loads a scene whose ship holds a turret
+beside a root also named Turret. It checks that the turret loads under the ship
+and saves back nested, that the ship cannot be deleted before its turret, that
+undoing the turret's deletion puts it back under the ship, and that a duplicate
+of the turret becomes the ship's next child. With the ship turned a quarter
+turn, it checks that picking finds the turret at its world position and nothing
+at its unturned one, and that a duplicate offset in world space keeps the right
+local offset. It saves no file.
+
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
 

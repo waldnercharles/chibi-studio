@@ -14,6 +14,7 @@
 #include "render/ui.h"
 #include "runtime/camera.h"
 #include "runtime/component_catalog.h"
+#include "runtime/transform_propagation.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -24,10 +25,14 @@
 #include <string.h>
 #include <sys/stat.h>
 
-static float actor_orientation(const ecs_world *world, ecs_entity entity)
+/* Where the viewport shows an entity: its exact world placement, since edits
+ * and loads move it before any engine frame propagates them. The angle turns
+ * the other way, as the viewport's y points down. */
+static GameGlobalTransform2D actor_pose(const ecs_world *world, ecs_entity entity)
 {
-    const GameOrientation *orientation = GAME_GameOrientation_get_const(world, entity);
-    return orientation ? -orientation->radians : 0;
+    GameGlobalTransform2D pose = game_transform_world_2d(world, entity);
+    pose.radians = -pose.radians;
+    return pose;
 }
 
 static render_scene3d_camera camera3d(engine_viewport *viewport)
@@ -87,14 +92,18 @@ static bool visual_bounds(const ecs_world *world, ecs_entity entity, bool effect
         return true;
     }
     const GameAppearance *appearance = GAME_GameAppearance_get_const(world, entity);
-    return appearance && appearance_bounds(
-                             GAME_GameTransform_get_const(world, entity),
-                             appearance,
-                             GAME_GameShader_get_const(world, entity),
-                             actor_orientation(world, entity),
-                             effects,
-                             bounds
-                         );
+    if (!appearance || !GAME_GameTransform_get_const(world, entity)) {
+        return false;
+    }
+    GameGlobalTransform2D pose = actor_pose(world, entity);
+    return appearance_bounds(
+        &pose.position,
+        appearance,
+        GAME_GameShader_get_const(world, entity),
+        pose.radians,
+        effects,
+        bounds
+    );
 }
 
 /* Whether `entity` is among the `count` in `only`, or `only` is NULL. */
@@ -227,9 +236,10 @@ ecs_entity pick_scene_entity(app_scene_authoring *scene, float x, float y, rende
             if (!appearance) {
                 continue;
             }
-            const GameTransform *transform = GAME_GameTransform_get_const(scene->world, entity);
+            GameGlobalTransform2D pose = actor_pose(scene->world, entity);
+            const GameTransform *transform = &pose.position;
             CF_Aabb bounds;
-            float radians = actor_orientation(scene->world, entity);
+            float radians = pose.radians;
             CF_V2 local;
             const GameShader *shader = GAME_GameShader_get_const(scene->world, entity);
             bool custom_shape = shader &&
@@ -466,10 +476,14 @@ static void edit_scene_pointer(app_scene_authoring *scene, engine_viewport *view
        gizmo moves placed ones. */
     if (scene->dragging_actor && !scene->gizmo.active) {
         if (pointer.dragging) {
-            GameTransform position = {
-                scene->edit_before.x + pointer.world_x - scene->drag_origin.x,
-                scene->edit_before.y - pointer.world_y - scene->drag_origin.y,
-            };
+            GameTransform moved = scene_local_offset(
+                scene->world,
+                scene->edit_actor,
+                (GameTransform){ pointer.world_x - scene->drag_origin.x,
+                                 -pointer.world_y - scene->drag_origin.y }
+            );
+            GameTransform position = { scene->edit_before.x + moved.x,
+                                       scene->edit_before.y + moved.y };
             write_transform_edit(scene, scene->edit_actor, position);
         }
         if (pointer.released) {
@@ -819,14 +833,16 @@ static void draw_arena_selection(
 static void outline_object(ecs_world *world, ecs_entity entity, float pixel, float margin, unsigned color)
 {
     CF_Aabb bounds;
-    const GameTransform *position = GAME_GameTransform_get_const(world, entity);
     const GameAppearance *appearance = GAME_GameAppearance_get_const(world, entity);
-    if (!position || !appearance ||
-        !appearance_bounds(
-            position,
+    if (!GAME_GameTransform_get_const(world, entity) || !appearance) {
+        return;
+    }
+    GameGlobalTransform2D pose = actor_pose(world, entity);
+    if (!appearance_bounds(
+            &pose.position,
             appearance,
             GAME_GameShader_get_const(world, entity),
-            actor_orientation(world, entity),
+            pose.radians,
             false,
             &bounds
         )) {
@@ -890,6 +906,10 @@ void app_scene_authoring_render(void *user)
         editing && !options->fog
     );
     render_skip hidden = scene_view_skip(scene, APP_SCENE_VIEW_HIDDEN, &scene->view_hidden);
+    /* Edits and loads move objects before any engine frame propagates them. */
+    if (game_transform_propagate(world) != ECS_OK) {
+        return;
+    }
     if (scene->render_viewport && engine_viewport_perspective(scene->render_viewport)) {
         render_scene3d_camera camera = camera3d(scene->render_viewport);
         app_scene_renderer_draw3d(
@@ -929,14 +949,11 @@ void app_scene_authoring_render(void *user)
         if (render_skip_has(hidden, entity)) {
             continue;
         }
-        GameTransform pose = *GAME_GameTransform_get_const(world, entity);
-        if (runtime) {
-            engine_render_position(runtime, entity, &pose);
-        }
-        const GameTransform *transform = &pose;
+        GameGlobalTransform2D pose = engine_render_transform(runtime, world, entity);
+        const GameTransform *transform = &pose.position;
         const GameAppearance *appearance = GAME_GameAppearance_get_const(world, entity);
         CF_Aabb bounds;
-        float radians = actor_orientation(world, entity);
+        float radians = -pose.radians;
         if (!appearance_bounds(
                 transform,
                 appearance,

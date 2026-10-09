@@ -529,15 +529,30 @@ int actor_has_behavior(game_source_registry *sources, const scene_actor *actor, 
 int add_actor(app_scene_authoring *scene, const char *name, const char *prototype_name);
 /* Scene document entities (scene_document.c), as loading and the clipboard
    share them: whether this project can make one, with the message set when
-   not; one spawned as a new object named `name`, its actor last; and an
-   object written as one. */
+   not; one spawned as a new object named `name` under `parent` (a zero handle
+   for a root), its actor last; and the objects whose indices `actors` lists,
+   in order, written as entities. An object whose parent is not among them is
+   written as a root. */
 int scene_validate_entity(app_scene_authoring *scene, const game_scene_entity *entity);
-int scene_spawn_entity(app_scene_authoring *scene, const game_scene_entity *entity, const char *name);
-int scene_document_add_actor(
+int scene_spawn_entity(
+    app_scene_authoring *scene,
+    const game_scene_entity *entity,
+    const char *name,
+    ecs_entity parent
+);
+int scene_document_add_actors(
     app_scene_authoring *scene,
     game_scene_document *document,
-    const scene_actor *actor
+    const int *actors
 );
+/* Objects keep the scene's order, a parent before its children, so the
+   document and the actor array line up. The identity of the actor's parent,
+   or 0 for a root; and the index just past the actor's descendants. */
+uint64_t scene_actor_parent(app_scene_authoring *scene, const scene_actor *actor);
+int scene_actor_subtree_end(const app_scene_authoring *scene, int index);
+/* A world offset as the change it makes to the entity's local Transform,
+   turned into its parent's frame. */
+GameTransform scene_local_offset(const ecs_world *world, ecs_entity entity, GameTransform offset);
 /* The scene document's name: its file's, without the extension. */
 void scene_document_name(const app_scene_authoring *scene, char *name, size_t size);
 int add_instance_at(app_scene_authoring *scene, const char *prototype_name, const GameTransform *position);
