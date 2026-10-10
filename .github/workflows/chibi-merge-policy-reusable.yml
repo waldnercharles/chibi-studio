@@ -101,9 +101,11 @@ jobs:
               const runs = await github.paginate(github.rest.checks.listForRef, {
                 owner, repo, ref: pr.head.sha, per_page: 100,
               });
-              let gate = runs.find(run =>
-                run.name === gateName && run.app?.id === githubActionsAppId
-              );
+              let gate = runs
+                .filter(run => run.name === gateName && run.app?.id === githubActionsAppId)
+                .sort((a, b) =>
+                  Date.parse(b.started_at || b.completed_at) - Date.parse(a.started_at || a.completed_at)
+                )[0];
               if (!gate) {
                 gate = (await github.rest.checks.create({
                   owner, repo, name: gateName, head_sha: pr.head.sha,
@@ -298,12 +300,37 @@ jobs:
               }
             }
 
-            async function applyAutoMerge(pr, approved, labelRemoved) {
+            async function applyAutoMerge(pr) {
               const labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
               const optedIn = labels.includes(autoMergeLabel);
-              if (!optedIn && !labelRemoved) return;
-              const canMerge = optedIn && gateReady && approved && !hasHold(pr) && await dependenciesMerged(pr);
-              await setAutoMerge(pr, canMerge);
+              await setAutoMerge(pr, false);
+              if (!optedIn || !gateReady || hasHold(pr) || !(await dependenciesMerged(pr))) return;
+
+              const current = (await github.rest.pulls.get({ owner, repo, pull_number: pr.number })).data;
+              if (current.state !== "open" || current.base.ref !== defaultBranch || current.head.sha !== pr.head.sha) return;
+              if (hasHold(current) || !(await dependenciesMerged(current))) return;
+
+              const approved = await updateGate(current);
+              if (!approved) return;
+
+              const latest = (await github.rest.pulls.get({ owner, repo, pull_number: pr.number })).data;
+              if (latest.state !== "open" || latest.base.ref !== defaultBranch || latest.head.sha !== current.head.sha) return;
+              if (hasHold(latest) || !(await dependenciesMerged(latest))) return;
+
+              try {
+                const result = await github.rest.pulls.merge({
+                  owner, repo, pull_number: latest.number, sha: latest.head.sha, merge_method: "squash",
+                });
+                core.info(result.data.merged
+                  ? `Merged pull request #${latest.number} after a fresh approval check.`
+                  : `Merge deferred for pull request #${latest.number}: ${result.data.message}`);
+              } catch (error) {
+                if (error.status === 405 || error.status === 409) {
+                  core.info(`Merge deferred for pull request #${latest.number}: ${error.message}`);
+                  return;
+                }
+                throw error;
+              }
             }
 
             const event = context.eventName;
@@ -341,12 +368,6 @@ jobs:
                 pr = (await github.rest.pulls.get({ owner, repo, pull_number: number })).data;
               }
 
-              const approved = await updateGate(pr);
-              const labelRemoved = context.payload.action === "unlabeled" &&
-                context.payload.label?.name === autoMergeLabel;
-              if (event !== "schedule" || pr.labels.some(label =>
-                (typeof label === "string" ? label : label.name) === autoMergeLabel
-              )) {
-                await applyAutoMerge(pr, approved, labelRemoved);
-              }
+              await updateGate(pr);
+              await applyAutoMerge(pr);
             }
