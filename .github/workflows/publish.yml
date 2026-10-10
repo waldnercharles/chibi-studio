@@ -55,13 +55,13 @@ jobs:
           tag=$(gh api 'repos/waldnercharles/chibi/releases?per_page=100' | python3 -c '
           import json, re, sys
           required = {"chibi-web-sdk.tar.gz", "chibi-export-linux-x64.tar.gz", "SHA256SUMS", "build.json"}
-          releases = json.load(sys.stdin)
-          tags = [r["tag_name"] for r in releases if not r["draft"]
-                  and re.fullmatch(r"engine-[0-9a-f]{40}", r["tag_name"])
-                  and required <= {a["name"] for a in r["assets"] if a["state"] == "uploaded"}]
-          if not tags:
+          releases = [r for r in json.load(sys.stdin) if not r["draft"]
+                      and re.fullmatch(r"engine-[0-9a-f]{40}", r["tag_name"])
+                      and required <= {a["name"] for a in r["assets"] if a["state"] == "uploaded"}]
+          if not releases:
               sys.exit("No complete engine release is available")
-          print(tags[0])')
+          # The API does not list releases newest first; take the last published.
+          print(max(releases, key=lambda r: r["published_at"])["tag_name"])')
           engine=${tag#engine-}
           echo "engine=$engine" >> "$GITHUB_OUTPUT"
           build=true
