@@ -181,9 +181,13 @@ jobs:
 
               for (const target of targets.values()) {
                 try {
-                  const issue = (await github.rest.issues.get(target)).data;
+                  const issue = (await github.rest.issues.get({
+                    owner: target.owner, repo: target.repo, issue_number: target.number,
+                  })).data;
                   if (issue.pull_request) {
-                    const dependency = (await github.rest.pulls.get({ ...target, pull_number: target.number })).data;
+                    const dependency = (await github.rest.pulls.get({
+                      owner: target.owner, repo: target.repo, pull_number: target.number,
+                    })).data;
                     if (!dependency.merged) return false;
                   } else if (issue.state !== "closed") {
                     return false;
