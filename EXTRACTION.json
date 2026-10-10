@@ -2062,7 +2062,7 @@
       "current_source_sha256": "948e97d759558ba0934bcb6c87def9dda533ba012665183a8486297bd79463e7",
       "sha256": "948e97d759558ba0934bcb6c87def9dda533ba012665183a8486297bd79463e7",
       "source_path": "src/editor/studio/studio_prefs.c",
-      "consumer_sha256": "af8befca12da4903547fe051ac1a4c03112027ca6046c16cc792a60052fa8244"
+      "consumer_sha256": "e0851bc3620cd9b502215acae472c28112da544260bbdede351f0281b056970f"
     },
     "src/editor/studio/studio_projects.c": {
       "current_source_sha256": "4fd1c657dd07a0a71de2b89c10186577f6b1bfd9e8c4221b22ab2a9a563b7992",

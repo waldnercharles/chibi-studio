@@ -1185,6 +1185,12 @@ static bool asset_selection_frame(void *state)
     REQUIRE(frames <= 5);
     switch (frames) {
         case 1:
+            /* A file saved before the view setting kept list view as the
+               smallest tile size. */
+            REQUIRE(studio_prefs_read("{\"assets\":{\"tileSize\":40}}").assets_list);
+            REQUIRE(!studio_prefs_read("{\"assets\":{\"tileSize\":40,\"view\":\"grid\"}}")
+                         .assets_list);
+            REQUIRE(!studio_prefs_read("{\"assets\":{\"tileSize\":96}}").assets_list);
             studio_show_editor(s, STUDIO_EDITOR_ASSETS);
             s->prefs.assets_list = true;
             s->assets_kind = REFERENCE_ASSET_PROTOTYPE;
