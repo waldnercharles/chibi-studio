@@ -8,7 +8,9 @@
 #include "graph/authoring/describe.h"
 #include "graph/model/local.h"
 #include "graph/nodes/behavior_expression.h"
+#include "graph/nodes/conv_nodes.h"
 #include "support/array.h"
+#include "ui/input_feel.h"
 #include "ui/rml.h"
 
 #include <assert.h>
@@ -184,13 +186,18 @@ static kit_dot_desc socket_dot(const studio *s, const pin_spec *spec, bool conne
 /* Watched pins, and the pin under the pointer, show their value in a bubble
    beside the socket unless an editor already shows it (Unreal). While the
    debug target runs, values are live, and with Show Live Values every data
-   output shows its value in a quieter chip (Unreal's watches everywhere). */
+   output shows its value in a quieter chip (Unreal's watches everywhere).
+   A hovered pin's bubble waits as a tooltip does, so sweeping across a
+   node doesn't flicker, except while values are live. */
 static void emit_watch(studio *s, node *n, bool input, int p, const pin_parts *parts, bool hovered)
 {
-    kit *k = s->graph.kit;
+    studio_graph *g = &s->graph;
+    kit *k = g->kit;
     editor *e = sg_graph_editor(s);
     bool live = eval_view_live(e->ev);
-    bool bubble = (parts->spec->flags & PIN_FLAG_WATCH) || hovered;
+    bool settled = g->in.time - g->hover_pin_since >= FEEL_TOOLTIP_DELAY;
+    bool bubble = (parts->spec->flags & PIN_FLAG_WATCH) ||
+                  (hovered && (live || settled));
     bool chip = !input && live && s->prefs.live_values && !sg_far(s);
     bool edited = parts->value != VALUE_NONE && parts->value != VALUE_CHIP;
     /* Previews can't read bindings, so a bound input shows only a run's value. */
@@ -793,6 +800,13 @@ static void emit_wires(studio *s)
     afree(via_first);
 }
 
+/* A snapped preview that will need a conversion dashes, as the wire it
+   makes will. */
+static unsigned converts(const pin_spec *out, const pin_spec *in)
+{
+    return out->kind == PIN_DATA && conversion_for_pins(out, in) ? KIT_WIRE_DASHED : 0;
+}
+
 static void emit_front(studio *s)
 {
     studio_graph *g = &s->graph;
@@ -837,12 +851,14 @@ static void emit_front(studio *s)
         wire.from_y = anchor_y;
         if (snap) {
             sg_socket_at(s, over, g->hover_kind, g->hover_pin, &wire.to_x, &wire.to_y);
+            wire.flags = converts(spec, &over->input_pins[g->hover_pin]);
         }
     } else {
         wire.to_x = anchor_x;
         wire.to_y = anchor_y;
         if (snap) {
             sg_socket_at(s, over, g->hover_kind, g->hover_pin, &wire.from_x, &wire.from_y);
+            wire.flags = converts(&over->output_pins[g->hover_pin], spec);
         }
     }
     kit_wires(

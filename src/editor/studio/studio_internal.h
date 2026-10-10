@@ -516,6 +516,7 @@ typedef struct
     uint64_t hover_node;
     int hover_kind, hover_pin; /* -1 without a socket */
     int hover_edge;            /* edge index under the pointer, or -1 */
+    double hover_pin_since;    /* when the pointer reached that socket */
     bool space;
     double value_edit_frame; /* a value gesture has an open undo snapshot */
     bool value_editing;

@@ -979,6 +979,8 @@ void sg_pointer(studio *s)
     graph_hit hit = inside ? parse_hit(kit_hovered_path(g->kit)) : NO_HIT;
     bool on_control = inside && kit_pointer_on_control(g->kit);
     node *hovered = sg_node_by_id(s, hit.node);
+    uint64_t was_node = g->hover_node;
+    int was_kind = g->hover_kind, was_pin = g->hover_pin;
     g->hover_node = hovered ? hovered->id : 0;
     g->hover_kind = hovered && !on_control ? hit.kind : -1;
     g->hover_pin = hovered && !on_control ? hit.pin : -1;
@@ -997,6 +999,10 @@ void sg_pointer(studio *s)
         g->hover_node = hit.node;
         g->hover_kind = hit.kind;
         g->hover_pin = hit.pin;
+    }
+    if (g->hover_node != was_node || g->hover_kind != was_kind ||
+        g->hover_pin != was_pin) {
+        g->hover_pin_since = g->in.time;
     }
     auto_pan(s);
     if (g->gesture == STUDIO_GRAPH_PAN) {
