@@ -2550,9 +2550,11 @@ static void show_completions(kit *k, node *n, kit_code_editor *e)
     float height = fminf(COMPLETION_ROWS, acount(e->completions)) *
                        kit_metric(k, "--autocomplete-row-h") +
                    8;
-    /* Under the word being completed, inside the window. */
-    int typed = math_max(zep_cursor(e->zep) - e->completion_start, 0L);
-    float left = caret.x - (float)typed * e->advance / dp(k);
+    /* Under the word being completed, inside the window: a cell a
+       character, however many bytes it takes. */
+    char *query = completion_query(e);
+    float left = caret.x -
+                 (float)codepoints(query, strlen(query)) * e->advance / dp(k);
     left = math_clamp(left, POPUP_EDGE, math_max(POPUP_EDGE, k->in.width - COMPLETION_WIDTH - POPUP_EDGE));
     float below = k->in.height - 4 - caret.y - caret.h;
     float above = caret.y - 4;
@@ -2565,7 +2567,6 @@ static void show_completions(kit *k, node *n, kit_code_editor *e)
     kit_style(k, "max-height", frame_format(k, "%.1fdp", height));
     kit_attr(k, "role", "listbox");
     push_node(k, list);
-    char *query = completion_query(e);
     int accepted = -1;
     for (int i = 0; i < acount(e->completions); i++) {
         kit_push(k, frame_format(k, "i%d", i), NULL, "code-completion");
