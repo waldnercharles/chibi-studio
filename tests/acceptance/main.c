@@ -209,6 +209,19 @@ static bool projects_open(studio *s)
     return true;
 }
 
+/* Counter opens on its Tick handler, where its events are, rather than its
+ * default graph, which holds only its state (Blueprint's event graph); the
+ * edit below then goes to that default graph. */
+static bool opens_on_handler(studio *s)
+{
+    editor *e = s->scene->graph_editor;
+    const graph *shown = editor_active_graph(e);
+    REQUIRE(shown && shown->name && !strcmp(shown->name, "Tick"));
+    const graph *main = behavior_asset_find_graph(editor_behavior_asset(e), 0);
+    REQUIRE(main && editor_open_graph(e, main->graph_id) == 0);
+    return true;
+}
+
 static bool source_edit_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -221,6 +234,7 @@ static bool source_edit_frame(void *state)
     if (frames == 1) {
         REQUIRE(projects_open(s));
         REQUIRE(reports_warn(s));
+        REQUIRE(opens_on_handler(s));
         const node *literal = NULL;
         REQUIRE(check_counter(s, 1, false, &literal));
         s->prefs.code_apply_live = true;
