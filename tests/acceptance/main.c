@@ -2529,10 +2529,13 @@ static bool code_followups_frame(void *state)
             REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
             keys++;
             return press_key(SDLK_ESCAPE);
-        case 25:
+        case 25: {
+            /* Escape gave the focus back to the text. */
             REQUIRE(!s->code.menu.open);
-            s->code.find.refocus = true;
+            rml_element *focus = rml_context_focus_element(rml_backend_context(s->backend));
+            REQUIRE(focus && !strcmp(rml_element_tag_name(focus), "kit-code"));
             return studio_code_replace(s, asset_code_path(code), asset_code_text(code), shared_problem, NULL);
+        }
         case 27: {
             const kit_code_marker *m = asset_code_markers(code);
             REQUIRE(acount(m) == 2 && m[0].start == m[1].start);

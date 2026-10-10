@@ -2233,7 +2233,17 @@ static void code_menu(studio *s)
         );
         c->menu.opening = false;
     } else if (popover && !popover_open(popover)) {
+        /* Closed without a choice. Opening left the focus on the text's
+           editor; while it is still there, nowhere or in the menu, as after
+           Escape, it returns to the text, as a kit popup's returns to its
+           trigger. A press on another control keeps the focus it took, and
+           a choice refocuses the text as it runs. */
         c->menu.open = false;
+        rml_element *focus = rml_context_focus_element(rml_backend_context(s->backend));
+        c->find.refocus |= !focus ||
+                           rml_element_owner_document(focus) ==
+                               rml_element_owner_document(popover) ||
+                           rml_element_query_selector(focus, "kit-code");
     }
 }
 

@@ -1810,7 +1810,7 @@
       "current_source_sha256": "2bc7f3689067a8ad2916dfa0dfc0ec0147a874721d165ec20f1be8f202867690",
       "sha256": "9129512614d262430a863e4cf6ccac6f161691d62449660f709ced5dfa89421c",
       "source_path": "src/editor/studio/studio_code.c",
-      "consumer_sha256": "39a0422c97a95a5f02483274cb77261ac34ee48ea2c7e0557ee1286b3b6d512d"
+      "consumer_sha256": "f125065350b4ecdefc8c60d360c6af8057f9d22abda5ae56212036a8c23b0483"
     },
     "src/editor/studio/studio_collab.c": {
       "current_source_sha256": "a9eb6419e86730bd61449fef5116d2575a54ae5d21887d5d31c740c84313ddd6",
