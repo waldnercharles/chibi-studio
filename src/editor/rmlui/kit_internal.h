@@ -326,6 +326,7 @@ void forget_motion(kit *k, node *n);
 /* ---------- Toasts (kit_toast.c) ---------- */
 
 void toasts_frame(kit *k);
+void toast_free(toast *t);
 
 /* ---------- Drag and drop (kit_drag.c over ui/drag.h) ---------- */
 

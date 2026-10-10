@@ -61,7 +61,7 @@ static void step(const kit *k, spring *s, spring_params p, double dt)
     spring_step(s, p, dt);
 }
 
-static void toast_free(toast *t)
+void toast_free(toast *t)
 {
     free(t->title);
     free(t->description);
