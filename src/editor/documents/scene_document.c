@@ -521,8 +521,14 @@ int scene_authoring_load_value(app_scene_authoring *scene, av_value *value, cons
     invalidate_runtime_snapshot(scene);
     game_entities_reset(scene->live->runtime->entities);
     game_physics_reset(scene->live->runtime->physics);
+    game_physics3d_reset(scene->live->runtime->physics3d);
     int configured = game_physics_configure(
         scene->live->runtime->physics,
+        document->physics
+    );
+    assert(configured == 0);
+    configured = game_physics3d_configure(
+        scene->live->runtime->physics3d,
         document->physics
     );
     assert(configured == 0);

@@ -1247,8 +1247,12 @@ int app_scene_authoring_rename_instance(app_scene_authoring *scene, ecs_entity e
 
 static void apply_physics_settings(app_scene_authoring *scene, game_physics_settings settings)
 {
-    game_physics_reset(scene->live->runtime->physics);
-    int result = game_physics_configure(scene->live->runtime->physics, settings);
+    game_preview_runtime *runtime = scene->live->runtime;
+    game_physics_reset(runtime->physics);
+    game_physics3d_reset(runtime->physics3d);
+    int result = game_physics_configure(runtime->physics, settings);
+    assert(result == 0);
+    result = game_physics3d_configure(runtime->physics3d, settings);
     assert(result == 0);
     scene->scene_dirty = true;
     asset_index_invalidate(scene);
