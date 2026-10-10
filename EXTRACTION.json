@@ -1570,7 +1570,8 @@
     "src/editor/documents/scene_document.c": {
       "current_source_sha256": "98dcf951fd9aa56b582ff9de36ddfe2bf0ae0ea22b64f16179bbc1d9bb2762de",
       "sha256": "f85160094ed7aec755eaa8f5db4dc40000de7e786cb3ad8e501822b7e76acffb",
-      "source_path": "src/editor/documents/scene_document.c"
+      "source_path": "src/editor/documents/scene_document.c",
+      "consumer_sha256": "8d9bf144b45288b4f12d7bba81cffe8816c3eb31ba02e6f33335ffc0fe369896"
     },
     "src/editor/documents/scene_documents.c": {
       "current_source_sha256": "0edc732289f4ae30ac2cd901bcb663a6daee4f38a83d517446b35a16cdbfff61",
@@ -2379,7 +2380,8 @@
     "src/editor/workspace/scene_actors.c": {
       "current_source_sha256": "9ca880f393fd1fba61077bb6a52647105586c0ac18c6d007282a0672604e22db",
       "sha256": "3723b1a07058a05b99e5bfc683ecfbc4c6b1292e2b781c5cf3e37d57d1587a75",
-      "source_path": "src/editor/workspace/scene_actors.c"
+      "source_path": "src/editor/workspace/scene_actors.c",
+      "consumer_sha256": "f544c07364cc46f0d7b466b083714e39a9a6773682311ab9d2e27208da358b23"
     },
     "src/editor/workspace/scene_asset_drop.c": {
       "current_source_sha256": "068cafc2d0558fcccba9dc115eae52ef648c9f72aa134636f949b8ef9319df13",

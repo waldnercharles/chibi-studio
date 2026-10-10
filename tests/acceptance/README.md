@@ -51,6 +51,12 @@ turn, it checks that picking finds the turret at its world position and nothing
 at its unturned one, and that a duplicate offset in world space keeps the right
 local offset. It saves no file.
 
+`studio-acceptance --scene-physics --project-root PATH` takes another
+disposable copy. Its first hidden frame loads a scene with a dynamic 3D crate
+and steps 3D physics once. It checks that changing the scene's physics
+settings, and undoing the change, drop the crate's 3D body until the next step,
+as they do for 2D bodies. It saves no file.
+
 `studio-acceptance --scene-viewport --project-root PATH` takes another
 disposable copy and runs fourteen hidden fixed-dt frames. It loads a box with a
 spot inside it that nothing draws, and checks that the spot is listed for a
