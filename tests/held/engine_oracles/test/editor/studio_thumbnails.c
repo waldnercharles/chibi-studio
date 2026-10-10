@@ -135,6 +135,7 @@ static thumbs_fixture fixture_open(const char *root, const char *scene)
     studio_prefs defaults = studio_prefs_default();
     s->prefs.ui_scale = 1;
     s->prefs.assets_tile = STUDIO_ASSETS_TILE;
+    s->prefs.assets_list = false;
     s->prefs.workspace = defaults.workspace;
     memcpy(s->prefs.layouts, defaults.layouts, sizeof defaults.layouts);
     studio_active_layout(s)->editors[STUDIO_AREA_TOP] = STUDIO_EDITOR_ASSETS;

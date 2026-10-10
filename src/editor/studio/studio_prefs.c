@@ -49,6 +49,8 @@ catch(_)
 #endif
 
 #define PREFS_VERSION 2
+/* Before Assets had a view setting, its smallest tile size listed them. */
+#define PREVIOUS_ASSETS_LIST 40
 
 /* An area showing a panel saves as {"panel": "<name>"}. */
 static const char *const EDITORS[STUDIO_EDITOR_COUNT] = {
@@ -140,7 +142,7 @@ bool studio_prefs_equal(const studio_prefs *a, const studio_prefs *b)
         }
     }
     return a->workspace == b->workspace && a->tool == b->tool &&
-           a->assets_tile == b->assets_tile;
+           a->assets_tile == b->assets_tile && a->assets_list == b->assets_list;
 }
 
 static int name_index(const char *const *names, int count, yyjson_val *value, int fallback)
@@ -311,8 +313,13 @@ studio_prefs studio_prefs_read(const char *json)
         }
     }
     p.tool = name_index(TOOLS, SCENE_TOOL_COUNT, value_at(root, "scene.tool"), SCENE_TOOL_SELECT);
-    yyjson_val *tile = yyjson_obj_get(yyjson_obj_get(root, "assets"), "tileSize");
-    p.assets_tile = (int)number(tile, (float)p.assets_tile, STUDIO_ASSETS_LIST, STUDIO_ASSETS_TILE_MAX);
+    yyjson_val *assets = yyjson_obj_get(root, "assets");
+    yyjson_val *tile = yyjson_obj_get(assets, "tileSize");
+    p.assets_tile = (int)number(tile, (float)p.assets_tile, STUDIO_ASSETS_TILE_MIN, STUDIO_ASSETS_TILE_MAX);
+    yyjson_val *view = yyjson_obj_get(assets, "view");
+    p.assets_list = view ? yyjson_is_str(view) && !strcmp(yyjson_get_str(view), "list")
+                         : yyjson_is_int(tile) &&
+                               yyjson_get_int(tile) == PREVIOUS_ASSETS_LIST;
     yyjson_val *layout = yyjson_obj_get(root, "layout");
     p.workspace = workspace_index(yyjson_obj_get(layout, "workspace"), STUDIO_WORKSPACE_VERTICAL_SPLIT);
     yyjson_val *presets = yyjson_obj_get(layout, "presets");
@@ -456,6 +463,7 @@ char *studio_prefs_write(const studio_prefs *p, const char *saved)
     }
     yyjson_mut_val *assets = yyjson_mut_obj_add_obj(doc, root, "assets");
     yyjson_mut_obj_add_int(doc, assets, "tileSize", p->assets_tile);
+    yyjson_mut_obj_add_str(doc, assets, "view", p->assets_list ? "list" : "grid");
     yyjson_mut_val *layout = yyjson_mut_obj_add_obj(doc, root, "layout");
     yyjson_mut_obj_add_str(doc, layout, "workspace", WORKSPACES[p->workspace]);
     yyjson_mut_val *presets = yyjson_mut_obj_add_obj(doc, layout, "presets");

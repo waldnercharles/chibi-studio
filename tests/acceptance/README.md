@@ -77,6 +77,16 @@ framing, foreground layer priority, hidden-state filtering and selecting empty
 cells as part of one layer. They are removed before rendering. No source save or
 playback occurs.
 
+`studio-acceptance --asset-selection --project-root PATH` takes another
+disposable copy and adds three unused prototypes to it before Studio opens. Its
+hidden frames show the Assets list's prototypes, then click, Shift-click and
+Ctrl-click (Cmd on a Mac) rows and extend the selection with Shift and the
+arrows, checking the selection after each. Delete then removes the two selected
+prototypes' files as one change, and that change's undo puts both back. Counter
+stays untouched. A filter the list takes then leaves the grid's arrows on the
+tiles it shows. Pointer hit-testing and the Undo toast's button are not
+exercised.
+
 `studio-acceptance --export-game --project-root PATH` accepts another disposable
 copy. Its first hidden frame runs the Export Game command, which needs the SDK's
 `chibi`, `chibi-compile` and `chibi-player` that the build copies beside it. The

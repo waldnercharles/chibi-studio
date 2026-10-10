@@ -43,6 +43,20 @@ void app_refactor_free(app_refactor *plan)
     }
 }
 
+void app_refactor_join(app_refactor *into, app_refactor *from)
+{
+    for (int i = 0; i < acount(from->files); i++) {
+        apush(into->files, from->files[i]);
+    }
+    for (int i = 0; i < acount(from->guards); i++) {
+        apush(into->guards, from->guards[i]);
+    }
+    into->mentions += from->mentions;
+    afree(from->files);
+    afree(from->guards);
+    free(from);
+}
+
 int app_refactor_count(const app_refactor *plan)
 {
     int count = 0;
@@ -117,11 +131,16 @@ void refactor_sync(app_scene_authoring *scene)
     scene_tabs_sync_current(scene);
 }
 
-/* The index, fresh with every edit, and each asset's saved file. */
-static char **saved_texts(app_scene_authoring *scene)
+void app_scene_authoring_refactor_index(app_scene_authoring *scene)
 {
     refactor_sync(scene);
     app_scene_authoring_refresh_asset_index(scene);
+}
+
+/* The index, fresh with every edit, and each asset's saved file. */
+static char **saved_texts(app_scene_authoring *scene)
+{
+    app_scene_authoring_refactor_index(scene);
     const reference_index *index = scene->asset_index;
     int count = reference_index_asset_count(index);
     char **texts = xcalloc((size_t)count + 1, sizeof *texts);

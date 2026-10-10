@@ -5,6 +5,7 @@
 #include "editor/collab/collab.h"
 #include "editor/documents/asset_code.h"
 #include "editor/studio/studio_internal.h"
+#include "editor/workspace/asset_refactor.h"
 #include "editor/workspace/scene_internal.h"
 #include "support/array.h"
 #include "support/file_io.h"
@@ -35,6 +36,7 @@ static enum {
     GRAPH_VISIBILITY,
     UNIT_WARNINGS,
     SCENE_HIERARCHY,
+    ASSET_SELECTION,
     SCENE_VIEWPORT,
     PLAY_KEYS,
     PROMPTS
@@ -1019,6 +1021,144 @@ static bool scene_hierarchy_frame(void *state)
     return true;
 }
 
+/* Three unused prototypes, the only ones; Assets deletes declarative assets
+   (executable sources go through their own refactors). */
+static const char *const spares[] = { "SpareA", "SpareB", "SpareC" };
+
+static bool spare_path(const char *name, char *path, size_t size)
+{
+    int length = snprintf(path, size, "%s/content/prototypes/%s.kdl", project, name);
+    REQUIRE(length > 0 && (size_t)length < size);
+    return true;
+}
+
+static bool write_spare(const char *name)
+{
+    char path[1024], text[128];
+    REQUIRE(spare_path(name, path, sizeof path));
+    snprintf(text, sizeof text, "name \"%s\"\ncomponents {\n    (object)GAME.GameTransform\n}\n", name);
+    FILE *file = fopen(path, "wb");
+    REQUIRE(file);
+    bool written = fputs(text, file) >= 0;
+    REQUIRE(fclose(file) == 0 && written);
+    return true;
+}
+
+static bool write_spares()
+{
+    char folder[1024];
+    int length = snprintf(folder, sizeof folder, "%s/content/prototypes", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof folder);
+    REQUIRE(mkdir(folder, 0777) == 0);
+    for (int i = 0; i < 3; i++) {
+        REQUIRE(write_spare(spares[i]));
+    }
+    return true;
+}
+
+static bool spare_exists(const char *name)
+{
+    char path[1024];
+    struct stat info;
+    return spare_path(name, path, sizeof path) && stat(path, &info) == 0;
+}
+
+/* A click on the prototype's row, with modifier keys. */
+static bool click_asset(studio *s, const char *name, unsigned modifiers)
+{
+    int id = reference_index_find_name(app_scene_authoring_asset_index(s->scene), REFERENCE_ASSET_PROTOTYPE, name);
+    REQUIRE(id >= 0);
+    ui_activation a = { .argc = 1, .modifiers = modifiers };
+    snprintf(a.args[0], sizeof a.args[0], "%d", id);
+    studio_assets_action(s, "click", &a);
+    return true;
+}
+
+/* The primary selection, and the assets marked with it in order. */
+static bool selection_is(studio *s, const char *selected, const char *marked)
+{
+    char names[256] = "";
+    for (int i = 0; i < acount(s->assets_marked); i++) {
+        size_t used = strlen(names);
+        snprintf(
+            names + used,
+            sizeof names - used,
+            "%s%s",
+            i ? " " : "",
+            s->assets_marked[i].name
+        );
+    }
+    bool same = !strcmp(s->assets_selected, selected) && !strcmp(names, marked);
+    if (!same) {
+        fprintf(stderr, "Studio assets selected %s with \"%s\"\n", s->assets_selected, names);
+    }
+    return same;
+}
+
+/* The toast's Undo of the last change. */
+static bool undo_change(studio *s)
+{
+    app_refactor *undo = s->refactor.undo, *redo = NULL;
+    REQUIRE(undo && s->refactor.undo_toast);
+    s->refactor.undo = NULL;
+    kit_toast_dismiss(s->kit, s->refactor.undo_toast);
+    s->refactor.undo_toast = 0;
+    char error[256] = "";
+    REQUIRE(app_scene_authoring_apply_refactor(s->scene, undo, &redo, error, sizeof error) == 0);
+    app_refactor_free(undo);
+    app_refactor_free(redo);
+    return true;
+}
+
+/* A file that sorts before the selection appears while the index waits to
+   be rebuilt, as it does while a pointer is down or an editor has the keys.
+   Deleting rebuilds it, renumbering the assets, yet removes the selected
+   ones. */
+static bool delete_after_index_change(studio *s)
+{
+    unsigned toggle = s->mac ? RML_KM_META : RML_KM_CTRL;
+    REQUIRE(click_asset(s, "SpareA", 0) && click_asset(s, "SpareC", toggle));
+    REQUIRE(write_spare("Spare0"));
+    app_scene_authoring_refresh_content(s->scene);
+    REQUIRE(studio_assets_key(s, SDLK_DELETE, 0));
+    REQUIRE(spare_exists("Spare0") && spare_exists("SpareB"));
+    REQUIRE(!spare_exists("SpareA") && !spare_exists("SpareC") && undo_change(s));
+    char path[1024];
+    REQUIRE(spare_path("Spare0", path, sizeof path) && remove(path) == 0);
+    app_scene_authoring_refresh_content(s->scene);
+    REQUIRE(spare_exists("SpareA") && spare_exists("SpareC"));
+    return true;
+}
+
+/* Clicks and the keys select several assets, which Delete removes as one
+   change that one Undo restores. */
+static bool select_and_delete(studio *s)
+{
+    unsigned toggle = s->mac ? RML_KM_META : RML_KM_CTRL;
+    REQUIRE(click_asset(s, "SpareA", 0) && selection_is(s, "SpareA", ""));
+    REQUIRE(click_asset(s, "SpareC", RML_KM_SHIFT) && selection_is(s, "SpareC", "SpareA SpareB"));
+    REQUIRE(click_asset(s, "SpareB", toggle) && selection_is(s, "SpareC", "SpareA"));
+    /* Shift and the arrows extend from where the plain click started. */
+    REQUIRE(studio_assets_key(s, SDLK_UP, SDL_KMOD_SHIFT));
+    REQUIRE(selection_is(s, "SpareB", "SpareA"));
+    REQUIRE(studio_assets_key(s, SDLK_UP, SDL_KMOD_SHIFT));
+    REQUIRE(selection_is(s, "SpareA", ""));
+    REQUIRE(studio_assets_key(s, SDLK_UP, SDL_KMOD_SHIFT));
+    REQUIRE(selection_is(s, "SpareA", ""));
+    REQUIRE(studio_assets_key(s, SDLK_DOWN, SDL_KMOD_SHIFT));
+    REQUIRE(studio_assets_key(s, SDLK_DOWN, SDL_KMOD_SHIFT));
+    REQUIRE(selection_is(s, "SpareC", "SpareA SpareB"));
+    REQUIRE(click_asset(s, "SpareB", toggle) && selection_is(s, "SpareC", "SpareA"));
+    REQUIRE(studio_assets_key(s, SDLK_DELETE, 0));
+    REQUIRE(!spare_exists("SpareA") && spare_exists("SpareB") && !spare_exists("SpareC"));
+    REQUIRE(unchanged_source());
+    /* The toast's Undo, which restores both files. */
+    REQUIRE(undo_change(s));
+    REQUIRE(spare_exists("SpareA") && spare_exists("SpareB") && spare_exists("SpareC"));
+    edits++;
+    return true;
+}
+
 /* A box, and inside it a spot with nothing to draw, which a marker shows. */
 static const char marked_scene
     [] = "version 1\nname \"Scene\"\n(array)entities {\n"
@@ -1164,6 +1304,55 @@ static bool played_scene(studio *s)
     );
     edits++;
     return true;
+}
+
+/* The grid's arrows move among the tiles it shows: a filter the list took
+   while the grid was hidden leaves none of its old lines behind. */
+static bool grid_after_list_filter(studio *s)
+{
+    REQUIRE(click_asset(s, "SpareC", 0) && selection_is(s, "SpareC", ""));
+    ui_activation grid = { .argc = 1 };
+    snprintf(grid.args[0], sizeof grid.args[0], "0");
+    studio_assets_action(s, "view", &grid);
+    REQUIRE(studio_assets_key(s, SDLK_RIGHT, 0) && selection_is(s, "SpareC", ""));
+    s->assets_filter[0] = '\0';
+    return true;
+}
+
+static bool asset_selection_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= 6);
+    switch (frames) {
+        case 1:
+            /* A file saved before the view setting kept list view as the
+               smallest tile size. */
+            REQUIRE(studio_prefs_read("{\"assets\":{\"tileSize\":40}}").assets_list);
+            REQUIRE(!studio_prefs_read("{\"assets\":{\"tileSize\":40,\"view\":\"grid\"}}")
+                         .assets_list);
+            REQUIRE(!studio_prefs_read("{\"assets\":{\"tileSize\":96}}").assets_list);
+            studio_show_editor(s, STUDIO_EDITOR_ASSETS);
+            s->prefs.assets_list = true;
+            s->assets_kind = REFERENCE_ASSET_PROTOTYPE;
+            return true;
+        case 2: return select_and_delete(s);
+        case 3:
+            /* After a frame has drawn the restored assets. */
+            REQUIRE(delete_after_index_change(s));
+            s->prefs.assets_list = false;
+            return true;
+        case 4:
+            s->prefs.assets_list = true;
+            snprintf(s->assets_filter, sizeof s->assets_filter, "SpareC");
+            return true;
+        case 5: return grid_after_list_filter(s);
+        default:
+            /* The grid lays every tile out again. */
+            REQUIRE(studio_assets_key(s, SDLK_LEFT, 0) && selection_is(s, "SpareB", ""));
+            return true;
+    }
 }
 
 /* The box and CROWD undrawn spots inside it, the last selected. */
@@ -1366,6 +1555,7 @@ bool studio_acceptance_frame(void *state)
             break;
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
+        case ASSET_SELECTION: callback_ok = asset_selection_frame(state); break;
         case SCENE_VIEWPORT: callback_ok = scene_viewport_frame(state); break;
         case PLAY_KEYS: callback_ok = play_keys_frame(state); break;
         case PROMPTS: callback_ok = prompts_frame(state); break;
@@ -1489,6 +1679,19 @@ TEST_CASE(scene_hierarchy)
     return true;
 }
 
+TEST_CASE(asset_selection)
+{
+    REQUIRE(write_spares());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         "6",
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == 6 && edits == 1);
+    printf("Studio asset selection accepted\n");
+    return true;
+}
+
 TEST_CASE(scene_viewport)
 {
     char *args[] = { (char *)executable, "--headless",
@@ -1570,18 +1773,20 @@ int main(int argc, char **argv)
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
     bool units = argc == 4 && !strcmp(argv[1], "--unit-warnings");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
+    bool assets = argc == 4 && !strcmp(argv[1], "--asset-selection");
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
     bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
     bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
     if ((!source_edit && !code_keys && !exporting && !visibility && !units &&
-         !hierarchy && !viewport && !playing && !prompting) ||
+         !hierarchy && !assets && !viewport && !playing && !prompting) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--export-game|--graph-visibility|"
-            "--unit-warnings|--scene-hierarchy|--scene-viewport|--play-keys|"
-            "--unsaved-prompts --project-root PATH | --scene-cursors\n"
+            "--unit-warnings|--scene-hierarchy|--asset-selection|"
+            "--scene-viewport|--play-keys|--unsaved-prompts --project-root "
+            "PATH | --scene-cursors\n"
         );
         return 2;
     }
@@ -1603,6 +1808,7 @@ int main(int argc, char **argv)
          : visibility  ? GRAPH_VISIBILITY
          : units       ? UNIT_WARNINGS
          : hierarchy   ? SCENE_HIERARCHY
+         : assets      ? ASSET_SELECTION
          : viewport    ? SCENE_VIEWPORT
          : playing     ? PLAY_KEYS
                        : PROMPTS;
@@ -1615,6 +1821,7 @@ int main(int argc, char **argv)
             break;
         case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
+        case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;
         case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
         case PLAY_KEYS: RUN_TEST_CASE(play_keys); break;
         case PROMPTS: RUN_TEST_CASE(unsaved_prompts); break;
