@@ -178,7 +178,7 @@ jobs:
                     : blocked
                       ? `Approval is blocked by hold or an open dependency on pull request #${blocked.number}.`
                       : waiting
-                        ? `Pull request #${waiting.number} awaits a current-head approval from Copilot or a maintainer, or a current-head Codex review followed by 👍 from ${codexLogin}.`
+                        ? `Pull request #${waiting.number} awaits a current-head approval from Copilot or a maintainer, or a current-head Codex review followed by thumbs-up from ${codexLogin}.`
                         : "No open pull request shares this head commit.";
               const state = approved ? "success" : "failure";
               const description = summary.slice(0, 140);
