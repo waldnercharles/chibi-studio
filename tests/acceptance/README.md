@@ -32,6 +32,24 @@ it into the disposable copy. Another Enter and a paste follow within the typing
 pause, and two undos return to the saved text: Save ends the typing burst and a
 paste is an undo step of its own. It runs fourteen hidden frames.
 
+`studio-acceptance --code-followups --project-root PATH` takes another
+disposable copy and runs thirty-four hidden frames on Counter. With Toggle
+Line Comment rebound to Control+C, that chord comments the state line instead
+of copying, and with Vim on, Control+/ uncomments it. A typed character, Find
+Again (F3) and typing over the match are two undo steps: a command that moves
+the caret ends the typing burst. A right click opens the text's menu, which
+takes the keys: a typeahead letter highlights an item and changes neither the
+caret nor the text. With two problems on one byte, F8 visits both and
+Shift+F8 goes back. Counter stays unsaved.
+
+`studio-acceptance --code-glyphs --project-root PATH` takes another disposable
+copy, adds a prototype named Crêpes and a UI document, Probe, and runs
+twenty-eight hidden frames. In the open scene's KDL, Control+Space in the
+strings "Crê" and "Cre" opens the completion list at the same left edge: the
+list starts under the word a cell a character, not a byte. In Probe's markup,
+with Control held and the pointer resting on a class its styles do not define,
+the class is no link; once the class becomes one they define, it is.
+
 `studio-acceptance --unit-warnings --project-root PATH` takes another disposable
 copy. It shows Counter in the Text Editor and replaces its source with one that
 assigns a speed (u/s) to a radius (u). By the next hidden frame that line must

@@ -51,7 +51,9 @@ static enum {
     ASSET_SELECTION,
     SCENE_VIEWPORT,
     PLAY_KEYS,
-    PROMPTS
+    PROMPTS,
+    CODE_FOLLOWUPS,
+    CODE_GLYPHS
 } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
@@ -2349,6 +2351,300 @@ static bool scene_viewport_frame(void *state)
     }
 }
 
+/* More of the Text Editor's keys than the code-keys selector, which is
+   near the time limit, has room for: a command rebound to a chord the
+   editor takes, Mod+/ under Vim, Find Again ending a typing burst, the
+   context menu's keys and F8 through problems on one byte. */
+#define FOLLOWUP_FRAMES 34
+/* Where the text's glyphs are: the completion list under a word that is
+   not ASCII, and the Mod+hover link of a UI symbol. */
+#define GLYPH_FRAMES 28
+/* Two problems on one byte: the name is unknown, and so not writable. */
+static const char shared_problem[] = "behavior Counter {\n"
+                                     "    state count: int = 1\n"
+                                     "    on Tick {\n"
+                                     "        missing = 1\n"
+                                     "    }\n"
+                                     "}\n";
+static const char crepe_lines[] = "probe \"Cr\xc3\xaa\"\nprobe \"Cre\"\n";
+/* Class names long enough to fill the text's first row, where the pointer
+   rests on them. */
+#define LONG_NAME                                                              \
+    "-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrs" \
+    "tuvwxyz"
+static const char probe_rml[] = "<div class=\"lonely" LONG_NAME "\"></div>\n";
+
+static bool write_content(const char *name, const char *text)
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/%s", project, name);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    FILE *file = fopen(path, "wb");
+    REQUIRE(file);
+    bool written = fputs(text, file) >= 0;
+    REQUIRE(fclose(file) == 0 && written);
+    return true;
+}
+
+/* A prototype whose name is not ASCII, which completes in the scene's
+   strings, and a UI document with a class its styles define and one they
+   do not. */
+static bool write_glyph_content()
+{
+    char folder[1024];
+    for (int i = 0; i < 2; i++) {
+        int length = snprintf(folder, sizeof folder, "%s/content/%s", project, i ? "ui" : "prototypes");
+        REQUIRE(length > 0 && (size_t)length < sizeof folder);
+        REQUIRE(mkdir(folder, 0777) == 0);
+    }
+    REQUIRE(
+        write_content("prototypes/Cr\xc3\xaapes.kdl", "name \"Cr\xc3\xaapes\"\ncomponents {\n    (object)GAME.GameTransform\n}\n")
+    );
+    REQUIRE(write_content("ui/Probe.rml", probe_rml));
+    REQUIRE(write_content("ui/Probe.rcss", ".known" LONG_NAME " { color: red; }\n"));
+    return true;
+}
+
+/* The first element `selector` finds in any of Studio's documents. */
+static rml_element *find_element(studio *s, const char *selector)
+{
+    rml_context *context = rml_backend_context(s->backend);
+    for (int i = 0; i < rml_context_document_count(context); i++) {
+        rml_element *found = rml_element_query_selector(rml_context_document(context, i), selector);
+        if (found) {
+            return found;
+        }
+    }
+    return NULL;
+}
+
+/* Moves the pointer into the text, `across` its width along its first
+   row; *x and *y are the point, in window points. */
+static bool point_into_text(studio *s, float across, float *x, float *y)
+{
+    rml_element *el = find_element(s, "kit-code");
+    REQUIRE(el);
+    rml_vec2 at = rml_element_absolute_offset(el, RML_BOX_CONTENT);
+    rml_vec2 size = rml_element_box_size(el, RML_BOX_CONTENT);
+    float points = s->prefs.ui_scale / studio_pixel_ratio(s);
+    *x = (at.x + size.x * across) * points;
+    *y = at.y * points + 6 * s->prefs.ui_scale;
+    return push_mouse(SDL_EVENT_MOUSE_MOTION, *x, *y, 0, 0);
+}
+
+static bool push_right_click(float x, float y)
+{
+    SDL_WindowID window = window_id();
+    REQUIRE(window);
+    for (int down = 1; down >= 0; down--) {
+        SDL_Event e = { .button = { .type = down ? SDL_EVENT_MOUSE_BUTTON_DOWN
+                                                 : SDL_EVENT_MOUSE_BUTTON_UP,
+                                    .windowID = window,
+                                    .button = SDL_BUTTON_RIGHT,
+                                    .down = down,
+                                    .clicks = 1,
+                                    .x = x,
+                                    .y = y } };
+        REQUIRE(SDL_PushEvent(&e));
+    }
+    return true;
+}
+
+/* Where the completion list's left edge is, in context pixels. */
+static bool completion_left(studio *s, float *left)
+{
+    rml_element *list = find_element(s, ".code-completions");
+    REQUIRE(list);
+    *left = rml_element_absolute_offset(list, RML_BOX_BORDER).x;
+    return true;
+}
+
+/* The caret after `after`'s first occurrence in the editor's text. */
+static bool caret_after(kit_code_editor *e, const char *after)
+{
+    const char *text = kit_code_text(e, NULL);
+    const char *at = strstr(text, after);
+    REQUIRE(at);
+    kit_code_set_cursor(e, (int)(at - text + strlen(after)));
+    return true;
+}
+
+/* Whether the text underlines a symbol as a link. */
+static bool linked(studio *s)
+{
+    rml_element *el = find_element(s, "kit-code");
+    REQUIRE(el);
+    return rml_element_has_attribute(el, "data-link");
+}
+
+static bool code_followups_frame(void *state)
+{
+    static int caret;
+    float x, y;
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= FOLLOWUP_FRAMES);
+    asset_code *code = counter_code(s);
+    REQUIRE(code);
+    kit_code_editor *e = asset_code_editor(code);
+    switch (frames) {
+        case 1: studio_show_editor(s, STUDIO_EDITOR_CODE); return true;
+        case 3:
+            /* Toggle Line Comment rebound to the chord that copies. */
+            snprintf(s->prefs.shortcuts[STUDIO_COMMAND_TOGGLE_LINE_COMMENT], STUDIO_CHORD_SIZE, "Mod+C");
+            s->code.find.refocus = true;
+            return caret_after(e, "sta");
+        case 5: keys++; return press_chord(SDLK_C, SDL_KMOD_CTRL);
+        case 6:
+            /* The editor takes preferences as it draws, after the frame's
+               keys. */
+            s->prefs.shortcuts[STUDIO_COMMAND_TOGGLE_LINE_COMMENT][0] = '\0';
+            s->prefs.code_vim = true;
+            return true;
+        case 8:
+            REQUIRE(!strcmp(asset_code_text(code), commented_bytes));
+            keys++;
+            return press_chord(SDLK_SLASH, SDL_KMOD_CTRL);
+        case 11:
+            REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
+            s->prefs.code_vim = false;
+            kit_code_set_cursor(e, 0);
+            snprintf(s->code.find.query, sizeof s->code.find.query, "count");
+            return true;
+        case 12: return type_text("x");
+        case 14: keys++; return press_key(SDLK_F3);
+        case 16: return type_text("y");
+        case 18: {
+            /* Find Again ended the burst: one undo takes back only the
+               typing at the match. */
+            REQUIRE(strstr(asset_code_text(code), "y"));
+            REQUIRE(asset_code_replay(code, false, false));
+            const char *text = asset_code_text(code);
+            REQUIRE(text[0] == 'x' && !strcmp(text + 1, counter_bytes));
+            REQUIRE(asset_code_replay(code, false, false));
+            REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
+            REQUIRE(caret_after(e, "sta"));
+            return true;
+        }
+        case 19:
+            REQUIRE(point_into_text(s, 0.5f, &x, &y));
+            return push_right_click(x, y);
+        case 21:
+            REQUIRE(s->code.menu.open);
+            caret = kit_code_cursor(e);
+            keys++;
+            /* A letter the menu's typeahead reads arrives as text too. */
+            REQUIRE(push_key(SDLK_G, SDL_KMOD_NONE, true) && type_text("g"));
+            return push_key(SDLK_G, SDL_KMOD_NONE, false);
+        case 23:
+            /* The menu takes the keys: typeahead highlights an item, and
+               neither the caret nor the text changes. */
+            REQUIRE(find_element(s, "#code-menu [data-highlighted]"));
+            REQUIRE(kit_code_cursor(e) == caret);
+            REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
+            keys++;
+            return press_key(SDLK_ESCAPE);
+        case 25:
+            REQUIRE(!s->code.menu.open);
+            s->code.find.refocus = true;
+            return studio_code_replace(s, asset_code_path(code), asset_code_text(code), shared_problem, NULL);
+        case 27: {
+            const kit_code_marker *m = asset_code_markers(code);
+            REQUIRE(acount(m) == 2 && m[0].start == m[1].start);
+            caret = m[0].start;
+            kit_code_set_cursor(e, 0);
+            keys++;
+            return press_key(SDLK_F8);
+        }
+        case 29:
+        case 31:
+        case 33:
+            /* F8 visits both problems on the byte, and Shift+F8 goes back. */
+            REQUIRE(kit_code_cursor(e) == caret);
+            REQUIRE(s->code.problem.index == (frames == 31));
+            if (frames == 33) {
+                return true;
+            }
+            keys++;
+            return press_chord(SDLK_F8, frames == 31 ? SDL_KMOD_SHIFT : 0);
+        default: return true;
+    }
+}
+
+static bool code_glyphs_frame(void *state)
+{
+    static float left;
+    float x, y;
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= GLYPH_FRAMES);
+    if (frames == 1) {
+        studio_show_editor(s, STUDIO_EDITOR_CODE);
+        return true;
+    }
+    asset_code *scene = scene_code(s);
+    REQUIRE(scene);
+    kit_code_editor *e = asset_code_editor(scene);
+    switch (frames) {
+        case 3:
+            kit_code_set_cursor(e, (int)strlen(kit_code_text(e, NULL)));
+            kit_code_paste(e, crepe_lines);
+            s->code.find.refocus = true;
+            return true;
+        case 5:
+        case 10:
+            REQUIRE(caret_after(e, frames == 5 ? "\"Cr\xc3\xaa" : "\"Cre"));
+            keys++;
+            return press_chord(SDLK_SPACE, SDL_KMOD_CTRL);
+        case 8:
+            REQUIRE(completion_left(s, &left));
+            return press_key(SDLK_ESCAPE);
+        case 13: {
+            /* The list starts under the word, a cell a character. */
+            float ascii;
+            REQUIRE(completion_left(s, &ascii));
+            REQUIRE(fabsf(ascii - left) < 0.5f);
+            char path[1024];
+            int length = snprintf(path, sizeof path, "%s/content/ui/Probe.rml", project);
+            REQUIRE(length > 0 && (size_t)length < sizeof path);
+            REQUIRE(press_key(SDLK_ESCAPE));
+            return studio_open_ui_source(s, path, 1);
+        }
+        case 18:
+            s->code.find.refocus = true;
+            return point_into_text(s, 0.3f, &x, &y);
+        case 19: return push_key(SDLK_LCTRL, SDL_KMOD_LCTRL, true);
+        case 22: {
+            /* The pointer rests on the class, which has no other
+               definition, so it is no link. */
+            const char *text = kit_code_text(s->code.editor, NULL);
+            const char *name = strstr(text, "lonely");
+            int under = kit_code_link(s->code.editor);
+            REQUIRE(
+                name && under > name - text &&
+                under < (int)(name - text + strlen("lonely" LONG_NAME))
+            );
+            REQUIRE(!linked(s));
+            /* The class its styles define takes its place under the
+               pointer. */
+            kit_code_set_selection(
+                s->code.editor,
+                (int)(name - text),
+                (int)(name - text + strlen("lonely"))
+            );
+            kit_code_paste(s->code.editor, "known");
+            return true;
+        }
+        case 26:
+            REQUIRE(strstr(kit_code_text(s->code.editor, NULL), "known" LONG_NAME));
+            REQUIRE(linked(s));
+            return push_key(SDLK_LCTRL, SDL_KMOD_NONE, false);
+        default: return true;
+    }
+}
+
 bool studio_acceptance_frame(void *state)
 {
     switch (mode) {
@@ -2367,6 +2663,8 @@ bool studio_acceptance_frame(void *state)
         case SCENE_VIEWPORT: callback_ok = scene_viewport_frame(state); break;
         case PLAY_KEYS: callback_ok = play_keys_frame(state); break;
         case PROMPTS: callback_ok = prompts_frame(state); break;
+        case CODE_FOLLOWUPS: callback_ok = code_followups_frame(state); break;
+        case CODE_GLYPHS: callback_ok = code_glyphs_frame(state); break;
     }
     return callback_ok;
 }
@@ -2613,6 +2911,34 @@ TEST_CASE(unsaved_prompts)
     return true;
 }
 
+TEST_CASE(code_followups)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(FOLLOWUP_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == FOLLOWUP_FRAMES && keys == 8);
+    REQUIRE(unchanged_source());
+    printf("Studio code follow-ups accepted: frames=%d keys=%d\n", frames, keys);
+    return true;
+}
+
+TEST_CASE(code_glyphs)
+{
+    REQUIRE(write_glyph_content());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(GLYPH_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == GLYPH_FRAMES && keys == 2);
+    printf("Studio code glyphs accepted: frames=%d keys=%d\n", frames, keys);
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
@@ -2633,9 +2959,11 @@ int main(int argc, char **argv)
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
     bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
     bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
+    bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
+    bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
          !keys_mode && !labels && !units && !hierarchy && !assets &&
-         !viewport && !playing && !prompting) ||
+         !viewport && !playing && !prompting && !followups && !glyphs) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
@@ -2643,7 +2971,8 @@ int main(int argc, char **argv)
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
             "--graph-visibility|--graph-keys|--graph-labels|--unit-warnings|"
             "--scene-hierarchy|"
-            "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts "
+            "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts|"
+            "--code-followups|--code-glyphs "
             "--project-root PATH | --scene-cursors\n"
         );
         return 2;
@@ -2672,7 +3001,9 @@ int main(int argc, char **argv)
          : assets      ? ASSET_SELECTION
          : viewport    ? SCENE_VIEWPORT
          : playing     ? PLAY_KEYS
-                       : PROMPTS;
+         : prompting   ? PROMPTS
+         : followups   ? CODE_FOLLOWUPS
+                       : CODE_GLYPHS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -2689,6 +3020,8 @@ int main(int argc, char **argv)
         case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
         case PLAY_KEYS: RUN_TEST_CASE(play_keys); break;
         case PROMPTS: RUN_TEST_CASE(unsaved_prompts); break;
+        case CODE_FOLLOWUPS: RUN_TEST_CASE(code_followups); break;
+        case CODE_GLYPHS: RUN_TEST_CASE(code_glyphs); break;
     }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;

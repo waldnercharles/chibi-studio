@@ -970,6 +970,14 @@ void studio_behavior_show(studio *s, int view)
     }
 }
 
+/* A command moves the caret: the next frame reports the move as it does
+   the keys', so it ends a typing burst as a click would. */
+static void move_caret(kit_code_editor *e, int byte)
+{
+    kit_code_set_cursor(e, byte);
+    kit_code_post(e, KIT_CODE_CURSOR);
+}
+
 void studio_code_reveal_node(studio *s, const studio_node_ref *at)
 {
     scene_document_tab *tab = active_asset(s);
@@ -987,7 +995,7 @@ void studio_code_reveal_node(studio *s, const studio_node_ref *at)
     asset_code *code = asset_editor(s, tab);
     int start, end;
     if (code && asset_code_location(code, at->graph_id, at->node_id, &start, &end)) {
-        kit_code_set_cursor(asset_code_editor(code), start);
+        move_caret(asset_code_editor(code), start);
     }
 }
 
@@ -1041,7 +1049,7 @@ bool studio_code_open_place(studio *s, const ui_code_place *place)
             if (!code) {
                 return false;
             }
-            kit_code_set_cursor(asset_code_editor(code), place->offset);
+            move_caret(asset_code_editor(code), place->offset);
             studio_show_editor(s, STUDIO_EDITOR_CODE);
             return true;
         }
@@ -1200,14 +1208,30 @@ static int problem_byte(const char *text, const kit_code_marker *marker)
                                        : line_offset(text, marker->line);
 }
 
-/* The nearest problem after the byte, or before it going back, or -1. */
-static int problem_from(const char *text, const kit_code_marker *markers, int from, int direction)
+/* The index of the problem F8 last went to in a document's part while the
+   caret stays where it went, else -1. */
+static int problem_kept(const studio_code *c, const void *document, int part, int cursor)
 {
+    const studio_code_problem *p = &c->problem;
+    bool kept = p->document == document && p->part == part && p->at == cursor;
+    return kept ? p->index : -1;
+}
+
+/* The nearest problem after the byte, or before it going back, or -1.
+   Problems on one byte take turns in their order, from `kept` when it is
+   one of them. */
+static int problem_from(const char *text, const kit_code_marker *markers, int from, int kept, int direction)
+{
+    bool on = kept >= 0 && kept < acount(markers) &&
+              problem_byte(text, &markers[kept]) == from;
+    int tie = on ? kept : direction > 0 ? INT_MAX : -1;
     int found = -1, best = 0;
     for (int i = 0; i < acount(markers); i++) {
         int at = problem_byte(text, &markers[i]);
-        bool beyond = direction > 0 ? at > from : at < from;
-        if (beyond && (found < 0 || (direction > 0 ? at < best : at > best))) {
+        bool beyond = direction > 0 ? at > from || (at == from && i > tie)
+                                    : at < from || (at == from && i < tie);
+        bool nearer = found < 0 || (direction > 0 ? at < best : at >= best);
+        if (beyond && nearer) {
             found = i;
             best = at;
         }
@@ -1215,28 +1239,30 @@ static int problem_from(const char *text, const kit_code_marker *markers, int fr
     return found;
 }
 
-/* The problem after or before the byte, wrapping past the text's end. */
-static int problem_around(const char *text, const kit_code_marker *markers, int from, int direction)
+/* The first problem past the text's start going on, or the last going
+   back. */
+static int problem_edge(const char *text, const kit_code_marker *markers, int direction)
 {
-    int found = problem_from(text, markers, from, direction);
-    return found >= 0
-             ? found
-             : problem_from(text, markers, direction > 0 ? -1 : INT_MAX, direction);
+    return problem_from(text, markers, direction > 0 ? -1 : INT_MAX, -1, direction);
 }
 
 /* F8 in an asset's source: the caret on the next problem, its message
-   beside it. */
-static void step_asset_problem(asset_code *code, int direction)
+   beside it, wrapping past the text's end. */
+static void step_asset_problem(studio_code *c, asset_code *code, int direction)
 {
     kit_code_editor *e = asset_code_editor(code);
     const kit_code_marker *markers = asset_code_markers(code);
     const char *text = kit_code_text(e, NULL);
-    int found = problem_around(text, markers, kit_code_cursor(e), direction);
+    int cursor = kit_code_cursor(e);
+    int found = problem_from(text, markers, cursor, problem_kept(c, code, -1, cursor), direction);
+    found = found >= 0 ? found : problem_edge(text, markers, direction);
     if (found < 0) {
         kit_code_notice(e, "No problems");
         return;
     }
-    kit_code_set_cursor(e, problem_byte(text, &markers[found]));
+    int at = problem_byte(text, &markers[found]);
+    c->problem = (studio_code_problem){ code, -1, found, at };
+    move_caret(e, at);
     kit_code_notice(e, markers[found].message);
 }
 
@@ -1247,19 +1273,19 @@ static void step_ui_problem(studio *s, ui_buffer *b, int direction)
 {
     studio_code *c = &s->code;
     ui_part part = b->part, other = part == UI_PART_RML ? UI_PART_RCSS : UI_PART_RML;
+    int cursor = kit_code_cursor(c->editor);
     int found = problem_from(
         kit_code_text(c->editor, NULL),
         c->markers[part],
-        kit_code_cursor(c->editor),
+        cursor,
+        problem_kept(c, b, part, cursor),
         direction
     );
     if (found < 0 && acount(c->markers[other])) {
         part = other;
     }
     const char *text = ui_buffer_text(b, part);
-    found = found >= 0
-              ? found
-              : problem_from(text, c->markers[part], direction > 0 ? -1 : INT_MAX, direction);
+    found = found >= 0 ? found : problem_edge(text, c->markers[part], direction);
     if (found < 0) {
         kit_code_notice(c->editor, "No problems");
         return;
@@ -1267,6 +1293,7 @@ static void step_ui_problem(studio *s, ui_buffer *b, int direction)
     const kit_code_marker *marker = &c->markers[part][found];
     c->reveal = marker->line;
     c->reveal_offset = problem_byte(text, marker);
+    c->problem = (studio_code_problem){ b, part, found, c->reveal_offset };
     c->reveal_wait = part != b->part ? REVEAL_FRAMES : 0;
     snprintf(c->reveal_notice, sizeof c->reveal_notice, "%s", marker->message);
     b->part = part;
@@ -1858,6 +1885,7 @@ static void show_match(studio_code *c, kit_code_editor *e, int at)
     c->find.at = at;
     if (at >= 0) {
         kit_code_select(e, at, at + (int)strlen(c->find.query));
+        kit_code_post(e, KIT_CODE_CURSOR); /* as move_caret */
     }
 }
 
@@ -2156,7 +2184,7 @@ void studio_code_command(studio *s, studio_command command)
         case STUDIO_COMMAND_PREVIOUS_PROBLEM: {
             int direction = command == STUDIO_COMMAND_NEXT_PROBLEM ? 1 : -1;
             if (code) {
-                step_asset_problem(code, direction);
+                step_asset_problem(&s->code, code, direction);
             } else {
                 step_ui_problem(s, shown(s)->ui, direction);
             }
@@ -2192,6 +2220,10 @@ static void code_menu(studio *s)
     c->menu.mounted = true;
     rml_element *popover = host ? rml_element_by_id(host, "code-menu") : NULL;
     if (popover && c->menu.opening) {
+        /* The menu reads its keys wherever the focus is, but a focused
+           text would also type the letters its typeahead reads, so the text
+           lets go of the focus, as the graph's menu has it. */
+        kit_blur(s->kit);
         float ratio = studio_pixel_ratio(s);
         popover_show(
             popover,
@@ -2535,7 +2567,7 @@ static void asset_requests(studio *s, asset_code *code, unsigned events)
         if (asset_code_definition(code, cursor, &definition)) {
             ui_code_place from = asset_place(code, cursor),
                           to = asset_place(code, definition);
-            kit_code_set_cursor(e, definition);
+            move_caret(e, definition);
             studio_nav_jump(s, &from, &to);
         } else if (!asset_symbol_definition(s, code, cursor)) {
             kit_code_notice(e, "No definition found");
@@ -2569,16 +2601,54 @@ static void asset_requests(studio *s, asset_code *code, unsigned events)
     }
 }
 
-/* The symbol under the pointer while the primary modifier is held:
-   Mod+click's underline. */
-static void link_symbol(const studio_code *c, const kit_code_editor *e, kit_code_desc *desc)
+/* The symbol under the pointer while the primary modifier is held, when
+   Go to Definition has somewhere else to go from it: Mod+click's
+   underline, as the asset sources' (asset_code.c). */
+static void link_symbol(studio *s, const ui_buffer *b, const kit_code_editor *e, kit_code_desc *desc)
 {
+    studio_code *c = &s->code;
     int at = kit_code_link(e);
     ui_source_symbol symbol = at >= 0 ? ui_source_symbol_at(c->source, at)
                                       : (ui_source_symbol){ .kind = UI_SYMBOL_NONE };
-    if (symbol.kind != UI_SYMBOL_NONE) {
+    ui_code_place place;
+    if (symbol.kind != UI_SYMBOL_NONE &&
+        ui_code_definition(b, c->source, at, project(s, b->path, false), &place)) {
         desc->link_start = symbol.start;
         desc->link_end = symbol.end;
+    }
+}
+
+/* The language commands' chords, each command's first CHORDS_PER_COMMAND
+   (studio_command_bindings). */
+#define CHORDS_PER_COMMAND 5
+#define CODE_CHORDS                                                               \
+    ((STUDIO_COMMAND_TOGGLE_LINE_COMMENT - STUDIO_COMMAND_GO_TO_DEFINITION + 1) * \
+     CHORDS_PER_COMMAND)
+typedef struct code_chords
+{
+    char names[CODE_CHORDS][STUDIO_CHORD_SIZE];
+    const char *list[CODE_CHORDS];
+    int count;
+} code_chords;
+
+/* The language commands' chords as the text names them, which its keys
+   send back to Studio before taking them (kit_code_desc.chords), so a
+   command runs on whatever chord it is bound to. */
+static void bound_chords(const studio *s, code_chords *out)
+{
+    out->count = 0;
+    for (int command = STUDIO_COMMAND_GO_TO_DEFINITION; language_command(command);
+         command++) {
+        const char *bindings[CHORDS_PER_COMMAND];
+        int count = studio_command_bindings(&s->prefs, (studio_command)command, bindings, CHORDS_PER_COMMAND);
+        for (int i = 0; i < count; i++) {
+            studio_key key;
+            if (studio_chord_parse(bindings[i], s->mac, &key)) {
+                studio_chord_name(key, s->mac, out->names[out->count]);
+                out->list[out->count] = out->names[out->count];
+                out->count++;
+            }
+        }
     }
 }
 
@@ -2586,6 +2656,8 @@ void studio_code_body(studio *s, int)
 {
     kit *k = s->kit;
     scene_document_tab *asset = active_asset(s);
+    code_chords chords;
+    bound_chords(s, &chords);
     if (asset) {
         asset_code *code = asset_editor(s, asset);
         if (!code) {
@@ -2597,7 +2669,9 @@ void studio_code_body(studio *s, int)
                                       .font_size = s->prefs.code_font_size,
                                       .font_family = studio_code_font(&s->prefs),
                                       .mac = s->mac,
-                                      .no_wrap = !s->prefs.code_wrap };
+                                      .no_wrap = !s->prefs.code_wrap,
+                                      .chords = chords.list,
+                                      .chord_count = chords.count };
         const reference_index *index = app_scene_authoring_asset_index(s->scene);
         const char **names = NULL;
         for (int i = 0; index && i < reference_index_asset_count(index); i++) {
@@ -2692,8 +2766,10 @@ void studio_code_body(studio *s, int)
         .no_wrap = !s->prefs.code_wrap,
         .hover = c->hover,
         .word_chars = "-", /* RML's and RCSS's names take hyphens */
+        .chords = chords.list,
+        .chord_count = chords.count,
     };
-    link_symbol(c, e, &desc);
+    link_symbol(s, b, e, &desc);
     kit_code_result r = kit_code(k, "text", e, &desc);
     if (c->find.refocus) {
         kit_focus(k);
