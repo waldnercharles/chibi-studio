@@ -149,8 +149,10 @@ prototypes' files as one change, and that change's undo puts both back. Counter
 stays untouched. A filter the list takes then leaves the grid's arrows on the
 tiles it shows. A field of one constant value, added with the spares, then
 shows its flat picture in the grid rather than the kind's icon within twelve
-frames. Pointer hit-testing and the Undo toast's button are not
-exercised.
+frames. A shape whose outline lies outside its frame and a UI document whose
+one box paints nothing, added with it, render flat in the grid and keep their
+kinds' icons by the twentieth frame. Pointer hit-testing and the Undo toast's
+button are not exercised.
 
 `studio-acceptance --export-game --project-root PATH` accepts another disposable
 copy. Its first hidden frame runs the Export Game command, which needs the SDK's

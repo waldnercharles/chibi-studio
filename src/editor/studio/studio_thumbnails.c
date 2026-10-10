@@ -638,8 +638,8 @@ static void finish(studio *s, studio_thumbs *t, int slot, bool drawn)
         t->busy = 0;
     }
     if (drawn) {
-        /* A picture shows once it is read back, and a world's once seen to
-           hold more than one color (take_picture). */
+        /* A picture shows once it is read back and seen to show something
+           (take_picture). */
         e->drawn = t->frame;
     } else if (e->shown) {
         /* An older picture no longer shows the asset, as an emptied graph. */
@@ -699,16 +699,25 @@ static bool flat(const CF_Pixel *pixels, int count)
     return true;
 }
 
+/* Whether a flat picture of the kind shows nothing, and fails to leave
+   its icon. A world's renderer (scene, prototype, material) and a shape's
+   say only that they ran, not whether what they drew covers anything: a
+   scene with no lighting yet, or a shape whose outline lies outside its
+   frame, comes out flat. UI documents, stylesheets and graphs draw on a
+   margin of their backdrop, so theirs is flat only when nothing shows. A
+   field's picture is its values, so a constant field's flat one shows. */
+static bool flat_shows_nothing(reference_asset_kind kind)
+{
+    return kind != REFERENCE_ASSET_FIELD;
+}
+
 /* A picture read back, which shows and goes to disk when it shows saved
-   content. A world's picture that came out flat, as a scene with no
-   lighting yet renders, says less than its kind's icon and fails instead:
-   its renderer cannot tell whether what it drew shows. Other kinds say
-   when they draw nothing, so their flat picture, as a constant field's,
-   shows. False when it failed. */
+   content, or fails when it is flat and shows nothing; false when it
+   failed. */
 static bool take_picture(studio *s, studio_thumbs *t, int slot, const CF_Pixel *pixels)
 {
     thumb *e = &t->slots[slot];
-    if (studio_thumb_needs_world(e->kind) && flat(pixels, e->side * e->side)) {
+    if (flat_shows_nothing(e->kind) && flat(pixels, e->side * e->side)) {
         e->state = THUMB_FAILED;
         t->stats.blank++;
         if (e->shown) {

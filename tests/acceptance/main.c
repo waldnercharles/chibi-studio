@@ -2064,8 +2064,26 @@ static const char flat_field
          "        (array)edges {\n            - from=\"1.Value\" "
          "to=\"4.Value\"\n"
          "        }\n    }\n}\n";
-#define ASSET_FRAMES 12
-static bool flat_shown;
+/* A shape whose outline lies far outside its frame, which covers nothing,
+   and a UI document whose one box paints nothing. */
+static const char blank_shape
+    [] = "version 3\nname \"Blank\"\ndomain \"shape\"\nbounds_x 16.0\n"
+         "bounds_y 16.0\nid_counter 11\n(array)graphs {\n    - {\n"
+         "        kind \"event\"\n        name \"\"\n        (array)nodes {\n"
+         "            - id=1 type=\"Shader Shape Output\"\n"
+         "            - id=3 type=\"Shader Vector2\" { inputs X=1000.0; }\n"
+         "            - id=7 type=\"Shader Circle\" { inputs Radius=1.0; }\n"
+         "        }\n        (array)edges {\n"
+         "            - from=\"3.Value\" to=\"7.Position\"\n"
+         "            - from=\"7.Value\" to=\"1.Distance\"\n"
+         "        }\n    }\n}\n";
+static const char blank_rml[] = "<div style=\"display: block; width: 64px; "
+                                "height: 64px;\"></div>\n";
+#define ASSET_FRAMES 20
+#define BLANK_FRAME 13
+static bool flat_shown, blank_shown;
+static int blank_before;
+static studio_thumb_stats last_thumb_stats;
 
 /* The grid shows fields; the flat field's thumbnail shows its picture
    rather than the kind's icon. */
@@ -2076,6 +2094,28 @@ static bool flat_field_shows(studio *s)
     int flat = reference_index_find_name(app_scene_authoring_asset_index(s->scene), REFERENCE_ASSET_FIELD, "Flat");
     REQUIRE(flat >= 0);
     flat_shown |= studio_thumb_cached(s, flat) != NULL;
+    return true;
+}
+
+/* The tile of asset `name` of `kind` shows a picture. */
+static bool tile_shown(studio *s, reference_asset_kind kind, const char *name)
+{
+    int asset = reference_index_find_name(app_scene_authoring_asset_index(s->scene), kind, name);
+    return asset >= 0 && studio_thumb_cached(s, asset) != NULL;
+}
+
+/* The grid shows the blank shape and UI document, whose flat pictures
+   show nothing, so their tiles keep their kinds' icons. */
+static bool blank_tiles_fail(studio *s)
+{
+    if (frames == BLANK_FRAME) {
+        s->assets_kind = -1;
+        snprintf(s->assets_filter, sizeof s->assets_filter, "Blank");
+        blank_before = studio_thumbs_stats(s).blank;
+    }
+    blank_shown |= tile_shown(s, REFERENCE_ASSET_SHAPE, "Blank") ||
+                   tile_shown(s, REFERENCE_ASSET_UI, "Blank");
+    last_thumb_stats = studio_thumbs_stats(s);
     return true;
 }
 
@@ -2112,7 +2152,8 @@ static bool asset_selection_frame(void *state)
             /* The grid lays every tile out again. */
             REQUIRE(studio_assets_key(s, SDLK_LEFT, 0) && selection_is(s, "SpareB", ""));
             return true;
-        default: return flat_field_shows(s);
+        default:
+            return frames < BLANK_FRAME ? flat_field_shows(s) : blank_tiles_fail(s);
     }
 }
 
@@ -2831,12 +2872,18 @@ TEST_CASE(asset_selection)
 {
     REQUIRE(write_spares());
     REQUIRE(write_content("fields", "Flat.kdl", flat_field));
+    REQUIRE(write_content("shapes", "Blank.kdl", blank_shape));
+    REQUIRE(write_content("ui", "Blank.rml", blank_rml));
     char *args[] = { (char *)executable, "--headless",
                      "--frames",         FRAMES_TEXT(ASSET_FRAMES),
                      "--fixed-dt",       "0.016666666666666666",
                      "--project-root",   (char *)project };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
     REQUIRE(callback_ok && frames == ASSET_FRAMES && edits == 1 && flat_shown);
+    /* Both rendered, and failed as their pictures were flat. */
+    const studio_thumb_stats *stats = &last_thumb_stats;
+    REQUIRE(stats->count[REFERENCE_ASSET_SHAPE] >= 1 && stats->count[REFERENCE_ASSET_UI] >= 1);
+    REQUIRE(stats->blank - blank_before >= 2 && !blank_shown);
     printf("Studio asset selection accepted\n");
     return true;
 }
