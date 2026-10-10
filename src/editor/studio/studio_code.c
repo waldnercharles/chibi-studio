@@ -970,6 +970,14 @@ void studio_behavior_show(studio *s, int view)
     }
 }
 
+/* A command moves the caret: the next frame reports the move as it does
+   the keys', so it ends a typing burst as a click would. */
+static void move_caret(kit_code_editor *e, int byte)
+{
+    kit_code_set_cursor(e, byte);
+    kit_code_post(e, KIT_CODE_CURSOR);
+}
+
 void studio_code_reveal_node(studio *s, const studio_node_ref *at)
 {
     scene_document_tab *tab = active_asset(s);
@@ -987,7 +995,7 @@ void studio_code_reveal_node(studio *s, const studio_node_ref *at)
     asset_code *code = asset_editor(s, tab);
     int start, end;
     if (code && asset_code_location(code, at->graph_id, at->node_id, &start, &end)) {
-        kit_code_set_cursor(asset_code_editor(code), start);
+        move_caret(asset_code_editor(code), start);
     }
 }
 
@@ -1041,7 +1049,7 @@ bool studio_code_open_place(studio *s, const ui_code_place *place)
             if (!code) {
                 return false;
             }
-            kit_code_set_cursor(asset_code_editor(code), place->offset);
+            move_caret(asset_code_editor(code), place->offset);
             studio_show_editor(s, STUDIO_EDITOR_CODE);
             return true;
         }
@@ -1858,6 +1866,7 @@ static void show_match(studio_code *c, kit_code_editor *e, int at)
     c->find.at = at;
     if (at >= 0) {
         kit_code_select(e, at, at + (int)strlen(c->find.query));
+        kit_code_post(e, KIT_CODE_CURSOR); /* as move_caret */
     }
 }
 
@@ -2539,7 +2548,7 @@ static void asset_requests(studio *s, asset_code *code, unsigned events)
         if (asset_code_definition(code, cursor, &definition)) {
             ui_code_place from = asset_place(code, cursor),
                           to = asset_place(code, definition);
-            kit_code_set_cursor(e, definition);
+            move_caret(e, definition);
             studio_nav_jump(s, &from, &to);
         } else if (!asset_symbol_definition(s, code, cursor)) {
             kit_code_notice(e, "No definition found");
