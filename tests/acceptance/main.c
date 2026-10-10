@@ -6,6 +6,7 @@
 #include "editor/documents/asset_code.h"
 #include "editor/studio/studio_graph_internal.h"
 #include "editor/studio/studio_internal.h"
+#include "editor/studio/studio_properties_internal.h"
 #include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/asset_refactor.h"
 #include "editor/workspace/scene_internal.h"
@@ -1427,6 +1428,15 @@ static bool write_content(const char *folder, const char *file, const char *text
     return true;
 }
 
+/* A component naming another object, which the game sets as it runs. */
+static const char
+    link_component[] = "component Link {\n    target: entity\n}\n";
+static const char
+    linked_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
+                     "    - name=\"A\" prototype=\"Linker\"\n"
+                     "    - name=\"B\" prototype=\"Linker\"\n"
+                     "}\n";
+
 /* A ship with a turret, and a root that shares the turret's name. */
 static const char
     nested_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
@@ -1469,6 +1479,79 @@ static bool saves_as(app_scene_authoring *scene, const char *expected)
     return same;
 }
 
+/* The Link component the project declares, or 0. */
+static ecs_component_id link_id(app_scene_authoring *scene)
+{
+    for (int i = 0; i < ecs_world_component_count(scene->world); i++) {
+        const ecs_component_desc *desc = ecs_world_component_at(scene->world, i);
+        if (desc && !strcmp(desc->name, "Link")) {
+            return desc->id;
+        }
+    }
+    return 0;
+}
+
+/* Sets `actor`'s Link to name `target`, as the game would. */
+static bool link_to(app_scene_authoring *scene, int actor, int target)
+{
+    pin_value value = { .type = PIN_HANDLE,
+                        .type_name = "ecs.entity",
+                        .u64 = ecs_entity_to_u64(scene->actors[target].entity) };
+    REQUIRE(
+        ecs_component_write_field(scene->world, scene->actors[actor].entity, link_id(scene), 0, value) == ECS_OK
+    );
+    return true;
+}
+
+/* A and B, both selected, naming each other, and Properties showing
+   their Link's Target. */
+static bool select_crossed_links(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(
+        app_scene_authoring_register_prototype(scene, "name \"Linker\"\ncomponents {\n    Link\n    GameTransform x=0 y=0\n}\n", NULL) ==
+        0
+    );
+    REQUIRE(scene_authoring_load_text(scene, linked_scene, NULL) == 0);
+    REQUIRE(acount(scene->actors) == 2 && link_id(scene));
+    REQUIRE(link_to(scene, 0, 1) && link_to(scene, 1, 0));
+    REQUIRE(app_scene_authoring_select_entity(scene, scene->actors[0].entity) == 0);
+    scene->actors[1].marked = true;
+    REQUIRE(scene_selection_count(scene) == 2);
+    /* A search opens the panels holding what it finds. */
+    snprintf(s->property_search, sizeof s->property_search, "Target");
+    return true;
+}
+
+/* A's Link row in Properties reads as the selection's: a dash that selects
+   nothing while A and B name different objects; B once both name it. */
+static bool mixed_link(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    rml_element *field = studio_element(s, ".entity-field");
+    REQUIRE(field);
+    char text[64] = "";
+    rml_element_inner_rml(studio_element(s, ".entity-field .value"), text, sizeof text);
+    REQUIRE(!strcmp(text, "\xe2\x80\x94"));
+    REQUIRE(rml_element_has_attribute(field, "data-mixed"));
+    REQUIRE(rml_element_has_attribute(field, "data-readonly"));
+    ui_activation reveal = { .argc = 1 };
+    properties_row_id(
+        &(properties_row){ .kind = PROPERTIES_OBJECT,
+                           .entity = ecs_entity_to_u64(scene->actors[0].entity),
+                           .component = link_id(scene),
+                           .field = 0 },
+        reveal.args[0]
+    );
+    studio_properties_action(s, "reveal", &reveal);
+    REQUIRE(scene->selected == 0 && scene_selection_count(scene) == 2);
+    REQUIRE(link_to(scene, 1, 1));
+    studio_properties_action(s, "reveal", &reveal);
+    REQUIRE(scene->selected == 1 && scene_selection_count(scene) == 1);
+    s->property_search[0] = '\0';
+    return true;
+}
+
 /* Children load under their parent and keep it through save, undo and
    duplication; a parent waits for its children to go first. */
 static bool scene_hierarchy_frame(void *state)
@@ -1476,9 +1559,12 @@ static bool scene_hierarchy_frame(void *state)
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
-    REQUIRE(frames <= 2);
+    REQUIRE(frames <= 3);
     if (frames == 2) {
         return true;
+    }
+    if (frames == 3) {
+        return mixed_link(s);
     }
     app_scene_authoring *scene = s->scene;
     REQUIRE(
@@ -1544,7 +1630,7 @@ static bool scene_hierarchy_frame(void *state)
     REQUIRE(child_of(scene, scene->selected, 0));
     REQUIRE(fabsf(moved->x - 10) < 1e-3f && fabsf(moved->y + 10) < 1e-3f);
     edits++;
-    return true;
+    return select_crossed_links(s);
 }
 
 /* Three unused prototypes, the only ones; Assets deletes declarative assets
@@ -2308,12 +2394,13 @@ TEST_CASE(scene_gizmo_cursors)
 
 TEST_CASE(scene_hierarchy)
 {
+    REQUIRE(write_content("components", "Link.chibi", link_component));
     char *args[] = { (char *)executable, "--headless",
-                     "--frames",         "2",
+                     "--frames",         "3",
                      "--fixed-dt",       "0.016666666666666666",
                      "--project-root",   (char *)project };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && frames == 2 && edits == 1);
+    REQUIRE(callback_ok && frames == 3 && edits == 1);
     printf("Studio scene hierarchy accepted\n");
     return true;
 }

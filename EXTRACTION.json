@@ -993,13 +993,13 @@
       "current_source_sha256": "9b75abd2ed82d508a2c07a401f5662aa7b76bcfc815d9008b8b13e5e8cdd6d20",
       "sha256": "9b75abd2ed82d508a2c07a401f5662aa7b76bcfc815d9008b8b13e5e8cdd6d20",
       "source_path": "projects/studio/content/ui/Properties.rcss",
-      "consumer_sha256": "f829432dc81e2d2ddcce84957bf784b094c1dc76295c0ef5d5a0b4c026512ccc"
+      "consumer_sha256": "f5a2e991ec9b9850d5297dbf2c4f1f06470f199fe3f0c0afcbb745b0666fc208"
     },
     "projects/studio/content/ui/Properties.rml": {
       "current_source_sha256": "545dc7a0778a9870485f1e2273300dcda4bf07e297bf13b78b65be8c44d026f4",
       "sha256": "545dc7a0778a9870485f1e2273300dcda4bf07e297bf13b78b65be8c44d026f4",
       "source_path": "projects/studio/content/ui/Properties.rml",
-      "consumer_sha256": "d8c0cffe0de5f5ec23f19f49b20ecbf81aedbdbb4277653e481931697aad6ac4"
+      "consumer_sha256": "96f146902958813c02cf6668c2d209fccfaddd6d2bbd41cea217f72596ab7edd"
     },
     "projects/studio/content/ui/PropertiesHeader.rcss": {
       "current_source_sha256": "d7680f39026872550f5152068520cd3bcc069e9341542f6eee92ca24c4bec427",
@@ -2116,7 +2116,7 @@
       "current_source_sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
       "sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
       "source_path": "src/editor/studio/studio_properties.c",
-      "consumer_sha256": "cfb04b045aa1c4b941aa78b994b7cb1d9e2848e8c03f63e5c7634145bb6ec4f9"
+      "consumer_sha256": "be36006e9dbc923078cdc77cdc3e1972905e2379be026549acb09b856e61a9e9"
     },
     "src/editor/studio/studio_properties_internal.h": {
       "current_source_sha256": "14c5ed4a4d38c1ca484be50e70be0cb1d3ec85d62a70185612d365659bcbd236",
@@ -2128,7 +2128,7 @@
       "current_source_sha256": "a0579bb794e0d93710c7c4e3c18b328c8fb94b5c2bb40b07304923167aef3130",
       "sha256": "a0579bb794e0d93710c7c4e3c18b328c8fb94b5c2bb40b07304923167aef3130",
       "source_path": "src/editor/studio/studio_properties_view.c",
-      "consumer_sha256": "949dae4213b62d5ac92add9abc6f21f495c69c3ba4ffc7e1128024eb70b354ca"
+      "consumer_sha256": "795928dbefd59a9f16426a3d8b303a9c02cee63d456a5e3eae42423c5f450096"
     },
     "src/editor/studio/studio_prototype_actions.c": {
       "current_source_sha256": "2d69a48bc7c1cb006a19e11a9b0df180defa389464e0eeeac40fc04adb0b345d",

@@ -49,7 +49,11 @@ under the ship, and that a duplicate of the turret becomes the ship's next
 child. With the ship turned a quarter
 turn, it checks that picking finds the turret at its world position and nothing
 at its unturned one, and that a duplicate offset in world space keeps the right
-local offset. It saves no file.
+local offset. Its project declares a Link component naming an object;
+with two objects selected whose Links name different objects, the third
+frame checks that Properties shows Link's Target as a read-only dash and
+that clicking it selects nothing, and that once both name one object a
+click selects it. It saves no file.
 
 `studio-acceptance --scene-viewport --project-root PATH` takes another
 disposable copy and runs nineteen hidden fixed-dt frames. It loads a box with a
