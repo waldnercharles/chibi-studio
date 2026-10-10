@@ -6,16 +6,14 @@ on:
   pull_request_target:
     branches: [main]
     types: [opened, reopened, synchronize, ready_for_review, edited, converted_to_draft, labeled, unlabeled]
-  pull_request_review:
-    types: [submitted, dismissed]
   issues:
     types: [labeled, unlabeled]
   schedule:
-    - cron: "17 * * * *"
-  workflow_dispatch:
+    - cron: "*/15 * * * *"
 
 permissions:
-  contents: read
+  contents: write
+  actions: write
   checks: write
   issues: write
   pull-requests: write
@@ -25,8 +23,11 @@ jobs:
     uses: ./.github/workflows/chibi-merge-policy-reusable.yml
     with:
       gate_ready: ${{ vars.CHIBI_REVIEW_GATE_READY == 'true' }}
+      post_merge_workflows: >-
+        [{"workflow":"ci.yml","ignore":["README.md","AGENTS.md","docs/**",".claude/**","web/**","EXTRACTION.json",".github/workflows/publish.yml"]},{"workflow":"publish.yml","include":["src/**","include/**","projects/**","web/**","cmake/**","CMakeLists.txt",".github/workflows/publish.yml"]}]
     permissions:
-      contents: read
+      contents: write
+      actions: write
       checks: write
       issues: write
       pull-requests: write
