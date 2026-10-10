@@ -1468,6 +1468,8 @@ rml_element *studio_ui_dialog(studio *s, const char *key, const char *name);
 /* Lets panel `name`'s mount go before the kit removes its host, when a
    panel shown on demand closes. */
 void studio_ui_panel_detach(studio *s, const char *name);
+/* Whether `element` is in panel `name`'s document, false while it shows none. */
+bool studio_ui_panel_holds(studio *s, const char *name, rml_element *element);
 /* The Studio scene's panels, each an editor type an area can show. */
 int studio_ui_panel_count(const studio *s);
 const char *studio_ui_panel_name(const studio *s, int index);

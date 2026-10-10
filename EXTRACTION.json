@@ -2006,7 +2006,7 @@
       "current_source_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
       "sha256": "a01a22cf19a858e983159029166fe7d9086a883aa6e864bfa9a359b78048a1e6",
       "source_path": "src/editor/studio/studio_internal.h",
-      "consumer_sha256": "7474778e5dc54921106fe2e81da763435395275a14f5e796cf9714a001f87fe9"
+      "consumer_sha256": "9da47014ae73cf57e56f7ee4e0e5cecec01bad78f58e08662fe7c6313859b26d"
     },
     "src/editor/studio/studio_keymap.c": {
       "current_source_sha256": "8b5d145d9512c78e41ef18d71680421e8da299c9aa6c6b5585d00d6b5b23d88a",
@@ -2069,7 +2069,8 @@
     "src/editor/studio/studio_palette_view.c": {
       "current_source_sha256": "942db470a6a11e8ff55b0279097d54e189d74a0a8156503331643e1b3a2297e6",
       "sha256": "942db470a6a11e8ff55b0279097d54e189d74a0a8156503331643e1b3a2297e6",
-      "source_path": "src/editor/studio/studio_palette_view.c"
+      "source_path": "src/editor/studio/studio_palette_view.c",
+      "consumer_sha256": "6dc7ad91a3e8fb856e9737f9f19f41acdee67ad3e04b5e8af86115a438d2dd07"
     },
     "src/editor/studio/studio_panels.c": {
       "current_source_sha256": "bdd80adcd85c06fa6025c329d68a399bea63652f03269095c2f99b66610e48f1",

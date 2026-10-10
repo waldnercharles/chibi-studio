@@ -45,6 +45,12 @@
 /* Rows written before the List has laid out. */
 #define UNLAID_ROWS 24
 
+/* The documents, mounted while their kind of list is open. */
+static const char *const PANELS[] = {
+    [STUDIO_PALETTE_MODAL] = "Palette",
+    [STUDIO_PALETTE_PICKER] = "Picker",
+};
+
 /* ---------- Opening and closing ---------- */
 
 static void reset(studio_palette_state *p, studio_palette_client client, const char *placeholder)
@@ -106,8 +112,17 @@ void studio_palette_open_box(
     s->ui_schedule.wake = true;
 }
 
+/* A closing palette lets go of the focus its search field held, so the
+   next key reaches the area under the pointer rather than a field whose
+   document only goes with the next emit. Focus a press already moved
+   elsewhere stays there. */
 void studio_palette_close(studio *s)
 {
+    studio_palette_mount mounted = s->palette.mounted;
+    rml_element *focus = rml_context_focus_element(rml_backend_context(s->backend));
+    if (mounted && focus && studio_ui_panel_holds(s, PANELS[mounted], focus)) {
+        rml_element_blur(focus);
+    }
     reset(&s->palette, STUDIO_PALETTE_CLOSED, "");
 }
 
@@ -639,12 +654,6 @@ void studio_palette_action(studio *s, const char *action, const ui_activation *a
 }
 
 /* ---------- Documents ---------- */
-
-/* The documents, mounted while their kind of list is open. */
-static const char *const PANELS[] = {
-    [STUDIO_PALETTE_MODAL] = "Palette",
-    [STUDIO_PALETTE_PICKER] = "Picker",
-};
 
 /* A Studio project without the document, such as a served copy older than
    the build, would leave the palette open, unseen and holding the keys. */

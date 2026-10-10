@@ -287,6 +287,12 @@ void sg_follow_graph(studio *s)
         ed_cancel_snapshot(sg_graph_editor(s));
     }
     g->title_edit = g->bubble_edit = g->comment = 0;
+    /* Bind to Source named a pin of the graph that left, and pin ids repeat
+       across graphs. */
+    g->bind_pin = 0;
+    g->bind_kit = NULL;
+    g->bind_focus = false;
+    g->details.bind[0] = '\0';
     g->gesture = STUDIO_GRAPH_IDLE;
     g->camera.active = false;
     studio_graph_view *view = view_for(g, id);

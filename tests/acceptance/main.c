@@ -349,6 +349,18 @@ static bool press_key(SDL_Keycode key)
     return press_chord(key, SDL_KMOD_NONE);
 }
 
+/* Queues `text` as the platform's text input for the window. */
+static bool type_text(const char *text)
+{
+    SDL_WindowID window = window_id();
+    REQUIRE(window);
+    SDL_Event e = {
+        .text = { .type = SDL_EVENT_TEXT_INPUT, .windowID = window, .text = text }
+    };
+    REQUIRE(SDL_PushEvent(&e));
+    return true;
+}
+
 /* Counter's source editor, whether or not its text currently reads. */
 static asset_code *counter_code(studio *s)
 {
@@ -710,7 +722,7 @@ static bool graph_visibility_frame(void *state)
     return true;
 }
 
-#define GRAPH_KEY_FRAMES 18
+#define GRAPH_KEY_FRAMES 24
 
 static bool selected_only(editor *e, uint64_t id)
 {
@@ -735,13 +747,15 @@ enum
     NAMED_SOURCE,
     NAMED_USE,
     VECTOR_USE,
+    OTHER_GRAPH,
     DECLARED_COUNT
 };
 
 /* Opens a declarative graph, as a material's, of three nodes. The first
    feeds the second through a value named as Name Value does, so the second
    reads the name instead of drawing a wire; code can't name values this
-   way. The third's vector input holds a literal a source can replace. */
+   way. The third's vector input holds a literal a source can replace. A
+   function graph beside it is another graph to switch to. */
 static bool open_declared(editor *e, uint64_t *ids)
 {
     behavior_asset *asset = behavior_asset_new("Declared");
@@ -755,6 +769,7 @@ static bool open_declared(editor *e, uint64_t *ids)
     ids[NAMED_SOURCE] = a->id;
     ids[NAMED_USE] = b->id;
     ids[VECTOR_USE] = vector->id;
+    ids[OTHER_GRAPH] = behavior_asset_add_graph(asset, GRAPH_FUNCTION, "Other")->graph_id;
     REQUIRE(!editor_declarative_graph(e, asset));
     behavior_asset_free(asset);
     return true;
@@ -819,23 +834,6 @@ static bool output_labels_show(studio *s, graph *gr)
     return true;
 }
 
-/* Chooses node search's last entry with nothing typed, as the palette
-   does, which leaves the command palette's recent items as they were. */
-static bool choose_node(studio *s, char *key, size_t size)
-{
-    studio_recent commands[STUDIO_RECENT_COUNT];
-    memcpy(commands, s->prefs.recent, sizeof commands);
-    studio_palette_entry *entries = NULL;
-    studio_graph_palette_entries(s, "", &entries);
-    REQUIRE(acount(entries) > 1);
-    studio_palette_entry chosen = alast(entries);
-    afree(entries);
-    snprintf(key, size, "%s", chosen.key);
-    studio_graph_palette_choose(s, &chosen);
-    REQUIRE(!memcmp(commands, s->prefs.recent, sizeof commands));
-    return true;
-}
-
 /* The node chosen last leads node search under Recent, and stays there
    through saved preferences. */
 static bool leads_search(studio *s, const char *key)
@@ -860,12 +858,14 @@ static bool leads_search(studio *s, const char *key)
    nodes selected, M refuses before editing either. Escape closing the node
    menu keeps the selection. Right doesn't follow a named value's uses,
    which draw no wire, Properties disables Bind to Source while the graph
-   is read-only, and Tab opens node search. */
+   is read-only, and Bind to Source on the canvas ends with its graph.
+   Tab opens node search, and the node Enter adds there takes M at once. */
 static bool graph_keys_frame(void *state)
 {
     static uint64_t from, to;
-    static uint64_t declared[DECLARED_COUNT];
+    static uint64_t declared[DECLARED_COUNT], added;
     static char chosen[96];
+    static studio_recent commands[STUDIO_RECENT_COUNT];
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
@@ -943,11 +943,41 @@ static bool graph_keys_frame(void *state)
     } else if (frames == 15) {
         REQUIRE(bind_disabled(s, true));
         graph_flow_resume(gr);
-        REQUIRE(press_key(SDLK_TAB));
+        /* Bind to Source on the canvas node, as its button does. */
+        node *vector = sg_node_by_id(s, declared[VECTOR_USE]);
+        s->graph.bind_pin = vector->input_pins[0].id;
+        s->graph.bind_kit = s->graph.kit;
+        s->graph.bind_focus = true;
     } else if (frames == 16) {
-        REQUIRE(s->palette.client == STUDIO_PALETTE_NODES && s->graph.spawn_pending);
-        REQUIRE(choose_node(s, chosen, sizeof chosen));
+        /* The node's source field took the focus. Another graph, which may
+           hold a pin of that id, leaves Bind to Source behind. */
+        REQUIRE(s->graph.bind_pin && !s->graph.bind_focus);
+        REQUIRE(!editor_open_graph(e, declared[OTHER_GRAPH]));
     } else if (frames == 17) {
+        REQUIRE(gr->graph_id == declared[OTHER_GRAPH]);
+        REQUIRE(!s->graph.bind_pin && !s->graph.bind_kit);
+    } else if (frames == 18) {
+        /* Frame 17 let go of the keys the field had. */
+        REQUIRE(press_key(SDLK_TAB));
+    } else if (frames == 19) {
+        REQUIRE(s->palette.client == STUDIO_PALETTE_NODES && s->graph.spawn_pending);
+    } else if (frames == 20) {
+        /* Frame 19 gave the picker's search field the focus. */
+        REQUIRE(type_text("Not"));
+    } else if (frames == 21) {
+        REQUIRE(!strcmp(s->palette.query, "Not"));
+        memcpy(commands, s->prefs.recent, sizeof commands);
+        REQUIRE(press_key(SDLK_RETURN));
+    } else if (frames == 22) {
+        /* Enter added the node and closed the picker, whose field let go of
+           the keys: M at once disables the new node. */
+        REQUIRE(!s->palette.client && acount(e->selected) == 1);
+        REQUIRE(!memcmp(commands, s->prefs.recent, sizeof commands));
+        added = e->selected[0]->id;
+        snprintf(chosen, sizeof chosen, "%s", s->prefs.recent_nodes[0].key);
+        REQUIRE(press_key(SDLK_M));
+    } else if (frames == 23) {
+        REQUIRE(sg_node_by_id(s, added)->disabled);
         REQUIRE(leads_search(s, chosen));
         keys++;
     }
