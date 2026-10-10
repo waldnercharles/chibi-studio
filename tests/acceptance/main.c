@@ -703,16 +703,36 @@ static bool play_keys_frame(void *state)
     return true;
 }
 
-#define PROMPT_FRAMES 14
-static bool quit_saved;
+#define PROMPT_FRAMES 18
+static bool quit_answered;
+
+/* Adds an object to the open scene, leaving it unsaved. Its prototype
+   exists only in this run, so the scene's file must never take it. */
+static bool add_probe(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(
+        app_scene_authoring_register_prototype(
+            scene,
+            "name \"Probe\"\ncomponents {\n    GameTransform x=0 y=0\n}\n",
+            NULL
+        ) == 0
+    );
+    REQUIRE(app_scene_authoring_add_instance(scene, "Probe") == 0);
+    REQUIRE(scene->scene_dirty);
+    return true;
+}
 
 /* Closing Counter's clean tab just closes it. Closing it with an edit asks,
    and its Discard closes the tab without writing; asked again, a Save by
-   hand dismisses the prompt and keeps the tab; quitting with an edit asks,
-   and its Save writes Counter before Studio quits. Both answers are clicks on
-   the toast's buttons, which the prompt answers two frames after the click.
-   Reduced motion, on from the first frame, settles each toast where layout
-   puts it, so the clicks land on its buttons. */
+   hand dismisses the prompt and keeps the tab. With the scene running,
+   quitting with an edit to Counter and to the scene asks; its Save writes
+   Counter, which applies live, and asks again about the scene the running
+   scene keeps from saving, whose Discard lets Studio quit without writing
+   it. Both answers are clicks on the toast's buttons, which the prompt
+   answers two frames after the click. Reduced motion, on from the first
+   frame, settles each toast where layout puts it, so the clicks land on its
+   buttons. */
 static bool prompts_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -720,9 +740,9 @@ static bool prompts_frame(void *state)
     frames++;
     REQUIRE(frames <= PROMPT_FRAMES);
     if (s->unsaved_prompt.quit) {
-        /* Save went through: nothing is unsaved, and Quit goes ahead. */
-        REQUIRE(frames > 11 && !studio_unsaved(s));
-        quit_saved = true;
+        /* Discard went through: Quit goes ahead with the scene unsaved. */
+        REQUIRE(frames > 15 && studio_unsaved(s));
+        quit_answered = true;
         return true;
     }
     switch (frames) {
@@ -765,15 +785,34 @@ static bool prompts_frame(void *state)
             REQUIRE(!s->unsaved_prompt.toast);
             REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_NONE);
             REQUIRE(counter_tab(s) >= 0 && counter_says("count: int = 5"));
+            REQUIRE(add_probe(s));
+            studio_command_run(s, STUDIO_COMMAND_PLAY);
+            break;
+        case 10:
+            REQUIRE(studio_session(s) && studio_save_held(s));
+            REQUIRE(scene_tabs_activate(s->scene, counter_tab(s)) == 0);
             REQUIRE(edit_counter(s, 5, "4"));
             REQUIRE(!studio_quit(s, true));
             REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
             break;
-        case 10:
-            REQUIRE(prompt_shows(s, "Save Counter before quitting?"));
+        case 11:
+            REQUIRE(prompt_shows(s, "and Counter before quitting?"));
             REQUIRE(click(s, ".toast[data-front] .toast-action"));
             break;
-        default: REQUIRE(frames < 13);
+        case 13:
+            /* Counter saved while the scene runs; the scene could not, so
+               the prompt asks again about it instead of quitting. */
+            REQUIRE(counter_says("count: int = 4"));
+            REQUIRE(studio_session(s) && studio_unsaved(s));
+            REQUIRE(s->unsaved_prompt.toast);
+            REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
+            break;
+        case 14:
+            REQUIRE(prompt_shows(s, "before quitting?"));
+            REQUIRE(element_says(s, ".toast[data-front] .description", "Stop the scene"));
+            REQUIRE(click(s, ".toast[data-front] .toast-cancel"));
+            break;
+        default: REQUIRE(frames < 17);
     }
     return true;
 }
@@ -1048,6 +1087,20 @@ TEST_CASE(scene_hierarchy)
     return true;
 }
 
+/* The start scene's file never took the probe object. */
+static bool start_unchanged()
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/scenes/Start.kdl", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    char *text = file_read_text(path);
+    REQUIRE(text);
+    bool same = !strstr(text, "Probe");
+    free(text);
+    REQUIRE(same);
+    return true;
+}
+
 /* Restores Counter's bytes over what the shell test saved. */
 static bool restore_counter()
 {
@@ -1082,9 +1135,10 @@ TEST_CASE(unsaved_prompts)
                      "--project-root",   (char *)project,
                      "--open",           "Counter" };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && quit_saved);
+    REQUIRE(callback_ok && quit_answered);
     bool saved = counter_says("count: int = 4");
-    REQUIRE(restore_counter() && saved);
+    bool kept = start_unchanged();
+    REQUIRE(restore_counter() && saved && kept);
     printf("\nStudio unsaved prompts accepted: frames=%d\n", frames);
     return true;
 }

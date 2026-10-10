@@ -64,14 +64,17 @@ pauses, F10 steps while paused, F5 resumes and Shift+F5 stops. It also checks th
 File menu's Revert File label. It saves nothing.
 
 `studio-acceptance --unsaved-prompts --project-root PATH` takes another disposable
-copy and runs at most fourteen hidden frames with reduced motion on, so toasts sit
+copy and runs at most eighteen hidden frames with reduced motion on, so toasts sit
 where layout puts them. Counter's clean tab closes without asking. With Counter
 edited, closing its tab asks "Save Counter before closing?" with Save and
 Discard, and a click on Discard closes the tab without writing. Edited and asked
 again, a Save by hand writes Counter, dismisses the prompt and keeps the tab
-open. With Counter edited again, Quit asks "Save Counter before quitting?", and
-a click on Save writes Counter before Studio quits. The clicks are pointer motion, press and
-release queued through SDL over the toast's buttons. The initial Counter bytes are
+open. Then it adds an object to the start scene from a prototype only that run
+registers and plays the scene. With Counter edited while it runs, Quit asks to
+save both; a click on Save writes Counter, whose text applies live, and asks
+again about the scene the running scene keeps from saving, naming how to save
+it. A click on Discard then quits without writing the scene. The clicks are
+pointer motion, press and release queued through SDL over the toast's buttons. The initial Counter bytes are
 restored afterwards.
 
 Execution requires explicit root coordination and independent admission under the
