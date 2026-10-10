@@ -222,6 +222,9 @@ void sg_delete_selection(studio *s)
     editor *e = sg_graph_editor(s);
     uint64_t frame = studio_graph_comment(s);
     if (sg_graph_readonly(s)) {
+        if (frame || acount(e->selected) || acount(e->selected_links)) {
+            sg_refuse_edit(s);
+        }
         return;
     }
     if (frame && !acount(e->selected_links)) {
@@ -312,6 +315,7 @@ void sg_paste(studio *s)
 {
     editor *e = sg_graph_editor(s);
     if (sg_graph_readonly(s)) {
+        sg_refuse_edit(s);
         return;
     }
     char *clipboard = cf_clipboard_get();

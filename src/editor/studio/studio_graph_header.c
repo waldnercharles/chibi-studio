@@ -220,8 +220,10 @@ static bool shows_target(const studio *s)
 
 void studio_graph_header_add(yyjson_mut_doc *doc)
 {
-    static const char *const TEXTS[] = { "backKbd",     "forwardKbd", "target",
-                                         "targetAbout", "arrangeKbd", NULL };
+    static const char *const TEXTS[] = { "backKbd",    "forwardKbd",
+                                         "target",     "targetAbout",
+                                         "arrangeKbd", "readonlyAbout",
+                                         NULL };
     static const char *const FLAGS[] = { "open",     "back",       "forward",
                                          "renaming", "debug",      "readonly",
                                          "find",     "sourceView", NULL };
@@ -325,6 +327,8 @@ bool studio_graph_header_sync(studio *s, const studio_panel_sync *at)
     changed |= ui_data_put_text(at->doc, h, "forwardKbd", studio_chord(s, "Alt+\xe2\x86\x92"));
     changed |= ui_data_put_text(at->doc, h, "arrangeKbd", studio_chord(s, "Shift+L"));
     changed |= ui_data_put_bool(h, "readonly", sg_graph_readonly(s));
+    const char *reason = sg_readonly_reason(s);
+    changed |= ui_data_put_text(at->doc, h, "readonlyAbout", reason ? reason : "");
     changed |= ui_data_put_bool(h, "find", s->graph.find.open);
     s->graph.renaming = renaming(s);
     changed |= ui_data_put_bool(h, "renaming", s->graph.renaming);

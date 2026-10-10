@@ -144,6 +144,12 @@ void sg_node_menu(studio *s, sg_menu *m, node *n);
 editor *sg_graph_editor(const studio *s);
 graph *sg_active_graph(const studio *s);
 bool sg_graph_readonly(const studio *s);
+/* Why the graph is read-only, for its header and refusals; NULL when it
+   isn't. */
+const char *sg_readonly_reason(const studio *s);
+/* An edit the read-only graph refused says why, in one toast however often
+   it is tried. */
+void sg_refuse_edit(studio *s);
 bool sg_node_visible(const graph *g, const node *n);
 node *sg_node_by_id(const studio *s, uint64_t id);
 graph_comment_box *sg_comment_by_id(const studio *s, uint64_t id);

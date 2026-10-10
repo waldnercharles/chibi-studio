@@ -495,6 +495,7 @@ typedef struct
     uint64_t bind_pin;
     kit *bind_kit;
     bool bind_focus;
+    int readonly_toast; /* the toast a refused edit shows, kept as one */
     uint64_t menu_comment;
     uint64_t comment; /* the selected comment frame, shown while no node is */
     bool press_toggle;

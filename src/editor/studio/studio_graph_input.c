@@ -734,6 +734,8 @@ static void release(studio *s, graph_hit hit)
                 g->spawn_x = g->world_x;
                 g->spawn_y = g->world_y;
                 studio_palette_open(s, STUDIO_PALETTE_NODES, "Add a node");
+            } else {
+                sg_refuse_edit(s);
             }
             break;
         }
@@ -1091,7 +1093,9 @@ void sg_shortcuts(studio *s)
             sg_rename_pin(s, renameable_hover(s), g->hover_pin);
         } else if (!mod && key == SDLK_F2 && event_hover(s)) {
             studio_refactor_rename_event(s, studio_event_renameable(s, event_hover(s)));
-        } else if (bare && key == SDLK_M && !sg_graph_readonly(s)) {
+        } else if (bare && key == SDLK_M && sg_graph_readonly(s)) {
+            sg_refuse_edit(s);
+        } else if (bare && key == SDLK_M) {
             mute_selection(s);
         } else if (!mod && !shift && key == SDLK_Q) {
             sg_straighten(s);
@@ -1106,7 +1110,9 @@ void sg_shortcuts(studio *s)
                 }
             }
         } else if ((mod && key == SDLK_D) || (shift && key == SDLK_D)) {
-            if (!sg_graph_readonly(s)) {
+            if (sg_graph_readonly(s)) {
+                sg_refuse_edit(s);
+            } else {
                 ed_duplicate_selected(e);
             }
         } else if (mod && key == SDLK_C) {
@@ -1119,7 +1125,9 @@ void sg_shortcuts(studio *s)
         } else if (mod && key == SDLK_G && !sg_graph_readonly(s) && acount(e->selected)) {
             sg_collapse(s, GRAPH_FUNCTION);
         } else if ((shift && key == SDLK_A) || (bare && key == SDLK_TAB)) {
-            if (!sg_graph_readonly(s)) {
+            if (sg_graph_readonly(s)) {
+                sg_refuse_edit(s);
+            } else {
                 g->spawn_pending = true;
                 g->spawn_x = g->world_x;
                 g->spawn_y = g->world_y;

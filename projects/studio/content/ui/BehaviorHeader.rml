@@ -17,6 +17,7 @@
     <button class="seg" data-attrif-data-pressed="graph_header.view == 1" data-event-click="emit('graph_header.view', 1)">Code</button>
     <button class="seg" data-attrif-data-pressed="graph_header.view == 2" data-event-click="emit('graph_header.view', 2)">Both</button>
   </div>
+  <span class="badge" data-if="graph_header.readonlyAbout != ''" data-tip="Read-only" data-attr-data-tip-about="graph_header.readonlyAbout">Read-only</span>
   <div class="spacer"></div>
   <button class="btn subtle sm debug-target" data-if="graph_header.debug" popovertarget="debug-targets" aria-haspopup="listbox" data-tip="Debug target" data-attr-data-tip-about="graph_header.targetAbout"><span class="icon">&#xebf8;</span><morph-text class="label">{{ graph_header.target }}</morph-text></button>
   <number-flow class="number-flow readout" data-if="graph_view.zoomShown" data-attr-value="graph_view.zoom" precision="0" prefix="" suffix="%"></number-flow>
