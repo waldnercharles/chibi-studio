@@ -19,9 +19,10 @@
 .panel-head .chev { color: var(--faint-foreground); width: 12dp; font-size: var(--studio-font-11, 11dp); transform: rotate(-90deg); transition: transform 0.14s cubic-out; }
 .panel[data-open] .panel-head .chev { transform: rotate(0deg); }
 .panel-head .title { font-weight: 600; }
-/* The panel's menu (kit_panel_menu), while the header is hovered. */
-.panel-head .menu { width: 18dp; line-height: var(--studio-line-18, 18dp); border-radius: var(--r); opacity: 0; cursor: pointer; }
-.panel-head:hover .menu { opacity: 1; }
+/* The panel's menu (kit_panel_menu): faint until the header is hovered or
+   the menu has the keyboard focus, so it is found without hunting. */
+.panel-head .menu { width: 18dp; line-height: var(--studio-line-18, 18dp); border-radius: var(--r); opacity: 0.4; cursor: pointer; }
+.panel-head:hover .menu, .panel-head .menu:focus-visible { opacity: 1; }
 .panel-head .menu:hover { background-color: var(--press); color: var(--foreground); }
 .panel-body { display: block; padding: 4dp 10dp 10dp 8dp; }
 

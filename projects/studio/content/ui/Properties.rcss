@@ -22,8 +22,16 @@ body, body.area-panel { width: 100%; height: 100%; margin: 0dp; padding: 0dp; ov
 /* RmlUi gives :focus to a focused element's ancestors too, as :focus-within. */
 .field.text:focus { background-color: var(--field-edit); border-color: var(--ring); }
 .identity .name-field .field.text:focus { background-color: var(--field-edit); border-color: var(--ring); }
-/* A panel's head folds it, but for its menu. */
+/* An object a handle names (studio_properties_view.c): a click selects it,
+   so it reads as a field with a locate mark, and None or a removed object
+   rests like a read-only field. */
+.entity-field[data-placeholder] .value, .entity-field[data-readonly] .lead { color: var(--muted-foreground); }
+.entity-field[data-readonly] { cursor: arrow; }
+/* A panel's head folds it, but for its menu. A long title ends in an
+   ellipsis on one line, so every head keeps one height. */
 .panel-fold { display: flex; align-items: center; gap: 6dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.panel-fold .title { flex: 0 1 auto; min-width: 0dp; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel-fold .badge { flex: 0 0 auto; }
 /* Why a scene setting is read-only while the scene runs. */
 .prop-note { padding: 0dp 4dp 8dp; color: var(--faint-foreground); }
 /* Several selected objects: a chip per prototype among them, wrapping. */
