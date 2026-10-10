@@ -8,6 +8,10 @@
 .project-name label { display: block; font-weight: 500; }
 .project-name .field { flex: 0 0 auto; }
 .project-name .field[data-invalid] { border-color: var(--destructive); }
+.project-location { display: flex; align-items: center; gap: 6dp; color: var(--muted-foreground); }
+.project-location .icon { flex: 0 0 auto; color: var(--faint-foreground); }
+.project-location .path { flex: 1 1 0dp; min-width: 0dp; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-location .btn { flex: 0 0 auto; margin-right: -6dp; }
 .project-error { color: var(--destructive); white-space: normal; }
 .project-pending { color: var(--muted-foreground); }
 .project-confirmation { display: flex; flex-direction: column; gap: 4dp; padding: 12dp; border: 1dp var(--border); border-radius: var(--r); background-color: var(--muted); white-space: normal; }

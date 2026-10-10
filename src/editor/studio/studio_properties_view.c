@@ -241,7 +241,7 @@ static yyjson_mut_val *row_new(yyjson_mut_doc *doc)
 {
     static const char *const TEXTS[] = { "id",      "label", "tip",  "about",
                                          "control", "unit",  "text", "drop",
-                                         "problem", "kind" };
+                                         "problem", "kind",  "hint" };
     static const char *const ROOMS[] = { "value", "min", "max", "step" };
     static const char *const FLAGS[] = { "shown",    "overridden", "mixed",
                                          "readonly", "invalid",    "integer",
@@ -442,15 +442,52 @@ static void number_hints(
         d->min = hint.min;
         d->max = hint.max;
         d->slider = true;
-        if (!d->integer) {
-            d->step = 0.01;
-            d->precision = 3;
-        }
     }
     if (hint.unit) {
         d->unit = hint.unit;
     }
 }
+
+/* An angle shows in degrees, as Unity's and Blender's rotations do; its
+   range turns with it. */
+static double to_degrees(const type_field *field, double value, number_shape *d)
+{
+    if (!properties_angle(field)) {
+        return value;
+    }
+    d->unit = d->unit && strchr(d->unit, '/') ? "\xc2\xb0/s" : "\xc2\xb0";
+    d->min *= 180 / M_PI;
+    d->max *= 180 / M_PI;
+    return value * 180 / M_PI;
+}
+
+/* Units of length (world units, pixels and their rates) and of angle step
+   by one; other quantities by a tenth. */
+static bool whole_steps(const char *unit)
+{
+    return unit && (!strcmp(unit, "u") || !strcmp(unit, "px") ||
+                    !strncmp(unit, "u/", 2) || !strncmp(unit, "\xc2\xb0", 2));
+}
+
+/* A float's step, from its range or unit and never its value, so arrows and
+   scrubs keep one gain however large the value grows: a presented range
+   steps by the power of ten nearest a hundredth of it, with a digit more
+   than the step shows. */
+static void float_step(number_shape *d)
+{
+    if (d->slider) {
+        int exponent = (int)floor(log10((d->max - d->min) / 100));
+        d->step = pow(10, exponent);
+        d->precision = exponent >= 1 ? 0 : 1 - exponent;
+        return;
+    }
+    d->step = whole_steps(d->unit) ? 1 : 0.1;
+    d->precision = d->unit && !strncmp(d->unit, "\xc2\xb0", 2) ? 1 : 2;
+}
+
+/* The largest integer a double holds exactly, which a number field edits;
+   64-bit fields edit within it. */
+#define EXACT_INTEGER 9007199254740992.0
 
 /* The type's range, within an authored one; unbounded types stay so. */
 static void number_bounds(pin_type type, number_shape *d)
@@ -465,6 +502,8 @@ static void number_bounds(pin_type type, number_shape *d)
         case PIN_I32:
         case PIN_ENUM: min = INT32_MIN, max = INT32_MAX; break;
         case PIN_U32: min = 0, max = UINT32_MAX; break;
+        case PIN_I64: min = -EXACT_INTEGER, max = EXACT_INTEGER; break;
+        case PIN_U64: min = 0, max = EXACT_INTEGER; break;
         case PIN_F32: min = -FLT_MAX, max = FLT_MAX; break;
         default: break;
     }
@@ -653,6 +692,56 @@ static void asset_row(rows *r, row_desc d, const asset_desc *asset)
     put_text(v, table, "none", asset->none);
 }
 
+/* ---------- Objects ---------- */
+
+/* The object a handle names: a placed object by its name, a spawned one by
+   its prototype's; NULL once it is gone. */
+static const char *entity_name(const app_scene_authoring *scene, ecs_entity entity)
+{
+    if (!ecs_entity_is_alive(scene->world, entity)) {
+        return NULL;
+    }
+    for (int i = 0; i < acount(scene->actors); i++) {
+        if (ecs_entity_to_u64(scene->actors[i].entity) == ecs_entity_to_u64(entity)) {
+            return scene->actors[i].name;
+        }
+    }
+    return runtime_entity_label(scene, entity);
+}
+
+/* An object a field names, which the game sets as it runs: scenes save no
+   object references (a saved prototype clears its handles), so the field
+   shows the object, as Unity's object field does, and a click selects it
+   rather than offering a pick that could not be kept. */
+static void entity_row(rows *r, row_desc d, uint64_t handle)
+{
+    view *v = r->v;
+    studio *s = v->s;
+    ecs_entity entity = ecs_entity_from_u64(handle);
+    const char *name = handle ? entity_name(s->scene, entity) : "";
+    char hint[160];
+    snprintf(hint, sizeof hint, "Select %s", name ? name : "");
+    d.control = "entity";
+    d.invalid = !name;
+    yyjson_mut_val *row = next_row(r, &d);
+    put_text(v, row, "text", name ? name : "Missing object");
+    put_text(v, row, "hint", name && name[0] ? hint : "");
+    put_text(
+        v,
+        row,
+        "problem",
+        name ? "Set while the game runs; scenes don't save object references"
+             : "The object this field named was removed"
+    );
+    uint32_t icon = !name ? KIT_ICON_WARNING
+                  : !handle
+                      ? KIT_ICON_TARGET
+                      : studio_prototype_icon(s, scene_entity_prototype(s->scene, entity));
+    yyjson_mut_val *table = member(row, "table");
+    put_glyph(v, table, "icon", icon);
+    put_text(v, table, "none", "None");
+}
+
 /* ---------- Reflected fields ---------- */
 
 /* Where a field is read and how it is marked. */
@@ -674,6 +763,8 @@ static double integer_of(const pin_value *value)
         case PIN_U16: return value->u16;
         case PIN_U32: return value->u;
         case PIN_ENUM: return value->e;
+        case PIN_I64: return (double)value->i64;
+        case PIN_U64: return (double)value->u64;
         default: return value->i;
     }
 }
@@ -700,18 +791,41 @@ static void integer_row(rows *r, const field_source *f)
     number_row(r, &d, &shape, integer_of(&f->value));
 }
 
+/* A 64-bit integer edits in a number field while a double holds it
+   exactly; past that, as its text, which keeps every digit a number field
+   would round away or clamp. */
+static void integer64_row(rows *r, const field_source *f)
+{
+    const pin_value *value = &f->value;
+    bool exact = value->type == PIN_I64 ? value->i64 >= -(int64_t)EXACT_INTEGER &&
+                                              value->i64 <= (int64_t)EXACT_INTEGER
+                                        : value->u64 <= (uint64_t)EXACT_INTEGER;
+    if (exact) {
+        integer_row(r, f);
+        return;
+    }
+    char text[32];
+    if (value->type == PIN_I64) {
+        snprintf(text, sizeof text, "%" PRId64, value->i64);
+    } else {
+        snprintf(text, sizeof text, "%" PRIu64, value->u64);
+    }
+    row_desc d = f->row;
+    d.control = "text";
+    text_row(r, &d, text);
+}
+
 static void float_row(rows *r, const field_source *f)
 {
     const type_field *field = &f->desc->type->fields[f->index];
-    double value = f->value.type == PIN_F32 ? f->value.f : f->value.d;
-    number_shape shape = { .step = fabs(value) >= 100 ? 1 : 0.1, .precision = 2 };
-    if (!strcmp(field->name, "radians")) {
-        value = value * 180 / M_PI;
-        shape.unit = "\xc2\xb0";
-        shape.step = 1;
-        shape.precision = 1;
-    }
+    number_shape shape = { 0 };
     number_hints(r->v->s, f->desc, field, &shape);
+    double value = to_degrees(
+        field,
+        f->value.type == PIN_F32 ? f->value.f : f->value.d,
+        &shape
+    );
+    float_step(&shape);
     number_bounds(f->value.type, &shape);
     row_desc d = f->row;
     d.control = "number";
@@ -736,8 +850,6 @@ static void struct_row(rows *r, const field_source *f)
         axes[i] = (axis_desc){ .key = type->fields[i].name,
                                .label = LABELS[i],
                                .value = value,
-                               .shape = { .step = fabs(value) >= 100 ? 1 : 0.1,
-                                          .precision = 2 },
                                .mixed = d.mixed,
                                .overridden = d.overridden };
         number_hints(
@@ -746,6 +858,7 @@ static void struct_row(rows *r, const field_source *f)
             &f->desc->type->fields[f->index],
             &axes[i].shape
         );
+        float_step(&axes[i].shape);
         number_bounds(axis.type, &axes[i].shape);
     }
     d.control = "vector";
@@ -757,7 +870,6 @@ static void value_row(rows *r, const field_source *f)
     const type_field *field = &f->desc->type->fields[f->index];
     const pin_value *value = &f->value;
     row_desc d = f->row;
-    char text[64];
     switch (value->type) {
         case PIN_BOOL:
             d.control = "bool";
@@ -778,15 +890,7 @@ static void value_row(rows *r, const field_source *f)
         case PIN_I16:
         case PIN_U16: integer_row(r, f); return;
         case PIN_I64:
-        case PIN_U64:
-            if (value->type == PIN_I64) {
-                snprintf(text, sizeof text, "%" PRId64, value->i64);
-            } else {
-                snprintf(text, sizeof text, "%" PRIu64, value->u64);
-            }
-            d.control = "text";
-            text_row(r, &d, text);
-            return;
+        case PIN_U64: integer64_row(r, f); return;
         case PIN_F32:
         case PIN_F64: float_row(r, f); return;
         case PIN_STRUCT: struct_row(r, f); return;
@@ -796,18 +900,7 @@ static void value_row(rows *r, const field_source *f)
             /* A mixed text stays empty, its placeholder a dash. */
             text_row(r, &d, d.mixed || !value->str ? "" : value->str);
             return;
-        case PIN_HANDLE:
-            d.control = "label";
-            text_row(
-                r,
-                &d,
-                value->u64 ? runtime_entity_label(
-                                 r->v->s->scene,
-                                 ecs_entity_from_u64(value->u64)
-                             )
-                           : "None"
-            );
-            return;
+        case PIN_HANDLE: entity_row(r, d, value->u64); return;
         default:
             d.control = "label";
             text_row(r, &d, pin_value_to_string(value));
@@ -1018,10 +1111,16 @@ static void component_panel(view *v, scene_actor *actor, const ecs_component_des
     if (overrides) {
         snprintf(badge, sizeof badge, "%d", overrides);
     }
-    /* An authored object's component its prototype lacks is its own. */
-    bool own = component == &added && actor->identity && !studio_live(s);
+    /* An authored object's component its prototype lacks is its own, but
+       for one the engine derives from another, which it computes. */
+    bool derived = desc->derived_from != 0;
+    bool own = component == &added && actor->identity && !studio_live(s) && !derived;
     if (own) {
         snprintf(badge, sizeof badge, "Added");
+    }
+    if (derived) {
+        snprintf(badge, sizeof badge, "Computed");
+        locked = true;
     }
     const char *key = properties_panel_key(desc->name);
     panel_desc d = { .key = key,
@@ -1032,8 +1131,8 @@ static void component_panel(view *v, scene_actor *actor, const ecs_component_des
                      /* While the scene runs, an authored object's component
                         menu keeps its values alone; else it removes a
                         component the object added. */
-                     .menu = (studio_live(s) && actor->identity) ||
-                             (own && !properties_multi(s, actor)) };
+                     .menu = !derived && ((studio_live(s) && actor->identity) ||
+                                          (own && !properties_multi(s, actor))) };
     rows r = next_panel(v, &d);
     const void *data = ecs_component_data_const(s->scene->world, actor->entity, desc->id);
     for (int i = 0; d.open && i < desc->type->field_count; i++) {

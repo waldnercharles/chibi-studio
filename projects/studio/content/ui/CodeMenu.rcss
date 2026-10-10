@@ -1,0 +1,7 @@
+/* The Text Editor's context menu (studio_code.c), at the secondary click
+   in a document of its own shown only while it is open, as VS Code's
+   editor context menu: Go to Definition and Find References, Rename Symbol
+   and Show Call Hierarchy, then Toggle Line Comment and Find. Each item is
+   a command, so it shows its shortcut and greys out where it cannot act. */
+body { display: block; }
+.menu-item { height: var(--menu-row-h); }

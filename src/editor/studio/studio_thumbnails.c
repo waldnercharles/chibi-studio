@@ -40,7 +40,7 @@
 #define EDIT_REST_SECONDS 0.6
 /* Changes with what any kind's picture looks like, so the disk's pictures
    from older renderers go unused. */
-#define RENDERER_VERSION 3
+#define RENDERER_VERSION 4
 /* What the disk cache holds at most, for every project together. */
 #ifdef __EMSCRIPTEN__
 #define DISK_CAP ((size_t)16 << 20)
@@ -49,6 +49,8 @@
 #endif
 #define DISK_FOLDER "thumbnails"
 #define SEED 1469598103934665603ull
+/* How far a pixel's channel may stray from the first's in a flat picture. */
+#define FLAT_TOLERANCE 2
 
 static const float SIZE_DP[STUDIO_THUMB_SIZE_COUNT] = { 128, 256 };
 static const int SIZE_MAX_PIXELS[STUDIO_THUMB_SIZE_COUNT] = { 256, 512 };
@@ -76,7 +78,8 @@ typedef struct
     bool shown;     /* the canvas holds a picture, maybe of an older stamp */
     bool loading;   /* more of the picture is coming */
     double ms;      /* spent on the picture in progress */
-    uint64_t drawn; /* the frame its picture for the disk was drawn in, or 0 */
+    uint64_t drawn; /* the frame its picture to read back was drawn in, or 0;
+                       that picture shows once it is seen to show something */
     CF_Readback readback; /* that picture on its way back from the GPU */
 } thumb;
 
@@ -635,8 +638,11 @@ static void finish(studio *s, studio_thumbs *t, int slot, bool drawn)
         t->busy = 0;
     }
     if (drawn) {
-        show(s, t, slot);
-        e->drawn = t->disk && !e->unsaved ? t->frame : 0;
+        /* A picture shows once it is read back and seen to hold more than
+           one color: a prototype nothing of which draws on its stage, or a
+           scene with no lighting yet, renders as one flat color, which says
+           less than its kind's icon (read_pictures). */
+        e->drawn = t->frame;
     } else if (e->shown) {
         /* An older picture no longer shows the asset, as an emptied graph. */
         rml_backend_set_image(s->backend, t->names[slot], 0);
@@ -681,13 +687,53 @@ static void step(studio *s, studio_thumbs *t, int slot)
     }
 }
 
-/* Pictures of saved content go to disk: read back a frame after they were
-   drawn, once the GPU has them, and written when the read lands, one a
-   frame. */
-static void store_pictures(studio_thumbs *t)
+/* Whether every pixel has one color, within a step of rounding. */
+static bool flat(const CF_Pixel *pixels, int count)
 {
-    bool wrote = false;
-    for (int i = 0; t->disk && i < SLOT_COUNT; i++) {
+    const CF_Pixel first = pixels[0];
+    for (int i = 1; i < count; i++) {
+        const CF_Pixel p = pixels[i];
+        if (abs(p.r - first.r) > FLAT_TOLERANCE || abs(p.g - first.g) > FLAT_TOLERANCE ||
+            abs(p.b - first.b) > FLAT_TOLERANCE || abs(p.a - first.a) > FLAT_TOLERANCE) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/* A picture read back, which shows unless it is flat, and goes to disk
+   when it shows saved content; false when it was flat. */
+static bool take_picture(studio *s, studio_thumbs *t, int slot, const CF_Pixel *pixels)
+{
+    thumb *e = &t->slots[slot];
+    if (flat(pixels, e->side * e->side)) {
+        e->state = THUMB_FAILED;
+        t->stats.blank++;
+        if (e->shown) {
+            rml_backend_set_image(s->backend, t->names[slot], 0);
+            e->shown = false;
+        }
+        s->ui_schedule.wake = true;
+        return false;
+    }
+    show(s, t, slot);
+    return true;
+}
+
+/* A picture no read can check shows as drawn. */
+static void show_unread(studio *s, studio_thumbs *t, int slot)
+{
+    show(s, t, slot);
+    drop_readback(&t->slots[slot]);
+}
+
+/* Pictures are read back a frame after they were drawn, once the GPU has
+   them, and taken when the read lands, one a frame: shown once seen to show
+   something, and written to disk when they show saved content. */
+static void read_pictures(studio *s, studio_thumbs *t)
+{
+    bool took = false;
+    for (int i = 0; i < SLOT_COUNT; i++) {
         thumb *e = &t->slots[i];
         if (!e->drawn) {
             continue;
@@ -695,20 +741,28 @@ static void store_pictures(studio_thumbs *t)
         if (!e->readback.id) {
             e->readback = t->frame > e->drawn ? cf_canvas_readback(e->canvas)
                                               : e->readback;
+            /* A target the backend cannot read gives no readback. */
+            if (t->frame > e->drawn && !e->readback.id) {
+                show_unread(s, t, i);
+            }
             continue;
         }
-        if (wrote || !cf_readback_ready(e->readback)) {
+        if (took || !cf_readback_ready(e->readback)) {
             continue;
         }
         int bytes = e->side * e->side * (int)sizeof(CF_Pixel);
         CF_Pixel *pixels = xmalloc((size_t)bytes);
-        if (cf_readback_data(e->readback, pixels, bytes) == bytes) {
+        bool read = cf_readback_data(e->readback, pixels, bytes) == bytes;
+        if (!read) {
+            show_unread(s, t, i);
+        }
+        if (read && take_picture(s, t, i, pixels) && t->disk && !e->unsaved) {
             studio_thumb_disk_store(t->disk, disk_key(e, e->side), pixels, e->side);
             t->stats.stored++;
         }
         free(pixels);
         drop_readback(e);
-        wrote = true;
+        took = true;
     }
 }
 
@@ -731,7 +785,7 @@ void studio_thumbs_frame(studio *s)
         t->slots[t->busy - 1].loading = false;
         t->busy = 0;
     }
-    store_pictures(t);
+    read_pictures(s, t);
     bool stepped = t->busy != 0;
     if (t->busy) {
         step(s, t, t->busy - 1);

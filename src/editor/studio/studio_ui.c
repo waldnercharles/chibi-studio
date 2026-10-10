@@ -552,9 +552,9 @@ static bool send_activations(studio *s, ui_mount *mount, ecs_entity entity)
         ui->wake = true;
         if (!strcmp(ui_mount_name(mount), "NewProject") &&
             (!strncmp(a.event, "newProject.", 11) || !strcmp(a.event, "Close"))) {
-            bool confirmation = s->new_project.confirm_discard;
+            bool confirmation = s->new_project.confirm_save;
             studio_new_project_action(s, !strcmp(a.event, "Close") ? "cancel" : a.event + 11);
-            if (!confirmation && s->new_project.confirm_discard) {
+            if (!confirmation && s->new_project.confirm_save) {
                 game_entities_request_event(
                     game_prototype_preview_entities(ui->world),
                     entity,

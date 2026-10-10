@@ -1,0 +1,10 @@
+<use ui="Menu" id="code-menu">
+  <use ui="MenuCommand" data-alias-command="commands.goToDefinition"/>
+  <use ui="MenuCommand" data-alias-command="commands.findReferences"/>
+  <use ui="MenuSeparator"/>
+  <use ui="MenuCommand" data-alias-command="commands.renameSymbol"/>
+  <use ui="MenuCommand" data-alias-command="commands.callHierarchy"/>
+  <use ui="MenuSeparator"/>
+  <use ui="MenuCommand" data-alias-command="commands.toggleLineComment"/>
+  <use ui="MenuCommand" data-alias-command="commands.find"/>
+</use>

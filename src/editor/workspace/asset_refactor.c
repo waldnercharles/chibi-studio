@@ -43,6 +43,20 @@ void app_refactor_free(app_refactor *plan)
     }
 }
 
+void app_refactor_join(app_refactor *into, app_refactor *from)
+{
+    for (int i = 0; i < acount(from->files); i++) {
+        apush(into->files, from->files[i]);
+    }
+    for (int i = 0; i < acount(from->guards); i++) {
+        apush(into->guards, from->guards[i]);
+    }
+    into->mentions += from->mentions;
+    afree(from->files);
+    afree(from->guards);
+    free(from);
+}
+
 int app_refactor_count(const app_refactor *plan)
 {
     int count = 0;

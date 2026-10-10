@@ -1234,7 +1234,7 @@ static void area_panels_take_turns(bool designer)
         frames(&f, 4);
     }
     /* The list, which streams no thumbnails between rounds. */
-    s->prefs.assets_tile = STUDIO_ASSETS_LIST;
+    s->prefs.assets_list = true;
     s->applied = s->prefs;
     int warnings = rml_backend_warning_count();
     uint64_t views[2] = { 0 };

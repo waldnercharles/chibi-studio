@@ -889,12 +889,6 @@ void *chibi_application_create(int argc, char **argv, const char *checkpoint, ch
     app_scene_authoring *authoring = loop->authoring;
     editor *graph_editor = loop->graph_editor;
     engine_viewport *viewport = loop->viewport;
-    /* Put the shipped movement graph on screen on first launch. The graph is
-     * still reachable through Files after switching documents. */
-    if (!play && !open &&
-        game_preview_find_definition(loop->live, "TwinStickInputBehavior")) {
-        (void)app_scene_authoring_open_behavior(authoring, "TwinStickInputBehavior");
-    }
     if (open &&
         open_graph(authoring, graph_editor, open, graph_name, error, error_size) != 0) {
         app_cleanup(loop);

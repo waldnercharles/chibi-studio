@@ -144,7 +144,7 @@ typedef struct toast
 {
     int id;
     kit_toast_type type;
-    char *title, *description, *action;
+    char *title, *description, *action, *cancel;
     double duration, remaining; /* seconds; a negative duration stays until closed */
     bool placed, removing, swiping, swiped, forced_height;
     float height, press_x, swipe_velocity;
@@ -236,6 +236,7 @@ struct kit
     bool dragging; /* a drag ran in the context at the last kit_begin */
     toast *toasts;
     CF_MAP(uint64_t) toast_actions; /* toast id -> frame the action was pressed */
+    CF_MAP(uint64_t) toast_cancels; /* toast id -> frame the cancel was pressed */
     int toast_next;
     double toast_time;
     float front_height;
