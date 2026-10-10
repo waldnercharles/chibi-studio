@@ -6,6 +6,9 @@ on:
       gate_ready:
         type: boolean
         default: false
+      enroll_after:
+        type: string
+        default: ""
       post_merge_workflows:
         type: string
         default: "[]"
@@ -28,6 +31,7 @@ jobs:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           CHIBI_REVIEW_GATE_READY: ${{ inputs.gate_ready }}
+          CHIBI_REVIEW_POLICY_START_AT: ${{ inputs.enroll_after }}
           CHIBI_POST_MERGE_WORKFLOWS: ${{ inputs.post_merge_workflows }}
         with:
           script: |
@@ -39,6 +43,7 @@ jobs:
             const copilotLogin = "copilot-pull-request-reviewer[bot]";
             const githubActionsAppId = 15368;
             const gateReady = process.env.CHIBI_REVIEW_GATE_READY === "true";
+            const enrollmentStart = Date.parse(process.env.CHIBI_REVIEW_POLICY_START_AT || "");
             const postMergeWorkflows = JSON.parse(process.env.CHIBI_POST_MERGE_WORKFLOWS || "[]");
             const defaultBranch = (await github.rest.repos.get({ owner, repo })).data.default_branch;
             const permissionCache = new Map();
@@ -293,6 +298,7 @@ jobs:
             }
 
             async function enrollNewPullRequest(pr) {
+              if (!gateReady || !Number.isFinite(enrollmentStart) || Date.parse(pr.created_at) < enrollmentStart) return;
               await ensureAutoMergeLabel();
               const existing = pr.labels.map(label => typeof label === "string" ? label : label.name);
               if (!existing.includes(autoMergeLabel)) {
@@ -363,8 +369,8 @@ jobs:
                 continue;
               }
 
-              if (event === "pull_request_target" && context.payload.action === "opened") {
-                await enrollNewPullRequest(pr);
+              await enrollNewPullRequest(pr);
+              if (!labels.includes(autoMergeLabel) && Date.parse(pr.created_at) >= enrollmentStart) {
                 pr = (await github.rest.pulls.get({ owner, repo, pull_number: number })).data;
               }
 

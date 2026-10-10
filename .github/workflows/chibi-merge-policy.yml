@@ -3,13 +3,10 @@ name: Chibi merge policy
 on:
   push:
     branches: [main]
-  pull_request_target:
-    branches: [main]
-    types: [opened, reopened, synchronize, ready_for_review, edited, converted_to_draft, labeled, unlabeled]
   issues:
     types: [labeled, unlabeled]
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
 
 permissions:
   contents: write
@@ -23,6 +20,7 @@ jobs:
     uses: ./.github/workflows/chibi-merge-policy-reusable.yml
     with:
       gate_ready: ${{ vars.CHIBI_REVIEW_GATE_READY == 'true' }}
+      enroll_after: ${{ vars.CHIBI_REVIEW_POLICY_START_AT }}
       post_merge_workflows: >-
         [{"workflow":"ci.yml","ignore":["README.md","AGENTS.md","docs/**",".claude/**","web/**","EXTRACTION.json",".github/workflows/publish.yml"]},{"workflow":"publish.yml","include":["src/**","include/**","projects/**","web/**","cmake/**","CMakeLists.txt",".github/workflows/publish.yml"]}]
     permissions:
