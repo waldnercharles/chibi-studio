@@ -45,7 +45,7 @@ at its unturned one, and that a duplicate offset in world space keeps the right
 local offset. It saves no file.
 
 `studio-acceptance --scene-viewport --project-root PATH` takes another
-disposable copy and runs nine hidden fixed-dt frames. It loads a box with a
+disposable copy and runs fourteen hidden fixed-dt frames. It loads a box with a
 spot inside it that nothing draws, and checks that the spot is listed for a
 marker and picks above the box, that a resize handle and the rotate ring take
 a press a few pixels past them, and that a resize labels its size by the
@@ -54,10 +54,15 @@ SDL events it checks that a whole wheel notch zooms the camera, that a
 fraction of one, as a trackpad scrolls, pans it, that Space with a left drag
 pans without playing, that Space released while Settings records a chord
 neither stays held nor plays, and that Space alone plays once it is released.
+With a Preview target playing, which it sets directly because this project's
+source behavior keeps a prototype preview from launching, the wheel, a
+trackpad's fraction included, and Space stay the game's.
 Framing before the Scene's first draw leaves the zoom's measure to that draw.
 While the game plays, the wheel, a trackpad's fraction included, reaches its
-UI, and the undrawn spot, which shows no marker then, picks nothing. It saves
-no file.
+UI, and the undrawn spot, which shows no marker then, picks nothing. Stopped,
+it loads 300 undrawn spots and checks that the Scene shows a marker for each.
+It then narrows the Scene to 240 dp beside the Text Editor and checks that the
+rotate tool's hint and its Add button stay inside it. It saves no file.
 
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
@@ -99,14 +104,17 @@ pauses, F10 steps while paused, F5 resumes and Shift+F5 stops. It also checks th
 File menu's Revert File label. It saves nothing.
 
 `studio-acceptance --unsaved-prompts --project-root PATH` takes another disposable
-copy and runs at most fourteen hidden frames with reduced motion on, so toasts sit
+copy and runs at most eighteen hidden frames with reduced motion on, so toasts sit
 where layout puts them. Counter's clean tab closes without asking. With Counter
 edited, closing its tab asks "Save Counter before closing?" with Save and
 Discard, and a click on Discard closes the tab without writing. Edited and asked
 again, a Save by hand writes Counter, dismisses the prompt and keeps the tab
-open. With Counter edited again, Quit asks "Save Counter before quitting?", and
-a click on Save writes Counter before Studio quits. The clicks are pointer motion, press and
-release queued through SDL over the toast's buttons. The initial Counter bytes are
+open. Then it adds an object to the start scene from a prototype only that run
+registers and plays the scene. With Counter edited while it runs, Quit asks to
+save both; a click on Save writes Counter, whose text applies live, and asks
+again about the scene the running scene keeps from saving, naming how to save
+it. A click on Discard then quits without writing the scene. The clicks are
+pointer motion, press and release queued through SDL over the toast's buttons. The initial Counter bytes are
 restored afterwards.
 
 Execution requires explicit root coordination and independent admission under the

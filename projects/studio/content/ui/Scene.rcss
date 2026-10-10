@@ -37,15 +37,16 @@ body.area-panel { padding: 0dp; overflow: hidden; }
 /* Why the tool's gizmo is grey, centered below it, with its one-click fix. */
 .tool-hint { position: absolute; left: 0dp; top: 0dp; width: 0dp; height: 0dp; }
 .tool-hint-box {
-    position: absolute; left: -160dp; top: 0dp; width: 320dp; display: flex; justify-content: center;
+    position: absolute; left: 0dp; top: 0dp; display: flex; justify-content: center;
     pointer-events: none;
 }
 .tool-hint-pill {
-    display: flex; align-items: center; gap: 6dp; padding: 2dp 2dp 2dp 8dp; border-radius: var(--r);
+    display: flex; align-items: center; gap: 6dp; box-sizing: border-box; min-width: 0dp; max-width: 100%; padding: 2dp 2dp 2dp 8dp; border-radius: var(--r);
     border: 1dp var(--line); background-color: var(--floating); pointer-events: auto;
 }
 .tool-hint-pill > .icon { color: var(--muted-foreground); font-size: 13dp; }
-.tool-hint-pill > .text { color: var(--foreground); font-size: var(--studio-font-11, 11dp); white-space: nowrap; }
+.tool-hint-pill > .icon, .tool-hint-pill > .btn { flex: 0 0 auto; }
+.tool-hint-pill > .text { flex: 0 1 auto; min-width: 0dp; overflow: hidden; text-overflow: ellipsis; color: var(--foreground); font-size: var(--studio-font-11, 11dp); white-space: nowrap; }
 /* A gesture's change by the pointer. */
 .delta-label {
     position: absolute; left: 0dp; top: 0dp; padding: 1dp 6dp; border-radius: var(--r);
