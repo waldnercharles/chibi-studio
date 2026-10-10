@@ -2192,6 +2192,10 @@ static void code_menu(studio *s)
     c->menu.mounted = true;
     rml_element *popover = host ? rml_element_by_id(host, "code-menu") : NULL;
     if (popover && c->menu.opening) {
+        /* The menu reads its keys wherever the focus is, but a focused
+           text would also type the letters its typeahead reads, so the text
+           lets go of the focus, as the graph's menu has it. */
+        kit_blur(s->kit);
         float ratio = studio_pixel_ratio(s);
         popover_show(
             popover,
