@@ -77,7 +77,8 @@
     "cmake/zep_dependencies.cmake": {
       "current_source_sha256": "2112944826b9cc4d3b46d2f3a9d8b4d63f1bc7817e3079c17cbf0b55b00359c3",
       "sha256": "2112944826b9cc4d3b46d2f3a9d8b4d63f1bc7817e3079c17cbf0b55b00359c3",
-      "source_path": "cmake/zep_dependencies.cmake"
+      "source_path": "cmake/zep_dependencies.cmake",
+      "consumer_sha256": "886951581b6d735199b209ca49638467c0849ead6e58ec4d109e3f1a6250d3c8"
     },
     "include/chibi/application.h": {
       "current_source_sha256": "e1a89898f27f81623f1d6b5935ae64db6f7b68842961e774c74bc0cc3e1fa5e7",
@@ -2127,12 +2128,14 @@
     "src/editor/text/zep_bridge.cpp": {
       "current_source_sha256": "1fa3d063bd2ac8d2cbdfaa1146cf52d31d87dc2cff5c7412af9db7953092dc03",
       "sha256": "1fa3d063bd2ac8d2cbdfaa1146cf52d31d87dc2cff5c7412af9db7953092dc03",
-      "source_path": "src/editor/text/zep_bridge.cpp"
+      "source_path": "src/editor/text/zep_bridge.cpp",
+      "consumer_sha256": "849c8a08a3c4dce47283005bdc6fbb47bdf0e9e0be5fc3fc945a093f388456ce"
     },
     "src/editor/text/zep_bridge.h": {
       "current_source_sha256": "c00d916fadd81518f710272ec3b65394bfb757f00256ed1a42a8c8664ffd1e2b",
       "sha256": "c00d916fadd81518f710272ec3b65394bfb757f00256ed1a42a8c8664ffd1e2b",
-      "source_path": "src/editor/text/zep_bridge.h"
+      "source_path": "src/editor/text/zep_bridge.h",
+      "consumer_sha256": "49788ccc1157c2113d6a80b289a5f1715675c826f42a1847abdf194d0153e1ef"
     },
     "src/editor/ui/choices.c": {
       "current_source_sha256": "445249cccfbeca102738e53ca9bc1c0081b39b431ae2b39421901bb44dc24638",
