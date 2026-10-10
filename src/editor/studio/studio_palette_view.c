@@ -19,7 +19,7 @@
  * client's markup over the same rows, under the field its text is typed in,
  * as Base UI's Combobox lists under its input.
  *
- * palette: { placeholder, empty, count,
+ * palette: { placeholder, empty, verb (what Enter does), count,
  *   rows: [{ heading, label (markup, the match in bold), about, meta,
  *            shortcut, tip, icon, image, place, current }] }
  * palette_ui: { highlight } */
@@ -334,6 +334,7 @@ void studio_palette_add_variables(yyjson_mut_doc *doc)
     yyjson_mut_val *palette = yyjson_mut_obj_add_obj(doc, root, "palette");
     yyjson_mut_obj_add_strcpy(doc, palette, "placeholder", "");
     yyjson_mut_obj_add_strcpy(doc, palette, "empty", "");
+    yyjson_mut_obj_add_strcpy(doc, palette, "verb", "Open");
     yyjson_mut_obj_add_int(doc, palette, "count", 0);
     yyjson_mut_obj_add_arr(doc, palette, "rows");
     yyjson_mut_val *ui = yyjson_mut_obj_add_obj(doc, root, "palette_ui");
@@ -532,6 +533,28 @@ static bool show_rows(studio *s, const studio_panel_sync *at, yyjson_mut_val *ar
     return changed;
 }
 
+/* What Enter does to the highlighted result, as cmdk's footers name it. */
+static const char *verb(const studio_palette_state *p)
+{
+    switch (p->client) {
+        case STUDIO_PALETTE_SEARCH:
+            if (p->highlight < 0 || p->highlight >= acount(p->places)) {
+                return "Open";
+            }
+            return studio_search_verb(
+                &p->entries[p->rows[p->places[p->highlight]].entry]
+            );
+        case STUDIO_PALETTE_NODES:
+        case STUDIO_PALETTE_COMPONENTS: return "Add";
+        case STUDIO_PALETTE_ASSETS:
+        case STUDIO_PALETTE_SOURCES:
+        case STUDIO_PALETTE_TYPES:
+        case STUDIO_PALETTE_CHOICES: return "Choose";
+        case STUDIO_PALETTE_CLOSED: break;
+    }
+    return "Open";
+}
+
 bool studio_palette_sync(studio *s, const studio_panel_sync *at)
 {
     studio_palette_state *p = &s->palette;
@@ -546,6 +569,7 @@ bool studio_palette_sync(studio *s, const studio_panel_sync *at)
     }
     bool changed = ui_data_put_text(at->doc, at->variable, "placeholder", p->placeholder);
     changed |= ui_data_put_text(at->doc, at->variable, "empty", empty);
+    changed |= ui_data_put_text(at->doc, at->variable, "verb", verb(p));
     changed |= ui_data_put_int(at->variable, "count", acount(p->places));
     changed |= show_rows(s, at, rows);
     yyjson_mut_val *ui = yyjson_mut_obj_get(yyjson_mut_doc_get_root(at->doc), "palette_ui");

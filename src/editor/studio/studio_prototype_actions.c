@@ -104,7 +104,7 @@ static void apply(studio *s, scene_actor *actor, const game_prototype_field *fie
     snprintf(prototype, sizeof prototype, "%s", actor->prototype_name);
     int reach = scene_override_reach(s->scene, actor, fields, count);
     if (scene_apply_overrides(s->scene, actor, fields, count) != 0) {
-        studio_report(s, "Could not apply the overrides");
+        studio_warn(s, "Could not apply the overrides");
         return;
     }
     char title[320], description[96];

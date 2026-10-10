@@ -909,11 +909,13 @@ static int discard_prototype(app_scene_authoring *scene, scene_document_tab *tab
 
 static int discard_behavior(app_scene_authoring *scene, scene_document_tab *tab)
 {
-    if (!tab->asset_saved) {
-        return -1;
-    }
     const char *name = tab->key + strlen("behavior:");
     game_preview_definition *definition = game_preview_find_definition(scene->live, name);
+    if (!tab->asset_saved) {
+        /* A behavior shown from its source keeps no graph snapshot; with
+           nothing unsaved there is nothing to discard. */
+        return definition && !definition->unsaved ? 0 : -1;
+    }
     behavior_asset *working = behavior_asset_from_value(tab->asset_saved);
     graph *graph = working ? behavior_asset_find_graph(working, 0) : NULL;
     if (!definition || !working || !graph) {
