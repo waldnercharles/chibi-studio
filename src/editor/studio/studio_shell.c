@@ -561,6 +561,7 @@ void studio_frame_selection(studio *s)
         fit_scene_view(s->viewport, scene->world, entities, acount(entities));
         engine_viewport_get_view(s->viewport, &scene->camera.view);
         scene->camera.saved = true;
+        app_scene_authoring_framed(scene);
     }
     afree(entities);
 }
@@ -663,6 +664,7 @@ void studio_frame_all(studio *s)
     fit_scene_view(s->viewport, s->scene->world, NULL, 0);
     engine_viewport_get_view(s->viewport, &s->scene->camera.view);
     s->scene->camera.saved = true;
+    app_scene_authoring_framed(s->scene);
 }
 
 void studio_select_all(studio *s)

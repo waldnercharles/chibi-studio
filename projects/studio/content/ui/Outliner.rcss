@@ -22,3 +22,7 @@ body { overflow: hidden; padding: 0dp; }
 .list:focus-visible .tree-row[data-active] { border-color: var(--ring); }
 /* The name's field starts where a row's icon does, past the twisty's room. */
 .object-rename { padding-left: 38dp; }
+/* With a filter that hides every object, the notice names the query and
+   offers the way back, as the Assets panel's empty state does. */
+.outliner-empty { display: flex; flex-direction: column; align-items: center; gap: 8dp; padding: 0dp 16dp; }
+.outliner-empty .btn { pointer-events: auto; }

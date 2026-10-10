@@ -239,6 +239,7 @@ static void restore_scene_tab_view(app_scene_authoring *scene, const scene_docum
     scene->scene_dirty = tab->scene_dirty;
     scene->camera.view = tab->camera;
     scene->camera.saved = tab->camera_saved;
+    scene->camera.framed = 0;
     scene->selected = -1;
     for (int i = 0; i < acount(scene->actors); i++) {
         uint64_t entity = i < tab->scene_entity_count ? tab->scene_entities[i] : 0;

@@ -54,6 +54,7 @@ enum
     KIT_ICON_ROTATE = 0xf0467,      /* nf-md-rotate_right */
     KIT_ICON_SCALE = 0xf0a68,       /* nf-md-resize */
     KIT_ICON_FRAME = 0xf004c,       /* nf-md-arrow_expand_all */
+    KIT_ICON_FOCUS = 0xf01a3,       /* nf-md-crosshairs */
     KIT_ICON_PAN = 0xf0bb4,         /* nf-md-pan */
     KIT_ICON_ZOOM_IN = 0xeb81,      /* nf-cod-zoom_in */
     KIT_ICON_ZOOM_OUT = 0xeb82,     /* nf-cod-zoom_out */

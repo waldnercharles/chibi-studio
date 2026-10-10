@@ -681,7 +681,10 @@ bool studio_hierarchy_sync(studio *s, const studio_panel_sync *at)
     yyjson_mut_val *hierarchy = at->variable;
     take_view_state(d, hierarchy, at->wrote);
     list_rows(d);
-    const char *empty = d->filter[0] && acount(d->tree) == 1 ? "No matches" : "";
+    char empty[sizeof d->filter + 32] = "";
+    if (d->filter[0] && acount(d->tree) == 1) {
+        snprintf(empty, sizeof empty, "No elements match “%s”", d->filter);
+    }
     bool changed = ui_data_put_text(at->doc, hierarchy, "query", d->filter);
     changed |= ui_data_put_text(at->doc, hierarchy, "empty", empty);
     changed |= show_document(at->doc, member(hierarchy, "root"), d);

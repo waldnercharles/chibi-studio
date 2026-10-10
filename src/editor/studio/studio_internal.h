@@ -1140,11 +1140,20 @@ struct studio
     kit_surface_input surface;
     struct
     {
-        float zoom; /* magnification of the Scene's frame, game UI included; 1 fits */
+        float zoom; /* magnification of the Canvas's frame; 1 fits */
         float x, y; /* the center shown, as fractions of the frame */
         float u, v; /* the pointer last frame, as fractions of the Scene area */
         bool panning;
     } view;
+    /* The Scene's camera navigation beyond the viewport's own wheel and middle
+       drag (studio_scene.c). */
+    struct
+    {
+        bool space_play;   /* Space went down over the Scene: Play on release */
+        bool space_panned; /* a drag panned while Space was down */
+        bool space_drag;   /* the left button pans until released */
+        double zoomed_at;  /* when a wheel or a pinch last zoomed the camera */
+    } scene_nav;
     studio_graph graph;
     studio_members members;
     studio_refactor refactor;
@@ -1163,6 +1172,14 @@ struct studio
     SDL_Keymod mods;   /* modifier state as of the last replayed key event */
     int nav_button; /* mouse button 4 (-1, Back) or 5 (1, Forward) this frame */
     float zoom_wheel; /* the wheel turned with Mod or Ctrl held this frame */
+    /* This frame's wheel as the Scene hears it: a mouse wheel's notches, and
+       a trackpad's scroll with Mod or Ctrl held, zoom (scene_wheel); a
+       trackpad's scroll without them pans (scroll_x, scroll_y). */
+    float scene_wheel;
+    float scroll_x, scroll_y;
+    bool wheel_trackpad; /* the scroll gesture in progress is a trackpad's */
+    double wheel_at;     /* when its last wheel event arrived */
+    bool space_down;     /* Space is held, as its key events say */
     float pinch;      /* the log of this frame's trackpad pinch scale, or 0 */
     int undo_toast;   /* toast offering Undo for undo_toast_group */
     uint64_t undo_toast_group;
@@ -1582,12 +1599,19 @@ bool studio_matches(const char *query, const char *text);
 /* Editors emit into an area body; headers into the area header. */
 void studio_scene_header(studio *s, int area);
 void studio_scene_body(studio *s, int area);
-/* Shows the part of the frame the view zoom does, as fractions of it, on
-   the surface emitted last. */
+/* Shows the part of the Canvas's frame its page zoom does, as fractions of
+   it, on the surface emitted last. */
 void studio_view_crop(studio *s);
-/* Takes the view zoom's gestures from the Scene area's pointer in `input`,
- * given in area points, and leaves it in the frame's points. */
+/* Takes the Scene area's navigation from its pointer in `input`, given in
+ * area points: in the Canvas, the page zoom's gestures, leaving the pointer
+ * in the frame's points; in the Scene, the camera's zoom from the wheel and
+ * a pinch, and its pan from a trackpad's scroll and a Space drag. */
 void studio_scene_view(studio *s, engine_viewport_host_input *input);
+/* Space over the Scene pans while held with a drag, so a Play it presses
+   waits for its release: true when `key` is that Space, held back. */
+bool studio_scene_space(studio *s, studio_key key);
+/* Plays once the held-back Space lifts, unless it panned; every frame. */
+void studio_scene_space_release(studio *s);
 /* The Outliner (studio_outliner.c): its header's filter and Add, and its
  * body, the authored Outliner panel in each area showing it, whose
  * behaviors call the editor nodes (studio_nodes.c). */
@@ -1605,6 +1629,8 @@ void studio_set_object_view(studio *s, int actor, unsigned flag, bool on);
 void studio_isolate(studio *s, int actor);
 /* Asks the panels that list objects to show the active one (RevealObject). */
 void studio_reveal_selection(studio *s);
+/* The object whose Outliner row the pointer rests on, or none. */
+ecs_entity studio_outliner_hovered(studio *s);
 /* Hide in Editor (Blender's H, Shift+H and Alt+H): hides the selected objects,
  * or the others, from the Scene's edit view, or shows them all again. */
 void studio_hide(studio *s, bool selected);
@@ -2650,6 +2676,8 @@ bool studio_can_add_component(studio *s);
  * prototype or object lacks, by the Properties tab each shows in, the
  * current tab's first. */
 void studio_add_component_open(studio *s);
+/* Adds `desc` to the one placed object selected, as Add Component does. */
+void studio_add_component_to_selection(studio *s, const ecs_component_desc *desc);
 void studio_component_entries(studio *s, studio_palette_entry **entries);
 void studio_component_choose(studio *s, const studio_palette_entry *entry);
 /* Runs the Undo a Remove Component toast offers; call every frame. */
