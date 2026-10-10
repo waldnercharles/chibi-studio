@@ -1325,7 +1325,7 @@
       "current_source_sha256": "fdd6ee02865e4f54bdc94831f86e3f24ed18c6e9f7af720b330d1fec5f4a35c4",
       "sha256": "fdd6ee02865e4f54bdc94831f86e3f24ed18c6e9f7af720b330d1fec5f4a35c4",
       "source_path": "projects/studio/content/ui/theme/graph.rcss",
-      "consumer_sha256": "d3c556f684af1e6cd3495e4adfcc5c9419eca3bb04c2f3ec7d93fca483431ca6"
+      "consumer_sha256": "f5bc30eba257ae51a2658d1ca3485ec18004b347fe08bcd23f87f0d93a4c5b9f"
     },
     "projects/studio/content/ui/theme/inspect.rcss": {
       "current_source_sha256": "f16a836cfb721178806660fe722825cf3d7a50c70c33209f98e47029429474f8",
