@@ -53,6 +53,9 @@ int app_scene_authoring_apply_refactor(
     size_t error_size
 );
 void app_refactor_free(app_refactor *plan);
+/* Moves `from`'s files into `into` and frees `from`, so plans of separate
+   files apply, and undo, as one. */
+void app_refactor_join(app_refactor *into, app_refactor *from);
 
 /* An asset a plan changes, for its preview. */
 typedef struct

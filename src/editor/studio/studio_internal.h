@@ -281,11 +281,12 @@ typedef struct
     bool scene_lighting;
     bool scene_fog;
     bool scene_cameras;
-    int assets_tile; /* Assets' thumbnail size in dp; STUDIO_ASSETS_LIST lists them */
+    int assets_tile; /* Assets' thumbnail size in dp */
+    bool assets_list; /* Assets lists its assets by kind instead of tiling them */
 } studio_prefs;
 
-/* Assets' thumbnail slider: its smallest step shows the list. */
-#define STUDIO_ASSETS_LIST 40
+/* Assets' thumbnail slider. */
+#define STUDIO_ASSETS_TILE_MIN 48
 #define STUDIO_ASSETS_TILE 96
 #define STUDIO_ASSETS_TILE_MAX 160
 
@@ -863,6 +864,14 @@ typedef struct studio_gallery
     studio_gallery_item *bin; /* Collected, in order (support/array.h) */
 } studio_gallery;
 
+/* An asset as Assets selects it: by kind and name, which outlive the asset
+   index's numbering (studio_assets.c). */
+typedef struct studio_asset_ref
+{
+    int kind; /* reference_asset_kind */
+    char name[128];
+} studio_asset_ref;
+
 /* A Properties panel the user folded or opened (studio_properties.c). */
 typedef struct studio_fold
 {
@@ -1049,6 +1058,8 @@ struct studio
     int assets_menu;           /* the asset under the row menu */
     int assets_selected_kind;  /* the selected asset's reference_asset_kind */
     char assets_selected[128]; /* the selected asset's name, or "" */
+    studio_asset_ref *assets_marked; /* selected with it (support/array.h) */
+    studio_asset_ref assets_anchor; /* where Shift extends the selection from */
     bool assets_reveal; /* scroll the selection into view on the next emission */
     int assets_rest;    /* the tile the pointer rests on, or -1 */
     double assets_rest_since;
@@ -1740,6 +1751,9 @@ void studio_record(studio *s, kit_toast_type kind, const char *text);
    named elsewhere, a missing asset has no file, and nothing indexes the
    imports of a stylesheet. */
 bool studio_asset_refactorable(const reference_asset *asset);
+/* Refactorable and declarative: the uses of an executable source live in
+   code, which no delete plans yet. */
+bool studio_asset_deletable(studio *s, const reference_asset *asset);
 /* Renames an event, its definition when it has one, and what sends and
    handles it; host events keep their names. */
 bool studio_code_replace(
@@ -1768,6 +1782,9 @@ bool studio_refactor_confirm_delete(
     uint64_t id
 );
 void studio_refactor_delete_asset(studio *s, int asset);
+/* Deletes several assets at once, with one Undo; refused while any of them
+   is still used, which deleting it alone lists. */
+void studio_refactor_delete_assets(studio *s, const int *assets, int count);
 /* The popover (Refactor.rml) and the Undo toast; call every frame. */
 void studio_refactor_frame(studio *s);
 void studio_refactor_free(studio *s);
