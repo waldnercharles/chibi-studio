@@ -365,8 +365,7 @@ static int boost(const studio_prefs *prefs, const char *key)
     return 40 * uses + 100 * (STUDIO_RECENT_COUNT - i) / STUDIO_RECENT_COUNT;
 }
 
-/* Moves `key` to the front, counting the use. */
-static void remember(studio_prefs *prefs, const char *key)
+void studio_palette_remember(studio_prefs *prefs, const char *key)
 {
     if (!key[0]) {
         return;
@@ -413,7 +412,7 @@ static void recent_first(const studio *s, studio_palette_entry **picks)
 void studio_search_choose(studio *s, const studio_palette_entry *p)
 {
     app_scene_authoring *scene = s->scene;
-    remember(&s->prefs, p->key);
+    studio_palette_remember(&s->prefs, p->key);
     switch ((pick_kind)p->kind) {
         case PICK_COMMAND:
             studio_command_run(s, (studio_command)p->index);

@@ -1499,6 +1499,9 @@ bool studio_search_lists_anew(const char *was, const char *query);
 /* The query without its prefix. */
 const char *studio_search_query(const char *query);
 void studio_search_choose(studio *s, const studio_palette_entry *entry);
+/* Moves `key` to the front of the recently chosen items, counting the use;
+   an empty key is none. */
+void studio_palette_remember(studio_prefs *prefs, const char *key);
 
 /* Content changed on disk (studio_disk.c): reloads it and raises failures and
    unsaved conflicts as toasts. */

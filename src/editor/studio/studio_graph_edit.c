@@ -1030,6 +1030,39 @@ static void read_catalog(studio *s)
     );
 }
 
+/* With nothing typed, the nodes added last lead under Recent, most recent
+   first (Serial Position), instead of the alphabet's first category. */
+static void recent_nodes_first(const studio *s, studio_palette_entry **entries)
+{
+    enum
+    {
+        RECENT_NODES = 5
+    };
+    studio_palette_entry *ordered = NULL;
+    bool *taken = xcalloc((size_t)acount(*entries) + 1, sizeof *taken);
+    const studio_recent *recent = s->prefs.recent;
+    for (int r = 0; r < STUDIO_RECENT_COUNT && recent[r].key[0] &&
+                    acount(ordered) < RECENT_NODES;
+         r++) {
+        for (int i = 0; i < acount(*entries); i++) {
+            if (!taken[i] && !strcmp((*entries)[i].key, recent[r].key)) {
+                apush(ordered, (*entries)[i]);
+                snprintf(alast(ordered).group, sizeof alast(ordered).group, "Recent");
+                taken[i] = true;
+                break;
+            }
+        }
+    }
+    for (int i = 0; i < acount(*entries); i++) {
+        if (!taken[i]) {
+            apush(ordered, (*entries)[i]);
+        }
+    }
+    free(taken);
+    afree(*entries);
+    *entries = ordered;
+}
+
 void studio_graph_palette_entries(studio *s, const char *query, studio_palette_entry **entries)
 {
     editor *e = sg_graph_editor(s);
@@ -1047,16 +1080,26 @@ void studio_graph_palette_entries(studio *s, const char *query, studio_palette_e
         }
     }
     afree(found);
+    /* The palette keeps this order and groups rows where a group first shows,
+       so a wire's search groups by band, its category after each name. */
+    static const char *const BANDS[] = { "Other nodes", "Any type", "Converts", "Fits the wire" };
+    bool linked = e->spawn_link_pending;
     for (int i = 0; i < acount(*matches); i++) {
         const ed_search_match *m = &(*matches)[i];
-        studio_palette_entry *entry = studio_palette_add(entries, m->category, m->name);
+        const char *group = linked ? BANDS[link_fit(e, m)] : m->category;
+        studio_palette_entry *entry = studio_palette_add(entries, group, m->name);
         entry->icon = m->function ? KIT_ICON_FUNCTION
                     : m->host_event || m->event || m->ui_event ? KIT_ICON_EVENT
                     : m->variable                              ? KIT_ICON_FIELD
                                                                : 0;
         const char *about = match_about(s, e, m);
         snprintf(entry->about, sizeof entry->about, "%s", about ? about : "");
+        snprintf(entry->meta, sizeof entry->meta, "%s", linked ? m->category : "");
+        snprintf(entry->key, sizeof entry->key, "node:%s/%s", m->category, m->name);
         entry->index = i;
+    }
+    if (!query[0] && !linked) {
+        recent_nodes_first(s, entries);
     }
     editor_set_ui_event_catalog(e, NULL, 0);
 }
@@ -1069,6 +1112,7 @@ void studio_graph_palette_choose(studio *s, const studio_palette_entry *entry)
         return;
     }
     read_catalog(s);
+    studio_palette_remember(&s->prefs, entry->key);
     bool linked = e->spawn_link_pending;
     ed_pin_view from = e->spawn_link_pin;
     node *n = NULL;
