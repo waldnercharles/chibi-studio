@@ -1978,6 +1978,14 @@ int sync_behavior_working(app_scene_authoring *scene)
         scene->graph_editor
     );
     if (presentation && scene->definition && scene->definition->working_presentation) {
+        if (scene->editor_state_seen && !scene->behavior_apply_pending &&
+            !editor_has_pending_edits(scene->graph_editor) &&
+            scene->editor_definition_seen == scene->definition &&
+            scene->editor_behavior_asset_seen ==
+                editor_behavior_asset(scene->graph_editor) &&
+            scene->editor_revision_seen == editor_edit_revision(scene->graph_editor)) {
+            return 0;
+        }
         assert(scene->definition->registered && scene->definition->path &&
                scene->definition->path[0]);
         authoring_source_presentation *copy = authoring_source_presentation_clone(presentation);
@@ -2072,6 +2080,11 @@ void preview_behavior_edits(app_scene_authoring *scene)
         return;
     }
     if (scene->definition->working_presentation) {
+        if (game_preview_sources_working(scene->live) ==
+            game_preview_sources_applied(scene->live)) {
+            scene->preview_retry = false;
+            return; /* Only presentation metadata changed. */
+        }
         int result = scene_publish_sources(
             scene,
             NULL,
@@ -2080,7 +2093,14 @@ void preview_behavior_edits(app_scene_authoring *scene)
         );
         scene->preview_retry = false;
         if (!result) {
-            scene->editor_state_seen = false;
+            /* Publication replaces the runtime definition, not the edit that
+               was just consumed. Remember that combination so an unchanged
+               editor does not publish it again on the next frame. */
+            scene->editor_state_seen = true;
+            scene->editor_definition_seen = scene->definition;
+            scene->editor_working = editor_behavior_asset(scene->graph_editor);
+            scene->editor_behavior_asset_seen = scene->editor_working;
+            scene->editor_revision_seen = editor_edit_revision(scene->graph_editor);
         }
         sync_editor_inspection(scene);
         return;
