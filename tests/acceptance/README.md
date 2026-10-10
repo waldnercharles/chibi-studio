@@ -19,8 +19,16 @@ input. No source save, scenario, playback or screenshot occurs.
 It shows Counter in the Text Editor, focuses it and places the cursor after the
 event's closing brace, then queues two Enter key presses through SDL, as the
 platform does, a few frames apart. The source must gain only whitespace: Enter
-types newlines and never accepts a completion nobody asked for. It runs twelve
-hidden frames and saves nothing.
+types newlines and never accepts a completion nobody asked for, and one undo
+takes back both, as typing coalesces. Control+/ on the state line then
+comments it and again uncomments it, and one undo restores the commented line,
+an undo step of its own. It runs twenty-one hidden frames; Counter stays
+unsaved.
+
+`studio-acceptance --kdl-keys --project-root PATH` takes another disposable copy.
+It shows the open scene in the Text Editor, types Enter at the end of its KDL
+and saves it: KDL that reads settles without waiting on a graph, so Save writes
+it into the disposable copy. It runs ten hidden frames.
 
 `studio-acceptance --scene-hierarchy --project-root PATH` takes another
 disposable copy. Its first hidden frame loads a scene whose ship holds a turret

@@ -11,7 +11,9 @@
  * a count in the header that steps through them; completion as you type and
  * on Control+Space; a card describing what the pointer rests on; Go to
  * Definition (F12 or a primary click) and Find References (Shift+F12) into
- * Output's Find view.
+ * Output's Find view; F8 and Shift+F8 through the problems, and Mod+/ to
+ * comment lines. These are Text Editor commands (studio_commands.c), so
+ * Search, the text's context menu and Settings ▸ Keyboard reach them.
  *
  * One history: the document's buffer (ui_buffer.h) keeps it and the code
  * editors keep none. Typing reaches the buffer as typed text, an accepted
@@ -34,6 +36,7 @@
 #include "support/text_file.h"
 #include "support/text_overlay.h"
 #include "support/xalloc.h"
+#include "ui/popover.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -52,6 +55,8 @@
 #define PROJECT_STALE 2.0
 /* Characters that start completion when typed, as '<' starts a tag. */
 #define COMPLETION_TRIGGERS "<.\"("
+/* Seconds a moved caret rests before its tab keeps it. */
+#define CAPTURE_REST 0.5
 
 static const char *const PART_NAMES[UI_PART_COUNT] = { "rml", "rcss" };
 
@@ -261,7 +266,10 @@ static void save_asset(studio *s, asset_code *code)
         av_value_free(e->saved_snapshot);
         e->saved_snapshot = ed_value_snapshot(e->asset);
     }
-    kit_toast(s->kit, 0, &(kit_toast_desc){ .type = KIT_TOAST_SUCCESS, .title = "Saved source" });
+    char title[160];
+    snprintf(title, sizeof title, "Saved %s", content_basename(asset_code_path(code)));
+    kit_toast(s->kit, 0, &(kit_toast_desc){ .type = KIT_TOAST_SUCCESS, .title = title });
+    studio_record(s, KIT_TOAST_SUCCESS, title);
 }
 
 static scene_document_tab *active_ui(studio *s)
@@ -508,6 +516,9 @@ static void prune_editors(studio *s)
             }
         }
         if (!open) {
+            if (c->editor == asset_code_editor(c->assets[i])) {
+                c->editor = NULL;
+            }
             asset_code_free(c->assets[i]);
             adel(c->assets, i);
         }
@@ -630,6 +641,14 @@ void studio_code_frame(studio *s)
         if (code && asset_code_pending(code)) {
             s->ui_schedule.wake = true;
         }
+    }
+    /* A moved caret is kept once it rests; edits are kept as they happen. */
+    if (s->code.capture_due && s->time >= s->code.capture_due) {
+        asset_code *code = tab ? asset_editor(s, tab) : NULL;
+        if (code) {
+            capture_asset(s, code);
+        }
+        s->code.capture_due = 0;
     }
     bool applied = false;
     for (int i = 0; i < acount(s->scene->tabs); i++) {
@@ -1175,37 +1194,83 @@ void studio_code_project_problems(studio *s, studio_ui_problem **out)
 
 /* ---------- Header ---------- */
 
-/* The first problem of a part after `line`, or 0. */
-static int problem_after(const kit_code_marker *markers, int line)
+/* A problem's first byte: its range's, else its line's. */
+static int problem_byte(const char *text, const kit_code_marker *marker)
 {
-    for (int i = 0; i < acount(markers); i++) {
-        if (markers[i].line > line) {
-            return markers[i].line;
-        }
-    }
-    return 0;
+    return marker->end > marker->start ? marker->start
+                                       : line_offset(text, marker->line);
 }
 
-/* The next problem after the cursor's line, then the other part's first,
-   wrapping to the first. */
-static void next_problem(studio *s, ui_buffer *b)
+/* The nearest problem after the byte, or before it going back, or -1. */
+static int problem_from(const char *text, const kit_code_marker *markers, int from, int direction)
+{
+    int found = -1, best = 0;
+    for (int i = 0; i < acount(markers); i++) {
+        int at = problem_byte(text, &markers[i]);
+        bool beyond = direction > 0 ? at > from : at < from;
+        if (beyond && (found < 0 || (direction > 0 ? at < best : at > best))) {
+            found = i;
+            best = at;
+        }
+    }
+    return found;
+}
+
+/* The problem after or before the byte, wrapping past the text's end. */
+static int problem_around(const char *text, const kit_code_marker *markers, int from, int direction)
+{
+    int found = problem_from(text, markers, from, direction);
+    return found >= 0
+             ? found
+             : problem_from(text, markers, direction > 0 ? -1 : INT_MAX, direction);
+}
+
+/* F8 in an asset's source: the caret on the next problem, its message
+   beside it. */
+static void step_asset_problem(asset_code *code, int direction)
+{
+    kit_code_editor *e = asset_code_editor(code);
+    const kit_code_marker *markers = asset_code_markers(code);
+    const char *text = kit_code_text(e, NULL);
+    int found = problem_around(text, markers, kit_code_cursor(e), direction);
+    if (found < 0) {
+        kit_code_notice(e, "No problems");
+        return;
+    }
+    kit_code_set_cursor(e, problem_byte(text, &markers[found]));
+    kit_code_notice(e, markers[found].message);
+}
+
+/* F8 in a UI document: the next problem in the part, then the other
+   part's first, wrapping; reveal places the caret and the message once the
+   part shows. */
+static void step_ui_problem(studio *s, ui_buffer *b, int direction)
 {
     studio_code *c = &s->code;
-    kit_code_editor *e = c->editor;
-    ui_part other = b->part == UI_PART_RML ? UI_PART_RCSS : UI_PART_RML;
-    const char *text = kit_code_text(e, NULL);
-    int cursor = kit_code_cursor(e), line = 1;
-    for (int i = 0; i < cursor && text[i]; i++) {
-        line += text[i] == '\n';
+    ui_part part = b->part, other = part == UI_PART_RML ? UI_PART_RCSS : UI_PART_RML;
+    int found = problem_from(
+        kit_code_text(c->editor, NULL),
+        c->markers[part],
+        kit_code_cursor(c->editor),
+        direction
+    );
+    if (found < 0 && acount(c->markers[other])) {
+        part = other;
     }
-    int next = problem_after(c->markers[b->part], line);
-    if (!next && acount(c->markers[other])) {
-        b->part = other;
-        next = c->markers[other][0].line;
+    const char *text = ui_buffer_text(b, part);
+    found = found >= 0
+              ? found
+              : problem_from(text, c->markers[part], direction > 0 ? -1 : INT_MAX, direction);
+    if (found < 0) {
+        kit_code_notice(c->editor, "No problems");
+        return;
     }
-    s->code.reveal = next ? next : problem_after(c->markers[b->part], 0);
-    s->code.reveal_offset = -1;
-    s->code.reveal_wait = next && b->part == other ? REVEAL_FRAMES : 0;
+    const kit_code_marker *marker = &c->markers[part][found];
+    c->reveal = marker->line;
+    c->reveal_offset = problem_byte(text, marker);
+    c->reveal_wait = part != b->part ? REVEAL_FRAMES : 0;
+    snprintf(c->reveal_notice, sizeof c->reveal_notice, "%s", marker->message);
+    b->part = part;
 }
 
 enum
@@ -1263,7 +1328,8 @@ static bool show_problems(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *h)
     );
     bool changed = ui_data_put_int(h, "problems", count);
     changed |= ui_data_put_int(h, "errors", errors);
-    return ui_data_put_text(doc, h, "problemsTip", count ? tip : "") || changed;
+    return ui_data_put_text(doc, h, "problemsTip", count ? tip : "No problems") ||
+           changed;
 }
 
 /* A UI document: Back and Forward, its part, its file, Find, Vim's mode,
@@ -1296,7 +1362,8 @@ static bool show_document(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *h, con
 bool studio_code_header_sync(studio *s, const studio_panel_sync *at)
 {
     yyjson_mut_val *h = at->variable;
-    bool view_changed = ui_data_put_int(h, "view", studio_behavior_view(s));
+    /* The header shows with the text, so the graph decides Code or Both. */
+    bool view_changed = ui_data_put_int(h, "view", studio_editor_shown(s, STUDIO_EDITOR_BEHAVIOR) ? 2 : 1);
     scene_document_tab *asset = active_asset(s);
     view_changed |= ui_data_put_bool(h, "sourceOnly", asset && asset->source_only);
     scene_document_tab *tab = asset ? NULL : shown(s);
@@ -1386,14 +1453,13 @@ bool studio_code_header_sync(studio *s, const studio_panel_sync *at)
         );
         changed |= ui_data_put_int(h, "problems", acount(markers));
         changed |= ui_data_put_int(h, "errors", errors);
-        changed |= ui_data_put_text(at->doc, h, "problemsTip", tip);
+        changed |= ui_data_put_text(at->doc, h, "problemsTip", acount(markers) ? tip : "No problems");
         return ui_data_put_bool(h, "dirty", code && asset_code_dirty(code)) || changed;
     }
     return tab ? show_document(s, at->doc, h, tab) || changed : changed;
 }
 
 static void open_find(studio_code *c);
-static void asset_calls(studio *s, asset_code *code, int cursor);
 
 void studio_code_header_action(studio *s, const char *action, const ui_activation *a)
 {
@@ -1402,16 +1468,6 @@ void studio_code_header_action(studio *s, const char *action, const ui_activatio
     int value = a->argc ? atoi(a->args[0]) : 0;
     if (!strcmp(action, "view")) {
         studio_behavior_show(s, value);
-    } else if (asset && (!strcmp(action, "rename") || !strcmp(action, "calls"))) {
-        asset_code *code = asset_editor(s, asset);
-        if (code) {
-            int offset = kit_code_cursor(asset_code_editor(code));
-            if (!strcmp(action, "rename")) {
-                studio_refactor_source(s, asset_code_path(code), offset);
-            } else {
-                asset_calls(s, code, offset);
-            }
-        }
     } else if (!strcmp(action, "apply")) {
         s->prefs.code_apply_live = value == 0;
         if (s->prefs.code_apply_live) {
@@ -1428,22 +1484,6 @@ void studio_code_header_action(studio *s, const char *action, const ui_activatio
         tab->ui->part = value ? UI_PART_RCSS : UI_PART_RML;
     } else if (!strcmp(action, "find") && (tab || asset)) {
         open_find(&s->code);
-    } else if (!strcmp(action, "nextProblem") && asset) {
-        asset_code *code = asset_editor(s, asset);
-        const kit_code_marker *markers = code ? asset_code_markers(code) : NULL;
-        int cursor = code ? kit_code_cursor(asset_code_editor(code)) : 0;
-        int at = 0;
-        for (int i = 0; i < acount(markers); i++) {
-            if (markers[i].start > cursor) {
-                at = i;
-                break;
-            }
-        }
-        if (acount(markers)) {
-            kit_code_set_cursor(asset_code_editor(code), markers[at].start);
-        }
-    } else if (!strcmp(action, "nextProblem") && tab && s->code.editor) {
-        next_problem(s, tab->ui);
     }
 }
 
@@ -1686,7 +1726,7 @@ static void go_to_definition(studio *s, const ui_buffer *b, kit_code_editor *e)
         return;
     }
     bool named = ui_source_symbol_at(c->source, at).kind != UI_SYMBOL_NONE;
-    studio_report(s, named ? "No other definition" : "No symbol to go to here");
+    kit_code_notice(e, named ? "No other definition" : "No symbol to go to here");
 }
 
 static const char *symbol_title(const ui_source_symbol *symbol, char *out, size_t size)
@@ -1726,7 +1766,7 @@ static void find_references(studio *s, const ui_buffer *b, kit_code_editor *e)
         &places
     );
     if (symbol.kind == UI_SYMBOL_NONE) {
-        studio_report(s, "No symbol to find here");
+        kit_code_notice(e, "No symbol to find here");
         return;
     }
     asetlen(s->references, 0);
@@ -1754,6 +1794,10 @@ static void reveal(studio *s, kit_code_editor *e, const ui_buffer *b)
     kit_focus(s->kit);
     s->code.reveal = 0;
     s->code.reveal_offset = -1;
+    if (s->code.reveal_notice[0]) {
+        kit_code_notice(e, s->code.reveal_notice);
+        s->code.reveal_notice[0] = '\0';
+    }
 }
 
 /* ---------- Find (VS Code's find widget) ---------- */
@@ -1787,17 +1831,21 @@ static int previous_match(const char *text, const char *query, int from)
     return -1;
 }
 
-/* Counts the matches, and places the shown one among them. */
+/* Counts the matches, each after the last one ends as VS Code counts
+   them, and places the shown one among them. */
 static void count_matches(studio_code *c, const char *text)
 {
     size_t size = strlen(c->find.query);
     c->find.count = 0;
     c->find.index = -1;
-    for (const char *at = text; size && *at; at++) {
-        if (!strncasecmp(at, c->find.query, size)) {
-            c->find.index = at - text == c->find.at ? c->find.count : c->find.index;
-            c->find.count++;
+    for (const char *at = text; size && *at;) {
+        if (strncasecmp(at, c->find.query, size)) {
+            at++;
+            continue;
         }
+        c->find.index = at - text == c->find.at ? c->find.count : c->find.index;
+        c->find.count++;
+        at += size;
     }
 }
 
@@ -1823,10 +1871,24 @@ static void step_find(studio_code *c, kit_code_editor *e, const char *text, int 
     );
 }
 
+/* Find starts from a selection within one line, as VS Code seeds its
+   query. */
 static void open_find(studio_code *c)
 {
     c->find.open = c->find.focus = true;
     c->find.at = -1;
+    int start, end;
+    if (!c->editor || !kit_code_selection(c->editor, &start, &end) ||
+        end <= start || (size_t)(end - start) >= sizeof c->find.query) {
+        return;
+    }
+    const char *text = kit_code_text(c->editor, NULL);
+    if (memchr(text + start, '\n', (size_t)(end - start))) {
+        return;
+    }
+    snprintf(c->find.query, sizeof c->find.query, "%.*s", end - start, text + start);
+    snprintf(c->find.seen, sizeof c->find.seen, "%s", c->find.query);
+    c->find.at = start;
 }
 
 static void close_find(studio_code *c)
@@ -1934,18 +1996,198 @@ static int chord_command(const studio *s, const char *chord)
     return studio_command_for_key(&s->prefs, key.key, key.mod, STUDIO_EDITOR_CODE, s->mac);
 }
 
+/* F3 and Shift+F3 step through the last query's matches from the text,
+   or open Find without one. */
+static void find_again(studio_code *c, int direction)
+{
+    if (!c->find.query[0]) {
+        open_find(c);
+        return;
+    }
+    int start, end;
+    if (!kit_code_selection(c->editor, &start, &end) || start != c->find.at) {
+        c->find.at = -1;
+    }
+    const char *text = kit_code_text(c->editor, NULL);
+    step_find(c, c->editor, text, direction);
+    count_matches(c, text);
+}
+
+static bool language_command(int command)
+{
+    return command >= STUDIO_COMMAND_GO_TO_DEFINITION &&
+           command <= STUDIO_COMMAND_TOGGLE_LINE_COMMENT;
+}
+
+/* A language command's key in the text always answers: where it cannot
+   act, the card at the caret says why. */
 static void run_chord(studio *s, const char *chord)
 {
     if (!strcmp(chord, "Mod+[") || !strcmp(chord, "Mod+]")) {
         studio_nav_step(s, chord[4] == ']' ? 1 : -1);
         return;
     }
+    if (!strcmp(chord, "F3") || !strcmp(chord, "Shift+F3")) {
+        find_again(&s->code, chord[0] == 'S' ? -1 : 1);
+        return;
+    }
     int command = chord_command(s, chord);
     if (command == STUDIO_COMMAND_FIND) {
         open_find(&s->code);
+    } else if (language_command(command)) {
+        studio_code_command(s, command);
     } else if (command >= 0) {
         studio_command_run(s, command);
     }
+}
+
+/* ---------- Language commands ---------- */
+
+/* The symbol at an asset's caret: one with a definition, which Rename
+   renames, or a callable, whose calls Call Hierarchy shows. */
+static bool asset_symbol(asset_code *code, bool callable)
+{
+    const authoring_reference
+        *reference = source_reference(code, kit_code_cursor(asset_code_editor(code)));
+    const authoring_navigation *navigation = asset_code_navigation(code);
+    if (!reference) {
+        return false;
+    }
+    return callable
+             ? authoring_navigation_callable(navigation, reference->target).id != 0
+             : authoring_navigation_definition(navigation, reference->target) != NULL;
+}
+
+static int problem_count(studio *s, asset_code *code)
+{
+    if (code) {
+        return acount(asset_code_markers(code));
+    }
+    int count = 0;
+    for (int p = 0; p < UI_PART_COUNT; p++) {
+        count += acount(s->code.markers[p]);
+    }
+    return count;
+}
+
+/* The editor the Text Editor shows, and its asset's source when it shows
+   one, or NULL. */
+static kit_code_editor *language_editor(studio *s, asset_code **code)
+{
+    scene_document_tab *asset = active_asset(s);
+    *code = asset ? asset_editor(s, asset) : NULL;
+    if (asset) {
+        return *code ? asset_code_editor(*code) : NULL;
+    }
+    return shown(s) ? s->code.editor : NULL;
+}
+
+bool studio_code_command_enabled(studio *s, studio_command command)
+{
+    asset_code *code;
+    if (!language_editor(s, &code) || !studio_editor_shown(s, STUDIO_EDITOR_CODE)) {
+        return false;
+    }
+    switch (command) {
+        case STUDIO_COMMAND_RENAME_SYMBOL:
+        case STUDIO_COMMAND_CALL_HIERARCHY:
+            return code &&
+                   asset_symbol(code, command == STUDIO_COMMAND_CALL_HIERARCHY);
+        case STUDIO_COMMAND_NEXT_PROBLEM:
+        case STUDIO_COMMAND_PREVIOUS_PROBLEM: return problem_count(s, code) > 0;
+        default: return true;
+    }
+}
+
+/* Comments the selected lines: // in sources and KDL, block comments in
+   RML and RCSS, each line or the lines as one block. */
+static void toggle_comment(studio *s, asset_code *code)
+{
+    if (code) {
+        asset_code_toggle_comment(code);
+        return;
+    }
+    bool rml = s->code.editor_part == UI_PART_RML;
+    kit_code_toggle_comment(s->code.editor, NULL, rml ? "<!--" : "/*", rml ? "-->" : "*/");
+    s->code.step_next = true;
+}
+
+/* Navigation goes to the editor as the request its keys used to make, so
+   the next frame answers it with the editor's own text and caret. */
+void studio_code_command(studio *s, studio_command command)
+{
+    asset_code *code;
+    kit_code_editor *e = language_editor(s, &code);
+    if (!e) {
+        return;
+    }
+    switch (command) {
+        case STUDIO_COMMAND_GO_TO_DEFINITION:
+            kit_code_post(e, KIT_CODE_DEFINITION);
+            break;
+        case STUDIO_COMMAND_FIND_REFERENCES:
+            kit_code_post(e, KIT_CODE_REFERENCES);
+            break;
+        case STUDIO_COMMAND_RENAME_SYMBOL:
+            kit_code_post(e, KIT_CODE_RENAME);
+            break;
+        case STUDIO_COMMAND_CALL_HIERARCHY:
+            kit_code_post(e, KIT_CODE_CALLS);
+            break;
+        case STUDIO_COMMAND_NEXT_PROBLEM:
+        case STUDIO_COMMAND_PREVIOUS_PROBLEM: {
+            int direction = command == STUDIO_COMMAND_NEXT_PROBLEM ? 1 : -1;
+            if (code) {
+                step_asset_problem(code, direction);
+            } else {
+                step_ui_problem(s, shown(s)->ui, direction);
+            }
+            break;
+        }
+        case STUDIO_COMMAND_TOGGLE_LINE_COMMENT: toggle_comment(s, code); break;
+        default: assert(!"a Text Editor command"); break;
+    }
+    s->code.menu.open = false;
+    s->code.find.refocus = true;
+    s->ui_schedule.wake = true;
+}
+
+/* ---------- Context menu ---------- */
+
+/* The text's secondary click opens its menu at the pointer (CodeMenu.rml),
+   its items the commands above; its document lives while it shows. */
+static void code_menu(studio *s)
+{
+    studio_code *c = &s->code;
+    if (!c->menu.open) {
+        if (c->menu.mounted) {
+            studio_ui_panel_detach(s, "CodeMenu");
+            c->menu.mounted = false;
+        }
+        return;
+    }
+    kit_document_begin(s->kit, "code-menu", "bar-place", true);
+    rml_element *host = studio_ui_panel(s, "code-menu", "CodeMenu");
+    kit_document_end(s->kit);
+    c->menu.mounted = true;
+    rml_element *popover = host ? rml_element_by_id(host, "code-menu") : NULL;
+    if (popover && c->menu.opening) {
+        float ratio = studio_pixel_ratio(s);
+        popover_show(
+            popover,
+            &(popover_anchor){
+                .side = POPOVER_POINT,
+                .box = { s->in.mouse_x * ratio, s->in.mouse_y * ratio, 0, 0 } }
+        );
+        c->menu.opening = false;
+    } else if (popover && !popover_open(popover)) {
+        c->menu.open = false;
+    }
+}
+
+static void open_menu(studio_code *c)
+{
+    c->menu.open = c->menu.opening = true;
 }
 
 /* Opening shows the bar at the next UI frame, whatever asked for it. */
@@ -2035,9 +2277,10 @@ static bool take_edits(studio *s, ui_buffer *b, studio_code_editor *shown, ui_pa
 {
     studio_code *c = &s->code;
     c->replayed = false;
-    bool completed = events & KIT_CODE_COMPLETED;
+    bool completed = (events & KIT_CODE_COMPLETED) || c->step_next;
     bool typed_completion = false;
     if (events & (KIT_CODE_CHANGED | KIT_CODE_COMPLETED)) {
+        c->step_next = false;
         text_edit edit;
         ui_code_change change;
         if (ui_code_prepare(b, part, shown->editor, shown->synced, &change, &edit)) {
@@ -2143,16 +2386,37 @@ static void respond(
     if (events & KIT_CODE_REFERENCES) {
         find_references(s, b, e);
     }
+    if (events & KIT_CODE_RENAME) {
+        kit_code_notice(e, "Rename isn't available in UI documents");
+    }
+    if (events & KIT_CODE_CALLS) {
+        kit_code_notice(e, "Call hierarchy isn't available in UI documents");
+    }
+    if (events & KIT_CODE_MENU) {
+        open_menu(&s->code);
+    }
     if (events & KIT_CODE_CHORD) {
         run_chord(s, r->chord);
     }
 }
 
-static void empty_state(kit *k)
+/* With nothing open, the area says what it edits and offers Search, as the
+   Behavior editor's empty state does. */
+static void empty_state(studio *s)
 {
-    kit_push(k, "empty", NULL, "pending-editor");
-    kit_icon(k, "icon", NULL, KIT_ICON_EXPRESSION);
-    kit_label(k, "name", NULL, "Open an asset or stylesheet from Assets");
+    kit *k = s->kit;
+    kit_push(k, "empty", NULL, "pending-editor behavior-empty");
+    kit_icon(k, "icon", "glyph", KIT_ICON_EXPRESSION);
+    kit_label(k, "title", "title", "No file open");
+    kit_label(k, "hint", "dim", "Open a source, KDL asset, UI document or stylesheet from Assets");
+    kit_push(k, "actions", NULL, "behavior-choices");
+    kit_button_desc search = { .label = "Search",
+                               .icon = KIT_ICON_SEARCH,
+                               .shortcut = studio_chord(s, "Mod+K") };
+    if (kit_button(k, "search", &search)) {
+        studio_command_run(s, STUDIO_COMMAND_SEARCH);
+    }
+    kit_pop(k);
     kit_pop(k);
 }
 
@@ -2211,7 +2475,7 @@ static void asset_references(studio *s, asset_code *code, int cursor)
     const authoring_navigation *index = asset_code_navigation(code);
     const authoring_reference *reference = source_reference(code, cursor);
     if (!reference) {
-        studio_report(s, "No symbol to find here");
+        kit_code_notice(asset_code_editor(code), "No symbol to find here");
         return;
     }
     asetlen(s->references, 0);
@@ -2255,11 +2519,14 @@ static void asset_requests(studio *s, asset_code *code, unsigned events)
             kit_code_set_cursor(e, definition);
             studio_nav_jump(s, &from, &to);
         } else if (!asset_symbol_definition(s, code, cursor)) {
-            studio_report(s, "No definition at this position");
+            kit_code_notice(e, "No definition found");
         }
     }
     if (events & KIT_CODE_REFERENCES) {
         asset_references(s, code, cursor);
+    }
+    if (events & KIT_CODE_MENU) {
+        open_menu(&s->code);
     }
     if ((events & KIT_CODE_BREAKPOINT) && !asset_code_error(code)[0] &&
         !active_asset(s)->source_only) {
@@ -2283,6 +2550,19 @@ static void asset_requests(studio *s, asset_code *code, unsigned events)
     }
 }
 
+/* The symbol under the pointer while the primary modifier is held:
+   Mod+click's underline. */
+static void link_symbol(const studio_code *c, const kit_code_editor *e, kit_code_desc *desc)
+{
+    int at = kit_code_link(e);
+    ui_source_symbol symbol = at >= 0 ? ui_source_symbol_at(c->source, at)
+                                      : (ui_source_symbol){ .kind = UI_SYMBOL_NONE };
+    if (symbol.kind != UI_SYMBOL_NONE) {
+        desc->link_start = symbol.start;
+        desc->link_end = symbol.end;
+    }
+}
+
 void studio_code_body(studio *s, int)
 {
     kit *k = s->kit;
@@ -2290,7 +2570,7 @@ void studio_code_body(studio *s, int)
     if (asset) {
         asset_code *code = asset_editor(s, asset);
         if (!code) {
-            empty_state(k);
+            empty_state(s);
             return;
         }
         kit_push(k, "code", NULL, "code-editor");
@@ -2318,6 +2598,7 @@ void studio_code_body(studio *s, int)
             paused_here ? s->pause.at.graph_id : 0,
             paused_here ? s->pause.at.node_id : 0
         );
+        asset_code_time(code, s->time);
         kit_code_result
             r = asset_code_draw(code, k, "text", &preferences, s->prefs.code_apply_live);
         if (s->code.find.refocus) {
@@ -2328,20 +2609,17 @@ void studio_code_body(studio *s, int)
         if (s->code.find.open) {
             find_widget(s);
         }
-        if (r.events &
-            (KIT_CODE_CHANGED | KIT_CODE_UNDO | KIT_CODE_REDO | KIT_CODE_CURSOR)) {
+        code_menu(s);
+        if (r.events & (KIT_CODE_CHANGED | KIT_CODE_UNDO | KIT_CODE_REDO)) {
             capture_asset(s, code);
+            s->code.capture_due = 0;
+        } else if (r.events & KIT_CODE_CURSOR) {
+            s->code.capture_due = s->time + CAPTURE_REST;
         }
         bool chord = r.events & KIT_CODE_CHORD;
         if ((r.events & KIT_CODE_SAVED) ||
             (chord && chord_command(s, r.chord) == STUDIO_COMMAND_SAVE)) {
             save_asset(s, code);
-        }
-        if (asset_code_error(code)[0]) {
-            kit_push(k, "status", NULL, "code-status");
-            kit_icon(k, "icon", NULL, KIT_ICON_ERROR);
-            kit_label(k, "message", "message", asset_code_error(code));
-            kit_pop(k);
         }
         kit_pop(k);
         if (chord && chord_command(s, r.chord) != STUDIO_COMMAND_SAVE) {
@@ -2353,7 +2631,7 @@ void studio_code_body(studio *s, int)
     scene_document_tab *tab = shown(s);
     if (!tab) {
         c->editor = NULL;
-        empty_state(k);
+        empty_state(s);
         return;
     }
     ui_buffer *b = tab->ui;
@@ -2385,7 +2663,9 @@ void studio_code_body(studio *s, int)
         .history = true,
         .no_wrap = !s->prefs.code_wrap,
         .hover = c->hover,
+        .word_chars = "-", /* RML's and RCSS's names take hyphens */
     };
+    link_symbol(c, e, &desc);
     kit_code_result r = kit_code(k, "text", e, &desc);
     if (c->find.refocus) {
         kit_focus(k);
@@ -2395,12 +2675,7 @@ void studio_code_body(studio *s, int)
     if (c->find.open) {
         find_widget(s);
     }
-    if (b->error[0]) {
-        kit_push(k, "status", NULL, "code-status");
-        kit_icon(k, "icon", NULL, KIT_ICON_ERROR);
-        kit_label(k, "message", "message", b->error);
-        kit_pop(k);
-    }
+    code_menu(s);
     respond(s, tab, shown_editor, part, &r);
     kit_pop(k);
 }

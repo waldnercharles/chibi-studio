@@ -51,6 +51,12 @@
 #define NO_KEY UINT32_MAX
 /* Seconds the pointer rests before the hover card, as the kit's tooltips. */
 #define HOVER_DELAY FEEL_TOOLTIP_DELAY
+/* Rows the completion list shows, which PageUp and PageDown step. */
+#define COMPLETION_ROWS 7
+/* The completion list's width (.code-completions) and its gap from the
+   window's edge. */
+#define COMPLETION_WIDTH 420.0f
+#define POPUP_EDGE 4.0f
 /* Cells kept between the cursor and a side edge while lines scroll sideways. */
 #define SCROLL_MARGIN_CELLS 4
 /* Lines zep-wheel-scroll.patch scrolls for each unit it is handed. */
@@ -113,6 +119,7 @@ static const struct
     { "zep-tip-border", { ZEP_COLOR_WIDGET_BORDER } },
     { "zep-flash", { ZEP_COLOR_FLASH } },
     { "zep-info", { ZEP_COLOR_INFO } },
+    { "zep-breakpoint", { ZEP_COLOR_CUSTOM } },
     { "tok-error", { ZEP_COLOR_ERROR } },
     { "tok-warning", { ZEP_COLOR_WARNING } },
 };
@@ -211,6 +218,11 @@ struct kit_code_editor
     float pointer_x, pointer_y;
     double rest_since;
     int hover; /* the byte under the resting pointer, or -1 */
+    float hover_x, hover_y; /* where the pointer rested to show it */
+    bool primary_held;      /* a click goes to the definition: kit_code_link */
+    char *notice;           /* kit_code_notice's message, or NULL */
+    long notice_cursor;     /* where the cursor was when it showed */
+    char word_chars[16];
 };
 
 static kit_code_editor *focused_code_editor;
@@ -686,6 +698,7 @@ void kit_code_editor_destroy(kit_code_editor *e)
     zep_destroy(e->zep);
     completions_free(e);
     marks_free(e);
+    free(e->notice);
     afree(e->spans);
     free(e->text);
     free(e);
@@ -857,6 +870,24 @@ const char *kit_code_mode(const kit_code_editor *e)
         case ZEP_MODE_NORMAL: break;
     }
     return "NORMAL";
+}
+
+void kit_code_post(kit_code_editor *e, unsigned events)
+{
+    e->result.events |= events;
+}
+
+static void clear_notice(kit_code_editor *e)
+{
+    free(e->notice);
+    e->notice = NULL;
+}
+
+void kit_code_notice(kit_code_editor *e, const char *message)
+{
+    clear_notice(e);
+    e->notice = xstrdup(message);
+    e->notice_cursor = zep_cursor(e->zep);
 }
 
 /* ---------- Keys ---------- */
@@ -1033,6 +1064,161 @@ void kit_code_paste(kit_code_editor *e, const char *text)
     free(normalized);
 }
 
+/* ---------- Comments ---------- */
+
+/* The lines a toggle covers: the selection's lines, without a last line the
+   selection only reaches the start of, or the cursor's line. */
+static void comment_lines(kit_code_editor *e, const char *text, size_t length, long *first, long *last)
+{
+    long start = zep_cursor(e->zep), end = start;
+    if (zep_selection(e->zep, &start, &end) && end > start && end > 0 &&
+        text[end - 1] == '\n') {
+        end--;
+    }
+    while (start > 0 && text[start - 1] != '\n') {
+        start--;
+    }
+    while ((size_t)end < length && text[end] != '\n') {
+        end++;
+    }
+    *first = start;
+    *last = end;
+}
+
+static long skip_blanks(const char *text, long at, long end)
+{
+    while (at < end && (text[at] == ' ' || text[at] == '\t')) {
+        at++;
+    }
+    return at;
+}
+
+static long line_end(const char *text, long at, long end)
+{
+    const char *newline = memchr(text + at, '\n', (size_t)(end - at));
+    return newline ? newline - text : end;
+}
+
+static bool starts_with(const char *text, long at, long end, const char *prefix)
+{
+    size_t size = strlen(prefix);
+    return (size_t)(end - at) >= size && !memcmp(text + at, prefix, size);
+}
+
+/* Comments every non-blank line at the lines' smallest indent, or removes
+   the prefix and one space after it when every non-blank line has it. */
+static int line_comment(const char *text, long first, long last, const char *prefix, char *inserted, text_edit *edits)
+{
+    long indent = LONG_MAX;
+    bool commented = true;
+    for (long at = first; at <= last; at = line_end(text, at, last) + 1) {
+        long end = line_end(text, at, last), word = skip_blanks(text, at, end);
+        if (word == end) {
+            continue;
+        }
+        indent = word - at < indent ? word - at : indent;
+        commented = commented && starts_with(text, word, end, prefix);
+    }
+    if (indent == LONG_MAX) {
+        return 0;
+    }
+    int count = 0;
+    long size = (long)strlen(prefix);
+    for (long at = first; at <= last; at = line_end(text, at, last) + 1) {
+        long end = line_end(text, at, last), word = skip_blanks(text, at, end);
+        if (word == end) {
+            continue;
+        }
+        if (!commented) {
+            edits[count++] = (text_edit){ (int)(at + indent), (int)(at + indent), inserted };
+            continue;
+        }
+        long stop = word + size + (word + size < end && text[word + size] == ' ');
+        edits[count++] = (text_edit){ (int)word, (int)stop, "" };
+    }
+    return count;
+}
+
+/* Wraps the lines' text in open and close, or unwraps it with one space
+   inside each delimiter. */
+static int block_comment(
+    const char *text,
+    long first,
+    long last,
+    const char *open,
+    const char *close,
+    char *const inserted[2],
+    text_edit *edits
+)
+{
+    long start = first, end = last;
+    while (start < end && isspace((unsigned char)text[start])) {
+        start++;
+    }
+    while (end > start && isspace((unsigned char)text[end - 1])) {
+        end--;
+    }
+    if (start == end) {
+        return 0;
+    }
+    long opened = (long)strlen(open), closed = (long)strlen(close);
+    if (end - start < opened + closed || !starts_with(text, start, end, open) ||
+        !starts_with(text, end - closed, end, close)) {
+        edits[0] = (text_edit){ (int)start, (int)start, inserted[0] };
+        edits[1] = (text_edit){ (int)end, (int)end, inserted[1] };
+        return 2;
+    }
+    long inner = start + opened, outer = end - closed;
+    inner += inner < outer && text[inner] == ' ';
+    outer -= outer > inner && text[outer - 1] == ' ';
+    edits[0] = (text_edit){ (int)start, (int)inner, "" };
+    edits[1] = (text_edit){ (int)outer, (int)end, "" };
+    return 2;
+}
+
+static char *joined(const char *a, const char *b)
+{
+    size_t size = strlen(a) + strlen(b) + 1;
+    char *text = xmalloc(size);
+    snprintf(text, size, "%s%s", a, b);
+    return text;
+}
+
+void kit_code_toggle_comment(kit_code_editor *e, const char *line, const char *open, const char *close)
+{
+    assert(line || (open && close));
+    size_t length;
+    const char *text = kit_code_text(e, &length);
+    long first, last, cursor = zep_cursor(e->zep), anchor = cursor, low, high;
+    if (zep_selection(e->zep, &low, &high)) {
+        anchor = cursor == low ? high : low;
+    }
+    comment_lines(e, text, length, &first, &last);
+    int lines = 2;
+    for (long at = first; at < last; at++) {
+        lines += text[at] == '\n';
+    }
+    text_edit *edits = xmalloc(sizeof *edits * (size_t)lines);
+    char *inserted[2] = { joined(line ? line : open, " "),
+                          joined(" ", close ? close : "") };
+    int count = line ? line_comment(text, first, last, line, inserted[0], edits)
+                     : block_comment(text, first, last, open, close, inserted, edits);
+    bool selected = anchor != cursor;
+    if (count > 0) {
+        if (e->vim && selected) {
+            zep_press_key(e->zep, ZEP_KEY_ESCAPE, 0);
+        }
+        apply(e, edits, count, moved(cursor, edits, count));
+        if (selected && !e->vim) {
+            zep_select(e->zep, moved(anchor, edits, count), moved(cursor, edits, count));
+        }
+        e->cursor = zep_cursor(e->zep);
+    }
+    free(inserted[0]);
+    free(inserted[1]);
+    free(edits);
+}
+
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_KEEPALIVE int kit_code_web_paste(const char *text)
 {
@@ -1119,7 +1305,8 @@ static long document_edge(kit_code_editor *e, rml_key key, keys m)
 
 static void accept_completion(kit_code_editor *e, int index);
 
-/* Up, Down, Enter, Tab and Escape choose among shown completions. */
+/* Up, Down, PageUp, PageDown, Enter, Tab and Escape choose among shown
+   completions. */
 static bool completion_key(kit_code_editor *e, rml_key key)
 {
     int count = acount(e->completions);
@@ -1131,6 +1318,12 @@ static bool completion_key(kit_code_editor *e, rml_key key)
             e->selected = (e->selected + count - 1) % count;
             return true;
         case RML_KEY_DOWN: e->selected = (e->selected + 1) % count; return true;
+        case RML_KEY_PRIOR:
+            e->selected = math_max(e->selected - COMPLETION_ROWS, 0);
+            return true;
+        case RML_KEY_NEXT:
+            e->selected = math_min(e->selected + COMPLETION_ROWS, count - 1);
+            return true;
         case RML_KEY_RETURN:
         case RML_KEY_NUMPADENTER:
         case RML_KEY_TAB: accept_completion(e, e->selected); return true;
@@ -1155,43 +1348,54 @@ static void block_hover(kit_code_editor *e)
 {
     e->hover_blocked = true;
     e->pointer_moved = false;
+    clear_notice(e);
 }
 
-/* Go to Definition (F12), Find References (Shift+F12) and completion
-   (Control+Space) ask the host. */
+static void host_chord(kit_code_editor *e, const char *chord)
+{
+    snprintf(e->result.chord, sizeof e->result.chord, "%s", chord);
+    e->result.events |= KIT_CODE_CHORD;
+}
+
+/* Keys whose command the host binds go back to it as chords: the function
+   keys but F9, which toggles a breakpoint here, and Shift+Alt+H (Call
+   Hierarchy), as VS Code binds them. Control+Space suggests here, as in
+   Blender's Text Editor. Vim's Control+O and Control+I step Back and
+   Forward. */
 static bool host_request(kit_code_editor *e, rml_key key, keys m)
 {
-    unsigned event = 0;
     if (e->vim && m.ctrl && !m.shift && !m.alt &&
         zep_current_mode(e->zep) == ZEP_MODE_NORMAL &&
         (key == RML_KEY_O || key == RML_KEY_I)) {
-        e->result.events |= KIT_CODE_CHORD;
-        snprintf(e->result.chord, sizeof e->result.chord, "%s", key == RML_KEY_O ? "Mod+[" : "Mod+]");
+        host_chord(e, key == RML_KEY_O ? "Mod+[" : "Mod+]");
         return true;
     }
-    if (key == RML_KEY_F2 && !m.primary && !m.alt && !m.shift) {
-        event = KIT_CODE_RENAME;
-    } else if (key == RML_KEY_H && m.shift && m.alt && !m.primary) {
-        event = KIT_CODE_CALLS;
-    } else if (key == RML_KEY_F12 && !m.primary && !m.alt) {
-        event = m.shift ? KIT_CODE_REFERENCES : KIT_CODE_DEFINITION;
-    } else if (key == RML_KEY_F9 && !m.primary && !m.alt && !m.shift) {
-        event = KIT_CODE_BREAKPOINT;
-    } else if ((key == RML_KEY_F5 || key == RML_KEY_F10 || key == RML_KEY_F11) && !m.primary && !m.alt) {
-        e->result.events |= KIT_CODE_CHORD;
+    if (key == RML_KEY_F9 && !m.primary && !m.alt && !m.shift) {
+        e->result.events |= KIT_CODE_BREAKPOINT;
+        return true;
+    }
+    char chord[32];
+    if (key >= RML_KEY_F1 && key <= RML_KEY_F12 && !m.primary) {
         snprintf(
-            e->result.chord,
-            sizeof e->result.chord,
-            "%sF%d",
+            chord,
+            sizeof chord,
+            "%s%sF%d",
+            m.alt ? "Alt+" : "",
             m.shift ? "Shift+" : "",
             (int)(key - RML_KEY_F1) + 1
         );
+        host_chord(e, chord);
         return true;
-    } else if (key == RML_KEY_SPACE && m.ctrl && !m.shift && !m.alt) {
-        event = KIT_CODE_SUGGEST;
     }
-    e->result.events |= event;
-    return event != 0;
+    if (key == RML_KEY_H && m.shift && m.alt && !m.primary) {
+        host_chord(e, "Shift+Alt+H");
+        return true;
+    }
+    if (key == RML_KEY_SPACE && m.ctrl && !m.shift && !m.alt) {
+        e->result.events |= KIT_CODE_SUGGEST;
+        return true;
+    }
+    return false;
 }
 
 /* Newlines inherit the current line's whitespace. Only code braces change
@@ -1525,6 +1729,23 @@ static void press(code_view *v, rml_vec2 at, int button)
     }
 }
 
+/* A secondary press moves the cursor there, as a primary one does, unless
+   it falls in the selection, which the host's menu then acts on. */
+static void secondary_press(code_view *v, rml_vec2 at)
+{
+    zep_editor *z = v->editor->zep;
+    long start, end;
+    bool selected = zep_selection(z, &start, &end);
+    zep_mouse_move(z, at.x, at.y);
+    locate_pointer(v);
+    long under = zep_hover_byte(z);
+    if (!selected || under < start || under >= end) {
+        press(v, at, 0);
+        v->dragging = false;
+    }
+    v->editor->result.events |= KIT_CODE_MENU;
+}
+
 /* Zep places the cursor on a press, so a drag presses again under the
    pointer and selects from the anchor to there. */
 static void drag(code_view *v, rml_vec2 at)
@@ -1539,27 +1760,38 @@ static void drag(code_view *v, rml_vec2 at)
     zep_select(z, v->anchor, zep_cursor(z));
 }
 
-static bool word_char(char c)
+/* A word's character in the shown language: letters, digits, '_' and the
+   desc's word_chars, as '-' in RCSS's and KDL's names. */
+static bool word_char(const kit_code_editor *e, char c)
 {
-    return isalnum((unsigned char)c) || c == '_' || c == '-';
+    return isalnum((unsigned char)c) || c == '_' || (c && strchr(e->word_chars, c));
 }
 
-/* A double click selects the word under the cursor, names with '-' in them
-   whole, as RCSS and RML spell them. */
+/* The word around `at`: [start, end), empty off a word. */
+static void word_at(const kit_code_editor *e, const char *text, size_t length, long at, long *start, long *end)
+{
+    *start = *end = at;
+    if (at < 0 || (size_t)at >= length || !word_char(e, text[at])) {
+        return;
+    }
+    while (*start > 0 && word_char(e, text[*start - 1])) {
+        (*start)--;
+    }
+    while ((size_t)*end < length && word_char(e, text[*end])) {
+        (*end)++;
+    }
+}
+
+/* A double click selects the word under the cursor. */
 static void select_word(code_view *v)
 {
     kit_code_editor *e = v->editor;
     size_t length;
     const char *text = kit_code_text(e, &length);
-    long start = zep_cursor(e->zep), end = start;
-    if ((size_t)start >= length || !word_char(text[start])) {
+    long start, end;
+    word_at(e, text, length, zep_cursor(e->zep), &start, &end);
+    if (start == end) {
         return;
-    }
-    while (start > 0 && word_char(text[start - 1])) {
-        start--;
-    }
-    while ((size_t)end < length && word_char(text[end])) {
-        end++;
     }
     /* Vim's selection holds the glyph under its cursor; the standard keys'
        ends before it. */
@@ -1622,6 +1854,7 @@ static void wheel(code_view *v, const rml_event *event, rml_vec2 at)
 /* Where the pointer is, for the hover card: it rests once it stops moving. */
 static void track_pointer(kit_code_editor *e, const rml_event *event)
 {
+    e->primary_held = event->modifiers & (e->mac ? RML_KM_META : RML_KM_CTRL);
     bool moved = event->mouse_x != e->pointer_x || event->mouse_y != e->pointer_y;
     e->pointer_moved |= moved || !e->pointer_in;
     e->pointer_in = true;
@@ -1638,10 +1871,22 @@ static void on_view_event(void *user, const rml_event *event)
     }
     rml_vec2 at = local(v, event);
     switch (event->id) {
+        case RML_EVENT_KEYDOWN:
+        case RML_EVENT_KEYUP:
+            /* The host trades Control and Command in key events on a Mac. */
+            e->primary_held = event->modifiers & RML_KM_CTRL;
+            break;
+        default: break;
+    }
+    switch (event->id) {
         case RML_EVENT_KEYDOWN: key_down(e, event); break;
         case RML_EVENT_TEXTINPUT: event_text(e, event); break;
         case RML_EVENT_MOUSEDOWN:
             block_hover(e);
+            if (event->button == 1) {
+                secondary_press(v, at);
+                break;
+            }
             press(v, at, event->button);
             if (primary_click(e, event)) {
                 v->dragging = false;
@@ -2030,6 +2275,7 @@ static void configure(kit *k, kit_code_editor *e, const kit_code_desc *d)
     }
     e->mac = d->mac;
     e->host_history = d->history;
+    snprintf(e->word_chars, sizeof e->word_chars, "%s", d->word_chars ? d->word_chars : "");
     /* Zep's own history would only grow while the host keeps one. */
     if (e->host_history) {
         zep_clear_history(e->zep);
@@ -2096,6 +2342,8 @@ static void highlight(code_view *v, kit_code_editor *e, const kit_code_desc *d)
 static uint64_t markers_hash(const kit_code_desc *d)
 {
     uint64_t h = cf_fnv1a(&d->marker_count, sizeof d->marker_count);
+    h = h * 31 + (uint64_t)d->link_start;
+    h = h * 31 + (uint64_t)d->link_end;
     for (int i = 0; i < d->marker_count; i++) {
         const kit_code_marker *m = &d->markers[i];
         h = h * 31 + cf_fnv1a(&m->line, sizeof m->line);
@@ -2114,8 +2362,19 @@ static zep_color severity_role(kit_code_severity severity)
         case KIT_CODE_ERROR: return ZEP_COLOR_ERROR;
         case KIT_CODE_WARNING: return ZEP_COLOR_WARNING;
         case KIT_CODE_INFO: return ZEP_COLOR_INFO;
+        case KIT_CODE_BREAKPOINT_MARKER: return ZEP_COLOR_CUSTOM;
     }
     return ZEP_COLOR_INFO;
+}
+
+/* A breakpoint is a dot; a diagnostic a bar, underlined unless it only
+   marks its line. */
+static unsigned marker_display(const kit_code_marker *m)
+{
+    if (m->severity == KIT_CODE_BREAKPOINT_MARKER) {
+        return ZEP_MARK_DOT;
+    }
+    return ZEP_MARK_INDICATOR | (m->indicator_only ? 0 : ZEP_MARK_UNDERLINE);
 }
 
 /* The bytes a marker underlines: its range within the text, else its line. */
@@ -2151,11 +2410,14 @@ static void diagnose(kit_code_editor *e, const kit_code_desc *d)
             e->zep,
             start,
             end,
-            ZEP_MARK_INDICATOR | (m->indicator_only ? 0 : ZEP_MARK_UNDERLINE),
+            marker_display(m),
             severity_role(m->severity),
             m->message ? m->message : ""
         );
         apush(e->marks, ((mark){ m->line, m->severity, xstrdup(m->message ? m->message : "") }));
+    }
+    if (d->link_end > d->link_start && (size_t)d->link_end <= length) {
+        zep_add_marker(e->zep, d->link_start, d->link_end, ZEP_MARK_UNDERLINE, ZEP_COLOR_INFO, "");
     }
 }
 
@@ -2283,16 +2545,20 @@ static void show_completions(kit *k, node *n, kit_code_editor *e)
     }
     kit_rect caret = code_caret(k, n);
     node *list = emit_in(k, k->layer, key, KIND_BOX, "div", "code-completions");
-    float height = fminf(7, acount(e->completions)) *
+    float height = fminf(COMPLETION_ROWS, acount(e->completions)) *
                        kit_metric(k, "--autocomplete-row-h") +
                    8;
+    /* Under the word being completed, inside the window. */
+    int typed = math_max(zep_cursor(e->zep) - e->completion_start, 0L);
+    float left = caret.x - (float)typed * e->advance / dp(k);
+    left = math_clamp(left, POPUP_EDGE, math_max(POPUP_EDGE, k->in.width - COMPLETION_WIDTH - POPUP_EDGE));
     float below = k->in.height - 4 - caret.y - caret.h;
     float above = caret.y - 4;
     bool up = below < height && above > below;
     height = fminf(height, fmaxf(1, up ? above : below));
     float top = up ? caret.y - height : caret.y + caret.h;
     top = math_clamp(top, 4.0f, math_max(4.0f, k->in.height - 4 - height));
-    kit_style(k, "left", frame_format(k, "%.1fdp", caret.x));
+    kit_style(k, "left", frame_format(k, "%.1fdp", left));
     kit_style(k, "top", frame_format(k, "%.1fdp", top));
     kit_style(k, "max-height", frame_format(k, "%.1fdp", height));
     kit_attr(k, "role", "listbox");
@@ -2329,18 +2595,50 @@ static void show_completions(kit *k, node *n, kit_code_editor *e)
     }
 }
 
-/* The byte under the pointer once it has rested there, for the next frame;
-   a key or a press hides it until the pointer moves. */
+/* Whether bytes a and b are one word, or the same byte. */
+static bool same_word(kit_code_editor *e, long a, long b)
+{
+    size_t length;
+    const char *text = kit_code_text(e, &length);
+    long a0, a1, b0, b1;
+    word_at(e, text, length, a, &a0, &a1);
+    word_at(e, text, length, b, &b0, &b1);
+    return a == b || (a0 < a1 && a0 == b0);
+}
+
+/* The byte under the pointer once it has rested there, for the next frame.
+   The card stays while the pointer moves within its word, as a tooltip
+   group keeps its tip; a key or a press hides it until the pointer moves. */
 static void update_hover(kit *k, kit_code_editor *e)
 {
     if (e->pointer_moved) {
         e->pointer_moved = false;
-        e->hover_blocked = false;
-        e->rest_since = k->in.time;
+        bool kept = e->hover >= 0 && !e->hover_blocked &&
+                    same_word(e, e->hover, zep_hover_byte(e->zep));
+        if (!kept) {
+            e->hover_blocked = false;
+            e->rest_since = k->in.time;
+            e->hover = -1;
+        }
     }
     bool rested = e->pointer_in && !e->hover_blocked && e->view &&
                   e->view->rendered && k->in.time - e->rest_since >= HOVER_DELAY;
-    e->hover = rested ? (int)zep_hover_byte(e->zep) : -1;
+    if (!rested) {
+        e->hover = -1;
+        return;
+    }
+    if (e->hover < 0) {
+        e->hover = (int)zep_hover_byte(e->zep);
+        e->hover_x = e->pointer_x;
+        e->hover_y = e->pointer_y;
+    }
+}
+
+int kit_code_link(const kit_code_editor *e)
+{
+    return e->primary_held && e->pointer_in && e->view && e->view->rendered
+             ? (int)zep_hover_byte(e->zep)
+             : -1;
 }
 
 /* The 1-based line of a byte. */
@@ -2361,6 +2659,7 @@ static uint32_t severity_icon(kit_code_severity severity)
         case KIT_CODE_ERROR: return KIT_ICON_ERROR;
         case KIT_CODE_WARNING: return KIT_ICON_WARNING;
         case KIT_CODE_INFO: return KIT_ICON_INFO;
+        case KIT_CODE_BREAKPOINT_MARKER: return KIT_ICON_DOT;
     }
     return KIT_ICON_INFO;
 }
@@ -2371,6 +2670,7 @@ static const char *severity_name(kit_code_severity severity)
         case KIT_CODE_ERROR: return "error";
         case KIT_CODE_WARNING: return "warning";
         case KIT_CODE_INFO: return "info";
+        case KIT_CODE_BREAKPOINT_MARKER: return "breakpoint";
     }
     return "info";
 }
@@ -2414,10 +2714,10 @@ static void place_hover(kit *k, const kit_code_editor *e, node *card)
 {
     float s = dp(k), edge = 4;
     kit_rect size = element_rect(k, card->el);
-    float x = e->pointer_x / s - 8, line = e->line / s;
-    float y = e->pointer_y / s + line;
+    float x = e->hover_x / s - 8, line = e->line / s;
+    float y = e->hover_y / s + line;
     if (y + size.h > k->in.height - edge) {
-        y = e->pointer_y / s - line - size.h;
+        y = e->hover_y / s - line - size.h;
     }
     x = math_clamp(x, edge, math_max(edge, k->in.width - size.w - edge));
     kit_style(k, "left", frame_format(k, "%.1fdp", x));
@@ -2427,8 +2727,7 @@ static void place_hover(kit *k, const kit_code_editor *e, node *card)
 /* The card for the byte the caller described, while the pointer rests. */
 static void show_hover(kit *k, node *n, kit_code_editor *e, const kit_code_desc *d)
 {
-    bool resting = e->hover >= 0 && e->pointer_in && !e->pointer_moved &&
-                   !e->hover_blocked;
+    bool resting = e->hover >= 0 && e->pointer_in && !e->hover_blocked;
     int line = resting ? line_of(e, e->hover) : 0;
     if (!resting || (!(d->hover && d->hover[0]) && !line_marked(e, line))) {
         return;
@@ -2441,19 +2740,48 @@ static void show_hover(kit *k, node *n, kit_code_editor *e, const kit_code_desc 
     pop_node(k);
 }
 
+/* kit_code_notice's card, under the caret's line or above it where the
+   window ends, until the cursor moves. */
+static void show_notice(kit *k, node *n, kit_code_editor *e)
+{
+    if (e->notice && zep_cursor(e->zep) != e->notice_cursor) {
+        clear_notice(e);
+    }
+    if (!e->notice || !e->view || !e->view->rendered) {
+        return;
+    }
+    kit_rect caret = code_caret(k, n);
+    /* It answers a key, so it shows at once. */
+    node *card = emit_in(k, k->layer, frame_format(k, "@notice:%s", n->path), KIND_BOX, "div", "code-hover code-notice");
+    kit_attr(k, "role", "status");
+    kit_rect size = element_rect(k, card->el);
+    float edge = 4, y = caret.y + caret.h + 2;
+    if (y + size.h > k->in.height - edge) {
+        y = caret.y - size.h - 2;
+    }
+    float x = math_clamp(caret.x - 8, edge, math_max(edge, k->in.width - size.w - edge));
+    kit_style(k, "left", frame_format(k, "%.1fdp", x));
+    kit_style(k, "top", frame_format(k, "%.1fdp", math_max(edge, y)));
+    push_node(k, card);
+    kit_label(k, "message", "message", e->notice);
+    pop_node(k);
+}
+
 kit_code_result kit_code(kit *k, const char *key, kit_code_editor *e, const kit_code_desc *d)
 {
     node *n = emit(k, key, KIND_CODE, "kit-code", KIT_CX(k, "code", { d->cls, d->cls != NULL }));
     code_view *v = view_of(n);
     attach(v, e);
     configure(k, e, d);
+    set_flag(n, "data-link", d->link_end > d->link_start);
     highlight(v, e, d);
     sync_colors(v);
     diagnose(e, d);
     take_completions(e, d);
     show_completions(k, n, e);
-    show_hover(k, n, e, d);
     update_hover(k, e);
+    show_hover(k, n, e, d);
+    show_notice(k, n, e);
     k->last = n;
     kit_code_result result = e->result;
     result.focused = e->focused;

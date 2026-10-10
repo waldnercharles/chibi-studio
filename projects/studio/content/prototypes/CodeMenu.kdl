@@ -1,0 +1,4 @@
+name "CodeMenu"
+components {
+    GAME.GameUi document="CodeMenu" hidden=#true
+}

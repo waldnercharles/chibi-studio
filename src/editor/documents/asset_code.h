@@ -31,6 +31,8 @@ const char *asset_code_error(const asset_code *code);
 const char *asset_code_text(const asset_code *code);
 /* The editable view exposes the complete executable source. */
 kit_code_editor *asset_code_editor(asset_code *code);
+/* Comments or uncomments the selected lines with //, as one undo step. */
+void asset_code_toggle_comment(asset_code *code);
 /* One source and metadata history serves both views, including invalid drafts. */
 bool asset_code_can_replay(const asset_code *code, bool redo);
 bool asset_code_replay(asset_code *code, bool redo, bool live);

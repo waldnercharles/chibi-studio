@@ -57,14 +57,15 @@ static const fixed_key FIXED[] = {
     { "Members", "Duplicate variable", "Shift+D Mod+D" },
     { "Members", "Drag in as a Set node", "Alt" },
     /* kit_code.c, studio_code.c */
-    { "Text Editor", "Go to definition", "F12" },
-    { "Text Editor", "Find references", "Shift+F12" },
+    { "Text Editor", "Go to definition", "Mod+Click" },
+    { "Text Editor", "Toggle breakpoint", "F9" },
     { "Text Editor", "Suggest completions", "Ctrl+Space" },
     { "Text Editor", "Back and forward", "Mod+[ Mod+]" },
     { "Text Editor", "Start and end of the text", "Ctrl+Home Ctrl+End", "Mod+Up Mod+Down" },
     { "Text Editor", "Find: next result", "Return Down" },
     { "Text Editor", "Find: previous result", "Shift+Return Up" },
     { "Text Editor", "Find: back to the text", "Escape" },
+    { "Text Editor", "Find again: next and previous match", "F3 Shift+F3" },
     /* studio_assets.c */
     { "Assets", "Rename", "F2" },
     { "Assets", "Delete", "X Backspace Delete" },

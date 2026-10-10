@@ -76,6 +76,17 @@ _Static_assert(
     "a command per Scene tool"
 );
 
+/* A Text Editor command (studio_code.c). */
+#define CODE_COMMAND(name, title, key, words, glyph)                           \
+    { .id = name,                                                              \
+      .label = title,                                                          \
+      .chord = key,                                                            \
+      .context = "Text Editor",                                                \
+      .contexts = EDITOR_BIT(STUDIO_EDITOR_CODE),                              \
+      .keywords = "code " words,                                               \
+      .icon = glyph,                                                           \
+      .phase = SHORTCUT_EDITOR }
+
 static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
     [STUDIO_COMMAND_SEARCH] = { .id = "search",
                                 .label = "Search",
@@ -656,7 +667,53 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                                         "bindings cheat sheet "
                                                         "help",
                                             .icon = KIT_ICON_KEYBOARD,
+                                            .excluded_contexts = EDITOR_BIT(STUDIO_EDITOR_CODE),
                                             .phase = SHORTCUT_EARLY },
+    /* The Text Editor's language commands, on VS Code's keys; Mod+/
+       comments there instead of showing the shortcuts. */
+    [STUDIO_COMMAND_GO_TO_DEFINITION] = CODE_COMMAND(
+        "goToDefinition",
+        "Go to Definition",
+        "F12",
+        "jump declaration symbol",
+        KIT_ICON_TARGET
+    ),
+    [STUDIO_COMMAND_FIND_REFERENCES] = CODE_COMMAND(
+        "findReferences",
+        "Find References",
+        "Shift+F12",
+        "usages symbol",
+        KIT_ICON_REFERENCES
+    ),
+    [STUDIO_COMMAND_RENAME_SYMBOL] = CODE_COMMAND("renameSymbol", "Rename Symbol", "F2", "refactor name", KIT_ICON_EDIT),
+    [STUDIO_COMMAND_CALL_HIERARCHY] = CODE_COMMAND(
+        "callHierarchy",
+        "Show Call Hierarchy",
+        "Shift+Alt+H",
+        "callers callees",
+        KIT_ICON_CALLERS
+    ),
+    [STUDIO_COMMAND_NEXT_PROBLEM] = CODE_COMMAND(
+        "nextProblem",
+        "Go to Next Problem",
+        "F8",
+        "error warning diagnostic marker",
+        KIT_ICON_DOWN
+    ),
+    [STUDIO_COMMAND_PREVIOUS_PROBLEM] = CODE_COMMAND(
+        "previousProblem",
+        "Go to Previous Problem",
+        "Shift+F8",
+        "error warning diagnostic marker",
+        KIT_ICON_UP
+    ),
+    [STUDIO_COMMAND_TOGGLE_LINE_COMMENT] = CODE_COMMAND(
+        "toggleLineComment",
+        "Toggle Line Comment",
+        "Mod+/",
+        "comment uncomment",
+        KIT_ICON_COMMENT
+    ),
     /* The object clipboard, as Unity's and Godot's; a focused field keeps
        these chords for its text. */
     [STUDIO_COMMAND_COPY] = { .id = "copy",
@@ -1258,6 +1315,14 @@ static bool enabled_with(studio *s, studio_command command, int argument)
                    !app_scene_authoring_viewing_through_camera(s->scene);
         case STUDIO_COMMAND_FRAME_ALL: return !studio_designer_active(s);
         case STUDIO_COMMAND_FIND: return finds(s, editor_at(s, argument));
+        case STUDIO_COMMAND_GO_TO_DEFINITION:
+        case STUDIO_COMMAND_FIND_REFERENCES:
+        case STUDIO_COMMAND_RENAME_SYMBOL:
+        case STUDIO_COMMAND_CALL_HIERARCHY:
+        case STUDIO_COMMAND_NEXT_PROBLEM:
+        case STUDIO_COMMAND_PREVIOUS_PROBLEM:
+        case STUDIO_COMMAND_TOGGLE_LINE_COMMENT:
+            return studio_code_command_enabled(s, command);
         default: return true;
     }
 }
@@ -1485,6 +1550,15 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_FIND: find(s, editor_at(s, argument)); break;
         case STUDIO_COMMAND_KEYBOARD_SHORTCUTS:
             studio_ui_show(s, "Shortcuts");
+            break;
+        case STUDIO_COMMAND_GO_TO_DEFINITION:
+        case STUDIO_COMMAND_FIND_REFERENCES:
+        case STUDIO_COMMAND_RENAME_SYMBOL:
+        case STUDIO_COMMAND_CALL_HIERARCHY:
+        case STUDIO_COMMAND_NEXT_PROBLEM:
+        case STUDIO_COMMAND_PREVIOUS_PROBLEM:
+        case STUDIO_COMMAND_TOGGLE_LINE_COMMENT:
+            studio_code_command(s, command);
             break;
         case STUDIO_COMMAND_COPY: studio_copy(s); break;
         case STUDIO_COMMAND_CUT: studio_cut(s); break;

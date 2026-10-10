@@ -30,6 +30,7 @@ static bool callback_ok = true;
 static enum {
     SOURCE_EDIT,
     CODE_KEYS,
+    KDL_KEYS,
     EXPORT_GAME,
     GRAPH_VISIBILITY,
     SCENE_HIERARCHY
@@ -256,13 +257,14 @@ static bool source_edit_frame(void *state)
 }
 
 /* The Text Editor settles before the keys, which leave frames between them
-   for the completion list to open. */
-#define KEY_FRAMES 12
+   for the completion list to open, then comments a line. */
+#define KEY_FRAMES 21
+#define KDL_FRAMES 10
 #define TEXT(x) #x
 #define FRAMES_TEXT(x) TEXT(x)
 
 /* Queues a key press and release for the window, as the platform would. */
-static bool press_key(SDL_Keycode key)
+static bool press_chord(SDL_Keycode key, SDL_Keymod mod)
 {
     int count = 0;
     SDL_Window **windows = SDL_GetWindows(&count);
@@ -274,10 +276,16 @@ static bool press_key(SDL_Keycode key)
                                  .windowID = window,
                                  .key = key,
                                  .scancode = SDL_GetScancodeFromKey(key, NULL),
+                                 .mod = mod,
                                  .down = down } };
         REQUIRE(SDL_PushEvent(&e));
     }
     return true;
+}
+
+static bool press_key(SDL_Keycode key)
+{
+    return press_chord(key, SDL_KMOD_NONE);
 }
 
 /* Counter's source editor, whether or not its text currently reads. */
@@ -305,8 +313,43 @@ static bool same_without_space(const char *a, const char *b)
     }
 }
 
+static const char commented_bytes[] = "behavior Counter {\n"
+                                      "    // state count: int = 1\n"
+                                      "    on Tick {\n"
+                                      "        count = count + 1\n"
+                                      "    }\n"
+                                      "}\n";
+
+/* The open scene's source editor. */
+static asset_code *scene_code(studio *s)
+{
+    for (int i = 0; i < acount(s->code.assets); i++) {
+        if (strstr(asset_code_path(s->code.assets[i]), "Start.kdl")) {
+            return s->code.assets[i];
+        }
+    }
+    return NULL;
+}
+
+/* The scene's KDL in the Text Editor settles once typed in, so Save writes
+   it. */
+static bool scene_saves(studio *s)
+{
+    asset_code *code = scene_code(s);
+    REQUIRE(code && asset_code_dirty(code) && !asset_code_pending(code));
+    studio_code_save(s);
+    REQUIRE(!asset_code_dirty(code));
+    char *disk = file_read_text(asset_code_path(code));
+    REQUIRE(disk);
+    bool saved = !strcmp(disk, asset_code_text(code));
+    free(disk);
+    REQUIRE(saved);
+    return true;
+}
+
 /* Enter on an empty line types newlines; it never accepts a completion the
-   user did not ask for. */
+   user did not ask for, and one undo takes back the burst. Mod+/ comments
+   the caret's line as an undo step of its own, and uncomments it. */
 static bool code_keys_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -317,18 +360,57 @@ static bool code_keys_frame(void *state)
     REQUIRE(code);
     if (frames == 1) {
         studio_show_editor(s, STUDIO_EDITOR_CODE);
-    } else if (frames == KEY_FRAMES - 8) {
+    } else if (frames == 4) {
         s->code.find.refocus = true;
         const char *close = strstr(asset_code_text(code), "    }\n}");
         REQUIRE(close);
         kit_code_set_cursor(asset_code_editor(code), (int)(close - asset_code_text(code)) + 5);
-    } else if (frames == KEY_FRAMES - 6 || frames == KEY_FRAMES - 3) {
+    } else if (frames == 6 || frames == 9) {
         REQUIRE(press_key(SDLK_RETURN));
         keys++;
-    } else if (frames == KEY_FRAMES) {
+    } else if (frames == 12) {
         const char *text = asset_code_text(code);
         REQUIRE(strlen(text) > strlen(counter_bytes) + 1);
         REQUIRE(same_without_space(text, counter_bytes));
+        REQUIRE(asset_code_replay(code, false, false));
+        REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
+        const char *state_line = strstr(asset_code_text(code), "state");
+        REQUIRE(state_line);
+        kit_code_set_cursor(asset_code_editor(code), (int)(state_line - asset_code_text(code)) + 2);
+    } else if (frames == 14 || frames == 18) {
+        REQUIRE(press_chord(SDLK_SLASH, SDL_KMOD_CTRL));
+        keys++;
+    } else if (frames == 17) {
+        REQUIRE(!strcmp(asset_code_text(code), commented_bytes));
+    } else if (frames == 21) {
+        REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
+        REQUIRE(asset_code_replay(code, false, false));
+        REQUIRE(!strcmp(asset_code_text(code), commented_bytes));
+    }
+    return true;
+}
+
+/* Enter at the end of the open scene's KDL settles without waiting on a
+   graph, so Save writes it. */
+static bool kdl_keys_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    frames++;
+    REQUIRE(frames <= KDL_FRAMES);
+    if (frames == 1) {
+        studio_show_editor(s, STUDIO_EDITOR_CODE);
+        return true;
+    }
+    asset_code *scene = scene_code(s);
+    REQUIRE(scene);
+    if (frames == 4) {
+        s->code.find.refocus = true;
+        kit_code_set_cursor(asset_code_editor(scene), (int)strlen(asset_code_text(scene)));
+    } else if (frames == 6) {
+        REQUIRE(press_key(SDLK_RETURN));
+        keys++;
+    } else if (frames == KDL_FRAMES) {
+        REQUIRE(scene_saves(s));
     }
     return true;
 }
@@ -695,6 +777,7 @@ bool studio_acceptance_frame(void *state)
     switch (mode) {
         case SOURCE_EDIT: callback_ok = source_edit_frame(state); break;
         case CODE_KEYS: callback_ok = code_keys_frame(state); break;
+        case KDL_KEYS: callback_ok = kdl_keys_frame(state); break;
         case EXPORT_GAME: callback_ok = export_frame(state); break;
         case GRAPH_VISIBILITY:
             callback_ok = graph_visibility_frame(state);
@@ -730,8 +813,23 @@ TEST_CASE(code_enter_types_newlines)
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
     REQUIRE(callback_ok);
     REQUIRE(unchanged_source());
-    REQUIRE(frames == KEY_FRAMES && keys == 2);
+    REQUIRE(frames == KEY_FRAMES && keys == 4);
     printf("Studio code keys accepted: frames=%d keys=%d\n", frames, keys);
+    return true;
+}
+
+TEST_CASE(kdl_enter_saves)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(KDL_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok);
+    REQUIRE(unchanged_source());
+    REQUIRE(frames == KDL_FRAMES && keys == 1);
+    printf("Studio KDL keys accepted: frames=%d keys=%d\n", frames, keys);
     return true;
 }
 
@@ -814,15 +912,17 @@ int main(int argc, char **argv)
     }
     bool source_edit = argc == 4 && !strcmp(argv[1], "--source-edit");
     bool code_keys = argc == 4 && !strcmp(argv[1], "--code-keys");
+    bool kdl_keys = argc == 4 && !strcmp(argv[1], "--kdl-keys");
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
-    if ((!source_edit && !code_keys && !exporting && !visibility && !hierarchy) ||
+    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility && !hierarchy) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
-            "--source-edit|--code-keys|--export-game|--graph-visibility|"
+            "--source-edit|--code-keys|--kdl-keys|--export-game|--graph-"
+            "visibility|"
             "--scene-hierarchy --project-root PATH | --scene-cursors\n"
         );
         return 2;
@@ -841,12 +941,14 @@ int main(int argc, char **argv)
     pu_display_time(true);
     mode = source_edit ? SOURCE_EDIT
          : code_keys   ? CODE_KEYS
+         : kdl_keys    ? KDL_KEYS
          : exporting   ? EXPORT_GAME
          : visibility  ? GRAPH_VISIBILITY
                        : SCENE_HIERARCHY;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
+        case KDL_KEYS: RUN_TEST_CASE(kdl_enter_saves); break;
         case EXPORT_GAME: RUN_TEST_CASE(export_game); break;
         case GRAPH_VISIBILITY:
             RUN_TEST_CASE(graph_visibility_and_document_pair);

@@ -15,6 +15,7 @@
 #include "support/xalloc.h"
 #include "ui/popover.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,16 +81,48 @@ static asset_code *source_code(studio *s, const char *path)
     return NULL;
 }
 
+/* A rename across files edits the saved files, so it waits for Save. */
+static bool unsaved_source(studio *s, asset_code *code)
+{
+    if (!asset_code_dirty(code)) {
+        return false;
+    }
+    snprintf(
+        s->refactor.error,
+        sizeof s->refactor.error,
+        "Save %s before renaming across files",
+        content_basename(asset_code_path(code))
+    );
+    return true;
+}
+
+/* Whether renaming the symbol rewrites another file. */
+static bool crosses_files(const authoring_navigation *index, int document, const authoring_reference *reference)
+{
+    if (reference->target.kind == AUTHORING_PROGRAM) {
+        return true;
+    }
+    for (int i = 0; i < authoring_navigation_reference_count(index); i++) {
+        const authoring_reference *found = authoring_navigation_reference_at(index, i);
+        if (found->location.document != document &&
+            authoring_target_equal(found->target, reference->target)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void studio_refactor_source(studio *s, const char *path, int offset)
 {
     asset_code *code = source_code(s, path);
-    const authoring_navigation *index = code ? asset_code_navigation(code) : NULL;
+    assert(code);
+    const authoring_navigation *index = asset_code_navigation(code);
     const authoring_reference
         *reference = index
                        ? authoring_navigation_at(index, asset_code_document(code), offset)
                        : NULL;
     if (!reference || !authoring_navigation_definition(index, reference->target)) {
-        studio_report(s, "No editable symbol at this position");
+        kit_code_notice(asset_code_editor(code), "No symbol to rename here");
         return;
     }
     const char *name = authoring_navigation_name(index, reference->target);
@@ -110,6 +143,9 @@ void studio_refactor_source(studio *s, const char *path, int offset)
     snprintf(r->title, sizeof r->title, "%s", name ? name : "");
     snprintf(r->name, sizeof r->name, "%s", name ? name : "");
     r->source_before = xstrdup(asset_code_text(code));
+    if (crosses_files(index, asset_code_document(code), reference)) {
+        unsaved_source(s, code);
+    }
 }
 
 static void plan_source(studio *s, asset_code *code)
@@ -136,7 +172,7 @@ static void plan_source(studio *s, asset_code *code)
     for (int i = 0; i < rename->count; i++) {
         r->source_project |= rename->edits[i].document != document;
     }
-    if (r->source_project) {
+    if (r->source_project && !unsaved_source(s, code)) {
         app_scene_authoring_plan_source_rename(
             s->scene,
             index,
@@ -146,7 +182,7 @@ static void plan_source(studio *s, asset_code *code)
             r->error,
             sizeof r->error
         );
-    } else {
+    } else if (!r->source_project) {
         r->source_after = authoring_rename_document(
             rename,
             document,
@@ -315,9 +351,11 @@ static void apply_rename(studio *s)
     studio_refactor *r = &s->refactor;
     if (r->source_project) {
         asset_code *code = source_code(s, r->source_path);
-        if (!code || strcmp(r->source_before, asset_code_text(code)) ||
-            asset_code_dirty(code)) {
+        if (!code || strcmp(r->source_before, asset_code_text(code))) {
             snprintf(r->error, sizeof r->error, "Source changed; reopen Rename");
+            return;
+        }
+        if (unsaved_source(s, code)) {
             return;
         }
     }

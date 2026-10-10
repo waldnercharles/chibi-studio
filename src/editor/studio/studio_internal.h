@@ -191,6 +191,14 @@ typedef enum
     STUDIO_COMMAND_FRAME_ALL,
     STUDIO_COMMAND_FIND,
     STUDIO_COMMAND_KEYBOARD_SHORTCUTS,
+    /* The Text Editor's language commands (studio_code.c), on VS Code's keys */
+    STUDIO_COMMAND_GO_TO_DEFINITION,
+    STUDIO_COMMAND_FIND_REFERENCES,
+    STUDIO_COMMAND_RENAME_SYMBOL,
+    STUDIO_COMMAND_CALL_HIERARCHY,
+    STUDIO_COMMAND_NEXT_PROBLEM,
+    STUDIO_COMMAND_PREVIOUS_PROBLEM,
+    STUDIO_COMMAND_TOGGLE_LINE_COMMENT,
     /* The object clipboard and extending the Outliner's selection */
     STUDIO_COMMAND_COPY,
     STUDIO_COMMAND_CUT,
@@ -763,6 +771,14 @@ typedef struct
     char editor_path[1024];
     ui_part editor_part;
     int reveal_offset; /* a byte of the part to reveal instead, or -1 */
+    char reveal_notice[256]; /* shown at the revealed place, as F8's problem */
+    bool step_next;          /* the next edit is an undo step of its own */
+    /* The text's context menu (CodeMenu.rml), while it shows. */
+    struct
+    {
+        bool open, opening, mounted;
+    } menu;
+    double capture_due; /* when a moved caret is captured, or 0 */
     /* The shown part's text parsed (assets/ui_source.h), the spans that
        highlight it, and each part's problems as markers (ui_code_markers). */
     ui_source *source;
@@ -1609,6 +1625,10 @@ bool studio_graph_active(const studio *s);
 void studio_graph_find(studio *s);
 /* Opens the Text Editor's find widget. */
 void studio_code_find(studio *s);
+/* The Text Editor's language commands (STUDIO_COMMAND_GO_TO_DEFINITION
+ * through STUDIO_COMMAND_TOGGLE_LINE_COMMENT) on the document it shows. */
+bool studio_code_command_enabled(studio *s, studio_command command);
+void studio_code_command(studio *s, studio_command command);
 /* The graph node Properties shows, or 0. */
 uint64_t studio_graph_node(const studio *s);
 /* The comment frame selected on the canvas while no node is, or 0. */
