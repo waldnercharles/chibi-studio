@@ -1518,13 +1518,13 @@
       "current_source_sha256": "91f77c6e1b3d60ddab4c59fa395ba78c9122e54cb6707f866eb2fb9730d2615c",
       "sha256": "5bcaf149c81eb750ce0da5b74954c40758aedfa32e6cb590849d723050c3ce64",
       "source_path": "src/editor/documents/asset_code.c",
-      "consumer_sha256": "f12cf8a487bced3bc723954d95e9257df72f3b76f07e9ba881776a8610151232"
+      "consumer_sha256": "9f50ea830fcf2eecb206fd1153350cc229541d4313d0760a2667034049a0106c"
     },
     "src/editor/documents/asset_code.h": {
       "current_source_sha256": "15d34e8aae5a3df6a5ef4a2632b6c6784714b03b3c0cb6c74be401afbb35d2e1",
       "sha256": "1199a5f51fd1b59918263a77197311471897d051d8833304e5c6dfa11a9633e1",
       "source_path": "src/editor/documents/asset_code.h",
-      "consumer_sha256": "15d34e8aae5a3df6a5ef4a2632b6c6784714b03b3c0cb6c74be401afbb35d2e1"
+      "consumer_sha256": "10f9528b65c0a769366a9e59116e9447be296dcdbb5861ed8857bc0669230c90"
     },
     "src/editor/documents/commands.c": {
       "current_source_sha256": "055ac0716c23f7d2078177827b141486c080318eea4bd8288e4c16c707d8a9b4",
@@ -1810,7 +1810,7 @@
       "current_source_sha256": "2bc7f3689067a8ad2916dfa0dfc0ec0147a874721d165ec20f1be8f202867690",
       "sha256": "9129512614d262430a863e4cf6ccac6f161691d62449660f709ced5dfa89421c",
       "source_path": "src/editor/studio/studio_code.c",
-      "consumer_sha256": "f125065350b4ecdefc8c60d360c6af8057f9d22abda5ae56212036a8c23b0483"
+      "consumer_sha256": "e7cc03472d80ccefa58b82fc64ab85b4f9bcf675b8d9f6a1815d7c9dae478ecf"
     },
     "src/editor/studio/studio_collab.c": {
       "current_source_sha256": "a9eb6419e86730bd61449fef5116d2575a54ae5d21887d5d31c740c84313ddd6",

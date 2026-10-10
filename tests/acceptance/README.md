@@ -36,12 +36,13 @@ paste is an undo step of its own. It runs fourteen hidden frames.
 disposable copy and runs thirty-four hidden frames on Counter. With Toggle
 Line Comment rebound to Control+C, that chord comments the state line instead
 of copying, and with Vim on, Control+/ uncomments it. A typed character, Find
-Again (F3) and typing over the match are two undo steps: a command that moves
-the caret ends the typing burst. A right click opens the text's menu, which
+Again (F3) and typing over the match are two undo steps, though the typing
+arrives in the frame that reports the caret's move: a command that moves the
+caret ends the typing burst at once. A right click opens the text's menu, which
 takes the keys: a typeahead letter highlights an item and changes neither the
 caret nor the text, and Escape closes it and gives the focus back to the text.
-With two problems on one byte, F8 visits both and
-Shift+F8 goes back. Counter stays unsaved.
+With two problems on one byte, F8 visits both and Shift+F8 goes back. Counter
+stays unsaved.
 
 `studio-acceptance --code-glyphs --project-root PATH` takes another disposable
 copy, adds a prototype named Crêpes and a UI document, Probe, and runs

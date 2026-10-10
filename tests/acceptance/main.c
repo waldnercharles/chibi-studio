@@ -2498,9 +2498,10 @@ static bool code_followups_frame(void *state)
             return true;
         case 12: return type_text("x");
         case 14: keys++; return press_key(SDLK_F3);
-        case 16: return type_text("y");
+        case 15: return type_text("y");
         case 18: {
-            /* Find Again ended the burst: one undo takes back only the
+            /* Find Again ended the burst, though the key came in the frame
+               that reports its caret move: one undo takes back only the
                typing at the match. */
             REQUIRE(strstr(asset_code_text(code), "y"));
             REQUIRE(asset_code_replay(code, false, false));
