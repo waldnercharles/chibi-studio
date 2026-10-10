@@ -15,5 +15,5 @@
     </use>
     <div class="cmd-empty" data-if="palette.count == 0">{{ palette.empty }}</div>
   </choice-list>
-  <div class="cmd-footer"><span class="kbd-key">&#x2191;</span><span class="kbd-key">&#x2193;</span><span class="hint">Navigate</span><span class="kbd-key">&#x21b5;</span><span class="hint">Open</span><span class="spacer"></span><span class="kbd-key">esc</span><span class="hint">Close</span></div>
+  <div class="cmd-footer"><span class="kbd-key">&#x2191;</span><span class="kbd-key">&#x2193;</span><span class="hint">Navigate</span><span class="kbd-key" data-if="palette.count > 0">&#x21b5;</span><span class="hint" data-if="palette.count > 0">{{ palette.verb }}</span><span class="spacer"></span><span class="kbd-key">esc</span><span class="hint">Close</span></div>
 </div>

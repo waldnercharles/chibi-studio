@@ -1487,6 +1487,8 @@ bool studio_search_lists_anew(const char *was, const char *query);
 /* The query without its prefix. */
 const char *studio_search_query(const char *query);
 void studio_search_choose(studio *s, const studio_palette_entry *entry);
+/* What choosing `entry` does, as a verb for the palette's Enter hint. */
+const char *studio_search_verb(const studio_palette_entry *entry);
 
 /* Content changed on disk (studio_disk.c): reloads it and raises failures and
    unsaved conflicts as toasts. */

@@ -457,6 +457,28 @@ void studio_search_choose(studio *s, const studio_palette_entry *p)
     }
 }
 
+const char *studio_search_verb(const studio_palette_entry *p)
+{
+    switch ((pick_kind)p->kind) {
+        case PICK_COMMAND: return "Run";
+        case PICK_SETTING:
+            return studio_settings[p->index].type == STUDIO_SETTING_BOOL
+                     ? "Toggle"
+                     : "Open";
+        case PICK_OBJECT:
+        case PICK_COMPONENT:
+        case PICK_ELEMENT: return "Select";
+        case PICK_SCENARIO: return "Replay";
+        case PICK_PREFIX: return "Filter";
+        case PICK_ASSET:
+        case PICK_PROJECT:
+        case PICK_GRAPH:
+        case PICK_NODE:
+        case PICK_RULE: return "Open";
+    }
+    return "Open";
+}
+
 /* ---------- The search's results ---------- */
 
 static scope scope_of(const char *query, const char **rest)
