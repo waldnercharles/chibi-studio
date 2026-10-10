@@ -19,6 +19,10 @@ static const float BIND_WIDTH = 24;
 /* Below this many device pixels per graph unit only titles show: 12 dp pin
    labels would draw under 7 px. Zoom alone would hide legible text on HiDPI. */
 static const float FAR_PIXELS = 0.6f;
+/* A graph opening in a small area shows its start at no less than this zoom
+   instead of all of it as unreadable titles; expression code wraps to fit
+   at it. */
+static const float OPEN_ZOOM_MIN = 0.75f;
 
 typedef enum
 {
@@ -33,6 +37,7 @@ struct studio_node_layout
     node_form form;
     float w, h;
     float label;           /* input label column, so input editors line up */
+    bool label_clipped;    /* that column was narrowed to keep NODE_MAX */
     float top;             /* the first row's top, below the node's */
     float column;          /* an operator's input column */
     int head_in, head_out; /* pins drawn in the title, or -1 */

@@ -144,9 +144,9 @@ void sg_frame_nodes(studio *s, bool selection, bool animate)
     camera_to(s, zoom, cx - w / 2 / effective_zoom, cy - h / 2 / effective_zoom, animate);
 }
 
-/* Below this, a graph opening in a small area shows its start legibly
-   instead of all of it as unreadable titles. */
-static const float OPEN_ZOOM_MIN = 0.75f, OPEN_MARGIN = 32;
+/* The room left above and beside a graph's start when it opens at
+   OPEN_ZOOM_MIN. */
+static const float OPEN_MARGIN = 32;
 
 /* A graph opens fitted when that leaves its nodes legible; otherwise at a
    legible zoom with its top-left corner in view, where its events start, as

@@ -101,6 +101,7 @@ body.graph-canvas:not(.dark) .gnode-head, body.graph-canvas:not(.dark) .gnode-he
 .ghalf.out { padding-right: 10dp; margin-left: auto; justify-content: flex-end; }
 /* Labels and fields stay inside the node; the full label remains in its tooltip. */
 .gpin-label { display: block; flex: 0 1 auto; min-width: 0dp; max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--muted-foreground); white-space: nowrap; line-height: var(--studio-line-22, 22dp); }
+.gpin-label[data-fits] { overflow: visible; text-overflow: clip; }
 [data-hover] > .gpin-label { color: var(--foreground); }
 .grow .field { flex: 1 1 auto; min-width: 0dp; height: var(--studio-height-18, 18dp); }
 .grow.out .field { flex: 0 0 64dp; }

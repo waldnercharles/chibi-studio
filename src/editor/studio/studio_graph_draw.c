@@ -284,10 +284,15 @@ static void emit_pin(studio *s, node *n, int kind, int p, const char *cls, float
                              : NULL;
         kit_tip(k, parts.label, NULL, expression);
         free(expression);
-        if (input && label_width > 0 && !sg_pin_exec(n, kind, p)) {
+        /* Zoomed out, hinted text can draw a little wider than it measured
+           at 100%: a label whose column fits spills into the gap rather
+           than truncating. */
+        bool column = input && label_width > 0 && !sg_pin_exec(n, kind, p);
+        if (column) {
             snprintf(width, sizeof width, "%.0fdp", label_width);
             kit_style(k, "width", width);
         }
+        kit_flag(k, "data-fits", column && !l.label_clipped);
     }
     emit_watch(s, n, input, p, &parts, hovered);
     if (input && parts.spec->kind == PIN_DATA &&
@@ -393,6 +398,7 @@ static void emit_code(studio *s, node *n, const node_layout *l)
     int starts[CODE_LINES], length = (int)strlen(code);
     int count = sg_code_lines(s, code, sg_code_room(l), starts);
     kit_push(k, "code", NULL, "gcode");
+    bool clipped = false; /* a line ran past its room as last laid out */
     for (int i = 0; i < count; i++) {
         int end = i + 1 < count ? starts[i + 1] : length;
         while (end > starts[i] && code[end - 1] == ' ') {
@@ -403,8 +409,9 @@ static void emit_code(studio *s, node *n, const node_layout *l)
         snprintf(line, sizeof line, "%.*s", end - starts[i], code + starts[i]);
         highlight_markup(HIGHLIGHT_EXPRESSION, line, markup, sizeof markup);
         kit_markup(k, key, "gcode-line", markup);
+        rml_element *el = kit_item_element(k);
+        clipped |= rml_element_scroll_width(el) > rml_element_client_width(el) + 0.5f;
     }
-    free(code);
     kit_button_desc edit = { .icon = KIT_ICON_EDIT,
                              .variant = KIT_GHOST,
                              .size = KIT_SM,
@@ -415,6 +422,9 @@ static void emit_code(studio *s, node *n, const node_layout *l)
         sg_begin_expression_edit(s, k, n, 0);
     }
     kit_pop(k);
+    /* Zoomed out past OPEN_ZOOM_MIN a line can clip: its tip shows it all. */
+    kit_tip(k, clipped ? "Expression" : NULL, NULL, clipped ? code : NULL);
+    free(code);
     if (!sg_graph_readonly(s) && kit_item_clicked(k)) {
         sg_begin_expression_edit(s, k, n, 0);
     }

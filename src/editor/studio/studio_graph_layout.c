@@ -514,6 +514,16 @@ const char *sg_node_title(const studio *s, node *n, node_form form, char *buf, s
     return buf;
 }
 
+/* Code wraps as the canvas draws it at OPEN_ZOOM_MIN: small hinted glyphs
+   round up to whole pixels, so text drawn zoomed out runs wider than at
+   100%, and a line that fits there fits at every zoom above it. */
+static float code_width(const studio *s, const char *text)
+{
+    float ratio = fmaxf(studio_pixel_ratio(s) * OPEN_ZOOM_MIN, FAR_PIXELS);
+    return s->graph.kit ? kit_text_width(s->graph.kit, text, CODE_SIZE, 400, ratio)
+                        : sg_text_width(s, text, CODE_SIZE, 400);
+}
+
 /* Breaks source at spaces into lines no wider than `width`, filling starts
    with each line's offset; returns the line count. A word wider than a line
    keeps a line of its own, and the last line takes whatever is left. */
@@ -530,7 +540,7 @@ int sg_code_lines(const studio *s, const char *code, float width, int starts[COD
         int end = code[i] && code[i] != ' ' ? i + 1 : i;
         char line[512];
         snprintf(line, sizeof line, "%.*s", end - start, code + start);
-        if (fits > start && sg_text_width(s, line, CODE_SIZE, 400) > width) {
+        if (fits > start && code_width(s, line) > width) {
             start = fits + (code[fits] == ' ');
             starts[count++] = start;
             fits = -1;
@@ -642,12 +652,14 @@ static node_layout measure_node(const studio *s, node *n)
     }
     char *code = studio_code_expression(s, n);
     if (code) {
-        width = fmaxf(width, sg_text_width(s, code, CODE_SIZE, 400) + CODE_INSET);
+        width = fmaxf(width, code_width(s, code) + CODE_INSET);
     }
     l.w = ceilf(fminf(fmaxf(2 * EDGE + width, NODE_MIN), NODE_MAX));
     float room = l.w - 2 * EDGE - 2 * SOCKET_PAD;
     float value_room = fminf(values, room * 0.6f);
-    l.label = fminf(l.label, fmaxf(0, room - value_room - (values > 0 ? PART_GAP : 0)));
+    float label = fminf(l.label, fmaxf(0, room - value_room - (values > 0 ? PART_GAP : 0)));
+    l.label_clipped = label < l.label;
+    l.label = label;
     if (code) {
         int starts[CODE_LINES];
         l.code_lines = sg_code_lines(s, code, sg_code_room(&l), starts);
