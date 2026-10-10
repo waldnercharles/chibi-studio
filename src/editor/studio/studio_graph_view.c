@@ -40,6 +40,7 @@ void sg_zoom_at(studio *s, float zoom, float wx, float wy)
     g->x = fx - (wx - g->surface.rect.x) / effective_zoom;
     g->y = fy - (wy - g->surface.rect.y) / effective_zoom;
     g->camera.active = false;
+    g->wheel_zoomed = s->time;
 }
 
 bool sg_far(const studio *s)
@@ -65,6 +66,26 @@ static void camera_to(studio *s, float zoom, float x, float y, bool animate)
     g->camera.y = y;
     g->camera.start = s->time;
     g->camera.active = true;
+}
+
+void sg_zoom_actual(studio *s)
+{
+    studio_graph *g = &s->graph;
+    float zoom = sg_zoom(s), w = g->surface.rect.w, h = g->surface.rect.h;
+    float cx = g->x + w / 2 / zoom, cy = g->y + h / 2 / zoom;
+    camera_to(s, 12.0f / s->prefs.standard_font_size, cx - w / 2, cy - h / 2, true);
+}
+
+float sg_zoom_readout(const studio *s)
+{
+    const studio_graph *g = &s->graph;
+    float zoom = g->camera.active ? g->camera.zoom : g->zoom;
+    return zoom * s->prefs.standard_font_size / 12.0f;
+}
+
+bool sg_wheel_zooming(const studio *s)
+{
+    return s->time - s->graph.wheel_zoomed < WHEEL_SETTLE;
 }
 
 /* Interpolates in screen space so the path neither swoops nor drifts: the

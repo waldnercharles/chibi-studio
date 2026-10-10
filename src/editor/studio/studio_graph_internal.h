@@ -23,6 +23,8 @@ static const float FAR_PIXELS = 0.6f;
    instead of all of it as unreadable titles; expression code wraps to fit
    at it. */
 static const float OPEN_ZOOM_MIN = 0.75f;
+/* How long after a wheel tick zooming counts as continuous. */
+static const double WHEEL_SETTLE = 0.3;
 
 typedef enum
 {
@@ -184,7 +186,14 @@ void sg_socket_at(const studio *s, node *n, int kind, int pin, float *x, float *
 float sg_zoom(const studio *s);
 float studio_graph_pixel_ratio(const studio *s);
 void sg_to_world(const studio *s, float wx, float wy, float *x, float *y);
+/* Zooms at a window point, as a wheel or pinch does. */
 void sg_zoom_at(studio *s, float zoom, float wx, float wy);
+/* Eases to 100% about the canvas center. */
+void sg_zoom_actual(studio *s);
+/* The zoom the readout shows: where an eased camera move ends. */
+float sg_zoom_readout(const studio *s);
+/* A wheel or pinch zoomed in the last WHEEL_SETTLE seconds. */
+bool sg_wheel_zooming(const studio *s);
 /* Zoomed out past FAR_PIXELS: nodes show titles only. */
 bool sg_far(const studio *s);
 void sg_camera_step(studio *s);

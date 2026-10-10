@@ -449,6 +449,7 @@ typedef struct
     bool focused;
     bool captured; /* a press began in the canvas and is held */
     float zoom, x, y;
+    double wheel_zoomed; /* when a wheel or pinch last zoomed */
     struct
     {
         float zoom, x, y;
@@ -515,8 +516,8 @@ typedef struct
     char link_error[160];
     uint64_t hover_node;
     int hover_kind, hover_pin; /* -1 without a socket */
-    int hover_edge;            /* edge index under the pointer, or -1 */
     double hover_pin_since;    /* when the pointer reached that socket */
+    int hover_edge;            /* edge index under the pointer, or -1 */
     bool space;
     double value_edit_frame; /* a value gesture has an open undo snapshot */
     bool value_editing;
