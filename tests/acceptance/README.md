@@ -42,7 +42,11 @@ a press a few pixels past them, and that a resize labels its size by the
 pointer and cancels back. After Frame All the zoom reads 100%. Through queued
 SDL events it checks that a whole wheel notch zooms the camera, that a
 fraction of one, as a trackpad scrolls, pans it, that Space with a left drag
-pans without playing, and that Space alone plays once it is released. It saves
+pans without playing, that Space released while Settings records a chord
+neither stays held nor plays, and that Space alone plays once it is released.
+Framing before the Scene's first draw leaves the zoom's measure to that draw.
+While the game plays, the wheel, a trackpad's fraction included, reaches its
+UI, and the undrawn spot, which shows no marker then, picks nothing. It saves
 no file.
 
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the

@@ -1958,7 +1958,7 @@
       "current_source_sha256": "4db01dfa4c90272a5d0a0deb7e3cb46b23f2e2e24986c38029e1b2d137264374",
       "sha256": "37bf9d494b1f81971417da1e762d8748f64ecf596e30a6334f39305df658a5d6",
       "source_path": "src/editor/studio/studio_host.c",
-      "consumer_sha256": "17ff90731bf5cca10fffab980547482b9436ffa541f6a4c32bf87fbbf0439c8e"
+      "consumer_sha256": "38900f99ce50c8b983d278511f71390a2804a088de32d566c5eca8a6259b4675"
     },
     "src/editor/studio/studio_inspect.c": {
       "current_source_sha256": "b1755ebef5f619db6e4cd06afd8005228fa79b8a03188c949c6b8bd9531c5e07",
@@ -2088,7 +2088,7 @@
       "current_source_sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "source_path": "src/editor/studio/studio_scene.c",
-      "consumer_sha256": "103c46724ade953057f2a9ebc3c1e5f480e16b2c0d7374ba9e090cc7a029c43e"
+      "consumer_sha256": "fb96e0c5f88da1723138eae1887b662cc01950cfcc7c633083a549a967d20636"
     },
     "src/editor/studio/studio_settings.c": {
       "current_source_sha256": "1c75298f324a970da1732a66036f3622d6c6be59319a2719b62ce0ceb7b5ff03",
@@ -2396,7 +2396,7 @@
       "current_source_sha256": "f2a2f0d495ea6a286f1dfd898f3904d55eedfdb9093f9ef79d9f16115503a482",
       "sha256": "c487c7af89a66c3beb36270f2751356d3c5429ccccef8268ef518557da7a5210",
       "source_path": "src/editor/workspace/scene_viewport.c",
-      "consumer_sha256": "5907acb5ee2855f4530d19ddce6fcbdea987dc5769ad9288d678a52a1900f290"
+      "consumer_sha256": "9ccb26113a311ede9067b4f1ce73297a7beab0c353520f40a8ec0ddc5814f3c6"
     },
     "src/editor/workspace/scene_world_preview.c": {
       "current_source_sha256": "0dc6c273fa210be49c28651ae1788498f1a081196d48c7803891f0ac847da9db",

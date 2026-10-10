@@ -130,6 +130,21 @@ static bool camera_free(const studio *s)
     return !s->scene->runtime_playing || (s->mods & SDL_KMOD_ALT);
 }
 
+/* A mouse wheel's notches and a pinch zoom the camera toward the pointer.
+   While the game has the camera, the wheel and a trackpad's scroll alike
+   scroll its UI (render/viewport.c). */
+static void zoom_camera(studio *s, engine_viewport_host_input *input)
+{
+    if (!camera_free(s)) {
+        return;
+    }
+    float notches = s->pinch / (FEEL_ZOOM_RATE * logf(2));
+    input->wheel = s->surface.hovered ? s->scene_wheel + notches : 0;
+    if (input->wheel != 0) {
+        s->scene_nav.zoomed_at = s->time;
+    }
+}
+
 /* A trackpad's two-finger scroll pans the camera the distance it would
    scroll a page, as Figma's canvas pans. */
 static void scroll_camera(studio *s, float width)
@@ -170,11 +185,7 @@ static void space_pan(studio *s, engine_viewport_host_input *input)
    a drag (Figma). */
 static void scene_view(studio *s, engine_viewport_host_input *input)
 {
-    float notches = s->pinch / (FEEL_ZOOM_RATE * logf(2));
-    input->wheel = s->surface.hovered ? s->scene_wheel + notches : 0;
-    if (input->wheel != 0) {
-        s->scene_nav.zoomed_at = s->time;
-    }
+    zoom_camera(s, input);
     scroll_camera(s, input->width);
     space_pan(s, input);
 }
@@ -545,17 +556,22 @@ static bool show_markers(studio *s, const studio_panel_sync *at, bool shown)
     return changed;
 }
 
+/* Room for any float's whole digits, their separators and "%". */
+#define PERCENT_DIGITS 48
+#define PERCENT_TEXT (PERCENT_DIGITS + PERCENT_DIGITS / 3 + 2)
+
 /* `percent` with thousands separators, as the readout's NumberFlow shows it. */
-static void grouped_percent(double percent, char out[24])
+static void grouped_percent(double percent, char out[PERCENT_TEXT])
 {
-    char digits[16];
+    char digits[PERCENT_DIGITS];
     int length = snprintf(digits, sizeof digits, "%.0f", fabs(percent));
+    assert(length > 0 && length < PERCENT_DIGITS);
     int at = 0;
     for (int i = 0; i < length; i++) {
         bool separate = i > 0 && (length - i) % 3 == 0;
-        at += snprintf(out + at, 24 - (size_t)at, separate ? ",%c" : "%c", digits[i]);
+        at += snprintf(out + at, PERCENT_TEXT - (size_t)at, separate ? ",%c" : "%c", digits[i]);
     }
-    snprintf(out + at, 24 - (size_t)at, "%%");
+    snprintf(out + at, PERCENT_TEXT - (size_t)at, "%%");
 }
 
 /* The camera's zoom against its last framing, so Frame reads 100%, once
@@ -571,7 +587,7 @@ static bool show_readout(studio *s, const studio_panel_sync *at, bool shown)
         return changed;
     }
     double percent = round(zoom * 100);
-    char text[24];
+    char text[PERCENT_TEXT];
     grouped_percent(percent, text);
     bool zooming = s->time - s->scene_nav.zoomed_at < ZOOM_SETTLE_SECONDS;
     changed |= ui_data_put_number(at->variable, "zoom", percent);

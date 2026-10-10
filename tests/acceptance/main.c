@@ -801,6 +801,23 @@ static bool marker_and_gizmo(studio *s)
     return true;
 }
 
+/* While the game plays, the wheel, a trackpad's included, scrolls its UI,
+   and an undrawn object, which shows no marker, picks nothing. */
+static bool played_scene(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(studio_session(s) && scene->runtime_playing);
+    engine_viewport_host_input input = { .wheel = 0.5f, .width = s->surface.rect.w };
+    studio_scene_view(s, &input);
+    REQUIRE(input.wheel == 0.5f);
+    REQUIRE(
+        ecs_entity_to_u64(pick_scene_entity(scene, 5, -5, (render_skip){ 0 })) ==
+        ecs_entity_to_u64(scene->actors[0].entity)
+    );
+    edits++;
+    return true;
+}
+
 /* The Scene's one zoom reads 100% when framed; a mouse wheel zooms it, a
    trackpad's scroll pans it, Space with a drag pans and Space alone plays
    once it lifts. Events queue after a frame for the next one. */
@@ -835,6 +852,10 @@ static bool scene_viewport_frame(void *state)
                 0
             );
             REQUIRE(scene_authoring_load_text(scene, marked_scene, NULL) == 0);
+            /* Framing before the Scene's first draw leaves its measure to
+               that draw. */
+            REQUIRE(!scene->render_viewport);
+            studio_frame_all(s);
             return true;
         case 2:
             REQUIRE(s->viewport && s->surface.rect.w > 0);
@@ -861,8 +882,12 @@ static bool scene_viewport_frame(void *state)
         case 5: return push_mouse(SDL_EVENT_MOUSE_MOTION, x + 40, y + 30, 0, 0);
         case 6:
             REQUIRE(push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x + 40, y + 30, 0, 0));
+            /* Space lifts while Settings records a chord too. */
+            s->shortcut_recording = STUDIO_COMMAND_FRAME + 1;
             return push_key(SDLK_SPACE, false);
         case 7:
+            REQUIRE(!s->space_down && !s->scene_nav.space_play);
+            s->shortcut_recording = 0;
             REQUIRE(!studio_session(s) && !scene->marquee);
             REQUIRE(view.width == before.width && view.center_x < before.center_x);
             REQUIRE(view.center_y > before.center_y);
@@ -871,10 +896,7 @@ static bool scene_viewport_frame(void *state)
             /* Space waits for its release, which a drag may still follow. */
             REQUIRE(s->space_down && !studio_session(s));
             return push_key(SDLK_SPACE, false);
-        default:
-            REQUIRE(studio_session(s));
-            edits++;
-            return true;
+        default: return played_scene(s);
     }
 }
 

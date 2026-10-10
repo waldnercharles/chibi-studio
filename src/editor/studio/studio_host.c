@@ -547,8 +547,12 @@ static bool forward_input(studio *s)
             s->space_down = s->scene_nav.space_play = s->scene_nav.space_drag = false;
             continue;
         }
-        if (recording && (e->type == SDL_EVENT_KEY_DOWN || e->type == SDL_EVENT_KEY_UP ||
-                          e->type == SDL_EVENT_TEXT_INPUT)) {
+        /* Space lifts as its key does, while a chord records too. */
+        bool key = e->type == SDL_EVENT_KEY_DOWN || e->type == SDL_EVENT_KEY_UP;
+        if (key && e->key.key == SDLK_SPACE) {
+            s->space_down = e->type == SDL_EVENT_KEY_DOWN;
+        }
+        if (recording && (key || e->type == SDL_EVENT_TEXT_INPUT)) {
             if (e->type != SDL_EVENT_TEXT_INPUT) {
                 s->mods = e->key.mod;
             }
@@ -645,9 +649,6 @@ static bool forward_input(studio *s)
                                                            : RML_INPUT_KEY_RELEASE;
                 input.key = input_key(e->key.key);
                 s->mods = e->key.mod;
-                if (e->key.key == SDLK_SPACE) {
-                    s->space_down = e->type == SDL_EVENT_KEY_DOWN;
-                }
                 input.modifiers = rml_key_modifiers(s, e->key.mod);
                 if (e->type == SDL_EVENT_KEY_DOWN) {
                     apush(

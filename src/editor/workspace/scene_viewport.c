@@ -318,7 +318,8 @@ ecs_entity pick_scene_entity(app_scene_authoring *scene, float x, float y, rende
         const GameTilemap *map = GAME_GameTilemap_get_const(scene->world, entity);
         bool marked = !scene_object_drawn(scene->world, entity);
         if (marked) {
-            if (!marker_hit(scene, entity, x, y)) {
+            /* A session shows no markers (app_scene_authoring_markers). */
+            if (runtime_session(scene) || !marker_hit(scene, entity, x, y)) {
                 continue;
             }
         } else if (map) {
@@ -635,9 +636,9 @@ static scene_camera *shown_camera(app_scene_authoring *scene)
 
 void app_scene_authoring_framed(app_scene_authoring *scene)
 {
-    assert(scene->render_viewport);
-    /* The next draw chooses the camera again, and measures its framing. */
-    if (scene->camera_target == -1) {
+    /* The next draw chooses the camera again, or for the first time, and
+       measures its framing. */
+    if (!scene->render_viewport || scene->camera_target == -1) {
         return;
     }
     engine_viewport_view view;
