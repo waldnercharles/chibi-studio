@@ -223,10 +223,19 @@ static void unsaved_names(studio *s, char *out, size_t size)
 #define UNSAVED_LOST "Your changes will be lost if you don't save them."
 #define UNSAVED_HELD "Stop the scene to save them, or discard them."
 
+/* The tab the pending action closes, else -1 for every document. */
+static int pending_tab(studio *s)
+{
+    studio_unsaved_prompt *prompt = &s->unsaved_prompt;
+    return prompt->action == STUDIO_UNSAVED_CLOSE_TAB
+             ? studio_tab_index(s, prompt->tab)
+             : -1;
+}
+
 /* Shows the prompt's question about `names`: "Save Level before quitting?"
    with Save first and Discard second, and the toast's close button
-   cancelling. While a running scene keeps documents from saving, it says
-   how to save them. */
+   cancelling. While a running scene keeps a pending document from saving,
+   it says how to save it. */
 static void show_unsaved(studio *s, const char *names)
 {
     studio_unsaved_prompt *prompt = &s->unsaved_prompt;
@@ -237,7 +246,9 @@ static void show_unsaved(studio *s, const char *names)
         prompt->toast,
         &(kit_toast_desc){ .type = KIT_TOAST_WARNING,
                            .title = title,
-                           .description = studio_save_held(s) ? UNSAVED_HELD : UNSAVED_LOST,
+                           .description = studio_unsaved_held(s, pending_tab(s))
+                                            ? UNSAVED_HELD
+                                            : UNSAVED_LOST,
                            .action = "Save",
                            .cancel = "Discard",
                            .duration = -1 }
@@ -341,9 +352,7 @@ static void answer_unsaved(studio *s)
     if (!prompt->toast) {
         return;
     }
-    int tab = prompt->action == STUDIO_UNSAVED_CLOSE_TAB
-                ? studio_tab_index(s, prompt->tab)
-                : -1;
+    int tab = pending_tab(s);
     bool save = kit_toast_action(s->kit, prompt->toast);
     bool discard = !save && kit_toast_cancel(s->kit, prompt->toast);
     if (!save && !discard && pending_unsaved(s, tab)) {

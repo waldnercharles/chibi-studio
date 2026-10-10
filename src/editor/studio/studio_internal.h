@@ -2008,6 +2008,9 @@ bool studio_save_all(studio *s);
 /* True while a running scene keeps documents from saving; text, which
    applies live, still saves. */
 bool studio_save_held(const studio *s);
+/* True while a running scene keeps tab `index` from saving, or with -1 any
+   document with unsaved edits. */
+bool studio_unsaved_held(studio *s, int index);
 /* The open tab with this key, or -1. */
 int studio_tab_index(const studio *s, const char *key);
 /* Reports a document saved: in Output, and in a toast except while Save All
