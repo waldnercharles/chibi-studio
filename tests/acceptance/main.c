@@ -1551,6 +1551,15 @@ static const char
                      "    - name=\"B\" prototype=\"Linker\"\n"
                      "}\n";
 
+/* A names the ship's turret by its path. */
+static const char
+    path_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
+                   "    - name=\"Ship\" prototype=\"Hull\" { (array)children "
+                   "{ - name=\"Turret\" prototype=\"Hull\"; }; }\n"
+                   "    - name=\"A\" prototype=\"Linker\" { components "
+                   "{ Link target=\"Ship.Turret\"; }; }\n"
+                   "}\n";
+
 /* A ship with a turret, and a root that shares the turret's name. */
 static const char
     nested_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
@@ -1617,15 +1626,59 @@ static bool link_to(app_scene_authoring *scene, int actor, int target)
     return true;
 }
 
+/* Whether `actor`'s Link names `target`, or nothing when it is negative. */
+static bool links(app_scene_authoring *scene, int actor, int target)
+{
+    pin_value value = { 0 };
+    REQUIRE(
+        ecs_component_read_field(scene->world, scene->actors[actor].entity, link_id(scene), 0, &value) == ECS_OK
+    );
+    return value.u64 ==
+           (target < 0 ? 0 : ecs_entity_to_u64(scene->actors[target].entity));
+}
+
+/* A Link the scene names by path holds the turret, and the path saves
+   through undo, a duplicate, a rename that leaves it naming nothing, a
+   checkpoint and a run of the scene. */
+static bool names_by_path(app_scene_authoring *scene)
+{
+    REQUIRE(
+        app_scene_authoring_register_prototype(scene, "name \"Linker\"\ncomponents {\n    Link\n    GameTransform x=0 y=0\n}\n", NULL) ==
+        0
+    );
+    REQUIRE(scene_authoring_load_text(scene, path_scene, NULL) == 0);
+    REQUIRE(acount(scene->actors) == 3 && links(scene, 2, 1) && saves_as(scene, path_scene));
+    scene->selected = 2;
+    REQUIRE(app_scene_authoring_delete_instance(scene) == 0 && acount(scene->actors) == 2);
+    REQUIRE(replay_scene_edit(scene, false) == 0);
+    REQUIRE(acount(scene->actors) == 3 && links(scene, 2, 1) && saves_as(scene, path_scene));
+    REQUIRE(app_scene_authoring_rename_instance(scene, scene->actors[1].entity, "Gun") == 0);
+    REQUIRE(links(scene, 2, -1));
+    REQUIRE(replay_scene_edit(scene, false) == 0 && links(scene, 2, 1));
+    char *checkpoint = app_scene_authoring_checkpoint(scene);
+    REQUIRE(checkpoint);
+    bool restored = app_scene_authoring_restore_checkpoint(scene, checkpoint) == 0;
+    free(checkpoint);
+    REQUIRE(restored && links(scene, 2, 1) && saves_as(scene, path_scene));
+    REQUIRE(app_scene_authoring_runtime_command(scene, APP_RUNTIME_SCENE, APP_RUNTIME_PLAY) == 0);
+    REQUIRE(app_scene_authoring_runtime_command(scene, APP_RUNTIME_SCENE, APP_RUNTIME_STOP) == 0);
+    REQUIRE(child_of(scene, 1, 0) && links(scene, 2, 1) && saves_as(scene, path_scene));
+    scene->selected = 2;
+    REQUIRE(app_scene_authoring_duplicate_instance(scene) == 0 && links(scene, 3, 1));
+    char *text = scene_authoring_scene_text(scene);
+    const char *first = text ? strstr(text, "target=\"Ship.Turret\"") : NULL;
+    bool both = first && strstr(first + 1, "target=\"Ship.Turret\"");
+    free(text);
+    REQUIRE(both);
+    return true;
+}
+
 /* A and B, both selected, naming each other, and Properties showing
    their Link's Target. */
 static bool select_crossed_links(studio *s)
 {
     app_scene_authoring *scene = s->scene;
-    REQUIRE(
-        app_scene_authoring_register_prototype(scene, "name \"Linker\"\ncomponents {\n    Link\n    GameTransform x=0 y=0\n}\n", NULL) ==
-        0
-    );
+    REQUIRE(names_by_path(scene));
     REQUIRE(scene_authoring_load_text(scene, linked_scene, NULL) == 0);
     REQUIRE(acount(scene->actors) == 2 && link_id(scene));
     REQUIRE(link_to(scene, 0, 1) && link_to(scene, 1, 0));
@@ -1662,6 +1715,22 @@ static bool mixed_link(studio *s)
     REQUIRE(link_to(scene, 1, 1));
     studio_properties_action(s, "reveal", &reveal);
     REQUIRE(scene->selected == 1 && scene_selection_count(scene) == 1);
+    /* A alone, naming by path a turret renamed away. */
+    REQUIRE(scene_authoring_load_text(scene, path_scene, NULL) == 0);
+    REQUIRE(app_scene_authoring_rename_instance(scene, scene->actors[1].entity, "Gun") == 0);
+    REQUIRE(app_scene_authoring_select_entity(scene, scene->actors[2].entity) == 0);
+    return true;
+}
+
+/* A's Link row shows the path that names no object, as a problem. */
+static bool dangling_path(studio *s)
+{
+    rml_element *field = studio_element(s, ".entity-field");
+    REQUIRE(field && rml_element_has_attribute(field, "data-invalid"));
+    char text[64] = "", tip[128] = "";
+    rml_element_inner_rml(studio_element(s, ".entity-field .value"), text, sizeof text);
+    rml_element_attribute(field, "data-tip", tip, sizeof tip);
+    REQUIRE(!strcmp(text, "Ship.Turret") && !strcmp(tip, "No object has the path Ship.Turret"));
     s->property_search[0] = '\0';
     return true;
 }
@@ -1673,12 +1742,15 @@ static bool scene_hierarchy_frame(void *state)
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
-    REQUIRE(frames <= 3);
+    REQUIRE(frames <= 4);
     if (frames == 2) {
         return true;
     }
     if (frames == 3) {
         return mixed_link(s);
+    }
+    if (frames == 4) {
+        return dangling_path(s);
     }
     app_scene_authoring *scene = s->scene;
     REQUIRE(
@@ -2990,11 +3062,11 @@ TEST_CASE(scene_hierarchy)
 {
     REQUIRE(write_content("components", "Link.chibi", link_component));
     char *args[] = { (char *)executable, "--headless",
-                     "--frames",         "3",
+                     "--frames",         "4",
                      "--fixed-dt",       "0.016666666666666666",
                      "--project-root",   (char *)project };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && frames == 3 && edits == 1);
+    REQUIRE(callback_ok && frames == 4 && edits == 1);
     printf("Studio scene hierarchy accepted\n");
     return true;
 }

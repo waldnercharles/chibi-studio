@@ -30,6 +30,7 @@ typedef struct
     game_prototype *runtime_snapshot;
     game_prototype *restored_state;
     scene_retained_component *retained;
+    game_prototype_link *paths; /* the entities the scene names in its fields */
     bool own_behaviors; /* the scene lists its behaviors instead of the prototype's */
     bool marked;
 } scene_actor;
@@ -541,6 +542,14 @@ int add_actor(app_scene_authoring *scene, const char *name, const char *prototyp
    in order, written as entities. An object whose parent is not among them is
    written as a root. */
 int scene_validate_entity(app_scene_authoring *scene, const game_scene_entity *entity);
+/* Writes the link's entity path into the overrides of its component. */
+void scene_override_path(av_doc *doc, av_value *overrides, const game_prototype_link *link);
+/* The entity paths the actor's fields name, as components values, or NULL
+   when it names none. */
+av_value *scene_actor_paths(app_scene_authoring *scene, const scene_actor *actor);
+/* Writes each actor's paths into its fields: the handle of the actor each
+   names, or zero when no actor has that path. */
+void scene_link_paths(app_scene_authoring *scene);
 int scene_spawn_entity(
     app_scene_authoring *scene,
     const game_scene_entity *entity,
