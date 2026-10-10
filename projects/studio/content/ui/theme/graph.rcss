@@ -107,6 +107,9 @@ body.graph-canvas:not(.dark) .gnode-head, body.graph-canvas:not(.dark) .gnode-he
 /* Labels and fields stay inside the node; the full label remains in its tooltip. */
 .gpin-label { display: block; flex: 0 1 auto; min-width: 0dp; max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--muted-foreground); white-space: nowrap; line-height: var(--studio-line-22, 22dp); }
 .gpin-label[data-fits] { overflow: visible; text-overflow: clip; }
+.out > .gpin-label { text-align: right; }
+/* A half row sizes to its label, which a percentage cap would collapse. */
+.ghalf > .gpin-label { flex-shrink: 0; max-width: none; }
 [data-hover] > .gpin-label { color: var(--foreground); }
 .grow .field { flex: 1 1 auto; min-width: 0dp; height: var(--studio-height-18, 18dp); }
 /* A refused entry stays red while focused (field.rcss rings a focused one). */

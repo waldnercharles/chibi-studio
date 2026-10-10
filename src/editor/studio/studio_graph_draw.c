@@ -300,15 +300,16 @@ static void emit_pin(studio *s, node *n, int kind, int p, const char *cls, float
         snprintf(about, sizeof about, "%s%s%s", type, expression ? " · " : "", expression ? expression : "");
         kit_tip(k, parts.label, NULL, about);
         free(expression);
-        /* Zoomed out, hinted text can draw a little wider than it measured
-           at 100%: a label whose column fits spills into the gap rather
-           than truncating. */
+        /* Input labels share their column's width; others take their own,
+           since a clipping label would shrink to nothing. Zoomed out, hinted
+           text can draw a little wider than it measured at 100%: a label
+           whose column fits spills into the gap rather than truncating. */
         bool column = input && label_width > 0 && !sg_pin_exec(n, kind, p);
-        if (column) {
-            snprintf(width, sizeof width, "%.0fdp", label_width);
-            kit_style(k, "width", width);
-        }
-        kit_flag(k, "data-fits", column && !l.label_clipped);
+        float fit = column ? label_width
+                           : ceilf(sg_text_width(s, parts.label, 12, 400));
+        snprintf(width, sizeof width, "%.0fdp", fit);
+        kit_style(k, "width", width);
+        kit_flag(k, "data-fits", column ? !l.label_clipped : fit <= l.w - 2 * EDGE - 2 * SOCKET_PAD);
     }
     emit_watch(s, n, input, p, &parts, hovered);
     if (input && parts.spec->kind == PIN_DATA &&

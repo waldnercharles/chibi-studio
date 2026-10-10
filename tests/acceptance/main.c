@@ -574,6 +574,41 @@ static bool selected_feeds(editor *e, const graph *gr, uint64_t id)
     return false;
 }
 
+/* Every output label a full node shows has room for its text: a label
+   without a width once collapsed to nothing. */
+static bool output_labels_show(studio *s, graph *gr)
+{
+    int shown = 0;
+    for (int i = 0; i < acount(gr->nodes); i++) {
+        node *n = gr->nodes[i];
+        const node_layout *l = sg_node_visible(gr, n) ? sg_layout_of(s, n) : NULL;
+        for (int p = 0; l && l->form == FORM_FULL && p < n->output_count; p++) {
+            pin_parts parts;
+            sg_pin_parts_of(s, n, ED_PIN_OUTPUT, p, &parts);
+            if (!sg_pin_in_rows(gr, n, l, ED_PIN_OUTPUT, p) || !parts.show_label) {
+                continue;
+            }
+            char row[16] = "", path[96];
+            if (sg_pin_exec(n, ED_PIN_OUTPUT, p)) {
+                snprintf(row, sizeof row, "/e%d", sg_pin_order(gr, n, l, ED_PIN_OUTPUT, p));
+            }
+            snprintf(
+                path,
+                sizeof path,
+                "world/stage/n%llu/b%s/o%d/l",
+                (unsigned long long)n->id,
+                row,
+                p
+            );
+            kit_rect r;
+            REQUIRE(kit_find(s->graph.kit, path, &r) && r.w > 0);
+            shown++;
+        }
+    }
+    REQUIRE(shown > 0);
+    return true;
+}
+
 /* Graph keys, through SDL as the platform sends them: Right walks the
    selection along a wire to the node it feeds and Left to the nearest node
    feeding that one, Escape at rest clears the selection, and M asks the
@@ -606,6 +641,7 @@ static bool graph_keys_frame(void *state)
             }
         }
         REQUIRE(to);
+        REQUIRE(output_labels_show(s, gr));
         sg_select_only(e, sg_node_by_id(s, from));
         REQUIRE(press_key(SDLK_RIGHT));
     } else if (frames == 4) {

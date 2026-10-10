@@ -51,7 +51,8 @@ cells as part of one layer. They are removed before rendering. No source save or
 playback occurs.
 
 `studio-acceptance --graph-keys --project-root PATH` takes a disposable copy
-and runs ten hidden fixed-dt frames on Counter's Tick graph. With the graph
+and runs ten hidden fixed-dt frames on Counter's Tick graph. It checks that
+every output label a full node shows lays out wider than nothing. With the graph
 area focused it queues keys through SDL, as the platform does: Right moves the
 selection along a wire to the node it feeds, Left to the nearest node feeding
 that one, Escape at rest clears the selection, and M asks the source to disable
