@@ -139,12 +139,10 @@ body > .area { height: 100%; }
 .param { border-radius: 4dp; }
 
 /* UI documents (workstream D). The Text Editor: the part's code editor
-   (kit_code) filling the body, and a status line while the text does not
-   read; its header is CodeHeader. */
+   (kit_code) filling the body; its header is CodeHeader, whose Invalid chip
+   says when the text does not read. */
 .code-editor { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display: flex; flex-direction: column; background-color: var(--background); }
 .code-editor kit-code { flex: 1 1 0dp; min-height: 0dp; }
-.code-status { display: flex; align-items: center; gap: 6dp; height: var(--studio-height-22, 22dp); flex: 0 0 auto; padding: 0dp 8dp; border-top: 1dp var(--edge); background-color: var(--muted); color: var(--destructive); white-space: nowrap; overflow: hidden; }
-.code-status .message { overflow: hidden; text-overflow: ellipsis; }
 /* Assets ▸ New: the name of the new asset. */
 .popup.new-asset { width: 260dp; }
 .new-asset-field { display: block; padding: 2dp 4dp 4dp; }

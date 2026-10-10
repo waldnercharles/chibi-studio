@@ -53,23 +53,26 @@ kit-code .zep-scrollbar-hover { color: var(--scrollbar-hover); }
 kit-code .zep-tip-border { color: var(--tooltip-edge); }
 kit-code .zep-flash { color: var(--highlight); }
 kit-code .zep-info { color: var(--primary); }
+kit-code .zep-breakpoint { color: var(--destructive); }
+/* The primary modifier over a symbol with a definition: a link to it. */
+kit-code[data-link] { cursor: pointer; }
 
 /* Completion surfaces share compact rows and keep names, types and matches distinct. */
 body { --autocomplete-row-h: var(--studio-mono-line-20, 20dp); }
 .code-completions {
     position: absolute; pointer-events: auto; background-color: var(--popover); border: 1dp var(--popover-edge);
     width: 420dp; max-width: 420dp; display: block; z-index: 20;
-    overflow-x: hidden; overflow-y: auto;
+    overflow-x: hidden; overflow-y: auto; box-shadow: var(--shadow-overlay);
 }
 .code-completions, .popup.autocomplete {
-    padding: 3dp; border-radius: 4dp;
+    padding: 3dp; border-radius: var(--r-lg);
     border-color: color-mix(in srgb, var(--foreground) 16%, var(--popover));
     font-family: var(--studio-code-font-family, jetbrains mono);
     font-size: var(--studio-mono-font-12, 12dp);
 }
 .code-completion, .popup.autocomplete .menu-item {
     display: flex; align-items: center; height: var(--autocomplete-row-h);
-    gap: 6dp; padding: 0dp 5dp; border-radius: 2dp;
+    gap: 6dp; padding: 0dp 5dp; border-radius: var(--r);
     white-space: nowrap; color: var(--foreground);
 }
 .code-completion .detail, .popup.autocomplete .detail {
@@ -105,7 +108,7 @@ body { --autocomplete-row-h: var(--studio-mono-line-20, 20dp); }
 .code-hover {
     position: absolute; pointer-events: none; display: block; z-index: 30; max-width: 520dp;
     background-color: var(--popover); border: 1dp var(--popover-edge); border-radius: var(--r-lg);
-    padding: 6dp 8dp; color: var(--foreground); font-size: var(--studio-mono-font-12, 12dp); line-height: var(--studio-mono-line-17, 17dp);
+    box-shadow: var(--shadow-overlay); padding: 6dp 8dp; color: var(--foreground); font-size: var(--studio-mono-font-12, 12dp); line-height: var(--studio-mono-line-17, 17dp);
 }
 .code-hover { opacity: 1; transition: opacity 0.1s cubic-out; }
 .code-hover[data-starting-style], .code-hover[data-ending-style] { opacity: 0; }
@@ -119,6 +122,9 @@ body { --autocomplete-row-h: var(--studio-mono-line-20, 20dp); }
 .code-hover-problem + .code-hover-title { margin-top: 6dp; padding-top: 6dp; border-top: 1dp var(--line); }
 .code-hover-line { display: block; font-family: var(--studio-code-font-family, jetbrains mono); font-size: var(--studio-mono-font-11, 11dp); color: var(--muted-foreground); white-space: nowrap; }
 
+/* Find floats over the text as the other overlays do. */
+.code-editor .find-widget { box-shadow: var(--shadow-overlay); }
+
 /* The Text Editor's header: Vim's mode, and the count of problems, which
    steps to the next. */
 .code-mode {
@@ -127,3 +133,4 @@ body { --autocomplete-row-h: var(--studio-mono-line-20, 20dp); }
 }
 .code-problems .icon { color: var(--warning); }
 .code-problems.errors .icon { color: var(--destructive); }
+.code-problems.clear .icon { color: var(--muted-foreground); }

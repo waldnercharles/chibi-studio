@@ -104,6 +104,7 @@ SAME(ZEP_MARK_TOOLTIP_AT_LINE, Zep::RangeMarkerDisplayType::TooltipAtLine);
 SAME(ZEP_MARK_CURSOR_TIP, Zep::RangeMarkerDisplayType::CursorTip);
 SAME(ZEP_MARK_CURSOR_TIP_AT_LINE, Zep::RangeMarkerDisplayType::CursorTipAtLine);
 SAME(ZEP_MARK_INDICATOR, Zep::RangeMarkerDisplayType::Indicator);
+SAME(ZEP_MARK_DOT, Zep::RangeMarkerDisplayType::IndicatorDot);
 
 static_assert(sizeof(zep_rgba) == sizeof(Zep::NVec4f));
 static_assert(offsetof(zep_rgba, r) == offsetof(Zep::NVec4f, x));

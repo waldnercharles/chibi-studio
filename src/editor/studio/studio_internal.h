@@ -195,6 +195,14 @@ typedef enum
     STUDIO_COMMAND_DOCUMENTATION,
     STUDIO_COMMAND_REPORT_ISSUE,
     STUDIO_COMMAND_ABOUT,
+    /* The Text Editor's language commands (studio_code.c), on VS Code's keys */
+    STUDIO_COMMAND_GO_TO_DEFINITION,
+    STUDIO_COMMAND_FIND_REFERENCES,
+    STUDIO_COMMAND_RENAME_SYMBOL,
+    STUDIO_COMMAND_CALL_HIERARCHY,
+    STUDIO_COMMAND_NEXT_PROBLEM,
+    STUDIO_COMMAND_PREVIOUS_PROBLEM,
+    STUDIO_COMMAND_TOGGLE_LINE_COMMENT,
     /* The object clipboard and extending the Outliner's selection */
     STUDIO_COMMAND_COPY,
     STUDIO_COMMAND_CUT,
@@ -789,6 +797,14 @@ typedef struct
     char editor_path[1024];
     ui_part editor_part;
     int reveal_offset; /* a byte of the part to reveal instead, or -1 */
+    char reveal_notice[256]; /* shown at the revealed place, as F8's problem */
+    /* The text's context menu (CodeMenu.rml), while it shows. */
+    struct
+    {
+        bool open, opening, mounted;
+    } menu;
+    double capture_due; /* when a moved caret is captured, or 0 */
+    char capture_path[1024]; /* the source whose caret moved */
     /* The shown part's text parsed (assets/ui_source.h), the spans that
        highlight it, and each part's problems as markers (ui_code_markers). */
     ui_source *source;
@@ -1678,6 +1694,10 @@ bool studio_graph_active(const studio *s);
 void studio_graph_find(studio *s);
 /* Opens the Text Editor's find widget. */
 void studio_code_find(studio *s);
+/* The Text Editor's language commands (STUDIO_COMMAND_GO_TO_DEFINITION
+ * through STUDIO_COMMAND_TOGGLE_LINE_COMMENT) on the document it shows. */
+bool studio_code_command_enabled(studio *s, studio_command command);
+void studio_code_command(studio *s, studio_command command);
 /* The graph node Properties shows, or 0. */
 uint64_t studio_graph_node(const studio *s);
 /* The comment frame selected on the canvas while no node is, or 0. */
@@ -1928,6 +1948,9 @@ int studio_command_for_key(
     studio_editor editor,
     bool mac
 );
+/* The command a key runs in `editor` now: the debugger's commands only
+ * while it pauses, so F10 steps a frame otherwise. */
+int studio_key_command(const studio *s, studio_key key, studio_editor editor);
 const char *studio_command_chord(const studio_prefs *prefs, studio_command command);
 const char *studio_command_default_chord(studio_command command);
 const char *studio_command_context(studio_command command);
@@ -3030,6 +3053,9 @@ void studio_code_header_action(studio *s, const char *action, const ui_activatio
 void studio_code_find_add(yyjson_mut_doc *doc);
 bool studio_code_find_sync(studio *s, const studio_panel_sync *at);
 void studio_code_find_action(studio *s, const char *action, const ui_activation *a);
+/* Runs F3 or Shift+F3 pressed in the focused find field, which the
+ * shortcuts otherwise leave to it; false for any other key. */
+bool studio_code_find_key(studio *s, studio_key key);
 
 /* ---------- Graph chrome (workstream G1) ---------- */
 

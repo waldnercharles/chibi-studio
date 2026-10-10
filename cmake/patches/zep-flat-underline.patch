@@ -1,0 +1,45 @@
+--- a/src/window.cpp
++++ b/src/window.cpp
+@@ -369,11 +369,9 @@
+ {
+     // Account for markers
+     auto margins = DPI_VEC2(GetEditor().GetConfig().widgetMargins);
+-    auto underlineHeight = DPI_Y(GetEditor().GetConfig().underlineHeight) + DPI_Y(UnderlineMargin * 2.0f);
+     NVec2f height(0.0f);
+ 
+     uint32_t lineWidgetCount = 0;
+-    bool underPad = false;
+     std::vector<ByteIndex> markerStack;
+     for (auto& [index, markerSet] : markers)
+     {
+@@ -411,18 +409,9 @@
+                 {
+                     markerStack.push_back(spMarker->GetRange().second);
+                     row = uint32_t(markerStack.size()) - 1;
+-
+-                    // Make the height bigger due to new row depth
+-                    height.y += underlineHeight;
+-                }
+-
+-                // Underlines get an extra space underneath to make it clear they are under and not over!
+-                if (!underPad)
+-                {
+-                    height.y += 1.0f;
+-                    underPad = true;
+                 }
+ 
++                // Underlines draw inside the line, so a marker never moves the lines below it.
+                 spMarker->displayRow = row;
+             }
+         }
+@@ -966,8 +955,8 @@
+                     // Draw lines under the text
+                     if (marker->displayType & RangeMarkerDisplayType::Underline)
+                     {
+-                        float offset = lineInfo.yOffsetPx + lineInfo.FullLineHeightPx();
+-                        offset += marker->displayRow * (DPI_Y(UnderlineMargin * 2) + underlineHeight) + 1.0f; // Margins & an extra line to seperate from background highlight
++                        // At the line's foot, where descenders end; later markers draw over earlier ones.
++                        float offset = lineInfo.yOffsetPx + lineInfo.FullLineHeightPx() - underlineHeight;
+                         display.DrawRectFilled(
+                             NRectf(NVec2f(screenPosX, ToWindowY(offset)),
+                                 NVec2f(screenPosX + cp.size.x, ToWindowY(offset + underlineHeight))),

@@ -137,6 +137,7 @@ extern "C"
         ZEP_MARK_CURSOR_TIP = 1 << 4,
         ZEP_MARK_CURSOR_TIP_AT_LINE = 1 << 5,
         ZEP_MARK_INDICATOR = 1 << 6,
+        ZEP_MARK_DOT = 1 << 8, /* a dot in the indicator column */
     };
 
     /* Zep::NVec4f: straight alpha, 0 to 1. */

@@ -86,6 +86,17 @@ _Static_assert(
     "a command per Scene tool"
 );
 
+/* A Text Editor command (studio_code.c). */
+#define CODE_COMMAND(name, title, key, words, glyph)                           \
+    { .id = name,                                                              \
+      .label = title,                                                          \
+      .chord = key,                                                            \
+      .context = "Text Editor",                                                \
+      .contexts = EDITOR_BIT(STUDIO_EDITOR_CODE),                              \
+      .keywords = "code " words,                                               \
+      .icon = glyph,                                                           \
+      .phase = SHORTCUT_EDITOR }
+
 static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
     [STUDIO_COMMAND_SEARCH] = { .id = "search",
                                 .label = "Search",
@@ -684,6 +695,7 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                                         "bindings cheat sheet "
                                                         "help",
                                             .icon = KIT_ICON_KEYBOARD,
+                                            .excluded_contexts = EDITOR_BIT(STUDIO_EDITOR_CODE),
                                             .phase = SHORTCUT_EARLY },
     [STUDIO_COMMAND_DOCUMENTATION] = { .id = "documentation",
                                        .label = "Documentation",
@@ -704,6 +716,51 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                .keywords = "help version engine",
                                .icon = KIT_ICON_INFO,
                                .phase = SHORTCUT_EARLY },
+    /* The Text Editor's language commands, on VS Code's keys; Mod+/
+       comments there instead of showing the shortcuts. */
+    [STUDIO_COMMAND_GO_TO_DEFINITION] = CODE_COMMAND(
+        "goToDefinition",
+        "Go to Definition",
+        "F12",
+        "jump declaration symbol",
+        KIT_ICON_TARGET
+    ),
+    [STUDIO_COMMAND_FIND_REFERENCES] = CODE_COMMAND(
+        "findReferences",
+        "Find References",
+        "Shift+F12",
+        "usages symbol",
+        KIT_ICON_REFERENCES
+    ),
+    [STUDIO_COMMAND_RENAME_SYMBOL] = CODE_COMMAND("renameSymbol", "Rename Symbol", "F2", "refactor name", KIT_ICON_EDIT),
+    [STUDIO_COMMAND_CALL_HIERARCHY] = CODE_COMMAND(
+        "callHierarchy",
+        "Show Call Hierarchy",
+        "Shift+Alt+H",
+        "callers callees",
+        KIT_ICON_CALLERS
+    ),
+    [STUDIO_COMMAND_NEXT_PROBLEM] = CODE_COMMAND(
+        "nextProblem",
+        "Go to Next Problem",
+        "F8",
+        "error warning diagnostic marker",
+        KIT_ICON_DOWN
+    ),
+    [STUDIO_COMMAND_PREVIOUS_PROBLEM] = CODE_COMMAND(
+        "previousProblem",
+        "Go to Previous Problem",
+        "Shift+F8",
+        "error warning diagnostic marker",
+        KIT_ICON_UP
+    ),
+    [STUDIO_COMMAND_TOGGLE_LINE_COMMENT] = CODE_COMMAND(
+        "toggleLineComment",
+        "Toggle Line Comment",
+        "Mod+/",
+        "comment uncomment",
+        KIT_ICON_COMMENT
+    ),
     /* The object clipboard, as Unity's and Godot's; a focused field keeps
        these chords for its text. */
     [STUDIO_COMMAND_COPY] = { .id = "copy",
@@ -1025,6 +1082,11 @@ int studio_command_for_key(
     return key_command(prefs, (studio_key){ .key = key, .mod = mod }, editor, mac, SHORTCUT_DEBUG);
 }
 
+int studio_key_command(const studio *s, studio_key key, studio_editor editor)
+{
+    return key_command(&s->prefs, key, editor, s->mac, s->pause.active ? SHORTCUT_DEBUG : SHORTCUT_EARLY);
+}
+
 studio_command_info studio_command_describe(studio *s, studio_command command)
 {
     const command_entry *e = &COMMANDS[command];
@@ -1330,6 +1392,14 @@ static bool enabled_with(studio *s, studio_command command, int argument)
                    !app_scene_authoring_viewing_through_camera(s->scene);
         case STUDIO_COMMAND_FRAME_ALL: return !studio_designer_active(s);
         case STUDIO_COMMAND_FIND: return finds(s, editor_at(s, argument));
+        case STUDIO_COMMAND_GO_TO_DEFINITION:
+        case STUDIO_COMMAND_FIND_REFERENCES:
+        case STUDIO_COMMAND_RENAME_SYMBOL:
+        case STUDIO_COMMAND_CALL_HIERARCHY:
+        case STUDIO_COMMAND_NEXT_PROBLEM:
+        case STUDIO_COMMAND_PREVIOUS_PROBLEM:
+        case STUDIO_COMMAND_TOGGLE_LINE_COMMENT:
+            return studio_code_command_enabled(s, command);
         default: return true;
     }
 }
@@ -1599,6 +1669,15 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
             break;
         case STUDIO_COMMAND_REPORT_ISSUE: open_url(s, REPORT_ISSUE_URL); break;
         case STUDIO_COMMAND_ABOUT: about(s); break;
+        case STUDIO_COMMAND_GO_TO_DEFINITION:
+        case STUDIO_COMMAND_FIND_REFERENCES:
+        case STUDIO_COMMAND_RENAME_SYMBOL:
+        case STUDIO_COMMAND_CALL_HIERARCHY:
+        case STUDIO_COMMAND_NEXT_PROBLEM:
+        case STUDIO_COMMAND_PREVIOUS_PROBLEM:
+        case STUDIO_COMMAND_TOGGLE_LINE_COMMENT:
+            studio_code_command(s, command);
+            break;
         case STUDIO_COMMAND_COPY: studio_copy(s); break;
         case STUDIO_COMMAND_CUT: studio_cut(s); break;
         case STUDIO_COMMAND_PASTE: studio_paste(s); break;
@@ -1682,9 +1761,12 @@ void studio_shortcuts(studio *s, bool field)
     for (int i = 0; i < acount(s->keys); i++) {
         studio_key key = s->keys[i];
         bool primary = studio_primary(s, key.mod);
-        int command = key_command(&s->prefs, key, editor, s->mac, s->pause.active ? SHORTCUT_DEBUG : SHORTCUT_EARLY);
+        int command = studio_key_command(s, key, editor);
         bool tab_navigation = command == STUDIO_COMMAND_PREVIOUS_TAB ||
                               command == STUDIO_COMMAND_NEXT_TAB;
+        if (field && studio_code_find_key(s, key)) {
+            continue;
+        }
         /* A focused field keeps its keys; chords that edit no text still
            reach Studio, as VS Code's do. */
         if (field && !tab_navigation && (!primary || studio_text_key(key.key))) {
