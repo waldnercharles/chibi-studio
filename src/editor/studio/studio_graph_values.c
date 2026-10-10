@@ -6,17 +6,18 @@
 #include "editor/collab/actions_internal.h"
 #include "editor/collab/collab.h"
 #include "editor/studio/studio_graph_internal.h"
+#include "editor/studio/studio_members_internal.h"
 #include "editor/ui/choices.h"
 #include "editor/ui/labels.h"
 #include "graph/model/local.h"
 #include "graph/model/pin_conv.h"
-#include "types/value_format.h"
 #include "graph/model/registry.h"
 #include "graph/nodes/behavior_expression.h"
 #include "graph/nodes/conv_nodes.h"
 #include "runtime/declared_components.h"
 #include "support/array.h"
 #include "support/number_expr.h"
+#include "types/value_format.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -1651,6 +1652,27 @@ static void bind_follow(studio *s, kit *k, const char *query)
     }
 }
 
+/* Enter on text that is neither a value of the input's type nor a source
+   keeps the field open, marked invalid with a tip that says what it takes,
+   until the text changes (Postel). */
+static void refuse_text(studio *s, const pin_spec *spec, const char *text)
+{
+    studio_graph *g = &s->graph;
+    g->refused_pin = spec->id;
+    snprintf(g->refused, sizeof g->refused, "%s", text);
+}
+
+static void refusal_mark(studio *s, kit *k, const pin_spec *spec, const char *query)
+{
+    studio_graph *g = &s->graph;
+    bool refused = query && g->refused_pin == spec->id && !strcmp(g->refused, query);
+    char type[96], title[128];
+    sm_type_label(spec, type, sizeof type);
+    snprintf(title, sizeof title, "Not a %s or a source", type);
+    kit_flag(k, "data-invalid", refused);
+    kit_tip(k, refused ? title : NULL, NULL, refused ? "Type a value, or choose a source from the list." : NULL);
+}
+
 void sg_emit_graph_input(studio *s, kit *k, node *n, int p)
 {
     editor *e = sg_graph_editor(s);
@@ -1711,6 +1733,7 @@ void sg_emit_graph_input(studio *s, kit *k, node *n, int p)
             "Value or source",
             sg_graph_readonly(s) ? KIT_READONLY : 0
         );
+        refusal_mark(s, k, spec, query);
         if (result.selected >= 0 && result.selected < acount(choices)) {
             apply_choice(s, k, n, p, &choices[result.selected]);
             kit_autocomplete_close(k, "source-edit");
@@ -1725,6 +1748,8 @@ void sg_emit_graph_input(studio *s, kit *k, node *n, int p)
                 } else if (s->graph.expression_error[0]) {
                     sg_show_error(s, "Can't use this expression", s->graph.expression_error);
                 }
+            } else {
+                refuse_text(s, spec, query);
             }
         }
         if (bind) {
