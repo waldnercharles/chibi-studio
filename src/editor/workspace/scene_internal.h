@@ -67,6 +67,7 @@ typedef struct
 {
     engine_viewport_view view;
     bool saved;
+    float framed; /* the view's width when last framed, its 100% zoom */
 } scene_camera;
 
 /* What the Generated World preview reads, hashed. */
@@ -687,7 +688,11 @@ void scene_view_rename(app_scene_authoring *scene, const char *from, const char 
 render_skip scene_view_skip(app_scene_authoring *scene, unsigned flags, uint64_t **buffer);
 /* The open scene's view state follows it to `path`, where it is saved. */
 void scene_view_save_as(app_scene_authoring *scene, const char *path);
-/* The topmost object at (x, y) in the 2D edit view that `skip` does not hold. */
+/* Whether the 2D view draws the entity: an appearance, a tilemap or an
+   enabled surface. The host marks the others (app_scene_authoring_markers). */
+bool scene_object_drawn(const ecs_world *world, ecs_entity entity);
+/* The topmost object at (x, y) in the 2D edit view that `skip` does not
+   hold; a marker over an undrawn object is above every drawn one. */
 ecs_entity pick_scene_entity(app_scene_authoring *scene, float x, float y, render_skip skip);
 /* The object a click at the pointer would pick, as of the Scene's last draw. */
 ecs_entity scene_pick_at_pointer(app_scene_authoring *scene, engine_viewport *viewport);

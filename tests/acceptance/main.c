@@ -13,6 +13,7 @@
 
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_process.h>
+#include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
 #include <math.h>
 #include <stdio.h>
@@ -32,7 +33,8 @@ static enum {
     CODE_KEYS,
     EXPORT_GAME,
     GRAPH_VISIBILITY,
-    SCENE_HIERARCHY
+    SCENE_HIERARCHY,
+    SCENE_VIEWPORT
 } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
@@ -261,22 +263,35 @@ static bool source_edit_frame(void *state)
 #define TEXT(x) #x
 #define FRAMES_TEXT(x) TEXT(x)
 
-/* Queues a key press and release for the window, as the platform would. */
-static bool press_key(SDL_Keycode key)
+/* The window the queued events go to. */
+static SDL_WindowID window_id()
 {
     int count = 0;
     SDL_Window **windows = SDL_GetWindows(&count);
     SDL_WindowID window = count ? SDL_GetWindowID(windows[0]) : 0;
     SDL_free(windows);
+    return window;
+}
+
+/* Queues a key press or release for the window, as the platform would. */
+static bool push_key(SDL_Keycode key, bool down)
+{
+    SDL_WindowID window = window_id();
     REQUIRE(window);
-    for (int down = 1; down >= 0; down--) {
-        SDL_Event e = { .key = { .type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP,
-                                 .windowID = window,
-                                 .key = key,
-                                 .scancode = SDL_GetScancodeFromKey(key, NULL),
-                                 .down = down } };
-        REQUIRE(SDL_PushEvent(&e));
-    }
+    SDL_Event e = { .key = { .type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP,
+                             .windowID = window,
+                             .key = key,
+                             .scancode = SDL_GetScancodeFromKey(key, NULL),
+                             .down = down } };
+    REQUIRE(SDL_PushEvent(&e));
+    return true;
+}
+
+/* Queues a key press and release for the window, as the platform would. */
+static bool press_key(SDL_Keycode key)
+{
+    REQUIRE(push_key(key, true));
+    REQUIRE(push_key(key, false));
     return true;
 }
 
@@ -690,6 +705,179 @@ static bool scene_hierarchy_frame(void *state)
     return true;
 }
 
+/* A box, and inside it a spot with nothing to draw, which a marker shows. */
+static const char marked_scene
+    [] = "version 1\nname \"Scene\"\n(array)entities {\n"
+         "    - name=\"Box\" prototype=\"Box\"\n"
+         "    - name=\"Spot\" prototype=\"Spot\" { components { GameTransform "
+         "x=5.0 y=5.0; }; }\n"
+         "}\n";
+#define VIEWPORT_FRAMES 9
+
+/* Queues a mouse event at the Scene surface's point (x, y), in points. */
+static bool push_mouse(Uint32 type, float x, float y, float wheel_x, float wheel_y)
+{
+    SDL_WindowID window = window_id();
+    REQUIRE(window);
+    SDL_Event e = { .type = type };
+    if (type == SDL_EVENT_MOUSE_MOTION) {
+        e.motion = (SDL_MouseMotionEvent){ .type = type, .windowID = window, .x = x, .y = y };
+    } else if (type == SDL_EVENT_MOUSE_WHEEL) {
+        e.wheel = (SDL_MouseWheelEvent){ .type = type,
+                                         .windowID = window,
+                                         .x = wheel_x,
+                                         .y = wheel_y,
+                                         .mouse_x = x,
+                                         .mouse_y = y };
+    } else {
+        e.button = (SDL_MouseButtonEvent){ .type = type,
+                                           .windowID = window,
+                                           .button = SDL_BUTTON_LEFT,
+                                           .down = type == SDL_EVENT_MOUSE_BUTTON_DOWN,
+                                           .clicks = 1,
+                                           .x = x,
+                                           .y = y };
+    }
+    REQUIRE(SDL_PushEvent(&e));
+    return true;
+}
+
+/* The gizmo part a pointer at canvas point (x, y) rests on, at a tenth of a
+   unit per pixel. */
+static int part_under(app_scene_authoring *scene, float x, float y)
+{
+    engine_viewport_pointer pointer = { .world_x = x, .world_y = y, .world_per_pixel = 0.1f };
+    scene_gizmo_pointer(scene, scene->render_viewport, &pointer);
+    return scene->gizmo.hover;
+}
+
+/* A marker picks above the box it sits in and is listed for the host; a
+   handle and the ring take a press a few pixels past them, and a resize
+   shows its size by the pointer. */
+static bool marker_and_gizmo(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(acount(scene->actors) == 2);
+    ecs_entity box = scene->actors[0].entity, spot = scene->actors[1].entity;
+    app_scene_marker markers[4];
+    REQUIRE(app_scene_authoring_markers(scene, markers, 4) == 1 && markers[0].actor == 1);
+    REQUIRE(
+        ecs_entity_to_u64(pick_scene_entity(scene, 5, -5, (render_skip){ 0 })) ==
+        ecs_entity_to_u64(spot)
+    );
+    REQUIRE(
+        ecs_entity_to_u64(pick_scene_entity(scene, -15, 15, (render_skip){ 0 })) ==
+        ecs_entity_to_u64(box)
+    );
+    REQUIRE(app_scene_authoring_select_entity(scene, box) == 0);
+    /* The right edge's handle sits at (20, 0); the ring 64 pixels out. */
+    scene->gizmo.in.tool = SCENE_TOOL_SCALE;
+    REQUIRE(part_under(scene, 20 + 1.1f, 0) >= SCENE_GIZMO_HANDLE);
+    REQUIRE(part_under(scene, 20 + 1.4f, 0) == SCENE_GIZMO_NONE);
+    scene->gizmo.in.tool = SCENE_TOOL_ROTATE;
+    REQUIRE(part_under(scene, 6.4f + 0.9f, 0) == SCENE_GIZMO_RING);
+    REQUIRE(part_under(scene, 6.4f - 0.9f, 0) == SCENE_GIZMO_RING);
+    REQUIRE(part_under(scene, 6.4f + 1.2f, 0) == SCENE_GIZMO_NONE);
+    scene->gizmo.in.tool = SCENE_TOOL_SCALE;
+    scene->gizmo.in.snap = false;
+    engine_viewport_pointer pointer = { .world_x = 20,
+                                        .world_per_pixel = 0.1f,
+                                        .pressed = true,
+                                        .down = true };
+    REQUIRE(scene_gizmo_pointer(scene, scene->render_viewport, &pointer));
+    pointer = (engine_viewport_pointer){ .world_x = 30,
+                                         .world_per_pixel = 0.1f,
+                                         .down = true,
+                                         .dragging = true };
+    REQUIRE(scene_gizmo_pointer(scene, scene->render_viewport, &pointer));
+    REQUIRE(scene->gizmo.active && !strcmp(scene->gizmo.delta, "50 \xc3\x97 40"));
+    REQUIRE(!strcmp(scene->gizmo.status, "Size 50 \xc3\x97 40"));
+    scene->gizmo.in.cancel = true;
+    REQUIRE(scene_gizmo_pointer(scene, scene->render_viewport, &pointer));
+    REQUIRE(
+        !scene->gizmo.active &&
+        GAME_GameAppearance_get_const(scene->world, box)->width == 40
+    );
+    return true;
+}
+
+/* The Scene's one zoom reads 100% when framed; a mouse wheel zooms it, a
+   trackpad's scroll pans it, Space with a drag pans and Space alone plays
+   once it lifts. Events queue after a frame for the next one. */
+static bool scene_viewport_frame(void *state)
+{
+    static engine_viewport_view before;
+    static float x, y;
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= VIEWPORT_FRAMES);
+    app_scene_authoring *scene = s->scene;
+    engine_viewport_view view = { 0 };
+    if (s->viewport) {
+        engine_viewport_get_view(s->viewport, &view);
+    }
+    switch (frames) {
+        case 1:
+            REQUIRE(
+                app_scene_authoring_register_prototype(
+                    scene,
+                    "name \"Box\"\ncomponents {\n    GameTransform x=0 y=0\n   "
+                    " "
+                    "GameOrientation radians=0\n    GameAppearance "
+                    "shape=\"Box\" "
+                    "width=40.0 height=40.0\n}\n",
+                    NULL
+                ) == 0
+            );
+            REQUIRE(
+                app_scene_authoring_register_prototype(scene, "name \"Spot\"\ncomponents {\n    GameTransform x=0 y=0\n}\n", NULL) ==
+                0
+            );
+            REQUIRE(scene_authoring_load_text(scene, marked_scene, NULL) == 0);
+            return true;
+        case 2:
+            REQUIRE(s->viewport && s->surface.rect.w > 0);
+            REQUIRE(marker_and_gizmo(s));
+            studio_frame_all(s);
+            REQUIRE(fabsf(app_scene_authoring_zoom(scene) - 1) < 1e-4f);
+            engine_viewport_get_view(s->viewport, &before);
+            x = (s->surface.rect.x + s->surface.rect.w * 0.5f) * s->prefs.ui_scale;
+            y = (s->surface.rect.y + s->surface.rect.h * 0.5f) * s->prefs.ui_scale;
+            REQUIRE(push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0));
+            return push_mouse(SDL_EVENT_MOUSE_WHEEL, x, y, 0, 1);
+        case 3:
+            REQUIRE(s->surface.hovered);
+            REQUIRE(view.width < before.width && app_scene_authoring_zoom(scene) > 1);
+            before = view;
+            /* A fraction of a notch reads as a trackpad's scroll. */
+            return push_mouse(SDL_EVENT_MOUSE_WHEEL, x, y, 0, 0.5f);
+        case 4:
+            REQUIRE(view.width == before.width && view.center_x == before.center_x);
+            REQUIRE(view.center_y > before.center_y);
+            before = view;
+            REQUIRE(push_key(SDLK_SPACE, true));
+            return push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, 0, 0);
+        case 5: return push_mouse(SDL_EVENT_MOUSE_MOTION, x + 40, y + 30, 0, 0);
+        case 6:
+            REQUIRE(push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x + 40, y + 30, 0, 0));
+            return push_key(SDLK_SPACE, false);
+        case 7:
+            REQUIRE(!studio_session(s) && !scene->marquee);
+            REQUIRE(view.width == before.width && view.center_x < before.center_x);
+            REQUIRE(view.center_y > before.center_y);
+            return push_key(SDLK_SPACE, true);
+        case 8:
+            /* Space waits for its release, which a drag may still follow. */
+            REQUIRE(s->space_down && !studio_session(s));
+            return push_key(SDLK_SPACE, false);
+        default:
+            REQUIRE(studio_session(s));
+            edits++;
+            return true;
+    }
+}
+
 bool studio_acceptance_frame(void *state)
 {
     switch (mode) {
@@ -700,6 +888,7 @@ bool studio_acceptance_frame(void *state)
             callback_ok = graph_visibility_frame(state);
             break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
+        case SCENE_VIEWPORT: callback_ok = scene_viewport_frame(state); break;
     }
     return callback_ok;
 }
@@ -805,6 +994,18 @@ TEST_CASE(scene_hierarchy)
     return true;
 }
 
+TEST_CASE(scene_viewport)
+{
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(VIEWPORT_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == VIEWPORT_FRAMES && edits == 1);
+    printf("Studio scene viewport accepted\n");
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
@@ -817,13 +1018,16 @@ int main(int argc, char **argv)
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
-    if ((!source_edit && !code_keys && !exporting && !visibility && !hierarchy) ||
+    bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
+    if ((!source_edit && !code_keys && !exporting && !visibility &&
+         !hierarchy && !viewport) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--export-game|--graph-visibility|"
-            "--scene-hierarchy --project-root PATH | --scene-cursors\n"
+            "--scene-hierarchy|--scene-viewport --project-root PATH | "
+            "--scene-cursors\n"
         );
         return 2;
     }
@@ -843,7 +1047,8 @@ int main(int argc, char **argv)
          : code_keys   ? CODE_KEYS
          : exporting   ? EXPORT_GAME
          : visibility  ? GRAPH_VISIBILITY
-                       : SCENE_HIERARCHY;
+         : hierarchy   ? SCENE_HIERARCHY
+                       : SCENE_VIEWPORT;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -852,6 +1057,7 @@ int main(int argc, char **argv)
             RUN_TEST_CASE(graph_visibility_and_document_pair);
             break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
+        case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
     }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;

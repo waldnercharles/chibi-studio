@@ -84,6 +84,24 @@ void studio_reveal_selection(studio *s)
     studio_ui_send(s, "RevealObject", key);
 }
 
+ecs_entity studio_outliner_hovered(studio *s)
+{
+    int area = s->hover_area;
+    if (area < 0 || studio_active_layout(s)->editors[area] != STUDIO_EDITOR_OUTLINER ||
+        studio_designer_active(s)) {
+        return (ecs_entity){ 0 };
+    }
+    rml_element *el = rml_context_hover_element(rml_backend_context(s->backend));
+    for (; el; el = rml_element_parent(el)) {
+        char key[24];
+        if (rml_element_attribute(el, "data-object", key, sizeof key)) {
+            int index = studio_object_index(s, key);
+            return index >= 0 ? s->scene->actors[index].entity : (ecs_entity){ 0 };
+        }
+    }
+    return (ecs_entity){ 0 };
+}
+
 /* ---------- Rename ---------- */
 
 static bool editor_shown(const studio *s, studio_editor editor)

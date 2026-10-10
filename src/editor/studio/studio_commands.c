@@ -1327,6 +1327,7 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_SHOW_ALL: studio_show_all(s); break;
         case STUDIO_COMMAND_RESET_CAMERA:
             engine_viewport_reset_camera(s->viewport);
+            app_scene_authoring_framed(s->scene);
             break;
         case STUDIO_COMMAND_TOGGLE_ASSETS:
             studio_toggle_drawer(s, STUDIO_EDITOR_ASSETS);
@@ -1602,7 +1603,11 @@ void studio_shortcuts(studio *s, bool field)
             continue;
         }
         if (command >= 0 && COMMANDS[command].phase == SHORTCUT_PLAY) {
-            studio_command_run(s, (studio_command)command);
+            bool held = command == STUDIO_COMMAND_PLAY &&
+                        editor == STUDIO_EDITOR_SCENE && studio_scene_space(s, key);
+            if (!held) {
+                studio_command_run(s, (studio_command)command);
+            }
             continue;
         }
         if (editor == STUDIO_EDITOR_MEMBERS && studio_members_key(s, key.key, key.mod)) {

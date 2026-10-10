@@ -34,6 +34,17 @@ turn, it checks that picking finds the turret at its world position and nothing
 at its unturned one, and that a duplicate offset in world space keeps the right
 local offset. It saves no file.
 
+`studio-acceptance --scene-viewport --project-root PATH` takes another
+disposable copy and runs nine hidden fixed-dt frames. It loads a box with a
+spot inside it that nothing draws, and checks that the spot is listed for a
+marker and picks above the box, that a resize handle and the rotate ring take
+a press a few pixels past them, and that a resize labels its size by the
+pointer and cancels back. After Frame All the zoom reads 100%. Through queued
+SDL events it checks that a whole wheel notch zooms the camera, that a
+fraction of one, as a trackpad scrolls, pans it, that Space with a left drag
+pans without playing, and that Space alone plays once it is released. It saves
+no file.
+
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
 

@@ -44,6 +44,8 @@ typedef struct
     bool axis_y;
     bool confirm; /* Enter confirms a modal move */
     bool cancel;  /* Escape or a right press cancels a gesture */
+    float marker_radius; /* how far from an undrawn object its marker icon
+                            reaches, in the view's pixels */
 } scene_tool_input;
 
 /* The parts of a gizmo, as hovered or dragged. */
@@ -86,6 +88,7 @@ typedef struct
     scene_gizmo_target *targets; /* array */
     scene_gizmo_field *fields;   /* array */
     char status[96]; /* the gesture's change so far, for the status bar */
+    char delta[64];  /* that change alone, for a label by the pointer */
     char report[96]; /* the last committed gesture's, until the host takes it */
 } scene_gizmo;
 
@@ -112,6 +115,16 @@ void scene_gizmo_finish(app_scene_authoring *scene, bool cancel);
 /* Whether the selection has what the tool edits: an Orientation to rotate,
    a size to resize. */
 bool scene_gizmo_enabled(app_scene_authoring *scene);
+/* Why the tool's gizmo shows grey in a 2D view: the component the selection
+   lacks, Rotate's Orientation or Scale's appearance, which gives it a size,
+   and where the gizmo shows, as fractions of the view from its top-left. */
+typedef struct
+{
+    const ecs_component_desc *missing;
+    float x, y;
+} scene_tool_hint;
+/* False while the gizmo works, or shows nothing. */
+bool scene_gizmo_hint(app_scene_authoring *scene, scene_tool_hint *hint);
 /* The grid's spacing while it shows under the scene, which is while a 2D
    scene is edited, else zero. */
 float scene_gizmo_grid(const app_scene_authoring *scene);
