@@ -1,13 +1,15 @@
 #define PICO_UNIT_IMPLEMENTATION
-#include "vendor/pico_unit.h"
-#include "editor/studio/studio_internal.h"
-#include "editor/documents/asset_code.h"
-#include "editor/workspace/scene_internal.h"
 #include "assets/input_map.h"
 #include "authoring/preview_source.h"
 #include "authoring/source_presentation.h"
+#include "editor/collab/collab.h"
+#include "editor/documents/asset_code.h"
+#include "editor/studio/studio_internal.h"
+#include "editor/workspace/scene_internal.h"
 #include "support/array.h"
 #include "support/file_io.h"
+#include "support/xalloc.h"
+#include "vendor/pico_unit.h"
 
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_process.h>
@@ -24,7 +26,7 @@ static const char *project;
 static const char *executable;
 static int frames, edits, undos, redos, keys;
 static bool callback_ok = true;
-static enum { SOURCE_EDIT, CODE_KEYS, EXPORT_GAME } mode;
+static enum { SOURCE_EDIT, CODE_KEYS, EXPORT_GAME, GRAPH_VISIBILITY } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
     "behavior Counter {\n"
@@ -116,6 +118,18 @@ static bool check_counter(studio *s, int expected, bool dirty, const node **lite
     return true;
 }
 
+/* A full host frame consumes the edit/undo/redo overlay into runtime source. */
+static bool counter_applied(studio *s)
+{
+    asset_code *code = counter_source(s);
+    REQUIRE(code);
+    const authoring_source
+        *applied = game_preview_source_find(s->scene->live, asset_code_path(code), true);
+    REQUIRE(applied && applied->valid);
+    REQUIRE(!strcmp(applied->syntax->text, asset_code_text(code)));
+    return true;
+}
+
 /* A changed input map republishes sources with its actions. */
 static bool input_map_reloads(studio *s)
 {
@@ -194,6 +208,9 @@ static bool source_edit_frame(void *state)
     REQUIRE(s && s->ui);
     frames++;
     REQUIRE(frames <= 4);
+    if (frames > 1) {
+        REQUIRE(counter_applied(s));
+    }
     if (frames == 1) {
         REQUIRE(projects_open(s));
         REQUIRE(reports_warn(s));
@@ -309,6 +326,154 @@ static bool code_keys_frame(void *state)
     return true;
 }
 
+/* Hidden graphs do no UI work. Both views follow one document, without
+   losing the scene source draft selected between visits to the graph. */
+static bool graph_visibility_frame(void *state)
+{
+    static rml_backend_stats hidden;
+    static int scene_tab = -1;
+    static char *draft;
+    static const authoring_sources *sources;
+    static const authoring_source_presentation *projection;
+    static unsigned index_generation, index_revision;
+    static rml_element *focus_document;
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= 10);
+    if (frames == 1) {
+        studio_behavior_show(s, 2);
+    } else if (frames == 3) {
+        REQUIRE(s->graph.backend);
+        hidden = rml_backend_get_stats(s->graph.backend);
+        REQUIRE(hidden.context_updates && hidden.render_captures);
+        sources = game_preview_sources_working(s->scene->live);
+        projection = s->scene->definition->working_presentation;
+        index_generation = s->scene->asset_index_generation;
+        index_revision = s->scene->asset_index_revision;
+        rml_context *context = rml_backend_context(s->graph.backend);
+        focus_document = rml_context_create_document(context, "acceptance-focus");
+        REQUIRE(focus_document);
+        rml_element_set_inner_rml(focus_document, "<input type='text' />");
+        rml_document_show(focus_document, RML_MODAL_NONE, RML_FOCUS_NONE, RML_SCROLL_FLAG_NONE);
+        rml_document_update(focus_document);
+        rml_element *input = rml_element_query_selector(focus_document, "input");
+        REQUIRE(input && rml_element_focus(input, true));
+        REQUIRE(studio_graph_wants_keyboard(s) && studio_graph_accepts_text(s));
+        studio_behavior_show(s, 1);
+    } else if (frames == 4 || frames == 5 || frames == 10) {
+        rml_backend_stats now = rml_backend_get_stats(s->graph.backend);
+        REQUIRE(now.context_updates == hidden.context_updates);
+        REQUIRE(now.render_captures == hidden.render_captures);
+        REQUIRE(s->scene->debug_hidden);
+        REQUIRE(!studio_graph_wants_keyboard(s) && !studio_graph_accepts_text(s));
+        if (frames < 10) {
+            REQUIRE(game_preview_sources_working(s->scene->live) == sources);
+            REQUIRE(game_preview_sources_applied(s->scene->live) == sources);
+            REQUIRE(s->scene->definition->working_presentation == projection);
+            REQUIRE(s->scene->asset_index_generation == index_generation);
+            REQUIRE(s->scene->asset_index_revision == index_revision);
+        }
+        if (frames == 5) {
+            rml_document_close(focus_document);
+            studio_behavior_show(s, 2);
+        }
+    } else if (frames == 7) {
+        /* Frame 6 lets the retained workspace resolve the Both layout. */
+        rml_backend_stats now = rml_backend_get_stats(s->graph.backend);
+        REQUIRE(now.context_updates > hidden.context_updates);
+        REQUIRE(now.render_captures > hidden.render_captures);
+        for (int i = 0; i < acount(s->scene->tabs); i++) {
+            if (s->scene->tabs[i].kind == APP_EDITOR_DOCUMENT_SCENE) {
+                scene_tab = i;
+                break;
+            }
+        }
+        REQUIRE(scene_tab >= 0);
+        REQUIRE(scene_tabs_activate(s->scene, scene_tab) == 0);
+    } else if (frames == 8) {
+        const char *path = s->scene->tabs[scene_tab].path;
+        asset_code *code = NULL;
+        for (int i = 0; i < acount(s->code.assets); i++) {
+            if (!strcmp(asset_code_path(s->code.assets[i]), path)) {
+                code = s->code.assets[i];
+                break;
+            }
+        }
+        REQUIRE(code);
+        const char *before = asset_code_text(code);
+        draft = xmalloc(strlen(before) + 2);
+        snprintf(draft, strlen(before) + 2, "%s\n", before);
+        REQUIRE(studio_code_replace(s, path, before, draft, NULL));
+        REQUIRE(asset_code_dirty(code));
+        REQUIRE(asset_code_can_replay(code, false));
+        /* The accepted collaboration echo performs document and view changes
+           together; an editor guest must not lose the requested Both view. */
+        int counter = -1;
+        for (int i = 0; i < acount(s->scene->tabs); i++) {
+            if (s->scene->tabs[i].kind == APP_EDITOR_DOCUMENT_BEHAVIOR) {
+                counter = i;
+                break;
+            }
+        }
+        REQUIRE(counter >= 0);
+        yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+        yyjson_mut_val *root = yyjson_mut_obj(doc);
+        yyjson_mut_doc_set_root(doc, root);
+        yyjson_mut_obj_add_str(doc, root, "family", "command");
+        yyjson_mut_obj_add_str(doc, root, "id", "behavior.view");
+        yyjson_mut_obj_add_strcpy(doc, root, "tab", s->scene->tabs[counter].key);
+        char *action = yyjson_mut_write(doc, 0, NULL);
+        yyjson_mut_doc_free(doc);
+        char error[256] = "";
+        collab_begin_replay();
+        bool applied = studio_collab_apply(s, action, error, sizeof error);
+        collab_end_replay();
+        free(action);
+        REQUIRE(applied);
+        REQUIRE(studio_behavior_view(s) == 2);
+        REQUIRE(s->scene->active_tab != scene_tab);
+        REQUIRE(scene_tabs_activate(s->scene, scene_tab) == 0);
+        studio_behavior_show(s, 2);
+        REQUIRE(s->scene->active_tab == counter);
+        REQUIRE(studio_behavior_view(s) == 2);
+    } else if (frames == 9) {
+        REQUIRE(check_counter(s, 1, false, NULL));
+        REQUIRE(s->code.editor_path[0]);
+        REQUIRE(strstr(s->code.editor_path, "Counter.chibi"));
+        REQUIRE(scene_tabs_activate(s->scene, scene_tab) == 0);
+        const char *text = av_get_str(
+            av_obj_get(s->scene->tabs[scene_tab].source_state, "text")
+        );
+        REQUIRE(text && !strcmp(text, draft));
+        REQUIRE(s->scene->tabs[scene_tab].source_dirty);
+        asset_code *code = NULL;
+        for (int i = 0; i < acount(s->code.assets); i++) {
+            if (!strcmp(
+                    asset_code_path(s->code.assets[i]),
+                    s->scene->tabs[scene_tab].path
+                )) {
+                code = s->code.assets[i];
+                break;
+            }
+        }
+        REQUIRE(code && asset_code_can_replay(code, false));
+        REQUIRE(asset_code_replay(code, false, false));
+        REQUIRE(strlen(asset_code_text(code)) + 1 == strlen(draft));
+        REQUIRE(!strncmp(asset_code_text(code), draft, strlen(draft) - 1));
+        REQUIRE(asset_code_can_replay(code, true));
+        REQUIRE(asset_code_replay(code, true, false));
+        REQUIRE(!strcmp(asset_code_text(code), draft));
+        free(draft);
+        draft = NULL;
+        REQUIRE(s->graph.area >= 0);
+        studio_active_layout(s)->editors[s->graph.area] = STUDIO_EDITOR_SCENE;
+        s->ui_schedule.wake = true;
+        hidden = rml_backend_get_stats(s->graph.backend);
+    }
+    return true;
+}
+
 #define EXPORTED "Exported game: "
 
 /* Frame 1 runs Export Game; frame 2 waits for the exporter to exit; frame 3's
@@ -348,6 +513,9 @@ bool studio_acceptance_frame(void *state)
         case SOURCE_EDIT: callback_ok = source_edit_frame(state); break;
         case CODE_KEYS: callback_ok = code_keys_frame(state); break;
         case EXPORT_GAME: callback_ok = export_frame(state); break;
+        case GRAPH_VISIBILITY:
+            callback_ok = graph_visibility_frame(state);
+            break;
     }
     return callback_ok;
 }
@@ -362,7 +530,7 @@ TEST_CASE(source_graph_edit_undo_redo)
     REQUIRE(callback_ok);
     REQUIRE(unchanged_source());
     REQUIRE(frames == 4 && edits == 1 && undos == 1 && redos == 1);
-    printf("Studio source edit accepted: frames=%d edits=%d undo=%d redo=%d\n",
+    printf("\nStudio source edit accepted: frames=%d edits=%d undo=%d redo=%d\n",
            frames, edits, undos, redos);
     return true;
 }
@@ -380,6 +548,21 @@ TEST_CASE(code_enter_types_newlines)
     REQUIRE(unchanged_source());
     REQUIRE(frames == KEY_FRAMES && keys == 2);
     printf("Studio code keys accepted: frames=%d keys=%d\n", frames, keys);
+    return true;
+}
+
+TEST_CASE(graph_visibility_and_document_pair)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         "10",
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == 10);
+    REQUIRE(unchanged_source());
+    printf("\nStudio graph visibility accepted: frames=%d\n", frames);
     return true;
 }
 
@@ -436,9 +619,15 @@ int main(int argc, char **argv)
     bool source_edit = argc == 4 && !strcmp(argv[1], "--source-edit");
     bool code_keys = argc == 4 && !strcmp(argv[1], "--code-keys");
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
-    if ((!source_edit && !code_keys && !exporting) || strcmp(argv[2], "--project-root")) {
-        fprintf(stderr, "Usage: studio-acceptance --source-edit|--code-keys|--export-game "
-                        "--project-root PATH | --scene-cursors\n");
+    bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
+    if ((!source_edit && !code_keys && !exporting && !visibility) ||
+        strcmp(argv[2], "--project-root")) {
+        fprintf(
+            stderr,
+            "Usage: studio-acceptance "
+            "--source-edit|--code-keys|--export-game|--graph-visibility "
+            "--project-root PATH | --scene-cursors\n"
+        );
         return 2;
     }
     executable = argv[0];
@@ -453,11 +642,17 @@ int main(int argc, char **argv)
         return 2;
     }
     pu_display_time(true);
-    mode = source_edit ? SOURCE_EDIT : code_keys ? CODE_KEYS : EXPORT_GAME;
+    mode = source_edit ? SOURCE_EDIT
+         : code_keys   ? CODE_KEYS
+         : visibility  ? GRAPH_VISIBILITY
+                       : EXPORT_GAME;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
         case EXPORT_GAME: RUN_TEST_CASE(export_game); break;
+        case GRAPH_VISIBILITY:
+            RUN_TEST_CASE(graph_visibility_and_document_pair);
+            break;
     }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;

@@ -878,6 +878,47 @@ int studio_behavior_view(const studio *s)
 
 void studio_behavior_show(studio *s, int view)
 {
+    char *action = NULL;
+    /* Both views describe the graph's document, even when a scene source was
+       selected while the graph stayed open. Activate its existing tab so the
+       other document retains its source draft and history. */
+    if (view == 2 && studio_graph_active(s)) {
+        const char *path = s->scene->graph_document_kind == APP_EDITOR_DOCUMENT_SYSTEM
+                             ? s->scene->system_path
+                         : s->scene->definition
+                             ? game_preview_definition_path(s->scene->definition)
+                             : NULL;
+        for (int i = 0; path && i < acount(s->scene->tabs); i++) {
+            const scene_document_tab *candidate = &s->scene->tabs[i];
+            if (candidate->path && !strcmp(candidate->path, path)) {
+                if (i != s->scene->active_tab && collab_active() &&
+                    !collab_replaying()) {
+                    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+                    yyjson_mut_val *root = yyjson_mut_obj(doc);
+                    yyjson_mut_doc_set_root(doc, root);
+                    yyjson_mut_obj_add_str(doc, root, "family", "command");
+                    yyjson_mut_obj_add_str(doc, root, "id", "behavior.view");
+                    yyjson_mut_obj_add_strcpy(doc, root, "tab", candidate->key);
+                    action = yyjson_mut_write(doc, 0, NULL);
+                    yyjson_mut_doc_free(doc);
+                    if (collab_actions_begin(action) != COLLAB_ACTION_APPLY) {
+                        free(action);
+                        return;
+                    }
+                    collab_begin_replay();
+                }
+                int result = scene_tabs_activate(s->scene, i);
+                if (action) {
+                    collab_end_replay();
+                }
+                if (result != 0) {
+                    free(action);
+                    return;
+                }
+                break;
+            }
+        }
+    }
     scene_document_tab *tab = active_asset(s);
     if (tab && tab->source_only) {
         view = 1;
@@ -905,6 +946,10 @@ void studio_behavior_show(studio *s, int view)
         s->focus_area = area;
     }
     s->ui_schedule.wake = true;
+    if (action) {
+        collab_actions_finish(action, true);
+        free(action);
+    }
 }
 
 void studio_code_reveal_node(studio *s, const studio_node_ref *at)
