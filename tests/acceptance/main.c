@@ -58,6 +58,20 @@ static bool unchanged_source()
     return true;
 }
 
+/* Counter's file holds `text`. */
+static bool counter_says(const char *text)
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/behaviors/Counter.chibi", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    char *saved = file_read_text(path);
+    REQUIRE(saved);
+    bool found = strstr(saved, text) != NULL;
+    free(saved);
+    REQUIRE(found);
+    return true;
+}
+
 static asset_code *counter_source(studio *s)
 {
     for (int i = 0; i < acount(s->code.assets); i++) {
@@ -633,11 +647,12 @@ static int counter_tab(studio *s)
     return -1;
 }
 
-/* Sets Counter's count literal in its source, leaving it unsaved. */
-static bool edit_counter(studio *s, const char *value)
+/* Sets Counter's saved count literal, `was`, in its source to `value`,
+   leaving it unsaved. */
+static bool edit_counter(studio *s, int was, const char *value)
 {
     const node *literal = NULL;
-    REQUIRE(check_counter(s, 1, false, &literal));
+    REQUIRE(check_counter(s, was, false, &literal));
     char error[256];
     bool changed = studio_code_expression_replace(s, literal, value, error, sizeof error);
     if (!changed) {
@@ -688,11 +703,12 @@ static bool play_keys_frame(void *state)
     return true;
 }
 
-#define PROMPT_FRAMES 12
+#define PROMPT_FRAMES 14
 static bool quit_saved;
 
 /* Closing Counter's clean tab just closes it. Closing it with an edit asks,
-   and its Discard closes the tab without writing; quitting with an edit asks,
+   and its Discard closes the tab without writing; asked again, a Save by
+   hand dismisses the prompt and keeps the tab; quitting with an edit asks,
    and its Save writes Counter before Studio quits. Both answers are clicks on
    the toast's buttons, which the prompt answers two frames after the click.
    Reduced motion, on from the first frame, settles each toast where layout
@@ -705,7 +721,7 @@ static bool prompts_frame(void *state)
     REQUIRE(frames <= PROMPT_FRAMES);
     if (s->unsaved_prompt.quit) {
         /* Save went through: nothing is unsaved, and Quit goes ahead. */
-        REQUIRE(frames > 9 && !studio_unsaved(s));
+        REQUIRE(frames > 11 && !studio_unsaved(s));
         quit_saved = true;
         return true;
     }
@@ -719,7 +735,7 @@ static bool prompts_frame(void *state)
             break;
         case 2:
             REQUIRE(!studio_command_enabled(s, STUDIO_COMMAND_SAVE_ALL));
-            REQUIRE(edit_counter(s, "3"));
+            REQUIRE(edit_counter(s, 1, "3"));
             REQUIRE(studio_command_enabled(s, STUDIO_COMMAND_SAVE_ALL));
             studio_close_tab(s, counter_tab(s));
             REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_CLOSE_TAB);
@@ -734,15 +750,30 @@ static bool prompts_frame(void *state)
             REQUIRE(app_scene_authoring_open_behavior(s->scene, "Counter") == 0);
             break;
         case 7:
-            REQUIRE(edit_counter(s, "4"));
+            REQUIRE(edit_counter(s, 1, "5"));
+            studio_close_tab(s, counter_tab(s));
+            REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_CLOSE_TAB);
+            break;
+        case 8:
+            /* Saving by hand while the prompt asks leaves nothing to ask. */
+            REQUIRE(prompt_shows(s, "Save Counter before closing?"));
+            REQUIRE(s->scene->active_tab == counter_tab(s));
+            studio_command_run(s, STUDIO_COMMAND_SAVE);
+            REQUIRE(!studio_unsaved(s));
+            break;
+        case 9:
+            REQUIRE(!s->unsaved_prompt.toast);
+            REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_NONE);
+            REQUIRE(counter_tab(s) >= 0 && counter_says("count: int = 5"));
+            REQUIRE(edit_counter(s, 5, "4"));
             REQUIRE(!studio_quit(s, true));
             REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
             break;
-        case 8:
+        case 10:
             REQUIRE(prompt_shows(s, "Save Counter before quitting?"));
             REQUIRE(click(s, ".toast[data-front] .toast-action"));
             break;
-        default: REQUIRE(frames < 11);
+        default: REQUIRE(frames < 13);
     }
     return true;
 }
@@ -1052,12 +1083,7 @@ TEST_CASE(unsaved_prompts)
                      "--open",           "Counter" };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
     REQUIRE(callback_ok && quit_saved);
-    char path[1024];
-    snprintf(path, sizeof path, "%s/content/behaviors/Counter.chibi", project);
-    char *text = file_read_text(path);
-    REQUIRE(text);
-    bool saved = strstr(text, "count: int = 4") != NULL;
-    free(text);
+    bool saved = counter_says("count: int = 4");
     REQUIRE(restore_counter() && saved);
     printf("\nStudio unsaved prompts accepted: frames=%d\n", frames);
     return true;

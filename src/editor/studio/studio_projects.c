@@ -298,22 +298,35 @@ static void proceed(studio *s, int tab)
     }
 }
 
+/* True while the pending action would still lose unsaved edits: the tab it
+   closes, else any document. */
+static bool pending_unsaved(studio *s, int tab)
+{
+    if (s->unsaved_prompt.action == STUDIO_UNSAVED_CLOSE_TAB) {
+        return tab >= 0 && scene_tabs_dirty(s->scene, &s->scene->tabs[tab]);
+    }
+    return studio_unsaved(s);
+}
+
+/* Takes the prompt's answer. Edits saved some other way while it asks
+   leave nothing to ask about, so it goes away unanswered. */
 static void answer_unsaved(studio *s)
 {
     studio_unsaved_prompt *prompt = &s->unsaved_prompt;
     if (!prompt->toast) {
         return;
     }
-    bool save = kit_toast_action(s->kit, prompt->toast);
-    bool discard = !save && kit_toast_cancel(s->kit, prompt->toast);
-    if (!save && !discard) {
-        return;
-    }
-    prompt->toast = 0;
     int tab = prompt->action == STUDIO_UNSAVED_CLOSE_TAB
                 ? studio_tab_index(s, prompt->tab)
                 : -1;
-    if (discard || save_pending(s, tab)) {
+    bool save = kit_toast_action(s->kit, prompt->toast);
+    bool discard = !save && kit_toast_cancel(s->kit, prompt->toast);
+    if (!save && !discard && pending_unsaved(s, tab)) {
+        return;
+    }
+    kit_toast_dismiss(s->kit, prompt->toast);
+    prompt->toast = 0;
+    if (discard || (save && save_pending(s, tab))) {
         proceed(s, tab);
     }
     prompt->action = STUDIO_UNSAVED_NONE;

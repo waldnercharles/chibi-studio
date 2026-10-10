@@ -1303,8 +1303,8 @@ static bool enabled_with(studio *s, studio_command command, int argument)
             return studio_live(s) && selection &&
                    selected_scene_entity(s->scene).slot;
         case STUDIO_COMMAND_RESUME:
-            return !s->hosted && !s->guest &&
-                   (s->pause.active ||
+            return s->pause.active ||
+                   (!s->hosted && !s->guest &&
                     !app_scene_authoring_runtime_state(s->scene).playing);
         case STUDIO_COMMAND_STEP_OVER:
         case STUDIO_COMMAND_STEP_INTO:
