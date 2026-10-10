@@ -32,6 +32,7 @@ static enum {
     CODE_KEYS,
     EXPORT_GAME,
     GRAPH_VISIBILITY,
+    UNIT_WARNINGS,
     SCENE_HIERARCHY
 } mode;
 static char exported[1024]; /* the export Studio reported */
@@ -329,6 +330,46 @@ static bool code_keys_frame(void *state)
         const char *text = asset_code_text(code);
         REQUIRE(strlen(text) > strlen(counter_bytes) + 1);
         REQUIRE(same_without_space(text, counter_bytes));
+    }
+    return true;
+}
+
+#define UNIT_FRAMES 4
+static const char unit_mismatch[] = "behavior Counter {\n"
+                                    "    state count: int = 1\n"
+                                    "    on Tick {\n"
+                                    "        count = count + 1\n"
+                                    "        self.GameCollider.radius = "
+                                    "self.GameMovement.speed\n"
+                                    "    }\n"
+                                    "}\n";
+static bool unit_warned;
+
+/* A unit mismatch underlines its statement as a warning, not an error. */
+static bool unit_warnings_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= UNIT_FRAMES);
+    asset_code *code = counter_code(s);
+    REQUIRE(code);
+    if (frames == 1) {
+        studio_show_editor(s, STUDIO_EDITOR_CODE);
+    } else if (frames == 2) {
+        const char *path = asset_code_path(code);
+        REQUIRE(studio_code_replace(s, path, asset_code_text(code), unit_mismatch, NULL));
+    } else {
+        const char *statement = strstr(unit_mismatch, "self.GameCollider");
+        const kit_code_marker *markers = asset_code_markers(code);
+        for (int i = 0; i < acount(markers); i++) {
+            const kit_code_marker *m = &markers[i];
+            REQUIRE(m->severity == KIT_CODE_WARNING);
+            REQUIRE(!strcmp(m->message, "Units differ: u = u/s") && m->line == 5);
+            REQUIRE(m->start == statement - unit_mismatch);
+            unit_warned = true;
+        }
+        REQUIRE(!asset_code_error(code)[0]);
     }
     return true;
 }
@@ -699,6 +740,7 @@ bool studio_acceptance_frame(void *state)
         case GRAPH_VISIBILITY:
             callback_ok = graph_visibility_frame(state);
             break;
+        case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
     }
     return callback_ok;
@@ -732,6 +774,21 @@ TEST_CASE(code_enter_types_newlines)
     REQUIRE(unchanged_source());
     REQUIRE(frames == KEY_FRAMES && keys == 2);
     printf("Studio code keys accepted: frames=%d keys=%d\n", frames, keys);
+    return true;
+}
+
+TEST_CASE(code_underlines_unit_mismatch)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(UNIT_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == UNIT_FRAMES && unit_warned);
+    REQUIRE(unchanged_source());
+    printf("Studio unit warning accepted: frames=%d\n", frames);
     return true;
 }
 
@@ -816,14 +873,16 @@ int main(int argc, char **argv)
     bool code_keys = argc == 4 && !strcmp(argv[1], "--code-keys");
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
+    bool units = argc == 4 && !strcmp(argv[1], "--unit-warnings");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
-    if ((!source_edit && !code_keys && !exporting && !visibility && !hierarchy) ||
+    if ((!source_edit && !code_keys && !exporting && !visibility && !units && !hierarchy) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--export-game|--graph-visibility|"
-            "--scene-hierarchy --project-root PATH | --scene-cursors\n"
+            "--unit-warnings|--scene-hierarchy "
+            "--project-root PATH | --scene-cursors\n"
         );
         return 2;
     }
@@ -843,6 +902,7 @@ int main(int argc, char **argv)
          : code_keys   ? CODE_KEYS
          : exporting   ? EXPORT_GAME
          : visibility  ? GRAPH_VISIBILITY
+         : units       ? UNIT_WARNINGS
                        : SCENE_HIERARCHY;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
@@ -851,6 +911,7 @@ int main(int argc, char **argv)
         case GRAPH_VISIBILITY:
             RUN_TEST_CASE(graph_visibility_and_document_pair);
             break;
+        case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
     }
     pu_print_stats();
