@@ -264,6 +264,29 @@ jobs:
               return true;
             }
 
+            async function mergedParentHead(parent) {
+              if (!parent.merge_commit_sha) return false;
+              try {
+                const mergedCommit = (await github.rest.repos.getCommit({ owner, repo, ref: parent.merge_commit_sha })).data;
+                // A normal merge records its source head directly, even when its
+                // result includes base changes absent from the source tree.
+                if (mergedCommit.parents.some(commit => commit.sha === parent.head.sha)) return true;
+                const [commits, archivedHead] = await Promise.all([
+                  github.paginate(github.rest.pulls.listCommits, { owner, repo, pull_number: parent.number, per_page: 100 }),
+                  github.rest.git.getRef({ owner, repo, ref: `pull/${parent.number}/head` }),
+                ]);
+                const last = commits.at(-1);
+                const committedAt = Date.parse(last?.commit.committer.date);
+                const mergedAt = Date.parse(parent.merged_at);
+                return commits.length === parent.commits && last?.sha === parent.head.sha &&
+                  archivedHead.data.object.sha === parent.head.sha && Number.isFinite(committedAt) &&
+                  Number.isFinite(mergedAt) && committedAt <= mergedAt;
+              } catch (error) {
+                if (error.status === 404) return false;
+                throw error;
+              }
+            }
+
             async function retargetMergedParent(pr) {
               if (!gateReady || pr.base.ref === defaultBranch || hasHold(pr) || !(await dependenciesMerged(pr))) return pr;
               const parents = await github.paginate(github.rest.pulls.list, {
@@ -282,13 +305,8 @@ jobs:
               const current = (await github.rest.pulls.get({ owner, repo, pull_number: pr.number })).data;
               if (current.state !== "open" || current.head.sha !== pr.head.sha || current.base.ref !== pr.base.ref ||
                   current.base.sha !== parent.head.sha || hasHold(current) || !(await dependenciesMerged(current))) return current;
-              if (!parent.merge_commit_sha) return current;
-              const [mergedCommit, parentCommit] = await Promise.all([
-                github.rest.repos.getCommit({ owner, repo, ref: parent.merge_commit_sha }),
-                github.rest.repos.getCommit({ owner, repo, ref: parent.head.sha }),
-              ]);
-              if (mergedCommit.data.commit.tree.sha !== parentCommit.data.commit.tree.sha) {
-                core.info(`#${pr.number}: parent #${parent.number} head differs from its merged result; automatic retargeting is held.`);
+              if (!await mergedParentHead(parent)) {
+                core.info(`#${pr.number}: cannot verify parent #${parent.number} source head at merge; automatic retargeting is held.`);
                 return current;
               }
               const comparison = (await github.rest.repos.compareCommitsWithBasehead({
