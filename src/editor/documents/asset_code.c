@@ -166,16 +166,20 @@ static void adopt_working(asset_code *c, const authoring_sources *sources)
         navigation(c);
     }
 }
-static void diagnostic(asset_code *c, const script_diagnostic *d)
+static void mark(asset_code *c, const script_diagnostic *d, kit_code_severity severity)
 {
     apush(
         c->markers,
         ((kit_code_marker){ .line = d->range.line,
-                            .severity = KIT_CODE_ERROR,
+                            .severity = severity,
                             .message = d->message,
                             .start = d->range.start,
                             .end = d->range.end })
     );
+}
+static void diagnostic(asset_code *c, const script_diagnostic *d)
+{
+    mark(c, d, KIT_CODE_ERROR);
     if (!c->error[0]) {
         snprintf(c->error, sizeof c->error, "%s", d->message);
     }
@@ -224,6 +228,11 @@ static void decorate(asset_code *c)
         if (c->facts) {
             for (int i = 0; i < c->facts->diagnostic_count; i++) {
                 diagnostic(c, &c->facts->diagnostics[i]);
+            }
+            /* Unit mismatches warn; the source still runs. */
+            const script_analysis *analysis = c->facts->analysis;
+            for (int i = 0; i < analysis->warning_count; i++) {
+                mark(c, &analysis->warnings[i], KIT_CODE_WARNING);
             }
             int count = 0;
             authoring_highlight *spans = authoring_source_highlights(c->navigation, c->document, &count);
