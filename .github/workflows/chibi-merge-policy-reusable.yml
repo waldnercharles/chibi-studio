@@ -39,17 +39,18 @@ jobs:
             const codexLogin = "chatgpt-codex-connector[bot]";
             const copilotLogin = "copilot-pull-request-reviewer[bot]";
             const githubActionsAppId = 15368;
-            const gateReady = process.env.CHIBI_REVIEW_GATE_READY === "true";
+            const gateConfigured = process.env.CHIBI_REVIEW_GATE_READY === "true";
             const postMergeWorkflows = JSON.parse(process.env.CHIBI_POST_MERGE_WORKFLOWS || "[]");
-            const defaultBranch = (await github.rest.repos.get({ owner, repo })).data.default_branch;
+            const repository = (await github.rest.repos.get({ owner, repo })).data;
+            const defaultBranch = repository.default_branch;
+            const gateReady = gateConfigured && !repository.allow_auto_merge;
             const permissionCache = new Map();
 
             async function isMaintainer(login) {
               if (!permissionCache.has(login)) {
                 try {
                   const { data } = await github.rest.repos.getCollaboratorPermissionLevel({ owner, repo, username: login });
-                  const permissions = data.user?.permissions || {};
-                  permissionCache.set(login, permissions.admin === true || permissions.maintain === true);
+                  permissionCache.set(login, data.permission === "admin" || data.role_name === "maintain");
                 } catch {
                   permissionCache.set(login, false);
                 }
@@ -130,15 +131,17 @@ jobs:
               const blocked = outcomes.find(outcome => outcome.held);
               const waiting = outcomes.find(outcome => !outcome.approval);
               const approved = gateReady && outcomes.length > 0 && outcomes.every(outcome => !outcome.held && outcome.approval);
-              const summary = !gateReady
-                ? "Approval gate setup is not complete."
-                : approved
-                  ? `Head ${pr.head.sha} is approved across ${outcomes.length} open pull request(s).`
-                  : blocked
-                    ? `Approval is blocked by hold or an open dependency on pull request #${blocked.number}.`
-                    : waiting
-                      ? `Pull request #${waiting.number} awaits a current-head approval from Copilot or a maintainer, or a fresh 👍 from ${codexLogin}.`
-                      : "No open pull request targets the default branch with this head commit.";
+              const summary = repository.allow_auto_merge
+                ? "Disable repository native auto-merge so every merge receives a fresh policy evaluation."
+                : !gateReady
+                  ? "Approval gate setup is not complete."
+                  : approved
+                    ? `Head ${pr.head.sha} is approved across ${outcomes.length} open pull request(s).`
+                    : blocked
+                      ? `Approval is blocked by hold or an open dependency on pull request #${blocked.number}.`
+                      : waiting
+                        ? `Pull request #${waiting.number} awaits a current-head approval from Copilot or a maintainer, or a fresh 👍 from ${codexLogin}.`
+                        : "No open pull request targets the default branch with this head commit.";
               await github.rest.checks.update({
                 owner, repo, check_run_id: gate.id,
                 name: gateName,
@@ -338,20 +341,13 @@ jobs:
               }
             }
 
-            const event = context.eventName;
             await relayPostMergeWorkflows();
-            if (event === "issues" && !context.payload.issue?.pull_request) return;
-            let pullNumbers = [];
-            if (context.payload.pull_request) {
-              pullNumbers = [context.payload.pull_request.number];
-            } else if (context.payload.issue?.pull_request) {
-              pullNumbers = [context.payload.issue.number];
-            } else {
-              const pulls = await github.paginate(github.rest.pulls.list, {
-                owner, repo, state: "open", base: defaultBranch, per_page: 100,
-              });
-              pullNumbers = pulls.map(pr => pr.number);
-            }
+            // Every retained invocation reconciles all PRs because concurrency can
+            // replace pending events for different PRs with the newest event.
+            const pulls = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: "open", per_page: 100,
+            });
+            const pullNumbers = pulls.map(pr => pr.number);
 
             for (const number of pullNumbers) {
               let pr;
