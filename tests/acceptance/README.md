@@ -87,6 +87,23 @@ framing, foreground layer priority, hidden-state filtering and selecting empty
 cells as part of one layer. They are removed before rendering. No source save or
 playback occurs.
 
+`studio-acceptance --graph-keys --project-root PATH` takes a disposable copy,
+adds a Late behavior to it, and runs twenty-five hidden fixed-dt frames on
+Counter's Tick graph. It checks that
+every output label a full node shows lays out wider than nothing. With the graph
+area focused it queues keys through SDL, as the platform does: Right moves the
+selection along a wire to the node it feeds, Left to the nearest node feeding
+that one, Escape at rest clears the selection, and M asks the source to disable
+the selection, which Counter's statement refuses with a reason while the node
+stays enabled. With two nodes selected, M refuses before editing either. Escape
+that closes the node menu leaves the selection alone. Tab opens node search,
+whose entry chosen leads the next search under Recent, also once preferences
+are saved and read back, without changing the command palette's recent items.
+The last frame opens Late, whose first handler graph is an unnamed completion
+handler (its entry an Event node without a name), and checks that it starts on
+its Tick graph. Pointer hit-testing and framing are not exercised, and nothing
+is saved.
+
 `studio-acceptance --asset-selection --project-root PATH` takes another
 disposable copy and adds three unused prototypes to it before Studio opens. Its
 hidden frames show the Assets list's prototypes, then click, Shift-click and

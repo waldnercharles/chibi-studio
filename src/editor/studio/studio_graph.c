@@ -17,6 +17,7 @@
 #include "platform/cute.h"
 #include "support/array.h"
 
+#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -142,6 +143,37 @@ bool sg_graph_readonly(const studio *s)
     const graph *g = sg_active_graph(s);
     return !g || g->math_expression || studio_code_graph_readonly(s) ||
            !behavior_asset_mutable(sg_graph_editor(s)->asset);
+}
+
+const char *sg_readonly_reason(const studio *s)
+{
+    const graph *g = sg_active_graph(s);
+    if (!g) {
+        return NULL;
+    }
+    if (g->math_expression) {
+        return "This graph shows a math expression. Edit the expression in its "
+               "node.";
+    }
+    if (studio_code_graph_readonly(s)) {
+        return "The code has errors or is being checked. The graph edits again "
+               "once it's valid.";
+    }
+    if (!behavior_asset_mutable(sg_graph_editor(s)->asset)) {
+        return "This asset can't be edited here.";
+    }
+    return NULL;
+}
+
+void sg_refuse_edit(studio *s)
+{
+    const char *reason = sg_readonly_reason(s);
+    assert(reason);
+    s->graph.readonly_toast = kit_toast(
+        s->kit,
+        s->graph.readonly_toast,
+        &(kit_toast_desc){ .type = KIT_TOAST_INFO, .title = "Read-only graph", .description = reason }
+    );
 }
 
 bool sg_node_visible(const graph *g, const node *n)
@@ -442,7 +474,7 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
             "mute",
             n->disabled ? "Enable" : "Disable",
             n->disabled ? KIT_ICON_EYE : KIT_ICON_EYE_OFF,
-            NULL,
+            "M",
             readonly
         )) {
         sg_set_node_disabled(s, n, !n->disabled);
@@ -799,7 +831,8 @@ void studio_behavior_body(studio *s, int area)
     if (!visible_nodes(sg_active_graph(s))) {
         char hint[96];
         snprintf(hint, sizeof hint, "Add a node with %s or a right click", studio_chord(s, "Shift+A"));
-        kit_label(k, "empty", "graph-empty", hint);
+        const char *reason = sg_readonly_reason(s);
+        kit_label(k, "empty", "graph-empty", reason ? reason : hint);
     }
     studio_debug_call_stack(s);
     sg_find_panel(s);

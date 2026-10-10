@@ -14,9 +14,17 @@ enum
 
 static const float ROW = 22; /* graph.rcss row pitch */
 static const float SOCKET_PAD = 10, PART_GAP = 6, EDGE = 1;
+/* Bind to Source beside a compound value: an 18 dp button and its gap. */
+static const float BIND_WIDTH = 24;
 /* Below this many device pixels per graph unit only titles show: 12 dp pin
    labels would draw under 7 px. Zoom alone would hide legible text on HiDPI. */
 static const float FAR_PIXELS = 0.6f;
+/* A graph opening in a small area shows its start at no less than this zoom
+   instead of all of it as unreadable titles; expression code wraps to fit
+   at it. */
+static const float OPEN_ZOOM_MIN = 0.75f;
+/* How long after a wheel tick zooming counts as continuous. */
+static const double WHEEL_SETTLE = 0.3;
 
 typedef enum
 {
@@ -31,6 +39,7 @@ struct studio_node_layout
     node_form form;
     float w, h;
     float label;           /* input label column, so input editors line up */
+    bool label_clipped;    /* that column was narrowed to keep NODE_MAX */
     float top;             /* the first row's top, below the node's */
     float column;          /* an operator's input column */
     int head_in, head_out; /* pins drawn in the title, or -1 */
@@ -136,7 +145,15 @@ void sg_node_menu(studio *s, sg_menu *m, node *n);
 /* Model access (studio_graph.c). */
 editor *sg_graph_editor(const studio *s);
 graph *sg_active_graph(const studio *s);
-bool sg_graph_readonly(const studio *s);
+/* Why the graph is read-only, for its header and refusals; NULL when it
+   isn't. */
+const char *sg_readonly_reason(const studio *s);
+/* An edit the read-only graph refused says why, in one toast however often
+   it is tried. */
+void sg_refuse_edit(studio *s);
+/* Whether a wire is being dragged from a pin: its press has moved past the
+   drag threshold, so a plain click on a pin changes nothing on screen. */
+bool sg_link_dragging(const studio *s);
 bool sg_node_visible(const graph *g, const node *n);
 node *sg_node_by_id(const studio *s, uint64_t id);
 graph_comment_box *sg_comment_by_id(const studio *s, uint64_t id);
@@ -168,11 +185,21 @@ void sg_socket_at(const studio *s, node *n, int kind, int pin, float *x, float *
 float sg_zoom(const studio *s);
 float studio_graph_pixel_ratio(const studio *s);
 void sg_to_world(const studio *s, float wx, float wy, float *x, float *y);
+/* Zooms at a window point, as a wheel or pinch does. */
 void sg_zoom_at(studio *s, float zoom, float wx, float wy);
+/* Eases to 100% about the canvas center. */
+void sg_zoom_actual(studio *s);
+/* The zoom the readout shows: where an eased camera move ends. */
+float sg_zoom_readout(const studio *s);
+/* A wheel or pinch zoomed in the last WHEEL_SETTLE seconds. */
+bool sg_wheel_zooming(const studio *s);
 /* Zoomed out past FAR_PIXELS: nodes show titles only. */
 bool sg_far(const studio *s);
 void sg_camera_step(studio *s);
 void sg_frame_nodes(studio *s, bool selection, bool animate);
+/* F: frames the selection, or everything once the selection is framed
+   already, or with none (imgui-node-editor). */
+void sg_frame_again(studio *s);
 /* The first view of a graph: fitted, or its start at a legible zoom. */
 void sg_frame_open(studio *s);
 /* Frames the selection holding n, or pans n into view unless it is in view. */
@@ -347,6 +374,7 @@ typedef struct gd_row
 {
     const char *id, *label, *about, *control, *def;
     bool readonly, invalid, heading, removable, fixed;
+    bool bindable; /* offers Bind to Source, which shows its source field */
 } gd_row;
 /* How a number edits: Base UI's NumberField attributes. */
 typedef struct gd_number_shape
@@ -405,6 +433,9 @@ typedef enum
     SG_INPUT_VALUE,
 } sg_input_kind;
 sg_input_kind sg_input_view(studio *s, node *n, int p, char *text, size_t size);
+/* Whether input p's value is a vector, color or compound that Bind to
+   Source can give a source in place of its editor. */
+bool sg_input_bindable(studio *s, node *n, int p);
 /* Opens input p's source list under its field, whose row is `row`. */
 void sg_source_open(studio *s, node *n, int p, const char *row, rml_element *field);
 void sg_source_free(studio *s);

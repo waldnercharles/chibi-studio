@@ -855,6 +855,12 @@ void studio_ui_panel_detach(studio *s, const char *name)
     }
 }
 
+bool studio_ui_panel_holds(studio *s, const char *name, rml_element *element)
+{
+    panel *p = s->ui ? find_panel(s->ui, name) : NULL;
+    return p && p->mount && ui_mount_holds(p->mount, element);
+}
+
 /* The alias takes when the mount binds the host to the data model, as a
  * widget's data-alias-* attributes do. */
 rml_element *studio_ui_area_header(studio *s, int area, const char *name)

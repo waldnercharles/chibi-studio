@@ -95,6 +95,7 @@ typedef struct widget
     bool autocomplete_submitted;
     bool autocomplete_canceled;
     bool autocomplete_sync;
+    bool autocomplete_refocus; /* closing returns the focus without reopening */
     bool secret;
     double value;
     int pending_index;

@@ -353,5 +353,8 @@ void kit_autocomplete_close(kit *k, const char *key)
     free(popup_key);
     field->w.autocomplete_sync = true;
     field->w.autocomplete_query_active = false;
+    /* The choice is made: the field keeps the focus with its list shut. */
+    field->w.autocomplete_refocus = true;
     rml_element_focus(field->w.input_el, true);
+    field->w.autocomplete_refocus = false;
 }

@@ -7,7 +7,11 @@
    Find, Frame all and the View menu (GraphView). The crumbs shrink first,
    ellipsizing their labels. */
 body, .graph-head { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
-.graph-head > .btn, .graph-head > .readout, .graph-head > .segmented, .graph-head > .segmented .seg { flex: 0 0 auto; }
+.graph-head > .btn, .graph-head > .segmented, .graph-head > .segmented .seg { flex: 0 0 auto; }
+/* The zoom readout resets to 100% when clicked; it reads as plain text
+   until hovered. */
+.graph-head > .zoom { padding: 0dp 2dp; }
+.graph-head > .zoom:hover .readout { color: var(--foreground); }
 /* A call entered and its separator, in the crumbs' row. */
 .caller { display: flex; align-items: center; gap: 2dp; flex: 0 1 auto; min-width: 0dp; }
 .rename { flex: 0 1 160dp; min-width: 60dp; }

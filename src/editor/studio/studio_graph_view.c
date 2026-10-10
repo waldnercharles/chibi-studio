@@ -40,6 +40,7 @@ void sg_zoom_at(studio *s, float zoom, float wx, float wy)
     g->x = fx - (wx - g->surface.rect.x) / effective_zoom;
     g->y = fy - (wy - g->surface.rect.y) / effective_zoom;
     g->camera.active = false;
+    g->wheel_zoomed = s->time;
 }
 
 bool sg_far(const studio *s)
@@ -65,6 +66,26 @@ static void camera_to(studio *s, float zoom, float x, float y, bool animate)
     g->camera.y = y;
     g->camera.start = s->time;
     g->camera.active = true;
+}
+
+void sg_zoom_actual(studio *s)
+{
+    studio_graph *g = &s->graph;
+    float zoom = sg_zoom(s), w = g->surface.rect.w, h = g->surface.rect.h;
+    float cx = g->x + w / 2 / zoom, cy = g->y + h / 2 / zoom;
+    camera_to(s, 12.0f / s->prefs.standard_font_size, cx - w / 2, cy - h / 2, true);
+}
+
+float sg_zoom_readout(const studio *s)
+{
+    const studio_graph *g = &s->graph;
+    float zoom = g->camera.active ? g->camera.zoom : g->zoom;
+    return zoom * s->prefs.standard_font_size / 12.0f;
+}
+
+bool sg_wheel_zooming(const studio *s)
+{
+    return s->time - s->graph.wheel_zoomed < WHEEL_SETTLE;
 }
 
 /* Interpolates in screen space so the path neither swoops nor drifts: the
@@ -124,29 +145,55 @@ static float fit_zoom(const studio *s, const float lo[2], const float hi[2])
     return fminf(fmaxf(zoom * 12.0f / s->prefs.standard_font_size, ZOOM_MIN), ZOOM_MAX);
 }
 
+/* The camera fitting the selection, or everything; false with none. */
+static bool frame_target(studio *s, bool selection, float camera[3])
+{
+    studio_graph *g = &s->graph;
+    float lo[2], hi[2];
+    if (!nodes_bounds(s, selection, lo, hi)) {
+        return false;
+    }
+    float w = g->surface.rect.w, h = g->surface.rect.h, zoom = fit_zoom(s, lo, hi);
+    float effective_zoom = zoom * s->prefs.standard_font_size / 12.0f;
+    camera[0] = zoom;
+    camera[1] = (lo[0] + hi[0]) / 2 - w / 2 / effective_zoom;
+    camera[2] = (lo[1] + hi[1]) / 2 - h / 2 / effective_zoom;
+    return true;
+}
+
 /* Fits the selection, or everything, with 10% padding and never past 1:1. */
 void sg_frame_nodes(studio *s, bool selection, bool animate)
 {
     studio_graph *g = &s->graph;
-    float lo[2], hi[2];
+    float camera[3];
     if (!sg_active_graph(s) || g->surface.rect.w <= 0) {
         return;
     }
-    if (!nodes_bounds(s, selection, lo, hi)) {
+    if (!frame_target(s, selection, camera)) {
         if (selection) {
             sg_frame_nodes(s, false, animate);
         }
         return;
     }
-    float w = g->surface.rect.w, h = g->surface.rect.h, zoom = fit_zoom(s, lo, hi);
-    float cx = (lo[0] + hi[0]) / 2, cy = (lo[1] + hi[1]) / 2;
-    float effective_zoom = zoom * s->prefs.standard_font_size / 12.0f;
-    camera_to(s, zoom, cx - w / 2 / effective_zoom, cy - h / 2 / effective_zoom, animate);
+    camera_to(s, camera[0], camera[1], camera[2], animate);
 }
 
-/* Below this, a graph opening in a small area shows its start legibly
-   instead of all of it as unreadable titles. */
-static const float OPEN_ZOOM_MIN = 0.75f, OPEN_MARGIN = 32;
+void sg_frame_again(studio *s)
+{
+    studio_graph *g = &s->graph;
+    bool selection = acount(sg_graph_editor(s)->selected) > 0;
+    float camera[3];
+    if (selection && sg_active_graph(s) && !g->camera.active &&
+        frame_target(s, true, camera) && fabsf(g->zoom - camera[0]) < 1e-3f &&
+        fabsf(g->x - camera[1]) < 1 && fabsf(g->y - camera[2]) < 1) {
+        selection = false;
+    }
+    sg_frame_nodes(s, selection, true);
+}
+
+/* The room left above and beside a graph's start when it opens at
+   OPEN_ZOOM_MIN. */
+static const float OPEN_MARGIN = 32;
 
 /* A graph opens fitted when that leaves its nodes legible; otherwise at a
    legible zoom with its top-left corner in view, where its events start, as
@@ -240,6 +287,12 @@ void sg_follow_graph(studio *s)
         ed_cancel_snapshot(sg_graph_editor(s));
     }
     g->title_edit = g->bubble_edit = g->comment = 0;
+    /* Bind to Source named a pin of the graph that left, and pin ids repeat
+       across graphs. */
+    g->bind_pin = 0;
+    g->bind_kit = NULL;
+    g->bind_focus = false;
+    g->details.bind[0] = '\0';
     g->gesture = STUDIO_GRAPH_IDLE;
     g->camera.active = false;
     studio_graph_view *view = view_for(g, id);

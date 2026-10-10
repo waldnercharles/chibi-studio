@@ -264,6 +264,7 @@ typedef struct
 {
     char shortcuts[STUDIO_COMMAND_COUNT][STUDIO_CHORD_SIZE]; /* empty uses the default */
     studio_recent recent[STUDIO_RECENT_COUNT]; /* most recent first; an empty key ends them */
+    studio_recent recent_nodes[STUDIO_RECENT_COUNT]; /* node search's, kept apart */
     studio_theme theme;
     bool comfortable;
     bool reduced_motion;
@@ -462,6 +463,7 @@ typedef struct
     bool focused;
     bool captured; /* a press began in the canvas and is held */
     float zoom, x, y;
+    double wheel_zoomed; /* when a wheel or pinch last zoomed */
     struct
     {
         float zoom, x, y;
@@ -501,6 +503,16 @@ typedef struct
     kit_rect inline_anchor;
     uint64_t inline_anchor_node, inline_anchor_pin;
     kit *inline_anchor_kit;
+    /* Bind to Source: a vector, color or compound input whose value editor
+       gives way to its source field until its list closes, the canvas kit
+       showing it (NULL in Properties), and whether the field still waits
+       for the focus. */
+    uint64_t bind_pin;
+    kit *bind_kit;
+    bool bind_focus;
+    int readonly_toast; /* the toast a refused edit shows, kept as one */
+    uint64_t refused_pin; /* an input whose field refused `refused` on Enter */
+    char refused[256];
     uint64_t menu_comment;
     uint64_t comment; /* the selected comment frame, shown while no node is */
     bool press_toggle;
@@ -518,6 +530,7 @@ typedef struct
     char link_error[160];
     uint64_t hover_node;
     int hover_kind, hover_pin; /* -1 without a socket */
+    double hover_pin_since;    /* when the pointer reached that socket */
     int hover_edge;            /* edge index under the pointer, or -1 */
     bool space;
     double value_edit_frame; /* a value gesture has an open undo snapshot */
@@ -601,6 +614,8 @@ typedef struct
         char choosing[GD_ROW_ID_MAX]; /* the row whose choice is open */
         char source[GD_ROW_ID_MAX];   /* the row whose source list is open */
         char popup[GD_ROW_ID_MAX];    /* the row whose popover is open */
+        char bind[GD_ROW_ID_MAX];     /* the row Bind to Source opened */
+        int bind_wait;                /* frames it waited for the field */
         uint64_t source_node;         /* that input's node and pin */
         int source_pin;
         bool source_shown; /* its list's popover showed */
@@ -1264,6 +1279,7 @@ struct studio
     bool guest_keys;  /* a press in the guest gave it the keyboard */
     bool guest_capture; /* a button pressed in the guest is held */
     bool typing;        /* a field or the graph had the keyboard last frame */
+    bool typed; /* this frame's keys reached a field or popup, which may have let go */
     bool scene_status;  /* the status bar shows a Scene gesture's change */
     /* ---------- Rename objects and prototype components ---------- */
     struct
@@ -1454,6 +1470,8 @@ rml_element *studio_ui_dialog(studio *s, const char *key, const char *name);
 /* Lets panel `name`'s mount go before the kit removes its host, when a
    panel shown on demand closes. */
 void studio_ui_panel_detach(studio *s, const char *name);
+/* Whether `element` is in panel `name`'s document, false while it shows none. */
+bool studio_ui_panel_holds(studio *s, const char *name, rml_element *element);
 /* The Studio scene's panels, each an editor type an area can show. */
 int studio_ui_panel_count(const studio *s);
 const char *studio_ui_panel_name(const studio *s, int index);
@@ -1555,6 +1573,12 @@ bool studio_search_lists_anew(const char *was, const char *query);
 /* The query without its prefix. */
 const char *studio_search_query(const char *query);
 void studio_search_choose(studio *s, const studio_palette_entry *entry);
+/* Moves `key` to the front of the recently chosen items, counting the use;
+   an empty key is none. */
+void studio_palette_remember(studio_recent *recent, const char *key);
+/* With nothing typed, up to `limit` entries chosen recently lead, most recent
+   first, under Recent. */
+void studio_palette_recent_first(const studio_recent *recent, int limit, studio_palette_entry **entries);
 /* What choosing `entry` does, as a verb for the palette's Enter hint. */
 const char *studio_search_verb(const studio_palette_entry *entry);
 
@@ -1690,6 +1714,8 @@ void studio_graph_palette(studio *s);
 bool studio_graph_can_replay(studio *s, bool redo);
 void studio_graph_history(studio *s, bool redo);
 bool studio_graph_active(const studio *s);
+/* No graph is open, or the open one refuses edits (sg_readonly_reason). */
+bool sg_graph_readonly(const studio *s);
 /* Opens Find in graph. */
 void studio_graph_find(studio *s);
 /* Opens the Text Editor's find widget. */

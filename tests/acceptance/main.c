@@ -4,9 +4,14 @@
 #include "authoring/source_presentation.h"
 #include "editor/collab/collab.h"
 #include "editor/documents/asset_code.h"
+#include "editor/studio/studio_graph_internal.h"
 #include "editor/studio/studio_internal.h"
 #include "editor/workspace/asset_refactor.h"
 #include "editor/workspace/scene_internal.h"
+#include "graph/authoring/graph_edit.h"
+#include "graph/authoring/local_edit.h"
+#include "graph/nodes/core_nodes.h"
+#include "graph/nodes/vector_nodes.h"
 #include "support/array.h"
 #include "support/file_io.h"
 #include "support/xalloc.h"
@@ -35,6 +40,7 @@ static enum {
     KDL_KEYS,
     EXPORT_GAME,
     GRAPH_VISIBILITY,
+    GRAPH_KEYS,
     UNIT_WARNINGS,
     SCENE_HIERARCHY,
     ASSET_SELECTION,
@@ -232,6 +238,26 @@ static bool projects_open(studio *s)
     return true;
 }
 
+/* Shows Counter's default graph, which holds its state and so the count
+   literal the edits change. */
+static bool show_state_graph(studio *s)
+{
+    editor *e = s->scene->graph_editor;
+    const graph *main = behavior_asset_find_graph(editor_behavior_asset(e), 0);
+    REQUIRE(main && editor_open_graph(e, main->graph_id) == 0);
+    return true;
+}
+
+/* Counter opens on its Tick handler, where its events are, rather than its
+ * default graph, which holds only its state (Blueprint's event graph); the
+ * edit below then goes to that default graph. */
+static bool opens_on_handler(studio *s)
+{
+    const graph *shown = editor_active_graph(s->scene->graph_editor);
+    REQUIRE(shown && shown->name && !strcmp(shown->name, "Tick"));
+    return show_state_graph(s);
+}
+
 static bool source_edit_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -244,6 +270,7 @@ static bool source_edit_frame(void *state)
     if (frames == 1) {
         REQUIRE(projects_open(s));
         REQUIRE(reports_warn(s));
+        REQUIRE(opens_on_handler(s));
         const node *literal = NULL;
         REQUIRE(check_counter(s, 1, false, &literal));
         s->prefs.code_apply_live = true;
@@ -322,6 +349,18 @@ static bool press_chord(SDL_Keycode key, SDL_Keymod mod)
 static bool press_key(SDL_Keycode key)
 {
     return press_chord(key, SDL_KMOD_NONE);
+}
+
+/* Queues `text` as the platform's text input for the window. */
+static bool type_text(const char *text)
+{
+    SDL_WindowID window = window_id();
+    REQUIRE(window);
+    SDL_Event e = {
+        .text = { .type = SDL_EVENT_TEXT_INPUT, .windowID = window, .text = text }
+    };
+    REQUIRE(SDL_PushEvent(&e));
+    return true;
 }
 
 /* Counter's source editor, whether or not its text currently reads. */
@@ -665,6 +704,7 @@ static bool graph_visibility_frame(void *state)
     frames++;
     REQUIRE(frames <= 10);
     if (frames == 1) {
+        REQUIRE(opens_on_handler(s));
         studio_behavior_show(s, 2);
     } else if (frames == 2) {
         REQUIRE(tilemap_viewport(s));
@@ -799,6 +839,97 @@ static bool graph_visibility_frame(void *state)
     return true;
 }
 
+#define GRAPH_KEY_FRAMES 25
+
+/* A behavior whose first handler graph is an unnamed completion handler,
+   whose entry is an Event node without a name, ahead of its Tick. */
+static const char
+    late_bytes[] = "behavior Late {\n"
+                   "    macro Advance(elapsed: ref float, dt: double) {\n"
+                   "        elapsed = cast<float>(cast<double>(elapsed) + dt)\n"
+                   "    }\n"
+                   "    state elapsed: float = 0.125\n"
+                   "    action advance = Advance(elapsed, delta)\n"
+                   "    after advance {\n"
+                   "        elapsed = min(elapsed, 1.0)\n"
+                   "    }\n"
+                   "    on Tick {\n"
+                   "        advance()\n"
+                   "    }\n"
+                   "}\n";
+
+static bool write_late()
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/behaviors/Late.chibi", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    FILE *file = fopen(path, "wb");
+    REQUIRE(file);
+    bool written = fputs(late_bytes, file) >= 0;
+    REQUIRE(fclose(file) == 0 && written);
+    return true;
+}
+
+/* Late opens past its unnamed completion handler, on its Tick. */
+static bool opens_past_unnamed_event(studio *s)
+{
+    REQUIRE(app_scene_authoring_open_behavior(s->scene, "Late") == 0);
+    const graph *shown = editor_active_graph(s->scene->graph_editor);
+    REQUIRE(shown && shown->name && !strcmp(shown->name, "Tick"));
+    return true;
+}
+
+static bool selected_only(editor *e, uint64_t id)
+{
+    REQUIRE(acount(e->selected) == 1 && e->selected[0]->id == id);
+    return true;
+}
+
+/* One node is selected, and it feeds the node with this id. */
+static bool selected_feeds(editor *e, const graph *gr, uint64_t id)
+{
+    REQUIRE(acount(e->selected) == 1);
+    for (int i = 0; i < acount(gr->edges); i++) {
+        if (gr->edges[i].from_id == e->selected[0]->id && gr->edges[i].to_id == id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+enum
+{
+    NAMED_SOURCE,
+    NAMED_USE,
+    VECTOR_USE,
+    OTHER_GRAPH,
+    DECLARED_COUNT
+};
+
+/* Opens a declarative graph, as a material's, of three nodes. The first
+   feeds the second through a value named as Name Value does, so the second
+   reads the name instead of drawing a wire; code can't name values this
+   way. The third's vector input holds a literal a source can replace. A
+   function graph beside it is another graph to switch to. */
+static bool open_declared(editor *e, uint64_t *ids)
+{
+    behavior_asset *asset = behavior_asset_new("Declared");
+    graph *gr = asset->graph;
+    node *a = graph_add_node(gr, &NODE_Not), *b = graph_add_node(gr, &NODE_Not);
+    node *vector = graph_add_node(gr, &NODE_Vector_Length);
+    b->x = a->x + 400;
+    vector->y = a->y + 300;
+    REQUIRE(!graph_connect_data(gr, a, 0, b, 0));
+    REQUIRE(graph_create_local(gr, a, 0, "named"));
+    ids[NAMED_SOURCE] = a->id;
+    ids[NAMED_USE] = b->id;
+    ids[VECTOR_USE] = vector->id;
+    ids[OTHER_GRAPH] = behavior_asset_add_graph(asset, GRAPH_FUNCTION, "Other")->graph_id;
+    REQUIRE(!editor_declarative_graph(e, asset));
+    behavior_asset_free(asset);
+    return true;
+}
+
 /* The first element `selector` finds in Studio's documents, the kit's layer
    among them, or NULL. */
 static rml_element *studio_element(studio *s, const char *selector)
@@ -811,6 +942,203 @@ static rml_element *studio_element(studio *s, const char *selector)
         }
     }
     return NULL;
+}
+
+/* Properties shows Bind to Source for the selected node's input, disabled
+   exactly when the graph is read-only. */
+static bool bind_disabled(studio *s, bool disabled)
+{
+    rml_element *bind = studio_element(s, ".graph-row button[data-tip='Bind to Source']");
+    REQUIRE(bind);
+    REQUIRE(rml_element_has_attribute(bind, "data-disabled") == disabled);
+    return true;
+}
+
+/* Every output label a full node shows has room for its text: a label
+   without a width once collapsed to nothing. */
+static bool output_labels_show(studio *s, graph *gr)
+{
+    int shown = 0;
+    for (int i = 0; i < acount(gr->nodes); i++) {
+        node *n = gr->nodes[i];
+        const node_layout *l = sg_node_visible(gr, n) ? sg_layout_of(s, n) : NULL;
+        for (int p = 0; l && l->form == FORM_FULL && p < n->output_count; p++) {
+            pin_parts parts;
+            sg_pin_parts_of(s, n, ED_PIN_OUTPUT, p, &parts);
+            if (!sg_pin_in_rows(gr, n, l, ED_PIN_OUTPUT, p) || !parts.show_label) {
+                continue;
+            }
+            char row[16] = "", path[96];
+            if (sg_pin_exec(n, ED_PIN_OUTPUT, p)) {
+                snprintf(row, sizeof row, "/e%d", sg_pin_order(gr, n, l, ED_PIN_OUTPUT, p));
+            }
+            snprintf(
+                path,
+                sizeof path,
+                "world/stage/n%llu/b%s/o%d/l",
+                (unsigned long long)n->id,
+                row,
+                p
+            );
+            kit_rect r;
+            REQUIRE(kit_find(s->graph.kit, path, &r) && r.w > 0);
+            shown++;
+        }
+    }
+    REQUIRE(shown > 0);
+    return true;
+}
+
+/* The node chosen last leads node search under Recent, and stays there
+   through saved preferences. */
+static bool leads_search(studio *s, const char *key)
+{
+    studio_palette_entry *entries = NULL;
+    studio_graph_palette_entries(s, "", &entries);
+    REQUIRE(acount(entries) && !strcmp(entries[0].key, key));
+    REQUIRE(!strcmp(entries[0].group, "Recent"));
+    afree(entries);
+    char *json = studio_prefs_write(&s->prefs, NULL);
+    studio_prefs saved = studio_prefs_read(json);
+    free(json);
+    REQUIRE(!strcmp(saved.recent_nodes[0].key, key));
+    REQUIRE(studio_prefs_equal(&saved, &s->prefs));
+    return true;
+}
+
+/* Graph keys, through SDL as the platform sends them: Right walks the
+   selection along a wire to the node it feeds and Left to the nearest node
+   feeding that one, Escape at rest clears the selection, and M asks the
+   source to disable the selection, which refuses and says why; with two
+   nodes selected, M refuses before editing either. Escape closing the node
+   menu keeps the selection. Right doesn't follow a named value's uses,
+   which draw no wire, Properties disables Bind to Source while the graph
+   is read-only, and Bind to Source on the canvas ends with its graph.
+   Tab opens node search, and the node Enter adds there takes M at once. */
+static bool graph_keys_frame(void *state)
+{
+    static uint64_t from, to;
+    static uint64_t declared[DECLARED_COUNT], added;
+    static char chosen[96];
+    static studio_recent commands[STUDIO_RECENT_COUNT];
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= GRAPH_KEY_FRAMES);
+    if (frames == 1) {
+        studio_show_editor(s, STUDIO_EDITOR_BEHAVIOR);
+        return true;
+    }
+    if (frames == 2) {
+        return true;
+    }
+    editor *e = sg_graph_editor(s);
+    graph *gr = sg_active_graph(s);
+    REQUIRE(e && gr && s->graph.area >= 0);
+    s->focus_area = s->graph.area;
+    if (frames == 3) {
+        for (int i = 0; i < acount(gr->edges) && !to; i++) {
+            node *a = sg_node_by_id(s, gr->edges[i].from_id);
+            node *b = sg_node_by_id(s, gr->edges[i].to_id);
+            if (sg_node_visible(gr, a) && sg_node_visible(gr, b)) {
+                from = a->id;
+                to = b->id;
+            }
+        }
+        REQUIRE(to);
+        REQUIRE(output_labels_show(s, gr));
+        sg_select_only(e, sg_node_by_id(s, from));
+        REQUIRE(press_key(SDLK_RIGHT));
+    } else if (frames == 4) {
+        REQUIRE(selected_only(e, to));
+        REQUIRE(press_key(SDLK_LEFT));
+    } else if (frames == 5) {
+        REQUIRE(selected_feeds(e, gr, to));
+        REQUIRE(press_key(SDLK_ESCAPE));
+    } else if (frames == 6) {
+        REQUIRE(!acount(e->selected));
+        sg_select_only(e, sg_node_by_id(s, to));
+        ed_clear_connect_error(e);
+        REQUIRE(press_key(SDLK_M));
+    } else if (frames == 7) {
+        /* Counter's statements aren't declarations a source can disable. */
+        REQUIRE(!sg_node_by_id(s, to)->disabled && e->connect_error[0]);
+        sg_select_only(e, sg_node_by_id(s, from));
+        ed_add_selected(e, sg_node_by_id(s, to));
+        REQUIRE(press_key(SDLK_M));
+    } else if (frames == 8) {
+        REQUIRE(!sg_node_by_id(s, from)->disabled && !sg_node_by_id(s, to)->disabled);
+        REQUIRE(strstr(alast(s->records).text, "one node at a time"));
+        sg_select_only(e, sg_node_by_id(s, to));
+        s->graph.menu_node = to;
+        s->graph.menu_edge = -1;
+        s->graph.menu_x = s->graph.menu_y = 100;
+        s->graph.menu_request = true;
+        s->ui_schedule.wake = true;
+    } else if (frames == 9) {
+        REQUIRE(s->graph.menu_open);
+        REQUIRE(press_key(SDLK_ESCAPE));
+    } else if (frames == 10) {
+        REQUIRE(!s->graph.menu_open && selected_only(e, to));
+        /* A named value draws no wire, so Right has nowhere to go. */
+        REQUIRE(open_declared(e, declared));
+    } else if (frames == 12) {
+        /* Frame 11 laid the graph out. */
+        sg_select_only(e, sg_node_by_id(s, declared[NAMED_SOURCE]));
+        REQUIRE(press_key(SDLK_RIGHT));
+    } else if (frames == 13) {
+        REQUIRE(selected_only(e, declared[NAMED_SOURCE]));
+        sg_select_only(e, sg_node_by_id(s, declared[VECTOR_USE]));
+        s->ui_schedule.wake = true;
+    } else if (frames == 14) {
+        /* A paused graph is read-only: Bind to Source can't act. */
+        REQUIRE(bind_disabled(s, false));
+        graph_flow_pause(gr);
+        s->ui_schedule.wake = true;
+    } else if (frames == 15) {
+        REQUIRE(bind_disabled(s, true));
+        graph_flow_resume(gr);
+        /* Bind to Source on the canvas node, as its button does. */
+        node *vector = sg_node_by_id(s, declared[VECTOR_USE]);
+        s->graph.bind_pin = vector->input_pins[0].id;
+        s->graph.bind_kit = s->graph.kit;
+        s->graph.bind_focus = true;
+    } else if (frames == 16) {
+        /* The node's source field took the focus. Another graph, which may
+           hold a pin of that id, leaves Bind to Source behind. */
+        REQUIRE(s->graph.bind_pin && !s->graph.bind_focus);
+        REQUIRE(!editor_open_graph(e, declared[OTHER_GRAPH]));
+    } else if (frames == 17) {
+        REQUIRE(gr->graph_id == declared[OTHER_GRAPH]);
+        REQUIRE(!s->graph.bind_pin && !s->graph.bind_kit);
+    } else if (frames == 18) {
+        /* Frame 17 let go of the keys the field had. */
+        REQUIRE(press_key(SDLK_TAB));
+    } else if (frames == 19) {
+        REQUIRE(s->palette.client == STUDIO_PALETTE_NODES && s->graph.spawn_pending);
+    } else if (frames == 20) {
+        /* Frame 19 gave the picker's search field the focus. */
+        REQUIRE(type_text("Not"));
+    } else if (frames == 21) {
+        REQUIRE(!strcmp(s->palette.query, "Not"));
+        memcpy(commands, s->prefs.recent, sizeof commands);
+        REQUIRE(press_key(SDLK_RETURN));
+    } else if (frames == 22) {
+        /* Enter added the node and closed the picker, whose field let go of
+           the keys: M at once disables the new node. */
+        REQUIRE(!s->palette.client && acount(e->selected) == 1);
+        REQUIRE(!memcmp(commands, s->prefs.recent, sizeof commands));
+        added = e->selected[0]->id;
+        snprintf(chosen, sizeof chosen, "%s", s->prefs.recent_nodes[0].key);
+        REQUIRE(press_key(SDLK_M));
+    } else if (frames == 23) {
+        REQUIRE(sg_node_by_id(s, added)->disabled);
+        REQUIRE(leads_search(s, chosen));
+        keys++;
+    } else if (frames == 24) {
+        REQUIRE(opens_past_unnamed_event(s));
+    }
+    return true;
 }
 
 static bool element_says(studio *s, const char *selector, const char *text)
@@ -879,12 +1207,12 @@ static int counter_tab(studio *s)
     return -1;
 }
 
-/* Sets Counter's saved count literal, `was`, in its source to `value`,
-   leaving it unsaved. */
+/* Sets Counter's saved count literal, `was`, in its source to `value` from
+   its default graph, leaving it unsaved. */
 static bool edit_counter(studio *s, int was, const char *value)
 {
     const node *literal = NULL;
-    REQUIRE(check_counter(s, was, false, &literal));
+    REQUIRE(show_state_graph(s) && check_counter(s, was, false, &literal));
     char error[256];
     bool changed = studio_code_expression_replace(s, literal, value, error, sizeof error);
     if (!changed) {
@@ -1735,6 +2063,7 @@ bool studio_acceptance_frame(void *state)
         case GRAPH_VISIBILITY:
             callback_ok = graph_visibility_frame(state);
             break;
+        case GRAPH_KEYS: callback_ok = graph_keys_frame(state); break;
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
         case ASSET_SELECTION: callback_ok = asset_selection_frame(state); break;
@@ -1818,6 +2147,21 @@ TEST_CASE(graph_visibility_and_document_pair)
     REQUIRE(callback_ok && frames == 10);
     REQUIRE(unchanged_source());
     printf("\nStudio graph visibility accepted: frames=%d\n", frames);
+    return true;
+}
+
+TEST_CASE(graph_keys)
+{
+    REQUIRE(unchanged_source() && write_late());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(GRAPH_KEY_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == GRAPH_KEY_FRAMES && keys == 1);
+    REQUIRE(unchanged_source());
+    printf("Studio graph keys accepted: frames=%d\n", frames);
     return true;
 }
 
@@ -1969,23 +2313,23 @@ int main(int argc, char **argv)
     bool kdl_keys = argc == 4 && !strcmp(argv[1], "--kdl-keys");
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
+    bool keys_mode = argc == 4 && !strcmp(argv[1], "--graph-keys");
     bool units = argc == 4 && !strcmp(argv[1], "--unit-warnings");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
     bool assets = argc == 4 && !strcmp(argv[1], "--asset-selection");
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
     bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
     bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
-    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
+    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility && !keys_mode &&
          !units && !hierarchy && !assets && !viewport && !playing && !prompting) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
-            "--graph-visibility|--unit-warnings|--scene-hierarchy|"
-            "--asset-selection|"
-            "--scene-viewport|--play-keys|--unsaved-prompts --project-root "
-            "PATH | --scene-cursors\n"
+            "--graph-visibility|--graph-keys|--unit-warnings|--scene-hierarchy|"
+            "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts "
+            "--project-root PATH | --scene-cursors\n"
         );
         return 2;
     }
@@ -2006,6 +2350,7 @@ int main(int argc, char **argv)
          : kdl_keys    ? KDL_KEYS
          : exporting   ? EXPORT_GAME
          : visibility  ? GRAPH_VISIBILITY
+         : keys_mode   ? GRAPH_KEYS
          : units       ? UNIT_WARNINGS
          : hierarchy   ? SCENE_HIERARCHY
          : assets      ? ASSET_SELECTION
@@ -2020,6 +2365,7 @@ int main(int argc, char **argv)
         case GRAPH_VISIBILITY:
             RUN_TEST_CASE(graph_visibility_and_document_pair);
             break;
+        case GRAPH_KEYS: RUN_TEST_CASE(graph_keys); break;
         case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
         case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;
