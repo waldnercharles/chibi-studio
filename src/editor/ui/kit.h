@@ -429,13 +429,19 @@ extern "C"
         kit_toast_type type;
         const char *title;
         const char *description;
-        const char *action; /* one button, e.g. "Undo"; pressing it dismisses the toast */
+        /* Sonner's action and cancel: the primary button, e.g. "Undo" or
+           "Save", and a secondary one before it, e.g. "Discard". Pressing
+           either dismisses the toast. */
+        const char *action;
+        const char *cancel;
         double duration; /* seconds; 0 means 4, negative stays until closed */
     } kit_toast_desc;
     int kit_toast(kit *k, int id, const kit_toast_desc *desc);
     void kit_toast_dismiss(kit *k, int id);
     /* True once, the frame after the toast's action was pressed. */
     bool kit_toast_action(kit *k, int id);
+    /* True once, the frame after the toast's cancel was pressed. */
+    bool kit_toast_cancel(kit *k, int id);
 
     /* Drag and drop (dnd-kit), thin wrappers over the drag every document
      * shares (ui/drag.h), so kit and authored lists drag into each other. The
