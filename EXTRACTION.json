@@ -1898,7 +1898,7 @@
       "current_source_sha256": "4ab3aff5082e6bfeb7bfc08c1363d5f8c5d30e189feb565c213e8f50e11d5cc8",
       "sha256": "951968eb62515a5ee2304ebd38fe32eb81b120dd964e199a5795b7a5a784e4f7",
       "source_path": "src/editor/studio/studio_graph_input.c",
-      "consumer_sha256": "1e58fc63b04e04d20369c2fdb2e5097de9029b77c86511389e31bcc648b7a5c6"
+      "consumer_sha256": "99578ec5e5764070a986fd54ab976a3353158593781982c65eaf8e47c3065918"
     },
     "src/editor/studio/studio_graph_internal.h": {
       "current_source_sha256": "4829efbcf63d8f0dc0fdb59e42c726d591b1ab070873b946a77ba2753586abc5",

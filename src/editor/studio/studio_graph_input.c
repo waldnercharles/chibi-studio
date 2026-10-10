@@ -274,6 +274,22 @@ static void begin_link(studio *s, node *n, int kind, int pin)
     g->link_pin = pin;
 }
 
+/* Node search opens where the node will land, at the pointer, rather than
+   across the window (Fitts; Blender's Add menu, Unreal's context menu). */
+static void open_node_search(studio *s, const char *placeholder)
+{
+    studio_graph *g = &s->graph;
+    float zoom = sg_zoom(s), scale = studio_pixel_ratio(s);
+    float box[4] = { (g->surface.rect.x + (g->world_x - g->x) * zoom) * scale,
+                     (g->surface.rect.y + (g->world_y - g->y) * zoom) * scale,
+                     0,
+                     0 };
+    g->spawn_pending = true;
+    g->spawn_x = g->world_x;
+    g->spawn_y = g->world_y;
+    studio_palette_open_box(s, STUDIO_PALETTE_NODES, placeholder, box);
+}
+
 static void end_link(studio *s, graph_hit hit)
 {
     studio_graph *g = &s->graph;
@@ -329,10 +345,7 @@ static void end_link(studio *s, graph_hit hit)
         e->spawn_link_pending = 1;
         e->spawn_link_pin = (ed_pin_view){ from, g->link_kind, g->link_pin };
         e->pending_snapshot = ed_snapshot(e);
-        g->spawn_pending = true;
-        g->spawn_x = g->world_x;
-        g->spawn_y = g->world_y;
-        studio_palette_open(s, STUDIO_PALETTE_NODES, "Add a node for this wire");
+        open_node_search(s, "Add a node for this wire");
     }
 }
 
@@ -730,10 +743,7 @@ static void release(studio *s, graph_hit hit)
                 g->menu_x = g->press_x;
                 g->menu_y = g->press_y;
             } else if (!sg_graph_readonly(s)) {
-                g->spawn_pending = true;
-                g->spawn_x = g->world_x;
-                g->spawn_y = g->world_y;
-                studio_palette_open(s, STUDIO_PALETTE_NODES, "Add a node");
+                open_node_search(s, "Add a node");
             } else {
                 sg_refuse_edit(s);
             }
@@ -1128,10 +1138,7 @@ void sg_shortcuts(studio *s)
             if (sg_graph_readonly(s)) {
                 sg_refuse_edit(s);
             } else {
-                g->spawn_pending = true;
-                g->spawn_x = g->world_x;
-                g->spawn_y = g->world_y;
-                studio_palette_open(s, STUDIO_PALETTE_NODES, "Add a node");
+                open_node_search(s, "Add a node");
             }
         } else if (!mod && !shift && key == SDLK_C && !sg_graph_readonly(s)) {
             sg_frame_selection(s);
