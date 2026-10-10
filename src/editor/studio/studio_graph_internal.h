@@ -150,6 +150,9 @@ const char *sg_readonly_reason(const studio *s);
 /* An edit the read-only graph refused says why, in one toast however often
    it is tried. */
 void sg_refuse_edit(studio *s);
+/* Whether a wire is being dragged from a pin: its press has moved past the
+   drag threshold, so a plain click on a pin changes nothing on screen. */
+bool sg_link_dragging(const studio *s);
 bool sg_node_visible(const graph *g, const node *n);
 node *sg_node_by_id(const studio *s, uint64_t id);
 graph_comment_box *sg_comment_by_id(const studio *s, uint64_t id);

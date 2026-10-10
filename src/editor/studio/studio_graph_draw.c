@@ -239,8 +239,7 @@ static bool node_dim(studio *s, node *n)
 {
     studio_graph *g = &s->graph;
     return sg_is_unused(g, n->id) && !problem_of(g, n->id) &&
-           !ed_node_selected(sg_graph_editor(s), n) &&
-           g->gesture != STUDIO_GRAPH_LINK;
+           !ed_node_selected(sg_graph_editor(s), n) && !sg_link_dragging(s);
 }
 
 /* One pin: a row, half an execution row, or a socket in the title. Input
@@ -258,8 +257,7 @@ static void emit_pin(studio *s, node *n, int kind, int p, const char *cls, float
     snprintf(key, sizeof key, input ? "i%d" : "o%d", p);
     bool hovered = g->hover_node == n->id && g->hover_kind == kind &&
                    g->hover_pin == p;
-    node *link_from = g->gesture == STUDIO_GRAPH_LINK ? sg_node_by_id(s, g->link_node)
-                                                      : NULL;
+    node *link_from = sg_link_dragging(s) ? sg_node_by_id(s, g->link_node) : NULL;
     bool source = link_from == n && g->link_kind == kind && g->link_pin == p;
     bool fits = link_from &&
                 sg_pins_compatible(link_from, g->link_kind, g->link_pin, n, kind, p);

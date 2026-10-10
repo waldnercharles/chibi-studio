@@ -90,6 +90,11 @@ static float drag_distance(const studio *s)
     );
 }
 
+bool sg_link_dragging(const studio *s)
+{
+    return s->graph.gesture == STUDIO_GRAPH_LINK && drag_distance(s) >= FEEL_DRAG_DP;
+}
+
 static float segment_distance(float px, float py, float ax, float ay, float bx, float by)
 {
     float dx = bx - ax, dy = by - ay;
@@ -1079,6 +1084,12 @@ void sg_shortcuts(studio *s)
             if (key == SDLK_ESCAPE) {
                 sg_cancel_gesture(s);
             }
+            continue;
+        }
+        /* At rest, Escape lets go of the selection, as in the Scene. */
+        if (bare && key == SDLK_ESCAPE) {
+            ed_clear_selection(e);
+            g->comment = 0;
             continue;
         }
         bool alt = s->keys[i].mod & SDL_KMOD_ALT;
