@@ -213,6 +213,7 @@ static struct studio_assets_cache *asset_rows(studio *s, const reference_index *
     memset(cache->totals, 0, sizeof cache->totals);
     aclear(cache->rows);
     aclear(cache->tiles);
+    aclear(cache->lines); /* until the grid lays the new tiles out */
     for (int m = 0; m < acount(cache->sorted); m++) {
         int id = cache->sorted[m];
         const reference_asset *asset = reference_index_asset_at(index, id);
@@ -374,7 +375,7 @@ static void extend_to(studio *s, const reference_index *index, const int *shown,
    column there; -1 when none does. */
 static int line_of(const struct studio_assets_cache *cache, int at, int *column)
 {
-    for (int l = 0, seen = 0; l < acount(cache->lines); l++) {
+    for (int l = 0, seen = 0; at >= 0 && l < acount(cache->lines); l++) {
         int count = cache->lines[l].count;
         if (count > 0 && at < seen + count) {
             *column = at - seen;
@@ -387,8 +388,9 @@ static int line_of(const struct studio_assets_cache *cache, int at, int *column)
 
 /* The list row or grid line to scroll into view: the selection's, after the
    keyboard moved it; -1 otherwise. */
-static int reveal_row(studio *s, const reference_index *index, const struct studio_assets_cache *cache)
+static int reveal_row(studio *s, const struct studio_assets_cache *cache)
 {
+    const reference_index *index = cache->index;
     if (!s->assets_reveal) {
         return -1;
     }
@@ -1209,11 +1211,11 @@ static bool show_list(
     studio *s,
     const studio_panel_sync *at,
     struct studio_assets_cache *cache,
-    rml_element *list,
-    int reveal
+    rml_element *list
 )
 {
     bool changed = fit(at->doc, member(at->variable, "lines"), 0, SHAPE_LINE);
+    int reveal = at->preview ? -1 : reveal_row(s, cache);
     int count = acount(cache->rows), first = 0;
     int length = count < UNLAID_ROWS ? count : UNLAID_ROWS;
     float row = list ? row_height(list) : 0;
@@ -1352,8 +1354,7 @@ static bool show_grid(
     studio *s,
     const studio_panel_sync *at,
     struct studio_assets_cache *cache,
-    rml_element *list,
-    int reveal
+    rml_element *list
 )
 {
     bool changed = fit(at->doc, member(at->variable, "rows"), 0, SHAPE_ITEM);
@@ -1362,6 +1363,8 @@ static bool show_grid(
         cache->columns = columns_fit(s, list, (float)s->prefs.assets_tile + 2 * TILE_PAD);
     }
     layout_lines(s, cache, row > 0 ? row : UNLAID_ROW);
+    /* The selection's line among those just laid out. */
+    int reveal = at->preview ? -1 : reveal_row(s, cache);
     int lines = acount(cache->lines), first = 0;
     int length = lines < UNLAID_LINES ? lines : UNLAID_LINES;
     if (list) {
@@ -1488,10 +1491,9 @@ bool studio_assets_sync(studio *s, const studio_panel_sync *at)
     /* Before the List lays out, its rows are a guess: window them once it
        has. */
     s->ui_schedule.wake |= !at->preview && !list;
-    int reveal = at->preview ? -1 : reveal_row(s, index, cache);
     changed |= show_header(s, at->doc, at->variable);
-    changed |= grid_view(s) ? show_grid(s, at, cache, list, reveal)
-                            : show_list(s, at, cache, list, reveal);
+    changed |= grid_view(s) ? show_grid(s, at, cache, list)
+                            : show_list(s, at, cache, list);
     /* A project always has its start scene, so only filters empty the view. */
     bool filtered = s->assets_filter[0] || s->assets_kind >= 0;
     const char *empty = filtered && !acount(cache->tiles) ? "No assets match" : "";

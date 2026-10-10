@@ -56,7 +56,8 @@ hidden frames show the Assets list's prototypes, then click, Shift-click and
 Ctrl-click (Cmd on a Mac) rows and extend the selection with Shift and the
 arrows, checking the selection after each. Delete then removes the two selected
 prototypes' files as one change, and that change's undo puts both back. Counter
-stays untouched. Pointer hit-testing and the Undo toast's button are not
+stays untouched. A filter the list takes then leaves the grid's arrows on the
+tiles it shows. Pointer hit-testing and the Undo toast's button are not
 exercised.
 
 `studio-acceptance --export-game --project-root PATH` accepts another disposable

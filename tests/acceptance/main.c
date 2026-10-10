@@ -767,21 +767,8 @@ static bool selection_is(studio *s, const char *selected, const char *marked)
 
 /* Clicks and the keys select several assets, which Delete removes as one
    change that one Undo restores. */
-static bool asset_selection_frame(void *state)
+static bool select_and_delete(studio *s)
 {
-    studio *s = studio_acceptance_studio(state);
-    REQUIRE(s && s->ui);
-    frames++;
-    REQUIRE(frames <= 3);
-    if (frames == 1) {
-        studio_show_editor(s, STUDIO_EDITOR_ASSETS);
-        s->prefs.assets_list = true;
-        s->assets_kind = REFERENCE_ASSET_PROTOTYPE;
-        return true;
-    }
-    if (frames == 3) {
-        return true;
-    }
     unsigned toggle = s->mac ? RML_KM_META : RML_KM_CTRL;
     REQUIRE(click_asset(s, "SpareA", 0) && selection_is(s, "SpareA", ""));
     REQUIRE(click_asset(s, "SpareC", RML_KM_SHIFT) && selection_is(s, "SpareC", "SpareA SpareB"));
@@ -813,6 +800,47 @@ static bool asset_selection_frame(void *state)
     REQUIRE(spare_exists("SpareA") && spare_exists("SpareB") && spare_exists("SpareC"));
     edits++;
     return true;
+}
+
+/* The grid's arrows move among the tiles it shows: a filter the list took
+   while the grid was hidden leaves none of its old lines behind. */
+static bool grid_after_list_filter(studio *s)
+{
+    REQUIRE(click_asset(s, "SpareC", 0) && selection_is(s, "SpareC", ""));
+    ui_activation grid = { .argc = 1 };
+    snprintf(grid.args[0], sizeof grid.args[0], "0");
+    studio_assets_action(s, "view", &grid);
+    REQUIRE(studio_assets_key(s, SDLK_RIGHT, 0) && selection_is(s, "SpareC", ""));
+    s->assets_filter[0] = '\0';
+    return true;
+}
+
+static bool asset_selection_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= 5);
+    switch (frames) {
+        case 1:
+            studio_show_editor(s, STUDIO_EDITOR_ASSETS);
+            s->prefs.assets_list = true;
+            s->assets_kind = REFERENCE_ASSET_PROTOTYPE;
+            return true;
+        case 2:
+            REQUIRE(select_and_delete(s));
+            s->prefs.assets_list = false;
+            return true;
+        case 3:
+            s->prefs.assets_list = true;
+            snprintf(s->assets_filter, sizeof s->assets_filter, "SpareC");
+            return true;
+        case 4: return grid_after_list_filter(s);
+        default:
+            /* The grid lays every tile out again. */
+            REQUIRE(studio_assets_key(s, SDLK_LEFT, 0) && selection_is(s, "SpareB", ""));
+            return true;
+    }
 }
 
 bool studio_acceptance_frame(void *state)
@@ -935,11 +963,11 @@ TEST_CASE(asset_selection)
 {
     REQUIRE(write_spares());
     char *args[] = { (char *)executable, "--headless",
-                     "--frames",         "3",
+                     "--frames",         "5",
                      "--fixed-dt",       "0.016666666666666666",
                      "--project-root",   (char *)project };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && frames == 3 && edits == 1);
+    REQUIRE(callback_ok && frames == 5 && edits == 1);
     printf("Studio asset selection accepted\n");
     return true;
 }

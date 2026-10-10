@@ -791,6 +791,30 @@ static void integer_row(rows *r, const field_source *f)
     number_row(r, &d, &shape, integer_of(&f->value));
 }
 
+/* A 64-bit integer edits in a number field while a double holds it
+   exactly; past that, as its text, which keeps every digit a number field
+   would round away or clamp. */
+static void integer64_row(rows *r, const field_source *f)
+{
+    const pin_value *value = &f->value;
+    bool exact = value->type == PIN_I64 ? value->i64 >= -(int64_t)EXACT_INTEGER &&
+                                              value->i64 <= (int64_t)EXACT_INTEGER
+                                        : value->u64 <= (uint64_t)EXACT_INTEGER;
+    if (exact) {
+        integer_row(r, f);
+        return;
+    }
+    char text[32];
+    if (value->type == PIN_I64) {
+        snprintf(text, sizeof text, "%" PRId64, value->i64);
+    } else {
+        snprintf(text, sizeof text, "%" PRIu64, value->u64);
+    }
+    row_desc d = f->row;
+    d.control = "text";
+    text_row(r, &d, text);
+}
+
 static void float_row(rows *r, const field_source *f)
 {
     const type_field *field = &f->desc->type->fields[f->index];
@@ -864,9 +888,9 @@ static void value_row(rows *r, const field_source *f)
         case PIN_I8:
         case PIN_U8:
         case PIN_I16:
-        case PIN_U16:
+        case PIN_U16: integer_row(r, f); return;
         case PIN_I64:
-        case PIN_U64: integer_row(r, f); return;
+        case PIN_U64: integer64_row(r, f); return;
         case PIN_F32:
         case PIN_F64: float_row(r, f); return;
         case PIN_STRUCT: struct_row(r, f); return;

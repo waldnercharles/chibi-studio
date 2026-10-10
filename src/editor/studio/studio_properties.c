@@ -1404,10 +1404,9 @@ static void reveal(studio *s, const properties_row *row)
         value.type != PIN_HANDLE || !value.u64) {
         return;
     }
-    app_scene_authoring_select_runtime_entity(
-        s->scene,
-        ecs_entity_from_u64(value.u64)
-    );
+    /* A placed object selects as the Outliner selects it; a spawned one as
+       a pick in the Scene does. */
+    app_scene_authoring_select_entity(s->scene, ecs_entity_from_u64(value.u64));
 }
 
 /* ---------- Menus ---------- */

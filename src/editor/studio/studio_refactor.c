@@ -437,14 +437,15 @@ void studio_refactor_delete_assets(studio *s, const int *assets, int count)
     }
     int used = first_used(s, assets, count);
     const reference_index *index = app_scene_authoring_asset_index(s->scene);
+    char title[192], error[256] = "";
     for (int i = 0; i < count; i++) {
         const reference_asset *asset = reference_index_asset_at(index, assets[i]);
         if (!studio_asset_deletable(s, asset)) {
-            refused(s, "Nothing deleted", studio_asset_refactorable(asset) ? CODE_UNDELETABLE : "Studio can't delete scenes or systems");
+            snprintf(error, sizeof error, "Studio can't delete %s", asset->name);
+            refused(s, "Nothing deleted", studio_asset_refactorable(asset) ? CODE_UNDELETABLE : error);
             return;
         }
     }
-    char title[192], error[256] = "";
     if (used >= 0) {
         snprintf(
             error,

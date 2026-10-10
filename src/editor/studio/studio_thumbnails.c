@@ -78,8 +78,8 @@ typedef struct
     bool shown;     /* the canvas holds a picture, maybe of an older stamp */
     bool loading;   /* more of the picture is coming */
     double ms;      /* spent on the picture in progress */
-    uint64_t drawn; /* the frame its picture to read back was drawn in, or 0 */
-    bool checking;  /* that picture shows once it is seen to show something */
+    uint64_t drawn; /* the frame its picture to read back was drawn in, or 0;
+                       that picture shows once it is seen to show something */
     CF_Readback readback; /* that picture on its way back from the GPU */
 } thumb;
 
@@ -379,7 +379,6 @@ static void drop_readback(thumb *e)
     }
     e->readback = (CF_Readback){ 0 };
     e->drawn = 0;
-    e->checking = false;
 }
 
 static void release(studio *s, studio_thumbs *t, int slot)
@@ -643,7 +642,6 @@ static void finish(studio *s, studio_thumbs *t, int slot, bool drawn)
            one color: a prototype nothing of which draws on its stage, or a
            scene with no lighting yet, renders as one flat color, which says
            less than its kind's icon (read_pictures). */
-        e->checking = true;
         e->drawn = t->frame;
     } else if (e->shown) {
         /* An older picture no longer shows the asset, as an emptied graph. */
@@ -718,18 +716,14 @@ static bool take_picture(studio *s, studio_thumbs *t, int slot, const CF_Pixel *
         s->ui_schedule.wake = true;
         return false;
     }
-    if (e->checking) {
-        show(s, t, slot);
-    }
+    show(s, t, slot);
     return true;
 }
 
 /* A picture no read can check shows as drawn. */
 static void show_unread(studio *s, studio_thumbs *t, int slot)
 {
-    if (t->slots[slot].checking) {
-        show(s, t, slot);
-    }
+    show(s, t, slot);
     drop_readback(&t->slots[slot]);
 }
 
