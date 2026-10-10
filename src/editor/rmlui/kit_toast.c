@@ -2,8 +2,9 @@
  * live four seconds. Collapsed, older toasts sit behind the front one, lifted by
  * the gap and scaled down 5% per step; hovering expands the stack to full
  * heights and pauses every timer. A drag to the right dismisses past 45 dp or
- * 0.11 dp/ms. Each toast may carry one action, such as Undo. Motion uses the
- * kit's springs, so a toast retargets from wherever it is. */
+ * 0.11 dp/ms. Each toast may carry an action, such as Undo, and a secondary
+ * cancel before it, such as Discard. Motion uses the kit's springs, so a toast
+ * retargets from wherever it is. */
 #include "editor/rmlui/kit_internal.h"
 #include "editor/ui/kit_icons.h"
 #include "support/math.h"
@@ -65,17 +66,19 @@ static void toast_free(toast *t)
     free(t->title);
     free(t->description);
     free(t->action);
+    free(t->cancel);
 }
 
-static void expire_actions(kit *k)
+/* Presses nobody asked about within two frames lapse. */
+static void expire_presses(kit *k, uint64_t **presses)
 {
-    for (int i = 0; i < cf_map_size(k->toast_actions);) {
-        if (k->frame - k->toast_actions[i] <= 2) {
+    for (int i = 0; i < cf_map_size(*presses);) {
+        if (k->frame - (*presses)[i] <= 2) {
             i++;
             continue;
         }
-        uint64_t key = cf_map_keys(k->toast_actions)[i];
-        cf_map_del(k->toast_actions, key);
+        uint64_t key = cf_map_keys(*presses)[i];
+        cf_map_del(*presses, key);
     }
 }
 
@@ -127,20 +130,37 @@ static node *toast_node(kit *k, const toast *t)
     return n;
 }
 
+/* One of the toast's buttons; pressing it records the press in `presses`
+   and dismisses the toast. */
+static void toast_button(kit *k, toast *t, const char *key, const kit_button_desc *d, uint64_t **presses)
+{
+    if (kit_button(k, key, d) && !t->removing) {
+        cf_map_set(*presses, (uint64_t)t->id, k->frame);
+        t->removing = true;
+    }
+}
+
+/* Sonner's order: the secondary cancel, then the primary action. */
 static void toast_buttons(kit *k, node *n, toast *t)
 {
     push_node(k, n);
+    if (!str_eq(t->cancel, "")) {
+        kit_button_desc cancel = {
+            .label = t->cancel,
+            .variant = KIT_SUBTLE,
+            .size = KIT_SM,
+            .cls = "toast-cancel",
+        };
+        toast_button(k, t, "cancel", &cancel, &k->toast_cancels);
+    }
     if (!str_eq(t->action, "")) {
         kit_button_desc action = {
             .label = t->action,
-            .variant = KIT_SUBTLE,
+            .variant = KIT_PRIMARY,
             .size = KIT_SM,
             .cls = "toast-action",
         };
-        if (kit_button(k, "action", &action) && !t->removing) {
-            cf_map_set(k->toast_actions, (uint64_t)t->id, k->frame);
-            t->removing = true;
-        }
+        toast_button(k, t, "action", &action, &k->toast_actions);
     }
     if (t->duration < 0) {
         kit_button_desc close = {
@@ -331,7 +351,8 @@ void toasts_frame(kit *k)
     double now = k->in.time;
     double dt = math_clamp(now - k->toast_time, 0.0, 0.1);
     k->toast_time = now;
-    expire_actions(k);
+    expire_presses(k, &k->toast_actions);
+    expire_presses(k, &k->toast_cancels);
     /* Faded toasts go before the toaster emits, so the last one's node
        leaves in the frame its fade ends asked for. */
     remove_finished(k);
@@ -385,6 +406,7 @@ int kit_toast(kit *k, int id, const kit_toast_desc *d)
     str_set(&t->title, d->title);
     str_set(&t->description, d->description);
     str_set(&t->action, d->action);
+    str_set(&t->cancel, d->cancel);
     t->duration = d->duration < 0 ? -1
                 : d->duration > 0 ? d->duration
                                   : LIFETIME;
@@ -404,4 +426,9 @@ void kit_toast_dismiss(kit *k, int id)
 bool kit_toast_action(kit *k, int id)
 {
     return cf_map_del(k->toast_actions, (uint64_t)id) != 0;
+}
+
+bool kit_toast_cancel(kit *k, int id)
+{
+    return cf_map_del(k->toast_cancels, (uint64_t)id) != 0;
 }

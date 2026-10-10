@@ -3,12 +3,20 @@
  * Authored UI runs one with emit('studio.<id>'), or on a tab or an area with
  * emit('studio.<id>', index), as VS Code's commands take arguments. Ids are
  * camelCase, so `commands.<id>` binds the same name. */
-#include "editor/workspace/viewport.h"
 #include "editor/collab/collab.h"
 #include "editor/studio/studio_internal.h"
+#include "editor/workspace/viewport.h"
 
+#include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
+#include <SDL3/SDL_misc.h>
+#include <stdio.h>
 #include <string.h>
+
+#define DOCUMENTATION_URL                                                      \
+    "https://github.com/waldnercharles/chibi-studio#readme"
+#define REPORT_ISSUE_URL                                                       \
+    "https://github.com/waldnercharles/chibi-studio/issues/new"
 
 typedef struct
 {
@@ -24,6 +32,8 @@ typedef struct
     uint32_t icon;
     bool indexed; /* runs only on the tab its argument names */
     bool repeat;
+    /* Acts only outside a paused debugger, so it may share a debugger key. */
+    bool undebugged;
     int phase;
 } command_entry;
 
@@ -79,6 +89,7 @@ _Static_assert(
 static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
     [STUDIO_COMMAND_SEARCH] = { .id = "search",
                                 .label = "Search",
+                                .menu = "Search\xe2\x80\xa6",
                                 .chord = "Mod+K",
                                 .aliases = { "Mod+P" },
                                 .context = "Global",
@@ -98,10 +109,20 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                               .context = "Global",
                               .icon = KIT_ICON_SAVE,
                               .phase = SHORTCUT_EARLY },
-    [STUDIO_COMMAND_RELOAD] = { .id = "reload",
-                                .label = "Reload",
+    /* VS Code's Save All. */
+    [STUDIO_COMMAND_SAVE_ALL] = { .id = "saveAll",
+                                  .label = "Save All",
+                                  .chord = "Mod+Alt+S",
+                                  .context = "Global",
+                                  .keywords = "every documents",
+                                  .icon = KIT_ICON_SAVE,
+                                  .phase = SHORTCUT_EARLY },
+    /* VS Code's Revert File: the saved file replaces the edits. */
+    [STUDIO_COMMAND_REVERT] = { .id = "revert",
+                                .label = "Revert File",
                                 .context = "Global",
-                                .keywords = "revert disk",
+                                .keywords = "reload discard disk saved",
+                                .icon = KIT_ICON_HISTORY,
                                 .phase = SHORTCUT_EARLY },
     [STUDIO_COMMAND_UNDO] = { .id = "undo",
                               .label = "Undo",
@@ -259,19 +280,23 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                               .keywords = "run start preview pause",
                               .icon = KIT_ICON_PLAY,
                               .phase = SHORTCUT_PLAY },
-    /* VS Code's Stop, beside the debugger's F5, F10 and F11. */
+    /* VS Code's Stop, beside the debugger's F5, F10 and F11. Games bind no
+       function key, so these reach Studio while a game has the keyboard. */
     [STUDIO_COMMAND_STOP] = { .id = "stop",
                               .label = "Stop",
                               .chord = "Shift+F5",
                               .context = "Global",
                               .icon = KIT_ICON_STOP,
                               .phase = SHORTCUT_EARLY },
+    /* F10 advances a frame unless the debugger pauses, where it steps over. */
     [STUDIO_COMMAND_STEP] = { .id = "step",
                               .label = "Step",
-                              .context = "Global",
-                              .keywords = "frame advance",
+                              .chord = "F10",
+                              .context = "Unless paused in the debugger",
+                              .keywords = "frame advance next",
                               .icon = KIT_ICON_STEP,
-                              .phase = SHORTCUT_EDITOR },
+                              .undebugged = true,
+                              .phase = SHORTCUT_EARLY },
     [STUDIO_COMMAND_RECORD_GAMEPLAY] = { .id = "recordGameplay",
                                          .label = "Record Gameplay",
                                          .context = "Global",
@@ -541,13 +566,16 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                                          "frame pilot",
                                              .icon = KIT_ICON_VIEWPORT,
                                              .phase = SHORTCUT_EDITOR },
+    /* F5 plays, and continues a paused run, as in VS Code, Visual Studio
+       and Godot. */
     [STUDIO_COMMAND_RESUME] = { .id = "resume",
-                                .label = "Resume",
+                                .label = "Play / Resume",
+                                .menu = "Play",
                                 .chord = "F5",
-                                .context = "When paused",
-                                .icon = KIT_ICON_CONTINUE,
-                                .repeat = true,
-                                .phase = SHORTCUT_DEBUG },
+                                .context = "Global",
+                                .keywords = "run start continue debug",
+                                .icon = KIT_ICON_PLAY,
+                                .phase = SHORTCUT_EARLY },
     [STUDIO_COMMAND_STEP_OVER] = { .id = "stepOver",
                                    .label = "Step Over",
                                    .chord = "F10",
@@ -657,6 +685,25 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                                         "help",
                                             .icon = KIT_ICON_KEYBOARD,
                                             .phase = SHORTCUT_EARLY },
+    [STUDIO_COMMAND_DOCUMENTATION] = { .id = "documentation",
+                                       .label = "Documentation",
+                                       .context = "Global",
+                                       .keywords = "help manual guide "
+                                                   "readme",
+                                       .icon = KIT_ICON_EXTERNAL,
+                                       .phase = SHORTCUT_EARLY },
+    [STUDIO_COMMAND_REPORT_ISSUE] = { .id = "reportIssue",
+                                      .label = "Report an Issue",
+                                      .context = "Global",
+                                      .keywords = "help bug feedback github",
+                                      .icon = KIT_ICON_EXTERNAL,
+                                      .phase = SHORTCUT_EARLY },
+    [STUDIO_COMMAND_ABOUT] = { .id = "about",
+                               .label = "About Chibi Studio",
+                               .context = "Global",
+                               .keywords = "help version engine",
+                               .icon = KIT_ICON_INFO,
+                               .phase = SHORTCUT_EARLY },
     /* The object clipboard, as Unity's and Godot's; a focused field keeps
        these chords for its text. */
     [STUDIO_COMMAND_COPY] = { .id = "copy",
@@ -800,9 +847,15 @@ static uint32_t command_contexts(const command_entry *entry)
     return contexts & ~entry->excluded_contexts;
 }
 
+static bool debugger_apart(const command_entry *a, const command_entry *b)
+{
+    return a->phase == SHORTCUT_DEBUG && b->undebugged;
+}
+
 static bool contexts_overlap(const command_entry *a, const command_entry *b)
 {
-    return command_contexts(a) & command_contexts(b);
+    return !debugger_apart(a, b) && !debugger_apart(b, a) &&
+           (command_contexts(a) & command_contexts(b));
 }
 
 static bool chord_conflicts(const char *a, const char *b, bool mac)
@@ -938,6 +991,29 @@ static bool command_binding_matches(
     return false;
 }
 
+/* The command a key runs, from phase `first` on: the debugger's commands
+   only while it pauses. */
+static int key_command(const studio_prefs *prefs, studio_key key, studio_editor editor, bool mac, int first)
+{
+    /* A user's binding wins over another command's default in a collision. */
+    for (int overrides = 1; overrides >= 0; overrides--) {
+        for (int phase = first; phase <= SHORTCUT_EDITOR; phase++) {
+            for (int command = 0; command < STUDIO_COMMAND_COUNT; command++) {
+                const command_entry *entry = &COMMANDS[command];
+                if (entry->phase != phase || entry->indexed ||
+                    override_set(prefs, (studio_command)command) != overrides ||
+                    !command_context_matches(entry, editor)) {
+                    continue;
+                }
+                if (command_binding_matches(prefs, (studio_command)command, key.key, key.mod, mac)) {
+                    return command;
+                }
+            }
+        }
+    }
+    return -1;
+}
+
 int studio_command_for_key(
     const studio_prefs *prefs,
     SDL_Keycode key,
@@ -946,23 +1022,7 @@ int studio_command_for_key(
     bool mac
 )
 {
-    /* A user's binding wins over another command's default in a collision. */
-    for (int overrides = 1; overrides >= 0; overrides--) {
-        for (int phase = SHORTCUT_DEBUG; phase <= SHORTCUT_EDITOR; phase++) {
-            for (int command = 0; command < STUDIO_COMMAND_COUNT; command++) {
-                const command_entry *entry = &COMMANDS[command];
-                if (entry->phase != phase || entry->indexed ||
-                    override_set(prefs, (studio_command)command) != overrides ||
-                    !command_context_matches(entry, editor)) {
-                    continue;
-                }
-                if (command_binding_matches(prefs, (studio_command)command, key, mod, mac)) {
-                    return command;
-                }
-            }
-        }
-    }
-    return -1;
+    return key_command(prefs, (studio_key){ .key = key, .mod = mod }, editor, mac, SHORTCUT_DEBUG);
 }
 
 studio_command_info studio_command_describe(studio *s, studio_command command)
@@ -996,6 +1056,14 @@ studio_command_info studio_command_describe(studio *s, studio_command command)
             } else if (app_scene_authoring_runtime_state(s->scene).playing) {
                 info.label = info.menu = "Pause";
                 info.icon = KIT_ICON_PAUSE;
+            }
+            break;
+        case STUDIO_COMMAND_RESUME:
+            if (s->pause.active ||
+                (studio_session(s) &&
+                 !app_scene_authoring_runtime_state(s->scene).playing)) {
+                info.label = info.menu = "Resume";
+                info.icon = KIT_ICON_CONTINUE;
             }
             break;
         case STUDIO_COMMAND_RECORD_GAMEPLAY:
@@ -1149,7 +1217,8 @@ static bool enabled_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_CLOSE_DRAWER:
             return studio_active_layout(s)->drawer_open;
         case STUDIO_COMMAND_SAVE: return studio_active_dirty(s);
-        case STUDIO_COMMAND_RELOAD: return editable;
+        case STUDIO_COMMAND_SAVE_ALL: return studio_unsaved(s);
+        case STUDIO_COMMAND_REVERT: return editable;
 #ifdef __EMSCRIPTEN__
         case STUDIO_COMMAND_OPEN_PROJECT:
         case STUDIO_COMMAND_QUIT: return false;
@@ -1234,6 +1303,9 @@ static bool enabled_with(studio *s, studio_command command, int argument)
             return studio_live(s) && selection &&
                    selected_scene_entity(s->scene).slot;
         case STUDIO_COMMAND_RESUME:
+            return s->pause.active ||
+                   (!s->hosted && !s->guest &&
+                    !app_scene_authoring_runtime_state(s->scene).playing);
         case STUDIO_COMMAND_STEP_OVER:
         case STUDIO_COMMAND_STEP_INTO:
         case STUDIO_COMMAND_STEP_OUT: return s->pause.active;
@@ -1260,6 +1332,34 @@ static bool enabled_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_FIND: return finds(s, editor_at(s, argument));
         default: return true;
     }
+}
+
+/* The platform's browser, or on the web a new tab. */
+static void open_url(studio *s, const char *url)
+{
+    if (!SDL_OpenURL(url)) {
+        studio_error(s, "Could not open the link", SDL_GetError());
+    }
+}
+
+static void about(studio *s)
+{
+    char description[128];
+    snprintf(
+        description,
+        sizeof description,
+        "Chibi engine %s \xc2\xb7 project format %d",
+        CHIBI_STUDIO_ENGINE_VERSION,
+        CHIBI_PROJECT_VERSION
+    );
+    kit_toast(
+        s->kit,
+        0,
+        &(kit_toast_desc){ .type = KIT_TOAST_INFO,
+                           .title = "Chibi Studio",
+                           .description = description,
+                           .duration = 8 }
+    );
 }
 
 bool studio_command_enabled(studio *s, studio_command command)
@@ -1302,7 +1402,8 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
             studio_ui_collaboration_action(s, command);
             break;
         case STUDIO_COMMAND_SAVE: studio_save(s); break;
-        case STUDIO_COMMAND_RELOAD: studio_reload(s); break;
+        case STUDIO_COMMAND_SAVE_ALL: studio_save_all(s); break;
+        case STUDIO_COMMAND_REVERT: studio_revert(s); break;
         case STUDIO_COMMAND_OPEN_PROJECT:
 #ifndef __EMSCRIPTEN__
             studio_pick_project();
@@ -1371,7 +1472,13 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_EXTEND_NEXT:
             studio_step_selection(s, 1, true);
             break;
-        case STUDIO_COMMAND_RESUME: studio_debug(s, STUDIO_RESUME); break;
+        case STUDIO_COMMAND_RESUME:
+            if (s->pause.active) {
+                studio_debug(s, STUDIO_RESUME);
+                break;
+            }
+            studio_runtime(s, APP_RUNTIME_PLAY);
+            break;
         case STUDIO_COMMAND_STEP_OVER: studio_debug(s, STUDIO_STEP_OVER); break;
         case STUDIO_COMMAND_STEP_INTO: studio_debug(s, STUDIO_STEP_INTO); break;
         case STUDIO_COMMAND_STEP_OUT: studio_debug(s, STUDIO_STEP_OUT); break;
@@ -1486,6 +1593,11 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_KEYBOARD_SHORTCUTS:
             studio_ui_show(s, "Shortcuts");
             break;
+        case STUDIO_COMMAND_DOCUMENTATION:
+            open_url(s, DOCUMENTATION_URL);
+            break;
+        case STUDIO_COMMAND_REPORT_ISSUE: open_url(s, REPORT_ISSUE_URL); break;
+        case STUDIO_COMMAND_ABOUT: about(s); break;
         case STUDIO_COMMAND_COPY: studio_copy(s); break;
         case STUDIO_COMMAND_CUT: studio_cut(s); break;
         case STUDIO_COMMAND_PASTE: studio_paste(s); break;
@@ -1545,7 +1657,7 @@ bool studio_text_key(SDL_Keycode key)
 }
 
 /* Games bind no function key, so those reach Studio while a game has the
-   keyboard: Stop, and the debugger's steps. */
+   keyboard: Play, Stop, Step and the debugger's steps. */
 static bool function_key(SDL_Keycode key)
 {
     return key >= SDLK_F1 && key <= SDLK_F12;
@@ -1569,7 +1681,7 @@ void studio_shortcuts(studio *s, bool field)
     for (int i = 0; i < acount(s->keys); i++) {
         studio_key key = s->keys[i];
         bool primary = studio_primary(s, key.mod);
-        int command = studio_command_for_key(&s->prefs, key.key, key.mod, editor, s->mac);
+        int command = key_command(&s->prefs, key, editor, s->mac, s->pause.active ? SHORTCUT_DEBUG : SHORTCUT_EARLY);
         bool tab_navigation = command == STUDIO_COMMAND_PREVIOUS_TAB ||
                               command == STUDIO_COMMAND_NEXT_TAB;
         /* A focused field keeps its keys; chords that edit no text still

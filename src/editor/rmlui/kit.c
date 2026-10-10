@@ -1058,6 +1058,7 @@ static void kit_free(kit *k)
     cf_map_free(k->by_element);
     cf_map_free(k->by_path);
     cf_map_free(k->toast_actions);
+    cf_map_free(k->toast_cancels);
     afree(k->stack);
     afree(k->emitting);
     afree(k->entering);
