@@ -10,6 +10,8 @@
 #include "editor/workspace/scene_internal.h"
 #include "graph/authoring/graph_edit.h"
 #include "graph/authoring/local_edit.h"
+#include "graph/model/local.h"
+#include "graph/model/registry.h"
 #include "graph/nodes/core_nodes.h"
 #include "graph/nodes/vector_nodes.h"
 #include "support/array.h"
@@ -41,6 +43,7 @@ static enum {
     EXPORT_GAME,
     GRAPH_VISIBILITY,
     GRAPH_KEYS,
+    GRAPH_LABELS,
     UNIT_WARNINGS,
     SCENE_HIERARCHY,
     ASSET_SELECTION,
@@ -986,6 +989,100 @@ static bool output_labels_show(studio *s, graph *gr)
         }
     }
     REQUIRE(shown > 0);
+    return true;
+}
+
+#define LABEL_FRAMES 5
+/* Wider than the room beside a number field on a node held to NODE_MAX, but
+   not than the node's whole interior. */
+#define LONG_NAME "distance_falloff_toward_the_nearest_light_source"
+/* A number field takes 64 dp beside its label (graph.rcss .grow.out .field). */
+static const float NUMBER_FIELD = 64;
+
+/* Opens a declarative graph, as a material's, of two constants whose
+   values are named as Name Value does, one shortly and one at length. */
+static bool open_named_constants(editor *e, uint64_t ids[2])
+{
+    const node_desc *constant = registry_node_by_name("Shader Constant");
+    REQUIRE(constant);
+    behavior_asset *asset = behavior_asset_new("Labels");
+    graph *gr = asset->graph;
+    node *a = graph_add_node(gr, constant), *b = graph_add_node(gr, constant);
+    b->y = a->y + 200;
+    REQUIRE(graph_declare_local(gr, a, 0, "n"));
+    REQUIRE(graph_declare_local(gr, b, 0, LONG_NAME));
+    ids[0] = a->id;
+    ids[1] = b->id;
+    REQUIRE(!editor_declarative_graph(e, asset));
+    behavior_asset_free(asset);
+    return true;
+}
+
+/* The label the graph drew for node `id`'s first output, or NULL. */
+static rml_element *output_label(studio *s, uint64_t id)
+{
+    char path[96];
+    snprintf(path, sizeof path, "world/stage/n%llu/b/o0/l", (unsigned long long)id);
+    rml_context *context = rml_backend_context(s->graph.backend);
+    for (int i = 0; i < rml_context_document_count(context); i++) {
+        rml_element *labels[32];
+        int count = rml_element_query_selector_all(rml_context_document(context, i), ".gpin-label", labels, 32);
+        for (int j = 0; j < count && j < 32; j++) {
+            char at[128];
+            if (kit_element_path(s->graph.kit, labels[j], at, sizeof at) &&
+                !strcmp(at, path)) {
+                return labels[j];
+            }
+        }
+    }
+    return NULL;
+}
+
+/* A label draws past its box only when its text fits beside its row's
+   number field. */
+static bool label_fits(studio *s, uint64_t id, bool fits)
+{
+    node *n = sg_node_by_id(s, id);
+    REQUIRE(n && sg_value_kind_of(s, n, 1, 0) == VALUE_NUMBER);
+    pin_parts parts;
+    sg_pin_parts_of(s, n, ED_PIN_OUTPUT, 0, &parts);
+    const node_layout *l = sg_layout_of(s, n);
+    float text = ceilf(sg_text_width(s, parts.label, 12, 400));
+    float room = l->w - 2 * EDGE - 2 * SOCKET_PAD;
+    if (!fits && (text <= room - PART_GAP - NUMBER_FIELD || text > room)) {
+        fprintf(
+            stderr,
+            "Studio graph label acceptance: %s is %.0f dp in %.0f dp\n",
+            parts.label,
+            text,
+            room
+        );
+        return false;
+    }
+    rml_element *label = output_label(s, id);
+    REQUIRE(label && rml_element_has_attribute(label, "data-fits") == fits);
+    return true;
+}
+
+/* A long output label on a node held to NODE_MAX shares its row with the
+   value's field: it clips there rather than painting past the socket. */
+static bool graph_labels_frame(void *state)
+{
+    static uint64_t ids[2];
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= LABEL_FRAMES);
+    if (frames == 1) {
+        studio_show_editor(s, STUDIO_EDITOR_BEHAVIOR);
+    } else if (frames == 3) {
+        REQUIRE(open_named_constants(sg_graph_editor(s), ids));
+    } else if (frames == 5) {
+        /* Frame 4 laid the graph out. */
+        REQUIRE(label_fits(s, ids[0], true));
+        REQUIRE(label_fits(s, ids[1], false));
+        keys = frames;
+    }
     return true;
 }
 
@@ -2079,6 +2176,7 @@ bool studio_acceptance_frame(void *state)
             callback_ok = graph_visibility_frame(state);
             break;
         case GRAPH_KEYS: callback_ok = graph_keys_frame(state); break;
+        case GRAPH_LABELS: callback_ok = graph_labels_frame(state); break;
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
         case ASSET_SELECTION: callback_ok = asset_selection_frame(state); break;
@@ -2177,6 +2275,19 @@ TEST_CASE(graph_keys)
     REQUIRE(callback_ok && frames == GRAPH_KEY_FRAMES && keys == 1);
     REQUIRE(unchanged_source());
     printf("Studio graph keys accepted: frames=%d\n", frames);
+    return true;
+}
+
+TEST_CASE(graph_labels)
+{
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(LABEL_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == LABEL_FRAMES && keys == LABEL_FRAMES);
+    printf("Studio graph labels accepted: frames=%d\n", frames);
     return true;
 }
 
@@ -2329,20 +2440,23 @@ int main(int argc, char **argv)
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
     bool keys_mode = argc == 4 && !strcmp(argv[1], "--graph-keys");
+    bool labels = argc == 4 && !strcmp(argv[1], "--graph-labels");
     bool units = argc == 4 && !strcmp(argv[1], "--unit-warnings");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
     bool assets = argc == 4 && !strcmp(argv[1], "--asset-selection");
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
     bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
     bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
-    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility && !keys_mode &&
-         !units && !hierarchy && !assets && !viewport && !playing && !prompting) ||
+    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
+         !keys_mode && !labels && !units && !hierarchy && !assets &&
+         !viewport && !playing && !prompting) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
-            "--graph-visibility|--graph-keys|--unit-warnings|--scene-hierarchy|"
+            "--graph-visibility|--graph-keys|--graph-labels|--unit-warnings|"
+            "--scene-hierarchy|"
             "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts "
             "--project-root PATH | --scene-cursors\n"
         );
@@ -2366,6 +2480,7 @@ int main(int argc, char **argv)
          : exporting   ? EXPORT_GAME
          : visibility  ? GRAPH_VISIBILITY
          : keys_mode   ? GRAPH_KEYS
+         : labels      ? GRAPH_LABELS
          : units       ? UNIT_WARNINGS
          : hierarchy   ? SCENE_HIERARCHY
          : assets      ? ASSET_SELECTION
@@ -2381,6 +2496,7 @@ int main(int argc, char **argv)
             RUN_TEST_CASE(graph_visibility_and_document_pair);
             break;
         case GRAPH_KEYS: RUN_TEST_CASE(graph_keys); break;
+        case GRAPH_LABELS: RUN_TEST_CASE(graph_labels); break;
         case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
         case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;

@@ -86,6 +86,14 @@ framing, foreground layer priority, hidden-state filtering and selecting empty
 cells as part of one layer. They are removed before rendering. No source save or
 playback occurs.
 
+`studio-acceptance --graph-labels --project-root PATH` takes a disposable copy
+and runs five hidden fixed-dt frames. It opens a graph of two constants whose
+values are named, as Name Value does. A long name on a node held to its widest
+fits the node but not the room beside its number field: it must clip rather than
+paint past the socket and the node's edge, while a short name beside its field
+still draws in full.
+It saves nothing.
+
 `studio-acceptance --graph-keys --project-root PATH` takes a disposable copy,
 adds a Late behavior to it, and runs twenty-five hidden fixed-dt frames on
 Counter's Tick graph. It checks that
