@@ -1763,7 +1763,7 @@
       "current_source_sha256": "2bc7f3689067a8ad2916dfa0dfc0ec0147a874721d165ec20f1be8f202867690",
       "sha256": "9129512614d262430a863e4cf6ccac6f161691d62449660f709ced5dfa89421c",
       "source_path": "src/editor/studio/studio_code.c",
-      "consumer_sha256": "1eca83b752b0cd760e183dd7833e892e59ff0864406eae9d587885108ee3da03"
+      "consumer_sha256": "af442bc24d8374f1c6e6a9dfaa1479af0d8a88cc45305ae313bb0a6a7d2ee2aa"
     },
     "src/editor/studio/studio_collab.c": {
       "current_source_sha256": "a9eb6419e86730bd61449fef5116d2575a54ae5d21887d5d31c740c84313ddd6",

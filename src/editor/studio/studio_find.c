@@ -271,7 +271,7 @@ void studio_open_reference(studio *s, const studio_reference *row)
         );
         finish_transform_edit(scene, false);
         if (asset < 0 || app_scene_authoring_open_asset(scene, asset) != 0) {
-            studio_report(s, "Could not open the reference");
+            studio_warn(s, "Could not open the reference");
             return;
         }
     }

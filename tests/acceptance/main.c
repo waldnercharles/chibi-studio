@@ -32,7 +32,9 @@ static enum {
     CODE_KEYS,
     EXPORT_GAME,
     GRAPH_VISIBILITY,
-    SCENE_HIERARCHY
+    SCENE_HIERARCHY,
+    PLAY_KEYS,
+    PROMPTS
 } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
@@ -175,10 +177,11 @@ static bool quit_asks(studio *s)
 {
     REQUIRE(!strncmp(s->window_title, "\xe2\x97\x8f ", 4));
     REQUIRE(strstr(s->window_title, "Counter"));
-    REQUIRE(!studio_quit(s, false) && !s->quit_toast);
-    REQUIRE(!studio_quit(s, true) && s->quit_toast);
-    int toast = s->quit_toast;
-    REQUIRE(!studio_quit(s, true) && s->quit_toast == toast);
+    REQUIRE(!studio_quit(s, false) && !s->unsaved_prompt.toast);
+    REQUIRE(!studio_quit(s, true) && s->unsaved_prompt.toast);
+    REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
+    int toast = s->unsaved_prompt.toast;
+    REQUIRE(!studio_quit(s, true) && s->unsaved_prompt.toast == toast);
     return true;
 }
 
@@ -205,7 +208,7 @@ static bool projects_open(studio *s)
     REQUIRE(length > 0 && (size_t)length < sizeof content);
     studio_open_project_folder(s, content);
     studio_open_project_folder(s, s->project_root);
-    REQUIRE(!s->open_project && !s->discard_toast);
+    REQUIRE(!s->open_project && !s->unsaved_prompt.toast);
     return true;
 }
 
@@ -261,23 +264,35 @@ static bool source_edit_frame(void *state)
 #define TEXT(x) #x
 #define FRAMES_TEXT(x) TEXT(x)
 
-/* Queues a key press and release for the window, as the platform would. */
-static bool press_key(SDL_Keycode key)
+static SDL_Window *studio_window()
 {
     int count = 0;
     SDL_Window **windows = SDL_GetWindows(&count);
-    SDL_WindowID window = count ? SDL_GetWindowID(windows[0]) : 0;
+    SDL_Window *window = count ? windows[0] : NULL;
     SDL_free(windows);
+    return window;
+}
+
+/* Queues a key press and release for the window, as the platform would. */
+static bool press_chord(SDL_Keycode key, SDL_Keymod mod)
+{
+    SDL_Window *window = studio_window();
     REQUIRE(window);
     for (int down = 1; down >= 0; down--) {
         SDL_Event e = { .key = { .type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP,
-                                 .windowID = window,
+                                 .windowID = SDL_GetWindowID(window),
                                  .key = key,
+                                 .mod = mod,
                                  .scancode = SDL_GetScancodeFromKey(key, NULL),
                                  .down = down } };
         REQUIRE(SDL_PushEvent(&e));
     }
     return true;
+}
+
+static bool press_key(SDL_Keycode key)
+{
+    return press_chord(key, SDL_KMOD_NONE);
 }
 
 /* Counter's source editor, whether or not its text currently reads. */
@@ -537,6 +552,201 @@ static bool graph_visibility_frame(void *state)
     return true;
 }
 
+/* The first element `selector` finds in Studio's documents, the kit's layer
+   among them, or NULL. */
+static rml_element *studio_element(studio *s, const char *selector)
+{
+    rml_context *context = rml_backend_context(s->backend);
+    for (int i = 0; i < rml_context_document_count(context); i++) {
+        rml_element *found = rml_element_query_selector(rml_context_document(context, i), selector);
+        if (found) {
+            return found;
+        }
+    }
+    return NULL;
+}
+
+static bool element_says(studio *s, const char *selector, const char *text)
+{
+    rml_element *element = studio_element(s, selector);
+    REQUIRE(element);
+    char markup[512];
+    rml_element_inner_rml(element, markup, sizeof markup);
+    if (!strstr(markup, text)) {
+        fprintf(stderr, "Studio shell acceptance: %s reads %s\n", selector, markup);
+    }
+    REQUIRE(strstr(markup, text));
+    return true;
+}
+
+/* The unsaved-changes prompt asks `title`, with Save as its action and
+   Discard as its cancel. */
+static bool prompt_shows(studio *s, const char *title)
+{
+    REQUIRE(element_says(s, ".toast[data-front] .title", title));
+    REQUIRE(element_says(s, ".toast[data-front] .toast-action", "Save"));
+    REQUIRE(element_says(s, ".toast[data-front] .toast-cancel", "Discard"));
+    return true;
+}
+
+/* Clicks the element `selector` finds, as a person would: the pointer moves
+   over it, presses and releases. */
+static bool click(studio *s, const char *selector)
+{
+    rml_element *button = studio_element(s, selector);
+    REQUIRE(button);
+    rml_vec2 at = rml_element_absolute_offset(button, RML_BOX_BORDER);
+    rml_vec2 size = rml_element_box_size(button, RML_BOX_BORDER);
+    REQUIRE(size.x > 0 && size.y > 0);
+    SDL_Window *window = studio_window();
+    REQUIRE(window);
+    /* Layout is in dp; the window's pointer is in points, ui_scale to a dp. */
+    float scale = s->prefs.ui_scale;
+    float x = (at.x + size.x / 2) * scale, y = (at.y + size.y / 2) * scale;
+    SDL_WindowID id = SDL_GetWindowID(window);
+    SDL_Event move = {
+        .motion = { .type = SDL_EVENT_MOUSE_MOTION, .windowID = id, .x = x, .y = y }
+    };
+    REQUIRE(SDL_PushEvent(&move));
+    for (int down = 1; down >= 0; down--) {
+        SDL_Event e = { .button = { .type = down ? SDL_EVENT_MOUSE_BUTTON_DOWN
+                                                 : SDL_EVENT_MOUSE_BUTTON_UP,
+                                    .windowID = id,
+                                    .button = SDL_BUTTON_LEFT,
+                                    .down = down,
+                                    .clicks = 1,
+                                    .x = x,
+                                    .y = y } };
+        REQUIRE(SDL_PushEvent(&e));
+    }
+    return true;
+}
+
+static int counter_tab(studio *s)
+{
+    for (int i = 0; i < acount(s->scene->tabs); i++) {
+        if (s->scene->tabs[i].kind == APP_EDITOR_DOCUMENT_BEHAVIOR &&
+            strstr(s->scene->tabs[i].key, "Counter")) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Sets Counter's count literal in its source, leaving it unsaved. */
+static bool edit_counter(studio *s, const char *value)
+{
+    const node *literal = NULL;
+    REQUIRE(check_counter(s, 1, false, &literal));
+    char error[256];
+    bool changed = studio_code_expression_replace(s, literal, value, error, sizeof error);
+    if (!changed) {
+        fprintf(stderr, "Studio prompt acceptance: %s\n", error);
+    }
+    REQUIRE(changed && studio_unsaved(s));
+    return true;
+}
+
+#define PLAY_KEY_FRAMES 6
+
+/* F5 plays, Space pauses, F10 steps while paused, F5 resumes and Shift+F5
+   stops, each a key the platform queues. */
+static bool play_keys_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= PLAY_KEY_FRAMES);
+    app_runtime_state run = app_scene_authoring_runtime_state(s->scene);
+    switch (frames) {
+        case 1:
+            REQUIRE(!studio_session(s));
+            REQUIRE(!strcmp(studio_command_label(STUDIO_COMMAND_REVERT), "Revert File"));
+            REQUIRE(press_key(SDLK_F5));
+            break;
+        case 2:
+            REQUIRE(studio_session(s) && run.playing);
+            REQUIRE(!studio_command_enabled(s, STUDIO_COMMAND_RESUME));
+            REQUIRE(press_key(SDLK_SPACE));
+            break;
+        case 3:
+            REQUIRE(studio_session(s) && !run.playing);
+            REQUIRE(!strcmp(studio_command_describe(s, STUDIO_COMMAND_RESUME).label, "Resume"));
+            REQUIRE(studio_command_enabled(s, STUDIO_COMMAND_STEP));
+            REQUIRE(press_key(SDLK_F10));
+            break;
+        case 4:
+            REQUIRE(studio_session(s) && !run.playing);
+            REQUIRE(press_key(SDLK_F5));
+            break;
+        case 5:
+            REQUIRE(studio_session(s) && run.playing);
+            REQUIRE(press_chord(SDLK_F5, SDL_KMOD_LSHIFT));
+            break;
+        default: REQUIRE(!studio_session(s)); keys = frames;
+    }
+    return true;
+}
+
+#define PROMPT_FRAMES 12
+static bool quit_saved;
+
+/* Closing Counter's clean tab just closes it. Closing it with an edit asks,
+   and its Discard closes the tab without writing; quitting with an edit asks,
+   and its Save writes Counter before Studio quits. Both answers are clicks on
+   the toast's buttons, which the prompt answers two frames after the click.
+   Reduced motion, on from the first frame, settles each toast where layout
+   puts it, so the clicks land on its buttons. */
+static bool prompts_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= PROMPT_FRAMES);
+    if (s->unsaved_prompt.quit) {
+        /* Save went through: nothing is unsaved, and Quit goes ahead. */
+        REQUIRE(frames > 9 && !studio_unsaved(s));
+        quit_saved = true;
+        return true;
+    }
+    switch (frames) {
+        case 1:
+            s->prefs.reduced_motion = true;
+            /* A clean tab closes without asking. */
+            studio_close_tab(s, counter_tab(s));
+            REQUIRE(counter_tab(s) < 0 && !s->unsaved_prompt.toast);
+            REQUIRE(app_scene_authoring_open_behavior(s->scene, "Counter") == 0);
+            break;
+        case 2:
+            REQUIRE(!studio_command_enabled(s, STUDIO_COMMAND_SAVE_ALL));
+            REQUIRE(edit_counter(s, "3"));
+            REQUIRE(studio_command_enabled(s, STUDIO_COMMAND_SAVE_ALL));
+            studio_close_tab(s, counter_tab(s));
+            REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_CLOSE_TAB);
+            break;
+        case 3:
+            REQUIRE(prompt_shows(s, "Save Counter before closing?"));
+            REQUIRE(click(s, ".toast[data-front] .toast-cancel"));
+            break;
+        case 6:
+            REQUIRE(counter_tab(s) < 0 && !studio_unsaved(s));
+            REQUIRE(unchanged_source());
+            REQUIRE(app_scene_authoring_open_behavior(s->scene, "Counter") == 0);
+            break;
+        case 7:
+            REQUIRE(edit_counter(s, "4"));
+            REQUIRE(!studio_quit(s, true));
+            REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
+            break;
+        case 8:
+            REQUIRE(prompt_shows(s, "Save Counter before quitting?"));
+            REQUIRE(click(s, ".toast[data-front] .toast-action"));
+            break;
+        default: REQUIRE(frames < 11);
+    }
+    return true;
+}
+
 #define EXPORTED "Exported game: "
 
 /* Frame 1 runs Export Game; frame 2 waits for the exporter to exit; frame 3's
@@ -700,6 +910,8 @@ bool studio_acceptance_frame(void *state)
             callback_ok = graph_visibility_frame(state);
             break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
+        case PLAY_KEYS: callback_ok = play_keys_frame(state); break;
+        case PROMPTS: callback_ok = prompts_frame(state); break;
     }
     return callback_ok;
 }
@@ -805,6 +1017,52 @@ TEST_CASE(scene_hierarchy)
     return true;
 }
 
+/* Restores Counter's bytes over what the shell test saved. */
+static bool restore_counter()
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/behaviors/Counter.chibi", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    FILE *file = fopen(path, "wb");
+    REQUIRE(file);
+    bool written = fputs(counter_bytes, file) >= 0;
+    REQUIRE(fclose(file) == 0 && written);
+    return true;
+}
+
+TEST_CASE(play_keys)
+{
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(PLAY_KEY_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && keys == PLAY_KEY_FRAMES);
+    printf("\nStudio play keys accepted\n");
+    return true;
+}
+
+TEST_CASE(unsaved_prompts)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(PROMPT_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && quit_saved);
+    char path[1024];
+    snprintf(path, sizeof path, "%s/content/behaviors/Counter.chibi", project);
+    char *text = file_read_text(path);
+    REQUIRE(text);
+    bool saved = strstr(text, "count: int = 4") != NULL;
+    free(text);
+    REQUIRE(restore_counter() && saved);
+    printf("\nStudio unsaved prompts accepted: frames=%d\n", frames);
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
@@ -817,13 +1075,18 @@ int main(int argc, char **argv)
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
-    if ((!source_edit && !code_keys && !exporting && !visibility && !hierarchy) ||
+    bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
+    bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
+    if ((!source_edit && !code_keys && !exporting && !visibility &&
+         !hierarchy && !playing && !prompting) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--export-game|--graph-visibility|"
-            "--scene-hierarchy --project-root PATH | --scene-cursors\n"
+            "--scene-hierarchy|--play-keys|--unsaved-prompts --project-root "
+            "PATH | "
+            "--scene-cursors\n"
         );
         return 2;
     }
@@ -843,7 +1106,9 @@ int main(int argc, char **argv)
          : code_keys   ? CODE_KEYS
          : exporting   ? EXPORT_GAME
          : visibility  ? GRAPH_VISIBILITY
-                       : SCENE_HIERARCHY;
+         : hierarchy   ? SCENE_HIERARCHY
+         : playing     ? PLAY_KEYS
+                       : PROMPTS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -852,6 +1117,8 @@ int main(int argc, char **argv)
             RUN_TEST_CASE(graph_visibility_and_document_pair);
             break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
+        case PLAY_KEYS: RUN_TEST_CASE(play_keys); break;
+        case PROMPTS: RUN_TEST_CASE(unsaved_prompts); break;
     }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;

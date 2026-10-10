@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -217,20 +218,28 @@ static void unsaved_names(studio *s, char *out, size_t size)
     }
 }
 
-/* Asks before an action that would discard unsaved edits, naming them, with
-   `action` on the toast's button, as closing a tab asks. */
-static int confirm_discard(studio *s, int toast, const char *verb, const char *action)
+/* ---------- Unsaved changes ---------- */
+
+#define UNSAVED_LOST "Your changes will be lost if you don't save them."
+
+/* What every action that would lose unsaved edits asks, as Save / Don't Save
+   / Cancel does on every desktop: "Save Level before quitting?" with Save
+   first and Discard second, and the toast's close button cancelling. One
+   prompt shows at a time; a new question updates it in place. */
+static void ask_unsaved(studio *s, studio_unsaved_action action, const char *names, const char *before)
 {
-    char names[256];
-    unsaved_names(s, names, sizeof names);
+    studio_unsaved_prompt *prompt = &s->unsaved_prompt;
     char title[448];
-    snprintf(title, sizeof title, "%s without saving %s?", verb, names);
-    return kit_toast(
+    snprintf(title, sizeof title, "Save %s before %s?", names, before);
+    prompt->action = action;
+    prompt->toast = kit_toast(
         s->kit,
-        toast,
+        prompt->toast,
         &(kit_toast_desc){ .type = KIT_TOAST_WARNING,
                            .title = title,
-                           .action = action,
+                           .description = UNSAVED_LOST,
+                           .action = "Save",
+                           .cancel = "Discard",
                            .duration = -1 }
     );
 }
@@ -241,31 +250,108 @@ void studio_open_project(studio *s, int index)
         request(s, index);
         return;
     }
-    char verb[160];
-    snprintf(verb, sizeof verb, "Open %s", s->projects[index].name);
-    s->discard_project = index;
-    s->discard_toast = confirm_discard(s, s->discard_toast, verb, "Open");
+    char names[256], before[192];
+    unsaved_names(s, names, sizeof names);
+    snprintf(before, sizeof before, "opening %s", s->projects[index].name);
+    s->unsaved_prompt.project = index;
+    ask_unsaved(s, STUDIO_UNSAVED_OPEN_PROJECT, names, before);
+}
+
+void studio_close_tab(studio *s, int index)
+{
+    if (!scene_tabs_can_close(s->scene, index)) {
+        return;
+    }
+    scene_document_tab *tab = &s->scene->tabs[index];
+    if (!scene_tabs_dirty(s->scene, tab)) {
+        studio_discard_tab(s, index);
+        return;
+    }
+    snprintf(s->unsaved_prompt.tab, sizeof s->unsaved_prompt.tab, "%s", tab->key);
+    ask_unsaved(s, STUDIO_UNSAVED_CLOSE_TAB, tab->label, "closing");
+}
+
+/* Saves what the pending action would lose: the tab it closes, else every
+   document. True when that left nothing unsaved; a failure's toast says why. */
+static bool save_pending(studio *s, int tab)
+{
+    if (s->unsaved_prompt.action == STUDIO_UNSAVED_CLOSE_TAB) {
+        return tab >= 0 && studio_save_tab(s, tab);
+    }
+    return studio_save_all(s);
+}
+
+/* Goes ahead with the action the prompt held. */
+static void proceed(studio *s, int tab)
+{
+    switch (s->unsaved_prompt.action) {
+        case STUDIO_UNSAVED_OPEN_PROJECT:
+            request(s, s->unsaved_prompt.project);
+            break;
+        case STUDIO_UNSAVED_CLOSE_TAB:
+            if (tab >= 0) {
+                studio_discard_tab(s, tab);
+            }
+            break;
+        case STUDIO_UNSAVED_QUIT: s->unsaved_prompt.quit = true; break;
+        case STUDIO_UNSAVED_NONE: break;
+    }
+}
+
+static void answer_unsaved(studio *s)
+{
+    studio_unsaved_prompt *prompt = &s->unsaved_prompt;
+    if (!prompt->toast) {
+        return;
+    }
+    bool save = kit_toast_action(s->kit, prompt->toast);
+    bool discard = !save && kit_toast_cancel(s->kit, prompt->toast);
+    if (!save && !discard) {
+        return;
+    }
+    prompt->toast = 0;
+    int tab = prompt->action == STUDIO_UNSAVED_CLOSE_TAB
+                ? studio_tab_index(s, prompt->tab)
+                : -1;
+    if (discard || save_pending(s, tab)) {
+        proceed(s, tab);
+    }
+    prompt->action = STUDIO_UNSAVED_NONE;
 }
 
 #ifndef __EMSCRIPTEN__
+/* What a folder is picked for: a project to open, or where New Project
+   creates one. */
+enum
+{
+    PICK_PROJECT,
+    PICK_LOCATION,
+    PICK_COUNT,
+};
+
 /* The folder dialog answers on a thread of its own; the frame takes what it
    left, each owned. */
-static void *picked_folder, *picker_error;
+static void *picked_folder[PICK_COUNT], *picker_error;
 
-static void SDLCALL folder_picked(void *, const char *const *folders, int)
+static void SDLCALL folder_picked(void *purpose, const char *const *folders, int)
 {
     if (!folders) {
         free(SDL_SetAtomicPointer(&picker_error, xstrdup(SDL_GetError())));
         return;
     }
     if (folders[0]) {
-        free(SDL_SetAtomicPointer(&picked_folder, xstrdup(folders[0])));
+        free(SDL_SetAtomicPointer(&picked_folder[(intptr_t)purpose], xstrdup(folders[0])));
     }
+}
+
+static void pick_folder(int purpose, const char *start)
+{
+    SDL_ShowOpenFolderDialog(folder_picked, (void *)(intptr_t)purpose, cf_app_get_window(), start, false);
 }
 
 void studio_pick_project()
 {
-    SDL_ShowOpenFolderDialog(folder_picked, NULL, cf_app_get_window(), NULL, false);
+    pick_folder(PICK_PROJECT, NULL);
 }
 
 static void fail(studio *s, const char *title, const char *error)
@@ -321,10 +407,17 @@ static void take_picked(studio *s)
         fail(s, "Could not show the folder picker", error);
         free(error);
     }
-    char *folder = SDL_SetAtomicPointer(&picked_folder, NULL);
+    char *folder = SDL_SetAtomicPointer(&picked_folder[PICK_PROJECT], NULL);
     if (folder) {
         studio_open_project_folder(s, folder);
         free(folder);
+    }
+    char *location = SDL_SetAtomicPointer(&picked_folder[PICK_LOCATION], NULL);
+    if (location) {
+        studio_new_project *dialog = &s->new_project;
+        snprintf(dialog->folder, sizeof dialog->folder, "%s", location);
+        dialog->error[0] = '\0';
+        free(location);
     }
 }
 #endif
@@ -339,16 +432,12 @@ void studio_projects_frame(studio *s)
         take_picked(s);
     }
 #endif
-    if (s->discard_toast && kit_toast_action(s->kit, s->discard_toast)) {
-        s->discard_toast = 0;
-        request(s, s->discard_project);
-    }
+    answer_unsaved(s);
 }
 
 bool studio_quit(studio *s, bool requested)
 {
-    if (s->quit_toast && kit_toast_action(s->kit, s->quit_toast)) {
-        s->quit_toast = 0;
+    if (s->unsaved_prompt.quit) {
         return true;
     }
     if (!requested) {
@@ -357,7 +446,9 @@ bool studio_quit(studio *s, bool requested)
     if (!studio_unsaved(s)) {
         return true;
     }
-    s->quit_toast = confirm_discard(s, s->quit_toast, "Quit", "Quit");
+    char names[256];
+    unsaved_names(s, names, sizeof names);
+    ask_unsaved(s, STUDIO_UNSAVED_QUIT, names, "quitting");
     return false;
 }
 
@@ -414,40 +505,47 @@ static void project_slug(const char *name, char *out, size_t size)
     out[at] = '\0';
 }
 
+/* Where New Project creates unless another folder is chosen: the workspace's
+   projects, else beside the external project an installed editor opened. */
+static bool default_location(const studio *s, char *folder, size_t size)
+{
+    const char *workspace = resource_workspace();
+    if (workspace) {
+        int length = snprintf(folder, size, "%s/projects", workspace);
+        return length >= 0 && (size_t)length < size;
+    }
+    size_t length = strlen(s->project_root);
+    while (length > 1 && s->project_root[length - 1] == '/') {
+        length--;
+    }
+    while (length && s->project_root[length - 1] != '/') {
+        length--;
+    }
+    if (length >= size) {
+        return false;
+    }
+    if (!length) {
+        snprintf(folder, size, ".");
+        return true;
+    }
+    if (length > 1) {
+        length--;
+    }
+    memcpy(folder, s->project_root, length);
+    folder[length] = '\0';
+    return true;
+}
+
 static char *native_project_root(const studio *s, const char *name)
 {
     char base[128];
     project_slug(name, base, sizeof base);
     char folder[4096];
-    const char *workspace = resource_workspace();
-    if (workspace) {
-        int length = snprintf(folder, sizeof folder, "%s/projects", workspace);
-        if (length < 0 || (size_t)length >= sizeof folder) {
-            errno = ENAMETOOLONG;
-            return NULL;
-        }
-    } else {
-        /* An installed editor creates beside the external project it opened. */
-        size_t length = strlen(s->project_root);
-        while (length > 1 && s->project_root[length - 1] == '/') {
-            length--;
-        }
-        while (length && s->project_root[length - 1] != '/') {
-            length--;
-        }
-        if (length >= sizeof folder) {
-            errno = ENAMETOOLONG;
-            return NULL;
-        }
-        if (!length) {
-            snprintf(folder, sizeof folder, ".");
-        } else {
-            if (length > 1) {
-                length--;
-            }
-            memcpy(folder, s->project_root, length);
-            folder[length] = '\0';
-        }
+    if (s->new_project.folder[0]) {
+        snprintf(folder, sizeof folder, "%s", s->new_project.folder);
+    } else if (!default_location(s, folder, sizeof folder)) {
+        errno = ENAMETOOLONG;
+        return NULL;
     }
     char path[4096];
     struct stat info;
@@ -498,6 +596,31 @@ static char *browser_project_root(const char *name, char *error, size_t error_si
 void studio_new_project_open(studio *s)
 {
     s->new_project = (studio_new_project){ .open = true, .focus = true };
+#ifndef __EMSCRIPTEN__
+    if (!default_location(s, s->new_project.folder, sizeof s->new_project.folder)) {
+        s->new_project.folder[0] = '\0';
+    }
+#endif
+}
+
+/* The longest location the dialog shows before it drops leading folders. */
+#define LOCATION_SHOWN 48
+
+void studio_new_project_location(const studio *s, char *out, size_t size)
+{
+    const char *folder = s->new_project.folder;
+    const char *home = getenv("HOME");
+    size_t length = home ? strlen(home) : 0;
+    char full[sizeof s->new_project.folder + 1];
+    bool homed = length > 1 && !strncmp(folder, home, length) &&
+                 (folder[length] == '/' || !folder[length]);
+    snprintf(full, sizeof full, "%s%s", homed ? "~" : "", homed ? folder + length : folder);
+    /* The folders nearest the project tell it apart; drop the leading ones. */
+    const char *tail = full;
+    while (strlen(tail) > LOCATION_SHOWN && strchr(tail + 1, '/')) {
+        tail = strchr(tail + 1, '/');
+    }
+    snprintf(out, size, "%s%s", tail == full ? "" : "\xe2\x80\xa6", tail);
 }
 
 static void created_project(studio *s, const char *root)
@@ -571,11 +694,19 @@ void studio_new_project_action(studio *s, const char *action)
         return;
     }
     if (!strcmp(action, "cancel")) {
-        dialog->confirm_discard = false;
+        dialog->confirm_save = false;
         dialog->open = false;
         return;
     }
-    if (strcmp(action, "create") && strcmp(action, "discard")) {
+#ifndef __EMSCRIPTEN__
+    if (!strcmp(action, "location")) {
+        pick_folder(PICK_LOCATION, dialog->folder[0] ? dialog->folder : NULL);
+        return;
+    }
+#endif
+    bool create = !strcmp(action, "create");
+    bool answer = !strcmp(action, "save") || !strcmp(action, "discard");
+    if (!create && !(answer && dialog->confirm_save)) {
         return;
     }
     trim(dialog->name);
@@ -583,14 +714,24 @@ void studio_new_project_action(studio *s, const char *action)
         snprintf(dialog->error, sizeof dialog->error, "Enter a project name");
         return;
     }
-    if (!strcmp(action, "create") && studio_unsaved(s)) {
-        dialog->confirm_discard = true;
+    /* The dialog asks inline what the unsaved prompt asks elsewhere. */
+    if (create && studio_unsaved(s)) {
+        char names[256];
+        unsaved_names(s, names, sizeof names);
+        snprintf(
+            dialog->confirm,
+            sizeof dialog->confirm,
+            "Save %s before creating %s?",
+            names,
+            dialog->name
+        );
+        dialog->confirm_save = true;
         return;
     }
-    if (!strcmp(action, "discard") && !dialog->confirm_discard) {
+    if (!strcmp(action, "save") && !studio_save_all(s)) {
         return;
     }
-    dialog->confirm_discard = false;
+    dialog->confirm_save = false;
     if (create_project(s)) {
         dialog->open = false;
     }
