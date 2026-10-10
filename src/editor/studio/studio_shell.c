@@ -162,6 +162,11 @@ void studio_error(studio *s, const char *title, const char *message)
     toast(s, KIT_TOAST_ERROR, title, message);
 }
 
+bool studio_save_held(const studio *s)
+{
+    return !studio_editable(s) || runtime_session(s->scene);
+}
+
 /* Saves the active document, or the behavior on the graph canvas while
    `graph` says the canvas owns Save. */
 static void save_document(studio *s, bool graph)
@@ -186,8 +191,11 @@ static void save_document(studio *s, bool graph)
         studio_code_save(s);
         return;
     }
-    if (!studio_editable(s) || runtime_session(scene)) {
-        toast(s, KIT_TOAST_WARNING, "Stop the scene to save", NULL);
+    if (studio_save_held(s)) {
+        /* Save All says once, at its end, what the scene kept unsaved. */
+        if (!s->saving_all) {
+            toast(s, KIT_TOAST_WARNING, "Stop the scene to save", NULL);
+        }
         return;
     }
     finish_transform_edit(scene, false);
@@ -267,15 +275,36 @@ int studio_tab_index(const studio *s, const char *key)
     return -1;
 }
 
+/* Reports Save All once: what it saved, and what a running scene kept
+   unsaved. `title` names the last document saved. */
+static void report_save_all(studio *s, char *title, size_t size, int saved, int unsaved)
+{
+    if (!unsaved) {
+        if (saved > 1) {
+            snprintf(title, size, "Saved %d documents", saved);
+        }
+        if (saved) {
+            toast(s, KIT_TOAST_SUCCESS, title, NULL);
+        }
+        return;
+    }
+    bool held = studio_save_held(s);
+    if (saved) {
+        snprintf(title, size, "Saved %d of %d documents", saved, saved + unsaved);
+        toast(s, KIT_TOAST_WARNING, title, held ? "Stop the scene to save the rest" : NULL);
+        return;
+    }
+    if (held) {
+        toast(s, KIT_TOAST_WARNING, "Stop the scene to save", NULL);
+    }
+}
+
 /* Saves each document with unsaved edits as Save would with it active, then
-   returns to the tab that was active, and reports once for all of them. */
+   returns to the tab that was active, and reports once for all of them. A
+   running scene keeps only documents that do not apply live from saving. */
 bool studio_save_all(studio *s)
 {
     app_scene_authoring *scene = s->scene;
-    if (!studio_editable(s) || runtime_session(scene)) {
-        toast(s, KIT_TOAST_WARNING, "Stop the scene to save", NULL);
-        return false;
-    }
     char *active = scene->active_tab >= 0
                      ? xstrdup(scene->tabs[scene->active_tab].key)
                      : NULL;
@@ -300,15 +329,7 @@ bool studio_save_all(studio *s)
         scene_tabs_activate(scene, back);
     }
     free(active);
-    if (saved > 1 && !unsaved) {
-        snprintf(title, sizeof title, "Saved %d documents", saved);
-    }
-    if (saved && !unsaved) {
-        toast(s, KIT_TOAST_SUCCESS, title, NULL);
-    } else if (saved) {
-        snprintf(title, sizeof title, "Saved %d of %d documents", saved, saved + unsaved);
-        toast(s, KIT_TOAST_WARNING, title, NULL);
-    }
+    report_save_all(s, title, sizeof title, saved, unsaved);
     return !studio_unsaved(s);
 }
 

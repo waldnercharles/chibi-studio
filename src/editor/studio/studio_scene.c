@@ -123,11 +123,18 @@ static void canvas_view(studio *s, engine_viewport_host_input *input)
     input->resolution = fminf(zoom, VIEW_SHARP_MAX);
 }
 
-/* Whether the Scene's camera follows the pointer: while the scene is edited
+/* Whether the Scene's runtime target, the scene or a previewed prototype,
+   plays, so the pointer and keys are its game's. */
+static bool target_playing(const studio *s)
+{
+    return app_scene_authoring_runtime_state(s->scene).playing;
+}
+
+/* Whether the Scene's camera follows the pointer: while the target is edited
    or paused, and with Alt held while it plays (render/viewport.c). */
 static bool camera_free(const studio *s)
 {
-    return !s->scene->runtime_playing || (s->mods & SDL_KMOD_ALT);
+    return !target_playing(s) || (s->mods & SDL_KMOD_ALT);
 }
 
 /* A mouse wheel's notches and a pinch zoom the camera toward the pointer.
@@ -202,8 +209,8 @@ void studio_scene_view(studio *s, engine_viewport_host_input *input)
 bool studio_scene_space(studio *s, studio_key key)
 {
     bool plain = !(key.mod & (SDL_KMOD_SHIFT | SDL_KMOD_ALT | SDL_KMOD_CTRL | SDL_KMOD_GUI));
-    if (key.key != SDLK_SPACE || !plain || key.repeat ||
-        s->scene->runtime_playing || studio_previewed_ui(s)) {
+    if (key.key != SDLK_SPACE || !plain || key.repeat || target_playing(s) ||
+        studio_previewed_ui(s)) {
         return false;
     }
     s->scene_nav.space_play = true;
@@ -390,7 +397,6 @@ void studio_scene_header(studio *s, int area)
 /* ---------- The overlays (`scene_view`) ---------- */
 
 #define CAMERA_LABELS_MAX 16
-#define MARKERS_MAX 256
 
 /* A marker's icon reaches this far from its object, as Scene.rcss draws it. */
 #define MARKER_RADIUS_DP 10.0f
@@ -400,8 +406,11 @@ void studio_scene_header(studio *s, int area)
 /* Room kept for the labels at the Scene's right and bottom edges. */
 #define DELTA_ROOM_X_DP 140.0f
 #define DELTA_ROOM_Y_DP 24.0f
-#define HINT_ROOM_X_DP 160.0f
 #define HINT_ROOM_Y_DP 40.0f
+/* The hint's box, centered under the gizmo, holds its pill; in a narrower
+   Scene it keeps this gap from each edge. */
+#define HINT_BOX_DP 320.0f
+#define HINT_GAP_DP 8.0f
 /* The tool's hint sits below the gizmo's ring (scene_gizmo.c's RING_RADIUS,
    in the view's pixels), with a gap. */
 #define HINT_BELOW_PX 76.0f
@@ -418,6 +427,7 @@ static const char *const VIEW_TEXTS[] = { "error",
                                           "hint",
                                           "hintAction",
                                           "hintAt",
+                                          "hintWidth",
                                           NULL };
 static const char *const VIEW_FLAGS[] = {
     "readout",      "zooming",     "session", "pending",
@@ -449,8 +459,8 @@ static void add_members(
    and locked); zoom, the camera's against its framing, while readout, and
    zoomText while zooming; delta, a gesture's change by the pointer at
    deltaAt; hint, why the tool's gizmo is grey, with hintAction while
-   hintAddable, at hintAt; session (Live); pending, while the generated
-   world fills; the notice line's error, else warning. */
+   hintAddable, in a box hintWidth wide at hintAt; session (Live); pending,
+   while the generated world fills; the notice line's error, else warning. */
 void studio_scene_view_add(yyjson_mut_doc *doc)
 {
     yyjson_mut_val *view = yyjson_mut_obj_add_obj(doc, yyjson_mut_doc_get_root(doc), "scene_view");
@@ -531,9 +541,12 @@ static ecs_entity hovered_object(studio *s)
    picked (pick_scene_entity hits within MARKER_RADIUS_DP). */
 static bool show_markers(studio *s, const studio_panel_sync *at, bool shown)
 {
-    app_scene_marker markers[MARKERS_MAX];
-    int count = shown ? app_scene_authoring_markers(s->scene, markers, MARKERS_MAX)
-                      : 0;
+    /* Each object nothing draws picks where it is (pick_scene_entity), so
+       each shows a marker there. */
+    app_scene_marker *markers = NULL;
+    int max = shown ? acount(s->scene->actors) : 0;
+    asetlen(markers, max);
+    int count = app_scene_authoring_markers(s->scene, markers, max);
     yyjson_mut_val *items = yyjson_mut_obj_get(at->variable, "markers");
     bool changed = fit_items(at->doc, items, count, MARKER_TEXTS, MARKER_FLAGS);
     ecs_entity hovered = hovered_object(s);
@@ -553,6 +566,7 @@ static bool show_markers(studio *s, const studio_panel_sync *at, bool shown)
         changed |= ui_data_put_bool(item, "hovered", over);
         changed |= ui_data_put_bool(item, "locked", markers[i].locked);
     }
+    afree(markers);
     return changed;
 }
 
@@ -627,7 +641,7 @@ static bool addable(studio *s, const ecs_component_desc *desc)
 static bool show_hint(studio *s, const studio_panel_sync *at, bool shown)
 {
     scene_tool_hint hint;
-    char text[160] = "", action[160] = "", place[64] = "";
+    char text[160] = "", action[160] = "", place[64] = "", width[32] = "";
     bool add = false;
     if (shown && !s->scene->gizmo.active && scene_gizmo_hint(s->scene, &hint)) {
         char label[128];
@@ -640,14 +654,17 @@ static bool show_hint(studio *s, const studio_panel_sync *at, bool shown)
         add = addable(s, hint.missing);
         snprintf(action, sizeof action, "Add %s", label);
         kit_rect r = s->surface.rect;
-        float x = fminf(fmaxf(hint.x * r.w, HINT_ROOM_X_DP), r.w - HINT_ROOM_X_DP);
+        float half = fminf(HINT_BOX_DP, fmaxf(r.w - 2 * HINT_GAP_DP, 0)) / 2;
+        float x = fminf(fmaxf(hint.x * r.w, half + HINT_GAP_DP), r.w - half - HINT_GAP_DP);
         float below = HINT_BELOW_PX / s->prefs.ui_scale;
         float y = fminf(hint.y * r.h + below, r.h - HINT_ROOM_Y_DP);
-        place_at(s, x / r.w, fmaxf(y, 0) / r.h, place);
+        place_at(s, (x - half) / r.w, fmaxf(y, 0) / r.h, place);
+        snprintf(width, sizeof width, "%.0fdp", 2 * half);
     }
     bool changed = ui_data_put_text(at->doc, at->variable, "hint", text);
     changed |= ui_data_put_text(at->doc, at->variable, "hintAction", action);
     changed |= ui_data_put_bool(at->variable, "hintAddable", add);
+    changed |= ui_data_put_text(at->doc, at->variable, "hintWidth", width);
     return ui_data_put_text(at->doc, at->variable, "hintAt", place) || changed;
 }
 
@@ -791,9 +808,7 @@ const char *studio_scene_cursor(const studio *s)
         return NULL;
     }
     /* The camera pans while playing too, with Alt held (render/viewport.c). */
-    bool pans = s->surface.down[2] &&
-                (!scene->runtime_playing || (s->mods & SDL_KMOD_ALT));
-    if (pans) {
+    if (s->surface.down[2] && camera_free(s)) {
         return "move";
     }
     if (!scene_can_move(scene)) {

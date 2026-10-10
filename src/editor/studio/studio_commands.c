@@ -1764,6 +1764,9 @@ void studio_shortcuts(studio *s, bool field)
         int command = studio_key_command(s, key, editor);
         bool tab_navigation = command == STUDIO_COMMAND_PREVIOUS_TAB ||
                               command == STUDIO_COMMAND_NEXT_TAB;
+        if (field && studio_code_find_key(s, key)) {
+            continue;
+        }
         /* A focused field keeps its keys; chords that edit no text still
            reach Studio, as VS Code's do. */
         if (field && !tab_navigation && (!primary || studio_text_key(key.key))) {

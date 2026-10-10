@@ -777,7 +777,8 @@ typedef struct
     studio_unsaved_action action;
     int project;    /* the project Open Project opens */
     char tab[1024]; /* the key of the tab Close Tab closes */
-    bool quit;      /* Quit may go ahead */
+    char before[192]; /* what the action does, as "quitting" */
+    bool quit;        /* Quit may go ahead */
 } studio_unsaved_prompt;
 
 /* Workstream I: the code editor of one open document part, which keeps its
@@ -818,6 +819,7 @@ typedef struct
         bool open, opening, mounted;
     } menu;
     double capture_due; /* when a moved caret is captured, or 0 */
+    char capture_path[1024]; /* the source whose caret moved */
     /* The shown part's text parsed (assets/ui_source.h), the spans that
        highlight it, and each part's problems as markers (ui_code_markers). */
     ui_source *source;
@@ -2003,6 +2005,9 @@ bool studio_save_tab(studio *s, int index);
 /* Saves every document with unsaved edits and returns to the active tab;
    true when nothing is left unsaved. */
 bool studio_save_all(studio *s);
+/* True while a running scene keeps documents from saving; text, which
+   applies live, still saves. */
+bool studio_save_held(const studio *s);
 /* The open tab with this key, or -1. */
 int studio_tab_index(const studio *s, const char *key);
 /* Reports a document saved: in Output, and in a toast except while Save All
@@ -3074,6 +3079,9 @@ void studio_code_header_action(studio *s, const char *action, const ui_activatio
 void studio_code_find_add(yyjson_mut_doc *doc);
 bool studio_code_find_sync(studio *s, const studio_panel_sync *at);
 void studio_code_find_action(studio *s, const char *action, const ui_activation *a);
+/* Runs F3 or Shift+F3 pressed in the focused find field, which the
+ * shortcuts otherwise leave to it; false for any other key. */
+bool studio_code_find_key(studio *s, studio_key key);
 
 /* ---------- Graph chrome (workstream G1) ---------- */
 
