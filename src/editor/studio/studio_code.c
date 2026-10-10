@@ -602,6 +602,19 @@ static void follow_active(studio *s, const scene_document_tab *active)
     }
 }
 
+/* A moved caret is kept in its tab once it rests, or once another source
+   shows; edits are kept as they happen. */
+static void capture_caret(studio *s)
+{
+    studio_code *c = &s->code;
+    for (int i = 0; i < acount(c->assets); i++) {
+        if (!strcmp(asset_code_path(c->assets[i]), c->capture_path)) {
+            capture_asset(s, c->assets[i]);
+        }
+    }
+    c->capture_due = 0;
+}
+
 void studio_code_frame(studio *s)
 {
     scene_document_tab *tab = active_asset(s);
@@ -633,13 +646,8 @@ void studio_code_frame(studio *s)
             s->ui_schedule.wake = true;
         }
     }
-    /* A moved caret is kept once it rests; edits are kept as they happen. */
     if (s->code.capture_due && s->time >= s->code.capture_due) {
-        asset_code *code = tab ? asset_editor(s, tab) : NULL;
-        if (code) {
-            capture_asset(s, code);
-        }
-        s->code.capture_due = 0;
+        capture_caret(s);
     }
     bool applied = false;
     for (int i = 0; i < acount(s->scene->tabs); i++) {
@@ -1793,50 +1801,55 @@ static void reveal(studio *s, kit_code_editor *e, const ui_buffer *b)
 
 /* ---------- Find (VS Code's find widget) ---------- */
 
-/* Where the next match of `query` starts at or after `from`, wrapping past
-   the end, or -1 without one. Case is ignored, as VS Code's default. */
-static int next_match(const char *text, const char *query, int from)
+/* Where the match of `query` after the one at `at` (the first, for -1)
+   starts, or -1 past the last. Each starts after the last one ends, as
+   VS Code counts them, so Find steps through exactly the matches it
+   counts. Case is ignored, as VS Code's default. */
+static int following_match(const char *text, const char *query, int at)
 {
-    int length = (int)strlen(text);
     size_t size = strlen(query);
-    for (int i = 0; i < length; i++) {
-        int at = (from + i) % length;
-        if (!strncasecmp(text + at, query, size)) {
-            return at;
+    for (const char *p = at < 0 ? text : text + at + size; size && *p; p++) {
+        if (!strncasecmp(p, query, size)) {
+            return (int)(p - text);
         }
     }
     return -1;
+}
+
+/* Where the first match at or after `from` starts, wrapping past the end,
+   or -1 without one. */
+static int next_match(const char *text, const char *query, int from)
+{
+    int first = following_match(text, query, -1);
+    for (int at = first; at >= 0; at = following_match(text, query, at)) {
+        if (at >= from) {
+            return at;
+        }
+    }
+    return first;
 }
 
 /* Where the last match before `from` starts, wrapping past the start. */
 static int previous_match(const char *text, const char *query, int from)
 {
-    int length = (int)strlen(text);
-    size_t size = strlen(query);
-    for (int i = 1; i <= length; i++) {
-        int at = ((from - i) % length + length) % length;
-        if (!strncasecmp(text + at, query, size)) {
-            return at;
-        }
+    int last = -1, before = -1;
+    for (int at = following_match(text, query, -1); at >= 0;
+         at = following_match(text, query, at)) {
+        before = at < from ? at : before;
+        last = at;
     }
-    return -1;
+    return before >= 0 ? before : last;
 }
 
-/* Counts the matches, each after the last one ends as VS Code counts
-   them, and places the shown one among them. */
+/* Counts the matches and places the shown one among them. */
 static void count_matches(studio_code *c, const char *text)
 {
-    size_t size = strlen(c->find.query);
     c->find.count = 0;
     c->find.index = -1;
-    for (const char *at = text; size && *at;) {
-        if (strncasecmp(at, c->find.query, size)) {
-            at++;
-            continue;
-        }
-        c->find.index = at - text == c->find.at ? c->find.count : c->find.index;
+    for (int at = following_match(text, c->find.query, -1); at >= 0;
+         at = following_match(text, c->find.query, at)) {
+        c->find.index = at == c->find.at ? c->find.count : c->find.index;
         c->find.count++;
-        at += size;
     }
 }
 
@@ -2002,6 +2015,21 @@ static void find_again(studio_code *c, int direction)
     const char *text = kit_code_text(c->editor, NULL);
     step_find(c, c->editor, text, direction);
     count_matches(c, text);
+}
+
+/* F3 and Shift+F3 find again from Find's field too, whose data-keys bind
+   no function key. */
+bool studio_code_find_key(studio *s, studio_key key)
+{
+    rml_element *focus = rml_context_focus_element(rml_backend_context(s->backend));
+    if (key.key != SDLK_F3 ||
+        (key.mod & (SDL_KMOD_CTRL | SDL_KMOD_ALT | SDL_KMOD_GUI)) ||
+        !s->code.find.open || !s->code.editor || !focus ||
+        strcmp(rml_element_id(focus), "code-find-query")) {
+        return false;
+    }
+    find_again(&s->code, key.mod & SDL_KMOD_SHIFT ? -1 : 1);
+    return true;
 }
 
 static bool language_command(int command)
@@ -2601,11 +2629,20 @@ void studio_code_body(studio *s, int)
             find_widget(s);
         }
         code_menu(s);
+        if (s->code.capture_due && strcmp(s->code.capture_path, asset->path)) {
+            capture_caret(s);
+        }
         if (r.events & (KIT_CODE_CHANGED | KIT_CODE_UNDO | KIT_CODE_REDO)) {
             capture_asset(s, code);
             s->code.capture_due = 0;
         } else if (r.events & KIT_CODE_CURSOR) {
             s->code.capture_due = s->time + CAPTURE_REST;
+            snprintf(
+                s->code.capture_path,
+                sizeof s->code.capture_path,
+                "%s",
+                asset->path
+            );
         }
         bool chord = r.events & KIT_CODE_CHORD;
         if ((r.events & KIT_CODE_SAVED) ||

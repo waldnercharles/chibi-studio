@@ -803,6 +803,7 @@ typedef struct
         bool open, opening, mounted;
     } menu;
     double capture_due; /* when a moved caret is captured, or 0 */
+    char capture_path[1024]; /* the source whose caret moved */
     /* The shown part's text parsed (assets/ui_source.h), the spans that
        highlight it, and each part's problems as markers (ui_code_markers). */
     ui_source *source;
@@ -3048,6 +3049,9 @@ void studio_code_header_action(studio *s, const char *action, const ui_activatio
 void studio_code_find_add(yyjson_mut_doc *doc);
 bool studio_code_find_sync(studio *s, const studio_panel_sync *at);
 void studio_code_find_action(studio *s, const char *action, const ui_activation *a);
+/* Runs F3 or Shift+F3 pressed in the focused find field, which the
+ * shortcuts otherwise leave to it; false for any other key. */
+bool studio_code_find_key(studio *s, studio_key key);
 
 /* ---------- Graph chrome (workstream G1) ---------- */
 

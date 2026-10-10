@@ -278,8 +278,9 @@ static bool source_edit_frame(void *state)
 }
 
 /* The Text Editor settles before the keys, which leave frames between them
-   for the completion list to open, then comments a line and steps a frame. */
-#define KEY_FRAMES 23
+   for the completion list to open, then comments a line, finds, rests the
+   caret in another tab and steps a frame. */
+#define KEY_FRAMES 38
 #define KDL_FRAMES 14
 #define TEXT(x) #x
 #define FRAMES_TEXT(x) TEXT(x)
@@ -381,11 +382,50 @@ static bool scene_saves(studio *s)
     return true;
 }
 
+/* The tab of `code`'s source. */
+static int code_tab(studio *s, asset_code *code)
+{
+    for (int i = 0; i < acount(s->scene->tabs); i++) {
+        const char *path = s->scene->tabs[i].path;
+        if (path && !strcmp(path, asset_code_path(code))) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* The caret `code`'s tab keeps for a restored workspace. */
+static int kept_cursor(studio *s, asset_code *code)
+{
+    int tab = code_tab(s, code);
+    REQUIRE(tab >= 0 && s->scene->tabs[tab].source_state);
+    return av_get_int(av_obj_get(s->scene->tabs[tab].source_state, "cursor"));
+}
+
+/* Whether the find field has the keyboard. */
+static bool find_focused(studio *s)
+{
+    rml_element *focus = rml_context_focus_element(rml_backend_context(s->backend));
+    return focus && !strcmp(rml_element_id(focus), "code-find-query");
+}
+
+/* The text selects `length` bytes from `start`. */
+static bool selects(asset_code *code, int start, int length)
+{
+    int from, to;
+    REQUIRE(kit_code_selection(asset_code_editor(code), &from, &to));
+    REQUIRE(from == start && to == start + length);
+    return true;
+}
+
 /* Enter on an empty line types newlines; it never accepts a completion the
    user did not ask for, and one undo takes back the burst. Mod+/ comments
-   the caret's line as an undo step of its own, and uncomments it. */
+   the caret's line as an undo step of its own, and uncomments it. F3 and
+   Shift+F3 from the find field step through the counted matches, which do
+   not overlap. A moved caret is kept in its own tab when another shows. */
 static bool code_keys_frame(void *state)
 {
+    static int spaces, caret, other_tab;
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
@@ -420,6 +460,42 @@ static bool code_keys_frame(void *state)
         REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
         REQUIRE(asset_code_replay(code, false, false));
         REQUIRE(!strcmp(asset_code_text(code), commented_bytes));
+        /* Find seeds "  " from the first indent, where it overlaps. */
+        spaces = (int)(strstr(commented_bytes, "    //") - commented_bytes);
+        kit_code_select(asset_code_editor(code), spaces, spaces + 2);
+        REQUIRE(press_chord(SDLK_F, SDL_KMOD_CTRL));
+        keys++;
+    } else if (frames == 24) {
+        REQUIRE(s->code.find.open && !strcmp(s->code.find.query, "  "));
+        REQUIRE(find_focused(s));
+        REQUIRE(press_key(SDLK_F3));
+        keys++;
+    } else if (frames == 26) {
+        REQUIRE(selects(code, spaces + 2, 2) && s->code.find.index == 1);
+        REQUIRE(press_chord(SDLK_F3, SDL_KMOD_SHIFT));
+        keys++;
+    } else if (frames == 28) {
+        REQUIRE(selects(code, spaces, 2) && s->code.find.index == 0);
+        REQUIRE(press_key(SDLK_ESCAPE));
+        keys++;
+    } else if (frames == 30) {
+        REQUIRE(!s->code.find.open);
+        REQUIRE(press_key(SDLK_DOWN));
+        keys++;
+    } else if (frames == 32) {
+        caret = kit_code_cursor(asset_code_editor(code));
+        REQUIRE(s->code.capture_due && kept_cursor(s, code) != caret);
+        other_tab = code_tab(s, code) ? 0 : 1;
+        REQUIRE(other_tab < acount(s->scene->tabs));
+        REQUIRE(scene_tabs_activate(s->scene, other_tab) == 0);
+        /* The caret's rest ends as the other tab shows. */
+        s->code.capture_due = s->time;
+    } else if (frames == 34) {
+        REQUIRE(s->scene->active_tab == other_tab && !s->code.capture_due);
+        REQUIRE(kept_cursor(s, code) == caret);
+        REQUIRE(scene_tabs_activate(s->scene, code_tab(s, code)) == 0);
+        s->code.find.refocus = true;
+    } else if (frames == 36) {
         /* F10 from the text steps a frame unless the debugger pauses. */
         REQUIRE(!studio_session(s) && !s->pause.active);
         REQUIRE(press_key(SDLK_F10));
@@ -1437,7 +1513,7 @@ TEST_CASE(code_enter_types_newlines)
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
     REQUIRE(callback_ok);
     REQUIRE(unchanged_source());
-    REQUIRE(frames == KEY_FRAMES && keys == 5);
+    REQUIRE(frames == KEY_FRAMES && keys == 10);
     printf("Studio code keys accepted: frames=%d keys=%d\n", frames, keys);
     return true;
 }
