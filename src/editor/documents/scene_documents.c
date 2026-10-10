@@ -302,8 +302,10 @@ static bool holds_event(const graph *gr)
    graph is where the events are. */
 static graph *start_graph(app_scene_authoring *scene, const behavior_asset *asset, const char *key)
 {
-    uint64_t left = editor_document_graph(scene->graph_editor, key);
-    graph *shown = left ? behavior_asset_find_graph(asset, left) : NULL;
+    uint64_t left;
+    graph *shown = editor_document_graph(scene->graph_editor, key, &left)
+                     ? behavior_asset_find_graph(asset, left)
+                     : NULL;
     if (shown) {
         return shown;
     }

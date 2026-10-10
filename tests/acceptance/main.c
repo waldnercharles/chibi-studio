@@ -419,6 +419,7 @@ static bool graph_visibility_frame(void *state)
     frames++;
     REQUIRE(frames <= 10);
     if (frames == 1) {
+        REQUIRE(opens_on_handler(s));
         studio_behavior_show(s, 2);
     } else if (frames == 2) {
         REQUIRE(tilemap_viewport(s));
