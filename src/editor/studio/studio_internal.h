@@ -858,14 +858,17 @@ typedef struct
     int hover_at;
     const ui_source *hover_source;
     /* The symbol Mod last held the pointer on, in which document, part
-       and revision, and whether it has a definition to underline as a
-       link: looked up again only when one of them changes. */
+       and revision, the project scan (its project_time) it was looked up
+       against, and whether it has a definition to underline as a link:
+       looked up again only when one of them changes or the scan goes
+       stale. */
     struct
     {
         char path[1024];
         ui_part part;
         unsigned revision;
         int start, end;
+        double scanned;
         bool found;
     } link;
     bool replayed; /* Undo or Redo from the editor changed the text */

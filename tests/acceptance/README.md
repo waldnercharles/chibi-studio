@@ -47,12 +47,14 @@ chord comments the problem's line. Counter stays unsaved.
 
 `studio-acceptance --code-glyphs --project-root PATH` takes another disposable
 copy, adds a prototype named Crêpes and a UI document, Probe, and runs
-twenty-eight hidden frames. In the open scene's KDL, Control+Space in the
+thirty hidden frames. In the open scene's KDL, Control+Space in the
 strings "Crê" and "Cre" opens the completion list at the same left edge: the
 list starts under the word a cell a character, not a byte. In Probe's markup,
 with Control held and the pointer resting on a class its styles do not define,
-the class is no link, and holding still does not look it up again; once the
-class becomes one they define, it is.
+the class is no link. Once another stylesheet defines it and the project's scan
+goes stale, it is; held still on it, the class is neither scanned nor looked up
+again, and once a same-length class takes its place, the new text is looked up
+and is no link.
 
 `studio-acceptance --unit-warnings --project-root PATH` takes another disposable
 copy. It shows Counter in the Text Editor and replaces its source with one that

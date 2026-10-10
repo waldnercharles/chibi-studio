@@ -2633,6 +2633,18 @@ static void asset_requests(studio *s, asset_code *code, unsigned events)
 /* The symbol under the pointer while the primary modifier is held, when
    Go to Definition has somewhere else to go from it: Mod+click's
    underline, as the asset sources' (asset_code.c). */
+/* Whether the last link lookup still holds: the same symbol in the same
+   text, against the project scan it used while that scan is fresh, so a
+   definition another file gains or loses shows once the project rescans. */
+static bool link_current(const studio *s, const ui_buffer *b, ui_source_symbol symbol)
+{
+    const studio_code *c = &s->code;
+    return !strcmp(c->link.path, b->path) && c->link.part == b->part &&
+           c->link.revision == b->revision && c->link.start == symbol.start &&
+           c->link.end == symbol.end && c->link.scanned == c->project_time &&
+           s->time - c->project_time < PROJECT_STALE;
+}
+
 static void link_symbol(studio *s, const ui_buffer *b, const kit_code_editor *e, kit_code_desc *desc)
 {
     studio_code *c = &s->code;
@@ -2642,9 +2654,7 @@ static void link_symbol(studio *s, const ui_buffer *b, const kit_code_editor *e,
     if (symbol.kind == UI_SYMBOL_NONE) {
         return;
     }
-    if (strcmp(c->link.path, b->path) || c->link.part != b->part ||
-        c->link.revision != b->revision || c->link.start != symbol.start ||
-        c->link.end != symbol.end) {
+    if (!link_current(s, b, symbol)) {
         ui_code_place place;
         bool found = ui_code_definition(b, c->source, at, project(s, b->path, false), &place);
         snprintf(c->link.path, sizeof c->link.path, "%s", b->path);
@@ -2652,6 +2662,7 @@ static void link_symbol(studio *s, const ui_buffer *b, const kit_code_editor *e,
         c->link.revision = b->revision;
         c->link.start = symbol.start;
         c->link.end = symbol.end;
+        c->link.scanned = c->project_time;
         c->link.found = found;
     }
     if (c->link.found) {

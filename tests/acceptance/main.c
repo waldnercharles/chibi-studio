@@ -2511,7 +2511,7 @@ static bool scene_viewport_frame(void *state)
 #define FOLLOWUP_FRAMES 37
 /* Where the text's glyphs are: the completion list under a word that is
    not ASCII, and the Mod+hover link of a UI symbol. */
-#define GLYPH_FRAMES 28
+#define GLYPH_FRAMES 30
 /* Two problems on one byte: the name is unknown, and so not writable. */
 static const char shared_problem[] = "behavior Counter {\n"
                                      "    state count: int = 1\n"
@@ -2722,7 +2722,7 @@ static bool code_followups_frame(void *state)
 static bool code_glyphs_frame(void *state)
 {
     static float left;
-    static double stale;
+    static double scanned;
     float x, y;
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
@@ -2764,16 +2764,7 @@ static bool code_glyphs_frame(void *state)
             s->code.find.refocus = true;
             return point_into_text(s, 0.3f, &x, &y);
         case 19: return push_key(SDLK_LCTRL, SDL_KMOD_LCTRL, true);
-        case 21:
-            /* The class under the pointer was looked up. Mark the project
-               stale: another lookup would scan it again. */
-            REQUIRE(kit_code_link(s->code.editor) >= 0);
-            stale = s->code.project_time = s->time - 100;
-            return true;
         case 22: {
-            /* Held still on the same class and text, it was not looked up
-               again. */
-            REQUIRE(s->code.project_time == stale);
             /* The pointer rests on the class, which has no other
                definition, so it is no link. */
             const char *text = kit_code_text(s->code.editor, NULL);
@@ -2784,19 +2775,40 @@ static bool code_glyphs_frame(void *state)
                 under < (int)(name - text + strlen("lonely" LONG_CLASS))
             );
             REQUIRE(!linked(s));
-            /* The class its styles define takes its place under the
-               pointer. */
+            /* Another stylesheet comes to define it, unseen until the
+               project's scan goes stale, as two seconds on would make it. */
+            REQUIRE(write_content("ui", "Other.rcss", ".lonely" LONG_CLASS " { color: red; }\n"));
+            s->code.project_time = s->time - 100;
+            return true;
+        }
+        case 24:
+            /* The rescan found the other file's definition. Empty the scan
+               while it stays fresh: a lookup now would find nothing. */
+            REQUIRE(linked(s));
+            REQUIRE(s->code.project_time > s->time - 1);
+            scanned = s->code.project_time;
+            ui_source_project_free(&s->code.project);
+            return true;
+        case 26: {
+            /* Held still, the class was neither scanned nor looked up
+               again. */
+            REQUIRE(s->code.project_time == scanned && linked(s));
+            /* A class of the same length takes its place: the text's new
+               revision looks it up again, against the emptied scan. */
+            const char *text = kit_code_text(s->code.editor, NULL);
+            const char *name = strstr(text, "lonely");
+            REQUIRE(name);
             kit_code_set_selection(
                 s->code.editor,
                 (int)(name - text),
                 (int)(name - text + strlen("lonely"))
             );
-            kit_code_paste(s->code.editor, "known");
+            kit_code_paste(s->code.editor, "nolink");
             return true;
         }
-        case 26:
-            REQUIRE(strstr(kit_code_text(s->code.editor, NULL), "known" LONG_CLASS));
-            REQUIRE(linked(s));
+        case 28:
+            REQUIRE(strstr(kit_code_text(s->code.editor, NULL), "nolink" LONG_CLASS));
+            REQUIRE(!linked(s));
             return push_key(SDLK_LCTRL, SDL_KMOD_NONE, false);
         default: return true;
     }
