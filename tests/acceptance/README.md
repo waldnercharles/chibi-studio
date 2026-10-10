@@ -52,7 +52,10 @@ activate the graph's Counter document; returning to the scene preserves its
 unsaved source draft and undo/redo history. The accepted collaboration action
 changes the document and view together. Hidden graph fields relinquish keyboard
 and text input; idle frames retain their source/projection generations and
-reference index revision. No source save or playback occurs.
+reference index revision. Two temporary entities also check rotated tilemap
+framing, foreground layer priority, hidden-state filtering and selecting empty
+cells as part of one layer. They are removed before rendering. No source save or
+playback occurs.
 
 `studio-acceptance --export-game --project-root PATH` accepts another disposable
 copy. Its first hidden frame runs the Export Game command, which needs the SDK's

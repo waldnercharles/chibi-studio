@@ -39,7 +39,7 @@ set(STUDIO_PACKAGES
     material_runtime model_authoring model_runtime native_types physics_runtime platform
     project_document project_preparation prototype_document reference_index render save_runtime
     scenario_document scene_document scene_runtime shader_preparation source_catalog source_presentation
-    spatial_runtime studio_capabilities studio_graph support text_source types ui
+    spatial_runtime studio_capabilities studio_graph support text_source tilemap_runtime types ui
     ui_authoring ui_document value_document)
 set(missing "")
 foreach(package IN LISTS STUDIO_PACKAGES)

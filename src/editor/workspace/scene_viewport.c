@@ -14,6 +14,7 @@
 #include "render/ui.h"
 #include "runtime/camera.h"
 #include "runtime/component_catalog.h"
+#include "runtime/tilemap.h"
 #include "runtime/transform_propagation.h"
 
 #include <assert.h>
@@ -80,6 +81,25 @@ static bool appearance_bounds(
 
 static bool visual_bounds(const ecs_world *world, ecs_entity entity, bool effects, CF_Aabb *bounds)
 {
+    const GameTilemap *map = GAME_GameTilemap_get_const(world, entity);
+    if (map) {
+        GameGlobalTransform2D shown = game_transform_world_2d(world, entity);
+        CF_V2 min, max;
+        if (!tilemap_bounds(
+                map->columns,
+                map->rows,
+                map->frame_width,
+                map->frame_height,
+                (CF_V2){ shown.position.x, shown.position.y },
+                shown.radians,
+                &min,
+                &max
+            )) {
+            return false;
+        }
+        *bounds = (CF_Aabb){ { min.x, -max.y }, { max.x, -min.y } };
+        return true;
+    }
     const GameMeshSurface2D *mesh = GAME_GameMeshSurface2D_get_const(world, entity);
     const GameSdfSurface3D *sdf = GAME_GameSdfSurface3D_get_const(world, entity);
     if ((mesh && mesh->enabled) || (sdf && sdf->enabled)) {
@@ -104,6 +124,31 @@ static bool visual_bounds(const ecs_world *world, ecs_entity entity, bool effect
         effects,
         bounds
     );
+}
+
+static bool tilemap_hit(const ecs_world *world, ecs_entity entity, CF_V2 point)
+{
+    const GameTilemap *map = GAME_GameTilemap_get_const(world, entity);
+    GameGlobalTransform2D shown = game_transform_world_2d(world, entity);
+    CF_V2 min, max;
+    if (!tilemap_bounds(
+            map->columns,
+            map->rows,
+            map->frame_width,
+            map->frame_height,
+            (CF_V2){ shown.position.x, shown.position.y },
+            shown.radians,
+            &min,
+            &max
+        )) {
+        return false;
+    }
+    float dx = point.x - shown.position.x, dy = point.y - shown.position.y;
+    float c = cosf(shown.radians), s = sinf(shown.radians);
+    CF_V2 local = { c * dx + s * dy, c * dy - s * dx };
+    return local.x >= 0 && local.y >= 0 &&
+           local.x < (float)map->columns * map->frame_width &&
+           local.y < (float)map->rows * map->frame_height;
 }
 
 /* Whether `entity` is among the `count` in `only`, or `only` is NULL. */
@@ -222,7 +267,12 @@ ecs_entity pick_scene_entity(app_scene_authoring *scene, float x, float y, rende
         const GameMeshSurface2D *mesh = GAME_GameMeshSurface2D_get_const(scene->world, entity);
         const GameAppearance *appearance = GAME_GameAppearance_get_const(scene->world, entity);
         const GameSdfSurface3D *sdf = GAME_GameSdfSurface3D_get_const(scene->world, entity);
-        if ((mesh && mesh->enabled) || (sdf && sdf->enabled)) {
+        const GameTilemap *map = GAME_GameTilemap_get_const(scene->world, entity);
+        if (map) {
+            if (!tilemap_hit(scene->world, entity, (CF_V2){ x, -y })) {
+                continue;
+            }
+        } else if ((mesh && mesh->enabled) || (sdf && sdf->enabled)) {
             render_mesh_surface surface = { 0 };
             char error[128];
             float height;
@@ -274,7 +324,7 @@ ecs_entity pick_scene_entity(app_scene_authoring *scene, float x, float y, rende
         if (!editable) {
             continue;
         }
-        int layer = appearance ? appearance->layer : 0;
+        int layer = map ? map->layer : appearance ? appearance->layer : 0;
         /* Match the renderer's authored layer, then stable entity-slot order. */
         if (picked.slot && (layer < picked_layer ||
                             (layer == picked_layer && entity.slot <= picked.slot))) {
@@ -833,19 +883,7 @@ static void draw_arena_selection(
 static void outline_object(ecs_world *world, ecs_entity entity, float pixel, float margin, unsigned color)
 {
     CF_Aabb bounds;
-    const GameAppearance *appearance = GAME_GameAppearance_get_const(world, entity);
-    if (!GAME_GameTransform_get_const(world, entity) || !appearance) {
-        return;
-    }
-    GameGlobalTransform2D pose = actor_pose(world, entity);
-    if (!appearance_bounds(
-            &pose.position,
-            appearance,
-            GAME_GameShader_get_const(world, entity),
-            pose.radians,
-            false,
-            &bounds
-        )) {
+    if (!visual_bounds(world, entity, false, &bounds)) {
         return;
     }
     bounds.min.x -= margin * pixel;
