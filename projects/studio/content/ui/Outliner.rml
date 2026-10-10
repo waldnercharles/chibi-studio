@@ -15,7 +15,10 @@
       </div>
     </div>
   </use>
-  <div class="outliner-empty" data-if="self.notice != ''">{{ self.notice }}</div>
+  <div class="outliner-empty" data-if="self.notice != ''">
+    <span class="notice">{{ self.notice }}</span>
+    <button class="btn sm outline" data-if="self.filtered" data-event-click="emit('ClearFilter')"><span class="label">Clear Filter</span></button>
+  </div>
   <use ui="Menu" id="outliner-menu">
     <use ui="MenuGroup" data-alias-group="self.menu"/>
     <use ui="MenuCommand" data-alias-command="commands.frame"/>

@@ -1094,6 +1094,14 @@ static void add_component(studio *s, const ecs_component_desc *desc)
     snprintf(s->components.added, sizeof s->components.added, "%s", desc->name);
 }
 
+void studio_add_component_to_selection(studio *s, const ecs_component_desc *desc)
+{
+    scene_actor *actor = selected_actor(s->scene);
+    assert(actor && actor->identity);
+    s->components.object = actor->identity;
+    add_component(s, desc);
+}
+
 /* A component the prototype lacks, as the palette lists it. */
 typedef struct
 {

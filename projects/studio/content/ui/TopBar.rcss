@@ -1,9 +1,10 @@
 /* Studio's top bar (studio_shell.c hosts it; studio_sources.c binds
    `editor` and `commands`, and studio_shell.c `menubar` and `shell`): the
-   brand, the menubar, the layout menu, the document tabs, the transport with
-   the play target's menu, a paused run's steps and the playback speed's
-   menu, Settings and Search. Each button runs its command with
-   emit('studio.<id>'), and a tab's with the tab's index. */
+   brand, the menubar, the document tabs, the transport with the play
+   target's menu, a paused run's steps and the playback speed's menu,
+   Collaboration, the layout menu and side pane, Settings and Search. Each
+   button runs its command with emit('studio.<id>'), and a tab's with the
+   tab's index. */
 body { flex: 0 0 auto; }
 .app-chrome { display: flex; flex-direction: column; flex: 0 0 auto; }
 // The transport stays clear of the tabs as the window narrows.
@@ -59,6 +60,8 @@ body { flex: 0 0 auto; }
   transition: none;
 }
 .doc-tab .face > .icon { flex: 0 0 auto; }
+// A tab is pressed to select or drag it, so it keeps its size.
+.doc-tab .face:active { transform: none; }
 .doc-tab .face:hover { background-color: transparent; }
 .doc-tab .face:focus-visible { background-color: transparent; }
 .doc-tab[data-state=on] .face { color: var(--foreground); }
@@ -112,7 +115,7 @@ body { flex: 0 0 auto; }
 .transport { display: flex; align-items: center; gap: 4dp; flex: 0 0 auto; }
 #play-target { display: flex; flex: 0 0 auto; }
 .target { width: 168dp; overflow: hidden; }
-.target .label { display: block; flex: 1 1 0dp; min-width: 0dp; overflow: hidden; white-space: nowrap; }
+.target .label { display: block; flex: 1 1 0dp; min-width: 0dp; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .target .icon { flex: 0 0 auto; }
 .group { display: flex; background-color: var(--secondary); border-radius: var(--r); }
 .group .btn { border-radius: 0dp; width: var(--h); padding: 0dp; }
@@ -147,6 +150,6 @@ body { flex: 0 0 auto; }
 }
 
 @media (max-width: 900dp) {
-  #layout, #layout + .sep { display: none; }
+  #layout { display: none; }
   .target { width: 120dp; }
 }

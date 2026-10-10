@@ -28,14 +28,14 @@
           <use ui="MenuCommand" data-alias-command="commands.newUiDocument"/>
           <use ui="MenuCommand" data-alias-command="commands.newStylesheet"/>
         </use>
-        <use ui="MenuCommand" data-alias-command="commands.search"/>
         <use ui="MenuCommand" data-if="commands.openProject.enabled" data-alias-command="commands.openProject"/>
         <use ui="Submenu" data-if="menubar.projects.size > 0" data-alias-item="menubar.items.openRecent">
           <use ui="MenuItem" data-for="project, i : menubar.projects" data-alias-item="project" data-event-click="emit('menubar.openProject', i)"/>
         </use>
         <use ui="MenuSeparator"/>
         <use ui="MenuCommand" data-alias-command="commands.save"/>
-        <use ui="MenuCommand" data-alias-command="commands.reload"/>
+        <use ui="MenuCommand" data-alias-command="commands.saveAll"/>
+        <use ui="MenuCommand" data-alias-command="commands.revert"/>
         <use ui="MenuCommand" data-alias-command="commands.closeTab"/>
         <use ui="MenuItem" data-if="menubar.web" data-alias-item="menubar.items.importProject" data-event-click="emit('menubar.importProject')"/>
         <use ui="MenuItem" data-if="menubar.web" data-alias-item="menubar.items.exportProject" data-event-click="emit('menubar.exportProject')"/>
@@ -59,37 +59,38 @@
         <use ui="MenuSeparator"/>
         <use ui="MenuCommand" data-alias-command="commands.selectAll"/>
         <use ui="MenuCommand" data-alias-command="commands.deselect"/>
+        <use ui="MenuSeparator"/>
         <use ui="MenuCommand" data-alias-command="commands.find"/>
+        <use ui="MenuCommand" data-alias-command="commands.search"/>
       </use>
       <button class="btn trigger" popovertarget="menu-view" aria-haspopup="menu"><span class="label">View</span></button>
+      <!-- Panels and layout first, as most editors' View menus lead; the
+           tabs and the Scene view's camera follow. -->
       <use ui="Menu" id="menu-view">
+        <use ui="MenuGroup">Panels</use>
+        <use ui="MenuCommand" data-alias-command="commands.toggleAssets"/>
+        <use ui="MenuCommand" data-alias-command="commands.toggleOutput"/>
+        <use ui="MenuCommand" data-alias-command="commands.togglePerformance"/>
+        <use ui="MenuCommand" data-alias-command="commands.toggleSidePane"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuGroup">Layout</use>
+        <use ui="MenuCommand" data-alias-command="commands.workspaceHorizontalSplit"/>
+        <use ui="MenuCommand" data-alias-command="commands.workspaceVerticalSplit"/>
+        <use ui="MenuCommand" data-alias-command="commands.maximize"/>
+        <use ui="MenuCommand" data-alias-command="commands.resetLayout"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuGroup">Tabs</use>
         <use ui="MenuCommand" data-alias-command="commands.previousTab"/>
         <use ui="MenuCommand" data-alias-command="commands.nextTab"/>
         <use ui="MenuCommand" data-alias-command="commands.togglePinTab"/>
         <use ui="MenuSeparator"/>
+        <use ui="MenuGroup">Scene</use>
         <use ui="MenuCommand" data-alias-command="commands.frame"/>
         <use ui="MenuCommand" data-alias-command="commands.frameAll"/>
         <use ui="MenuCommand" data-alias-command="commands.resetCamera"/>
-        <use ui="MenuSeparator"/>
         <use ui="MenuCommand" data-alias-command="commands.hideSelected"/>
         <use ui="MenuCommand" data-alias-command="commands.hideUnselected"/>
         <use ui="MenuCommand" data-alias-command="commands.showAll"/>
-        <use ui="MenuSeparator"/>
-        <use ui="MenuCommand" data-alias-command="commands.showLiveValues"/>
-        <use ui="MenuSeparator"/>
-        <use ui="MenuGroup">Drawers</use>
-        <use ui="MenuCommand" data-alias-command="commands.toggleAssets"/>
-        <use ui="MenuCommand" data-alias-command="commands.toggleOutput"/>
-        <use ui="MenuCommand" data-alias-command="commands.togglePerformance"/>
-        <use ui="MenuSeparator"/>
-        <use ui="MenuCommand" data-alias-command="commands.inspectElement"/>
-        <use ui="MenuSeparator"/>
-        <use ui="MenuGroup">Layout Mode</use>
-        <use ui="MenuCommand" data-alias-command="commands.workspaceHorizontalSplit"/>
-        <use ui="MenuCommand" data-alias-command="commands.workspaceVerticalSplit"/>
-        <use ui="MenuCommand" data-alias-command="commands.toggleSidePane"/>
-        <use ui="MenuCommand" data-alias-command="commands.maximize"/>
-        <use ui="MenuCommand" data-alias-command="commands.resetLayout"/>
         <use ui="MenuSeparator"/>
         <use ui="MenuGroup">UI Scale</use>
         <use ui="MenuCommand" data-alias-command="commands.zoomIn"/>
@@ -125,8 +126,11 @@
         <use ui="MenuCommand" data-alias-command="commands.keepChanges"/>
       </use>
       <button class="btn trigger" popovertarget="menu-play" aria-haspopup="menu"><span class="label">Play</span></button>
+      <!-- F5 plays or resumes; while the game runs, Space's Pause takes
+           its place, so the menu never lists Play twice. -->
       <use ui="Menu" id="menu-play">
-        <use ui="MenuCommand" data-alias-command="commands.play"/>
+        <use ui="MenuCommand" data-if="commands.resume.enabled" data-alias-command="commands.resume"/>
+        <use ui="MenuCommand" data-if="!commands.resume.enabled" data-alias-command="commands.play"/>
         <use ui="MenuCommand" data-alias-command="commands.stop"/>
         <use ui="MenuCommand" data-alias-command="commands.step"/>
         <use ui="MenuSeparator"/>
@@ -135,30 +139,31 @@
         <use ui="MenuCommand" data-alias-command="commands.faster"/>
         <use ui="MenuCommand" data-alias-command="commands.normalSpeed"/>
         <use ui="MenuSeparator"/>
-        <use ui="MenuCommand" data-alias-command="commands.resume"/>
+        <use ui="MenuGroup">Debugger</use>
         <use ui="MenuCommand" data-alias-command="commands.stepOver"/>
         <use ui="MenuCommand" data-alias-command="commands.stepInto"/>
         <use ui="MenuCommand" data-alias-command="commands.stepOut"/>
+        <use ui="MenuCommand" data-alias-command="commands.showLiveValues"/>
       </use>
       <button class="btn trigger" popovertarget="menu-help" aria-haspopup="menu"><span class="label">Help</span></button>
       <use ui="Menu" id="menu-help">
         <use ui="MenuCommand" data-alias-command="commands.keyboardShortcuts"/>
+        <use ui="MenuCommand" data-alias-command="commands.documentation"/>
+        <use ui="MenuCommand" data-alias-command="commands.reportIssue"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.inspectElement"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.about"/>
       </use>
     </menubar>
-    <div id="layout">
-      <button class="btn icon-only" popovertarget="layout-menu" aria-haspopup="menu" data-tip="Layout"><span class="icon">&#xebeb;</span></button>
-      <use ui="Menu" id="layout-menu">
-        <use ui="MenuGroup">Layout</use>
-        <use ui="MenuCommand" data-alias-command="commands.workspaceHorizontalSplit"/>
-        <use ui="MenuCommand" data-alias-command="commands.workspaceVerticalSplit"/>
-      </use>
-    </div>
-    <div class="sep"/>
-
     <div class="spacer"/>
     <div class="transport">
+      <!-- A plain label: <morph-text> took its text in its first update,
+           before the binding replaced the raw {{ }} text, and showed that
+           text at startup. The target changes as scenes switch, often from
+           the keyboard, so it needs no motion. -->
       <div id="play-target">
-        <button class="btn subtle target" popovertarget="target-menu" aria-haspopup="menu" data-tip="Play target"><span class="icon">{{ shell.target.icon }}</span><morph-text class="label">{{ shell.target.label }}</morph-text></button>
+        <button class="btn subtle target" popovertarget="target-menu" aria-haspopup="menu" data-tip="Play target"><span class="icon">{{ shell.target.icon }}</span><span class="label">{{ shell.target.label }}</span></button>
         <use ui="Menu" id="target-menu">
           <use ui="MenuGroup">Play</use>
           <use ui="MenuItem" data-alias-item="shell.target.scene" data-event-click="emit('shell.target', 'scene')"/>
@@ -167,8 +172,8 @@
       </div>
       <div class="group">
         <button class="btn icon-only" data-attr-data-tip="commands.play.label" data-attr-data-kbd="commands.play.shortcut" data-attr-data-state="editor.playing && !editor.paused ? 'on' : 'off'" data-event-click="emit('studio.play')" data-attrif-data-disabled="!commands.play.enabled"><span class="icon">{{ commands.play.icon }}</span></button>
-        <button class="btn icon-only" data-attr-data-tip="commands.stop.label" data-attrif-data-disabled="!commands.stop.enabled" data-event-click="emit('studio.stop')"><span class="icon">{{ commands.stop.icon }}</span></button>
-        <button class="btn icon-only" data-if="!editor.paused" data-attr-data-tip="commands.step.label" data-event-click="emit('studio.step')" data-attrif-data-disabled="!commands.step.enabled"><span class="icon">{{ commands.step.icon }}</span></button>
+        <button class="btn icon-only" data-attr-data-tip="commands.stop.label" data-attr-data-kbd="commands.stop.shortcut" data-attrif-data-disabled="!commands.stop.enabled" data-event-click="emit('studio.stop')"><span class="icon">{{ commands.stop.icon }}</span></button>
+        <button class="btn icon-only" data-if="!editor.paused" data-attr-data-tip="commands.step.label" data-attr-data-kbd="commands.step.shortcut" data-event-click="emit('studio.step')" data-attrif-data-disabled="!commands.step.enabled"><span class="icon">{{ commands.step.icon }}</span></button>
         <div id="debug-steps" data-if="editor.paused">
           <button class="btn icon-only" data-attr-data-tip="commands.stepOver.label" data-attr-data-kbd="commands.stepOver.shortcut" data-event-click="emit('studio.stepOver')"><span class="icon">{{ commands.stepOver.icon }}</span></button>
           <button class="btn icon-only" data-attr-data-tip="commands.stepInto.label" data-attr-data-kbd="commands.stepInto.shortcut" data-event-click="emit('studio.stepInto')"><span class="icon">{{ commands.stepInto.icon }}</span></button>
@@ -188,8 +193,21 @@
       </div>
     </div>
     <div class="spacer"/>
-    <button class="btn collaboration-trigger" data-attr-data-tip="commands.collaboration.label" data-attr-data-state="collaboration.connected ? 'on' : 'off'" data-event-click="emit('studio.collaboration')"><span class="icon">{{ commands.collaboration.icon }}</span><span class="label">Collab</span></button>
+    <!-- Icon-only until a session exists, then labelled so the session reads at a glance. -->
+    <button class="btn collaboration-trigger" data-attr-data-tip="commands.collaboration.label" data-attr-data-state="collaboration.connected ? 'on' : 'off'" data-class-icon-only="!collaboration.connected" data-event-click="emit('studio.collaboration')"><span class="icon">{{ commands.collaboration.icon }}</span><span class="label" data-if="collaboration.connected">Collab</span></button>
     <div class="sep"/>
+    <!-- The layout controls sit together at the right, as VS Code's do. -->
+    <div id="layout">
+      <button class="btn icon-only" popovertarget="layout-menu" aria-haspopup="menu" data-tip="Layout"><span class="icon">&#xebeb;</span></button>
+      <use ui="Menu" id="layout-menu">
+        <use ui="MenuGroup">Layout</use>
+        <use ui="MenuCommand" data-alias-command="commands.workspaceHorizontalSplit"/>
+        <use ui="MenuCommand" data-alias-command="commands.workspaceVerticalSplit"/>
+        <use ui="MenuCommand" data-alias-command="commands.maximize"/>
+        <use ui="MenuSeparator"/>
+        <use ui="MenuCommand" data-alias-command="commands.resetLayout"/>
+      </use>
+    </div>
     <button class="btn icon-only side-pane" data-attr-data-tip="commands.toggleSidePane.label" data-attr-data-state="commands.toggleSidePane.checked ? 'on' : 'off'" data-event-click="emit('studio.toggleSidePane')"><span class="icon">{{ commands.toggleSidePane.icon }}</span></button>
     <button class="btn icon-only" data-attr-data-tip="commands.settings.label" data-attr-data-kbd="commands.settings.shortcut" data-event-click="emit('studio.settings')"><span class="icon">{{ commands.settings.icon }}</span></button>
     <button class="btn search-trigger" data-attr-data-tip="commands.search.label" data-attr-data-kbd="commands.search.shortcut" data-event-click="emit('studio.search')"><span class="icon">{{ commands.search.icon }}</span><span class="label">{{ commands.search.label }}</span><span class="kbd">{{ commands.search.shortcut }}</span></button>
