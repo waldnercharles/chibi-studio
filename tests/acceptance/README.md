@@ -25,6 +25,16 @@ hidden frames and saves nothing.
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
 
+`studio-acceptance --graph-visibility --project-root PATH` takes a disposable
+copy and runs ten hidden fixed-dt frames. It checks that maximizing Code and
+replacing the graph area with Scene stop graph context updates and rendering,
+and that showing Both resumes them. Selecting Both from a scene source must
+activate the graph's Counter document; returning to the scene preserves its
+unsaved source draft and undo/redo history. The accepted collaboration action
+changes the document and view together. Hidden graph fields relinquish keyboard
+and text input; idle frames retain their source/projection generations and
+reference index revision. No source save or playback occurs.
+
 `studio-acceptance --export-game --project-root PATH` accepts another disposable
 copy. Its first hidden frame runs the Export Game command, which needs the SDK's
 `chibi`, `chibi-compile` and `chibi-player` that the build copies beside it. The

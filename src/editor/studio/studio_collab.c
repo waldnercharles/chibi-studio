@@ -533,6 +533,19 @@ bool studio_collab_apply(studio *s, const char *json, char *error, size_t size)
         applied = studio_collab_restore(s, json);
     } else if (family && !strcmp(family, "command")) {
         const char *id = yyjson_get_str(yyjson_obj_get(root, "id"));
+        if (id && !strcmp(id, "behavior.view")) {
+            const char *key = yyjson_get_str(yyjson_obj_get(root, "tab"));
+            int index = key ? tab_by_key(s->scene, key) : -1;
+            bool graph = index >= 0 && !s->scene->tabs[index].source_only &&
+                         (s->scene->tabs[index].kind == APP_EDITOR_DOCUMENT_BEHAVIOR ||
+                          s->scene->tabs[index].kind == APP_EDITOR_DOCUMENT_SYSTEM);
+            if (graph && scene_tabs_activate(s->scene, index) == 0) {
+                studio_behavior_show(s, 2);
+                applied = true;
+            }
+            yyjson_doc_free(doc);
+            return applied;
+        }
         int command = id ? studio_command_named(id) : -1;
         if (command == STUDIO_COMMAND_UNDO || command == STUDIO_COMMAND_REDO) {
             if (collab_is_host()) {

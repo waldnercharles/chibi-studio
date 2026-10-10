@@ -1762,12 +1762,14 @@
     "src/editor/studio/studio_code.c": {
       "current_source_sha256": "2bc7f3689067a8ad2916dfa0dfc0ec0147a874721d165ec20f1be8f202867690",
       "sha256": "9129512614d262430a863e4cf6ccac6f161691d62449660f709ced5dfa89421c",
-      "source_path": "src/editor/studio/studio_code.c"
+      "source_path": "src/editor/studio/studio_code.c",
+      "consumer_sha256": "1eca83b752b0cd760e183dd7833e892e59ff0864406eae9d587885108ee3da03"
     },
     "src/editor/studio/studio_collab.c": {
       "current_source_sha256": "a9eb6419e86730bd61449fef5116d2575a54ae5d21887d5d31c740c84313ddd6",
       "sha256": "a9eb6419e86730bd61449fef5116d2575a54ae5d21887d5d31c740c84313ddd6",
-      "source_path": "src/editor/studio/studio_collab.c"
+      "source_path": "src/editor/studio/studio_collab.c",
+      "consumer_sha256": "60af050d5af319126cb1cd5ea52ec1bf5c23014c654109d30b9b40259aafea5e"
     },
     "src/editor/studio/studio_commands.c": {
       "current_source_sha256": "a57d09649e465de860c1fcde24684f72dd0588e6a71b22ef50df00db79ced3d7",
@@ -1847,7 +1849,8 @@
     "src/editor/studio/studio_graph.c": {
       "current_source_sha256": "6061bc599a17a3b61c3d6b99729d57e410befff06b346c3d188081cc7e54d725",
       "sha256": "5913a02f13074c1fb1f5fff80ec3f2fc341f3811ccbaf53762f98840bc87990e",
-      "source_path": "src/editor/studio/studio_graph.c"
+      "source_path": "src/editor/studio/studio_graph.c",
+      "consumer_sha256": "d069f3e3f2b66d8b64d8e8e83b7debd88d72045f9c8765a4b0a838593d869a07"
     },
     "src/editor/studio/studio_graph_comment.c": {
       "current_source_sha256": "b5c125313cda03fa83f768970ca4fb6450cd99679004986b0f5573efa962ad1f",
@@ -2299,7 +2302,8 @@
     "src/editor/workspace/scene_authoring.c": {
       "current_source_sha256": "b60c6ff2f94a8a5733efdb4ec8fe811f89d0d02e8d1635b0ec68dc73588f9612",
       "sha256": "0e6389b4bfcaf9c1f64637bf80918284091122a81e90e2efa2c77e99f36c1421",
-      "source_path": "src/editor/workspace/scene_authoring.c"
+      "source_path": "src/editor/workspace/scene_authoring.c",
+      "consumer_sha256": "fce28870715d0bcbed7f592a7f7a6ab18078c82f16119b62033e08bed167959a"
     },
     "src/editor/workspace/scene_authoring.h": {
       "current_source_sha256": "8b5270dfd0df43786a42529669ece1f70460727a5fb805aefabab953e5139a1f",
@@ -2365,7 +2369,8 @@
     "src/editor/workspace/scene_viewport.c": {
       "current_source_sha256": "f2a2f0d495ea6a286f1dfd898f3904d55eedfdb9093f9ef79d9f16115503a482",
       "sha256": "c487c7af89a66c3beb36270f2751356d3c5429ccccef8268ef518557da7a5210",
-      "source_path": "src/editor/workspace/scene_viewport.c"
+      "source_path": "src/editor/workspace/scene_viewport.c",
+      "consumer_sha256": "6a54efca709a505d187dd527b9dc9051f323422c500bf545f6bf22685ca9a73d"
     },
     "src/editor/workspace/scene_world_preview.c": {
       "current_source_sha256": "0dc6c273fa210be49c28651ae1788498f1a081196d48c7803891f0ac847da9db",

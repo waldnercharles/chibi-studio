@@ -929,14 +929,11 @@ void app_scene_authoring_render(void *user)
         if (render_skip_has(hidden, entity)) {
             continue;
         }
-        GameTransform pose = *GAME_GameTransform_get_const(world, entity);
-        if (runtime) {
-            engine_render_position(runtime, entity, &pose);
-        }
-        const GameTransform *transform = &pose;
+        GameGlobalTransform2D shown = engine_render_transform(runtime, world, entity);
+        const GameTransform *transform = &shown.position;
         const GameAppearance *appearance = GAME_GameAppearance_get_const(world, entity);
         CF_Aabb bounds;
-        float radians = actor_orientation(world, entity);
+        float radians = -shown.radians;
         if (!appearance_bounds(
                 transform,
                 appearance,
