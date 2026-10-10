@@ -159,16 +159,31 @@ jobs:
             }
 
             async function dependenciesMerged(pr) {
-              const references = [...(pr.body || "").matchAll(/\b(?:depends on|stacked on|must merge (?:after|with)) #([0-9]+)\b/gi)];
-              for (const match of references) {
+              const body = pr.body || "";
+              const targets = new Map();
+              const addTarget = target => {
+                const [reference, rawNumber] = target.split("#");
+                const parts = reference ? reference.split("/") : [];
+                const dependencyOwner = parts.length > 1 ? parts.at(-2) : owner;
+                const dependencyRepo = parts.length > 0 ? parts.at(-1) : repo;
+                const number = Number(rawNumber);
+                targets.set(`${dependencyOwner}/${dependencyRepo}#${number}`, {
+                  owner: dependencyOwner, repo: dependencyRepo, number,
+                });
+              };
+              const directives = body.matchAll(/\b(?:depends on|stacked on|must merge (?:after|with(?: or after)?))\s+((?:[A-Za-z0-9_.-]+\/)?[A-Za-z0-9_.-]+#[0-9]+|#[0-9]+)\b/gi);
+              for (const match of directives) addTarget(match[1]);
+              if (/\bmust merge with or after it\b/i.test(body)) {
+                for (const match of body.matchAll(/(?:([A-Za-z0-9_.-]+)\/)?([A-Za-z0-9_.-]+)#([0-9]+)\b/g)) {
+                  addTarget(`${match[1] ? `${match[1]}/` : ""}${match[2]}#${match[3]}`);
+                }
+              }
+
+              for (const target of targets.values()) {
                 try {
-                  const issue = (await github.rest.issues.get({
-                    owner, repo, issue_number: Number(match[1]),
-                  })).data;
+                  const issue = (await github.rest.issues.get(target)).data;
                   if (issue.pull_request) {
-                    const dependency = (await github.rest.pulls.get({
-                      owner, repo, pull_number: Number(match[1]),
-                    })).data;
+                    const dependency = (await github.rest.pulls.get({ ...target, pull_number: target.number })).data;
                     if (!dependency.merged) return false;
                   } else if (issue.state !== "closed") {
                     return false;
