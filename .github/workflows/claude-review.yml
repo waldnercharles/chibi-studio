@@ -42,17 +42,16 @@ jobs:
             --max-turns 40
             --allowedTools "Read,Edit,Write,Grep,Glob,Bash(git:*),Bash(make:*),Bash(gh pr:*)"
           prompt: |
-            Review pull request #${{ github.event.pull_request.number }} against origin/${{ github.event.pull_request.base.ref }}
-            as a strict reviewer, following AGENTS.md (correctness, ownership and
-            lifetimes, failure paths, style, dead code, missing pico_unit coverage).
-            Fix every real problem yourself: edit the files, build and run the
-            admitted checks that cover them (60-second ceiling, see AGENTS.md),
-            commit with an imperative message and `git push` to the PR branch.
-            Do not merge, close or relabel the PR. Ignore nits. If a problem
-            needs an owner decision you cannot make, add the `hold` label with
-            `gh pr edit ${{ github.event.pull_request.number }} --add-label hold`
-            and explain in one PR comment. Finish with a short PR comment
-            summarizing findings and fixes.
+            Review pull request #${{ github.event.pull_request.number }} by following
+            .claude/skills/pr-review/SKILL.md, plus AGENTS.md conventions and missing
+            pico_unit coverage. Then fix every real problem you find instead of only
+            reporting it: edit the files, build and run the admitted checks that cover
+            them (60-second ceiling, see AGENTS.md), commit with an imperative message
+            and `git push` to the PR branch. Do not merge, close or relabel the PR.
+            Ignore nits. If a problem needs an owner decision you cannot make, add the
+            `hold` label with `gh pr edit ${{ github.event.pull_request.number }} --add-label hold`
+            and explain in one PR comment. Finish with a short PR comment summarizing
+            findings and fixes, in the tone the skill specifies.
       - name: Merge once checks pass
         run: |
           labels=$(gh pr view "$PR" --json labels --jq '[.labels[].name]|join(",")')
