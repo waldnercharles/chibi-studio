@@ -29,7 +29,7 @@
 .search-input:placeholder-shown { color: var(--faint-foreground); }
 .search-input selection { background-color: var(--primary); color: var(--primary-foreground); }
 .search .clear {
-  position: absolute; right: 3dp; top: 50%; margin-top: -8dp; width: 16dp; height: 16dp; line-height: 16dp;
+  position: absolute; right: 3dp; top: 50%; width: 16dp; height: 16dp; line-height: 16dp;
   text-align: center; border-radius: 3dp; cursor: pointer;
   transform: translateY(-50%);
 }
