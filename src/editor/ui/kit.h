@@ -795,9 +795,10 @@ extern "C"
         const char *word_chars;
         /* Chords the host binds to the editor's own commands, in
          * kit_code_result.chord's notation ("Mod+/", "Alt+Shift+H"). Those
-         * with the primary modifier or Alt, or on a function key, go back to
-         * the host before the editor's keys take them, so a command rebound
-         * to Mod+C, or Mod+/ under Vim, still runs. */
+         * with the primary modifier, Ctrl on a Mac or Meta elsewhere, or Alt,
+         * or on a function key, go back to the host before the editor's keys
+         * take them, so a command rebound to Mod+C, Meta+K, or Mod+/ under
+         * Vim, still runs. */
         const char *const *chords;
         int chord_count;
         /* Bytes [link_start, link_end) of the symbol kit_code_link names,

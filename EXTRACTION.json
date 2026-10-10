@@ -1704,7 +1704,7 @@
       "current_source_sha256": "221e28db084147124738f1a531f1300861183944dd87ee8fc7584e446b348c7c",
       "sha256": "221e28db084147124738f1a531f1300861183944dd87ee8fc7584e446b348c7c",
       "source_path": "src/editor/rmlui/kit_code.c",
-      "consumer_sha256": "a0b6b55b26d98d4ec568f2b4f137d946af6b6a848d4d9ced4e675ab53bf1d412"
+      "consumer_sha256": "016c119d178244be34a533813629c03879062a88dcca418d8586f03a4a681c0e"
     },
     "src/editor/rmlui/kit_command.c": {
       "current_source_sha256": "4f0d2ec71b0f088df1e9ba442cdd679f7084d79f0de121adf83684b3ff58b3d1",
@@ -2241,7 +2241,7 @@
       "current_source_sha256": "0971a1fa08b4407bd6f7b275384c1ccc97235a0b00c4c883235554bbd340962c",
       "sha256": "0971a1fa08b4407bd6f7b275384c1ccc97235a0b00c4c883235554bbd340962c",
       "source_path": "src/editor/ui/kit.h",
-      "consumer_sha256": "7a6fcf4f57ee3002ae6f1644eab5827a6732059e9182caa3ce9c4b8a36cc0a9d"
+      "consumer_sha256": "2ca4e9a4609b1917aba7d77e67373fd1d87728e10e0aebef36b6d8037aa3ae92"
     },
     "src/editor/ui/kit_icons.h": {
       "current_source_sha256": "d48b0fd19d34495e5d0f0f9dff1848213fbc440ab3b0aad4afc32645cdcd73a3",

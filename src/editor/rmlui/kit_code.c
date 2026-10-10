@@ -990,8 +990,9 @@ static bool standard_key(rml_key key)
 /* A key's modifiers as the person pressed them. */
 typedef struct keys
 {
-    bool primary; /* Command on a Mac, Control elsewhere */
-    bool ctrl;    /* the physical Control key */
+    bool primary;   /* Command on a Mac, Control elsewhere */
+    bool ctrl;      /* the physical Control key */
+    bool secondary; /* Control on a Mac, Meta elsewhere: a chord's Ctrl or Meta */
     bool alt, shift;
 } keys;
 
@@ -1002,6 +1003,7 @@ static keys read_keys(const kit_code_editor *e, unsigned modifiers)
     return (keys){
         .primary = modifiers & RML_KM_CTRL,
         .ctrl = modifiers & (e->mac ? RML_KM_META : RML_KM_CTRL),
+        .secondary = modifiers & RML_KM_META,
         .alt = modifiers & RML_KM_ALT,
         .shift = modifiers & RML_KM_SHIFT,
     };
@@ -1019,10 +1021,10 @@ static bool function_key(rml_key key)
     return key >= RML_KEY_F1 && key <= RML_KEY_F12;
 }
 
-/* A key's chord in kit_code_result.chord's notation: Mod, Alt, Shift, then
-   the key's name, as studio_chord writes them; false for a key it cannot
-   name. */
-static bool chord_name(char out[32], rml_key key, keys m)
+/* A key's chord in kit_code_result.chord's notation: Mod, Ctrl on a Mac or
+   Meta elsewhere, Alt, Shift, then the key's name, as studio_chord_name
+   writes them; false for a key it cannot name. */
+static bool chord_name(const kit_code_editor *e, char out[32], rml_key key, keys m)
 {
     char name[8];
     uint32_t c = chord_char(key);
@@ -1035,13 +1037,23 @@ static bool chord_name(char out[32], rml_key key, keys m)
     } else {
         return false;
     }
-    snprintf(out, 32, "%s%s%s%s", m.primary ? "Mod+" : "", m.alt ? "Alt+" : "", m.shift ? "Shift+" : "", name);
+    const char *secondary = !m.secondary ? "" : e->mac ? "Ctrl+" : "Meta+";
+    snprintf(
+        out,
+        32,
+        "%s%s%s%s%s",
+        m.primary ? "Mod+" : "",
+        secondary,
+        m.alt ? "Alt+" : "",
+        m.shift ? "Shift+" : "",
+        name
+    );
     return true;
 }
 
 static void report_chord(kit_code_editor *e, rml_key key, keys m)
 {
-    if (chord_name(e->result.chord, key, m)) {
+    if (chord_name(e, e->result.chord, key, m)) {
         e->result.events |= KIT_CODE_CHORD;
     }
 }
@@ -1381,11 +1393,13 @@ static void host_chord(kit_code_editor *e, const char *chord)
 
 /* A chord the host binds to one of the editor's commands (desc.chords) goes
    back to it before the editor's own keys can take it: a command rebound to
-   Mod+C, or Mod+/ under Vim. Keys that type stay the editor's. */
+   Mod+C, Ctrl+K on a Mac, Meta+K elsewhere, or Mod+/ under Vim. Keys that
+   type stay the editor's. */
 static bool bound_chord(kit_code_editor *e, rml_key key, keys m)
 {
     char name[32];
-    if ((!m.primary && !m.alt && !function_key(key)) || !chord_name(name, key, m)) {
+    bool modified = m.primary || m.secondary || m.alt;
+    if ((!modified && !function_key(key)) || !chord_name(e, name, key, m)) {
         return false;
     }
     for (int i = 0; i < acount(e->chords); i++) {

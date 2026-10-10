@@ -2508,7 +2508,7 @@ static bool scene_viewport_frame(void *state)
    near the time limit, has room for: a command rebound to a chord the
    editor takes, Mod+/ under Vim, Find Again ending a typing burst, the
    context menu's keys and F8 through problems on one byte. */
-#define FOLLOWUP_FRAMES 34
+#define FOLLOWUP_FRAMES 37
 /* Where the text's glyphs are: the completion list under a word that is
    not ASCII, and the Mod+hover link of a UI symbol. */
 #define GLYPH_FRAMES 28
@@ -2703,10 +2703,18 @@ static bool code_followups_frame(void *state)
             REQUIRE(kit_code_cursor(e) == caret);
             REQUIRE(s->code.problem.index == (frames == 31));
             if (frames == 33) {
+                /* Toggle Line Comment rebound to a chord on the secondary
+                   modifier, Meta off a Mac. */
+                snprintf(s->prefs.shortcuts[STUDIO_COMMAND_TOGGLE_LINE_COMMENT], STUDIO_CHORD_SIZE, "Meta+K");
                 return true;
             }
             keys++;
             return press_chord(SDLK_F8, frames == 31 ? SDL_KMOD_SHIFT : 0);
+        case 35: keys++; return press_chord(SDLK_K, SDL_KMOD_LGUI);
+        case 37:
+            REQUIRE(strstr(asset_code_text(code), "// missing = 1"));
+            s->prefs.shortcuts[STUDIO_COMMAND_TOGGLE_LINE_COMMENT][0] = '\0';
+            return true;
         default: return true;
     }
 }
@@ -3088,7 +3096,7 @@ TEST_CASE(code_followups)
                      "--project-root",   (char *)project,
                      "--open",           "Counter" };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && frames == FOLLOWUP_FRAMES && keys == 8);
+    REQUIRE(callback_ok && frames == FOLLOWUP_FRAMES && keys == 9);
     REQUIRE(unchanged_source());
     printf("Studio code follow-ups accepted: frames=%d keys=%d\n", frames, keys);
     return true;
