@@ -1003,7 +1003,8 @@
     "projects/studio/content/ui/PropertyRow.rml": {
       "current_source_sha256": "3cdc3a88b1183c4f86d9ec480aa12f2fdd110aa8dc86ee07c8078a6b7f6e90bc",
       "sha256": "3cdc3a88b1183c4f86d9ec480aa12f2fdd110aa8dc86ee07c8078a6b7f6e90bc",
-      "source_path": "projects/studio/content/ui/PropertyRow.rml"
+      "source_path": "projects/studio/content/ui/PropertyRow.rml",
+      "consumer_sha256": "eea499368d868fe5e7f7b86f8510228043ec759a75f3f40bc262b868998c0f0b"
     },
     "projects/studio/content/ui/Refactor.rcss": {
       "current_source_sha256": "8ccf825df9c8d01af4d2b4b04955dd48ba9e361640e9f41c434ea8d74d1c5c16",
@@ -1349,7 +1350,7 @@
       "current_source_sha256": "5a9a95b7403e608de8d987710a7b512291994c8825a4e4c5241b5f0ad902ccac",
       "sha256": "5a9a95b7403e608de8d987710a7b512291994c8825a4e4c5241b5f0ad902ccac",
       "source_path": "projects/studio/content/ui/theme/panel.rcss",
-      "consumer_sha256": "46fa008eaa8d47d8233c1a54ac7fb6cf79aac76a72f9b08dccdd6195dc6b029d"
+      "consumer_sha256": "12dfb79006519de371e5466ccaf2766c1525f8d4af39725f527994cc1dcf0cb3"
     },
     "projects/studio/content/ui/theme/popup.rcss": {
       "current_source_sha256": "fa131528d49e122d4bad088468241b490b961e0bfe1801de54e638ab468ac7ae",
@@ -1714,7 +1715,8 @@
     "src/editor/rmlui/kit_popup.c": {
       "current_source_sha256": "d9dd4dfd2fe7b867540f680473618a9cebcc6cc0ba869292b13dc90535bf4b3b",
       "sha256": "d9dd4dfd2fe7b867540f680473618a9cebcc6cc0ba869292b13dc90535bf4b3b",
-      "source_path": "src/editor/rmlui/kit_popup.c"
+      "source_path": "src/editor/rmlui/kit_popup.c",
+      "consumer_sha256": "08847d1bd4f43c3ccf89acbc7c6221d3d8fca17508c0ba15616505db90996d44"
     },
     "src/editor/rmlui/kit_slot.c": {
       "current_source_sha256": "fc28731a18bd1bff5ef727f3b89d173eaa6df6bc49fd9a3d381159a98b0b4b56",

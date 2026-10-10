@@ -6,7 +6,9 @@
  * dropdown's or an autocomplete's search field keeps its own highlight here.
  * A tooltip shows after a 500 ms hover, switches instantly within 400 ms of
  * the last one, and hides while a button is held or a popup or the palette
- * is open. It holds a label, a shortcut and an optional description. */
+ * is open. It holds a label, a shortcut and an optional description. An
+ * element marked data-tip-clipped tips its own text while text-overflow
+ * cuts it short, as a truncated label shows in full on hover. */
 #include "editor/rmlui/kit_internal.h"
 #include "editor/ui/kit_icons.h"
 #include "support/math.h"
@@ -747,22 +749,50 @@ void set_tip(node *n, const char *label, const char *shortcut, const char *descr
     set_optional_attr(n, "data-tip-about", description);
 }
 
-/* The hovered element with a tip, unless a held button or a popup blocks
- * tooltips. */
+/* The element's text, which its one text node holds; "" without one. */
+static char *own_text(const rml_element *el)
+{
+    rml_element *node = rml_element_first_child(el);
+    if (!node || strcmp(rml_element_tag_name(node), "#text")) {
+        return xstrdup("");
+    }
+    size_t size = rml_element_text(node, NULL, 0) + 1;
+    char *text = xmalloc(size);
+    rml_element_text(node, text, size);
+    return text;
+}
+
+/* A data-tip-clipped element whose text is wider than its box. */
+static bool clipped(rml_element *el)
+{
+    if (!rml_element_has_attribute(el, "data-tip-clipped")) {
+        return false;
+    }
+    char *text = own_text(el);
+    bool cut = rml_element_string_width(el, text) > rml_element_client_width(el);
+    free(text);
+    return cut;
+}
+
+/* The hovered element with a tip, or else a clipped one, unless a held
+ * button or a popup blocks tooltips. */
 static rml_element *tip_owner(kit *k)
 {
     if (k->in.down[0] || k->in.down[1] || popover_top(k->context)) {
         return NULL;
     }
     /* An empty tip, as a binding leaves one, shows nothing. */
-    rml_element *el = rml_context_hover_element(k->context);
+    rml_element *el = rml_context_hover_element(k->context), *cut = NULL;
     for (; el; el = rml_element_parent(el)) {
         char tip[2];
         if (rml_element_attribute(el, "data-tip", tip, sizeof tip) > 0) {
             return el;
         }
+        if (!cut && clipped(el)) {
+            cut = el;
+        }
     }
-    return NULL;
+    return cut;
 }
 
 /* Tooltips keep their size on screen in a zoomed canvas. */
@@ -776,6 +806,10 @@ static float tip_scale(const kit *k)
 static void tip_content(kit *k, rml_element *target)
 {
     char *tip = element_attribute(target, "data-tip");
+    if (!tip[0]) {
+        free(tip);
+        tip = own_text(target);
+    }
     char *shortcut = element_attribute(target, "data-kbd");
     char *about = element_attribute(target, "data-tip-about");
     char *image = element_attribute(target, "data-tip-image");

@@ -2,9 +2,12 @@
    a row's popovers, whose items have labels too. */
 .prop { display: flex; align-items: center; gap: 10dp; margin-top: var(--gap); }
 .prop > .label {
-    width: 38%; max-width: var(--studio-property-label-max, 160dp); flex: 0 0 auto; height: var(--h); display: flex; align-items: center; justify-content: flex-end;
-    color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    width: 40%; max-width: var(--studio-property-label-max, 160dp); flex: 0 0 auto; height: var(--h); display: flex; align-items: center; justify-content: flex-end;
+    color: var(--muted-foreground); white-space: nowrap; overflow: hidden;
 }
+/* A label longer than its column ends in an ellipsis, and its tooltip
+   then holds all of it (data-tip-clipped, kit_popup.c). */
+.prop > .label > span { flex: 0 1 auto; min-width: 0dp; overflow: hidden; text-overflow: ellipsis; }
 .prop > .control { flex: 1 1 0dp; display: flex; align-items: center; gap: 4dp; }
 .prop > .label .hl { background-color: var(--highlight); color: var(--strong); border-radius: 2dp; }
 
