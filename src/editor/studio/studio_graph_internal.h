@@ -189,6 +189,9 @@ void sg_zoom_at(studio *s, float zoom, float wx, float wy);
 bool sg_far(const studio *s);
 void sg_camera_step(studio *s);
 void sg_frame_nodes(studio *s, bool selection, bool animate);
+/* F: frames the selection, or everything once the selection is framed
+   already, or with none (imgui-node-editor). */
+void sg_frame_again(studio *s);
 /* The first view of a graph: fitted, or its start at a legible zoom. */
 void sg_frame_open(studio *s);
 /* Frames the selection holding n, or pans n into view unless it is in view. */

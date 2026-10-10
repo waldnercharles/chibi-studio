@@ -124,24 +124,50 @@ static float fit_zoom(const studio *s, const float lo[2], const float hi[2])
     return fminf(fmaxf(zoom * 12.0f / s->prefs.standard_font_size, ZOOM_MIN), ZOOM_MAX);
 }
 
+/* The camera fitting the selection, or everything; false with none. */
+static bool frame_target(studio *s, bool selection, float camera[3])
+{
+    studio_graph *g = &s->graph;
+    float lo[2], hi[2];
+    if (!nodes_bounds(s, selection, lo, hi)) {
+        return false;
+    }
+    float w = g->surface.rect.w, h = g->surface.rect.h, zoom = fit_zoom(s, lo, hi);
+    float effective_zoom = zoom * s->prefs.standard_font_size / 12.0f;
+    camera[0] = zoom;
+    camera[1] = (lo[0] + hi[0]) / 2 - w / 2 / effective_zoom;
+    camera[2] = (lo[1] + hi[1]) / 2 - h / 2 / effective_zoom;
+    return true;
+}
+
 /* Fits the selection, or everything, with 10% padding and never past 1:1. */
 void sg_frame_nodes(studio *s, bool selection, bool animate)
 {
     studio_graph *g = &s->graph;
-    float lo[2], hi[2];
+    float camera[3];
     if (!sg_active_graph(s) || g->surface.rect.w <= 0) {
         return;
     }
-    if (!nodes_bounds(s, selection, lo, hi)) {
+    if (!frame_target(s, selection, camera)) {
         if (selection) {
             sg_frame_nodes(s, false, animate);
         }
         return;
     }
-    float w = g->surface.rect.w, h = g->surface.rect.h, zoom = fit_zoom(s, lo, hi);
-    float cx = (lo[0] + hi[0]) / 2, cy = (lo[1] + hi[1]) / 2;
-    float effective_zoom = zoom * s->prefs.standard_font_size / 12.0f;
-    camera_to(s, zoom, cx - w / 2 / effective_zoom, cy - h / 2 / effective_zoom, animate);
+    camera_to(s, camera[0], camera[1], camera[2], animate);
+}
+
+void sg_frame_again(studio *s)
+{
+    studio_graph *g = &s->graph;
+    bool selection = acount(sg_graph_editor(s)->selected) > 0;
+    float camera[3];
+    if (selection && sg_active_graph(s) && !g->camera.active &&
+        frame_target(s, true, camera) && fabsf(g->zoom - camera[0]) < 1e-3f &&
+        fabsf(g->x - camera[1]) < 1 && fabsf(g->y - camera[2]) < 1) {
+        selection = false;
+    }
+    sg_frame_nodes(s, selection, true);
 }
 
 /* The room left above and beside a graph's start when it opens at
