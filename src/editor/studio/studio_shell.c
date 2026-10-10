@@ -1679,11 +1679,11 @@ bool studio_areas_moved(studio *s)
 }
 
 /* The workspace is authored: projects/studio's Workspace lays out the
-   areas' places, the splitters between them, the drawer and side column
-   easing open and shut, and a maximized area filling it all, from the
-   `workspace` source. It is a document of its own over the areas, so a
-   splitter's hit area reaches past its gutter onto theirs; everything else
-   in it passes the pointer through. */
+   areas' places, the splitters between them, the drawer and side column,
+   and a maximized area filling it all, from the `workspace` source. It is
+   a document of its own over the areas, so a splitter's hit area reaches
+   past its gutter onto theirs; everything else in it passes the pointer
+   through. */
 static void workspace(studio *s)
 {
     kit *k = s->kit;

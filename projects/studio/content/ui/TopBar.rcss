@@ -59,6 +59,8 @@ body { flex: 0 0 auto; }
   transition: none;
 }
 .doc-tab .face > .icon { flex: 0 0 auto; }
+// A tab is pressed to select or drag it, so it keeps its size.
+.doc-tab .face:active { transform: none; }
 .doc-tab .face:hover { background-color: transparent; }
 .doc-tab .face:focus-visible { background-color: transparent; }
 .doc-tab[data-state=on] .face { color: var(--foreground); }
