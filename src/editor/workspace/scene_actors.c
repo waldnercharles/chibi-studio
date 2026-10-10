@@ -1167,6 +1167,11 @@ void app_scene_authoring_set_default_ui(app_scene_authoring *scene, const char *
     set_name(&scene->default_ui, ui);
 }
 
+void app_scene_authoring_set_studio_project(app_scene_authoring *scene)
+{
+    scene->studio_project = true;
+}
+
 int app_scene_authoring_set_physics(app_scene_authoring *scene, game_physics_settings settings)
 {
     if (scene->runtime_snapshot_valid || scene->preview_playing ||

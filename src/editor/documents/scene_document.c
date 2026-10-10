@@ -1,5 +1,6 @@
 #include "assets/scene_document.h"
 
+#include "authoring/application_catalog.h"
 #include "authoring/behavior_loader.h"
 #include "authoring/preview_source.h"
 #include "editor/workspace/scene_internal.h"
@@ -193,12 +194,54 @@ static int load_content_prototype(app_scene_authoring *scene, const char *path)
     return result;
 }
 
+int scene_attach_studio_nodes(app_scene_authoring *scene, game_preview_world *world, char *error, size_t size)
+{
+    if (!scene->studio_project || game_preview_sources_working(world)) {
+        return 0;
+    }
+    int bound = game_source_bind_service(
+        world->runtime->sources,
+        "studio",
+        &scene->studio_nodes
+    );
+    assert(!bound);
+    (void)bound;
+    native_capabilities *catalog = authoring_application_catalog_new(true, error, size);
+    if (!catalog) {
+        return -1;
+    }
+    int status = game_preview_sources_prepare_with_catalog(
+        world,
+        scene->content_root,
+        behavior_default_backend(),
+        catalog,
+        error,
+        size
+    );
+    native_capabilities_free(catalog);
+    return status;
+}
+
 int app_scene_authoring_load_content(app_scene_authoring *scene)
 {
     if (!scene) {
         return -1;
     }
     content_refresh(scene);
+    game_preview_world *worlds[] = {
+        scene->live,
+        game_prototype_preview_live(scene->prototype_preview),
+    };
+    for (int i = 0; i < 2; i++) {
+        if (scene_attach_studio_nodes(
+                scene,
+                worlds[i],
+                scene->message,
+                sizeof scene->message
+            )) {
+            return -1;
+        }
+    }
     int loaded = app_behavior_fixtures_load(
         scene->live,
         scene->prototype_preview,
@@ -466,6 +509,7 @@ int scene_authoring_load_value(app_scene_authoring *scene, av_value *value, cons
         "Loaded scene from %s.",
         scene->scene_path ? scene->scene_path : "checkpoint"
     );
+    scene_notice(scene);
     return 0;
 }
 
@@ -504,6 +548,11 @@ int app_scene_authoring_load(app_scene_authoring *scene, const char *path)
 const char *app_scene_authoring_message(const app_scene_authoring *scene)
 {
     return scene ? scene->message : NULL;
+}
+
+void scene_notice(app_scene_authoring *scene)
+{
+    snprintf(scene->notice, sizeof scene->notice, "%s", scene->message);
 }
 
 app_editor_document_context app_scene_authoring_document(const app_scene_authoring *scene)

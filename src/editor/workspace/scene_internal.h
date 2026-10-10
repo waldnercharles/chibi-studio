@@ -5,6 +5,7 @@
 #include "assets/scene_document.h"
 #include "authoring/prototype_preview.h"
 #include "authoring/source_catalog.h"
+#include "authoring/studio_schema.h"
 #include "editor/documents/scene_history.h"
 #include "editor/documents/scene_retention.h"
 #include "editor/documents/ui_buffer.h"
@@ -175,7 +176,6 @@ typedef struct
 struct app_scene_authoring
 {
     char source_preview_hold[1024]; /* On Save source edits still update the authored graph. */
-    app_sdf_shapes shapes;
     app_scene_renderer *renderer;
     engine_viewport *render_viewport;
     bool perspective;
@@ -217,6 +217,8 @@ struct app_scene_authoring
     char *content_root;
     char *ui;         /* the scene's root ui document, or NULL for default_ui */
     char *default_ui; /* the project's, or NULL */
+    bool studio_project; /* Studio's own project, whose behaviors call the editor nodes */
+    studio_node_service studio_nodes; /* those calls' service, run by the window's Studio */
     tree_watch disk;  /* declarative content files as last loaded or saved */
     tree_watch code_disk;
     tree_watch code_metadata_disk;
@@ -317,8 +319,13 @@ struct app_scene_authoring
     unsigned scenario_seed;         /* of the recording */
     av_value *scenario_saved_state; /* progress the recording started from, owned */
     char message[256];
+    char notice[256]; /* the message, when it reports a success rather than a problem */
     char prototype_message[256];
 };
+
+/* Marks the message just written as a success, which Studio reports plainly,
+   not as a problem. */
+void scene_notice(app_scene_authoring *scene);
 
 /* Document I/O is shared by disk commands and saved workspace checkpoints. */
 /* The open scene as saving would write it, leaving an edit in progress open,
@@ -643,6 +650,14 @@ typedef struct
 bool scene_same_file(const char *a, const char *b);
 void scene_disk_note(app_scene_authoring *scene, const char *path);
 void scene_disk_follow(app_scene_authoring *scene, const scene_move *moves, int count);
+/* In Studio's own project, prepares `world` with the editor nodes and binds
+   their service; otherwise does nothing. */
+int scene_attach_studio_nodes(
+    app_scene_authoring *scene,
+    game_preview_world *world,
+    char *error,
+    size_t size
+);
 
 /* ---------- Editor view state (scene_view.c) ---------- */
 

@@ -2521,7 +2521,8 @@
       ],
       "current_source_sha256": "dccd31a1f6caea79afb78cc7f9542160b9a45e7de95e876f3c097b9722e3b015",
       "sha256": "dccd31a1f6caea79afb78cc7f9542160b9a45e7de95e876f3c097b9722e3b015",
-      "source_path": "tools/web_storage.js"
+      "source_path": "tools/web_storage.js",
+      "consumer_sha256": "d6ae2eac9a5a92c0938d63290b95fd03f2a2a0d773127ed26cfdfcb654152804"
     }
   },
   "format": 1,

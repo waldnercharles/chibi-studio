@@ -687,6 +687,7 @@ static void break_on_spawn(app_scene_authoring *scene)
         runtime_entity_label(scene, spawned),
         (unsigned)spawned.slot
     );
+    scene_notice(scene);
 }
 
 int app_scene_authoring_frame(app_scene_authoring *scene, double monotonic_time)

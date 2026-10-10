@@ -647,6 +647,10 @@ static bool restore_behaviors(app_scene_authoring *scene, yyjson_val *behaviors,
     if (!scene->prototype_preview) {
         return false;
     }
+    game_preview_world *preview = game_prototype_preview_live(scene->prototype_preview);
+    if (scene_attach_studio_nodes(scene, preview, scene->message, sizeof scene->message)) {
+        return false;
+    }
     /* Definitions precede their consumers regardless of their saved order. */
     for (int pass = 0; pass < 3; pass++) {
         size_t i, count;

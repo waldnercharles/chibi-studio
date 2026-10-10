@@ -2,6 +2,7 @@
  * systems swap into the running world; prototypes refresh their instances and
  * the open scene reloads, keeping the view and selection, once the runtime
  * stops. A document with unsaved edits keeps them until reloaded by path. */
+#include "assets/input_map.h"
 #include "authoring/preview_source.h"
 #include "authoring/source_presentation.h"
 #include "editor/workspace/scene_internal.h"
@@ -100,6 +101,7 @@ static app_disk_result add_definition(app_scene_authoring *scene, const char *pa
         );
     }
     snprintf(scene->message, sizeof scene->message, "Added %s.", definition->name);
+    scene_notice(scene);
     return APP_DISK_RELOADED;
 }
 
@@ -152,6 +154,9 @@ static app_disk_result sync_system(app_scene_authoring *scene, const char *path,
             content_basename(path),
             error
         );
+        if (!status) {
+            scene_notice(scene);
+        }
         return status ? APP_DISK_FAILED : APP_DISK_RELOADED;
     }
     free(json);
@@ -267,7 +272,38 @@ static app_disk_result sync_scene(app_scene_authoring *scene, const char *path, 
     tab->selected_entity = 0;
     tab->selected = -1;
     snprintf(scene->message, sizeof scene->message, "Reloaded %s.", content_basename(path));
+    scene_notice(scene);
     return APP_DISK_RELOADED;
+}
+
+/* The input map declares the `input.<Action>` members scripts read, so every
+ * source prepares again with its text. */
+static app_disk_result sync_input_map(app_scene_authoring *scene, const char *path)
+{
+    char *text = read_scene_file(path);
+    char error[256] = "";
+    source_catalog_edit edit = { .path = path, .text = text };
+    int status = text ? scene_publish_source_edits(scene, &edit, 1, error, sizeof error) : -1;
+    free(text);
+    snprintf(
+        scene->message,
+        sizeof scene->message,
+        status ? "Could not reload %s: %s" : "Reloaded %s.",
+        content_basename(path),
+        error
+    );
+    if (!status) {
+        scene_notice(scene);
+    }
+    return status ? APP_DISK_FAILED : APP_DISK_RELOADED;
+}
+
+static bool input_map_path(const app_scene_authoring *scene, const char *path)
+{
+    char *map = content_path_join(scene->content_root, INPUT_MAP_FILE);
+    bool same = !strcmp(map, path);
+    free(map);
+    return same;
 }
 
 /* A removed file leaves what the editor loaded from it. */
@@ -276,6 +312,9 @@ static app_disk_result sync_path(app_scene_authoring *scene, const char *path, b
     struct stat info;
     if (stat(path, &info) != 0) {
         return APP_DISK_NONE;
+    }
+    if (input_map_path(scene, path)) {
+        return sync_input_map(scene, path);
     }
     if (in_graph_folder(scene, path)) {
         return sync_graph(scene, path, force);
