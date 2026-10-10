@@ -63,7 +63,7 @@ jobs:
               return review.user?.type === "User" && await isMaintainer(review.user.login);
             }
 
-            async function freshApproval(pr, gateStartedAt) {
+            async function freshApproval(pr) {
               const reviews = await github.paginate(github.rest.pulls.listReviews, {
                 owner, repo, pull_number: pr.number, per_page: 100,
               });
@@ -78,25 +78,47 @@ jobs:
                 if (!cleared) return null;
               }
 
-              const approvals = otherReviews.filter(review =>
-                review.commit_id === pr.head.sha && review.state === "APPROVED"
-              );
-              for (const review of approvals) {
-                if (await isAllowedReviewer(review)) {
-                  if (review.user?.login === copilotLogin) return "Copilot";
+              const currentReviews = otherReviews.filter(review => review.commit_id === pr.head.sha);
+              const copilotReview = currentReviews.filter(review => review.user?.login === copilotLogin)
+                .sort((a, b) => Date.parse(b.submitted_at) - Date.parse(a.submitted_at) || b.id - a.id)[0];
+              if (copilotReview?.state === "APPROVED" ||
+                  (copilotReview?.state === "COMMENTED" && /^### 🟢 Approved\s*$/m.test(copilotReview.body || ""))) {
+                return "Copilot";
+              }
+              for (const review of currentReviews) {
+                if (review.state === "APPROVED" && review.user?.type === "User" && await isMaintainer(review.user.login)) {
                   return `maintainer @${review.user.login}`;
                 }
+              }
+
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner, repo, issue_number: pr.number, per_page: 100,
+              });
+              const summary = comments.filter(comment =>
+                comment.user?.login === codexLogin &&
+                comment.body?.includes("<!-- codex-pull-request-review-summary -->")
+              ).sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at) || b.id - a.id)[0];
+              if (!summary) return null;
+              const reviewRows = summary.body.split("\n").filter(line =>
+                line.startsWith("|") && /\*\*[^*]*Review\*\*/.test(line)
+              );
+              if (reviewRows.length === 0) return null;
+              let reviewedAt = 0;
+              for (const row of reviewRows) {
+                const reviewedHead = row.match(/`([a-f0-9]{7,40})`/i)?.[1];
+                const completedAt = Date.parse(row.match(/datetime="([^"]+)"/)?.[1]);
+                if (!row.includes("✅ **Completed**") || !reviewedHead || !pr.head.sha.startsWith(reviewedHead) ||
+                    !Number.isFinite(completedAt)) return null;
+                reviewedAt = Math.max(reviewedAt, completedAt);
               }
 
               const reactions = await github.paginate(github.rest.reactions.listForIssue, {
                 owner, repo, issue_number: pr.number, per_page: 100,
               });
-              const freshCodexReaction = reactions.some(reaction =>
-                reaction.user?.login === codexLogin &&
-                reaction.content === "+1" &&
-                Date.parse(reaction.created_at) > Date.parse(gateStartedAt)
-              );
-              return freshCodexReaction ? "ChatGPT via Codex review" : null;
+              return reactions.some(reaction =>
+                reaction.user?.login === codexLogin && reaction.content === "+1" &&
+                Date.parse(reaction.created_at) >= reviewedAt
+              ) ? "ChatGPT via Codex review" : null;
             }
 
             async function updateGate(pr) {
@@ -118,13 +140,13 @@ jobs:
               }
 
               const pulls = await github.paginate(github.rest.pulls.list, {
-                owner, repo, state: "open", base: defaultBranch, per_page: 100,
+                owner, repo, state: "open", per_page: 100,
               });
               const siblings = pulls.filter(candidate => candidate.head.sha === pr.head.sha);
               const outcomes = await Promise.all(siblings.map(async sibling => {
-                const held = hasHold(sibling) || !(await dependenciesMerged(sibling));
+                const held = sibling.base.ref !== defaultBranch || hasHold(sibling) || !(await dependenciesMerged(sibling));
                 const approval = gateReady && !held
-                  ? await freshApproval(sibling, gate.started_at)
+                  ? await freshApproval(sibling)
                   : null;
                 return { number: sibling.number, held, approval };
               }));
@@ -140,8 +162,8 @@ jobs:
                     : blocked
                       ? `Approval is blocked by hold or an open dependency on pull request #${blocked.number}.`
                       : waiting
-                        ? `Pull request #${waiting.number} awaits a current-head approval from Copilot or a maintainer, or a fresh 👍 from ${codexLogin}.`
-                        : "No open pull request targets the default branch with this head commit.";
+                        ? `Pull request #${waiting.number} awaits a current-head approval from Copilot or a maintainer, or a current-head Codex review followed by 👍 from ${codexLogin}.`
+                        : "No open pull request shares this head commit.";
               await github.rest.checks.update({
                 owner, repo, check_run_id: gate.id,
                 name: gateName,
@@ -206,6 +228,30 @@ jobs:
                 }
               }
               return true;
+            }
+
+            async function retargetMergedParent(pr) {
+              if (!gateReady || pr.base.ref === defaultBranch || hasHold(pr) || !(await dependenciesMerged(pr))) return pr;
+              const parents = await github.paginate(github.rest.pulls.list, {
+                owner, repo, state: "all", head: `${owner}:${pr.base.ref}`, per_page: 100,
+              });
+              const owners = parents.filter(parent => parent.number !== pr.number &&
+                parent.head.ref === pr.base.ref && parent.head.repo?.id === repository.id);
+              if (owners.length !== 1 || !owners[0].merged_at) {
+                core.info(`#${pr.number}: waiting for an unambiguous merged parent of base ${pr.base.ref}.`);
+                return pr;
+              }
+              const parent = (await github.rest.pulls.get({ owner, repo, pull_number: owners[0].number })).data;
+              if (!parent.merged || parent.head.sha !== pr.base.sha || parent.base.ref === pr.base.ref ||
+                  parent.base.ref === pr.head.ref) return pr;
+              const current = (await github.rest.pulls.get({ owner, repo, pull_number: pr.number })).data;
+              if (current.state !== "open" || current.head.sha !== pr.head.sha || current.base.ref !== pr.base.ref ||
+                  hasHold(current) || !(await dependenciesMerged(current))) return current;
+              const { data } = await github.rest.pulls.update({
+                owner, repo, pull_number: current.number, base: parent.base.ref,
+              });
+              core.info(`Retargeted #${pr.number} from merged parent #${parent.number} to ${parent.base.ref}; approval and checks will be evaluated again.`);
+              return data;
             }
 
             async function hasAutoMerge(pr) {
@@ -312,7 +358,7 @@ jobs:
             async function applyAutoMerge(pr) {
               const labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
               const optedIn = labels.includes(autoMergeLabel);
-              if (!optedIn || !gateReady || hasHold(pr) || !(await dependenciesMerged(pr))) return;
+              if (!optedIn || !gateReady || pr.base.ref !== defaultBranch || hasHold(pr) || !(await dependenciesMerged(pr))) return;
 
               const current = (await github.rest.pulls.get({ owner, repo, pull_number: pr.number })).data;
               if (current.state !== "open" || current.base.ref !== defaultBranch || current.head.sha !== pr.head.sha) return;
@@ -359,10 +405,9 @@ jobs:
               }
               let labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
               if (pr.state !== "open") continue;
-              if (pr.base.ref !== defaultBranch) {
-                if (labels.includes(autoMergeLabel)) await disableAutoMerge(pr);
-                continue;
-              }
+              await disableAutoMerge(pr);
+              pr = await retargetMergedParent(pr);
+              labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
 
               await enrollNewPullRequest(pr);
               if (gateReady && !labels.includes(autoMergeLabel) && !labels.includes(noAutoMergeLabel)) {
@@ -376,8 +421,6 @@ jobs:
                 pr = (await github.rest.pulls.get({ owner, repo, pull_number: number })).data;
                 labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
               }
-
-              await disableAutoMerge(pr);
 
               await updateGate(pr);
               await applyAutoMerge(pr);
