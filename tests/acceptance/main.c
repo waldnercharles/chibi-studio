@@ -1997,7 +1997,7 @@ static bool marker_and_gizmo(studio *s)
 /* While a previewed prototype plays, the wheel, a trackpad's fraction
    included, and Space are its game's, as the scene's are while it plays.
    The preview launches beside this project's source behavior, which its
-   sources already bring to the preview's world. */
+   sources already bring to the preview's world (previewed_source_runs). */
 static bool previewed_prototype_plays(studio *s)
 {
     app_scene_authoring *scene = s->scene;
@@ -2021,6 +2021,56 @@ static bool previewed_prototype_plays(studio *s)
     REQUIRE(scene->active_runtime_target == APP_RUNTIME_SCENE);
     REQUIRE(input.wheel == 0.5f && after.center_y == before.center_y);
     REQUIRE(!space);
+    return true;
+}
+
+/* A prototype that runs Counter, this project's source behavior. */
+static const char ticker_prototype[] = "name \"Ticker\"\ncomponents {\n"
+                                       "    GameTransform x=0 y=0\n}\n"
+                                       "(array)behaviors \"Counter\"\n";
+
+/* Counter's `count` state as the preview's world published it. */
+static uint64_t previewed_count_state(app_scene_authoring *scene)
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/behaviors/Counter.chibi", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    const authoring_source *source = game_preview_source_find(
+        game_prototype_preview_live(scene->prototype_preview),
+        path,
+        true
+    );
+    REQUIRE(source && source->valid);
+    for (int i = 0; i < source->analysis->symbol_count; i++) {
+        const script_symbol *symbol = &source->analysis->symbols[i];
+        if (symbol->kind == SCRIPT_STATE && !strcmp(symbol->name, "count")) {
+            return symbol->id;
+        }
+    }
+    return 0;
+}
+
+/* Previewing a prototype attaches its source behavior, which its sources
+   published to the preview's world rather than the launch copying it, and
+   the behavior runs as the preview ticks. */
+static bool previewed_source_runs(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    int previewed = app_scene_authoring_preview_prototype(scene, "Ticker");
+    if (previewed != 0) {
+        fprintf(stderr, "Studio viewport acceptance: %s\n", scene->prototype_message);
+    }
+    REQUIRE(previewed == 0);
+    execution_instance *counter = game_prototype_preview_instance(scene->prototype_preview, "Counter");
+    uint64_t count = previewed_count_state(scene);
+    REQUIRE(counter && count);
+    REQUIRE(execution_instance_state(counter, count)->i == 1);
+    REQUIRE(game_prototype_preview_tick(scene->prototype_preview, s->time) >= 0);
+    REQUIRE(
+        game_prototype_preview_tick(scene->prototype_preview, s->time + 2 * ENGINE_FIXED_SECONDS) >= 0
+    );
+    REQUIRE(execution_instance_state(counter, count)->i > 1);
+    app_scene_authoring_stop_prototype_preview(scene);
     return true;
 }
 
@@ -2343,6 +2393,7 @@ static bool scene_viewport_frame(void *state)
                 app_scene_authoring_register_prototype(scene, "name \"Spot\"\ncomponents {\n    GameTransform x=0 y=0\n}\n", NULL) ==
                 0
             );
+            REQUIRE(app_scene_authoring_register_prototype(scene, ticker_prototype, NULL) == 0);
             REQUIRE(scene_authoring_load_text(scene, marked_scene, NULL) == 0);
             /* Framing before the Scene's first draw leaves its measure to
                that draw. */
@@ -2363,7 +2414,7 @@ static bool scene_viewport_frame(void *state)
             REQUIRE(s->surface.hovered);
             REQUIRE(view.width < before.width && app_scene_authoring_zoom(scene) > 1);
             before = view;
-            REQUIRE(previewed_prototype_plays(s));
+            REQUIRE(previewed_prototype_plays(s) && previewed_source_runs(s));
             /* A fraction of a notch reads as a trackpad's scroll. */
             return push_mouse(SDL_EVENT_MOUSE_WHEEL, x, y, 0, 0.5f);
         case 4:
