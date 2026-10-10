@@ -2,6 +2,7 @@
 #include "graph/authoring/graph_edit.h"
 /* Graph canvas rendering: nodes, pins, wires and comments as kit elements. */
 #include "editor/studio/studio_graph_internal.h"
+#include "editor/studio/studio_members_internal.h"
 #include "editor/ui/highlight.h"
 #include "editor/ui/labels.h"
 #include "graph/authoring/describe.h"
@@ -63,7 +64,7 @@ static const float PIN_COLORS[][3] = {
     [PIN_I64] = { 0.413575f, 0.770f, 0.429609f },
     [PIN_U64] = { 0.413575f, 0.770f, 0.429609f },
     [PIN_F32] = { 0.65f, 0.85f, 0.39f },
-    [PIN_F64] = { 0.65f, 0.85f, 0.39f },
+    [PIN_F64] = { 0.42f, 0.68f, 0.22f },
     [PIN_NAME] = { 0.73f, 0.57f, 0.90f },
     [PIN_HANDLE] = { 0.36f, 0.77f, 0.85f },
     [PIN_STR] = { 0.91f, 0.48f, 0.73f },
@@ -269,8 +270,13 @@ static void emit_pin(studio *s, node *n, int kind, int p, const char *cls, float
                                                 : 1;
     kit_push(k, key, NULL, cls);
     kit_flag(k, "data-hover", hovered);
+    /* Colors alone don't tell types apart, and outputs go unlabeled: a
+       socket and its label tip the pin's type (Unreal). */
+    char type[96];
+    sm_type_label(parts.spec, type, sizeof type);
     if (!input || !(parts.spec->flags & PIN_FLAG_SETTING)) {
         kit_push(k, "s", "span", "socket");
+        kit_tip(k, parts.label, NULL, type);
         kit_dot_desc dot = socket_dot(s, parts.spec, parts.connected || parts.inline_source, hovered, alpha);
         kit_dot(k, "d", NULL, &dot);
         kit_pop(k);
@@ -285,7 +291,9 @@ static void emit_pin(studio *s, node *n, int kind, int p, const char *cls, float
         char *expression = n->desc == &NODE_BehaviorExpression
                              ? studio_code_expression(s, n)
                              : NULL;
-        kit_tip(k, parts.label, NULL, expression);
+        char about[512];
+        snprintf(about, sizeof about, "%s%s%s", type, expression ? " · " : "", expression ? expression : "");
+        kit_tip(k, parts.label, NULL, about);
         free(expression);
         /* Zoomed out, hinted text can draw a little wider than it measured
            at 100%: a label whose column fits spills into the gap rather

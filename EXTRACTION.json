@@ -1874,7 +1874,7 @@
       "current_source_sha256": "c627457f73b9bb0e27ed7086b6b3f4b7a09bdcfcb1fab0640ae8d42b02880e18",
       "sha256": "c6fba37f751b4d1cd8c898e63e7aea935d644cf67cc4ad00315c1da4cc7f2dbe",
       "source_path": "src/editor/studio/studio_graph_draw.c",
-      "consumer_sha256": "ae1792fe983e2463e968a460efb9a55ba189f2acc601a1904199b9f92ac1b544"
+      "consumer_sha256": "32f328dfb5cd5c71f2fd6badecd0887c64d44067e3813ede16871a7f2787b5a6"
     },
     "src/editor/studio/studio_graph_edit.c": {
       "current_source_sha256": "e16956dd076e838f2808b55155d79aa977d0195d3d6411691440735a8ac4b52c",
