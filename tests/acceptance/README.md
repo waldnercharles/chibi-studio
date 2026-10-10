@@ -50,7 +50,8 @@ twenty-eight hidden frames. In the open scene's KDL, Control+Space in the
 strings "Crê" and "Cre" opens the completion list at the same left edge: the
 list starts under the word a cell a character, not a byte. In Probe's markup,
 with Control held and the pointer resting on a class its styles do not define,
-the class is no link; once the class becomes one they define, it is.
+the class is no link, and holding still does not look it up again; once the
+class becomes one they define, it is.
 
 `studio-acceptance --unit-warnings --project-root PATH` takes another disposable
 copy. It shows Counter in the Text Editor and replaces its source with one that

@@ -857,6 +857,17 @@ typedef struct
     char *hover;
     int hover_at;
     const ui_source *hover_source;
+    /* The symbol Mod last held the pointer on, in which document, part
+       and revision, and whether it has a definition to underline as a
+       link: looked up again only when one of them changes. */
+    struct
+    {
+        char path[1024];
+        ui_part part;
+        unsigned revision;
+        int start, end;
+        bool found;
+    } link;
     bool replayed; /* Undo or Redo from the editor changed the text */
     /* Find (Mod+F): the query, where its shown match starts and how many
        the part holds. */

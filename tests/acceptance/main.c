@@ -2563,6 +2563,7 @@ static bool code_followups_frame(void *state)
 static bool code_glyphs_frame(void *state)
 {
     static float left;
+    static double stale;
     float x, y;
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
@@ -2604,7 +2605,16 @@ static bool code_glyphs_frame(void *state)
             s->code.find.refocus = true;
             return point_into_text(s, 0.3f, &x, &y);
         case 19: return push_key(SDLK_LCTRL, SDL_KMOD_LCTRL, true);
+        case 21:
+            /* The class under the pointer was looked up. Mark the project
+               stale: another lookup would scan it again. */
+            REQUIRE(kit_code_link(s->code.editor) >= 0);
+            stale = s->code.project_time = s->time - 100;
+            return true;
         case 22: {
+            /* Held still on the same class and text, it was not looked up
+               again. */
+            REQUIRE(s->code.project_time == stale);
             /* The pointer rests on the class, which has no other
                definition, so it is no link. */
             const char *text = kit_code_text(s->code.editor, NULL);

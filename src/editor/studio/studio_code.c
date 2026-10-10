@@ -2639,9 +2639,22 @@ static void link_symbol(studio *s, const ui_buffer *b, const kit_code_editor *e,
     int at = kit_code_link(e);
     ui_source_symbol symbol = at >= 0 ? ui_source_symbol_at(c->source, at)
                                       : (ui_source_symbol){ .kind = UI_SYMBOL_NONE };
-    ui_code_place place;
-    if (symbol.kind != UI_SYMBOL_NONE &&
-        ui_code_definition(b, c->source, at, project(s, b->path, false), &place)) {
+    if (symbol.kind == UI_SYMBOL_NONE) {
+        return;
+    }
+    if (strcmp(c->link.path, b->path) || c->link.part != b->part ||
+        c->link.revision != b->revision || c->link.start != symbol.start ||
+        c->link.end != symbol.end) {
+        ui_code_place place;
+        bool found = ui_code_definition(b, c->source, at, project(s, b->path, false), &place);
+        snprintf(c->link.path, sizeof c->link.path, "%s", b->path);
+        c->link.part = b->part;
+        c->link.revision = b->revision;
+        c->link.start = symbol.start;
+        c->link.end = symbol.end;
+        c->link.found = found;
+    }
+    if (c->link.found) {
         desc->link_start = symbol.start;
         desc->link_end = symbol.end;
     }
