@@ -1785,14 +1785,18 @@ static bool marker_and_gizmo(studio *s)
 
 /* While a previewed prototype plays, the wheel, a trackpad's fraction
    included, and Space are its game's, as the scene's are while it plays.
-   The state is the one a Preview target's Play sets; this project's source
-   behavior keeps a prototype preview from launching here. */
+   The preview launches beside this project's source behavior, which its
+   sources already bring to the preview's world. */
 static bool previewed_prototype_plays(studio *s)
 {
     app_scene_authoring *scene = s->scene;
     REQUIRE(!scene->runtime_playing && scene->active_runtime_target == APP_RUNTIME_SCENE);
-    scene->active_runtime_target = APP_RUNTIME_PREVIEW;
-    scene->preview_playing = true;
+    int previewed = app_scene_authoring_preview_prototype(scene, "Box");
+    if (previewed != 0) {
+        fprintf(stderr, "Studio viewport acceptance: %s\n", scene->prototype_message);
+    }
+    REQUIRE(previewed == 0 && !strcmp(scene->prototype_message, "Previewing Box."));
+    REQUIRE(scene->active_runtime_target == APP_RUNTIME_PREVIEW && scene->preview_playing);
     engine_viewport_view before, after;
     engine_viewport_get_view(s->viewport, &before);
     float scrolled = s->scroll_y;
@@ -1802,8 +1806,8 @@ static bool previewed_prototype_plays(studio *s)
     s->scroll_y = scrolled;
     engine_viewport_get_view(s->viewport, &after);
     bool space = studio_scene_space(s, (studio_key){ .key = SDLK_SPACE });
-    scene->preview_playing = false;
-    scene->active_runtime_target = APP_RUNTIME_SCENE;
+    app_scene_authoring_stop_prototype_preview(scene);
+    REQUIRE(scene->active_runtime_target == APP_RUNTIME_SCENE);
     REQUIRE(input.wheel == 0.5f && after.center_y == before.center_y);
     REQUIRE(!space);
     return true;

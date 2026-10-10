@@ -61,9 +61,8 @@ SDL events it checks that a whole wheel notch zooms the camera, that a
 fraction of one, as a trackpad scrolls, pans it, that Space with a left drag
 pans without playing, that Space released while Settings records a chord
 neither stays held nor plays, and that Space alone plays once it is released.
-With a Preview target playing, which it sets directly because this project's
-source behavior keeps a prototype preview from launching, the wheel, a
-trackpad's fraction included, and Space stay the game's.
+With the box's prototype previewed beside this project's source behavior, the
+wheel, a trackpad's fraction included, and Space stay the game's.
 Framing before the Scene's first draw leaves the zoom's measure to that draw.
 While the game plays, the wheel, a trackpad's fraction included, reaches its
 UI, and the undrawn spot, which shows no marker then, picks nothing. Stopped,

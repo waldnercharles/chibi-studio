@@ -2447,7 +2447,8 @@
     "src/editor/workspace/scene_runtime.c": {
       "current_source_sha256": "c13c72958fa5e50bbf97919ac212f5a41a824d69aedc5d89fa9d9ce37ab7e77d",
       "sha256": "6046e226fe5e17ded4a1c01e38cf220faaafa6bd91c9e6d669f5bbecb53f4c91",
-      "source_path": "src/editor/workspace/scene_runtime.c"
+      "source_path": "src/editor/workspace/scene_runtime.c",
+      "consumer_sha256": "8c4db8c16dcacaf3e098e221d49bbbca1f63ec3e4f79c05845d667796617b238"
     },
     "src/editor/workspace/scene_tabs.c": {
       "current_source_sha256": "01c0e112b7d69f71c359833c32b7e25f6520744648ff5ed76f3ec427df7038d3",
