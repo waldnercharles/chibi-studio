@@ -1509,7 +1509,7 @@
       "current_source_sha256": "91f77c6e1b3d60ddab4c59fa395ba78c9122e54cb6707f866eb2fb9730d2615c",
       "sha256": "5bcaf149c81eb750ce0da5b74954c40758aedfa32e6cb590849d723050c3ce64",
       "source_path": "src/editor/documents/asset_code.c",
-      "consumer_sha256": "f8595ca053106d950962c9c16aa1109d660d34556edeff631ac1a203071bcfa1"
+      "consumer_sha256": "8fcd97edf8d3602f51c8ee0af200e6edeca3b6a9806978e3b509b6f1a5b9f203"
     },
     "src/editor/documents/asset_code.h": {
       "current_source_sha256": "15d34e8aae5a3df6a5ef4a2632b6c6784714b03b3c0cb6c74be401afbb35d2e1",

@@ -1,7 +1,7 @@
 name: Chibi review signal
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review, edited, converted_to_draft, labeled, unlabeled, auto_merge_enabled]
   pull_request_review:
     types: [submitted, edited, dismissed]
