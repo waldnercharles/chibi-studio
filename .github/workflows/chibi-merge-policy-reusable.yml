@@ -13,7 +13,7 @@ on:
 permissions:
   contents: write
   actions: write
-  checks: write
+  statuses: write
   issues: write
   pull-requests: write
 
@@ -35,12 +35,11 @@ jobs:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const gateName = "Chibi review approval";
+            const gateName = "Chibi review gate";
             const autoMergeLabel = "chibi-auto-merge";
             const noAutoMergeLabel = "chibi-no-auto-merge";
             const codexLogin = "chatgpt-codex-connector[bot]";
             const copilotLogin = "copilot-pull-request-reviewer[bot]";
-            const githubActionsAppId = 15368;
             const gateConfigured = process.env.CHIBI_REVIEW_GATE_READY === "true";
             const postMergeWorkflows = JSON.parse(process.env.CHIBI_POST_MERGE_WORKFLOWS || "[]");
             const repository = (await github.rest.repos.get({ owner, repo })).data;
@@ -156,23 +155,6 @@ jobs:
             }
 
             async function updateGate(pr) {
-              const runs = await github.paginate(github.rest.checks.listForRef, {
-                owner, repo, ref: pr.head.sha, per_page: 100,
-              });
-              let gate = runs
-                .filter(run => run.name === gateName && run.app?.id === githubActionsAppId)
-                .sort((a, b) =>
-                  Date.parse(b.started_at || b.completed_at) - Date.parse(a.started_at || a.completed_at)
-                )[0];
-              if (!gate) {
-                gate = (await github.rest.checks.create({
-                  owner, repo, name: gateName, head_sha: pr.head.sha,
-                  status: "in_progress", started_at: new Date().toISOString(),
-                  details_url: pr.html_url,
-                  output: { title: "Checking approval", summary: "Checking current-head reviews." },
-                })).data;
-              }
-
               const pulls = await github.paginate(github.rest.pulls.list, {
                 owner, repo, state: "open", per_page: 100,
               });
@@ -198,17 +180,26 @@ jobs:
                       : waiting
                         ? `Pull request #${waiting.number} awaits a current-head approval from Copilot or a maintainer, or a current-head Codex review followed by 👍 from ${codexLogin}.`
                         : "No open pull request shares this head commit.";
-              await github.rest.checks.update({
-                owner, repo, check_run_id: gate.id,
-                name: gateName,
-                status: "completed",
-                conclusion: approved ? "success" : "failure",
-                details_url: pr.html_url,
-                output: {
-                  title: approved ? "Approval received" : "Approval required",
-                  summary,
-                },
-              });
+              const state = approved ? "success" : "failure";
+              const description = summary.slice(0, 140);
+              let previous;
+              for await (const page of github.paginate.iterator(github.rest.repos.listCommitStatusesForRef, {
+                owner, repo, ref: pr.head.sha, per_page: 100,
+              })) {
+                previous = page.data.find(status =>
+                  status.context === gateName && status.creator?.login === "github-actions[bot]"
+                );
+                if (previous) break;
+              }
+              // Commit statuses remain eligible when this head has a Copilot
+              // dynamic suite. Reuse unchanged decisions to avoid GitHub's
+              // limit of 1,000 statuses per SHA and context.
+              if (previous?.state !== state || previous.description !== description) {
+                await github.rest.repos.createCommitStatus({
+                  owner, repo, sha: pr.head.sha, context: gateName, state, description,
+                  target_url: `${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId}`,
+                });
+              }
               core.info(`#${pr.number}: ${summary}`);
               return approved;
             }

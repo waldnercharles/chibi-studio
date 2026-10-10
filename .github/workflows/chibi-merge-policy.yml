@@ -3,8 +3,7 @@ name: Chibi merge policy
 on:
   push:
     branches: [main]
-  issues:
-    types: [labeled, unlabeled]
+  workflow_dispatch:
   workflow_run:
     workflows: [Chibi review signal]
     types: [completed]
@@ -14,7 +13,7 @@ on:
 permissions:
   contents: write
   actions: write
-  checks: write
+  statuses: write
   issues: write
   pull-requests: write
 
@@ -28,6 +27,6 @@ jobs:
     permissions:
       contents: write
       actions: write
-      checks: write
+      statuses: write
       issues: write
       pull-requests: write
