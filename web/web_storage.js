@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
     Module['chibiZipFiles'] = zip;
     Module['chibiDownloadModelBundle'] = (directory, name) => {
         try {
-            const files = ['model.mesh.json', 'model.obj', 'model.mtl', 'provenance.json']
+            const files = ['model.mesh', 'model.obj', 'model.mtl', 'provenance.json']
                 .map(file => [file, Module['FS'].readFile(`${directory}/${file}`)]);
             const archive = zip(files);
             const link = document.createElement('a');

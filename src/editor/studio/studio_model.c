@@ -51,7 +51,7 @@ static void bake_controls(studio *s, const editor *e)
     if (kit_panel_begin(k, "bake-limits", "Bake Limits", NULL, false)) {
         const char *keys[] = { "max-triangles", "max-samples", "max-work" };
         const char *names[] = { "Triangles", "Sample queries", "Node work" };
-        const double maximum[] = { 349525, 100000000, 100000000000 };
+        const double maximum[] = { MODEL_BAKE_TRIANGLE_MAX, 100000000, 100000000000 };
         double values[] = { settings.max_triangles,
                             (double)settings.max_samples,
                             (double)settings.max_work };
