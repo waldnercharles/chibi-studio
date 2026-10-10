@@ -1995,6 +1995,9 @@ bool studio_chord_matches(const char *chord, SDL_Keycode key, SDL_Keymod mod, bo
  * browser and SDL's web backend report as the key: ⌥G arrives as ©. */
 SDL_Keycode studio_event_key(const SDL_KeyboardEvent *e);
 void studio_chord_format(char *out, size_t size, const char *chord, bool mac);
+/* The chord a key makes in the notation bindings keep: Mod, the other of
+ * Control and Command, Alt, Shift, then the key's name ("Mod+Alt+/"). */
+void studio_chord_name(studio_key key, bool mac, char out[STUDIO_CHORD_SIZE]);
 bool studio_shortcut_record(studio_prefs *prefs, int *recording, studio_key key, bool mac);
 
 /* What commands run (studio_shell.c). */

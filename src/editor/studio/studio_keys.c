@@ -204,6 +204,24 @@ bool studio_chord_matches(const char *chord, SDL_Keycode key, SDL_Keymod mod, bo
            binding.mod == chord_modifiers(mod);
 }
 
+void studio_chord_name(studio_key key, bool mac, char out[STUDIO_CHORD_SIZE])
+{
+    const char *name = key.key == SDLK_PLUS    ? "Plus"
+                     : key.key == SDLK_KP_PLUS ? "KeypadPlus"
+                                               : SDL_GetKeyName(key.key);
+    SDL_Keymod mod = chord_modifiers(key.mod);
+    snprintf(
+        out,
+        STUDIO_CHORD_SIZE,
+        "%s%s%s%s%s",
+        mod & (mac ? SDL_KMOD_GUI : SDL_KMOD_CTRL) ? "Mod+" : "",
+        mod & (mac ? SDL_KMOD_CTRL : SDL_KMOD_GUI) ? (mac ? "Ctrl+" : "Meta+") : "",
+        mod & SDL_KMOD_ALT ? "Alt+" : "",
+        mod & SDL_KMOD_SHIFT ? "Shift+" : "",
+        name
+    );
+}
+
 /* Escape cancels, modifier presses and held-key repeats keep recording.
  * A completed recording is one preference edit. */
 bool studio_shortcut_record(studio_prefs *prefs, int *recording, studio_key key, bool mac)
@@ -218,21 +236,8 @@ bool studio_shortcut_record(studio_prefs *prefs, int *recording, studio_key key,
     if (key.repeat || modifier_key(key.key)) {
         return true;
     }
-    const char *name = key.key == SDLK_PLUS    ? "Plus"
-                     : key.key == SDLK_KP_PLUS ? "KeypadPlus"
-                                               : SDL_GetKeyName(key.key);
     char chord[STUDIO_CHORD_SIZE];
-    SDL_Keymod mod = chord_modifiers(key.mod);
-    snprintf(
-        chord,
-        sizeof chord,
-        "%s%s%s%s%s",
-        mod & (mac ? SDL_KMOD_GUI : SDL_KMOD_CTRL) ? "Mod+" : "",
-        mod & (mac ? SDL_KMOD_CTRL : SDL_KMOD_GUI) ? (mac ? "Ctrl+" : "Meta+") : "",
-        mod & SDL_KMOD_ALT ? "Alt+" : "",
-        mod & SDL_KMOD_SHIFT ? "Shift+" : "",
-        name
-    );
+    studio_chord_name(key, mac, chord);
     if (!studio_chord_valid(chord)) {
         return true;
     }

@@ -180,6 +180,12 @@ typedef struct mark
     char *message;
 } mark;
 
+/* A chord in kit_code_result.chord's notation. */
+typedef struct chord
+{
+    char name[32];
+} chord;
+
 struct kit_code_editor
 {
     zep_editor *zep;
@@ -223,6 +229,7 @@ struct kit_code_editor
     char *notice;           /* kit_code_notice's message, or NULL */
     long notice_cursor;     /* where the cursor was when it showed */
     char word_chars[16];
+    chord *chords; /* array: desc.chords, which go back to the host */
 };
 
 static kit_code_editor *focused_code_editor;
@@ -700,6 +707,7 @@ void kit_code_editor_destroy(kit_code_editor *e)
     marks_free(e);
     free(e->notice);
     afree(e->spans);
+    afree(e->chords);
     free(e->text);
     free(e);
 }
@@ -1006,24 +1014,36 @@ static unsigned zep_modifiers(const kit_code_editor *e, keys m)
            (m.shift ? ZEP_MOD_SHIFT : 0u);
 }
 
-static void chord_name(char out[32], rml_key key, keys m)
+static bool function_key(rml_key key)
+{
+    return key >= RML_KEY_F1 && key <= RML_KEY_F12;
+}
+
+/* A key's chord in kit_code_result.chord's notation: Mod, Alt, Shift, then
+   the key's name, as studio_chord writes them; false for a key it cannot
+   name. */
+static bool chord_name(char out[32], rml_key key, keys m)
 {
     char name[8];
     uint32_t c = chord_char(key);
-    if (c != NO_KEY && c != ' ') {
-        snprintf(name, sizeof name, "%c", c >= 'a' && c <= 'z' ? c - 'a' + 'A' : (int)c);
-    } else if (key >= RML_KEY_F1 && key <= RML_KEY_F12) {
+    if (function_key(key)) {
         snprintf(name, sizeof name, "F%d", key - RML_KEY_F1 + 1);
+    } else if (c == ' ') {
+        snprintf(name, sizeof name, "Space");
+    } else if (c != NO_KEY) {
+        snprintf(name, sizeof name, "%c", c >= 'a' && c <= 'z' ? c - 'a' + 'A' : (int)c);
     } else {
-        snprintf(name, sizeof name, "%s", c == ' ' ? "Space" : "?");
+        return false;
     }
-    snprintf(out, 32, "Mod+%s%s%s", m.alt ? "Alt+" : "", m.shift ? "Shift+" : "", name);
+    snprintf(out, 32, "%s%s%s%s", m.primary ? "Mod+" : "", m.alt ? "Alt+" : "", m.shift ? "Shift+" : "", name);
+    return true;
 }
 
 static void report_chord(kit_code_editor *e, rml_key key, keys m)
 {
-    chord_name(e->result.chord, key, m);
-    e->result.events |= KIT_CODE_CHORD;
+    if (chord_name(e->result.chord, key, m)) {
+        e->result.events |= KIT_CODE_CHORD;
+    }
 }
 
 void kit_code_paste(kit_code_editor *e, const char *text)
@@ -1359,11 +1379,28 @@ static void host_chord(kit_code_editor *e, const char *chord)
     e->result.events |= KIT_CODE_CHORD;
 }
 
+/* A chord the host binds to one of the editor's commands (desc.chords) goes
+   back to it before the editor's own keys can take it: a command rebound to
+   Mod+C, or Mod+/ under Vim. Keys that type stay the editor's. */
+static bool bound_chord(kit_code_editor *e, rml_key key, keys m)
+{
+    char name[32];
+    if ((!m.primary && !m.alt && !function_key(key)) || !chord_name(name, key, m)) {
+        return false;
+    }
+    for (int i = 0; i < acount(e->chords); i++) {
+        if (!strcmp(e->chords[i].name, name)) {
+            host_chord(e, name);
+            return true;
+        }
+    }
+    return false;
+}
+
 /* Keys whose command the host binds go back to it as chords: the function
-   keys but F9, which toggles a breakpoint here, and Shift+Alt+H (Call
-   Hierarchy), as VS Code binds them. Control+Space suggests here, as in
-   Blender's Text Editor. Vim's Control+O and Control+I step Back and
-   Forward. */
+   keys but F9, which toggles a breakpoint here. Control+Space suggests
+   here, as in Blender's Text Editor. Vim's Control+O and Control+I step
+   Back and Forward. */
 static bool host_request(kit_code_editor *e, rml_key key, keys m)
 {
     if (e->vim && m.ctrl && !m.shift && !m.alt &&
@@ -1376,21 +1413,8 @@ static bool host_request(kit_code_editor *e, rml_key key, keys m)
         e->result.events |= KIT_CODE_BREAKPOINT;
         return true;
     }
-    char chord[32];
-    if (key >= RML_KEY_F1 && key <= RML_KEY_F12 && !m.primary) {
-        snprintf(
-            chord,
-            sizeof chord,
-            "%s%sF%d",
-            m.alt ? "Alt+" : "",
-            m.shift ? "Shift+" : "",
-            (int)(key - RML_KEY_F1) + 1
-        );
-        host_chord(e, chord);
-        return true;
-    }
-    if (key == RML_KEY_H && m.shift && m.alt && !m.primary) {
-        host_chord(e, "Shift+Alt+H");
+    if (function_key(key) && !m.primary) {
+        report_chord(e, key, m);
         return true;
     }
     if (key == RML_KEY_SPACE && m.ctrl && !m.shift && !m.alt) {
@@ -1580,7 +1604,7 @@ static void key_down(kit_code_editor *e, const rml_event *event)
         e->result.events |= KIT_CODE_CHORD;
         return;
     }
-    if (completion_key(e, key) || host_request(e, key, m)) {
+    if (completion_key(e, key) || bound_chord(e, key, m) || host_request(e, key, m)) {
         return;
     }
 #ifdef __EMSCRIPTEN__
@@ -2277,6 +2301,12 @@ static void configure(kit *k, kit_code_editor *e, const kit_code_desc *d)
     }
     e->mac = d->mac;
     e->host_history = d->history;
+    asetlen(e->chords, 0);
+    for (int i = 0; i < d->chord_count; i++) {
+        chord bound;
+        snprintf(bound.name, sizeof bound.name, "%s", d->chords[i]);
+        apush(e->chords, bound);
+    }
     snprintf(e->word_chars, sizeof e->word_chars, "%s", d->word_chars ? d->word_chars : "");
     /* Zep's own history would only grow while the host keeps one. */
     if (e->host_history) {

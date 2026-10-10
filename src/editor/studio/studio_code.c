@@ -2590,10 +2590,46 @@ static void link_symbol(studio *s, const ui_buffer *b, const kit_code_editor *e,
     }
 }
 
+/* The language commands' chords, each command's first CHORDS_PER_COMMAND
+   (studio_command_bindings). */
+#define CHORDS_PER_COMMAND 5
+#define CODE_CHORDS                                                               \
+    ((STUDIO_COMMAND_TOGGLE_LINE_COMMENT - STUDIO_COMMAND_GO_TO_DEFINITION + 1) * \
+     CHORDS_PER_COMMAND)
+typedef struct code_chords
+{
+    char names[CODE_CHORDS][STUDIO_CHORD_SIZE];
+    const char *list[CODE_CHORDS];
+    int count;
+} code_chords;
+
+/* The language commands' chords as the text names them, which its keys
+   send back to Studio before taking them (kit_code_desc.chords), so a
+   command runs on whatever chord it is bound to. */
+static void bound_chords(const studio *s, code_chords *out)
+{
+    out->count = 0;
+    for (int command = STUDIO_COMMAND_GO_TO_DEFINITION; language_command(command);
+         command++) {
+        const char *bindings[CHORDS_PER_COMMAND];
+        int count = studio_command_bindings(&s->prefs, (studio_command)command, bindings, CHORDS_PER_COMMAND);
+        for (int i = 0; i < count; i++) {
+            studio_key key;
+            if (studio_chord_parse(bindings[i], s->mac, &key)) {
+                studio_chord_name(key, s->mac, out->names[out->count]);
+                out->list[out->count] = out->names[out->count];
+                out->count++;
+            }
+        }
+    }
+}
+
 void studio_code_body(studio *s, int)
 {
     kit *k = s->kit;
     scene_document_tab *asset = active_asset(s);
+    code_chords chords;
+    bound_chords(s, &chords);
     if (asset) {
         asset_code *code = asset_editor(s, asset);
         if (!code) {
@@ -2605,7 +2641,9 @@ void studio_code_body(studio *s, int)
                                       .font_size = s->prefs.code_font_size,
                                       .font_family = studio_code_font(&s->prefs),
                                       .mac = s->mac,
-                                      .no_wrap = !s->prefs.code_wrap };
+                                      .no_wrap = !s->prefs.code_wrap,
+                                      .chords = chords.list,
+                                      .chord_count = chords.count };
         const reference_index *index = app_scene_authoring_asset_index(s->scene);
         const char **names = NULL;
         for (int i = 0; index && i < reference_index_asset_count(index); i++) {
@@ -2700,6 +2738,8 @@ void studio_code_body(studio *s, int)
         .no_wrap = !s->prefs.code_wrap,
         .hover = c->hover,
         .word_chars = "-", /* RML's and RCSS's names take hyphens */
+        .chords = chords.list,
+        .chord_count = chords.count,
     };
     link_symbol(s, b, e, &desc);
     kit_code_result r = kit_code(k, "text", e, &desc);
