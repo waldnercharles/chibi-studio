@@ -1,6 +1,7 @@
 #include "graph/authoring/graph_edit.h"
 /* Graph canvas input: replayed window events, gestures and shortcuts. */
 #include "editor/studio/studio_graph_internal.h"
+#include "graph/model/local.h"
 #include "platform/cute.h"
 #include "support/array.h"
 #include "ui/input_feel.h"
@@ -1043,10 +1044,14 @@ static node *renameable_hover(studio *s)
     return n && sg_pin_renameable(s, n, g->hover_kind, g->hover_pin) ? n : NULL;
 }
 
+/* Whether a drawn wire runs from one node to the other: a named value's
+   uses read its name instead of a wire. */
 static bool feeds(const graph *gr, const node *from, const node *to)
 {
     for (int i = 0; i < acount(gr->edges); i++) {
-        if (gr->edges[i].from_id == from->id && gr->edges[i].to_id == to->id) {
+        const edge *ed = &gr->edges[i];
+        if (ed->from_id == from->id && ed->to_id == to->id &&
+            !graph_edge_is_local(gr, ed)) {
             return true;
         }
     }

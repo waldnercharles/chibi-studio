@@ -8,6 +8,10 @@
 #include "editor/studio/studio_internal.h"
 #include "editor/workspace/asset_refactor.h"
 #include "editor/workspace/scene_internal.h"
+#include "graph/authoring/graph_edit.h"
+#include "graph/authoring/local_edit.h"
+#include "graph/nodes/core_nodes.h"
+#include "graph/nodes/vector_nodes.h"
 #include "support/array.h"
 #include "support/file_io.h"
 #include "support/xalloc.h"
@@ -706,7 +710,7 @@ static bool graph_visibility_frame(void *state)
     return true;
 }
 
-#define GRAPH_KEY_FRAMES 13
+#define GRAPH_KEY_FRAMES 18
 
 static bool selected_only(editor *e, uint64_t id)
 {
@@ -724,6 +728,60 @@ static bool selected_feeds(editor *e, const graph *gr, uint64_t id)
         }
     }
     return false;
+}
+
+enum
+{
+    NAMED_SOURCE,
+    NAMED_USE,
+    VECTOR_USE,
+    DECLARED_COUNT
+};
+
+/* Opens a declarative graph, as a material's, of three nodes. The first
+   feeds the second through a value named as Name Value does, so the second
+   reads the name instead of drawing a wire; code can't name values this
+   way. The third's vector input holds a literal a source can replace. */
+static bool open_declared(editor *e, uint64_t *ids)
+{
+    behavior_asset *asset = behavior_asset_new("Declared");
+    graph *gr = asset->graph;
+    node *a = graph_add_node(gr, &NODE_Not), *b = graph_add_node(gr, &NODE_Not);
+    node *vector = graph_add_node(gr, &NODE_Vector_Length);
+    b->x = a->x + 400;
+    vector->y = a->y + 300;
+    REQUIRE(!graph_connect_data(gr, a, 0, b, 0));
+    REQUIRE(graph_create_local(gr, a, 0, "named"));
+    ids[NAMED_SOURCE] = a->id;
+    ids[NAMED_USE] = b->id;
+    ids[VECTOR_USE] = vector->id;
+    REQUIRE(!editor_declarative_graph(e, asset));
+    behavior_asset_free(asset);
+    return true;
+}
+
+/* The first element `selector` finds in Studio's documents, the kit's layer
+   among them, or NULL. */
+static rml_element *studio_element(studio *s, const char *selector)
+{
+    rml_context *context = rml_backend_context(s->backend);
+    for (int i = 0; i < rml_context_document_count(context); i++) {
+        rml_element *found = rml_element_query_selector(rml_context_document(context, i), selector);
+        if (found) {
+            return found;
+        }
+    }
+    return NULL;
+}
+
+/* Properties shows Bind to Source for the selected node's input, disabled
+   exactly when the graph is read-only. */
+static bool bind_disabled(studio *s, bool disabled)
+{
+    rml_element *bind = studio_element(s, ".graph-row button[data-tip='Bind to Source']");
+    REQUIRE(bind);
+    REQUIRE(rml_element_has_attribute(bind, "data-disabled") == disabled);
+    return true;
 }
 
 /* Every output label a full node shows has room for its text: a label
@@ -800,10 +858,13 @@ static bool leads_search(studio *s, const char *key)
    feeding that one, Escape at rest clears the selection, and M asks the
    source to disable the selection, which refuses and says why; with two
    nodes selected, M refuses before editing either. Escape closing the node
-   menu keeps the selection, and Tab opens node search. */
+   menu keeps the selection. Right doesn't follow a named value's uses,
+   which draw no wire, Properties disables Bind to Source while the graph
+   is read-only, and Tab opens node search. */
 static bool graph_keys_frame(void *state)
 {
     static uint64_t from, to;
+    static uint64_t declared[DECLARED_COUNT];
     static char chosen[96];
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
@@ -864,29 +925,33 @@ static bool graph_keys_frame(void *state)
         REQUIRE(press_key(SDLK_ESCAPE));
     } else if (frames == 10) {
         REQUIRE(!s->graph.menu_open && selected_only(e, to));
+        /* A named value draws no wire, so Right has nowhere to go. */
+        REQUIRE(open_declared(e, declared));
+    } else if (frames == 12) {
+        /* Frame 11 laid the graph out. */
+        sg_select_only(e, sg_node_by_id(s, declared[NAMED_SOURCE]));
+        REQUIRE(press_key(SDLK_RIGHT));
+    } else if (frames == 13) {
+        REQUIRE(selected_only(e, declared[NAMED_SOURCE]));
+        sg_select_only(e, sg_node_by_id(s, declared[VECTOR_USE]));
+        s->ui_schedule.wake = true;
+    } else if (frames == 14) {
+        /* A paused graph is read-only: Bind to Source can't act. */
+        REQUIRE(bind_disabled(s, false));
+        graph_flow_pause(gr);
+        s->ui_schedule.wake = true;
+    } else if (frames == 15) {
+        REQUIRE(bind_disabled(s, true));
+        graph_flow_resume(gr);
         REQUIRE(press_key(SDLK_TAB));
-    } else if (frames == 11) {
+    } else if (frames == 16) {
         REQUIRE(s->palette.client == STUDIO_PALETTE_NODES && s->graph.spawn_pending);
         REQUIRE(choose_node(s, chosen, sizeof chosen));
-    } else if (frames == 12) {
+    } else if (frames == 17) {
         REQUIRE(leads_search(s, chosen));
         keys++;
     }
     return true;
-}
-
-/* The first element `selector` finds in Studio's documents, the kit's layer
-   among them, or NULL. */
-static rml_element *studio_element(studio *s, const char *selector)
-{
-    rml_context *context = rml_backend_context(s->backend);
-    for (int i = 0; i < rml_context_document_count(context); i++) {
-        rml_element *found = rml_element_query_selector(rml_context_document(context, i), selector);
-        if (found) {
-            return found;
-        }
-    }
-    return NULL;
 }
 
 static bool element_says(studio *s, const char *selector, const char *text)

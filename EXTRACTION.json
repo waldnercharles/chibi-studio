@@ -995,7 +995,7 @@
       "current_source_sha256": "545dc7a0778a9870485f1e2273300dcda4bf07e297bf13b78b65be8c44d026f4",
       "sha256": "545dc7a0778a9870485f1e2273300dcda4bf07e297bf13b78b65be8c44d026f4",
       "source_path": "projects/studio/content/ui/Properties.rml",
-      "consumer_sha256": "57c4ad4e4fff95ff749e4f0def1e6cd04da5d19b5367fb61cfb5e80b425d92c9"
+      "consumer_sha256": "d8c0cffe0de5f5ec23f19f49b20ecbf81aedbdbb4277653e481931697aad6ac4"
     },
     "projects/studio/content/ui/PropertiesHeader.rcss": {
       "current_source_sha256": "d7680f39026872550f5152068520cd3bcc069e9341542f6eee92ca24c4bec427",
@@ -1928,7 +1928,7 @@
       "current_source_sha256": "4ab3aff5082e6bfeb7bfc08c1363d5f8c5d30e189feb565c213e8f50e11d5cc8",
       "sha256": "951968eb62515a5ee2304ebd38fe32eb81b120dd964e199a5795b7a5a784e4f7",
       "source_path": "src/editor/studio/studio_graph_input.c",
-      "consumer_sha256": "8c7e110e12fd5727d29aaa0f3f6c27dacb1688ecf40a93f6e89c657a18511e5a"
+      "consumer_sha256": "be6ce91e2d432fe0e607aa0b733070ccc5483f978e47b117d8f1e30b7f5458c0"
     },
     "src/editor/studio/studio_graph_internal.h": {
       "current_source_sha256": "4829efbcf63d8f0dc0fdb59e42c726d591b1ab070873b946a77ba2753586abc5",
