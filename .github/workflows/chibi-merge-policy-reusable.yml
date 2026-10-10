@@ -17,6 +17,8 @@ permissions:
   issues: write
   pull-requests: write
 
+# Coalesced pending events are safe: each retained run rereads all open PRs,
+# and direct merges refresh approval/hold state instead of replaying event data.
 concurrency:
   group: chibi-merge-policy-${{ github.repository }}
   cancel-in-progress: false
@@ -63,7 +65,40 @@ jobs:
               return review.user?.type === "User" && await isMaintainer(review.user.login);
             }
 
+            const boundaryPrefix = "<!-- chibi-review-boundary ";
+            function boundaryBody(boundary) {
+              return `${boundaryPrefix}${JSON.stringify(boundary)} -->`;
+            }
+
+            async function reviewBoundary(pr) {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner, repo, issue_number: pr.number, per_page: 100,
+              });
+              const marker = comments.filter(comment =>
+                comment.user?.login === "github-actions[bot]" && comment.body?.startsWith(boundaryPrefix)
+              ).sort((a, b) => b.id - a.id)[0];
+              if (!marker) return { comments, after: 0 };
+              let boundary;
+              try {
+                boundary = JSON.parse(marker.body.slice(boundaryPrefix.length, -4));
+              } catch {
+                return { comments, blocked: true };
+              }
+              if (boundary.pending) {
+                if (pr.base.ref !== boundary.base) return { comments, blocked: true };
+                boundary = { head: pr.head.sha, base: pr.base.ref, at: new Date().toISOString(), pending: false };
+                const { data } = await github.rest.issues.updateComment({
+                  owner, repo, comment_id: marker.id, body: boundaryBody(boundary),
+                });
+                marker.updated_at = data.updated_at;
+              }
+              const after = Math.max(Date.parse(boundary.at), Date.parse(marker.updated_at));
+              return { comments, after, blocked: !Number.isFinite(after) };
+            }
+
             async function freshApproval(pr) {
+              const boundary = await reviewBoundary(pr);
+              if (boundary.blocked) return null;
               const reviews = await github.paginate(github.rest.pulls.listReviews, {
                 owner, repo, pull_number: pr.number, per_page: 100,
               });
@@ -78,7 +113,9 @@ jobs:
                 if (!cleared) return null;
               }
 
-              const currentReviews = otherReviews.filter(review => review.commit_id === pr.head.sha);
+              const currentReviews = otherReviews.filter(review =>
+                review.commit_id === pr.head.sha && Date.parse(review.submitted_at) > boundary.after
+              );
               const copilotReview = currentReviews.filter(review => review.user?.login === copilotLogin)
                 .sort((a, b) => Date.parse(b.submitted_at) - Date.parse(a.submitted_at) || b.id - a.id)[0];
               if (copilotReview?.state === "APPROVED" ||
@@ -91,10 +128,7 @@ jobs:
                 }
               }
 
-              const comments = await github.paginate(github.rest.issues.listComments, {
-                owner, repo, issue_number: pr.number, per_page: 100,
-              });
-              const summary = comments.filter(comment =>
+              const summary = boundary.comments.filter(comment =>
                 comment.user?.login === codexLogin &&
                 comment.body?.includes("<!-- codex-pull-request-review-summary -->")
               ).sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at) || b.id - a.id)[0];
@@ -108,7 +142,7 @@ jobs:
                 const reviewedHead = row.match(/`([a-f0-9]{7,40})`/i)?.[1];
                 const completedAt = Date.parse(row.match(/datetime="([^"]+)"/)?.[1]);
                 if (!row.includes("✅ **Completed**") || !reviewedHead || !pr.head.sha.startsWith(reviewedHead) ||
-                    !Number.isFinite(completedAt)) return null;
+                    !Number.isFinite(completedAt) || completedAt <= boundary.after) return null;
                 reviewedAt = Math.max(reviewedAt, completedAt);
               }
 
@@ -242,13 +276,31 @@ jobs:
                 return pr;
               }
               const parent = (await github.rest.pulls.get({ owner, repo, pull_number: owners[0].number })).data;
-              if (!parent.merged || parent.head.sha !== pr.base.sha || parent.base.ref === pr.base.ref ||
-                  parent.base.ref === pr.head.ref) return pr;
+              if (!parent.merged || parent.head.ref !== pr.base.ref || parent.head.repo?.id !== repository.id ||
+                  parent.head.sha !== pr.base.sha || parent.base.repo?.id !== repository.id ||
+                  parent.base.ref === pr.base.ref || parent.base.ref === pr.head.ref) return pr;
               const current = (await github.rest.pulls.get({ owner, repo, pull_number: pr.number })).data;
               if (current.state !== "open" || current.head.sha !== pr.head.sha || current.base.ref !== pr.base.ref ||
-                  hasHold(current) || !(await dependenciesMerged(current))) return current;
+                  current.base.sha !== parent.head.sha || hasHold(current) || !(await dependenciesMerged(current))) return current;
+              const comparison = (await github.rest.repos.compareCommitsWithBasehead({
+                owner, repo, basehead: `${parent.head.sha}...${current.head.sha}`,
+              })).data;
+              if (!["ahead", "identical"].includes(comparison.status) || comparison.merge_base_commit?.sha !== parent.head.sha) {
+                core.info(`#${pr.number}: base parent #${parent.number} is not an ancestor of the current head.`);
+                return current;
+              }
+              // Persist a blocking marker before changing the base. If finalization
+              // fails, reviewBoundary recovers only after observing the target base.
+              const boundary = { head: current.head.sha, base: parent.base.ref, at: new Date().toISOString(), pending: true };
+              const marker = (await github.rest.issues.createComment({
+                owner, repo, issue_number: current.number, body: boundaryBody(boundary),
+              })).data;
               const { data } = await github.rest.pulls.update({
                 owner, repo, pull_number: current.number, base: parent.base.ref,
+              });
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: marker.id,
+                body: boundaryBody({ head: data.head.sha, base: data.base.ref, at: new Date().toISOString(), pending: false }),
               });
               core.info(`Retargeted #${pr.number} from merged parent #${parent.number} to ${parent.base.ref}; approval and checks will be evaluated again.`);
               return data;
