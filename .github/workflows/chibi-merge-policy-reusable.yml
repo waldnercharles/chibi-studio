@@ -6,9 +6,6 @@ on:
       gate_ready:
         type: boolean
         default: false
-      enroll_after:
-        type: string
-        default: ""
       post_merge_workflows:
         type: string
         default: "[]"
@@ -31,7 +28,6 @@ jobs:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           CHIBI_REVIEW_GATE_READY: ${{ inputs.gate_ready }}
-          CHIBI_REVIEW_POLICY_START_AT: ${{ inputs.enroll_after }}
           CHIBI_POST_MERGE_WORKFLOWS: ${{ inputs.post_merge_workflows }}
         with:
           script: |
@@ -39,11 +35,11 @@ jobs:
             const repo = context.repo.repo;
             const gateName = "Chibi review approval";
             const autoMergeLabel = "chibi-auto-merge";
+            const noAutoMergeLabel = "chibi-no-auto-merge";
             const codexLogin = "chatgpt-codex-connector[bot]";
             const copilotLogin = "copilot-pull-request-reviewer[bot]";
             const githubActionsAppId = 15368;
             const gateReady = process.env.CHIBI_REVIEW_GATE_READY === "true";
-            const enrollmentStart = Date.parse(process.env.CHIBI_REVIEW_POLICY_START_AT || "");
             const postMergeWorkflows = JSON.parse(process.env.CHIBI_POST_MERGE_WORKFLOWS || "[]");
             const defaultBranch = (await github.rest.repos.get({ owner, repo })).data.default_branch;
             const permissionCache = new Map();
@@ -52,8 +48,8 @@ jobs:
               if (!permissionCache.has(login)) {
                 try {
                   const { data } = await github.rest.repos.getCollaboratorPermissionLevel({ owner, repo, username: login });
-                  const permissions = data.permissions || {};
-                  permissionCache.set(login, permissions.admin === true || permissions.maintain === true || permissions.push === true);
+                  const permissions = data.user?.permissions || {};
+                  permissionCache.set(login, permissions.admin === true || permissions.maintain === true);
                 } catch {
                   permissionCache.set(login, false);
                 }
@@ -126,21 +122,23 @@ jobs:
               const siblings = pulls.filter(candidate => candidate.head.sha === pr.head.sha);
               const outcomes = await Promise.all(siblings.map(async sibling => {
                 const held = hasHold(sibling) || !(await dependenciesMerged(sibling));
-                const approval = !held
+                const approval = gateReady && !held
                   ? await freshApproval(sibling, gate.started_at)
                   : null;
                 return { number: sibling.number, held, approval };
               }));
               const blocked = outcomes.find(outcome => outcome.held);
               const waiting = outcomes.find(outcome => !outcome.approval);
-              const approved = outcomes.length > 0 && outcomes.every(outcome => !outcome.held && outcome.approval);
-              const summary = approved
-                ? `Head ${pr.head.sha} is approved across ${outcomes.length} open pull request(s).`
-                : blocked
-                  ? `Approval is blocked by hold or an open dependency on pull request #${blocked.number}.`
-                  : waiting
-                    ? `Pull request #${waiting.number} awaits a current-head approval from Copilot or a maintainer, or a fresh 👍 from ${codexLogin}.`
-                    : "No open pull request targets the default branch with this head commit.";
+              const approved = gateReady && outcomes.length > 0 && outcomes.every(outcome => !outcome.held && outcome.approval);
+              const summary = !gateReady
+                ? "Approval gate setup is not complete."
+                : approved
+                  ? `Head ${pr.head.sha} is approved across ${outcomes.length} open pull request(s).`
+                  : blocked
+                    ? `Approval is blocked by hold or an open dependency on pull request #${blocked.number}.`
+                    : waiting
+                      ? `Pull request #${waiting.number} awaits a current-head approval from Copilot or a maintainer, or a fresh 👍 from ${codexLogin}.`
+                      : "No open pull request targets the default branch with this head commit.";
               await github.rest.checks.update({
                 owner, repo, check_run_id: gate.id,
                 name: gateName,
@@ -159,6 +157,7 @@ jobs:
             function hasHold(pr) {
               if (pr.draft) return true;
               const labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
+              if (labels.includes(noAutoMergeLabel)) return true;
               if (labels.some(label => /^(hold|blocked|wip|do[- ]?not[- ]?merge)$/i.test(label))) return true;
               const body = pr.body || "";
               return /(?:^|\n)[ \t]*(?:hold|blocked)[ \t]*(?::.*)?$/im.test(body) ||
@@ -214,13 +213,12 @@ jobs:
               return Boolean(result.node?.autoMergeRequest);
             }
 
-            async function setAutoMerge(pr, enabled) {
-              const current = await hasAutoMerge(pr);
-              if (current === enabled) return;
-              const mutation = enabled
-                ? `mutation($id: ID!) { enablePullRequestAutoMerge(input: { pullRequestId: $id, mergeMethod: SQUASH }) { pullRequest { id } } }`
-                : `mutation($id: ID!) { disablePullRequestAutoMerge(input: { pullRequestId: $id }) { pullRequest { id } } }`;
-              await github.graphql(mutation, { id: pr.node_id });
+            async function disableAutoMerge(pr) {
+              if (!await hasAutoMerge(pr)) return;
+              await github.graphql(
+                `mutation($id: ID!) { disablePullRequestAutoMerge(input: { pullRequestId: $id }) { pullRequest { id } } }`,
+                { id: pr.node_id }
+              );
             }
 
             async function ensureAutoMergeLabel() {
@@ -233,6 +231,7 @@ jobs:
                   description: "Opt this pull request into automatic merge after approval and required checks.",
                 });
               }
+              await ensureLabel(noAutoMergeLabel, "Keep this pull request out of automatic merging.");
             }
 
             function matchesPath(path, pattern) {
@@ -298,10 +297,11 @@ jobs:
             }
 
             async function enrollNewPullRequest(pr) {
-              if (!gateReady || !Number.isFinite(enrollmentStart) || Date.parse(pr.created_at) < enrollmentStart) return;
+              if (!gateReady) return;
+              const labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
+              if (labels.includes(noAutoMergeLabel)) return;
               await ensureAutoMergeLabel();
-              const existing = pr.labels.map(label => typeof label === "string" ? label : label.name);
-              if (!existing.includes(autoMergeLabel)) {
+              if (!labels.includes(autoMergeLabel)) {
                 await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: [autoMergeLabel] });
               }
             }
@@ -309,7 +309,6 @@ jobs:
             async function applyAutoMerge(pr) {
               const labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
               const optedIn = labels.includes(autoMergeLabel);
-              await setAutoMerge(pr, false);
               if (!optedIn || !gateReady || hasHold(pr) || !(await dependenciesMerged(pr))) return;
 
               const current = (await github.rest.pulls.get({ owner, repo, pull_number: pr.number })).data;
@@ -362,17 +361,27 @@ jobs:
                 if (error.status === 404) continue;
                 throw error;
               }
-              const labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
+              let labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
               if (pr.state !== "open") continue;
               if (pr.base.ref !== defaultBranch) {
-                if (labels.includes(autoMergeLabel)) await setAutoMerge(pr, false);
+                if (labels.includes(autoMergeLabel)) await disableAutoMerge(pr);
                 continue;
               }
 
               await enrollNewPullRequest(pr);
-              if (!labels.includes(autoMergeLabel) && Date.parse(pr.created_at) >= enrollmentStart) {
+              if (gateReady && !labels.includes(autoMergeLabel) && !labels.includes(noAutoMergeLabel)) {
                 pr = (await github.rest.pulls.get({ owner, repo, pull_number: number })).data;
+                labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
               }
+
+              if (!labels.includes(autoMergeLabel) && !labels.includes(noAutoMergeLabel) && await hasAutoMerge(pr)) {
+                await ensureAutoMergeLabel();
+                await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: [autoMergeLabel] });
+                pr = (await github.rest.pulls.get({ owner, repo, pull_number: number })).data;
+                labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
+              }
+
+              await disableAutoMerge(pr);
 
               await updateGate(pr);
               await applyAutoMerge(pr);

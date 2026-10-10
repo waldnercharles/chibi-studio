@@ -1,0 +1,17 @@
+name: Chibi review signal
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review, edited, converted_to_draft]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+
+permissions: {}
+
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - run: ':'
