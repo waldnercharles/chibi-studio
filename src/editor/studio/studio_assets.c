@@ -613,13 +613,20 @@ static void anchor_popover(studio *s, int asset)
     }
 }
 
-/* Deletes every selected asset the view shows, as one change. */
+/* Deletes every selected asset the view shows, as one change. The assets go
+   by kind and name, since deleting rebuilds the index that numbers them. */
 static void delete_selection(studio *s)
 {
+    const struct studio_assets_cache *cache = current_cache(s);
     int *assets = selected_assets(s);
-    if (acount(assets)) {
-        studio_refactor_delete_assets(s, assets, acount(assets));
+    studio_asset_ref *refs = NULL;
+    for (int i = 0; i < acount(assets); i++) {
+        apush(refs, ref_of(reference_index_asset_at(cache->index, assets[i])));
     }
+    if (acount(refs)) {
+        studio_refactor_delete_assets(s, refs, acount(refs));
+    }
+    afree(refs);
     afree(assets);
 }
 

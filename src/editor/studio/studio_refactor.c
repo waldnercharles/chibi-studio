@@ -392,7 +392,6 @@ void studio_refactor_delete_asset(studio *s, int asset)
 /* The first of the assets something still uses, or -1. */
 static int first_used(studio *s, const int *assets, int count)
 {
-    app_scene_authoring_refresh_asset_index(s->scene);
     const reference_index *index = app_scene_authoring_asset_index(s->scene);
     for (int i = 0; i < count; i++) {
         const reference **uses = NULL;
@@ -427,14 +426,30 @@ static void deleted_title(const reference_index *index, const int *assets, int c
     snprintf(out, size, "Deleted %s and %d others", first, count - 1);
 }
 
-/* Deletes several unused assets as one change, which one Undo restores. A
-   used one refuses them all: the single delete lists where it is used. */
-void studio_refactor_delete_assets(studio *s, const int *assets, int count)
+/* The assets in the rebuilt index, which can number them differently from
+   the one they were selected in; NULL, refusing, when one is gone. */
+static int *find_assets(studio *s, const studio_asset_ref *refs, int count)
 {
-    if (count == 1) {
-        studio_refactor_delete_asset(s, assets[0]);
-        return;
+    app_scene_authoring_refactor_index(s->scene);
+    const reference_index *index = app_scene_authoring_asset_index(s->scene);
+    int *assets = NULL;
+    for (int i = 0; i < count; i++) {
+        int asset = reference_index_find_name(index, refs[i].kind, refs[i].name);
+        if (asset < 0) {
+            char error[256];
+            snprintf(error, sizeof error, "%s no longer exists", refs[i].name);
+            refused(s, "Nothing deleted", error);
+            afree(assets);
+            return NULL;
+        }
+        apush(assets, asset);
     }
+    return assets;
+}
+
+/* Deletes the found assets as one change. */
+static void delete_found(studio *s, const int *assets, int count)
+{
     int used = first_used(s, assets, count);
     const reference_index *index = app_scene_authoring_asset_index(s->scene);
     char title[192], error[256] = "";
@@ -476,6 +491,22 @@ void studio_refactor_delete_assets(studio *s, const int *assets, int count)
     }
     apply(s, plan, title);
     app_refactor_free(plan);
+}
+
+/* Deletes several unused assets as one change, which one Undo restores. A
+   used one refuses them all: the single delete lists where it is used. */
+void studio_refactor_delete_assets(studio *s, const studio_asset_ref *refs, int count)
+{
+    int *assets = find_assets(s, refs, count);
+    if (!assets) {
+        return;
+    }
+    if (count == 1) {
+        studio_refactor_delete_asset(s, assets[0]);
+    } else {
+        delete_found(s, assets, count);
+    }
+    afree(assets);
 }
 
 void studio_refactor_rename_asset(studio *s, int asset)

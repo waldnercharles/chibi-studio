@@ -1842,7 +1842,7 @@ bool studio_refactor_confirm_delete(
 void studio_refactor_delete_asset(studio *s, int asset);
 /* Deletes several assets at once, with one Undo; refused while any of them
    is still used, which deleting it alone lists. */
-void studio_refactor_delete_assets(studio *s, const int *assets, int count);
+void studio_refactor_delete_assets(studio *s, const studio_asset_ref *refs, int count);
 /* The popover (Refactor.rml) and the Undo toast; call every frame. */
 void studio_refactor_frame(studio *s);
 void studio_refactor_free(studio *s);
