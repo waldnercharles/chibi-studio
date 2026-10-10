@@ -448,7 +448,13 @@ jobs:
 
               const latest = (await github.rest.pulls.get({ owner, repo, pull_number: pr.number })).data;
               if (latest.state !== "open" || latest.base.ref !== defaultBranch || latest.head.sha !== current.head.sha) return;
+              const latestLabels = latest.labels.map(label => typeof label === "string" ? label : label.name);
+              if (!latestLabels.includes(autoMergeLabel) || latestLabels.includes(noAutoMergeLabel)) return;
               if (hasHold(latest) || !(await dependenciesMerged(latest))) return;
+              if (!await freshApproval(latest)) {
+                await updateGate(latest);
+                return;
+              }
 
               try {
                 const result = await github.rest.pulls.merge({
