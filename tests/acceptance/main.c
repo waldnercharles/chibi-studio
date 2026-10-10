@@ -41,6 +41,7 @@ static enum {
     EXPORT_GAME,
     GRAPH_VISIBILITY,
     GRAPH_KEYS,
+    UNIT_WARNINGS,
     SCENE_HIERARCHY,
     ASSET_SELECTION,
     SCENE_VIEWPORT,
@@ -589,6 +590,46 @@ static bool kdl_keys_frame(void *state)
         kit_code_paste(asset_code_editor(scene), "x");
     } else if (frames == KDL_FRAMES) {
         REQUIRE(undoes_to_save(scene));
+    }
+    return true;
+}
+
+#define UNIT_FRAMES 4
+static const char unit_mismatch[] = "behavior Counter {\n"
+                                    "    state count: int = 1\n"
+                                    "    on Tick {\n"
+                                    "        count = count + 1\n"
+                                    "        self.GameCollider.radius = "
+                                    "self.GameMovement.speed\n"
+                                    "    }\n"
+                                    "}\n";
+static bool unit_warned;
+
+/* A unit mismatch underlines its statement as a warning, not an error. */
+static bool unit_warnings_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= UNIT_FRAMES);
+    asset_code *code = counter_code(s);
+    REQUIRE(code);
+    if (frames == 1) {
+        studio_show_editor(s, STUDIO_EDITOR_CODE);
+    } else if (frames == 2) {
+        const char *path = asset_code_path(code);
+        REQUIRE(studio_code_replace(s, path, asset_code_text(code), unit_mismatch, NULL));
+    } else {
+        const char *statement = strstr(unit_mismatch, "self.GameCollider");
+        const kit_code_marker *markers = asset_code_markers(code);
+        for (int i = 0; i < acount(markers); i++) {
+            const kit_code_marker *m = &markers[i];
+            REQUIRE(m->severity == KIT_CODE_WARNING);
+            REQUIRE(!strcmp(m->message, "Units differ: u = u/s") && m->line == 5);
+            REQUIRE(m->start == statement - unit_mismatch);
+            unit_warned = true;
+        }
+        REQUIRE(!asset_code_error(code)[0]);
     }
     return true;
 }
@@ -1993,6 +2034,7 @@ bool studio_acceptance_frame(void *state)
             callback_ok = graph_visibility_frame(state);
             break;
         case GRAPH_KEYS: callback_ok = graph_keys_frame(state); break;
+        case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
         case ASSET_SELECTION: callback_ok = asset_selection_frame(state); break;
         case SCENE_VIEWPORT: callback_ok = scene_viewport_frame(state); break;
@@ -2045,6 +2087,21 @@ TEST_CASE(kdl_enter_saves)
     REQUIRE(unchanged_source());
     REQUIRE(frames == KDL_FRAMES && keys == 2);
     printf("Studio KDL keys accepted: frames=%d keys=%d\n", frames, keys);
+    return true;
+}
+
+TEST_CASE(code_underlines_unit_mismatch)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(UNIT_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == UNIT_FRAMES && unit_warned);
+    REQUIRE(unchanged_source());
+    printf("Studio unit warning accepted: frames=%d\n", frames);
     return true;
 }
 
@@ -2227,19 +2284,20 @@ int main(int argc, char **argv)
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
     bool keys_mode = argc == 4 && !strcmp(argv[1], "--graph-keys");
+    bool units = argc == 4 && !strcmp(argv[1], "--unit-warnings");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
     bool assets = argc == 4 && !strcmp(argv[1], "--asset-selection");
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
     bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
     bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
-    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
-         !keys_mode && !hierarchy && !assets && !viewport && !playing && !prompting) ||
+    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility && !keys_mode &&
+         !units && !hierarchy && !assets && !viewport && !playing && !prompting) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
-            "--graph-visibility|--graph-keys|--scene-hierarchy|"
+            "--graph-visibility|--graph-keys|--unit-warnings|--scene-hierarchy|"
             "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts "
             "--project-root PATH | --scene-cursors\n"
         );
@@ -2263,6 +2321,7 @@ int main(int argc, char **argv)
          : exporting   ? EXPORT_GAME
          : visibility  ? GRAPH_VISIBILITY
          : keys_mode   ? GRAPH_KEYS
+         : units       ? UNIT_WARNINGS
          : hierarchy   ? SCENE_HIERARCHY
          : assets      ? ASSET_SELECTION
          : viewport    ? SCENE_VIEWPORT
@@ -2277,6 +2336,7 @@ int main(int argc, char **argv)
             RUN_TEST_CASE(graph_visibility_and_document_pair);
             break;
         case GRAPH_KEYS: RUN_TEST_CASE(graph_keys); break;
+        case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
         case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;
         case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
