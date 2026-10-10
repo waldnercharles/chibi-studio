@@ -946,7 +946,15 @@ static const char marked_scene
          "    - name=\"Spot\" prototype=\"Spot\" { components { GameTransform "
          "x=5.0 y=5.0; }; }\n"
          "}\n";
-#define VIEWPORT_FRAMES 9
+/* More undrawn objects than any fixed count of markers the Scene kept, laid
+   out inside the box's 40 by 40, so a framed view shows them all. */
+#define CROWD_COLUMNS 20
+#define CROWD_ROWS 15
+#define CROWD (CROWD_COLUMNS * CROWD_ROWS)
+#define CROWD_LINE 128 /* room for each spot's line of the scene */
+#define VIEWPORT_FRAMES 14
+/* The narrow Scene the hint must fit: under the hint box's 320 dp. */
+#define NARROW_SCENE_DP 240.0f
 
 /* Queues a mouse event at the Scene surface's point (x, y), in points. */
 static bool push_mouse(Uint32 type, float x, float y, float wheel_x, float wheel_y)
@@ -1035,6 +1043,32 @@ static bool marker_and_gizmo(studio *s)
     return true;
 }
 
+/* While a previewed prototype plays, the wheel, a trackpad's fraction
+   included, and Space are its game's, as the scene's are while it plays.
+   The state is the one a Preview target's Play sets; this project's source
+   behavior keeps a prototype preview from launching here. */
+static bool previewed_prototype_plays(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(!scene->runtime_playing && scene->active_runtime_target == APP_RUNTIME_SCENE);
+    scene->active_runtime_target = APP_RUNTIME_PREVIEW;
+    scene->preview_playing = true;
+    engine_viewport_view before, after;
+    engine_viewport_get_view(s->viewport, &before);
+    float scrolled = s->scroll_y;
+    s->scroll_y = 0.5f;
+    engine_viewport_host_input input = { .wheel = 0.5f, .width = s->surface.rect.w };
+    studio_scene_view(s, &input);
+    s->scroll_y = scrolled;
+    engine_viewport_get_view(s->viewport, &after);
+    bool space = studio_scene_space(s, (studio_key){ .key = SDLK_SPACE });
+    scene->preview_playing = false;
+    scene->active_runtime_target = APP_RUNTIME_SCENE;
+    REQUIRE(input.wheel == 0.5f && after.center_y == before.center_y);
+    REQUIRE(!space);
+    return true;
+}
+
 /* While the game plays, the wheel, a trackpad's included, scrolls its UI,
    and an undrawn object, which shows no marker, picks nothing. */
 static bool played_scene(studio *s)
@@ -1050,6 +1084,111 @@ static bool played_scene(studio *s)
     );
     edits++;
     return true;
+}
+
+/* The box and CROWD undrawn spots inside it, the last selected. */
+static bool load_crowd(studio *s)
+{
+    size_t size = (size_t)(CROWD + 3) * CROWD_LINE;
+    char *text = xmalloc(size);
+    int at = snprintf(text, size, "version 1\nname \"Scene\"\n(array)entities {\n    - name=\"Box\" prototype=\"Box\"\n");
+    for (int i = 0; i < CROWD; i++) {
+        int x = 2 * (i % CROWD_COLUMNS) - CROWD_COLUMNS + 1;
+        int y = 2 * (i / CROWD_COLUMNS) - CROWD_ROWS + 1;
+        at += snprintf(
+            text + at,
+            size - (size_t)at,
+            "    - name=\"Spot%d\" prototype=\"Spot\" { components { "
+            "GameTransform x=%d.0 y=%d.0; }; }\n",
+            i,
+            x,
+            y
+        );
+    }
+    snprintf(text + at, size - (size_t)at, "}\n");
+    int loaded = scene_authoring_load_text(s->scene, text, NULL);
+    free(text);
+    REQUIRE(loaded == 0 && acount(s->scene->actors) == CROWD + 1);
+    ecs_entity last = s->scene->actors[CROWD].entity;
+    return app_scene_authoring_select_entity(s->scene, last) == 0;
+}
+
+/* How many markers the Scene shows, past data-for's hidden template. */
+static int scene_markers(studio *s)
+{
+    rml_element *surface = studio_element(s, "#scene-surface");
+    REQUIRE(surface);
+    rml_element *document = rml_element_owner_document(surface);
+    rml_element *found[CROWD + 2];
+    int count = rml_element_query_selector_all(document, ".viewport > .marker", found, CROWD + 2);
+    REQUIRE(count <= CROWD + 2);
+    int shown = 0;
+    for (int i = 0; i < count; i++) {
+        shown += rml_element_is_visible(found[i], false);
+    }
+    return shown;
+}
+
+/* `selector`'s element in the tool's hint lies across the Scene's width,
+   inside it. Layout offsets leave out the transform that places the hint. */
+static bool inside_scene(studio *s, const char *selector)
+{
+    rml_element *surface = studio_element(s, "#scene-surface");
+    rml_element *element = studio_element(s, selector);
+    REQUIRE(surface && element);
+    char transform[128];
+    float shift;
+    rml_element_property(studio_element(s, ".tool-hint"), "transform", transform, sizeof transform);
+    REQUIRE(sscanf(transform, "translate(%fpx", &shift) == 1);
+    float left = rml_element_absolute_offset(surface, RML_BOX_BORDER).x;
+    float right = left + rml_element_box_size(surface, RML_BOX_BORDER).x;
+    float at = rml_element_absolute_offset(element, RML_BOX_BORDER).x + shift;
+    float width = rml_element_box_size(element, RML_BOX_BORDER).x;
+    if (width <= 0 || at < left || at + width > right) {
+        fprintf(
+            stderr,
+            "Studio scene acceptance: %s spans %g..%g in %g..%g\n",
+            selector,
+            at,
+            at + width,
+            left,
+            right
+        );
+    }
+    REQUIRE(width > 0 && at >= left && at + width <= right);
+    return true;
+}
+
+/* Every undrawn object shows its marker, however many there are, and in a
+   Scene narrowed under the hint's box the rotate tool's hint for a spot
+   with no orientation, and its Add, stay inside it. */
+static bool crowd_and_narrow(studio *s)
+{
+    switch (frames) {
+        case 10: {
+            studio_command_run(s, STUDIO_COMMAND_STOP);
+            REQUIRE(!studio_session(s) && load_crowd(s));
+            studio_command_run(s, STUDIO_COMMAND_ROTATE_TOOL);
+            /* The Scene beside the Text Editor, the splitter dragged to
+               leave it NARROW_SCENE_DP. */
+            float column = s->main_rect.w;
+            REQUIRE(column > NARROW_SCENE_DP * 2);
+            studio_set_workspace(s, STUDIO_WORKSPACE_HORIZONTAL_SPLIT);
+            studio_active_layout(s)->main_split = NARROW_SCENE_DP / (column - 4);
+            studio_ui_resync(s, "workspace");
+            return true;
+        }
+        case 12:
+            REQUIRE(s->surface.rect.w > 0 && s->surface.rect.w < 320);
+            studio_frame_all(s);
+            return true;
+        case VIEWPORT_FRAMES:
+            REQUIRE(scene_markers(s) == CROWD);
+            REQUIRE(element_says(s, ".tool-hint-pill .text", "No Orientation to rotate"));
+            REQUIRE(inside_scene(s, ".tool-hint-pill"));
+            return inside_scene(s, ".tool-hint-pill .btn");
+        default: return true;
+    }
 }
 
 /* The Scene's one zoom reads 100% when framed; a mouse wheel zooms it, a
@@ -1105,6 +1244,7 @@ static bool scene_viewport_frame(void *state)
             REQUIRE(s->surface.hovered);
             REQUIRE(view.width < before.width && app_scene_authoring_zoom(scene) > 1);
             before = view;
+            REQUIRE(previewed_prototype_plays(s));
             /* A fraction of a notch reads as a trackpad's scroll. */
             return push_mouse(SDL_EVENT_MOUSE_WHEEL, x, y, 0, 0.5f);
         case 4:
@@ -1130,7 +1270,8 @@ static bool scene_viewport_frame(void *state)
             /* Space waits for its release, which a drag may still follow. */
             REQUIRE(s->space_down && !studio_session(s));
             return push_key(SDLK_SPACE, SDL_KMOD_NONE, false);
-        default: return played_scene(s);
+        case 9: return played_scene(s);
+        default: return crowd_and_narrow(s);
     }
 }
 

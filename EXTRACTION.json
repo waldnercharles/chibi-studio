@@ -1029,13 +1029,13 @@
       "current_source_sha256": "18502419237e77150c2003f275240a20fc54ee98bef17b0a0b788432f27f637b",
       "sha256": "18502419237e77150c2003f275240a20fc54ee98bef17b0a0b788432f27f637b",
       "source_path": "projects/studio/content/ui/Scene.rcss",
-      "consumer_sha256": "f852110ad90e489d3f52b5c7b027d15acde50659f665218ee232f9d2a2b89dd5"
+      "consumer_sha256": "405d31cd2820ad3dadaf04a7eeaff50fc955b9f70500a43fd0916c17780ac23e"
     },
     "projects/studio/content/ui/Scene.rml": {
       "current_source_sha256": "c274b2103a713429c05cdc26cbe18ba71e0c4117ef6da1ce01136c2455aadb6a",
       "sha256": "c274b2103a713429c05cdc26cbe18ba71e0c4117ef6da1ce01136c2455aadb6a",
       "source_path": "projects/studio/content/ui/Scene.rml",
-      "consumer_sha256": "f36979fd18d3659f73ebdabc10ea90f4e600675a89be3053b5eccad15c92f7f2"
+      "consumer_sha256": "ebeac94bda76b16eae9348901af811d886841c273f142ce01009ac83967ff0fb"
     },
     "projects/studio/content/ui/SceneHeader.rcss": {
       "current_source_sha256": "5eaa1e7b3bb45e630f8bb34f51a6ad0acacc7190ade1554b34fc152d0af1b222",
@@ -2089,7 +2089,7 @@
       "current_source_sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "source_path": "src/editor/studio/studio_scene.c",
-      "consumer_sha256": "fb96e0c5f88da1723138eae1887b662cc01950cfcc7c633083a549a967d20636"
+      "consumer_sha256": "e4e45fb9428c988c11e024ead0738c159e6cb5bcd335ff5dee1afda4af66a755"
     },
     "src/editor/studio/studio_settings.c": {
       "current_source_sha256": "1c75298f324a970da1732a66036f3622d6c6be59319a2719b62ce0ceb7b5ff03",
