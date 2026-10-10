@@ -221,27 +221,38 @@ static void unsaved_names(studio *s, char *out, size_t size)
 /* ---------- Unsaved changes ---------- */
 
 #define UNSAVED_LOST "Your changes will be lost if you don't save them."
+#define UNSAVED_HELD "Stop the scene to save them, or discard them."
 
-/* What every action that would lose unsaved edits asks, as Save / Don't Save
-   / Cancel does on every desktop: "Save Level before quitting?" with Save
-   first and Discard second, and the toast's close button cancelling. One
-   prompt shows at a time; a new question updates it in place. */
-static void ask_unsaved(studio *s, studio_unsaved_action action, const char *names, const char *before)
+/* Shows the prompt's question about `names`: "Save Level before quitting?"
+   with Save first and Discard second, and the toast's close button
+   cancelling. While a running scene keeps documents from saving, it says
+   how to save them. */
+static void show_unsaved(studio *s, const char *names)
 {
     studio_unsaved_prompt *prompt = &s->unsaved_prompt;
     char title[448];
-    snprintf(title, sizeof title, "Save %s before %s?", names, before);
-    prompt->action = action;
+    snprintf(title, sizeof title, "Save %s before %s?", names, prompt->before);
     prompt->toast = kit_toast(
         s->kit,
         prompt->toast,
         &(kit_toast_desc){ .type = KIT_TOAST_WARNING,
                            .title = title,
-                           .description = UNSAVED_LOST,
+                           .description = studio_save_held(s) ? UNSAVED_HELD : UNSAVED_LOST,
                            .action = "Save",
                            .cancel = "Discard",
                            .duration = -1 }
     );
+}
+
+/* What every action that would lose unsaved edits asks, as Save / Don't Save
+   / Cancel does on every desktop. One prompt shows at a time; a new question
+   updates it in place. */
+static void ask_unsaved(studio *s, studio_unsaved_action action, const char *names, const char *before)
+{
+    studio_unsaved_prompt *prompt = &s->unsaved_prompt;
+    prompt->action = action;
+    snprintf(prompt->before, sizeof prompt->before, "%s", before);
+    show_unsaved(s, names);
 }
 
 void studio_open_project(studio *s, int index)
@@ -308,6 +319,20 @@ static bool pending_unsaved(studio *s, int tab)
     return studio_unsaved(s);
 }
 
+/* Asks again about what Save left unsaved, such as a scene the running
+   scene kept from saving, so the action never goes ahead as if saved: Save
+   once the scene stops, or Discard, still does. */
+static void ask_again(studio *s, int tab)
+{
+    char names[256];
+    if (tab >= 0) {
+        snprintf(names, sizeof names, "%s", s->scene->tabs[tab].label);
+    } else {
+        unsaved_names(s, names, sizeof names);
+    }
+    show_unsaved(s, names);
+}
+
 /* Takes the prompt's answer. Edits saved some other way while it asks
    leave nothing to ask about, so it goes away unanswered. */
 static void answer_unsaved(studio *s)
@@ -326,7 +351,11 @@ static void answer_unsaved(studio *s)
     }
     kit_toast_dismiss(s->kit, prompt->toast);
     prompt->toast = 0;
-    if (discard || (save && save_pending(s, tab))) {
+    if (save && !save_pending(s, tab) && pending_unsaved(s, tab)) {
+        ask_again(s, tab);
+        return;
+    }
+    if (save || discard) {
         proceed(s, tab);
     }
     prompt->action = STUDIO_UNSAVED_NONE;
@@ -463,6 +492,21 @@ bool studio_quit(studio *s, bool requested)
     unsaved_names(s, names, sizeof names);
     ask_unsaved(s, STUDIO_UNSAVED_QUIT, names, "quitting");
     return false;
+}
+
+/* Asks inline whether to save the unsaved documents before creating. */
+static void confirm_unsaved(studio *s, studio_new_project *dialog)
+{
+    char names[256];
+    unsaved_names(s, names, sizeof names);
+    snprintf(
+        dialog->confirm,
+        sizeof dialog->confirm,
+        "Save %s before creating %s?",
+        names,
+        dialog->name
+    );
+    dialog->confirm_save = true;
 }
 
 static bool named(const char *name)
@@ -727,21 +771,11 @@ void studio_new_project_action(studio *s, const char *action)
         snprintf(dialog->error, sizeof dialog->error, "Enter a project name");
         return;
     }
-    /* The dialog asks inline what the unsaved prompt asks elsewhere. */
-    if (create && studio_unsaved(s)) {
-        char names[256];
-        unsaved_names(s, names, sizeof names);
-        snprintf(
-            dialog->confirm,
-            sizeof dialog->confirm,
-            "Save %s before creating %s?",
-            names,
-            dialog->name
-        );
-        dialog->confirm_save = true;
-        return;
-    }
-    if (!strcmp(action, "save") && !studio_save_all(s)) {
+    /* The dialog asks inline what the unsaved prompt asks elsewhere, and
+       asks again about what Save left unsaved. */
+    if ((create && studio_unsaved(s)) ||
+        (!strcmp(action, "save") && !studio_save_all(s))) {
+        confirm_unsaved(s, dialog);
         return;
     }
     dialog->confirm_save = false;

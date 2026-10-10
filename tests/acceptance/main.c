@@ -713,16 +713,36 @@ static bool play_keys_frame(void *state)
     return true;
 }
 
-#define PROMPT_FRAMES 14
-static bool quit_saved;
+#define PROMPT_FRAMES 18
+static bool quit_answered;
+
+/* Adds an object to the open scene, leaving it unsaved. Its prototype
+   exists only in this run, so the scene's file must never take it. */
+static bool add_probe(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(
+        app_scene_authoring_register_prototype(
+            scene,
+            "name \"Probe\"\ncomponents {\n    GameTransform x=0 y=0\n}\n",
+            NULL
+        ) == 0
+    );
+    REQUIRE(app_scene_authoring_add_instance(scene, "Probe") == 0);
+    REQUIRE(scene->scene_dirty);
+    return true;
+}
 
 /* Closing Counter's clean tab just closes it. Closing it with an edit asks,
    and its Discard closes the tab without writing; asked again, a Save by
-   hand dismisses the prompt and keeps the tab; quitting with an edit asks,
-   and its Save writes Counter before Studio quits. Both answers are clicks on
-   the toast's buttons, which the prompt answers two frames after the click.
-   Reduced motion, on from the first frame, settles each toast where layout
-   puts it, so the clicks land on its buttons. */
+   hand dismisses the prompt and keeps the tab. With the scene running,
+   quitting with an edit to Counter and to the scene asks; its Save writes
+   Counter, which applies live, and asks again about the scene the running
+   scene keeps from saving, whose Discard lets Studio quit without writing
+   it. Both answers are clicks on the toast's buttons, which the prompt
+   answers two frames after the click. Reduced motion, on from the first
+   frame, settles each toast where layout puts it, so the clicks land on its
+   buttons. */
 static bool prompts_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -730,9 +750,9 @@ static bool prompts_frame(void *state)
     frames++;
     REQUIRE(frames <= PROMPT_FRAMES);
     if (s->unsaved_prompt.quit) {
-        /* Save went through: nothing is unsaved, and Quit goes ahead. */
-        REQUIRE(frames > 11 && !studio_unsaved(s));
-        quit_saved = true;
+        /* Discard went through: Quit goes ahead with the scene unsaved. */
+        REQUIRE(frames > 15 && studio_unsaved(s));
+        quit_answered = true;
         return true;
     }
     switch (frames) {
@@ -775,15 +795,34 @@ static bool prompts_frame(void *state)
             REQUIRE(!s->unsaved_prompt.toast);
             REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_NONE);
             REQUIRE(counter_tab(s) >= 0 && counter_says("count: int = 5"));
+            REQUIRE(add_probe(s));
+            studio_command_run(s, STUDIO_COMMAND_PLAY);
+            break;
+        case 10:
+            REQUIRE(studio_session(s) && studio_save_held(s));
+            REQUIRE(scene_tabs_activate(s->scene, counter_tab(s)) == 0);
             REQUIRE(edit_counter(s, 5, "4"));
             REQUIRE(!studio_quit(s, true));
             REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
             break;
-        case 10:
-            REQUIRE(prompt_shows(s, "Save Counter before quitting?"));
+        case 11:
+            REQUIRE(prompt_shows(s, "and Counter before quitting?"));
             REQUIRE(click(s, ".toast[data-front] .toast-action"));
             break;
-        default: REQUIRE(frames < 13);
+        case 13:
+            /* Counter saved while the scene runs; the scene could not, so
+               the prompt asks again about it instead of quitting. */
+            REQUIRE(counter_says("count: int = 4"));
+            REQUIRE(studio_session(s) && studio_unsaved(s));
+            REQUIRE(s->unsaved_prompt.toast);
+            REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
+            break;
+        case 14:
+            REQUIRE(prompt_shows(s, "before quitting?"));
+            REQUIRE(element_says(s, ".toast[data-front] .description", "Stop the scene"));
+            REQUIRE(click(s, ".toast[data-front] .toast-cancel"));
+            break;
+        default: REQUIRE(frames < 17);
     }
     return true;
 }
@@ -1058,7 +1097,15 @@ static const char marked_scene
          "    - name=\"Spot\" prototype=\"Spot\" { components { GameTransform "
          "x=5.0 y=5.0; }; }\n"
          "}\n";
-#define VIEWPORT_FRAMES 9
+/* More undrawn objects than any fixed count of markers the Scene kept, laid
+   out inside the box's 40 by 40, so a framed view shows them all. */
+#define CROWD_COLUMNS 20
+#define CROWD_ROWS 15
+#define CROWD (CROWD_COLUMNS * CROWD_ROWS)
+#define CROWD_LINE 128 /* room for each spot's line of the scene */
+#define VIEWPORT_FRAMES 14
+/* The narrow Scene the hint must fit: under the hint box's 320 dp. */
+#define NARROW_SCENE_DP 240.0f
 
 /* Queues a mouse event at the Scene surface's point (x, y), in points. */
 static bool push_mouse(Uint32 type, float x, float y, float wheel_x, float wheel_y)
@@ -1147,6 +1194,32 @@ static bool marker_and_gizmo(studio *s)
     return true;
 }
 
+/* While a previewed prototype plays, the wheel, a trackpad's fraction
+   included, and Space are its game's, as the scene's are while it plays.
+   The state is the one a Preview target's Play sets; this project's source
+   behavior keeps a prototype preview from launching here. */
+static bool previewed_prototype_plays(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(!scene->runtime_playing && scene->active_runtime_target == APP_RUNTIME_SCENE);
+    scene->active_runtime_target = APP_RUNTIME_PREVIEW;
+    scene->preview_playing = true;
+    engine_viewport_view before, after;
+    engine_viewport_get_view(s->viewport, &before);
+    float scrolled = s->scroll_y;
+    s->scroll_y = 0.5f;
+    engine_viewport_host_input input = { .wheel = 0.5f, .width = s->surface.rect.w };
+    studio_scene_view(s, &input);
+    s->scroll_y = scrolled;
+    engine_viewport_get_view(s->viewport, &after);
+    bool space = studio_scene_space(s, (studio_key){ .key = SDLK_SPACE });
+    scene->preview_playing = false;
+    scene->active_runtime_target = APP_RUNTIME_SCENE;
+    REQUIRE(input.wheel == 0.5f && after.center_y == before.center_y);
+    REQUIRE(!space);
+    return true;
+}
+
 /* While the game plays, the wheel, a trackpad's included, scrolls its UI,
    and an undrawn object, which shows no marker, picks nothing. */
 static bool played_scene(studio *s)
@@ -1211,6 +1284,111 @@ static bool asset_selection_frame(void *state)
     }
 }
 
+/* The box and CROWD undrawn spots inside it, the last selected. */
+static bool load_crowd(studio *s)
+{
+    size_t size = (size_t)(CROWD + 3) * CROWD_LINE;
+    char *text = xmalloc(size);
+    int at = snprintf(text, size, "version 1\nname \"Scene\"\n(array)entities {\n    - name=\"Box\" prototype=\"Box\"\n");
+    for (int i = 0; i < CROWD; i++) {
+        int x = 2 * (i % CROWD_COLUMNS) - CROWD_COLUMNS + 1;
+        int y = 2 * (i / CROWD_COLUMNS) - CROWD_ROWS + 1;
+        at += snprintf(
+            text + at,
+            size - (size_t)at,
+            "    - name=\"Spot%d\" prototype=\"Spot\" { components { "
+            "GameTransform x=%d.0 y=%d.0; }; }\n",
+            i,
+            x,
+            y
+        );
+    }
+    snprintf(text + at, size - (size_t)at, "}\n");
+    int loaded = scene_authoring_load_text(s->scene, text, NULL);
+    free(text);
+    REQUIRE(loaded == 0 && acount(s->scene->actors) == CROWD + 1);
+    ecs_entity last = s->scene->actors[CROWD].entity;
+    return app_scene_authoring_select_entity(s->scene, last) == 0;
+}
+
+/* How many markers the Scene shows, past data-for's hidden template. */
+static int scene_markers(studio *s)
+{
+    rml_element *surface = studio_element(s, "#scene-surface");
+    REQUIRE(surface);
+    rml_element *document = rml_element_owner_document(surface);
+    rml_element *found[CROWD + 2];
+    int count = rml_element_query_selector_all(document, ".viewport > .marker", found, CROWD + 2);
+    REQUIRE(count <= CROWD + 2);
+    int shown = 0;
+    for (int i = 0; i < count; i++) {
+        shown += rml_element_is_visible(found[i], false);
+    }
+    return shown;
+}
+
+/* `selector`'s element in the tool's hint lies across the Scene's width,
+   inside it. Layout offsets leave out the transform that places the hint. */
+static bool inside_scene(studio *s, const char *selector)
+{
+    rml_element *surface = studio_element(s, "#scene-surface");
+    rml_element *element = studio_element(s, selector);
+    REQUIRE(surface && element);
+    char transform[128];
+    float shift;
+    rml_element_property(studio_element(s, ".tool-hint"), "transform", transform, sizeof transform);
+    REQUIRE(sscanf(transform, "translate(%fpx", &shift) == 1);
+    float left = rml_element_absolute_offset(surface, RML_BOX_BORDER).x;
+    float right = left + rml_element_box_size(surface, RML_BOX_BORDER).x;
+    float at = rml_element_absolute_offset(element, RML_BOX_BORDER).x + shift;
+    float width = rml_element_box_size(element, RML_BOX_BORDER).x;
+    if (width <= 0 || at < left || at + width > right) {
+        fprintf(
+            stderr,
+            "Studio scene acceptance: %s spans %g..%g in %g..%g\n",
+            selector,
+            at,
+            at + width,
+            left,
+            right
+        );
+    }
+    REQUIRE(width > 0 && at >= left && at + width <= right);
+    return true;
+}
+
+/* Every undrawn object shows its marker, however many there are, and in a
+   Scene narrowed under the hint's box the rotate tool's hint for a spot
+   with no orientation, and its Add, stay inside it. */
+static bool crowd_and_narrow(studio *s)
+{
+    switch (frames) {
+        case 10: {
+            studio_command_run(s, STUDIO_COMMAND_STOP);
+            REQUIRE(!studio_session(s) && load_crowd(s));
+            studio_command_run(s, STUDIO_COMMAND_ROTATE_TOOL);
+            /* The Scene beside the Text Editor, the splitter dragged to
+               leave it NARROW_SCENE_DP. */
+            float column = s->main_rect.w;
+            REQUIRE(column > NARROW_SCENE_DP * 2);
+            studio_set_workspace(s, STUDIO_WORKSPACE_HORIZONTAL_SPLIT);
+            studio_active_layout(s)->main_split = NARROW_SCENE_DP / (column - 4);
+            studio_ui_resync(s, "workspace");
+            return true;
+        }
+        case 12:
+            REQUIRE(s->surface.rect.w > 0 && s->surface.rect.w < 320);
+            studio_frame_all(s);
+            return true;
+        case VIEWPORT_FRAMES:
+            REQUIRE(scene_markers(s) == CROWD);
+            REQUIRE(element_says(s, ".tool-hint-pill .text", "No Orientation to rotate"));
+            REQUIRE(inside_scene(s, ".tool-hint-pill"));
+            return inside_scene(s, ".tool-hint-pill .btn");
+        default: return true;
+    }
+}
+
 /* The Scene's one zoom reads 100% when framed; a mouse wheel zooms it, a
    trackpad's scroll pans it, Space with a drag pans and Space alone plays
    once it lifts. Events queue after a frame for the next one. */
@@ -1264,6 +1442,7 @@ static bool scene_viewport_frame(void *state)
             REQUIRE(s->surface.hovered);
             REQUIRE(view.width < before.width && app_scene_authoring_zoom(scene) > 1);
             before = view;
+            REQUIRE(previewed_prototype_plays(s));
             /* A fraction of a notch reads as a trackpad's scroll. */
             return push_mouse(SDL_EVENT_MOUSE_WHEEL, x, y, 0, 0.5f);
         case 4:
@@ -1289,7 +1468,8 @@ static bool scene_viewport_frame(void *state)
             /* Space waits for its release, which a drag may still follow. */
             REQUIRE(s->space_down && !studio_session(s));
             return push_key(SDLK_SPACE, SDL_KMOD_NONE, false);
-        default: return played_scene(s);
+        case 9: return played_scene(s);
+        default: return crowd_and_narrow(s);
     }
 }
 
@@ -1437,6 +1617,20 @@ TEST_CASE(scene_viewport)
     return true;
 }
 
+/* The start scene's file never took the probe object. */
+static bool start_unchanged()
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/scenes/Start.kdl", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    char *text = file_read_text(path);
+    REQUIRE(text);
+    bool same = !strstr(text, "Probe");
+    free(text);
+    REQUIRE(same);
+    return true;
+}
+
 /* Restores Counter's bytes over what the shell test saved. */
 static bool restore_counter()
 {
@@ -1471,9 +1665,10 @@ TEST_CASE(unsaved_prompts)
                      "--project-root",   (char *)project,
                      "--open",           "Counter" };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && quit_saved);
+    REQUIRE(callback_ok && quit_answered);
     bool saved = counter_says("count: int = 4");
-    REQUIRE(restore_counter() && saved);
+    bool kept = start_unchanged();
+    REQUIRE(restore_counter() && saved && kept);
     printf("\nStudio unsaved prompts accepted: frames=%d\n", frames);
     return true;
 }

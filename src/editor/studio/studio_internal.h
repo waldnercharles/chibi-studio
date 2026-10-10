@@ -754,7 +754,8 @@ typedef struct
     studio_unsaved_action action;
     int project;    /* the project Open Project opens */
     char tab[1024]; /* the key of the tab Close Tab closes */
-    bool quit;      /* Quit may go ahead */
+    char before[192]; /* what the action does, as "quitting" */
+    bool quit;        /* Quit may go ahead */
 } studio_unsaved_prompt;
 
 /* Workstream I: the code editor of one open document part, which keeps its
@@ -1955,6 +1956,9 @@ bool studio_save_tab(studio *s, int index);
 /* Saves every document with unsaved edits and returns to the active tab;
    true when nothing is left unsaved. */
 bool studio_save_all(studio *s);
+/* True while a running scene keeps documents from saving; text, which
+   applies live, still saves. */
+bool studio_save_held(const studio *s);
 /* The open tab with this key, or -1. */
 int studio_tab_index(const studio *s, const char *key);
 /* Reports a document saved: in Output, and in a toast except while Save All
