@@ -1774,7 +1774,8 @@
     "src/editor/studio/studio_commands.c": {
       "current_source_sha256": "a57d09649e465de860c1fcde24684f72dd0588e6a71b22ef50df00db79ced3d7",
       "sha256": "a57d09649e465de860c1fcde24684f72dd0588e6a71b22ef50df00db79ced3d7",
-      "source_path": "src/editor/studio/studio_commands.c"
+      "source_path": "src/editor/studio/studio_commands.c",
+      "consumer_sha256": "6fd72bfb85a6fc7d446c971b06f007de7ca5ced7e5cc420bc503c2a9ec628374"
     },
     "src/editor/studio/studio_debug.c": {
       "current_source_sha256": "4d8ef83a4ace1d2059f5dbffded88d7a73356d2b30b194e6ed69c371e0c185e3",
@@ -2162,7 +2163,8 @@
     "src/editor/ui/kit_icons.h": {
       "current_source_sha256": "d48b0fd19d34495e5d0f0f9dff1848213fbc440ab3b0aad4afc32645cdcd73a3",
       "sha256": "d48b0fd19d34495e5d0f0f9dff1848213fbc440ab3b0aad4afc32645cdcd73a3",
-      "source_path": "src/editor/ui/kit_icons.h"
+      "source_path": "src/editor/ui/kit_icons.h",
+      "consumer_sha256": "7ea952dc07cc8034117b4817b65c24c5a0b46ddf5db7005d2ae4ce3c8ccd1828"
     },
     "src/editor/ui/kit_wire_shape.c": {
       "current_source_sha256": "eba917d35e8408df9fb699b081bfcac330753e6391a87c54df9d37a9613dfd7d",

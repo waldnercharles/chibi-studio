@@ -150,7 +150,7 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                .context = "Scene, Outliner",
                                .contexts = OBJECT_AREAS,
                                .keywords = "focus zoom",
-                               .icon = KIT_ICON_FRAME,
+                               .icon = KIT_ICON_FOCUS,
                                .phase = SHORTCUT_EDITOR },
     [STUDIO_COMMAND_RESET_CAMERA] = { .id = "resetCamera",
                                       .label = "Reset Camera",
