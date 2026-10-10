@@ -798,7 +798,45 @@ static bool graph_visibility_frame(void *state)
     return true;
 }
 
-#define GRAPH_KEY_FRAMES 24
+#define GRAPH_KEY_FRAMES 25
+
+/* A behavior whose first handler graph is an unnamed completion handler,
+   whose entry is an Event node without a name, ahead of its Tick. */
+static const char
+    late_bytes[] = "behavior Late {\n"
+                   "    macro Advance(elapsed: ref float, dt: double) {\n"
+                   "        elapsed = cast<float>(cast<double>(elapsed) + dt)\n"
+                   "    }\n"
+                   "    state elapsed: float = 0.125\n"
+                   "    action advance = Advance(elapsed, delta)\n"
+                   "    after advance {\n"
+                   "        elapsed = min(elapsed, 1.0)\n"
+                   "    }\n"
+                   "    on Tick {\n"
+                   "        advance()\n"
+                   "    }\n"
+                   "}\n";
+
+static bool write_late()
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/behaviors/Late.chibi", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    FILE *file = fopen(path, "wb");
+    REQUIRE(file);
+    bool written = fputs(late_bytes, file) >= 0;
+    REQUIRE(fclose(file) == 0 && written);
+    return true;
+}
+
+/* Late opens past its unnamed completion handler, on its Tick. */
+static bool opens_past_unnamed_event(studio *s)
+{
+    REQUIRE(app_scene_authoring_open_behavior(s->scene, "Late") == 0);
+    const graph *shown = editor_active_graph(s->scene->graph_editor);
+    REQUIRE(shown && shown->name && !strcmp(shown->name, "Tick"));
+    return true;
+}
 
 static bool selected_only(editor *e, uint64_t id)
 {
@@ -1056,6 +1094,8 @@ static bool graph_keys_frame(void *state)
         REQUIRE(sg_node_by_id(s, added)->disabled);
         REQUIRE(leads_search(s, chosen));
         keys++;
+    } else if (frames == 24) {
+        REQUIRE(opens_past_unnamed_event(s));
     }
     return true;
 }
@@ -2025,7 +2065,7 @@ TEST_CASE(graph_visibility_and_document_pair)
 
 TEST_CASE(graph_keys)
 {
-    REQUIRE(unchanged_source());
+    REQUIRE(unchanged_source() && write_late());
     char *args[] = { (char *)executable, "--headless",
                      "--frames",         FRAMES_TEXT(GRAPH_KEY_FRAMES),
                      "--fixed-dt",       "0.016666666666666666",

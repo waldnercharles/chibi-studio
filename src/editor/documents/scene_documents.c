@@ -290,7 +290,8 @@ static bool holds_event(const graph *gr)
 {
     for (int i = 0; i < acount(gr->nodes); i++) {
         const node *n = gr->nodes[i];
-        if (n->desc->display_class == NODE_DISPLAY_EVENT && n->reference_name[0]) {
+        if (n->desc->display_class == NODE_DISPLAY_EVENT && n->reference_name &&
+            n->reference_name[0]) {
             return true;
         }
     }
