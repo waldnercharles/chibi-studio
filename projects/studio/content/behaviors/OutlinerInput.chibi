@@ -31,6 +31,9 @@ behavior "OutlinerInput" {
         } else {
         }
     }
+    on ClearFilter as clearfilter() {
+        set_object_filter(Filter: "");
+    }
     on SpawnBreak as spawnbreak() {
         toggle_spawn_break(Prototype: selection().Prototype);
     }

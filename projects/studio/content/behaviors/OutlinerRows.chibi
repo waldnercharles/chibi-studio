@@ -36,13 +36,16 @@ behavior "OutlinerRows" {
         }
     }
     after branch_3.True {
+        await set_ui_data(Entity: 0, Name: "filtered", Value: bool = engine["Bool"](Value: false));
         set_ui_data(Entity: 0, Name: "notice", Value: string = engine["String"](Value: ""));
     }
     after branch_3.False {
         if (text_equal(A: scene_info().Filter, B: "")) {
+            await set_ui_data(Entity: 0, Name: "filtered", Value: bool = engine["Bool"](Value: false));
             set_ui_data(Entity: 0, Name: "notice", Value: string = engine["String"](Value: "No objects. Add a prototype to start."));
         } else {
-            set_ui_data(Entity: 0, Name: "notice", Value: string = engine["String"](Value: "No matches"));
+            await set_ui_data(Entity: 0, Name: "filtered", Value: bool = engine["Bool"](Value: true));
+            set_ui_data(Entity: 0, Name: "notice", Value: string = format_text(Format: "No objects match “{}”", Arg0: string = scene_info().Filter));
         }
     }
     on FoldRoot as foldroot() {
