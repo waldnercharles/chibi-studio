@@ -333,6 +333,60 @@ static bool code_keys_frame(void *state)
     return true;
 }
 
+static bool tilemap_viewport(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    ecs_world *world = scene->world;
+    ecs_entity map = ecs_world_create_entity(world);
+    ecs_entity foreground = ecs_world_create_entity(world);
+    REQUIRE(GAME_GameTransform_add(world, map, 0) == ECS_OK);
+    REQUIRE(GAME_GameOrientation_add(world, map, 0) == ECS_OK);
+    REQUIRE(GAME_GameTilemap_add(world, map, 0) == ECS_OK);
+    REQUIRE(GAME_GameTransform_add(world, foreground, 0) == ECS_OK);
+    REQUIRE(GAME_GameAppearance_add(world, foreground, 0) == ECS_OK);
+    REQUIRE(GAME_GameRenderState_add(world, foreground, 0) == ECS_OK);
+    REQUIRE(ecs_world_apply_commands(world) == ECS_OK);
+    *GAME_GameTransform_get(world, map) = (GameTransform){ 10, 20 };
+    *GAME_GameOrientation_get(world, map) = (GameOrientation){ 1.5707963267948966f };
+    *GAME_GameTilemap_get(world, map) = (GameTilemap){ .cells = "1 -1",
+                                                       .columns = 2,
+                                                       .rows = 1,
+                                                       .frame_width = 8,
+                                                       .frame_height = 4,
+                                                       .layer = -50 };
+    *GAME_GameTransform_get(world, foreground) = (GameTransform){ 8, 24 };
+    *GAME_GameAppearance_get(world, foreground) = (GameAppearance){ .shape = GAME_SHAPE_BOX,
+                                                                    .width = 2,
+                                                                    .height = 2,
+                                                                    .layer = 10 };
+    int actor_count = acount(scene->actors);
+    apush(scene->actors, ((scene_actor){ .entity = map }));
+    apush(scene->actors, ((scene_actor){ .entity = foreground }));
+    REQUIRE(s->viewport);
+    engine_viewport_view before, fitted;
+    engine_viewport_get_view(s->viewport, &before);
+    bool fit = fit_scene_view(s->viewport, world, &map, 1);
+    engine_viewport_get_view(s->viewport, &fitted);
+    ecs_entity top = pick_scene_entity(scene, 8, -24, (render_skip){ 0 });
+    GAME_GameRenderState_get(world, foreground)->hidden = true;
+    ecs_entity layer = pick_scene_entity(scene, 8, -24, (render_skip){ 0 });
+    ecs_entity empty_cell = pick_scene_entity(scene, 8, -32, (render_skip){ 0 });
+    ecs_entity outside = pick_scene_entity(scene, 10.5f, -24, (render_skip){ 0 });
+    engine_viewport_set_view(s->viewport, &before);
+    asetlen(scene->actors, actor_count);
+    REQUIRE(ecs_world_destroy_entity(world, foreground) == ECS_OK);
+    REQUIRE(ecs_world_destroy_entity(world, map) == ECS_OK);
+    REQUIRE(fit);
+    REQUIRE(fabsf(fitted.center_x - 8) < 0.001f);
+    REQUIRE(fabsf(fitted.center_y + 28) < 0.001f);
+    REQUIRE(fitted.width >= 4 && fitted.height >= 16);
+    REQUIRE(ecs_entity_to_u64(top) == ecs_entity_to_u64(foreground));
+    REQUIRE(ecs_entity_to_u64(layer) == ecs_entity_to_u64(map));
+    REQUIRE(ecs_entity_to_u64(empty_cell) == ecs_entity_to_u64(map));
+    REQUIRE(ecs_entity_to_u64(outside) != ecs_entity_to_u64(map));
+    return true;
+}
+
 /* Hidden graphs do no UI work. Both views follow one document, without
    losing the scene source draft selected between visits to the graph. */
 static bool graph_visibility_frame(void *state)
@@ -350,6 +404,8 @@ static bool graph_visibility_frame(void *state)
     REQUIRE(frames <= 10);
     if (frames == 1) {
         studio_behavior_show(s, 2);
+    } else if (frames == 2) {
+        REQUIRE(tilemap_viewport(s));
     } else if (frames == 3) {
         REQUIRE(s->graph.backend);
         hidden = rml_backend_get_stats(s->graph.backend);
