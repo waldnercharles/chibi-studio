@@ -403,6 +403,10 @@ void write_transform_edit(app_scene_authoring *scene, ecs_entity entity, GameTra
 /* Fits the `count` objects in `only` in the view, or every object when
    `only` is NULL; false when none of them draws. */
 bool fit_scene_view(engine_viewport *viewport, ecs_world *world, const ecs_entity *only, int count);
+/* fit_scene_view for the Scene's own view, where objects nothing draws show
+   a marker: around their places too, keeping the zoom when only markers
+   show; false when none of them draws or has a place. */
+bool frame_scene_view(engine_viewport *viewport, ecs_world *world, const ecs_entity *only, int count);
 /* Generated World (scene_world_preview.c): prepares the scene's materials for
  * the edited view each draw, and discards them for a session or when off. */
 void scene_world_preview_update(app_scene_authoring *scene, const engine_viewport_camera *view);

@@ -429,10 +429,10 @@ static const char *const VIEW_TEXTS[] = { "error",
                                           "hintAt",
                                           "hintWidth",
                                           NULL };
-static const char *const VIEW_FLAGS[] = {
-    "readout",      "zooming",     "session", "pending",
-    "modelPreview", "hintAddable", NULL
-};
+static const char *const VIEW_FLAGS[] = { "readout",      "zooming",
+                                          "session",      "pending",
+                                          "modelPreview", "hinted",
+                                          "hintAddable",  NULL };
 static const char *const CAMERA_TEXTS[] = { "name", "at", NULL };
 static const char *const CAMERA_FLAGS[] = { "active", "disabled", "selected", NULL };
 static const char *const MARKER_TEXTS[] = { "icon", "at", "name", NULL };
@@ -637,33 +637,36 @@ static bool addable(studio *s, const ecs_component_desc *desc)
 }
 
 /* Why the tool's gizmo is grey, below it, with the one click that fixes it
-   when there is one: a disabled control says why. */
+   when there is one: a disabled control says why. It comes and goes with
+   presence, so a hint leaving keeps its text and place while it fades. */
 static bool show_hint(studio *s, const studio_panel_sync *at, bool shown)
 {
     scene_tool_hint hint;
-    char text[160] = "", action[160] = "", place[64] = "", width[32] = "";
-    bool add = false;
-    if (shown && !s->scene->gizmo.active && scene_gizmo_hint(s->scene, &hint)) {
-        char label[128];
-        editor_component_label(hint.missing->name, label, sizeof label);
-        if (s->prefs.tool == SCENE_TOOL_ROTATE) {
-            snprintf(text, sizeof text, "No %s to rotate", label);
-        } else {
-            snprintf(text, sizeof text, "No size to scale");
-        }
-        add = addable(s, hint.missing);
-        snprintf(action, sizeof action, "Add %s", label);
-        kit_rect r = s->surface.rect;
-        float half = fminf(HINT_BOX_DP, fmaxf(r.w - 2 * HINT_GAP_DP, 0)) / 2;
-        float x = fminf(fmaxf(hint.x * r.w, half + HINT_GAP_DP), r.w - half - HINT_GAP_DP);
-        float below = HINT_BELOW_PX / s->prefs.ui_scale;
-        float y = fminf(hint.y * r.h + below, r.h - HINT_ROOM_Y_DP);
-        place_at(s, (x - half) / r.w, fmaxf(y, 0) / r.h, place);
-        snprintf(width, sizeof width, "%.0fdp", 2 * half);
+    bool hinted = shown && !s->scene->gizmo.active &&
+                  scene_gizmo_hint(s->scene, &hint);
+    bool changed = ui_data_put_bool(at->variable, "hinted", hinted);
+    if (!hinted) {
+        return changed;
     }
-    bool changed = ui_data_put_text(at->doc, at->variable, "hint", text);
+    char text[160], action[160], place[64], width[32], label[128];
+    editor_component_label(hint.missing->name, label, sizeof label);
+    /* The tool the gizmo has, which takes a tool chosen a frame later. */
+    if (s->scene->gizmo.in.tool == SCENE_TOOL_ROTATE) {
+        snprintf(text, sizeof text, "No %s to rotate", label);
+    } else {
+        snprintf(text, sizeof text, "No size to scale");
+    }
+    snprintf(action, sizeof action, "Add %s", label);
+    kit_rect r = s->surface.rect;
+    float half = fminf(HINT_BOX_DP, fmaxf(r.w - 2 * HINT_GAP_DP, 0)) / 2;
+    float x = fminf(fmaxf(hint.x * r.w, half + HINT_GAP_DP), r.w - half - HINT_GAP_DP);
+    float below = HINT_BELOW_PX / s->prefs.ui_scale;
+    float y = fminf(hint.y * r.h + below, r.h - HINT_ROOM_Y_DP);
+    place_at(s, (x - half) / r.w, fmaxf(y, 0) / r.h, place);
+    snprintf(width, sizeof width, "%.0fdp", 2 * half);
+    changed |= ui_data_put_text(at->doc, at->variable, "hint", text);
     changed |= ui_data_put_text(at->doc, at->variable, "hintAction", action);
-    changed |= ui_data_put_bool(at->variable, "hintAddable", add);
+    changed |= ui_data_put_bool(at->variable, "hintAddable", addable(s, hint.missing));
     changed |= ui_data_put_text(at->doc, at->variable, "hintWidth", width);
     return ui_data_put_text(at->doc, at->variable, "hintAt", place) || changed;
 }

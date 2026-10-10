@@ -1681,7 +1681,7 @@ static const char marked_scene
 #define CROWD_ROWS 15
 #define CROWD (CROWD_COLUMNS * CROWD_ROWS)
 #define CROWD_LINE 128 /* room for each spot's line of the scene */
-#define VIEWPORT_FRAMES 14
+#define VIEWPORT_FRAMES 19
 /* The narrow Scene the hint must fit: under the hint box's 320 dp. */
 #define NARROW_SCENE_DP 240.0f
 
@@ -1740,6 +1740,13 @@ static bool marker_and_gizmo(studio *s)
         ecs_entity_to_u64(pick_scene_entity(scene, -15, 15, (render_skip){ 0 })) ==
         ecs_entity_to_u64(box)
     );
+    /* A thumbnail fits only what draws, so the spot alone fits nothing;
+       the Scene frames it by its marker, at its place. */
+    REQUIRE(!fit_scene_view(s->viewport, scene->world, &spot, 1));
+    REQUIRE(frame_scene_view(s->viewport, scene->world, &spot, 1));
+    engine_viewport_view framed;
+    engine_viewport_get_view(s->viewport, &framed);
+    REQUIRE(framed.center_x == 5 && framed.center_y == -5);
     REQUIRE(app_scene_authoring_select_entity(scene, box) == 0);
     /* The right edge's handle sits at (20, 0); the ring 64 pixels out. */
     scene->gizmo.in.tool = SCENE_TOOL_SCALE;
@@ -1937,6 +1944,47 @@ static bool inside_scene(studio *s, const char *selector)
     return true;
 }
 
+/* The hint a tool no longer needs fades out (presence) as it was. Then the
+   box and spot load again, nothing selected, framed. */
+static bool hint_leaves(studio *s)
+{
+    rml_element *hint = studio_element(s, ".tool-hint");
+    REQUIRE(hint && rml_element_is_visible(hint, false));
+    REQUIRE(rml_element_has_attribute(hint, "data-ending-style"));
+    REQUIRE(element_says(s, ".tool-hint-pill .text", "No Orientation to rotate"));
+    REQUIRE(scene_authoring_load_text(s->scene, marked_scene, NULL) == 0);
+    studio_command_run(s, STUDIO_COMMAND_DESELECT);
+    REQUIRE(scene_selection_count(s->scene) == 0);
+    studio_frame_all(s);
+    return true;
+}
+
+/* A marquee drawn from empty space below the box over the spot marker's
+   lower right, short of its center, takes the spot. */
+static bool marquee_edge(studio *s)
+{
+    static float x, y, reach;
+    app_scene_authoring *scene = s->scene;
+    if (frames == 17) {
+        app_scene_marker marker;
+        REQUIRE(app_scene_authoring_markers(scene, &marker, 1) == 1 && marker.actor == 1);
+        kit_rect r = s->surface.rect;
+        x = (r.x + marker.x * r.w) * s->prefs.ui_scale;
+        y = (r.y + marker.y * r.h) * s->prefs.ui_scale;
+        reach = scene->gizmo.in.marker_radius;
+        float bottom = (r.y + r.h) * s->prefs.ui_scale - 2;
+        REQUIRE(bottom > y + 2 * reach);
+        REQUIRE(push_mouse(SDL_EVENT_MOUSE_MOTION, x + reach, bottom, 0, 0));
+        return push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x + reach, bottom, 0, 0);
+    }
+    if (frames == 18) {
+        REQUIRE(scene->marquee);
+        return push_mouse(SDL_EVENT_MOUSE_MOTION, x + 0.6f * reach, y + 0.6f * reach, 0, 0);
+    }
+    REQUIRE(scene->marquee && scene_instance_selected(scene, 1));
+    return push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x + 0.6f * reach, y + 0.6f * reach, 0, 0);
+}
+
 /* Every undrawn object shows its marker, however many there are, and in a
    Scene narrowed under the hint's box the rotate tool's hint for a spot
    with no orientation, and its Add, stay inside it. */
@@ -1960,11 +2008,18 @@ static bool crowd_and_narrow(studio *s)
             REQUIRE(s->surface.rect.w > 0 && s->surface.rect.w < 320);
             studio_frame_all(s);
             return true;
-        case VIEWPORT_FRAMES:
+        case 14:
             REQUIRE(scene_markers(s) == CROWD);
             REQUIRE(element_says(s, ".tool-hint-pill .text", "No Orientation to rotate"));
             REQUIRE(inside_scene(s, ".tool-hint-pill"));
-            return inside_scene(s, ".tool-hint-pill .btn");
+            REQUIRE(inside_scene(s, ".tool-hint-pill .btn"));
+            studio_command_run(s, STUDIO_COMMAND_MOVE_TOOL);
+            return true;
+        /* The gizmo takes the tool a frame after the command. */
+        case 16: return hint_leaves(s);
+        case 17:
+        case 18:
+        case VIEWPORT_FRAMES: return marquee_edge(s);
         default: return true;
     }
 }

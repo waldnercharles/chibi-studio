@@ -1046,13 +1046,13 @@
       "current_source_sha256": "18502419237e77150c2003f275240a20fc54ee98bef17b0a0b788432f27f637b",
       "sha256": "18502419237e77150c2003f275240a20fc54ee98bef17b0a0b788432f27f637b",
       "source_path": "projects/studio/content/ui/Scene.rcss",
-      "consumer_sha256": "405d31cd2820ad3dadaf04a7eeaff50fc955b9f70500a43fd0916c17780ac23e"
+      "consumer_sha256": "443364687be1c5cf3cc6ef4dbaa7924db5a0fd884f00d1446cd4bb5599181877"
     },
     "projects/studio/content/ui/Scene.rml": {
       "current_source_sha256": "c274b2103a713429c05cdc26cbe18ba71e0c4117ef6da1ce01136c2455aadb6a",
       "sha256": "c274b2103a713429c05cdc26cbe18ba71e0c4117ef6da1ce01136c2455aadb6a",
       "source_path": "projects/studio/content/ui/Scene.rml",
-      "consumer_sha256": "ebeac94bda76b16eae9348901af811d886841c273f142ce01009ac83967ff0fb"
+      "consumer_sha256": "b594272512d1e1be2abb9151a26e29458609364c264cd8476a9946bfb6e45d59"
     },
     "projects/studio/content/ui/SceneHeader.rcss": {
       "current_source_sha256": "5eaa1e7b3bb45e630f8bb34f51a6ad0acacc7190ade1554b34fc152d0af1b222",
@@ -2146,7 +2146,7 @@
       "current_source_sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "source_path": "src/editor/studio/studio_scene.c",
-      "consumer_sha256": "e4e45fb9428c988c11e024ead0738c159e6cb5bcd335ff5dee1afda4af66a755"
+      "consumer_sha256": "c59ed21f962135eb26251b0bed0060530745763e43a6aca3467a99db2494ce80"
     },
     "src/editor/studio/studio_settings.c": {
       "current_source_sha256": "1c75298f324a970da1732a66036f3622d6c6be59319a2719b62ce0ceb7b5ff03",
@@ -2157,7 +2157,7 @@
       "current_source_sha256": "e38ecbf7677c5f74f7fcafc5199412171781a5fd8eac038a7923a1327142499c",
       "sha256": "e38ecbf7677c5f74f7fcafc5199412171781a5fd8eac038a7923a1327142499c",
       "source_path": "src/editor/studio/studio_shell.c",
-      "consumer_sha256": "e0ea91894f87eaafb9537f97ed176318d350aacad9912823400cc5bd01fcfefa"
+      "consumer_sha256": "8970e27a5db6323893a519c49ad62d26db03fa13bdea1811111a6522a672d5be"
     },
     "src/editor/studio/studio_sources.c": {
       "current_source_sha256": "3163175f127f6aec6a68be24efe77791ed9ed640daf72819e281de90b0cad483",
@@ -2436,7 +2436,7 @@
       "current_source_sha256": "93345eaf41711cf406a6263f27024a9fa1c875e7d92d97926750cb1d33ffb0eb",
       "sha256": "7aedf7279fffcd4c7def1ae879505521def3a81e56d828081c46f436f43ec3ed",
       "source_path": "src/editor/workspace/scene_internal.h",
-      "consumer_sha256": "b1239ca7a0417b7be08f2d62c02d91f0f5365ae6f666db3ff6a418c825d782c7"
+      "consumer_sha256": "470a6f83747eb28429a52605b31a7030cd636e831723187944885d9c0fa564a7"
     },
     "src/editor/workspace/scene_overlays.c": {
       "current_source_sha256": "0199c3ed41f96506ccb2c3b1f88cf8e543fecb947bcd1ec9964dc01d5005bed0",
@@ -2464,7 +2464,7 @@
       "current_source_sha256": "f2a2f0d495ea6a286f1dfd898f3904d55eedfdb9093f9ef79d9f16115503a482",
       "sha256": "c487c7af89a66c3beb36270f2751356d3c5429ccccef8268ef518557da7a5210",
       "source_path": "src/editor/workspace/scene_viewport.c",
-      "consumer_sha256": "9ccb26113a311ede9067b4f1ce73297a7beab0c353520f40a8ec0ddc5814f3c6"
+      "consumer_sha256": "afe9c18fc4d271fd19b74e87a5f93dfb51902119d8118afd13c1030812c9ebf9"
     },
     "src/editor/workspace/scene_world_preview.c": {
       "current_source_sha256": "0dc6c273fa210be49c28651ae1788498f1a081196d48c7803891f0ac847da9db",
