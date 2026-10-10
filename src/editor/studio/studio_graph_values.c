@@ -1615,6 +1615,42 @@ static void graph_input_display(
     snprintf(out, size, "%s", pin_value_to_string(&spec->default_value));
 }
 
+/* A vector, color or compound input keeps its value editor, and Bind to
+   Source beside it swaps in the input's source field, as typing a path in
+   a scalar input's field binds it. */
+static void bind_button(studio *s, kit *k, uint64_t pin)
+{
+    studio_graph *g = &s->graph;
+    kit_button_desc bind = { .icon = KIT_ICON_BINDING,
+                             .size = KIT_SM,
+                             .cls = "gbind",
+                             .tip = "Bind to Source",
+                             .description = "Type a property path, or choose a "
+                                            "value for this input to read." };
+    if (kit_button(k, "bind", &bind)) {
+        g->bind_pin = pin;
+        g->bind_kit = k;
+        g->bind_focus = true;
+        g->details.bind[0] = '\0';
+    }
+}
+
+/* The field Bind to Source swapped in takes the focus, which opens its list;
+   the value editor returns once the list closes, or if it never opened. */
+static void bind_follow(studio *s, kit *k, const char *query)
+{
+    studio_graph *g = &s->graph;
+    if (g->bind_focus) {
+        kit_focus(k);
+        g->bind_focus = false;
+        return;
+    }
+    if (!query) {
+        g->bind_pin = 0;
+        g->bind_kit = NULL;
+    }
+}
+
 void sg_emit_graph_input(studio *s, kit *k, node *n, int p)
 {
     editor *e = sg_graph_editor(s);
@@ -1646,14 +1682,18 @@ void sg_emit_graph_input(studio *s, kit *k, node *n, int p)
     bool compound_literal = !source && !binding &&
                             (parts.value == VALUE_VECTOR || parts.value == VALUE_COLOR ||
                              parts.value == VALUE_COMPOUND);
-    bool autocomplete = can_choose_source && !compound_literal;
+    bool bind = s->graph.bind_pin == spec->id && s->graph.bind_kit == k;
+    bool autocomplete = can_choose_source && (!compound_literal || bind);
 
     if (s->graph.input_edit_pin == spec->id && s->graph.input_edit_kit == k) {
         node *expression = graph_node_by_id(gr, s->graph.input_edit_node);
         sg_emit_expression_editor(s, k, expression, spec->id);
     } else if (autocomplete) {
-        char displayed[256];
-        graph_input_display(s, spec, &parts, source, source_pin, expression_source, binding, displayed, sizeof displayed);
+        /* A compound value's field starts empty: it takes a source. */
+        char displayed[256] = "";
+        if (!bind) {
+            graph_input_display(s, spec, &parts, source, source_pin, expression_source, binding, displayed, sizeof displayed);
+        }
         const char *query = kit_autocomplete_query(k, "source-edit");
         source_choice *choices = NULL;
         kit_command_item *items = NULL;
@@ -1687,12 +1727,19 @@ void sg_emit_graph_input(studio *s, kit *k, node *n, int p)
                 }
             }
         }
+        if (bind) {
+            bind_follow(s, k, query);
+        }
         afree(items);
         afree(choices);
     } else if (parts.value == VALUE_CHIP) {
         kit_label(k, "source-context", "chip graph-source-context", parts.chip);
     } else if (parts.value != VALUE_NONE) {
+        uint64_t pin = spec->id; /* an edit may move the node's pins */
         sg_emit_value_in(s, k, n, 0, p);
+        if (compound_literal && can_choose_source) {
+            bind_button(s, k, pin);
+        }
     } else if (source) {
         char label[256];
         graph_input_display(s, spec, &parts, source, source_pin, expression_source, binding, label, sizeof label);
@@ -1717,6 +1764,16 @@ void sg_emit_graph_input(studio *s, kit *k, node *n, int p)
 }
 
 /* ---------- Properties' inputs (workstream G1) ---------- */
+
+bool sg_input_bindable(studio *s, node *n, int p)
+{
+    const pin_spec *spec = &n->input_pins[p];
+    pin_parts parts;
+    sg_pin_parts_of(s, n, ED_PIN_INPUT, p, &parts);
+    return parts.source_select && !(spec->flags & PIN_FLAG_SETTING) &&
+           (parts.value == VALUE_VECTOR || parts.value == VALUE_COLOR ||
+            parts.value == VALUE_COMPOUND);
+}
 
 sg_input_kind sg_input_view(studio *s, node *n, int p, char *text, size_t size)
 {
@@ -1743,8 +1800,11 @@ sg_input_kind sg_input_view(studio *s, node *n, int p, char *text, size_t size)
     bool compound_literal = !source && !binding &&
                             (parts.value == VALUE_VECTOR || parts.value == VALUE_COLOR ||
                              parts.value == VALUE_COMPOUND);
-    if (can_choose_source && !compound_literal) {
-        graph_input_display(s, spec, &parts, source, source_pin, expression, binding, text, size);
+    bool bind = s->graph.bind_pin == spec->id && !s->graph.bind_kit;
+    if (can_choose_source && (!compound_literal || bind)) {
+        if (!bind) {
+            graph_input_display(s, spec, &parts, source, source_pin, expression, binding, text, size);
+        }
         return SG_INPUT_SOURCE;
     }
     if (parts.value == VALUE_CHIP) {

@@ -130,6 +130,7 @@
                 <button class="btn subtle sm" data-if="row.control == 'array'" data-attrif-data-disabled="row.readonly || !row.removable" data-event-click="emit('graph_details.add', row.id)"><span class="icon">&#xea60;</span><span class="label">Add item</span></button>
               </div>
             </div>
+            <button class="btn sm icon-only" data-if="row.bindable" data-tip="Bind to Source" data-tip-about="Type a property path, or choose a value for this input to read." data-event-click="emit('graph_details.bind', row.id)"><span class="icon">&#xf0339;</span></button>
             <div class="popup popover graph-inline-values" popover data-template>
               <span class="graph-inline-heading">Inline inputs</span>
               <div class="graph-inline-part" data-for="sub : row.sub">

@@ -488,6 +488,13 @@ typedef struct
     kit_rect inline_anchor;
     uint64_t inline_anchor_node, inline_anchor_pin;
     kit *inline_anchor_kit;
+    /* Bind to Source: a vector, color or compound input whose value editor
+       gives way to its source field until its list closes, the canvas kit
+       showing it (NULL in Properties), and whether the field still waits
+       for the focus. */
+    uint64_t bind_pin;
+    kit *bind_kit;
+    bool bind_focus;
     uint64_t menu_comment;
     uint64_t comment; /* the selected comment frame, shown while no node is */
     bool press_toggle;
@@ -588,6 +595,8 @@ typedef struct
         char choosing[GD_ROW_ID_MAX]; /* the row whose choice is open */
         char source[GD_ROW_ID_MAX];   /* the row whose source list is open */
         char popup[GD_ROW_ID_MAX];    /* the row whose popover is open */
+        char bind[GD_ROW_ID_MAX];     /* the row Bind to Source opened */
+        int bind_wait;                /* frames it waited for the field */
         uint64_t source_node;         /* that input's node and pin */
         int source_pin;
         bool source_shown; /* its list's popover showed */

@@ -432,7 +432,10 @@ static float value_width(const studio *s, const pin_parts *parts)
             break;
         default: break;
     }
-    return width;
+    /* An unbound compound value keeps room for Bind to Source beside it. */
+    bool compound = parts->value == VALUE_VECTOR || parts->value == VALUE_COLOR ||
+                    parts->value == VALUE_COMPOUND;
+    return width + (compound && parts->source_select ? BIND_WIDTH : 0);
 }
 
 /* Operators and one-output reads compact (Unreal); anything with execution

@@ -244,7 +244,7 @@ void control_focus(kit *k, node *n, rml_element *target)
     }
     n->w.focused = true;
     set_flag(n, "data-editing", true);
-    if (n->kind == KIND_AUTOCOMPLETE && !locked(n)) {
+    if (n->kind == KIND_AUTOCOMPLETE && !locked(n) && !n->w.autocomplete_refocus) {
         autocomplete_open_on(k, frame_format(k, "autocomplete:%s", n->path), n);
     }
 }

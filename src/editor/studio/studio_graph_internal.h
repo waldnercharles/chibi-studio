@@ -14,6 +14,8 @@ enum
 
 static const float ROW = 22; /* graph.rcss row pitch */
 static const float SOCKET_PAD = 10, PART_GAP = 6, EDGE = 1;
+/* Bind to Source beside a compound value: an 18 dp button and its gap. */
+static const float BIND_WIDTH = 24;
 /* Below this many device pixels per graph unit only titles show: 12 dp pin
    labels would draw under 7 px. Zoom alone would hide legible text on HiDPI. */
 static const float FAR_PIXELS = 0.6f;
@@ -347,6 +349,7 @@ typedef struct gd_row
 {
     const char *id, *label, *about, *control, *def;
     bool readonly, invalid, heading, removable, fixed;
+    bool bindable; /* offers Bind to Source, which shows its source field */
 } gd_row;
 /* How a number edits: Base UI's NumberField attributes. */
 typedef struct gd_number_shape
@@ -405,6 +408,9 @@ typedef enum
     SG_INPUT_VALUE,
 } sg_input_kind;
 sg_input_kind sg_input_view(studio *s, node *n, int p, char *text, size_t size);
+/* Whether input p's value is a vector, color or compound that Bind to
+   Source can give a source in place of its editor. */
+bool sg_input_bindable(studio *s, node *n, int p);
 /* Opens input p's source list under its field, whose row is `row`. */
 void sg_source_open(studio *s, node *n, int p, const char *row, rml_element *field);
 void sg_source_free(studio *s);
