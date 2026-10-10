@@ -2370,7 +2370,7 @@
       "current_source_sha256": "f2a2f0d495ea6a286f1dfd898f3904d55eedfdb9093f9ef79d9f16115503a482",
       "sha256": "c487c7af89a66c3beb36270f2751356d3c5429ccccef8268ef518557da7a5210",
       "source_path": "src/editor/workspace/scene_viewport.c",
-      "consumer_sha256": "6a54efca709a505d187dd527b9dc9051f323422c500bf545f6bf22685ca9a73d"
+      "consumer_sha256": "0032393708f56a2a91137e92f4d11763f054e1001d91edee8ef5f970069ec656"
     },
     "src/editor/workspace/scene_world_preview.c": {
       "current_source_sha256": "0dc6c273fa210be49c28651ae1788498f1a081196d48c7803891f0ac847da9db",

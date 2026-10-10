@@ -58,12 +58,14 @@ bool scene_history_push_field(
 typedef struct
 {
     uint64_t identity;
+    uint64_t parent; /* the parent actor's identity, or 0 for a root */
     int index;
     const char *name;
     const char *prototype_name;
     av_value *base;
     av_value *state;
     bool created;
+    bool own_behaviors; /* the scene lists its behaviors */
     av_value *retained;
 } scene_actor_edit;
 

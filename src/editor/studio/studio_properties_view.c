@@ -425,7 +425,7 @@ typedef struct number_shape
     const char *unit;
 } number_shape;
 
-/* An authored range draws a slider; an authored unit follows the value. */
+/* A presented range draws a slider; a presented unit follows the value. */
 static void number_hints(
     const studio *s,
     const ecs_component_desc *desc,
@@ -433,25 +433,22 @@ static void number_hints(
     number_shape *d
 )
 {
-    const presented_field *hint = component_presentation_field(
+    field_hint hint = component_presentation_field(
         &s->presentation.hints,
         desc,
         (int)(field - desc->type->fields)
     );
-    if (!hint) {
-        return;
-    }
-    if (hint->min < hint->max) {
-        d->min = hint->min;
-        d->max = hint->max;
+    if (hint.min < hint.max) {
+        d->min = hint.min;
+        d->max = hint.max;
         d->slider = true;
         if (!d->integer) {
             d->step = 0.01;
             d->precision = 3;
         }
     }
-    if (hint->unit) {
-        d->unit = hint->unit;
+    if (hint.unit) {
+        d->unit = hint.unit;
     }
 }
 
@@ -1021,6 +1018,11 @@ static void component_panel(view *v, scene_actor *actor, const ecs_component_des
     if (overrides) {
         snprintf(badge, sizeof badge, "%d", overrides);
     }
+    /* An authored object's component its prototype lacks is its own. */
+    bool own = component == &added && actor->identity && !studio_live(s);
+    if (own) {
+        snprintf(badge, sizeof badge, "Added");
+    }
     const char *key = properties_panel_key(desc->name);
     panel_desc d = { .key = key,
                      .title = title,
@@ -1028,8 +1030,10 @@ static void component_panel(view *v, scene_actor *actor, const ecs_component_des
                      .order = registry_order(s->scene, desc),
                      .open = properties_open(s, key),
                      /* While the scene runs, an authored object's component
-                        menu keeps its values alone. */
-                     .menu = studio_live(s) && actor->identity };
+                        menu keeps its values alone; else it removes a
+                        component the object added. */
+                     .menu = (studio_live(s) && actor->identity) ||
+                             (own && !properties_multi(s, actor)) };
     rows r = next_panel(v, &d);
     const void *data = ecs_component_data_const(s->scene->world, actor->entity, desc->id);
     for (int i = 0; d.open && i < desc->type->field_count; i++) {
@@ -1399,8 +1403,8 @@ static void field_menu(view *v, const properties_subject *subject)
     );
 }
 
-/* A component panel's menu: Remove Component on a prototype, Keep Changes
-   on a running object. */
+/* A component panel's menu: Remove Component on a prototype or a component
+   an object added, Keep Changes on a running object. */
 static void component_menu(view *v, const properties_subject *subject)
 {
     studio *s = v->s;
@@ -1408,7 +1412,7 @@ static void component_menu(view *v, const properties_subject *subject)
     char title[128];
     editor_component_label(s->components.menu, title, sizeof title);
     put_text(v, menu, "title", title);
-    bool remove = subject->asset != NULL;
+    bool remove = subject->asset || !studio_live(s);
     const char *why = properties_while_playing(s, subject->locked, "Stop playing to remove");
     put_text(v, menu, "label", remove ? "Remove Component" : "Keep Changes");
     put_glyph(v, menu, "icon", remove ? KIT_ICON_TRASH : KIT_ICON_PIN);
@@ -1488,6 +1492,15 @@ typedef struct shown
     bool behaviors, add;
 } shown;
 
+/* Add Component, below the panels, unless the scene runs. */
+static void add_button(view *v, const properties_subject *subject)
+{
+    yyjson_mut_val *add = member(v->root, "add");
+    const char *why = properties_while_playing(v->s, subject->locked, "Stop playing to add components");
+    put_flag(v, add, "locked", subject->locked);
+    put_text(v, add, "why", why ? why : "");
+}
+
 static void object_body(view *v, const properties_subject *subject, shown *out)
 {
     studio *s = v->s;
@@ -1507,6 +1520,8 @@ static void object_body(view *v, const properties_subject *subject, shown *out)
         behaviors(v, subject);
         return;
     }
+    out->add = actor->identity && !subject->multi;
+    add_button(v, subject);
     for (int i = 0; i < scene->registry.component_count; i++) {
         const ecs_component_desc *desc = scene->registry.components[i];
         bool shared = true;
@@ -1540,10 +1555,7 @@ static void body(view *v, const properties_subject *subject)
             prototype_identity(v, subject->asset->prototype);
         }
         prototype_panels(v, subject->asset, subject->locked);
-        yyjson_mut_val *add = member(v->root, "add");
-        const char *why = properties_while_playing(s, subject->locked, "Stop playing to add components");
-        put_flag(v, add, "locked", subject->locked);
-        put_text(v, add, "why", why ? why : "");
+        add_button(v, subject);
     } else if (subject->actor) {
         object_body(v, subject, &out);
     }

@@ -44,7 +44,12 @@ static bool same_names(const char **names, char **graphs)
 
 /* An actor keeps its prototype's behaviors until the scene lists its own or
    its behaviors differ from the prototype's. */
-int scene_document_add_actor(app_scene_authoring *scene, game_scene_document *document, const scene_actor *actor)
+static int add_actor_entity(
+    app_scene_authoring *scene,
+    game_scene_document *document,
+    const scene_actor *actor,
+    int parent
+)
 {
     game_preview_runtime *runtime = scene->live->runtime;
     game_source_registry *behaviors = runtime->sources;
@@ -66,7 +71,12 @@ int scene_document_add_actor(app_scene_authoring *scene, game_scene_document *do
         }
     }
     int index = acount(document->entities);
-    int result = game_scene_document_add_entity(document, actor->name, actor->prototype_name);
+    int result = game_scene_document_add_entity(
+        document,
+        parent,
+        actor->name,
+        actor->prototype_name
+    );
     if (result == 0 && (actor->own_behaviors || !same_names(names, actor->base->graphs))) {
         result = game_scene_document_set_entity_behaviors(document, index, names, acount(names));
     }
@@ -90,6 +100,31 @@ int scene_document_add_actor(app_scene_authoring *scene, game_scene_document *do
     return result;
 }
 
+/* The position in `actors` of the actor's parent, or -1. */
+static int listed_parent(const app_scene_authoring *scene, const int *actors, const scene_actor *actor)
+{
+    ecs_entity parent = ecs_parent(scene->world, actor->entity);
+    for (int i = 0; parent.slot && i < acount(actors); i++) {
+        if (ecs_entity_to_u64(scene->actors[actors[i]].entity) ==
+            ecs_entity_to_u64(parent)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int scene_document_add_actors(app_scene_authoring *scene, game_scene_document *document, const int *actors)
+{
+    for (int i = 0; i < acount(actors); i++) {
+        const scene_actor *actor = &scene->actors[actors[i]];
+        if (add_actor_entity(scene, document, actor, listed_parent(scene, actors, actor)) !=
+            0) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 game_scene_document *scene_authoring_document(app_scene_authoring *scene)
 {
     char name[256];
@@ -101,11 +136,15 @@ game_scene_document *scene_authoring_document(app_scene_authoring *scene)
     document->perspective = scene->perspective;
     game_scene_document_set_ui(document, scene->ui);
     document->physics = game_physics_configuration(scene->live->runtime->physics);
+    int *actors = NULL;
     for (int i = 0; i < acount(scene->actors); i++) {
-        if (scene_document_add_actor(scene, document, &scene->actors[i]) != 0) {
-            game_scene_document_free(document);
-            return NULL;
-        }
+        apush(actors, i);
+    }
+    int result = scene_document_add_actors(scene, document, actors);
+    afree(actors);
+    if (result != 0) {
+        game_scene_document_free(document);
+        return NULL;
     }
     return document;
 }
@@ -413,12 +452,23 @@ int scene_validate_entity(app_scene_authoring *scene, const game_scene_entity *e
     return result;
 }
 
-int scene_spawn_entity(app_scene_authoring *scene, const game_scene_entity *entity, const char *name)
+int scene_spawn_entity(
+    app_scene_authoring *scene,
+    const game_scene_entity *entity,
+    const char *name,
+    ecs_entity parent
+)
 {
     if (add_actor(scene, name, entity->prototype) != 0) {
         return -1;
     }
     scene_actor *actor = &alast(scene->actors);
+    if (parent.slot &&
+        (ecs_world_record_add_pair(scene->world, actor->entity, ECS_CHILD_OF, parent, 0) ||
+         ecs_world_apply_commands(scene->world))) {
+        snprintf(scene->message, sizeof scene->message, "Could not place %s under its parent.", name);
+        return -1;
+    }
     if (scene_retention_load(entity->retained, &actor->retained) != 0 ||
         apply_components_value(scene, actor->entity, entity->components) != 0 ||
         restore_retained_components(scene, actor, actor->base) != 0) {
@@ -484,7 +534,9 @@ int scene_authoring_load_value(app_scene_authoring *scene, av_value *value, cons
     }
     for (int i = 0; i < acount(document->entities); i++) {
         game_scene_entity *entity = &document->entities[i];
-        if (scene_spawn_entity(scene, entity, entity->name) != 0) {
+        ecs_entity parent = entity->parent >= 0 ? scene->actors[entity->parent].entity
+                                                : (ecs_entity){ 0 };
+        if (scene_spawn_entity(scene, entity, entity->name, parent) != 0) {
             game_scene_document_free(document);
             return -1;
         }

@@ -500,6 +500,20 @@ bool scene_collab_apply_action(app_scene_authoring *scene, const char *json, cha
         if (!ok) {
             fail(error, error_size, "Could not update instance behavior");
         }
+    } else if (!strcmp(operation, "instance.component_add") || !strcmp(operation, "instance.component_remove")) {
+        scene_actor *actor = action_actor(scene, root, error, error_size);
+        const char *component = text(root, "component");
+        bool add = !strcmp(operation, "instance.component_add");
+        if (!actor || !component) {
+            fail(error, error_size, "Instance component action is incomplete");
+            goto done;
+        }
+        select_instance(scene, (int)(actor - scene->actors));
+        ok = (add ? app_scene_authoring_add_instance_component(scene, component)
+                  : app_scene_authoring_remove_instance_component(scene, component)) == 0;
+        if (!ok) {
+            fail(error, error_size, "Could not update the requested instance component");
+        }
     } else if (!strcmp(operation, "transform.set")) {
         scene_actor *actor = action_actor(scene, root, error, error_size);
         yyjson_val *x = yyjson_obj_get(root, "x"), *y = yyjson_obj_get(root, "y");
