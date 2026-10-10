@@ -1903,7 +1903,7 @@
       "current_source_sha256": "cdad54d6795f752687015c9d5a85d75417bd0b69be7ad57026e1e28ec3abe519",
       "sha256": "5d5e1ea7ad267bc3b8fcecdf2ba1bd7f038e09393f2fa3e8af028997b2275c9e",
       "source_path": "src/editor/studio/studio_graph_layout.c",
-      "consumer_sha256": "a02f64cea3a163853b6857916da458b307217dbe3596ea0d28762040f5b5bfd4"
+      "consumer_sha256": "f0f1d10fbd1530e3a9b5305e8a2933090a18993b2c6e53083660263a79157654"
     },
     "src/editor/studio/studio_graph_literals.c": {
       "current_source_sha256": "1d8ce15646219e1fa5a84810ff2d1fb91e76f9846216a246aac391275156ffc1",

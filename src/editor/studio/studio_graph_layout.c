@@ -399,11 +399,12 @@ void sg_pin_parts_of(const studio *s, node *n, int kind, int p, pin_parts *out)
 
 /* Layout uses the same text metrics at every camera zoom. Measuring at the
    live zoom makes hinted glyph advances change node widths and socket
-   positions as the camera moves. The canvas still rasterizes text at its
-   displayed zoom. */
+   positions as the camera moves. It measures as the canvas draws at 100%,
+   where sg_zoom is 1 and a graph unit is one device-independent pixel; the
+   canvas still rasterizes text at its displayed zoom. */
 float sg_text_width(const studio *s, const char *text, float size, int weight)
 {
-    float ratio = fmaxf(studio_pixel_ratio(s) * s->prefs.standard_font_size / 12.0f, FAR_PIXELS);
+    float ratio = fmaxf(studio_pixel_ratio(s), FAR_PIXELS);
     return s->graph.kit ? kit_text_width(s->graph.kit, text, size, weight, ratio)
                         : strlen(text) * size * 0.55f;
 }
