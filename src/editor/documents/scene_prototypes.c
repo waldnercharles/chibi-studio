@@ -353,7 +353,7 @@ int app_scene_authoring_set_prototype_field(
     return result;
 }
 
-static const ecs_component_desc *component_descriptor(const app_scene_authoring *scene, const char *name)
+const ecs_component_desc *component_descriptor(const app_scene_authoring *scene, const char *name)
 {
     for (int i = 0; i < scene->registry.component_count; i++) {
         const ecs_component_desc *desc = scene->registry.components[i];

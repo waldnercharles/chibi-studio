@@ -1767,7 +1767,7 @@ static void track_pointer(studio *s)
 }
 
 /* editor/Components.kdl applies without a restart. An invalid edit keeps the
-   last valid file; components present generically while it is missing. */
+   last valid file; the engine's presentation applies while it is missing. */
 static void sync_presentation(studio *s)
 {
     studio_presentation *p = &s->presentation;

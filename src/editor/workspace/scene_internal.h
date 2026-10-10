@@ -417,6 +417,8 @@ char **instance_behavior_names(app_scene_authoring *scene, ecs_entity entity);
 scene_prototype_asset *previewed_prototype(app_scene_authoring *scene);
 
 bool prototype_has_component_id(const game_prototype *prototype, ecs_component_id id);
+/* The registry's component `name`, or NULL. */
+const ecs_component_desc *component_descriptor(const app_scene_authoring *scene, const char *name);
 /* The live world and the prototype preview spawn the prototype as it is now. */
 int register_prototype_hosts(app_scene_authoring *scene, const game_prototype *prototype);
 
@@ -545,6 +547,8 @@ int scene_document_add_actors(
     game_scene_document *document,
     const int *actors
 );
+/* Whether the object has children, which removing it would destroy. */
+bool scene_actor_has_children(app_scene_authoring *scene, const scene_actor *actor);
 /* Objects keep the scene's order, a parent before its children, so the
    document and the actor array line up. The identity of the actor's parent,
    or 0 for a root; and the index just past the actor's descendants. */

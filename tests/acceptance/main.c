@@ -411,6 +411,16 @@ static bool scene_hierarchy_frame(void *state)
     REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0));
     REQUIRE(!ecs_parent(scene->world, scene->actors[2].entity).slot);
     REQUIRE(saves_as(scene, nested_scene));
+    /* Changing an object's components replaces it, which a parent waits for
+       too; a child keeps its parent through the change and its undo. */
+    scene->selected = 0;
+    REQUIRE(app_scene_authoring_add_instance_component(scene, "GameVelocity") != 0);
+    REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0));
+    scene->selected = 1;
+    REQUIRE(app_scene_authoring_add_instance_component(scene, "GameVelocity") == 0);
+    REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0));
+    REQUIRE(replay_scene_edit(scene, false) == 0);
+    REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0) && saves_as(scene, nested_scene));
     scene->selected = 0;
     REQUIRE(app_scene_authoring_delete_instance(scene) != 0 && acount(scene->actors) == 3);
     scene->selected = 1;

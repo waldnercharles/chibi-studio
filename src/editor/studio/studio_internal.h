@@ -698,7 +698,7 @@ typedef struct
 /* The open project's editor/Components.kdl, re-read when it changes. */
 typedef struct
 {
-    component_presentation hints; /* the last valid file; empty while it is missing */
+    component_presentation hints; /* the last valid file; empty (the engine's) while it is missing */
     file_watch watch;
 } studio_presentation;
 
@@ -1207,11 +1207,13 @@ struct studio
     } rename;
     struct
     {
-        char prototype[128]; /* the one Add Component adds to */
+        uint64_t object;     /* the placed object Add Component adds to, or 0 */
+        char prototype[128]; /* else the prototype it adds to */
         char added[128];     /* the component added last, whose panel opens */
         char menu[128];      /* the component whose panel menu is open */
         int toast;           /* offers Undo after Remove Component */
         const av_value *step; /* the removal's undo snapshot; never dereferenced */
+        uint64_t scene_step;  /* else an object's removal's scene step */
     } components;
     struct
     {
@@ -2594,9 +2596,11 @@ void studio_rename_object(studio *s);
 /* Names the object `entity` authors, as one Undo step; a refused name
  * toasts why. */
 void studio_rename_commit(studio *s, uint64_t entity, const char *name);
+/* Whether Properties shows a prototype, or one placed object, to add to. */
+bool studio_can_add_component(studio *s);
 /* Add Component (Unity's Inspector): the palette lists the components the
- * open prototype lacks, by the Properties tab each shows in, the current
- * tab's first. */
+ * prototype or object lacks, by the Properties tab each shows in, the
+ * current tab's first. */
 void studio_add_component_open(studio *s);
 void studio_component_entries(studio *s, studio_palette_entry **entries);
 void studio_component_choose(studio *s, const studio_palette_entry *entry);
