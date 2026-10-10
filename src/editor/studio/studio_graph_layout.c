@@ -566,6 +566,14 @@ float sg_code_height(const node_layout *l)
     return l->code_lines ? CODE_PAD + (float)l->code_lines * CODE_LINE : 0;
 }
 
+/* The width a row's label has inside its node beside the row's own value,
+   as measure_node gives an output row. */
+float sg_label_room(const studio *s, const node_layout *l, const pin_parts *parts)
+{
+    float value = value_width(s, parts);
+    return l->w - 2 * EDGE - 2 * SOCKET_PAD - (value > 0 ? PART_GAP + value : 0);
+}
+
 static node_layout measure_operator(const studio *s, node *n, node_layout l, const char *symbol)
 {
     graph *gr = sg_active_graph(s);

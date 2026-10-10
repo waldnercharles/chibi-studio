@@ -32,6 +32,30 @@ it into the disposable copy. Another Enter and a paste follow within the typing
 pause, and two undos return to the saved text: Save ends the typing burst and a
 paste is an undo step of its own. It runs fourteen hidden frames.
 
+`studio-acceptance --code-followups --project-root PATH` takes another
+disposable copy and runs thirty-seven hidden frames on Counter. With Toggle
+Line Comment rebound to Control+C, that chord comments the state line instead
+of copying, and with Vim on, Control+/ uncomments it. A typed character, Find
+Again (F3) and typing over the match are two undo steps, though the typing
+arrives in the frame that reports the caret's move: a command that moves the
+caret ends the typing burst at once. A right click opens the text's menu, which
+takes the keys: a typeahead letter highlights an item and changes neither the
+caret nor the text, and Escape closes it and gives the focus back to the text.
+With two problems on one byte, F8 visits both and Shift+F8 goes back. With
+Toggle Line Comment rebound to Meta+K, the secondary modifier off a Mac, that
+chord comments the problem's line. Counter stays unsaved.
+
+`studio-acceptance --code-glyphs --project-root PATH` takes another disposable
+copy, adds a prototype named Crêpes and a UI document, Probe, and runs
+thirty hidden frames. In the open scene's KDL, Control+Space in the
+strings "Crê" and "Cre" opens the completion list at the same left edge: the
+list starts under the word a cell a character, not a byte. In Probe's markup,
+with Control held and the pointer resting on a class its styles do not define,
+the class is no link. Once another stylesheet defines it and the project's scan
+goes stale, it is; held still on it, the class is neither scanned nor looked up
+again, and once a same-length class takes its place, the new text is looked up
+and is no link.
+
 `studio-acceptance --unit-warnings --project-root PATH` takes another disposable
 copy. It shows Counter in the Text Editor and replaces its source with one that
 assigns a speed (u/s) to a radius (u). By the next hidden frame that line must
@@ -49,7 +73,11 @@ under the ship, and that a duplicate of the turret becomes the ship's next
 child. With the ship turned a quarter
 turn, it checks that picking finds the turret at its world position and nothing
 at its unturned one, and that a duplicate offset in world space keeps the right
-local offset. It saves no file.
+local offset. Its project declares a Link component naming an object;
+with two objects selected whose Links name different objects, the third
+frame checks that Properties shows Link's Target as a read-only dash and
+that clicking it selects nothing, and that once both name one object a
+click selects it. It saves no file.
 
 `studio-acceptance --scene-physics --project-root PATH` takes another
 disposable copy. Its first hidden frame loads a scene with a dynamic 3D crate
@@ -58,24 +86,29 @@ settings, and undoing the change, drop the crate's 3D body until the next step,
 as they do for 2D bodies. It saves no file.
 
 `studio-acceptance --scene-viewport --project-root PATH` takes another
-disposable copy and runs fourteen hidden fixed-dt frames. It loads a box with a
+disposable copy and runs nineteen hidden fixed-dt frames. It loads a box with a
 spot inside it that nothing draws, and checks that the spot is listed for a
-marker and picks above the box, that a resize handle and the rotate ring take
+marker and picks above the box, that fitting it for a thumbnail finds nothing
+to draw while framing it in the Scene centers on its place, that a resize handle and the rotate ring take
 a press a few pixels past them, and that a resize labels its size by the
 pointer and cancels back. After Frame All the zoom reads 100%. Through queued
 SDL events it checks that a whole wheel notch zooms the camera, that a
 fraction of one, as a trackpad scrolls, pans it, that Space with a left drag
 pans without playing, that Space released while Settings records a chord
 neither stays held nor plays, and that Space alone plays once it is released.
-With a Preview target playing, which it sets directly because this project's
-source behavior keeps a prototype preview from launching, the wheel, a
-trackpad's fraction included, and Space stay the game's.
+With the box's prototype previewed beside this project's source behavior, the
+wheel, a trackpad's fraction included, and Space stay the game's. A prototype
+that runs Counter then previews with Counter attached from the source the
+preview's world published, and its count rises as the preview ticks.
 Framing before the Scene's first draw leaves the zoom's measure to that draw.
 While the game plays, the wheel, a trackpad's fraction included, reaches its
 UI, and the undrawn spot, which shows no marker then, picks nothing. Stopped,
 it loads 300 undrawn spots and checks that the Scene shows a marker for each.
 It then narrows the Scene to 240 dp beside the Text Editor and checks that the
-rotate tool's hint and its Add button stay inside it. It saves no file.
+rotate tool's hint and its Add button stay inside it, and that after the Move
+tool takes over the hint fades out with its text. With the box and spot loaded
+again, a marquee dragged through queued SDL events from below the box over the
+spot marker's edge, short of its center, selects the spot. It saves no file.
 
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
@@ -92,6 +125,14 @@ reference index revision. Two temporary entities also check rotated tilemap
 framing, foreground layer priority, hidden-state filtering and selecting empty
 cells as part of one layer. They are removed before rendering. No source save or
 playback occurs.
+
+`studio-acceptance --graph-labels --project-root PATH` takes a disposable copy
+and runs five hidden fixed-dt frames. It opens a graph of two constants whose
+values are named, as Name Value does. A long name on a node held to its widest
+fits the node but not the room beside its number field: it must clip rather than
+paint past the socket and the node's edge, while a short name beside its field
+still draws in full.
+It saves nothing.
 
 `studio-acceptance --graph-keys --project-root PATH` takes a disposable copy,
 adds a Late behavior to it, and runs twenty-five hidden fixed-dt frames on
@@ -117,8 +158,12 @@ Ctrl-click (Cmd on a Mac) rows and extend the selection with Shift and the
 arrows, checking the selection after each. Delete then removes the two selected
 prototypes' files as one change, and that change's undo puts both back. Counter
 stays untouched. A filter the list takes then leaves the grid's arrows on the
-tiles it shows. Pointer hit-testing and the Undo toast's button are not
-exercised.
+tiles it shows. A field of one constant value, added with the spares, then
+shows its flat picture in the grid rather than the kind's icon within twelve
+frames. A shape whose outline lies outside its frame and a UI document whose
+one box paints nothing, added with it, render flat in the grid and keep their
+kinds' icons by the twentieth frame. Pointer hit-testing and the Undo toast's
+button are not exercised.
 
 `studio-acceptance --export-game --project-root PATH` accepts another disposable
 copy. Its first hidden frame runs the Export Game command, which needs the SDK's
@@ -134,14 +179,16 @@ pauses, F10 steps while paused, F5 resumes and Shift+F5 stops. It also checks th
 File menu's Revert File label. It saves nothing.
 
 `studio-acceptance --unsaved-prompts --project-root PATH` takes another disposable
-copy and runs at most eighteen hidden frames with reduced motion on, so toasts sit
+copy and runs at most nineteen hidden frames with reduced motion on, so toasts sit
 where layout puts them. Counter's clean tab closes without asking. With Counter
 edited, closing its tab asks "Save Counter before closing?" with Save and
 Discard, and a click on Discard closes the tab without writing. Edited and asked
 again, a Save by hand writes Counter, dismisses the prompt and keeps the tab
 open. Then it adds an object to the start scene from a prototype only that run
-registers and plays the scene. With Counter edited while it runs, Quit asks to
-save both; a click on Save writes Counter, whose text applies live, and asks
+registers and plays the scene. With Counter edited while it runs, closing its
+tab warns only that the edit would be lost, since Counter's text applies live
+and still saves. Quit then asks to save both and says to stop the scene to save
+them; a click on Save writes Counter and asks
 again about the scene the running scene keeps from saving, naming how to save
 it. A click on Discard then quits without writing the scene. The clicks are
 pointer motion, press and release queued through SDL over the toast's buttons. The initial Counter bytes are

@@ -709,6 +709,20 @@ static const char *entity_name(const app_scene_authoring *scene, ecs_entity enti
     return runtime_entity_label(scene, entity);
 }
 
+/* Objects that name different objects show a dash, as a mixed text does,
+   and select none of them. */
+static void mixed_entity_row(rows *r, row_desc d)
+{
+    d.control = "entity";
+    yyjson_mut_val *row = next_row(r, &d);
+    put_text(r->v, row, "text", "\xe2\x80\x94");
+    put_text(r->v, row, "hint", "");
+    put_text(r->v, row, "problem", "The selected objects name different objects");
+    yyjson_mut_val *table = member(row, "table");
+    put_glyph(r->v, table, "icon", KIT_ICON_TARGET);
+    put_text(r->v, table, "none", "None");
+}
+
 /* An object a field names, which the game sets as it runs: scenes save no
    object references (a saved prototype clears its handles), so the field
    shows the object, as Unity's object field does, and a click selects it
@@ -717,6 +731,10 @@ static void entity_row(rows *r, row_desc d, uint64_t handle)
 {
     view *v = r->v;
     studio *s = v->s;
+    if (d.mixed) {
+        mixed_entity_row(r, d);
+        return;
+    }
     ecs_entity entity = ecs_entity_from_u64(handle);
     const char *name = handle ? entity_name(s->scene, entity) : "";
     char hint[160];

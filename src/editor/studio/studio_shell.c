@@ -167,6 +167,32 @@ bool studio_save_held(const studio *s)
     return !studio_editable(s) || runtime_session(s->scene);
 }
 
+/* Behavior source, edited source and UI text apply live, so Save writes
+   them while the scene runs, as save_document does. */
+static bool tab_held(const scene_document_tab *tab)
+{
+    return tab->kind != APP_EDITOR_DOCUMENT_BEHAVIOR &&
+           tab->kind != APP_EDITOR_DOCUMENT_UI && !tab->source_dirty;
+}
+
+bool studio_unsaved_held(const studio *s, int index)
+{
+    app_scene_authoring *scene = s->scene;
+    if (!studio_save_held(s)) {
+        return false;
+    }
+    if (index >= 0) {
+        return tab_held(&scene->tabs[index]);
+    }
+    for (int i = 0; i < acount(scene->tabs); i++) {
+        if (scene_tabs_dirty(scene, &scene->tabs[i]) && tab_held(&scene->tabs[i])) {
+            return true;
+        }
+    }
+    /* A scene without a tab, which the loop did not see. */
+    return scene->scene_dirty;
+}
+
 /* Saves the active document, or the behavior on the graph canvas while
    `graph` says the canvas owns Save. */
 static void save_document(studio *s, bool graph)
@@ -558,7 +584,7 @@ void studio_frame_selection(studio *s)
         }
     }
     if (acount(entities)) {
-        fit_scene_view(s->viewport, scene->world, entities, acount(entities));
+        frame_scene_view(s->viewport, scene->world, entities, acount(entities));
         engine_viewport_get_view(s->viewport, &scene->camera.view);
         scene->camera.saved = true;
         app_scene_authoring_framed(scene);
@@ -661,7 +687,7 @@ void studio_paste(studio *s)
 
 void studio_frame_all(studio *s)
 {
-    fit_scene_view(s->viewport, s->scene->world, NULL, 0);
+    frame_scene_view(s->viewport, s->scene->world, NULL, 0);
     engine_viewport_get_view(s->viewport, &s->scene->camera.view);
     s->scene->camera.saved = true;
     app_scene_authoring_framed(s->scene);

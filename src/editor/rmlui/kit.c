@@ -1047,9 +1047,7 @@ static void kit_free(kit *k)
     }
     cf_map_free(k->popups);
     for (int i = 0; i < acount(k->toasts); i++) {
-        free(k->toasts[i].title);
-        free(k->toasts[i].description);
-        free(k->toasts[i].action);
+        toast_free(&k->toasts[i]);
     }
     afree(k->toasts);
     free(k->surface_capture);

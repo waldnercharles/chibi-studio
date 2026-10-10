@@ -175,6 +175,7 @@ const char *sg_node_title(const studio *s, node *n, node_form form, char *buf, s
 int sg_code_lines(const studio *s, const char *code, float width, int starts[CODE_LINES]);
 float sg_code_room(const node_layout *l);
 float sg_code_height(const node_layout *l);
+float sg_label_room(const studio *s, const node_layout *l, const pin_parts *parts);
 float sg_text_width(const studio *s, const char *text, float size, int weight);
 const node_layout *sg_layout_of(const studio *s, node *n);
 float sg_pin_y(const studio *s, node *n, int kind, int pin);

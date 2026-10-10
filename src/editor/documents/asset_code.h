@@ -73,6 +73,8 @@ void asset_code_execution(asset_code *code, uint64_t graph, uint64_t node);
 /* Only unchanged text can identify a paused generation in the current draft. */
 bool asset_code_execution_location(const asset_code *code, int *start, int *end);
 void asset_code_time(asset_code *code, double time);
+/* A command moved the caret: the next typing starts an undo step of its own. */
+void asset_code_end_typing(asset_code *code);
 bool asset_code_pending(const asset_code *code);
 bool asset_code_graph_blocked(const asset_code *code);
 bool asset_code_runtime_held(const asset_code *code);

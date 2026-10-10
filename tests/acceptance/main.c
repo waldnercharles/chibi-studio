@@ -6,10 +6,14 @@
 #include "editor/documents/asset_code.h"
 #include "editor/studio/studio_graph_internal.h"
 #include "editor/studio/studio_internal.h"
+#include "editor/studio/studio_properties_internal.h"
+#include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/asset_refactor.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/authoring/graph_edit.h"
 #include "graph/authoring/local_edit.h"
+#include "graph/model/local.h"
+#include "graph/model/registry.h"
 #include "graph/nodes/core_nodes.h"
 #include "graph/nodes/vector_nodes.h"
 #include "runtime/scenes/physics3d.h"
@@ -22,6 +26,7 @@
 #include <SDL3/SDL_process.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
+#include <errno.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,13 +47,16 @@ static enum {
     EXPORT_GAME,
     GRAPH_VISIBILITY,
     GRAPH_KEYS,
+    GRAPH_LABELS,
     UNIT_WARNINGS,
     SCENE_HIERARCHY,
     SCENE_PHYSICS,
     ASSET_SELECTION,
     SCENE_VIEWPORT,
     PLAY_KEYS,
-    PROMPTS
+    PROMPTS,
+    CODE_FOLLOWUPS,
+    CODE_GLYPHS
 } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
@@ -991,6 +999,100 @@ static bool output_labels_show(studio *s, graph *gr)
     return true;
 }
 
+#define LABEL_FRAMES 5
+/* Wider than the room beside a number field on a node held to NODE_MAX, but
+   not than the node's whole interior. */
+#define LONG_NAME "distance_falloff_toward_the_nearest_light_source"
+/* A number field takes 64 dp beside its label (graph.rcss .grow.out .field). */
+static const float NUMBER_FIELD = 64;
+
+/* Opens a declarative graph, as a material's, of two constants whose
+   values are named as Name Value does, one shortly and one at length. */
+static bool open_named_constants(editor *e, uint64_t ids[2])
+{
+    const node_desc *constant = registry_node_by_name("Shader Constant");
+    REQUIRE(constant);
+    behavior_asset *asset = behavior_asset_new("Labels");
+    graph *gr = asset->graph;
+    node *a = graph_add_node(gr, constant), *b = graph_add_node(gr, constant);
+    b->y = a->y + 200;
+    REQUIRE(graph_declare_local(gr, a, 0, "n"));
+    REQUIRE(graph_declare_local(gr, b, 0, LONG_NAME));
+    ids[0] = a->id;
+    ids[1] = b->id;
+    REQUIRE(!editor_declarative_graph(e, asset));
+    behavior_asset_free(asset);
+    return true;
+}
+
+/* The label the graph drew for node `id`'s first output, or NULL. */
+static rml_element *output_label(studio *s, uint64_t id)
+{
+    char path[96];
+    snprintf(path, sizeof path, "world/stage/n%llu/b/o0/l", (unsigned long long)id);
+    rml_context *context = rml_backend_context(s->graph.backend);
+    for (int i = 0; i < rml_context_document_count(context); i++) {
+        rml_element *labels[32];
+        int count = rml_element_query_selector_all(rml_context_document(context, i), ".gpin-label", labels, 32);
+        for (int j = 0; j < count && j < 32; j++) {
+            char at[128];
+            if (kit_element_path(s->graph.kit, labels[j], at, sizeof at) &&
+                !strcmp(at, path)) {
+                return labels[j];
+            }
+        }
+    }
+    return NULL;
+}
+
+/* A label draws past its box only when its text fits beside its row's
+   number field. */
+static bool label_fits(studio *s, uint64_t id, bool fits)
+{
+    node *n = sg_node_by_id(s, id);
+    REQUIRE(n && sg_value_kind_of(s, n, 1, 0) == VALUE_NUMBER);
+    pin_parts parts;
+    sg_pin_parts_of(s, n, ED_PIN_OUTPUT, 0, &parts);
+    const node_layout *l = sg_layout_of(s, n);
+    float text = ceilf(sg_text_width(s, parts.label, 12, 400));
+    float room = l->w - 2 * EDGE - 2 * SOCKET_PAD;
+    if (!fits && (text <= room - PART_GAP - NUMBER_FIELD || text > room)) {
+        fprintf(
+            stderr,
+            "Studio graph label acceptance: %s is %.0f dp in %.0f dp\n",
+            parts.label,
+            text,
+            room
+        );
+        return false;
+    }
+    rml_element *label = output_label(s, id);
+    REQUIRE(label && rml_element_has_attribute(label, "data-fits") == fits);
+    return true;
+}
+
+/* A long output label on a node held to NODE_MAX shares its row with the
+   value's field: it clips there rather than painting past the socket. */
+static bool graph_labels_frame(void *state)
+{
+    static uint64_t ids[2];
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= LABEL_FRAMES);
+    if (frames == 1) {
+        studio_show_editor(s, STUDIO_EDITOR_BEHAVIOR);
+    } else if (frames == 3) {
+        REQUIRE(open_named_constants(sg_graph_editor(s), ids));
+    } else if (frames == 5) {
+        /* Frame 4 laid the graph out. */
+        REQUIRE(label_fits(s, ids[0], true));
+        REQUIRE(label_fits(s, ids[1], false));
+        keys = frames;
+    }
+    return true;
+}
+
 /* The node chosen last leads node search under Recent, and stays there
    through saved preferences. */
 static bool leads_search(studio *s, const char *key)
@@ -1265,7 +1367,7 @@ static bool play_keys_frame(void *state)
     return true;
 }
 
-#define PROMPT_FRAMES 18
+#define PROMPT_FRAMES 19
 static bool quit_answered;
 
 /* Adds an object to the open scene, leaving it unsaved. Its prototype
@@ -1288,13 +1390,14 @@ static bool add_probe(studio *s)
 /* Closing Counter's clean tab just closes it. Closing it with an edit asks,
    and its Discard closes the tab without writing; asked again, a Save by
    hand dismisses the prompt and keeps the tab. With the scene running,
-   quitting with an edit to Counter and to the scene asks; its Save writes
-   Counter, which applies live, and asks again about the scene the running
-   scene keeps from saving, whose Discard lets Studio quit without writing
-   it. Both answers are clicks on the toast's buttons, which the prompt
-   answers two frames after the click. Reduced motion, on from the first
-   frame, settles each toast where layout puts it, so the clicks land on its
-   buttons. */
+   closing Counter with an edit warns only that the edit would be lost, as
+   Counter still saves; quitting with the scene also edited says to stop
+   the scene to save them. Its Save writes Counter, which applies live, and
+   asks again about the scene the running scene keeps from saving, whose
+   Discard lets Studio quit without writing it. Both answers are clicks on
+   the toast's buttons, which the prompt answers two frames after the click.
+   Reduced motion, on from the first frame, settles each toast where layout
+   puts it, so the clicks land on its buttons. */
 static bool prompts_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -1303,7 +1406,7 @@ static bool prompts_frame(void *state)
     REQUIRE(frames <= PROMPT_FRAMES);
     if (s->unsaved_prompt.quit) {
         /* Discard went through: Quit goes ahead with the scene unsaved. */
-        REQUIRE(frames > 15 && studio_unsaved(s));
+        REQUIRE(frames > 16 && studio_unsaved(s));
         quit_answered = true;
         return true;
     }
@@ -1354,14 +1457,24 @@ static bool prompts_frame(void *state)
             REQUIRE(studio_session(s) && studio_save_held(s));
             REQUIRE(scene_tabs_activate(s->scene, counter_tab(s)) == 0);
             REQUIRE(edit_counter(s, 5, "4"));
+            studio_close_tab(s, counter_tab(s));
+            REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_CLOSE_TAB);
+            break;
+        case 11:
+            /* Counter applies live, so the running scene does not keep it
+               from saving. Quitting asks in its place about the scene too,
+               which the running scene does keep. */
+            REQUIRE(prompt_shows(s, "Save Counter before closing?"));
+            REQUIRE(element_says(s, ".toast[data-front] .description", "will be lost"));
             REQUIRE(!studio_quit(s, true));
             REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
             break;
-        case 11:
+        case 12:
             REQUIRE(prompt_shows(s, "and Counter before quitting?"));
+            REQUIRE(element_says(s, ".toast[data-front] .description", "Stop the scene"));
             REQUIRE(click(s, ".toast[data-front] .toast-action"));
             break;
-        case 13:
+        case 14:
             /* Counter saved while the scene runs; the scene could not, so
                the prompt asks again about it instead of quitting. */
             REQUIRE(counter_says("count: int = 4"));
@@ -1369,12 +1482,12 @@ static bool prompts_frame(void *state)
             REQUIRE(s->unsaved_prompt.toast);
             REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
             break;
-        case 14:
+        case 15:
             REQUIRE(prompt_shows(s, "before quitting?"));
             REQUIRE(element_says(s, ".toast[data-front] .description", "Stop the scene"));
             REQUIRE(click(s, ".toast[data-front] .toast-cancel"));
             break;
-        default: REQUIRE(frames < 17);
+        default: REQUIRE(frames < 18);
     }
     return true;
 }
@@ -1411,6 +1524,32 @@ static bool export_frame(void *state)
     }
     return true;
 }
+
+/* Writes `text` to `file` in the content folder `folder`, which it makes if
+   needed. */
+static bool write_content(const char *folder, const char *file, const char *text)
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/%s", project, folder);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    REQUIRE(mkdir(path, 0777) == 0 || errno == EEXIST);
+    length = snprintf(path, sizeof path, "%s/content/%s/%s", project, folder, file);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    FILE *out = fopen(path, "wb");
+    REQUIRE(out);
+    bool written = fputs(text, out) >= 0;
+    REQUIRE(fclose(out) == 0 && written);
+    return true;
+}
+
+/* A component naming another object, which the game sets as it runs. */
+static const char
+    link_component[] = "component Link {\n    target: entity\n}\n";
+static const char
+    linked_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
+                     "    - name=\"A\" prototype=\"Linker\"\n"
+                     "    - name=\"B\" prototype=\"Linker\"\n"
+                     "}\n";
 
 /* A ship with a turret, and a root that shares the turret's name. */
 static const char
@@ -1454,6 +1593,79 @@ static bool saves_as(app_scene_authoring *scene, const char *expected)
     return same;
 }
 
+/* The Link component the project declares, or 0. */
+static ecs_component_id link_id(app_scene_authoring *scene)
+{
+    for (int i = 0; i < ecs_world_component_count(scene->world); i++) {
+        const ecs_component_desc *desc = ecs_world_component_at(scene->world, i);
+        if (desc && !strcmp(desc->name, "Link")) {
+            return desc->id;
+        }
+    }
+    return 0;
+}
+
+/* Sets `actor`'s Link to name `target`, as the game would. */
+static bool link_to(app_scene_authoring *scene, int actor, int target)
+{
+    pin_value value = { .type = PIN_HANDLE,
+                        .type_name = "ecs.entity",
+                        .u64 = ecs_entity_to_u64(scene->actors[target].entity) };
+    REQUIRE(
+        ecs_component_write_field(scene->world, scene->actors[actor].entity, link_id(scene), 0, value) == ECS_OK
+    );
+    return true;
+}
+
+/* A and B, both selected, naming each other, and Properties showing
+   their Link's Target. */
+static bool select_crossed_links(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(
+        app_scene_authoring_register_prototype(scene, "name \"Linker\"\ncomponents {\n    Link\n    GameTransform x=0 y=0\n}\n", NULL) ==
+        0
+    );
+    REQUIRE(scene_authoring_load_text(scene, linked_scene, NULL) == 0);
+    REQUIRE(acount(scene->actors) == 2 && link_id(scene));
+    REQUIRE(link_to(scene, 0, 1) && link_to(scene, 1, 0));
+    REQUIRE(app_scene_authoring_select_entity(scene, scene->actors[0].entity) == 0);
+    scene->actors[1].marked = true;
+    REQUIRE(scene_selection_count(scene) == 2);
+    /* A search opens the panels holding what it finds. */
+    snprintf(s->property_search, sizeof s->property_search, "Target");
+    return true;
+}
+
+/* A's Link row in Properties reads as the selection's: a dash that selects
+   nothing while A and B name different objects; B once both name it. */
+static bool mixed_link(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    rml_element *field = studio_element(s, ".entity-field");
+    REQUIRE(field);
+    char text[64] = "";
+    rml_element_inner_rml(studio_element(s, ".entity-field .value"), text, sizeof text);
+    REQUIRE(!strcmp(text, "\xe2\x80\x94"));
+    REQUIRE(rml_element_has_attribute(field, "data-mixed"));
+    REQUIRE(rml_element_has_attribute(field, "data-readonly"));
+    ui_activation reveal = { .argc = 1 };
+    properties_row_id(
+        &(properties_row){ .kind = PROPERTIES_OBJECT,
+                           .entity = ecs_entity_to_u64(scene->actors[0].entity),
+                           .component = link_id(scene),
+                           .field = 0 },
+        reveal.args[0]
+    );
+    studio_properties_action(s, "reveal", &reveal);
+    REQUIRE(scene->selected == 0 && scene_selection_count(scene) == 2);
+    REQUIRE(link_to(scene, 1, 1));
+    studio_properties_action(s, "reveal", &reveal);
+    REQUIRE(scene->selected == 1 && scene_selection_count(scene) == 1);
+    s->property_search[0] = '\0';
+    return true;
+}
+
 /* Children load under their parent and keep it through save, undo and
    duplication; a parent waits for its children to go first. */
 static bool scene_hierarchy_frame(void *state)
@@ -1461,9 +1673,12 @@ static bool scene_hierarchy_frame(void *state)
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
-    REQUIRE(frames <= 2);
+    REQUIRE(frames <= 3);
     if (frames == 2) {
         return true;
+    }
+    if (frames == 3) {
+        return mixed_link(s);
     }
     app_scene_authoring *scene = s->scene;
     REQUIRE(
@@ -1529,7 +1744,7 @@ static bool scene_hierarchy_frame(void *state)
     REQUIRE(child_of(scene, scene->selected, 0));
     REQUIRE(fabsf(moved->x - 10) < 1e-3f && fabsf(moved->y + 10) < 1e-3f);
     edits++;
-    return true;
+    return select_crossed_links(s);
 }
 
 static const char physics_crate[] = "name \"Crate3D\"\ncomponents {\n"
@@ -1740,7 +1955,7 @@ static const char marked_scene
 #define CROWD_ROWS 15
 #define CROWD (CROWD_COLUMNS * CROWD_ROWS)
 #define CROWD_LINE 128 /* room for each spot's line of the scene */
-#define VIEWPORT_FRAMES 14
+#define VIEWPORT_FRAMES 19
 /* The narrow Scene the hint must fit: under the hint box's 320 dp. */
 #define NARROW_SCENE_DP 240.0f
 
@@ -1799,6 +2014,13 @@ static bool marker_and_gizmo(studio *s)
         ecs_entity_to_u64(pick_scene_entity(scene, -15, 15, (render_skip){ 0 })) ==
         ecs_entity_to_u64(box)
     );
+    /* A thumbnail fits only what draws, so the spot alone fits nothing;
+       the Scene frames it by its marker, at its place. */
+    REQUIRE(!fit_scene_view(s->viewport, scene->world, &spot, 1));
+    REQUIRE(frame_scene_view(s->viewport, scene->world, &spot, 1));
+    engine_viewport_view framed;
+    engine_viewport_get_view(s->viewport, &framed);
+    REQUIRE(framed.center_x == 5 && framed.center_y == -5);
     REQUIRE(app_scene_authoring_select_entity(scene, box) == 0);
     /* The right edge's handle sits at (20, 0); the ring 64 pixels out. */
     scene->gizmo.in.tool = SCENE_TOOL_SCALE;
@@ -1833,14 +2055,18 @@ static bool marker_and_gizmo(studio *s)
 
 /* While a previewed prototype plays, the wheel, a trackpad's fraction
    included, and Space are its game's, as the scene's are while it plays.
-   The state is the one a Preview target's Play sets; this project's source
-   behavior keeps a prototype preview from launching here. */
+   The preview launches beside this project's source behavior, which its
+   sources already bring to the preview's world (previewed_source_runs). */
 static bool previewed_prototype_plays(studio *s)
 {
     app_scene_authoring *scene = s->scene;
     REQUIRE(!scene->runtime_playing && scene->active_runtime_target == APP_RUNTIME_SCENE);
-    scene->active_runtime_target = APP_RUNTIME_PREVIEW;
-    scene->preview_playing = true;
+    int previewed = app_scene_authoring_preview_prototype(scene, "Box");
+    if (previewed != 0) {
+        fprintf(stderr, "Studio viewport acceptance: %s\n", scene->prototype_message);
+    }
+    REQUIRE(previewed == 0 && !strcmp(scene->prototype_message, "Previewing Box."));
+    REQUIRE(scene->active_runtime_target == APP_RUNTIME_PREVIEW && scene->preview_playing);
     engine_viewport_view before, after;
     engine_viewport_get_view(s->viewport, &before);
     float scrolled = s->scroll_y;
@@ -1850,10 +2076,60 @@ static bool previewed_prototype_plays(studio *s)
     s->scroll_y = scrolled;
     engine_viewport_get_view(s->viewport, &after);
     bool space = studio_scene_space(s, (studio_key){ .key = SDLK_SPACE });
-    scene->preview_playing = false;
-    scene->active_runtime_target = APP_RUNTIME_SCENE;
+    app_scene_authoring_stop_prototype_preview(scene);
+    REQUIRE(scene->active_runtime_target == APP_RUNTIME_SCENE);
     REQUIRE(input.wheel == 0.5f && after.center_y == before.center_y);
     REQUIRE(!space);
+    return true;
+}
+
+/* A prototype that runs Counter, this project's source behavior. */
+static const char ticker_prototype[] = "name \"Ticker\"\ncomponents {\n"
+                                       "    GameTransform x=0 y=0\n}\n"
+                                       "(array)behaviors \"Counter\"\n";
+
+/* Counter's `count` state as the preview's world published it. */
+static uint64_t previewed_count_state(app_scene_authoring *scene)
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/behaviors/Counter.chibi", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    const authoring_source *source = game_preview_source_find(
+        game_prototype_preview_live(scene->prototype_preview),
+        path,
+        true
+    );
+    REQUIRE(source && source->valid);
+    for (int i = 0; i < source->analysis->symbol_count; i++) {
+        const script_symbol *symbol = &source->analysis->symbols[i];
+        if (symbol->kind == SCRIPT_STATE && !strcmp(symbol->name, "count")) {
+            return symbol->id;
+        }
+    }
+    return 0;
+}
+
+/* Previewing a prototype attaches its source behavior, which its sources
+   published to the preview's world rather than the launch copying it, and
+   the behavior runs as the preview ticks. */
+static bool previewed_source_runs(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    int previewed = app_scene_authoring_preview_prototype(scene, "Ticker");
+    if (previewed != 0) {
+        fprintf(stderr, "Studio viewport acceptance: %s\n", scene->prototype_message);
+    }
+    REQUIRE(previewed == 0);
+    execution_instance *counter = game_prototype_preview_instance(scene->prototype_preview, "Counter");
+    uint64_t count = previewed_count_state(scene);
+    REQUIRE(counter && count);
+    REQUIRE(execution_instance_state(counter, count)->i == 1);
+    REQUIRE(game_prototype_preview_tick(scene->prototype_preview, s->time) >= 0);
+    REQUIRE(
+        game_prototype_preview_tick(scene->prototype_preview, s->time + 2 * ENGINE_FIXED_SECONDS) >= 0
+    );
+    REQUIRE(execution_instance_state(counter, count)->i > 1);
+    app_scene_authoring_stop_prototype_preview(scene);
     return true;
 }
 
@@ -1887,12 +2163,77 @@ static bool grid_after_list_filter(studio *s)
     return true;
 }
 
+/* A field of one value everywhere, whose thumbnail is one flat color. */
+static const char flat_field
+    [] = "version 3\nname \"Flat\"\ndomain \"field\"\nid_counter 10\n"
+         "(array)graphs {\n    - {\n        kind \"event\"\n"
+         "        name \"\"\n        (array)nodes {\n"
+         "            - id=1 type=\"Field Constant\" { inputs Value=-1.0; }\n"
+         "            - id=4 type=\"Field Output\"\n        }\n"
+         "        (array)edges {\n            - from=\"1.Value\" "
+         "to=\"4.Value\"\n"
+         "        }\n    }\n}\n";
+/* A shape whose outline lies far outside its frame, which covers nothing,
+   and a UI document whose one box paints nothing. */
+static const char blank_shape
+    [] = "version 3\nname \"Blank\"\ndomain \"shape\"\nbounds_x 16.0\n"
+         "bounds_y 16.0\nid_counter 11\n(array)graphs {\n    - {\n"
+         "        kind \"event\"\n        name \"\"\n        (array)nodes {\n"
+         "            - id=1 type=\"Shader Shape Output\"\n"
+         "            - id=3 type=\"Shader Vector2\" { inputs X=1000.0; }\n"
+         "            - id=7 type=\"Shader Circle\" { inputs Radius=1.0; }\n"
+         "        }\n        (array)edges {\n"
+         "            - from=\"3.Value\" to=\"7.Position\"\n"
+         "            - from=\"7.Value\" to=\"1.Distance\"\n"
+         "        }\n    }\n}\n";
+static const char blank_rml[] = "<div style=\"display: block; width: 64px; "
+                                "height: 64px;\"></div>\n";
+#define ASSET_FRAMES 20
+#define BLANK_FRAME 13
+static bool flat_shown, blank_shown;
+static int blank_before;
+static studio_thumb_stats last_thumb_stats;
+
+/* The grid shows fields; the flat field's thumbnail shows its picture
+   rather than the kind's icon. */
+static bool flat_field_shows(studio *s)
+{
+    s->prefs.assets_list = false;
+    s->assets_kind = REFERENCE_ASSET_FIELD;
+    int flat = reference_index_find_name(app_scene_authoring_asset_index(s->scene), REFERENCE_ASSET_FIELD, "Flat");
+    REQUIRE(flat >= 0);
+    flat_shown |= studio_thumb_cached(s, flat) != NULL;
+    return true;
+}
+
+/* The tile of asset `name` of `kind` shows a picture. */
+static bool tile_shown(studio *s, reference_asset_kind kind, const char *name)
+{
+    int asset = reference_index_find_name(app_scene_authoring_asset_index(s->scene), kind, name);
+    return asset >= 0 && studio_thumb_cached(s, asset) != NULL;
+}
+
+/* The grid shows the blank shape and UI document, whose flat pictures
+   show nothing, so their tiles keep their kinds' icons. */
+static bool blank_tiles_fail(studio *s)
+{
+    if (frames == BLANK_FRAME) {
+        s->assets_kind = -1;
+        snprintf(s->assets_filter, sizeof s->assets_filter, "Blank");
+        blank_before = studio_thumbs_stats(s).blank;
+    }
+    blank_shown |= tile_shown(s, REFERENCE_ASSET_SHAPE, "Blank") ||
+                   tile_shown(s, REFERENCE_ASSET_UI, "Blank");
+    last_thumb_stats = studio_thumbs_stats(s);
+    return true;
+}
+
 static bool asset_selection_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
-    REQUIRE(frames <= 6);
+    REQUIRE(frames <= ASSET_FRAMES);
     switch (frames) {
         case 1:
             /* A file saved before the view setting kept list view as the
@@ -1916,10 +2257,12 @@ static bool asset_selection_frame(void *state)
             snprintf(s->assets_filter, sizeof s->assets_filter, "SpareC");
             return true;
         case 5: return grid_after_list_filter(s);
-        default:
+        case 6:
             /* The grid lays every tile out again. */
             REQUIRE(studio_assets_key(s, SDLK_LEFT, 0) && selection_is(s, "SpareB", ""));
             return true;
+        default:
+            return frames < BLANK_FRAME ? flat_field_shows(s) : blank_tiles_fail(s);
     }
 }
 
@@ -1996,6 +2339,47 @@ static bool inside_scene(studio *s, const char *selector)
     return true;
 }
 
+/* The hint a tool no longer needs fades out (presence) as it was. Then the
+   box and spot load again, nothing selected, framed. */
+static bool hint_leaves(studio *s)
+{
+    rml_element *hint = studio_element(s, ".tool-hint");
+    REQUIRE(hint && rml_element_is_visible(hint, false));
+    REQUIRE(rml_element_has_attribute(hint, "data-ending-style"));
+    REQUIRE(element_says(s, ".tool-hint-pill .text", "No Orientation to rotate"));
+    REQUIRE(scene_authoring_load_text(s->scene, marked_scene, NULL) == 0);
+    studio_command_run(s, STUDIO_COMMAND_DESELECT);
+    REQUIRE(scene_selection_count(s->scene) == 0);
+    studio_frame_all(s);
+    return true;
+}
+
+/* A marquee drawn from empty space below the box over the spot marker's
+   lower right, short of its center, takes the spot. */
+static bool marquee_edge(studio *s)
+{
+    static float x, y, reach;
+    app_scene_authoring *scene = s->scene;
+    if (frames == 17) {
+        app_scene_marker marker;
+        REQUIRE(app_scene_authoring_markers(scene, &marker, 1) == 1 && marker.actor == 1);
+        kit_rect r = s->surface.rect;
+        x = (r.x + marker.x * r.w) * s->prefs.ui_scale;
+        y = (r.y + marker.y * r.h) * s->prefs.ui_scale;
+        reach = scene->gizmo.in.marker_radius;
+        float bottom = (r.y + r.h) * s->prefs.ui_scale - 2;
+        REQUIRE(bottom > y + 2 * reach);
+        REQUIRE(push_mouse(SDL_EVENT_MOUSE_MOTION, x + reach, bottom, 0, 0));
+        return push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x + reach, bottom, 0, 0);
+    }
+    if (frames == 18) {
+        REQUIRE(scene->marquee);
+        return push_mouse(SDL_EVENT_MOUSE_MOTION, x + 0.6f * reach, y + 0.6f * reach, 0, 0);
+    }
+    REQUIRE(scene->marquee && scene_instance_selected(scene, 1));
+    return push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x + 0.6f * reach, y + 0.6f * reach, 0, 0);
+}
+
 /* Every undrawn object shows its marker, however many there are, and in a
    Scene narrowed under the hint's box the rotate tool's hint for a spot
    with no orientation, and its Add, stay inside it. */
@@ -2019,11 +2403,18 @@ static bool crowd_and_narrow(studio *s)
             REQUIRE(s->surface.rect.w > 0 && s->surface.rect.w < 320);
             studio_frame_all(s);
             return true;
-        case VIEWPORT_FRAMES:
+        case 14:
             REQUIRE(scene_markers(s) == CROWD);
             REQUIRE(element_says(s, ".tool-hint-pill .text", "No Orientation to rotate"));
             REQUIRE(inside_scene(s, ".tool-hint-pill"));
-            return inside_scene(s, ".tool-hint-pill .btn");
+            REQUIRE(inside_scene(s, ".tool-hint-pill .btn"));
+            studio_command_run(s, STUDIO_COMMAND_MOVE_TOOL);
+            return true;
+        /* The gizmo takes the tool a frame after the command. */
+        case 16: return hint_leaves(s);
+        case 17:
+        case 18:
+        case VIEWPORT_FRAMES: return marquee_edge(s);
         default: return true;
     }
 }
@@ -2061,6 +2452,7 @@ static bool scene_viewport_frame(void *state)
                 app_scene_authoring_register_prototype(scene, "name \"Spot\"\ncomponents {\n    GameTransform x=0 y=0\n}\n", NULL) ==
                 0
             );
+            REQUIRE(app_scene_authoring_register_prototype(scene, ticker_prototype, NULL) == 0);
             REQUIRE(scene_authoring_load_text(scene, marked_scene, NULL) == 0);
             /* Framing before the Scene's first draw leaves its measure to
                that draw. */
@@ -2081,7 +2473,7 @@ static bool scene_viewport_frame(void *state)
             REQUIRE(s->surface.hovered);
             REQUIRE(view.width < before.width && app_scene_authoring_zoom(scene) > 1);
             before = view;
-            REQUIRE(previewed_prototype_plays(s));
+            REQUIRE(previewed_prototype_plays(s) && previewed_source_runs(s));
             /* A fraction of a notch reads as a trackpad's scroll. */
             return push_mouse(SDL_EVENT_MOUSE_WHEEL, x, y, 0, 0.5f);
         case 4:
@@ -2112,6 +2504,316 @@ static bool scene_viewport_frame(void *state)
     }
 }
 
+/* More of the Text Editor's keys than the code-keys selector, which is
+   near the time limit, has room for: a command rebound to a chord the
+   editor takes, Mod+/ under Vim, Find Again ending a typing burst, the
+   context menu's keys and F8 through problems on one byte. */
+#define FOLLOWUP_FRAMES 37
+/* Where the text's glyphs are: the completion list under a word that is
+   not ASCII, and the Mod+hover link of a UI symbol. */
+#define GLYPH_FRAMES 30
+/* Two problems on one byte: the name is unknown, and so not writable. */
+static const char shared_problem[] = "behavior Counter {\n"
+                                     "    state count: int = 1\n"
+                                     "    on Tick {\n"
+                                     "        missing = 1\n"
+                                     "    }\n"
+                                     "}\n";
+static const char crepe_lines[] = "probe \"Cr\xc3\xaa\"\nprobe \"Cre\"\n";
+/* Class names long enough to fill the text's first row, where the pointer
+   rests on them. */
+#define LONG_CLASS                                                             \
+    "-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrs" \
+    "tuvwxyz"
+static const char probe_rml[] = "<div class=\"lonely" LONG_CLASS "\"></div>\n";
+
+/* A prototype whose name is not ASCII, which completes in the scene's
+   strings, and a UI document with a class its styles define and one they
+   do not. */
+static bool write_glyph_content()
+{
+    REQUIRE(
+        write_content("prototypes", "Cr\xc3\xaapes.kdl", "name \"Cr\xc3\xaapes\"\ncomponents {\n    (object)GAME.GameTransform\n}\n")
+    );
+    REQUIRE(write_content("ui", "Probe.rml", probe_rml));
+    REQUIRE(write_content("ui", "Probe.rcss", ".known" LONG_CLASS " { color: red; }\n"));
+    return true;
+}
+
+/* The first element `selector` finds in any of Studio's documents. */
+static rml_element *find_element(studio *s, const char *selector)
+{
+    rml_context *context = rml_backend_context(s->backend);
+    for (int i = 0; i < rml_context_document_count(context); i++) {
+        rml_element *found = rml_element_query_selector(rml_context_document(context, i), selector);
+        if (found) {
+            return found;
+        }
+    }
+    return NULL;
+}
+
+/* Moves the pointer into the text, `across` its width along its first
+   row; *x and *y are the point, in window points. */
+static bool point_into_text(studio *s, float across, float *x, float *y)
+{
+    rml_element *el = find_element(s, "kit-code");
+    REQUIRE(el);
+    rml_vec2 at = rml_element_absolute_offset(el, RML_BOX_CONTENT);
+    rml_vec2 size = rml_element_box_size(el, RML_BOX_CONTENT);
+    float points = s->prefs.ui_scale / studio_pixel_ratio(s);
+    *x = (at.x + size.x * across) * points;
+    *y = at.y * points + 6 * s->prefs.ui_scale;
+    return push_mouse(SDL_EVENT_MOUSE_MOTION, *x, *y, 0, 0);
+}
+
+static bool push_right_click(float x, float y)
+{
+    SDL_WindowID window = window_id();
+    REQUIRE(window);
+    for (int down = 1; down >= 0; down--) {
+        SDL_Event e = { .button = { .type = down ? SDL_EVENT_MOUSE_BUTTON_DOWN
+                                                 : SDL_EVENT_MOUSE_BUTTON_UP,
+                                    .windowID = window,
+                                    .button = SDL_BUTTON_RIGHT,
+                                    .down = down,
+                                    .clicks = 1,
+                                    .x = x,
+                                    .y = y } };
+        REQUIRE(SDL_PushEvent(&e));
+    }
+    return true;
+}
+
+/* Where the completion list's left edge is, in context pixels. */
+static bool completion_left(studio *s, float *left)
+{
+    rml_element *list = find_element(s, ".code-completions");
+    REQUIRE(list);
+    *left = rml_element_absolute_offset(list, RML_BOX_BORDER).x;
+    return true;
+}
+
+/* The caret after `after`'s first occurrence in the editor's text. */
+static bool caret_after(kit_code_editor *e, const char *after)
+{
+    const char *text = kit_code_text(e, NULL);
+    const char *at = strstr(text, after);
+    REQUIRE(at);
+    kit_code_set_cursor(e, (int)(at - text + strlen(after)));
+    return true;
+}
+
+/* Whether the text underlines a symbol as a link. */
+static bool linked(studio *s)
+{
+    rml_element *el = find_element(s, "kit-code");
+    REQUIRE(el);
+    return rml_element_has_attribute(el, "data-link");
+}
+
+static bool code_followups_frame(void *state)
+{
+    static int caret;
+    float x, y;
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= FOLLOWUP_FRAMES);
+    asset_code *code = counter_code(s);
+    REQUIRE(code);
+    kit_code_editor *e = asset_code_editor(code);
+    switch (frames) {
+        case 1: studio_show_editor(s, STUDIO_EDITOR_CODE); return true;
+        case 3:
+            /* Toggle Line Comment rebound to the chord that copies. */
+            snprintf(s->prefs.shortcuts[STUDIO_COMMAND_TOGGLE_LINE_COMMENT], STUDIO_CHORD_SIZE, "Mod+C");
+            s->code.find.refocus = true;
+            return caret_after(e, "sta");
+        case 5: keys++; return press_chord(SDLK_C, SDL_KMOD_CTRL);
+        case 6:
+            /* The editor takes preferences as it draws, after the frame's
+               keys. */
+            s->prefs.shortcuts[STUDIO_COMMAND_TOGGLE_LINE_COMMENT][0] = '\0';
+            s->prefs.code_vim = true;
+            return true;
+        case 8:
+            REQUIRE(!strcmp(asset_code_text(code), commented_bytes));
+            keys++;
+            return press_chord(SDLK_SLASH, SDL_KMOD_CTRL);
+        case 11:
+            REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
+            s->prefs.code_vim = false;
+            kit_code_set_cursor(e, 0);
+            snprintf(s->code.find.query, sizeof s->code.find.query, "count");
+            return true;
+        case 12: return type_text("x");
+        case 14: keys++; return press_key(SDLK_F3);
+        case 15: return type_text("y");
+        case 18: {
+            /* Find Again ended the burst, though the key came in the frame
+               that reports its caret move: one undo takes back only the
+               typing at the match. */
+            REQUIRE(strstr(asset_code_text(code), "y"));
+            REQUIRE(asset_code_replay(code, false, false));
+            const char *text = asset_code_text(code);
+            REQUIRE(text[0] == 'x' && !strcmp(text + 1, counter_bytes));
+            REQUIRE(asset_code_replay(code, false, false));
+            REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
+            REQUIRE(caret_after(e, "sta"));
+            return true;
+        }
+        case 19:
+            REQUIRE(point_into_text(s, 0.5f, &x, &y));
+            return push_right_click(x, y);
+        case 21:
+            REQUIRE(s->code.menu.open);
+            caret = kit_code_cursor(e);
+            keys++;
+            /* A letter the menu's typeahead reads arrives as text too. */
+            REQUIRE(push_key(SDLK_G, SDL_KMOD_NONE, true) && type_text("g"));
+            return push_key(SDLK_G, SDL_KMOD_NONE, false);
+        case 23:
+            /* The menu takes the keys: typeahead highlights an item, and
+               neither the caret nor the text changes. */
+            REQUIRE(find_element(s, "#code-menu [data-highlighted]"));
+            REQUIRE(kit_code_cursor(e) == caret);
+            REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
+            keys++;
+            return press_key(SDLK_ESCAPE);
+        case 25: {
+            /* Escape gave the focus back to the text. */
+            REQUIRE(!s->code.menu.open);
+            rml_element *focus = rml_context_focus_element(rml_backend_context(s->backend));
+            REQUIRE(focus && !strcmp(rml_element_tag_name(focus), "kit-code"));
+            return studio_code_replace(s, asset_code_path(code), asset_code_text(code), shared_problem, NULL);
+        }
+        case 27: {
+            const kit_code_marker *m = asset_code_markers(code);
+            REQUIRE(acount(m) == 2 && m[0].start == m[1].start);
+            caret = m[0].start;
+            kit_code_set_cursor(e, 0);
+            keys++;
+            return press_key(SDLK_F8);
+        }
+        case 29:
+        case 31:
+        case 33:
+            /* F8 visits both problems on the byte, and Shift+F8 goes back. */
+            REQUIRE(kit_code_cursor(e) == caret);
+            REQUIRE(s->code.problem.index == (frames == 31));
+            if (frames == 33) {
+                /* Toggle Line Comment rebound to a chord on the secondary
+                   modifier, Meta off a Mac. */
+                snprintf(s->prefs.shortcuts[STUDIO_COMMAND_TOGGLE_LINE_COMMENT], STUDIO_CHORD_SIZE, "Meta+K");
+                return true;
+            }
+            keys++;
+            return press_chord(SDLK_F8, frames == 31 ? SDL_KMOD_SHIFT : 0);
+        case 35: keys++; return press_chord(SDLK_K, SDL_KMOD_LGUI);
+        case 37:
+            REQUIRE(strstr(asset_code_text(code), "// missing = 1"));
+            s->prefs.shortcuts[STUDIO_COMMAND_TOGGLE_LINE_COMMENT][0] = '\0';
+            return true;
+        default: return true;
+    }
+}
+
+static bool code_glyphs_frame(void *state)
+{
+    static float left;
+    static double scanned;
+    float x, y;
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= GLYPH_FRAMES);
+    if (frames == 1) {
+        studio_show_editor(s, STUDIO_EDITOR_CODE);
+        return true;
+    }
+    asset_code *scene = scene_code(s);
+    REQUIRE(scene);
+    kit_code_editor *e = asset_code_editor(scene);
+    switch (frames) {
+        case 3:
+            kit_code_set_cursor(e, (int)strlen(kit_code_text(e, NULL)));
+            kit_code_paste(e, crepe_lines);
+            s->code.find.refocus = true;
+            return true;
+        case 5:
+        case 10:
+            REQUIRE(caret_after(e, frames == 5 ? "\"Cr\xc3\xaa" : "\"Cre"));
+            keys++;
+            return press_chord(SDLK_SPACE, SDL_KMOD_CTRL);
+        case 8:
+            REQUIRE(completion_left(s, &left));
+            return press_key(SDLK_ESCAPE);
+        case 13: {
+            /* The list starts under the word, a cell a character. */
+            float ascii;
+            REQUIRE(completion_left(s, &ascii));
+            REQUIRE(fabsf(ascii - left) < 0.5f);
+            char path[1024];
+            int length = snprintf(path, sizeof path, "%s/content/ui/Probe.rml", project);
+            REQUIRE(length > 0 && (size_t)length < sizeof path);
+            REQUIRE(press_key(SDLK_ESCAPE));
+            return studio_open_ui_source(s, path, 1);
+        }
+        case 18:
+            s->code.find.refocus = true;
+            return point_into_text(s, 0.3f, &x, &y);
+        case 19: return push_key(SDLK_LCTRL, SDL_KMOD_LCTRL, true);
+        case 22: {
+            /* The pointer rests on the class, which has no other
+               definition, so it is no link. */
+            const char *text = kit_code_text(s->code.editor, NULL);
+            const char *name = strstr(text, "lonely");
+            int under = kit_code_link(s->code.editor);
+            REQUIRE(
+                name && under > name - text &&
+                under < (int)(name - text + strlen("lonely" LONG_CLASS))
+            );
+            REQUIRE(!linked(s));
+            /* Another stylesheet comes to define it, unseen until the
+               project's scan goes stale, as two seconds on would make it. */
+            REQUIRE(write_content("ui", "Other.rcss", ".lonely" LONG_CLASS " { color: red; }\n"));
+            s->code.project_time = s->time - 100;
+            return true;
+        }
+        case 24:
+            /* The rescan found the other file's definition. Empty the scan
+               while it stays fresh: a lookup now would find nothing. */
+            REQUIRE(linked(s));
+            REQUIRE(s->code.project_time > s->time - 1);
+            scanned = s->code.project_time;
+            ui_source_project_free(&s->code.project);
+            return true;
+        case 26: {
+            /* Held still, the class was neither scanned nor looked up
+               again. */
+            REQUIRE(s->code.project_time == scanned && linked(s));
+            /* A class of the same length takes its place: the text's new
+               revision looks it up again, against the emptied scan. */
+            const char *text = kit_code_text(s->code.editor, NULL);
+            const char *name = strstr(text, "lonely");
+            REQUIRE(name);
+            kit_code_set_selection(
+                s->code.editor,
+                (int)(name - text),
+                (int)(name - text + strlen("lonely"))
+            );
+            kit_code_paste(s->code.editor, "nolink");
+            return true;
+        }
+        case 28:
+            REQUIRE(strstr(kit_code_text(s->code.editor, NULL), "nolink" LONG_CLASS));
+            REQUIRE(!linked(s));
+            return push_key(SDLK_LCTRL, SDL_KMOD_NONE, false);
+        default: return true;
+    }
+}
+
 bool studio_acceptance_frame(void *state)
 {
     switch (mode) {
@@ -2123,6 +2825,7 @@ bool studio_acceptance_frame(void *state)
             callback_ok = graph_visibility_frame(state);
             break;
         case GRAPH_KEYS: callback_ok = graph_keys_frame(state); break;
+        case GRAPH_LABELS: callback_ok = graph_labels_frame(state); break;
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
         case SCENE_PHYSICS: callback_ok = scene_physics_frame(state); break;
@@ -2130,6 +2833,8 @@ bool studio_acceptance_frame(void *state)
         case SCENE_VIEWPORT: callback_ok = scene_viewport_frame(state); break;
         case PLAY_KEYS: callback_ok = play_keys_frame(state); break;
         case PROMPTS: callback_ok = prompts_frame(state); break;
+        case CODE_FOLLOWUPS: callback_ok = code_followups_frame(state); break;
+        case CODE_GLYPHS: callback_ok = code_glyphs_frame(state); break;
     }
     return callback_ok;
 }
@@ -2225,6 +2930,19 @@ TEST_CASE(graph_keys)
     return true;
 }
 
+TEST_CASE(graph_labels)
+{
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(LABEL_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == LABEL_FRAMES && keys == LABEL_FRAMES);
+    printf("Studio graph labels accepted: frames=%d\n", frames);
+    return true;
+}
+
 TEST_CASE(export_game)
 {
     char *args[] = { (char *)executable, "--headless", "--frames", "3",
@@ -2270,12 +2988,13 @@ TEST_CASE(scene_gizmo_cursors)
 
 TEST_CASE(scene_hierarchy)
 {
+    REQUIRE(write_content("components", "Link.chibi", link_component));
     char *args[] = { (char *)executable, "--headless",
-                     "--frames",         "2",
+                     "--frames",         "3",
                      "--fixed-dt",       "0.016666666666666666",
                      "--project-root",   (char *)project };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && frames == 2 && edits == 1);
+    REQUIRE(callback_ok && frames == 3 && edits == 1);
     printf("Studio scene hierarchy accepted\n");
     return true;
 }
@@ -2295,12 +3014,19 @@ TEST_CASE(scene_physics)
 TEST_CASE(asset_selection)
 {
     REQUIRE(write_spares());
+    REQUIRE(write_content("fields", "Flat.kdl", flat_field));
+    REQUIRE(write_content("shapes", "Blank.kdl", blank_shape));
+    REQUIRE(write_content("ui", "Blank.rml", blank_rml));
     char *args[] = { (char *)executable, "--headless",
-                     "--frames",         "6",
+                     "--frames",         FRAMES_TEXT(ASSET_FRAMES),
                      "--fixed-dt",       "0.016666666666666666",
                      "--project-root",   (char *)project };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && frames == 6 && edits == 1);
+    REQUIRE(callback_ok && frames == ASSET_FRAMES && edits == 1 && flat_shown);
+    /* Both rendered, and failed as their pictures were flat. */
+    const studio_thumb_stats *stats = &last_thumb_stats;
+    REQUIRE(stats->count[REFERENCE_ASSET_SHAPE] >= 1 && stats->count[REFERENCE_ASSET_UI] >= 1);
+    REQUIRE(stats->blank - blank_before >= 2 && !blank_shown);
     printf("Studio asset selection accepted\n");
     return true;
 }
@@ -2373,6 +3099,34 @@ TEST_CASE(unsaved_prompts)
     return true;
 }
 
+TEST_CASE(code_followups)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(FOLLOWUP_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == FOLLOWUP_FRAMES && keys == 9);
+    REQUIRE(unchanged_source());
+    printf("Studio code follow-ups accepted: frames=%d keys=%d\n", frames, keys);
+    return true;
+}
+
+TEST_CASE(code_glyphs)
+{
+    REQUIRE(write_glyph_content());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(GLYPH_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == GLYPH_FRAMES && keys == 2);
+    printf("Studio code glyphs accepted: frames=%d keys=%d\n", frames, keys);
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
@@ -2386,6 +3140,7 @@ int main(int argc, char **argv)
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
     bool keys_mode = argc == 4 && !strcmp(argv[1], "--graph-keys");
+    bool labels = argc == 4 && !strcmp(argv[1], "--graph-labels");
     bool units = argc == 4 && !strcmp(argv[1], "--unit-warnings");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
     bool physics = argc == 4 && !strcmp(argv[1], "--scene-physics");
@@ -2393,17 +3148,20 @@ int main(int argc, char **argv)
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
     bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
     bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
+    bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
+    bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
-         !keys_mode && !units && !hierarchy && !physics && !assets &&
-         !viewport && !playing && !prompting) ||
+         !keys_mode && !labels && !units && !hierarchy && !physics && !assets &&
+         !viewport && !playing && !prompting && !followups && !glyphs) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
-            "--graph-visibility|--graph-keys|--unit-warnings|--scene-hierarchy|"
-            "--scene-physics|"
-            "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts "
+            "--graph-visibility|--graph-keys|--graph-labels|--unit-warnings|"
+            "--scene-hierarchy|--scene-physics|"
+            "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts|"
+            "--code-followups|--code-glyphs "
             "--project-root PATH | --scene-cursors\n"
         );
         return 2;
@@ -2426,13 +3184,16 @@ int main(int argc, char **argv)
          : exporting   ? EXPORT_GAME
          : visibility  ? GRAPH_VISIBILITY
          : keys_mode   ? GRAPH_KEYS
+         : labels      ? GRAPH_LABELS
          : units       ? UNIT_WARNINGS
          : hierarchy   ? SCENE_HIERARCHY
          : physics     ? SCENE_PHYSICS
          : assets      ? ASSET_SELECTION
          : viewport    ? SCENE_VIEWPORT
          : playing     ? PLAY_KEYS
-                       : PROMPTS;
+         : prompting   ? PROMPTS
+         : followups   ? CODE_FOLLOWUPS
+                       : CODE_GLYPHS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -2442,6 +3203,7 @@ int main(int argc, char **argv)
             RUN_TEST_CASE(graph_visibility_and_document_pair);
             break;
         case GRAPH_KEYS: RUN_TEST_CASE(graph_keys); break;
+        case GRAPH_LABELS: RUN_TEST_CASE(graph_labels); break;
         case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
         case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics); break;
@@ -2449,6 +3211,8 @@ int main(int argc, char **argv)
         case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
         case PLAY_KEYS: RUN_TEST_CASE(play_keys); break;
         case PROMPTS: RUN_TEST_CASE(unsaved_prompts); break;
+        case CODE_FOLLOWUPS: RUN_TEST_CASE(code_followups); break;
+        case CODE_GLYPHS: RUN_TEST_CASE(code_glyphs); break;
     }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;

@@ -721,7 +721,7 @@ extern "C"
          * ("Mod+S", "Shift+F12"): with the primary modifier, Save, Search,
          * UI Scale and the drawers always, anything the standard keys do not
          * edit with, and on a Mac every Command chord in Vim but Z and V;
-         * the function keys but F9; and Shift+Alt+H. The
+         * the function keys but F9; and those desc.chords names. The
          * host runs the command bound to it, as Go to Definition on F12. */
         char chord[32];
         int completion; /* the accepted item, or -1 */
@@ -793,6 +793,14 @@ extern "C"
         /* Characters besides letters, digits and '_' that a double click
          * keeps in a word, as "-" in RCSS's names; NULL for none. */
         const char *word_chars;
+        /* Chords the host binds to the editor's own commands, in
+         * kit_code_result.chord's notation ("Mod+/", "Alt+Shift+H"). Those
+         * with the primary modifier, Ctrl on a Mac or Meta elsewhere, or Alt,
+         * or on a function key, go back to the host before the editor's keys
+         * take them, so a command rebound to Mod+C, Meta+K, or Mod+/ under
+         * Vim, still runs. */
+        const char *const *chords;
+        int chord_count;
         /* Bytes [link_start, link_end) of the symbol kit_code_link names,
          * when it has a definition: underlined as a link, as VS Code does
          * under Command or Control. */

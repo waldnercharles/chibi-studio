@@ -1397,10 +1397,13 @@ static void narrow_selection(studio *s, const char *prototype)
 }
 
 /* Selects the object an entity field names (studio_properties_view.c),
-   as Unity's object field pings its object. */
+   as Unity's object field pings its object; nothing when the selected
+   objects name different ones. */
 static void reveal(studio *s, const properties_row *row)
 {
     pin_value value = { 0 };
+    properties_subject subject;
+    properties_subject_of(s, &subject);
     if (row->kind != PROPERTIES_OBJECT ||
         ecs_component_read_field(
             s->scene->world,
@@ -1409,7 +1412,9 @@ static void reveal(studio *s, const properties_row *row)
             row->field,
             &value
         ) != ECS_OK ||
-        value.type != PIN_HANDLE || !value.u64) {
+        value.type != PIN_HANDLE || !value.u64 ||
+        (subject.actor &&
+         properties_mixed(s, subject.actor, row->component, row->field, &value))) {
         return;
     }
     /* A placed object selects as the Outliner selects it; a spawned one as

@@ -793,6 +793,15 @@ typedef struct
     char *synced;
 } studio_code_editor;
 
+/* The problem F8 last went to (studio_code.c), so problems that share a
+ * byte each take a turn: its document (an asset_code or a ui_buffer), the
+ * document's part (-1 for an asset), the marker's index and its byte. */
+typedef struct
+{
+    const void *document;
+    int part, index, at;
+} studio_code_problem;
+
 /* UI documents (workstream D). The Text Editor (studio_code.c) shows the
  * active UI document and keeps the last one while a document of another kind
  * is active. */
@@ -813,6 +822,7 @@ typedef struct
     ui_part editor_part;
     int reveal_offset; /* a byte of the part to reveal instead, or -1 */
     char reveal_notice[256]; /* shown at the revealed place, as F8's problem */
+    studio_code_problem problem;
     /* The text's context menu (CodeMenu.rml), while it shows. */
     struct
     {
@@ -847,6 +857,20 @@ typedef struct
     char *hover;
     int hover_at;
     const ui_source *hover_source;
+    /* The symbol Mod last held the pointer on, in which document, part
+       and revision, the project scan (its project_time) it was looked up
+       against, and whether it has a definition to underline as a link:
+       looked up again only when one of them changes or the scan goes
+       stale. */
+    struct
+    {
+        char path[1024];
+        ui_part part;
+        unsigned revision;
+        int start, end;
+        double scanned;
+        bool found;
+    } link;
     bool replayed; /* Undo or Redo from the editor changed the text */
     /* Find (Mod+F): the query, where its shown match starts and how many
        the part holds. */
@@ -1995,6 +2019,9 @@ bool studio_chord_matches(const char *chord, SDL_Keycode key, SDL_Keymod mod, bo
  * browser and SDL's web backend report as the key: ⌥G arrives as ©. */
 SDL_Keycode studio_event_key(const SDL_KeyboardEvent *e);
 void studio_chord_format(char *out, size_t size, const char *chord, bool mac);
+/* The chord a key makes in the notation bindings keep: Mod, the other of
+ * Control and Command, Alt, Shift, then the key's name ("Mod+Alt+/"). */
+void studio_chord_name(studio_key key, bool mac, char out[STUDIO_CHORD_SIZE]);
 bool studio_shortcut_record(studio_prefs *prefs, int *recording, studio_key key, bool mac);
 
 /* What commands run (studio_shell.c). */
@@ -2008,6 +2035,9 @@ bool studio_save_all(studio *s);
 /* True while a running scene keeps documents from saving; text, which
    applies live, still saves. */
 bool studio_save_held(const studio *s);
+/* True while a running scene keeps tab `index` from saving, or with -1 any
+   document with unsaved edits. */
+bool studio_unsaved_held(const studio *s, int index);
 /* The open tab with this key, or -1. */
 int studio_tab_index(const studio *s, const char *key);
 /* Reports a document saved: in Output, and in a toast except while Save All

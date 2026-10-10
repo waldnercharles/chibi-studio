@@ -346,7 +346,7 @@ int app_scene_authoring_preview_prototype(app_scene_authoring *scene, const char
                                  GAME_COMPONENT_GameProjectile.id
                              );
     bool follow = continuing ? scene->preview_follow : loop;
-    char error[256];
+    char error[256] = "";
     finish_transform_edit(scene, true);
     app_scene_authoring_stop_prototype_preview(scene);
     int configured = game_prototype_preview_configure_physics(
@@ -354,8 +354,13 @@ int app_scene_authoring_preview_prototype(app_scene_authoring *scene, const char
         game_physics_configuration(scene->live->runtime->physics)
     );
     assert(configured == 0);
+    /* Source behaviors reach the preview's world as their sources publish
+       (scene_stage_source_edits); only graph behaviors are copied here. */
     for (int i = 0; i < game_preview_definition_count(scene->live); i++) {
         game_preview_definition *definition = game_preview_definition_at(scene->live, i);
+        if (definition->working_presentation) {
+            continue;
+        }
         if (game_prototype_preview_update_behavior(
                 scene->prototype_preview,
                 definition->name,
@@ -363,10 +368,20 @@ int app_scene_authoring_preview_prototype(app_scene_authoring *scene, const char
                 true,
                 error,
                 sizeof error
-            ) != 0) {
-            snprintf(scene->prototype_message, sizeof scene->prototype_message, "%s", error);
-            return -1;
+            ) == 0) {
+            continue;
         }
+        if (!error[0]) {
+            snprintf(error, sizeof error, "%s did not update", definition->name);
+        }
+        snprintf(
+            scene->prototype_message,
+            sizeof scene->prototype_message,
+            "Could not preview %s: %s.",
+            prototype_name,
+            error
+        );
+        return -1;
     }
     int result = game_prototype_preview_launch(scene->prototype_preview, asset->prototype, error, sizeof error);
     if (result == ECS_OK) {

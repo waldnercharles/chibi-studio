@@ -567,6 +567,11 @@ void asset_code_time(asset_code *c, double time)
     c->time = time;
 }
 
+void asset_code_end_typing(asset_code *c)
+{
+    c->typing = false;
+}
+
 bool asset_code_pending(const asset_code *c)
 {
     return c->source_pending;
