@@ -8,6 +8,9 @@ on:
       - "AGENTS.md"
       - "docs/**"
       - ".claude/**"
+      - "web/**"
+      - "EXTRACTION.json"
+      - ".github/workflows/publish.yml"
   push:
     branches: [main]
     paths-ignore:
@@ -15,6 +18,9 @@ on:
       - "AGENTS.md"
       - "docs/**"
       - ".claude/**"
+      - "web/**"
+      - "EXTRACTION.json"
+      - ".github/workflows/publish.yml"
 
 permissions:
   contents: read
@@ -79,8 +85,41 @@ jobs:
         with:
           path: chibi/dist/sdk
           key: studio-sdk-v1-ubuntu24-${{ runner.arch }}-debug-nosan-${{ steps.deps.outputs.toolchain }}-${{ steps.deps.outputs.engine }}
-      - name: Restore dependencies
+      - name: Download the published engine SDK
         if: steps.sdk.outputs.cache-hit != 'true'
+        id: published-sdk
+        env:
+          GH_TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
+          ENGINE: ${{ steps.deps.outputs.engine }}
+        shell: bash
+        run: |
+          # Listing releases distinguishes an absent package from API/auth errors.
+          gh api 'repos/waldnercharles/chibi/releases?per_page=100' > "$RUNNER_TEMP/engine-releases.json"
+          available=$(python3 - "$RUNNER_TEMP/engine-releases.json" <<'PYCODE'
+          import json, os, sys
+          required = {"chibi-sdk-linux-x64.tar.gz", "SHA256SUMS"}
+          release = next((r for r in json.load(open(sys.argv[1]))
+                          if r["tag_name"] == "engine-" + os.environ["ENGINE"] and not r["draft"]), None)
+          assets = {a["name"] for a in release["assets"] if a["state"] == "uploaded"} if release else set()
+          print(str(required <= assets).lower())
+          PYCODE
+          )
+          echo "available=$available" >> "$GITHUB_OUTPUT"
+          if [ "$available" != true ]; then
+            echo "No published SDK for engine $ENGINE; building from source."
+            exit 0
+          fi
+          packages="$RUNNER_TEMP/engine-packages"
+          mkdir -p "$packages" chibi/dist/sdk
+          gh release download "engine-$ENGINE" --repo waldnercharles/chibi \
+            --pattern chibi-sdk-linux-x64.tar.gz --pattern SHA256SUMS --dir "$packages"
+          cd "$packages"
+          awk '$2 == "chibi-sdk-linux-x64.tar.gz"' SHA256SUMS > selected-sums
+          test "$(wc -l < selected-sums)" -eq 1
+          sha256sum --check selected-sums
+          tar -xzf chibi-sdk-linux-x64.tar.gz -C "$GITHUB_WORKSPACE/chibi/dist/sdk"
+      - name: Restore dependencies
+        if: steps.sdk.outputs.cache-hit != 'true' && steps.published-sdk.outputs.available != 'true'
         id: cache-deps
         uses: actions/cache/restore@v4
         with:
@@ -90,18 +129,18 @@ jobs:
           key: studio-deps-${{ runner.os }}-clang18-${{ steps.deps.outputs.key }}
           restore-keys: studio-deps-${{ runner.os }}-clang18-
       - name: Package the engine SDK
-        if: steps.sdk.outputs.cache-hit != 'true'
+        if: steps.sdk.outputs.cache-hit != 'true' && steps.published-sdk.outputs.available != 'true'
         working-directory: chibi
         run: make package-sdk SDK_PREFIX=dist/sdk LIBCLANG_ROOT=/usr/lib/llvm-18
       # PRs consume main's caches without uploading another branch-scoped copy.
       - name: Save packaged engine SDK
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.sdk.outputs.cache-hit != 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.sdk.outputs.cache-hit != 'true' && steps.published-sdk.outputs.available != 'true'
         uses: actions/cache/save@v4
         with:
           path: chibi/dist/sdk
           key: ${{ steps.sdk.outputs.cache-primary-key }}
       - name: Save dependencies
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.sdk.outputs.cache-hit != 'true' && steps.cache-deps.outputs.cache-hit != 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.sdk.outputs.cache-hit != 'true' && steps.published-sdk.outputs.available != 'true' && steps.cache-deps.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
@@ -129,9 +168,9 @@ jobs:
         shell: bash
         run: |
           prefix="$RUNNER_TEMP/chibi"
-          # What the engine's `make install` does, from the SDK built above.
-          make -C chibi sdk-install SDK_PREFIX="$prefix" LIBCLANG_ROOT=/usr/lib/llvm-18
-          cp chibi/dist/sdk/share/chibi/engine.json "$prefix/share/chibi/"
+          # SDK packages are relocatable; reuse the verified package without rebuilding.
+          mkdir -p "$prefix"
+          cp -a chibi/dist/sdk/. "$prefix/"
           make -C chibi-studio install PREFIX="$prefix"
           export PATH="$prefix/bin:$PATH"
           cd chibi-studio/projects/starter

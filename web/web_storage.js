@@ -64,6 +64,7 @@ if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
     // The project is chosen once IndexedDB has loaded; main reads this same array.
     const args = Module['arguments'] = ['--project-root', ''];
     let project;
+    let publishedProject;
     const fs = () => Module['FS'];
     const report = error => {
         if (error) Module['showError'](`Browser storage failed: ${error.message || error}`);
@@ -156,6 +157,7 @@ if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
             history.replaceState(null, '', `?project=${id}`);
             return id;
         }
+        if (publishedProject && !launch.has('project-root')) return publishedProject;
         const previous = lastOpened();
         if (!launch.has('project-root') && found(previous)) return previous;
         const id = slug(sample) || 'project';
@@ -201,6 +203,75 @@ if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
             if (inside) write(`${workspace}/${id}/${path}`, data);
         }
         return id;
+    };
+
+    // Published sources stay separate from the reusable editor bundle. Each revision
+    // gets its own editable workspace; revisiting it preserves the user's changes.
+    const loadPublishedProject = async () => {
+        const source = launch.get('source') || Module['chibiPublishedProject'];
+        if (!source || ['project', 'project-root', 'new'].some(name => launch.has(name))) return;
+        const sameOrigin = (path, base) => {
+            const url = new URL(path, base);
+            if (url.origin !== location.origin) throw new Error('Published projects must use the same origin');
+            return url;
+        };
+        const download = async (url, options = {}) => {
+            const response = await fetch(url, {...options, signal: AbortSignal.timeout(30000)});
+            if (!response.ok) throw new Error(`Could not download ${url.pathname}: HTTP ${response.status}`);
+            if (response.url) sameOrigin(response.url, url);
+            return response;
+        };
+        const url = sameOrigin(source, location.href);
+        const description = await (await download(url, {cache: 'no-store'})).json();
+        if (description.format !== 1 || typeof description.id !== 'string' ||
+            !/^[a-z0-9][a-z0-9-]{0,79}$/.test(description.id) ||
+            !/^[a-f0-9]{40}$/.test(description.revision) || !/^[a-f0-9]{64}$/.test(description.sha256) ||
+            typeof description.archive !== 'string' || !description.archive) {
+            throw new Error('Invalid published project manifest');
+        }
+        const id = `published-${description.id}-${description.revision}`;
+        const root = `${workspace}/${id}`;
+        const marker = `${root}/.published`;
+        if (exists(root)) {
+            if (!found(id) || !exists(marker) || fs().readFile(marker, {encoding: 'utf8'}) !== description.sha256) {
+                throw new Error('Published project identity conflicts with an existing workspace');
+            }
+            publishedProject = id;
+            return;
+        }
+        const archiveUrl = sameOrigin(description.archive, url);
+        const buffer = await (await download(archiveUrl, {cache: 'no-store'})).arrayBuffer();
+        const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', buffer)),
+            byte => byte.toString(16).padStart(2, '0')).join('');
+        if (digest !== description.sha256) throw new Error('Published project archive checksum does not match');
+        const archive = await unzip(buffer);
+        const names = new Set();
+        for (const [name] of archive) {
+            if (name.includes('\\') || name.split('/').some(part => !part || part === '.' || part === '..') ||
+                names.has(name) || name === '.published') throw new Error(`Invalid published project path: ${name}`);
+            names.add(name);
+        }
+        if (!names.has(manifest)) throw new Error(`The published archive has no root ${manifest}`);
+        // Validate before writing and remove failed imports so the next visit can retry.
+        const remove = path => {
+            if (fs().isDir(fs().stat(path).mode)) {
+                for (const child of fs().readdir(path)) {
+                    if (child !== '.' && child !== '..') remove(`${path}/${child}`);
+                }
+                fs().rmdir(path);
+                return;
+            }
+            fs().unlink(path);
+        };
+        try {
+            for (const [name, data] of archive) write(`${root}/${name}`, data);
+            write(marker, description.sha256);
+            await sync();
+        } catch (error) {
+            if (exists(root)) remove(root);
+            throw error;
+        }
+        publishedProject = id;
     };
 
     Module['chibiSaveAsset'] = () => {
@@ -290,9 +361,16 @@ if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
         fs().mkdirTree(workspace);
         fs().mount(fs().filesystems.IDBFS, {}, workspace);
         addRunDependency('chibi-storage');
-        fs().syncfs(true, error => {
-            report(error);
-            removeRunDependency('chibi-storage');
+        fs().syncfs(true, async error => {
+            try {
+                if (error) throw error;
+                await loadPublishedProject();
+                removeRunDependency('chibi-storage');
+            } catch (failure) {
+                const message = `Could not open project: ${failure.message || failure}`;
+                Module['showError'](message);
+                abort(message);
+            }
         });
     });
     // Bundled samples are readable only once every run dependency has resolved.
