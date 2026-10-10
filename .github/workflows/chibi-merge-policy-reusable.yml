@@ -282,6 +282,15 @@ jobs:
               const current = (await github.rest.pulls.get({ owner, repo, pull_number: pr.number })).data;
               if (current.state !== "open" || current.head.sha !== pr.head.sha || current.base.ref !== pr.base.ref ||
                   current.base.sha !== parent.head.sha || hasHold(current) || !(await dependenciesMerged(current))) return current;
+              if (!parent.merge_commit_sha) return current;
+              const [mergedCommit, parentCommit] = await Promise.all([
+                github.rest.repos.getCommit({ owner, repo, ref: parent.merge_commit_sha }),
+                github.rest.repos.getCommit({ owner, repo, ref: parent.head.sha }),
+              ]);
+              if (mergedCommit.data.commit.tree.sha !== parentCommit.data.commit.tree.sha) {
+                core.info(`#${pr.number}: parent #${parent.number} head differs from its merged result; automatic retargeting is held.`);
+                return current;
+              }
               const comparison = (await github.rest.repos.compareCommitsWithBasehead({
                 owner, repo, basehead: `${parent.head.sha}...${current.head.sha}`,
               })).data;
