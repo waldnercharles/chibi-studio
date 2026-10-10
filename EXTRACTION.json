@@ -634,7 +634,8 @@
     "projects/studio/content/ui/Dialog.rcss": {
       "current_source_sha256": "76d1a0981490149d581485eb040bbe6b79e8d7899c68aa15f3b9993031b6e68d",
       "sha256": "76d1a0981490149d581485eb040bbe6b79e8d7899c68aa15f3b9993031b6e68d",
-      "source_path": "projects/studio/content/ui/Dialog.rcss"
+      "source_path": "projects/studio/content/ui/Dialog.rcss",
+      "consumer_sha256": "a88919baf691993c843e329fe720cca9e80170ec025c321d98827e8ecef89d57"
     },
     "projects/studio/content/ui/Dialog.rml": {
       "current_source_sha256": "c9717d68151db56429a7c3d6c733b4f6966363bf2ff0b7ac2d22df6e50f1f524",
@@ -866,12 +867,14 @@
     "projects/studio/content/ui/NewProject.rcss": {
       "current_source_sha256": "5ee6d6a730e1396538d638a7eb43792f5cf29d9528dba797c62d5a828100c51e",
       "sha256": "5ee6d6a730e1396538d638a7eb43792f5cf29d9528dba797c62d5a828100c51e",
-      "source_path": "projects/studio/content/ui/NewProject.rcss"
+      "source_path": "projects/studio/content/ui/NewProject.rcss",
+      "consumer_sha256": "96e9d6cd2ff903e4ac020b0c4648785c136e858f016bad2b8867a4ce43743206"
     },
     "projects/studio/content/ui/NewProject.rml": {
       "current_source_sha256": "150a4c56fb88e9532c2d1e9c94349f90b6ae4c35c2f419757f050f6352a52975",
       "sha256": "150a4c56fb88e9532c2d1e9c94349f90b6ae4c35c2f419757f050f6352a52975",
-      "source_path": "projects/studio/content/ui/NewProject.rml"
+      "source_path": "projects/studio/content/ui/NewProject.rml",
+      "consumer_sha256": "e4fa048b123753fdd2fe341caaf8bb8613b05250956798d141fe6fe7f8273a7f"
     },
     "projects/studio/content/ui/NumberField.rcss": {
       "current_source_sha256": "41601ebc99a04b684e965bc103cdcd28c3bc9a237d9b59c7bf2d6897c5e7e0c8",
@@ -933,7 +936,8 @@
     "projects/studio/content/ui/Palette.rml": {
       "current_source_sha256": "4fccc2cae4214b297103a708ee6b4b8df7adf20f143b297dc1d127071dee23c3",
       "sha256": "4fccc2cae4214b297103a708ee6b4b8df7adf20f143b297dc1d127071dee23c3",
-      "source_path": "projects/studio/content/ui/Palette.rml"
+      "source_path": "projects/studio/content/ui/Palette.rml",
+      "consumer_sha256": "0c6d56d564c30566f77f88b5de381574149958a340c424eba6c96b803a76576b"
     },
     "projects/studio/content/ui/Panel.rcss": {
       "current_source_sha256": "e434066b6c33f10c770d439e3b2d952f3d584b873eabf70c3250c67f14a910ce",
@@ -1081,7 +1085,8 @@
     "projects/studio/content/ui/Settings.rcss": {
       "current_source_sha256": "52d324ea4b6faf15fd94615ffb7d30ff679a4deea4d160d14542f284cb53878e",
       "sha256": "52d324ea4b6faf15fd94615ffb7d30ff679a4deea4d160d14542f284cb53878e",
-      "source_path": "projects/studio/content/ui/Settings.rcss"
+      "source_path": "projects/studio/content/ui/Settings.rcss",
+      "consumer_sha256": "6cbe0651faa56b77ab3d349f20018fa4d2809111647db17cba76f6248777be0a"
     },
     "projects/studio/content/ui/Settings.rml": {
       "current_source_sha256": "825a97d07ece38ebae8a23cc95071a896e070e3bcca73b610d33743b729970d5",
@@ -1211,12 +1216,14 @@
     "projects/studio/content/ui/TopBar.rcss": {
       "current_source_sha256": "fd9683b3f7bbfdda05c9fbbfa681253c9ccb481df60b3e573242bc80d403ed00",
       "sha256": "fd9683b3f7bbfdda05c9fbbfa681253c9ccb481df60b3e573242bc80d403ed00",
-      "source_path": "projects/studio/content/ui/TopBar.rcss"
+      "source_path": "projects/studio/content/ui/TopBar.rcss",
+      "consumer_sha256": "4de77b813240688d78e02afb236632b2c0e4f7bb346cac961bf46fe66f0a5f85"
     },
     "projects/studio/content/ui/TopBar.rml": {
       "current_source_sha256": "5193fa5ae1a98f54a9430bf56aa435cb81abba8bd347a095a418cc18247bcbfc",
       "sha256": "5193fa5ae1a98f54a9430bf56aa435cb81abba8bd347a095a418cc18247bcbfc",
-      "source_path": "projects/studio/content/ui/TopBar.rml"
+      "source_path": "projects/studio/content/ui/TopBar.rml",
+      "consumer_sha256": "889fd6b3c5e863955de3063204bfab4c4fe01189a23c9e5e2b5431dd90798d32"
     },
     "projects/studio/content/ui/TreeRow.rcss": {
       "current_source_sha256": "bc136a64d5d7951510921b278268a1451a67dc85bea5ac97d015c5a0bce771f9",
@@ -1261,7 +1268,8 @@
     "projects/studio/content/ui/Workspace.rcss": {
       "current_source_sha256": "2d72bf830578fd56893badbc1065d6fbdafa48a2f6025e1286379c5e5910b1e3",
       "sha256": "2d72bf830578fd56893badbc1065d6fbdafa48a2f6025e1286379c5e5910b1e3",
-      "source_path": "projects/studio/content/ui/Workspace.rcss"
+      "source_path": "projects/studio/content/ui/Workspace.rcss",
+      "consumer_sha256": "33928bb9f749b9a43db89806199b19aee6e7d3cb18c36df9519dd36e6d6e5955"
     },
     "projects/studio/content/ui/Workspace.rml": {
       "current_source_sha256": "f13136a0bf2b1987cc63cf3ea30c2d28bdc1151e182a2d60f48213edb023687a",
@@ -1301,7 +1309,8 @@
     "projects/studio/content/ui/theme/button.rcss": {
       "current_source_sha256": "c1f548a3e82efe70dea324e44fd3d867f4141aad51949fd3b9c91e92fc7d151b",
       "sha256": "c1f548a3e82efe70dea324e44fd3d867f4141aad51949fd3b9c91e92fc7d151b",
-      "source_path": "projects/studio/content/ui/theme/button.rcss"
+      "source_path": "projects/studio/content/ui/theme/button.rcss",
+      "consumer_sha256": "99fe606c65c01ffd160deb4ca1c3011ac3462e081fc1001471e061c4d8eafed6"
     },
     "projects/studio/content/ui/theme/chart.rcss": {
       "current_source_sha256": "b51150be4ebf6555476cc31700986cc8e32f65b104a87568e39ecfb0641f4966",
@@ -1491,7 +1500,8 @@
     "src/editor/documents/asset_code.c": {
       "current_source_sha256": "91f77c6e1b3d60ddab4c59fa395ba78c9122e54cb6707f866eb2fb9730d2615c",
       "sha256": "5bcaf149c81eb750ce0da5b74954c40758aedfa32e6cb590849d723050c3ce64",
-      "source_path": "src/editor/documents/asset_code.c"
+      "source_path": "src/editor/documents/asset_code.c",
+      "consumer_sha256": "f8595ca053106d950962c9c16aa1109d660d34556edeff631ac1a203071bcfa1"
     },
     "src/editor/documents/asset_code.h": {
       "current_source_sha256": "15d34e8aae5a3df6a5ef4a2632b6c6784714b03b3c0cb6c74be401afbb35d2e1",
@@ -1666,7 +1676,8 @@
     "src/editor/rmlui/kit.c": {
       "current_source_sha256": "509c1f46af9d3f72cfbc20e35f8ddb15269eee03050c6612894795816e48edb8",
       "sha256": "509c1f46af9d3f72cfbc20e35f8ddb15269eee03050c6612894795816e48edb8",
-      "source_path": "src/editor/rmlui/kit.c"
+      "source_path": "src/editor/rmlui/kit.c",
+      "consumer_sha256": "dc74c5d51dfdae19ee7bb755450d21be99979c72cc1030be736de310d491e288"
     },
     "src/editor/rmlui/kit_code.c": {
       "current_source_sha256": "221e28db084147124738f1a531f1300861183944dd87ee8fc7584e446b348c7c",
@@ -1696,7 +1707,8 @@
     "src/editor/rmlui/kit_internal.h": {
       "current_source_sha256": "18a2b7596f96f79e0434b872b80563bd8741dc5066c54ca7ad65ae65bea57499",
       "sha256": "18a2b7596f96f79e0434b872b80563bd8741dc5066c54ca7ad65ae65bea57499",
-      "source_path": "src/editor/rmlui/kit_internal.h"
+      "source_path": "src/editor/rmlui/kit_internal.h",
+      "consumer_sha256": "5eaa0047eb5d694993ad89c204315583594a2239fb5a339e3b20084f72066623"
     },
     "src/editor/rmlui/kit_list.c": {
       "current_source_sha256": "0e0b525e2d1e25984e7daa3a55c490932133951172dcbaa28f8103f9b590d418",
@@ -1731,7 +1743,8 @@
     "src/editor/rmlui/kit_toast.c": {
       "current_source_sha256": "54df474aa9c74bcff253072ada969957b50400c1ce0f86cadb9eac0024fbf91b",
       "sha256": "54df474aa9c74bcff253072ada969957b50400c1ce0f86cadb9eac0024fbf91b",
-      "source_path": "src/editor/rmlui/kit_toast.c"
+      "source_path": "src/editor/rmlui/kit_toast.c",
+      "consumer_sha256": "63b57b5d0c046705208dceaff09920cd0be8f5fa633bc3213924c4907df46283"
     },
     "src/editor/rmlui/kit_wires.c": {
       "current_source_sha256": "43f948c3d2ecea36864f7459667d3035cd68299459cf8f4aaaf47577c50eadfc",
@@ -1840,7 +1853,8 @@
     "src/editor/studio/studio_disk.c": {
       "current_source_sha256": "43619281e25792d0945add2307f0ac653270628907441f35446c112c07a0196b",
       "sha256": "43619281e25792d0945add2307f0ac653270628907441f35446c112c07a0196b",
-      "source_path": "src/editor/studio/studio_disk.c"
+      "source_path": "src/editor/studio/studio_disk.c",
+      "consumer_sha256": "2d8f2300faa04bcf9cd7d8a788adb7f2bb578c656be778eaed9b5f5299476c0a"
     },
     "src/editor/studio/studio_drop.c": {
       "current_source_sha256": "d5ee00299dbb4187d9a6b0004e5416bd5606356016534d46ce341378146a9e4f",
@@ -1850,7 +1864,8 @@
     "src/editor/studio/studio_find.c": {
       "current_source_sha256": "39c56f02fec1a40a99be91b647d96474868f18dff8ad9f69a787bb0de7d33975",
       "sha256": "bdb49e7dc3e2e605c0cd9e90d4ccd3a94398d4fa4fd30b57cb8f56e250743a33",
-      "source_path": "src/editor/studio/studio_find.c"
+      "source_path": "src/editor/studio/studio_find.c",
+      "consumer_sha256": "27121abc1f37ed31f643ccb03fc2cb2e954795b8af39d8abd0bda2854ea09361"
     },
     "src/editor/studio/studio_gallery.c": {
       "current_source_sha256": "2e310540b560b7ba432813b814854ca77385eda7184104d65c7eafeb66db7754",
@@ -1969,7 +1984,7 @@
       "current_source_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
       "sha256": "a01a22cf19a858e983159029166fe7d9086a883aa6e864bfa9a359b78048a1e6",
       "source_path": "src/editor/studio/studio_internal.h",
-      "consumer_sha256": "cbb8f62023eb95e8542f3f61ba6cca62dc5b4b032342126aa48d9cd09ec0032e"
+      "consumer_sha256": "2032bd7c88f99cc88c582e1fcad158c9ad1056d714c81f8d065aac25073a13d2"
     },
     "src/editor/studio/studio_keymap.c": {
       "current_source_sha256": "8b5d145d9512c78e41ef18d71680421e8da299c9aa6c6b5585d00d6b5b23d88a",
@@ -2026,12 +2041,14 @@
     "src/editor/studio/studio_palette.c": {
       "current_source_sha256": "950fea49f12d09b3bc70d606a9177c277aced6770dda7818242e42e8557cc45a",
       "sha256": "042a38fe0656055db9a23617f129a9fd4650beb17ff7fb0e21bc7bc255fbd6ea",
-      "source_path": "src/editor/studio/studio_palette.c"
+      "source_path": "src/editor/studio/studio_palette.c",
+      "consumer_sha256": "4fa541c8df1cf749a963d44e4eaf03ffd13f433034530a72d20a0526106473c5"
     },
     "src/editor/studio/studio_palette_view.c": {
       "current_source_sha256": "942db470a6a11e8ff55b0279097d54e189d74a0a8156503331643e1b3a2297e6",
       "sha256": "942db470a6a11e8ff55b0279097d54e189d74a0a8156503331643e1b3a2297e6",
-      "source_path": "src/editor/studio/studio_palette_view.c"
+      "source_path": "src/editor/studio/studio_palette_view.c",
+      "consumer_sha256": "572d05197b4fb971f34290e97c78ac600915eed15f9290b303610d340edd7ed1"
     },
     "src/editor/studio/studio_panels.c": {
       "current_source_sha256": "bdd80adcd85c06fa6025c329d68a399bea63652f03269095c2f99b66610e48f1",
@@ -2057,7 +2074,7 @@
       "current_source_sha256": "4fd1c657dd07a0a71de2b89c10186577f6b1bfd9e8c4221b22ab2a9a563b7992",
       "sha256": "4fd1c657dd07a0a71de2b89c10186577f6b1bfd9e8c4221b22ab2a9a563b7992",
       "source_path": "src/editor/studio/studio_projects.c",
-      "consumer_sha256": "2b3d7d011eac481f7299995125d2d10652c522207e8ff8bec08d928f48c586aa"
+      "consumer_sha256": "2f16e647cc3391d9b748e425a3d40091e1e4fd74298df84776c87bee2f1fd95a"
     },
     "src/editor/studio/studio_properties.c": {
       "current_source_sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
@@ -2078,7 +2095,8 @@
     "src/editor/studio/studio_prototype_actions.c": {
       "current_source_sha256": "2d69a48bc7c1cb006a19e11a9b0df180defa389464e0eeeac40fc04adb0b345d",
       "sha256": "2d69a48bc7c1cb006a19e11a9b0df180defa389464e0eeeac40fc04adb0b345d",
-      "source_path": "src/editor/studio/studio_prototype_actions.c"
+      "source_path": "src/editor/studio/studio_prototype_actions.c",
+      "consumer_sha256": "ca4adc85ba3bdf12f407989a478a615ca714c2cdc724eccddf8fbeec3bd00c80"
     },
     "src/editor/studio/studio_refactor.c": {
       "current_source_sha256": "86ca21a29ce092333dc2f80f310cddf4ab081178fb015eafde0aae69ef20123b",
@@ -2100,12 +2118,13 @@
       "current_source_sha256": "e38ecbf7677c5f74f7fcafc5199412171781a5fd8eac038a7923a1327142499c",
       "sha256": "e38ecbf7677c5f74f7fcafc5199412171781a5fd8eac038a7923a1327142499c",
       "source_path": "src/editor/studio/studio_shell.c",
-      "consumer_sha256": "79f8d6c664a858b63539584ec22ba204f6871877db5dd50ecc19ccf71b10c6c1"
+      "consumer_sha256": "e0ea91894f87eaafb9537f97ed176318d350aacad9912823400cc5bd01fcfefa"
     },
     "src/editor/studio/studio_sources.c": {
       "current_source_sha256": "3163175f127f6aec6a68be24efe77791ed9ed640daf72819e281de90b0cad483",
       "sha256": "ad4f609f80a5ab1986f04d7783f422602cd37d5407ae488a1b0deae07a86fb8c",
-      "source_path": "src/editor/studio/studio_sources.c"
+      "source_path": "src/editor/studio/studio_sources.c",
+      "consumer_sha256": "92c981696d334da9309348c1217d6665a84ac44aa33e0a9ae2b499d377be63a2"
     },
     "src/editor/studio/studio_thumbnail_cache.c": {
       "current_source_sha256": "24c082cc35358cba824fc0539a403b9afd1154bb79d3b1ab0cb9796b0b350ceb",
@@ -2141,7 +2160,8 @@
       ],
       "current_source_sha256": "4cc012974e9fb688f8ecaf94c80661d34e38a780341636777eda9caa59a010d9",
       "sha256": "262e7451d439607c4a6409da7aa56f473c19dec23546088992f0487ffe91a637",
-      "source_path": "src/editor/studio/studio_ui.c"
+      "source_path": "src/editor/studio/studio_ui.c",
+      "consumer_sha256": "712dc489a6030f1fd21f27a6a988185b5e25ac8b5f667195cce2dfec25524a8b"
     },
     "src/editor/text/zep_bridge.cpp": {
       "current_source_sha256": "1fa3d063bd2ac8d2cbdfaa1146cf52d31d87dc2cff5c7412af9db7953092dc03",
@@ -2176,7 +2196,8 @@
     "src/editor/ui/kit.h": {
       "current_source_sha256": "0971a1fa08b4407bd6f7b275384c1ccc97235a0b00c4c883235554bbd340962c",
       "sha256": "0971a1fa08b4407bd6f7b275384c1ccc97235a0b00c4c883235554bbd340962c",
-      "source_path": "src/editor/ui/kit.h"
+      "source_path": "src/editor/ui/kit.h",
+      "consumer_sha256": "a6ff2c8cb3c95e4f751d0b9fc233b6ca88bc0ce07d3b7e2a3ee242f69a2a8d9f"
     },
     "src/editor/ui/kit_icons.h": {
       "current_source_sha256": "d48b0fd19d34495e5d0f0f9dff1848213fbc440ab3b0aad4afc32645cdcd73a3",
@@ -2202,7 +2223,8 @@
     "src/editor/workspace/application.c": {
       "current_source_sha256": "e316a252094df626c49efa43ded1c5dd6b6fcf363dce59a5d6bb9dd3ebcc85cf",
       "sha256": "5e104920f3b8e7ad9f5182af5e8b5dbed048e2dd98b0b62e3f9ac664bd7be991",
-      "source_path": "src/editor/workspace/application.c"
+      "source_path": "src/editor/workspace/application.c",
+      "consumer_sha256": "5c897bc93e7a12ac091a47a12885e342a5170ba1ab67741db8ec411f1ef28cfd"
     },
     "src/editor/workspace/asset_index.c": {
       "current_source_sha256": "0bc887484cae9e739df73fa16f377342f9a47bfdc273242061d532dd98e55e48",
