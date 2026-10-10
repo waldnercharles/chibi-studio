@@ -1,9 +1,14 @@
 /* Assets' header controls, in its area header's #controls: the kind filter,
-   the name filter, Unity's thumbnail size slider, whose smallest step lists
-   the assets by kind, and New, a Menu of every kind Studio makes, grouped
+   the name filter, the grid or list view, Unity's thumbnail size slider,
+   which the grid alone has, and New, a Menu of every kind Studio makes, grouped
    as Blender's Add and Unity's Create menus group theirs, with the filter's
    kind first. Choosing one asks for its name (NewAsset). */
 body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
 .assets-kind { width: 140dp; display: flex; }
+.assets-view { flex: 0 0 auto; width: 56dp; margin-left: 4dp; }
+.assets-view .seg { padding: 0dp; }
+.assets-view .seg .icon { line-height: var(--h); }
+.assets-view .seg:hover .icon { color: var(--foreground); }
+.assets-view .seg[data-pressed] .icon { color: var(--primary-foreground); }
 .assets-size { width: 96dp; display: flex; margin-left: 4dp; }
 body > .btn { flex: 0 0 auto; }

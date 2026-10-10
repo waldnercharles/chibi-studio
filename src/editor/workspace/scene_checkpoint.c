@@ -989,6 +989,7 @@ int app_scene_authoring_restore_checkpoint(app_scene_authoring *scene, const cha
         goto done;
     }
     scene->camera.saved = yyjson_get_bool(yyjson_obj_get(root, "camera_saved"));
+    scene->camera.framed = 0;
     scene->scene_dirty = yyjson_get_bool(yyjson_obj_get(root, "dirty"));
     scene->selected = yyjson_get_int(yyjson_obj_get(root, "selected"));
     const char *selected_prototype_name = yyjson_get_str(

@@ -5,6 +5,7 @@
 #include "editor/collab/collab.h"
 #include "editor/documents/asset_code.h"
 #include "editor/studio/studio_internal.h"
+#include "editor/workspace/asset_refactor.h"
 #include "editor/workspace/scene_internal.h"
 #include "support/array.h"
 #include "support/file_io.h"
@@ -13,6 +14,7 @@
 
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_process.h>
+#include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
 #include <math.h>
 #include <stdio.h>
@@ -33,7 +35,11 @@ static enum {
     KDL_KEYS,
     EXPORT_GAME,
     GRAPH_VISIBILITY,
-    SCENE_HIERARCHY
+    SCENE_HIERARCHY,
+    ASSET_SELECTION,
+    SCENE_VIEWPORT,
+    PLAY_KEYS,
+    PROMPTS
 } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
@@ -54,6 +60,20 @@ static bool unchanged_source()
     bool same = !strcmp(text, counter_bytes);
     free(text);
     REQUIRE(same);
+    return true;
+}
+
+/* Counter's file holds `text`. */
+static bool counter_says(const char *text)
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/behaviors/Counter.chibi", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    char *saved = file_read_text(path);
+    REQUIRE(saved);
+    bool found = strstr(saved, text) != NULL;
+    free(saved);
+    REQUIRE(found);
     return true;
 }
 
@@ -176,10 +196,11 @@ static bool quit_asks(studio *s)
 {
     REQUIRE(!strncmp(s->window_title, "\xe2\x97\x8f ", 4));
     REQUIRE(strstr(s->window_title, "Counter"));
-    REQUIRE(!studio_quit(s, false) && !s->quit_toast);
-    REQUIRE(!studio_quit(s, true) && s->quit_toast);
-    int toast = s->quit_toast;
-    REQUIRE(!studio_quit(s, true) && s->quit_toast == toast);
+    REQUIRE(!studio_quit(s, false) && !s->unsaved_prompt.toast);
+    REQUIRE(!studio_quit(s, true) && s->unsaved_prompt.toast);
+    REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
+    int toast = s->unsaved_prompt.toast;
+    REQUIRE(!studio_quit(s, true) && s->unsaved_prompt.toast == toast);
     return true;
 }
 
@@ -206,7 +227,7 @@ static bool projects_open(studio *s)
     REQUIRE(length > 0 && (size_t)length < sizeof content);
     studio_open_project_folder(s, content);
     studio_open_project_folder(s, s->project_root);
-    REQUIRE(!s->open_project && !s->discard_toast);
+    REQUIRE(!s->open_project && !s->unsaved_prompt.toast);
     return true;
 }
 
@@ -257,29 +278,42 @@ static bool source_edit_frame(void *state)
 }
 
 /* The Text Editor settles before the keys, which leave frames between them
-   for the completion list to open, then comments a line. */
-#define KEY_FRAMES 21
+   for the completion list to open, then comments a line and steps a frame. */
+#define KEY_FRAMES 23
 #define KDL_FRAMES 14
 #define TEXT(x) #x
 #define FRAMES_TEXT(x) TEXT(x)
 
-/* Queues a key press and release for the window, as the platform would. */
-static bool press_chord(SDL_Keycode key, SDL_Keymod mod)
+/* The window the queued events go to. */
+static SDL_WindowID window_id()
 {
     int count = 0;
     SDL_Window **windows = SDL_GetWindows(&count);
     SDL_WindowID window = count ? SDL_GetWindowID(windows[0]) : 0;
     SDL_free(windows);
+    return window;
+}
+
+/* Queues a key press or release for the window, as the platform would. */
+static bool push_key(SDL_Keycode key, SDL_Keymod mod, bool down)
+{
+    SDL_WindowID window = window_id();
     REQUIRE(window);
-    for (int down = 1; down >= 0; down--) {
-        SDL_Event e = { .key = { .type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP,
-                                 .windowID = window,
-                                 .key = key,
-                                 .scancode = SDL_GetScancodeFromKey(key, NULL),
-                                 .mod = mod,
-                                 .down = down } };
-        REQUIRE(SDL_PushEvent(&e));
-    }
+    SDL_Event e = { .key = { .type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP,
+                             .windowID = window,
+                             .key = key,
+                             .mod = mod,
+                             .scancode = SDL_GetScancodeFromKey(key, NULL),
+                             .down = down } };
+    REQUIRE(SDL_PushEvent(&e));
+    return true;
+}
+
+/* Queues a key press and release for the window, as the platform would. */
+static bool press_chord(SDL_Keycode key, SDL_Keymod mod)
+{
+    REQUIRE(push_key(key, mod, true));
+    REQUIRE(push_key(key, mod, false));
     return true;
 }
 
@@ -386,6 +420,14 @@ static bool code_keys_frame(void *state)
         REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
         REQUIRE(asset_code_replay(code, false, false));
         REQUIRE(!strcmp(asset_code_text(code), commented_bytes));
+        /* F10 from the text steps a frame unless the debugger pauses. */
+        REQUIRE(!studio_session(s) && !s->pause.active);
+        REQUIRE(press_key(SDLK_F10));
+        keys++;
+    } else if (frames == KEY_FRAMES) {
+        REQUIRE(
+            studio_session(s) && !app_scene_authoring_runtime_state(s->scene).playing
+        );
     }
     return true;
 }
@@ -640,6 +682,217 @@ static bool graph_visibility_frame(void *state)
     return true;
 }
 
+/* The first element `selector` finds in Studio's documents, the kit's layer
+   among them, or NULL. */
+static rml_element *studio_element(studio *s, const char *selector)
+{
+    rml_context *context = rml_backend_context(s->backend);
+    for (int i = 0; i < rml_context_document_count(context); i++) {
+        rml_element *found = rml_element_query_selector(rml_context_document(context, i), selector);
+        if (found) {
+            return found;
+        }
+    }
+    return NULL;
+}
+
+static bool element_says(studio *s, const char *selector, const char *text)
+{
+    rml_element *element = studio_element(s, selector);
+    REQUIRE(element);
+    char markup[512];
+    rml_element_inner_rml(element, markup, sizeof markup);
+    if (!strstr(markup, text)) {
+        fprintf(stderr, "Studio shell acceptance: %s reads %s\n", selector, markup);
+    }
+    REQUIRE(strstr(markup, text));
+    return true;
+}
+
+/* The unsaved-changes prompt asks `title`, with Save as its action and
+   Discard as its cancel. */
+static bool prompt_shows(studio *s, const char *title)
+{
+    REQUIRE(element_says(s, ".toast[data-front] .title", title));
+    REQUIRE(element_says(s, ".toast[data-front] .toast-action", "Save"));
+    REQUIRE(element_says(s, ".toast[data-front] .toast-cancel", "Discard"));
+    return true;
+}
+
+/* Clicks the element `selector` finds, as a person would: the pointer moves
+   over it, presses and releases. */
+static bool click(studio *s, const char *selector)
+{
+    rml_element *button = studio_element(s, selector);
+    REQUIRE(button);
+    rml_vec2 at = rml_element_absolute_offset(button, RML_BOX_BORDER);
+    rml_vec2 size = rml_element_box_size(button, RML_BOX_BORDER);
+    REQUIRE(size.x > 0 && size.y > 0);
+    SDL_WindowID id = window_id();
+    REQUIRE(id);
+    /* Layout is in dp; the window's pointer is in points, ui_scale to a dp. */
+    float scale = s->prefs.ui_scale;
+    float x = (at.x + size.x / 2) * scale, y = (at.y + size.y / 2) * scale;
+    SDL_Event move = {
+        .motion = { .type = SDL_EVENT_MOUSE_MOTION, .windowID = id, .x = x, .y = y }
+    };
+    REQUIRE(SDL_PushEvent(&move));
+    for (int down = 1; down >= 0; down--) {
+        SDL_Event e = { .button = { .type = down ? SDL_EVENT_MOUSE_BUTTON_DOWN
+                                                 : SDL_EVENT_MOUSE_BUTTON_UP,
+                                    .windowID = id,
+                                    .button = SDL_BUTTON_LEFT,
+                                    .down = down,
+                                    .clicks = 1,
+                                    .x = x,
+                                    .y = y } };
+        REQUIRE(SDL_PushEvent(&e));
+    }
+    return true;
+}
+
+static int counter_tab(studio *s)
+{
+    for (int i = 0; i < acount(s->scene->tabs); i++) {
+        if (s->scene->tabs[i].kind == APP_EDITOR_DOCUMENT_BEHAVIOR &&
+            strstr(s->scene->tabs[i].key, "Counter")) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Sets Counter's saved count literal, `was`, in its source to `value`,
+   leaving it unsaved. */
+static bool edit_counter(studio *s, int was, const char *value)
+{
+    const node *literal = NULL;
+    REQUIRE(check_counter(s, was, false, &literal));
+    char error[256];
+    bool changed = studio_code_expression_replace(s, literal, value, error, sizeof error);
+    if (!changed) {
+        fprintf(stderr, "Studio prompt acceptance: %s\n", error);
+    }
+    REQUIRE(changed && studio_unsaved(s));
+    return true;
+}
+
+#define PLAY_KEY_FRAMES 6
+
+/* F5 plays, Space pauses, F10 steps while paused, F5 resumes and Shift+F5
+   stops, each a key the platform queues. */
+static bool play_keys_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= PLAY_KEY_FRAMES);
+    app_runtime_state run = app_scene_authoring_runtime_state(s->scene);
+    switch (frames) {
+        case 1:
+            REQUIRE(!studio_session(s));
+            REQUIRE(!strcmp(studio_command_label(STUDIO_COMMAND_REVERT), "Revert File"));
+            REQUIRE(press_key(SDLK_F5));
+            break;
+        case 2:
+            REQUIRE(studio_session(s) && run.playing);
+            REQUIRE(!studio_command_enabled(s, STUDIO_COMMAND_RESUME));
+            REQUIRE(press_key(SDLK_SPACE));
+            break;
+        case 3:
+            REQUIRE(studio_session(s) && !run.playing);
+            REQUIRE(!strcmp(studio_command_describe(s, STUDIO_COMMAND_RESUME).label, "Resume"));
+            REQUIRE(studio_command_enabled(s, STUDIO_COMMAND_STEP));
+            REQUIRE(press_key(SDLK_F10));
+            break;
+        case 4:
+            REQUIRE(studio_session(s) && !run.playing);
+            REQUIRE(press_key(SDLK_F5));
+            break;
+        case 5:
+            REQUIRE(studio_session(s) && run.playing);
+            REQUIRE(press_chord(SDLK_F5, SDL_KMOD_LSHIFT));
+            break;
+        default: REQUIRE(!studio_session(s)); keys = frames;
+    }
+    return true;
+}
+
+#define PROMPT_FRAMES 14
+static bool quit_saved;
+
+/* Closing Counter's clean tab just closes it. Closing it with an edit asks,
+   and its Discard closes the tab without writing; asked again, a Save by
+   hand dismisses the prompt and keeps the tab; quitting with an edit asks,
+   and its Save writes Counter before Studio quits. Both answers are clicks on
+   the toast's buttons, which the prompt answers two frames after the click.
+   Reduced motion, on from the first frame, settles each toast where layout
+   puts it, so the clicks land on its buttons. */
+static bool prompts_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= PROMPT_FRAMES);
+    if (s->unsaved_prompt.quit) {
+        /* Save went through: nothing is unsaved, and Quit goes ahead. */
+        REQUIRE(frames > 11 && !studio_unsaved(s));
+        quit_saved = true;
+        return true;
+    }
+    switch (frames) {
+        case 1:
+            s->prefs.reduced_motion = true;
+            /* A clean tab closes without asking. */
+            studio_close_tab(s, counter_tab(s));
+            REQUIRE(counter_tab(s) < 0 && !s->unsaved_prompt.toast);
+            REQUIRE(app_scene_authoring_open_behavior(s->scene, "Counter") == 0);
+            break;
+        case 2:
+            REQUIRE(!studio_command_enabled(s, STUDIO_COMMAND_SAVE_ALL));
+            REQUIRE(edit_counter(s, 1, "3"));
+            REQUIRE(studio_command_enabled(s, STUDIO_COMMAND_SAVE_ALL));
+            studio_close_tab(s, counter_tab(s));
+            REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_CLOSE_TAB);
+            break;
+        case 3:
+            REQUIRE(prompt_shows(s, "Save Counter before closing?"));
+            REQUIRE(click(s, ".toast[data-front] .toast-cancel"));
+            break;
+        case 6:
+            REQUIRE(counter_tab(s) < 0 && !studio_unsaved(s));
+            REQUIRE(unchanged_source());
+            REQUIRE(app_scene_authoring_open_behavior(s->scene, "Counter") == 0);
+            break;
+        case 7:
+            REQUIRE(edit_counter(s, 1, "5"));
+            studio_close_tab(s, counter_tab(s));
+            REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_CLOSE_TAB);
+            break;
+        case 8:
+            /* Saving by hand while the prompt asks leaves nothing to ask. */
+            REQUIRE(prompt_shows(s, "Save Counter before closing?"));
+            REQUIRE(s->scene->active_tab == counter_tab(s));
+            studio_command_run(s, STUDIO_COMMAND_SAVE);
+            REQUIRE(!studio_unsaved(s));
+            break;
+        case 9:
+            REQUIRE(!s->unsaved_prompt.toast);
+            REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_NONE);
+            REQUIRE(counter_tab(s) >= 0 && counter_says("count: int = 5"));
+            REQUIRE(edit_counter(s, 5, "4"));
+            REQUIRE(!studio_quit(s, true));
+            REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
+            break;
+        case 10:
+            REQUIRE(prompt_shows(s, "Save Counter before quitting?"));
+            REQUIRE(click(s, ".toast[data-front] .toast-action"));
+            break;
+        default: REQUIRE(frames < 13);
+    }
+    return true;
+}
+
 #define EXPORTED "Exported game: "
 
 /* Frame 1 runs Export Game; frame 2 waits for the exporter to exit; frame 3's
@@ -793,6 +1046,352 @@ static bool scene_hierarchy_frame(void *state)
     return true;
 }
 
+/* Three unused prototypes, the only ones; Assets deletes declarative assets
+   (executable sources go through their own refactors). */
+static const char *const spares[] = { "SpareA", "SpareB", "SpareC" };
+
+static bool spare_path(const char *name, char *path, size_t size)
+{
+    int length = snprintf(path, size, "%s/content/prototypes/%s.kdl", project, name);
+    REQUIRE(length > 0 && (size_t)length < size);
+    return true;
+}
+
+static bool write_spares()
+{
+    char folder[1024];
+    int length = snprintf(folder, sizeof folder, "%s/content/prototypes", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof folder);
+    REQUIRE(mkdir(folder, 0777) == 0);
+    for (int i = 0; i < 3; i++) {
+        char path[1024], text[128];
+        REQUIRE(spare_path(spares[i], path, sizeof path));
+        snprintf(
+            text,
+            sizeof text,
+            "name \"%s\"\ncomponents {\n    (object)GAME.GameTransform\n}\n",
+            spares[i]
+        );
+        FILE *file = fopen(path, "wb");
+        REQUIRE(file);
+        bool written = fputs(text, file) >= 0;
+        REQUIRE(fclose(file) == 0 && written);
+    }
+    return true;
+}
+
+static bool spare_exists(const char *name)
+{
+    char path[1024];
+    struct stat info;
+    return spare_path(name, path, sizeof path) && stat(path, &info) == 0;
+}
+
+/* A click on the prototype's row, with modifier keys. */
+static bool click_asset(studio *s, const char *name, unsigned modifiers)
+{
+    int id = reference_index_find_name(app_scene_authoring_asset_index(s->scene), REFERENCE_ASSET_PROTOTYPE, name);
+    REQUIRE(id >= 0);
+    ui_activation a = { .argc = 1, .modifiers = modifiers };
+    snprintf(a.args[0], sizeof a.args[0], "%d", id);
+    studio_assets_action(s, "click", &a);
+    return true;
+}
+
+/* The primary selection, and the assets marked with it in order. */
+static bool selection_is(studio *s, const char *selected, const char *marked)
+{
+    char names[256] = "";
+    for (int i = 0; i < acount(s->assets_marked); i++) {
+        size_t used = strlen(names);
+        snprintf(
+            names + used,
+            sizeof names - used,
+            "%s%s",
+            i ? " " : "",
+            s->assets_marked[i].name
+        );
+    }
+    bool same = !strcmp(s->assets_selected, selected) && !strcmp(names, marked);
+    if (!same) {
+        fprintf(stderr, "Studio assets selected %s with \"%s\"\n", s->assets_selected, names);
+    }
+    return same;
+}
+
+/* Clicks and the keys select several assets, which Delete removes as one
+   change that one Undo restores. */
+static bool select_and_delete(studio *s)
+{
+    unsigned toggle = s->mac ? RML_KM_META : RML_KM_CTRL;
+    REQUIRE(click_asset(s, "SpareA", 0) && selection_is(s, "SpareA", ""));
+    REQUIRE(click_asset(s, "SpareC", RML_KM_SHIFT) && selection_is(s, "SpareC", "SpareA SpareB"));
+    REQUIRE(click_asset(s, "SpareB", toggle) && selection_is(s, "SpareC", "SpareA"));
+    /* Shift and the arrows extend from where the plain click started. */
+    REQUIRE(studio_assets_key(s, SDLK_UP, SDL_KMOD_SHIFT));
+    REQUIRE(selection_is(s, "SpareB", "SpareA"));
+    REQUIRE(studio_assets_key(s, SDLK_UP, SDL_KMOD_SHIFT));
+    REQUIRE(selection_is(s, "SpareA", ""));
+    REQUIRE(studio_assets_key(s, SDLK_UP, SDL_KMOD_SHIFT));
+    REQUIRE(selection_is(s, "SpareA", ""));
+    REQUIRE(studio_assets_key(s, SDLK_DOWN, SDL_KMOD_SHIFT));
+    REQUIRE(studio_assets_key(s, SDLK_DOWN, SDL_KMOD_SHIFT));
+    REQUIRE(selection_is(s, "SpareC", "SpareA SpareB"));
+    REQUIRE(click_asset(s, "SpareB", toggle) && selection_is(s, "SpareC", "SpareA"));
+    REQUIRE(studio_assets_key(s, SDLK_DELETE, 0));
+    REQUIRE(!spare_exists("SpareA") && spare_exists("SpareB") && !spare_exists("SpareC"));
+    REQUIRE(unchanged_source());
+    /* The toast's Undo, which restores both files. */
+    app_refactor *undo = s->refactor.undo, *redo = NULL;
+    REQUIRE(undo && s->refactor.undo_toast);
+    s->refactor.undo = NULL;
+    kit_toast_dismiss(s->kit, s->refactor.undo_toast);
+    s->refactor.undo_toast = 0;
+    char error[256] = "";
+    REQUIRE(app_scene_authoring_apply_refactor(s->scene, undo, &redo, error, sizeof error) == 0);
+    app_refactor_free(undo);
+    app_refactor_free(redo);
+    REQUIRE(spare_exists("SpareA") && spare_exists("SpareB") && spare_exists("SpareC"));
+    edits++;
+    return true;
+}
+
+/* A box, and inside it a spot with nothing to draw, which a marker shows. */
+static const char marked_scene
+    [] = "version 1\nname \"Scene\"\n(array)entities {\n"
+         "    - name=\"Box\" prototype=\"Box\"\n"
+         "    - name=\"Spot\" prototype=\"Spot\" { components { GameTransform "
+         "x=5.0 y=5.0; }; }\n"
+         "}\n";
+#define VIEWPORT_FRAMES 9
+
+/* Queues a mouse event at the Scene surface's point (x, y), in points. */
+static bool push_mouse(Uint32 type, float x, float y, float wheel_x, float wheel_y)
+{
+    SDL_WindowID window = window_id();
+    REQUIRE(window);
+    SDL_Event e = { .type = type };
+    if (type == SDL_EVENT_MOUSE_MOTION) {
+        e.motion = (SDL_MouseMotionEvent){ .type = type, .windowID = window, .x = x, .y = y };
+    } else if (type == SDL_EVENT_MOUSE_WHEEL) {
+        e.wheel = (SDL_MouseWheelEvent){ .type = type,
+                                         .windowID = window,
+                                         .x = wheel_x,
+                                         .y = wheel_y,
+                                         .mouse_x = x,
+                                         .mouse_y = y };
+    } else {
+        e.button = (SDL_MouseButtonEvent){ .type = type,
+                                           .windowID = window,
+                                           .button = SDL_BUTTON_LEFT,
+                                           .down = type == SDL_EVENT_MOUSE_BUTTON_DOWN,
+                                           .clicks = 1,
+                                           .x = x,
+                                           .y = y };
+    }
+    REQUIRE(SDL_PushEvent(&e));
+    return true;
+}
+
+/* The gizmo part a pointer at canvas point (x, y) rests on, at a tenth of a
+   unit per pixel. */
+static int part_under(app_scene_authoring *scene, float x, float y)
+{
+    engine_viewport_pointer pointer = { .world_x = x, .world_y = y, .world_per_pixel = 0.1f };
+    scene_gizmo_pointer(scene, scene->render_viewport, &pointer);
+    return scene->gizmo.hover;
+}
+
+/* A marker picks above the box it sits in and is listed for the host; a
+   handle and the ring take a press a few pixels past them, and a resize
+   shows its size by the pointer. */
+static bool marker_and_gizmo(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(acount(scene->actors) == 2);
+    ecs_entity box = scene->actors[0].entity, spot = scene->actors[1].entity;
+    app_scene_marker markers[4];
+    REQUIRE(app_scene_authoring_markers(scene, markers, 4) == 1 && markers[0].actor == 1);
+    REQUIRE(
+        ecs_entity_to_u64(pick_scene_entity(scene, 5, -5, (render_skip){ 0 })) ==
+        ecs_entity_to_u64(spot)
+    );
+    REQUIRE(
+        ecs_entity_to_u64(pick_scene_entity(scene, -15, 15, (render_skip){ 0 })) ==
+        ecs_entity_to_u64(box)
+    );
+    REQUIRE(app_scene_authoring_select_entity(scene, box) == 0);
+    /* The right edge's handle sits at (20, 0); the ring 64 pixels out. */
+    scene->gizmo.in.tool = SCENE_TOOL_SCALE;
+    REQUIRE(part_under(scene, 20 + 1.1f, 0) >= SCENE_GIZMO_HANDLE);
+    REQUIRE(part_under(scene, 20 + 1.4f, 0) == SCENE_GIZMO_NONE);
+    scene->gizmo.in.tool = SCENE_TOOL_ROTATE;
+    REQUIRE(part_under(scene, 6.4f + 0.9f, 0) == SCENE_GIZMO_RING);
+    REQUIRE(part_under(scene, 6.4f - 0.9f, 0) == SCENE_GIZMO_RING);
+    REQUIRE(part_under(scene, 6.4f + 1.2f, 0) == SCENE_GIZMO_NONE);
+    scene->gizmo.in.tool = SCENE_TOOL_SCALE;
+    scene->gizmo.in.snap = false;
+    engine_viewport_pointer pointer = { .world_x = 20,
+                                        .world_per_pixel = 0.1f,
+                                        .pressed = true,
+                                        .down = true };
+    REQUIRE(scene_gizmo_pointer(scene, scene->render_viewport, &pointer));
+    pointer = (engine_viewport_pointer){ .world_x = 30,
+                                         .world_per_pixel = 0.1f,
+                                         .down = true,
+                                         .dragging = true };
+    REQUIRE(scene_gizmo_pointer(scene, scene->render_viewport, &pointer));
+    REQUIRE(scene->gizmo.active && !strcmp(scene->gizmo.delta, "50 \xc3\x97 40"));
+    REQUIRE(!strcmp(scene->gizmo.status, "Size 50 \xc3\x97 40"));
+    scene->gizmo.in.cancel = true;
+    REQUIRE(scene_gizmo_pointer(scene, scene->render_viewport, &pointer));
+    REQUIRE(
+        !scene->gizmo.active &&
+        GAME_GameAppearance_get_const(scene->world, box)->width == 40
+    );
+    return true;
+}
+
+/* While the game plays, the wheel, a trackpad's included, scrolls its UI,
+   and an undrawn object, which shows no marker, picks nothing. */
+static bool played_scene(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(studio_session(s) && scene->runtime_playing);
+    engine_viewport_host_input input = { .wheel = 0.5f, .width = s->surface.rect.w };
+    studio_scene_view(s, &input);
+    REQUIRE(input.wheel == 0.5f);
+    REQUIRE(
+        ecs_entity_to_u64(pick_scene_entity(scene, 5, -5, (render_skip){ 0 })) ==
+        ecs_entity_to_u64(scene->actors[0].entity)
+    );
+    edits++;
+    return true;
+}
+
+/* The grid's arrows move among the tiles it shows: a filter the list took
+   while the grid was hidden leaves none of its old lines behind. */
+static bool grid_after_list_filter(studio *s)
+{
+    REQUIRE(click_asset(s, "SpareC", 0) && selection_is(s, "SpareC", ""));
+    ui_activation grid = { .argc = 1 };
+    snprintf(grid.args[0], sizeof grid.args[0], "0");
+    studio_assets_action(s, "view", &grid);
+    REQUIRE(studio_assets_key(s, SDLK_RIGHT, 0) && selection_is(s, "SpareC", ""));
+    s->assets_filter[0] = '\0';
+    return true;
+}
+
+static bool asset_selection_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= 5);
+    switch (frames) {
+        case 1:
+            studio_show_editor(s, STUDIO_EDITOR_ASSETS);
+            s->prefs.assets_list = true;
+            s->assets_kind = REFERENCE_ASSET_PROTOTYPE;
+            return true;
+        case 2:
+            REQUIRE(select_and_delete(s));
+            s->prefs.assets_list = false;
+            return true;
+        case 3:
+            s->prefs.assets_list = true;
+            snprintf(s->assets_filter, sizeof s->assets_filter, "SpareC");
+            return true;
+        case 4: return grid_after_list_filter(s);
+        default:
+            /* The grid lays every tile out again. */
+            REQUIRE(studio_assets_key(s, SDLK_LEFT, 0) && selection_is(s, "SpareB", ""));
+            return true;
+    }
+}
+
+/* The Scene's one zoom reads 100% when framed; a mouse wheel zooms it, a
+   trackpad's scroll pans it, Space with a drag pans and Space alone plays
+   once it lifts. Events queue after a frame for the next one. */
+static bool scene_viewport_frame(void *state)
+{
+    static engine_viewport_view before;
+    static float x, y;
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= VIEWPORT_FRAMES);
+    app_scene_authoring *scene = s->scene;
+    engine_viewport_view view = { 0 };
+    if (s->viewport) {
+        engine_viewport_get_view(s->viewport, &view);
+    }
+    switch (frames) {
+        case 1:
+            REQUIRE(
+                app_scene_authoring_register_prototype(
+                    scene,
+                    "name \"Box\"\ncomponents {\n    GameTransform x=0 y=0\n   "
+                    " "
+                    "GameOrientation radians=0\n    GameAppearance "
+                    "shape=\"Box\" "
+                    "width=40.0 height=40.0\n}\n",
+                    NULL
+                ) == 0
+            );
+            REQUIRE(
+                app_scene_authoring_register_prototype(scene, "name \"Spot\"\ncomponents {\n    GameTransform x=0 y=0\n}\n", NULL) ==
+                0
+            );
+            REQUIRE(scene_authoring_load_text(scene, marked_scene, NULL) == 0);
+            /* Framing before the Scene's first draw leaves its measure to
+               that draw. */
+            REQUIRE(!scene->render_viewport);
+            studio_frame_all(s);
+            return true;
+        case 2:
+            REQUIRE(s->viewport && s->surface.rect.w > 0);
+            REQUIRE(marker_and_gizmo(s));
+            studio_frame_all(s);
+            REQUIRE(fabsf(app_scene_authoring_zoom(scene) - 1) < 1e-4f);
+            engine_viewport_get_view(s->viewport, &before);
+            x = (s->surface.rect.x + s->surface.rect.w * 0.5f) * s->prefs.ui_scale;
+            y = (s->surface.rect.y + s->surface.rect.h * 0.5f) * s->prefs.ui_scale;
+            REQUIRE(push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0));
+            return push_mouse(SDL_EVENT_MOUSE_WHEEL, x, y, 0, 1);
+        case 3:
+            REQUIRE(s->surface.hovered);
+            REQUIRE(view.width < before.width && app_scene_authoring_zoom(scene) > 1);
+            before = view;
+            /* A fraction of a notch reads as a trackpad's scroll. */
+            return push_mouse(SDL_EVENT_MOUSE_WHEEL, x, y, 0, 0.5f);
+        case 4:
+            REQUIRE(view.width == before.width && view.center_x == before.center_x);
+            REQUIRE(view.center_y > before.center_y);
+            before = view;
+            REQUIRE(push_key(SDLK_SPACE, SDL_KMOD_NONE, true));
+            return push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, 0, 0);
+        case 5: return push_mouse(SDL_EVENT_MOUSE_MOTION, x + 40, y + 30, 0, 0);
+        case 6:
+            REQUIRE(push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x + 40, y + 30, 0, 0));
+            /* Space lifts while Settings records a chord too. */
+            s->shortcut_recording = STUDIO_COMMAND_FRAME + 1;
+            return push_key(SDLK_SPACE, SDL_KMOD_NONE, false);
+        case 7:
+            REQUIRE(!s->space_down && !s->scene_nav.space_play);
+            s->shortcut_recording = 0;
+            REQUIRE(!studio_session(s) && !scene->marquee);
+            REQUIRE(view.width == before.width && view.center_x < before.center_x);
+            REQUIRE(view.center_y > before.center_y);
+            return push_key(SDLK_SPACE, SDL_KMOD_NONE, true);
+        case 8:
+            /* Space waits for its release, which a drag may still follow. */
+            REQUIRE(s->space_down && !studio_session(s));
+            return push_key(SDLK_SPACE, SDL_KMOD_NONE, false);
+        default: return played_scene(s);
+    }
+}
+
 bool studio_acceptance_frame(void *state)
 {
     switch (mode) {
@@ -804,6 +1403,10 @@ bool studio_acceptance_frame(void *state)
             callback_ok = graph_visibility_frame(state);
             break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
+        case ASSET_SELECTION: callback_ok = asset_selection_frame(state); break;
+        case SCENE_VIEWPORT: callback_ok = scene_viewport_frame(state); break;
+        case PLAY_KEYS: callback_ok = play_keys_frame(state); break;
+        case PROMPTS: callback_ok = prompts_frame(state); break;
     }
     return callback_ok;
 }
@@ -834,7 +1437,7 @@ TEST_CASE(code_enter_types_newlines)
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
     REQUIRE(callback_ok);
     REQUIRE(unchanged_source());
-    REQUIRE(frames == KEY_FRAMES && keys == 4);
+    REQUIRE(frames == KEY_FRAMES && keys == 5);
     printf("Studio code keys accepted: frames=%d keys=%d\n", frames, keys);
     return true;
 }
@@ -924,6 +1527,72 @@ TEST_CASE(scene_hierarchy)
     return true;
 }
 
+TEST_CASE(asset_selection)
+{
+    REQUIRE(write_spares());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         "5",
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == 5 && edits == 1);
+    printf("Studio asset selection accepted\n");
+    return true;
+}
+
+TEST_CASE(scene_viewport)
+{
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(VIEWPORT_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == VIEWPORT_FRAMES && edits == 1);
+    printf("Studio scene viewport accepted\n");
+    return true;
+}
+
+/* Restores Counter's bytes over what the shell test saved. */
+static bool restore_counter()
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/behaviors/Counter.chibi", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    FILE *file = fopen(path, "wb");
+    REQUIRE(file);
+    bool written = fputs(counter_bytes, file) >= 0;
+    REQUIRE(fclose(file) == 0 && written);
+    return true;
+}
+
+TEST_CASE(play_keys)
+{
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(PLAY_KEY_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && keys == PLAY_KEY_FRAMES);
+    printf("\nStudio play keys accepted\n");
+    return true;
+}
+
+TEST_CASE(unsaved_prompts)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(PROMPT_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && quit_saved);
+    bool saved = counter_says("count: int = 4");
+    REQUIRE(restore_counter() && saved);
+    printf("\nStudio unsaved prompts accepted: frames=%d\n", frames);
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
@@ -937,14 +1606,20 @@ int main(int argc, char **argv)
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
-    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility && !hierarchy) ||
+    bool assets = argc == 4 && !strcmp(argv[1], "--asset-selection");
+    bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
+    bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
+    bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
+    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
+         !hierarchy && !assets && !viewport && !playing && !prompting) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
-            "--source-edit|--code-keys|--kdl-keys|--export-game|--graph-"
-            "visibility|"
-            "--scene-hierarchy --project-root PATH | --scene-cursors\n"
+            "--source-edit|--code-keys|--kdl-keys|--export-game|"
+            "--graph-visibility|--scene-hierarchy|--asset-selection|"
+            "--scene-viewport|--play-keys|--unsaved-prompts --project-root "
+            "PATH | --scene-cursors\n"
         );
         return 2;
     }
@@ -965,7 +1640,11 @@ int main(int argc, char **argv)
          : kdl_keys    ? KDL_KEYS
          : exporting   ? EXPORT_GAME
          : visibility  ? GRAPH_VISIBILITY
-                       : SCENE_HIERARCHY;
+         : hierarchy   ? SCENE_HIERARCHY
+         : assets      ? ASSET_SELECTION
+         : viewport    ? SCENE_VIEWPORT
+         : playing     ? PLAY_KEYS
+                       : PROMPTS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -975,6 +1654,10 @@ int main(int argc, char **argv)
             RUN_TEST_CASE(graph_visibility_and_document_pair);
             break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
+        case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;
+        case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
+        case PLAY_KEYS: RUN_TEST_CASE(play_keys); break;
+        case PROMPTS: RUN_TEST_CASE(unsaved_prompts); break;
     }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;

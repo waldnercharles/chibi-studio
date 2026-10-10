@@ -44,6 +44,21 @@ turn, it checks that picking finds the turret at its world position and nothing
 at its unturned one, and that a duplicate offset in world space keeps the right
 local offset. It saves no file.
 
+`studio-acceptance --scene-viewport --project-root PATH` takes another
+disposable copy and runs nine hidden fixed-dt frames. It loads a box with a
+spot inside it that nothing draws, and checks that the spot is listed for a
+marker and picks above the box, that a resize handle and the rotate ring take
+a press a few pixels past them, and that a resize labels its size by the
+pointer and cancels back. After Frame All the zoom reads 100%. Through queued
+SDL events it checks that a whole wheel notch zooms the camera, that a
+fraction of one, as a trackpad scrolls, pans it, that Space with a left drag
+pans without playing, that Space released while Settings records a chord
+neither stays held nor plays, and that Space alone plays once it is released.
+Framing before the Scene's first draw leaves the zoom's measure to that draw.
+While the game plays, the wheel, a trackpad's fraction included, reaches its
+UI, and the undrawn spot, which shows no marker then, picks nothing. It saves
+no file.
+
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
 
@@ -60,6 +75,16 @@ framing, foreground layer priority, hidden-state filtering and selecting empty
 cells as part of one layer. They are removed before rendering. No source save or
 playback occurs.
 
+`studio-acceptance --asset-selection --project-root PATH` takes another
+disposable copy and adds three unused prototypes to it before Studio opens. Its
+hidden frames show the Assets list's prototypes, then click, Shift-click and
+Ctrl-click (Cmd on a Mac) rows and extend the selection with Shift and the
+arrows, checking the selection after each. Delete then removes the two selected
+prototypes' files as one change, and that change's undo puts both back. Counter
+stays untouched. A filter the list takes then leaves the grid's arrows on the
+tiles it shows. Pointer hit-testing and the Undo toast's button are not
+exercised.
+
 `studio-acceptance --export-game --project-root PATH` accepts another disposable
 copy. Its first hidden frame runs the Export Game command, which needs the SDK's
 `chibi`, `chibi-compile` and `chibi-player` that the build copies beside it. The
@@ -67,6 +92,22 @@ second frame waits for the exporter to exit, and the third frame's own poll
 reports it. It checks that the command is disabled while the export runs, that
 Studio reports the export, and that the reported folder holds the compiled game.
 Showing the folder is not exercised.
+
+`studio-acceptance --play-keys --project-root PATH` takes another disposable
+copy and runs six hidden frames, each queuing one key through SDL: F5 plays, Space
+pauses, F10 steps while paused, F5 resumes and Shift+F5 stops. It also checks the
+File menu's Revert File label. It saves nothing.
+
+`studio-acceptance --unsaved-prompts --project-root PATH` takes another disposable
+copy and runs at most fourteen hidden frames with reduced motion on, so toasts sit
+where layout puts them. Counter's clean tab closes without asking. With Counter
+edited, closing its tab asks "Save Counter before closing?" with Save and
+Discard, and a click on Discard closes the tab without writing. Edited and asked
+again, a Save by hand writes Counter, dismisses the prompt and keeps the tab
+open. With Counter edited again, Quit asks "Save Counter before quitting?", and
+a click on Save writes Counter before Studio quits. The clicks are pointer motion, press and
+release queued through SDL over the toast's buttons. The initial Counter bytes are
+restored afterwards.
 
 Execution requires explicit root coordination and independent admission under the
 60-second GPU policy. Merely building this target does not run it. A whole UI

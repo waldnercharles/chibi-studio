@@ -99,6 +99,8 @@ bool properties_mixed(
 int *properties_others(studio *s, ecs_component_id component);
 /* A 2-4 axis float vector's type, or NULL. */
 const type_desc *properties_vector(const pin_value *value);
+/* Whether a float field holds an angle in radians, which shows in degrees. */
+bool properties_angle(const type_field *field);
 /* The kind of asset a text field names, or REFERENCE_ASSET_KIND_COUNT. */
 reference_asset_kind properties_named(
     const ecs_component_desc *desc,

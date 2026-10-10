@@ -135,7 +135,7 @@ static asset_code *asset_editor(studio *s, scene_document_tab *tab)
             asset_code
                 *restored = asset_code_restore(tab->source_state, &s->scene->registry);
             if (!restored) {
-                studio_report(s, "Could not restore code source draft");
+                studio_warn(s, "Could not restore code source draft");
                 return NULL;
             }
             asset_code_free(code);
@@ -149,7 +149,7 @@ static asset_code *asset_editor(studio *s, scene_document_tab *tab)
                          ? asset_code_restore(tab->source_state, &s->scene->registry)
                          : asset_code_open(tab->path, error, sizeof error);
     if (!code) {
-        studio_report(s, tab->source_state ? "Could not restore code source draft" : error);
+        studio_warn(s, tab->source_state ? "Could not restore code source draft" : error);
         return NULL;
     }
     asset_code_set_registry(code, &s->scene->registry);
@@ -268,8 +268,7 @@ static void save_asset(studio *s, asset_code *code)
     }
     char title[160];
     snprintf(title, sizeof title, "Saved %s", content_basename(asset_code_path(code)));
-    kit_toast(s->kit, 0, &(kit_toast_desc){ .type = KIT_TOAST_SUCCESS, .title = title });
-    studio_record(s, KIT_TOAST_SUCCESS, title);
+    studio_saved(s, title, NULL);
 }
 
 static scene_document_tab *active_ui(studio *s)
@@ -369,8 +368,7 @@ static void save(studio *s, scene_document_tab *tab)
     }
     char title[160];
     snprintf(title, sizeof title, "Saved %s", tab->label);
-    kit_toast(s->kit, 0, &(kit_toast_desc){ .type = KIT_TOAST_SUCCESS, .title = title });
-    studio_record(s, KIT_TOAST_SUCCESS, title);
+    studio_saved(s, title, NULL);
 }
 
 /* A file another program changed since it loaded is saved over only when
@@ -404,9 +402,28 @@ void studio_code_save(studio *s)
     );
 }
 
+/* A behavior shown from its source keeps no snapshot of its saved graph:
+   its file is the saved state, so discarding its edits reloads the file.
+   False, with an error toast, when that failed. */
+static bool reload_source_behavior(studio *s, const scene_document_tab *tab)
+{
+    if (tab->kind != APP_EDITOR_DOCUMENT_BEHAVIOR || tab->asset_saved ||
+        !tab->path || !scene_tabs_dirty(s->scene, tab)) {
+        return true;
+    }
+    char *path = xstrdup(tab->path);
+    app_disk_result result = studio_code_reload_path(s, path);
+    free(path);
+    if (result == APP_DISK_RELOADED) {
+        return true;
+    }
+    studio_error(s, "Could not discard changes", app_scene_authoring_message(s->scene));
+    return false;
+}
+
 /* A UI document's tab closes with its text; another discards what its
    document has unsaved, as reverting it would. */
-static void close_tab(studio *s, int index)
+void studio_discard_tab(studio *s, int index)
 {
     if (!scene_tabs_can_close(s->scene, index)) {
         return;
@@ -416,6 +433,10 @@ static void close_tab(studio *s, int index)
         scene_tabs_close(s->scene, APP_EDITOR_DOCUMENT_UI, tab->path);
         return;
     }
+    if (!reload_source_behavior(s, tab)) {
+        return;
+    }
+    tab = &s->scene->tabs[index];
     for (int i = acount(s->code.assets) - 1; i >= 0; i--) {
         if (tab->path && !strcmp(asset_code_path(s->code.assets[i]), tab->path)) {
             /* Remove the live overlay before the tab reloads its disk state. */
@@ -423,30 +444,9 @@ static void close_tab(studio *s, int index)
             adel(s->code.assets, i);
         }
     }
-    scene_tabs_discard(s->scene, index);
-}
-
-void studio_close_tab(studio *s, int index)
-{
-    if (!scene_tabs_can_close(s->scene, index)) {
-        return;
+    if (scene_tabs_discard(s->scene, index) != 0) {
+        studio_error(s, "Could not close the tab", app_scene_authoring_message(s->scene));
     }
-    scene_document_tab *tab = &s->scene->tabs[index];
-    if (!scene_tabs_dirty(s->scene, tab)) {
-        close_tab(s, index);
-        return;
-    }
-    char title[160];
-    snprintf(title, sizeof title, "Close %s without saving?", tab->label);
-    kit_toast_desc ask = {
-        .type = KIT_TOAST_WARNING,
-        .title = title,
-        .action = "Close",
-        .duration = 6,
-    };
-    kit_toast_dismiss(s->kit, s->code.close_toast);
-    snprintf(s->code.close, sizeof s->code.close, "%s", tab->key);
-    s->code.close_toast = kit_toast(s->kit, 0, &ask);
 }
 
 static void toast_actions(studio *s)
@@ -457,15 +457,6 @@ static void toast_actions(studio *s)
         scene_document_tab *tab = ui_tab(s, s->code.overwrite);
         if (tab) {
             save(s, tab);
-        }
-    }
-    if (s->code.close_toast && kit_toast_action(k, s->code.close_toast)) {
-        s->code.close_toast = 0;
-        for (int i = 0; i < acount(s->scene->tabs); i++) {
-            if (!strcmp(s->scene->tabs[i].key, s->code.close)) {
-                close_tab(s, i);
-                break;
-            }
         }
     }
 }
@@ -1993,7 +1984,7 @@ static int chord_command(const studio *s, const char *chord)
     if (!studio_chord_parse(chord, s->mac, &key)) {
         return -1;
     }
-    return studio_command_for_key(&s->prefs, key.key, key.mod, STUDIO_EDITOR_CODE, s->mac);
+    return studio_key_command(s, key, STUDIO_EDITOR_CODE);
 }
 
 /* F3 and Shift+F3 step through the last query's matches from the text,

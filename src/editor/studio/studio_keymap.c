@@ -18,6 +18,14 @@ static const fixed_key FIXED[] = {
     /* studio_scene.c and workspace/scene_viewport.c: multi-selection */
     { "Scene", "Add an object to the selection, or take it out", "Shift+Click Mod+Click" },
     { "Scene", "Add a marquee's objects to the selection", "Shift+Drag Mod+Drag" },
+    /* studio_scene.c and workspace/scene_gizmo.c: the view and the tools */
+    { "Scene", "Pan while held, with a drag", "Space" },
+    { "Scene", "Zoom around the pointer", "Mod+Scroll" },
+    { "Scene", "Grab: constrain to X or Y, again to free it", "X Y" },
+    { "Scene", "Grab: place, or cancel", "Return Escape" },
+    { "Scene", "Invert snapping while dragging", "Ctrl" },
+    { "Scene", "Scale: keep the aspect ratio", "Shift" },
+    { "Scene", "Scale: from the center", "Alt" },
     { "Outliner", "Add a row to the selection, or take it out", "Mod+Click" },
     { "Outliner", "Select the rows from the last clicked one", "Shift+Click" },
     /* studio_graph_input.c, studio_graph_find.c, studio_graph_nav.c */

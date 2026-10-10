@@ -50,7 +50,7 @@
           <span class="badge override" data-if="panel.badge != ''">{{ panel.badge }}</span>
           <span class="spacer"></span>
         </div>
-        <span class="icon menu" data-if="panel.menu" data-tip="More" data-event-click="emit('properties.panelMenu', panel.key)">&#xea7c;</span>
+        <button class="btn sm icon-only menu" data-if="panel.menu" aria-haspopup="menu" data-tip="More" data-event-click="emit('properties.panelMenu', panel.key)"><span class="icon">&#xea7c;</span></button>
       </div>
       <div class="panel-body" data-if="panel.open">
         <use ui="PropertyRow" data-for="row : panel.rows" data-if="row.shown" data-alias-property="row" data-event-contextmenu="emit('properties.menu', row.id)">
@@ -65,6 +65,7 @@
             </div>
           </div>
           <div class="kind" data-when="row.control == 'asset'"><use ui="AssetField" data-alias-table="row.table" data-alias-value="row.text" data-attr-data-row="row.id" data-attr-data-drop="row.drop" data-drop-hint="Assign" data-attr-data-tip="row.problem" data-attrif-data-drop-preview="row.preview" data-attrif-data-readonly="row.readonly" data-attrif-data-invalid="row.invalid" data-event-click="emit('palette.pick', row.kind, row.text, row.table.none, 'typed')" data-event-change="emit('properties.change', row.id, ev.value)" data-event-drop="emit('properties.drop', row.id, ev.payload)"/></div>
+          <div class="kind" data-when="row.control == 'entity'"><button class="field select entity-field" data-attr-id="row.id" data-attr-aria-label="row.label" data-attrif-data-placeholder="row.text == ''" data-attrif-data-readonly="row.hint == ''" data-attrif-data-invalid="row.invalid" data-attr-data-tip="row.hint != '' ? row.hint : row.problem" data-attr-data-tip-about="row.hint != '' ? row.problem : ''" data-event-click="emit('properties.reveal', row.id)"><span class="icon lead">{{ row.table.icon }}</span><span class="part value">{{ row.text == '' ? row.table.none : row.text }}</span><span class="icon caret" data-if="row.hint != ''">&#xebf8;</span></button></div>
           <span class="muted" data-when="row.control == 'label'">{{ row.text }}</span>
         </use>
       </div>

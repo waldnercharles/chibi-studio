@@ -63,6 +63,8 @@ include(cmake/zep_dependencies.cmake)
 include(cmake/studio_sources.cmake)
 add_library(studio STATIC ${STUDIO_SOURCES})
 target_include_directories(studio PRIVATE src include)
+# Help ▸ About names the engine release Studio was built against.
+target_compile_definitions(studio PRIVATE CHIBI_STUDIO_ENGINE_VERSION="${Chibi_VERSION}")
 option(CHIBI_STUDIO_TRACY "Profile Studio zones with an installed Tracy client" OFF)
 option(CHIBI_STUDIO_WEB_TRACE "Profile Studio zones with browser User Timing" OFF)
 if(CHIBI_STUDIO_TRACY AND CHIBI_STUDIO_WEB_TRACE)

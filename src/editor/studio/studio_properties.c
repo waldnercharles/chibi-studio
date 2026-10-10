@@ -624,6 +624,13 @@ static void move(studio *s, scene_actor *actor, int axis, double v, bool active,
 
 /* ---------- Values from the panel ---------- */
 
+bool properties_angle(const type_field *field)
+{
+    const char *unit = field->unit;
+    return !strcmp(field->name, "radians") ||
+           (unit && !strncmp(unit, "rad", 3) && (!unit[3] || unit[3] == '/'));
+}
+
 static bool parse_integer64(const char *text, pin_value *value)
 {
     while (isspace((unsigned char)*text)) {
@@ -704,7 +711,7 @@ static bool parse_field(
         case PIN_F32:
         case PIN_F64: {
             double v = strtod(text, NULL);
-            v = !strcmp(field->name, "radians") ? v * M_PI / 180 : v;
+            v = properties_angle(field) ? v * M_PI / 180 : v;
             if (value->type == PIN_F32) {
                 value->f = (float)v;
             } else {
@@ -936,7 +943,7 @@ static void reset_field(studio *s, scene_actor *actor)
 {
     app_scene_authoring *scene = s->scene;
     const ecs_component_desc *desc = properties_component(scene, s->context.component);
-    if (!desc) {
+    if (!desc || desc->derived_from) {
         return;
     }
     game_prototype_component added;
@@ -1087,6 +1094,14 @@ static void add_component(studio *s, const ecs_component_desc *desc)
     snprintf(s->components.added, sizeof s->components.added, "%s", desc->name);
 }
 
+void studio_add_component_to_selection(studio *s, const ecs_component_desc *desc)
+{
+    scene_actor *actor = selected_actor(s->scene);
+    assert(actor && actor->identity);
+    s->components.object = actor->identity;
+    add_component(s, desc);
+}
+
 /* A component the prototype lacks, as the palette lists it. */
 typedef struct
 {
@@ -1094,6 +1109,35 @@ typedef struct
     char label[128];
     int index; /* in the registry */
 } component_choice;
+
+/* The fields an entry lists before it counts the rest. */
+#define ABOUT_FIELDS 4
+
+/* An entry's second line, which tells components with like names apart:
+   their first fields, as "Speed · Lifetime · Rate". The SDK gives
+   components no description yet; once it does, that takes this place. */
+static void component_about(const ecs_component_desc *desc, char *out, size_t size)
+{
+    const type_desc *type = desc->type;
+    out[0] = '\0';
+    if (!type->field_count) {
+        snprintf(out, size, "A tag, with no values");
+        return;
+    }
+    size_t used = 0;
+    for (int i = 0; i < type->field_count && i < ABOUT_FIELDS; i++) {
+        char label[64];
+        editor_identifier_label(type->fields[i].name, label, sizeof label);
+        used += (size_t)snprintf(out + used, size - used, "%s%s", i ? " \xc2\xb7 " : "", label);
+        if (used >= size) {
+            return;
+        }
+    }
+    int rest = type->field_count - ABOUT_FIELDS;
+    if (rest > 0) {
+        snprintf(out + used, size - used, " \xc2\xb7 %d more", rest);
+    }
+}
 
 static int by_tab_and_label(const void *a, const void *b)
 {
@@ -1116,8 +1160,10 @@ void studio_component_entries(studio *s, studio_palette_entry **entries)
     component_choice *choices = NULL;
     for (int i = 0; (asset || actor) && i < scene->registry.component_count; i++) {
         const ecs_component_desc *desc = scene->registry.components[i];
-        if (asset ? prototype_has_component_id(asset->prototype, desc->id)
-                  : ecs_component_has(scene->world, actor->entity, desc->id)) {
+        /* The engine computes a derived component from its source. */
+        if (desc->derived_from ||
+            (asset ? prototype_has_component_id(asset->prototype, desc->id)
+                   : ecs_component_has(scene->world, actor->entity, desc->id))) {
             continue;
         }
         component_choice choice = {
@@ -1141,6 +1187,7 @@ void studio_component_entries(studio *s, studio_palette_entry **entries)
             choices[i].label
         );
         snprintf(e->keywords, sizeof e->keywords, "%s", desc->name);
+        component_about(desc, e->about, sizeof e->about);
         e->icon = TAB_ICONS[tab];
         e->index = choices[i].index;
     }
@@ -1349,6 +1396,27 @@ static void narrow_selection(studio *s, const char *prototype)
     }
 }
 
+/* Selects the object an entity field names (studio_properties_view.c),
+   as Unity's object field pings its object. */
+static void reveal(studio *s, const properties_row *row)
+{
+    pin_value value = { 0 };
+    if (row->kind != PROPERTIES_OBJECT ||
+        ecs_component_read_field(
+            s->scene->world,
+            ecs_entity_from_u64(row->entity),
+            row->component,
+            row->field,
+            &value
+        ) != ECS_OK ||
+        value.type != PIN_HANDLE || !value.u64) {
+        return;
+    }
+    /* A placed object selects as the Outliner selects it; a spawned one as
+       a pick in the Scene does. */
+    app_scene_authoring_select_entity(s->scene, ecs_entity_from_u64(value.u64));
+}
+
 /* ---------- Menus ---------- */
 
 /* The element that sent `a`, while it lasts. */
@@ -1357,16 +1425,22 @@ static rml_element *sender(const ui_activation *a)
     return a->anchor ? rml_element_ref_get(a->anchor) : NULL;
 }
 
-/* Shows the Properties menu `id` at the pointer, from the document that sent
-   `a`. */
+/* Shows the Properties menu `id` from the document that sent `a`: under the
+   button that opened it, as Base UI anchors a menu to its trigger, so a
+   keyboard press opens it there too; at the pointer for a right press. */
 static void show_menu(const ui_activation *a, const char *id)
 {
     rml_element *from = sender(a);
     rml_element *menu = from ? rml_element_by_id(rml_element_owner_document(from), id)
                              : NULL;
-    if (menu) {
-        popover_show(menu, &(popover_anchor){ .side = POPOVER_POINT, .box = { a->x, a->y, 0, 0 } });
+    if (!menu) {
+        return;
     }
+    if (!strcmp(rml_element_tag_name(from), "button")) {
+        popover_show(menu, &(popover_anchor){ .side = POPOVER_BELOW, .element = from, .trigger = from });
+        return;
+    }
+    popover_show(menu, &(popover_anchor){ .side = POPOVER_POINT, .box = { a->x, a->y, 0, 0 } });
 }
 
 /* A right press on a field opens its menu: Reset and Apply to Prototype. */
@@ -1390,7 +1464,7 @@ static void component_menu(studio *s, const char *key, const ui_activation *a)
         const ecs_component_desc *d = s->scene->registry.components[i];
         desc = !strcmp(properties_panel_key(d->name), key) ? d : desc;
     }
-    if (!desc) {
+    if (!desc || desc->derived_from) {
         return;
     }
     game_prototype_component added;
@@ -1537,6 +1611,8 @@ void studio_properties_action(studio *s, const char *action, const ui_activation
         }
     } else if (!strcmp(action, "narrow")) {
         narrow_selection(s, arg);
+    } else if (!strcmp(action, "reveal") && parsed) {
+        reveal(s, &row);
     } else if (!strcmp(action, "openBehavior")) {
         if (!s->scene->graph_document_id || strcmp(s->scene->graph_document_id, arg)) {
             app_scene_authoring_open_behavior(s->scene, arg);
