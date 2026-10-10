@@ -35,6 +35,9 @@ int app_scene_authoring_plan_source_rename(
     char *error,
     size_t error_size
 );
+/* Rebuilds the asset index from every open document as a plan does, so
+ * symbols found in it name the assets a plan will. */
+void app_scene_authoring_refactor_index(struct app_scene_authoring *scene);
 /* Deletes whatever still uses the symbol would leave dangling. */
 int app_scene_authoring_plan_delete(
     struct app_scene_authoring *scene,

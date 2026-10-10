@@ -1541,6 +1541,18 @@ static bool spare_path(const char *name, char *path, size_t size)
     return true;
 }
 
+static bool write_spare(const char *name)
+{
+    char path[1024], text[128];
+    REQUIRE(spare_path(name, path, sizeof path));
+    snprintf(text, sizeof text, "name \"%s\"\ncomponents {\n    (object)GAME.GameTransform\n}\n", name);
+    FILE *file = fopen(path, "wb");
+    REQUIRE(file);
+    bool written = fputs(text, file) >= 0;
+    REQUIRE(fclose(file) == 0 && written);
+    return true;
+}
+
 static bool write_spares()
 {
     char folder[1024];
@@ -1548,18 +1560,7 @@ static bool write_spares()
     REQUIRE(length > 0 && (size_t)length < sizeof folder);
     REQUIRE(mkdir(folder, 0777) == 0);
     for (int i = 0; i < 3; i++) {
-        char path[1024], text[128];
-        REQUIRE(spare_path(spares[i], path, sizeof path));
-        snprintf(
-            text,
-            sizeof text,
-            "name \"%s\"\ncomponents {\n    (object)GAME.GameTransform\n}\n",
-            spares[i]
-        );
-        FILE *file = fopen(path, "wb");
-        REQUIRE(file);
-        bool written = fputs(text, file) >= 0;
-        REQUIRE(fclose(file) == 0 && written);
+        REQUIRE(write_spare(spares[i]));
     }
     return true;
 }
@@ -1603,6 +1604,41 @@ static bool selection_is(studio *s, const char *selected, const char *marked)
     return same;
 }
 
+/* The toast's Undo of the last change. */
+static bool undo_change(studio *s)
+{
+    app_refactor *undo = s->refactor.undo, *redo = NULL;
+    REQUIRE(undo && s->refactor.undo_toast);
+    s->refactor.undo = NULL;
+    kit_toast_dismiss(s->kit, s->refactor.undo_toast);
+    s->refactor.undo_toast = 0;
+    char error[256] = "";
+    REQUIRE(app_scene_authoring_apply_refactor(s->scene, undo, &redo, error, sizeof error) == 0);
+    app_refactor_free(undo);
+    app_refactor_free(redo);
+    return true;
+}
+
+/* A file that sorts before the selection appears while the index waits to
+   be rebuilt, as it does while a pointer is down or an editor has the keys.
+   Deleting rebuilds it, renumbering the assets, yet removes the selected
+   ones. */
+static bool delete_after_index_change(studio *s)
+{
+    unsigned toggle = s->mac ? RML_KM_META : RML_KM_CTRL;
+    REQUIRE(click_asset(s, "SpareA", 0) && click_asset(s, "SpareC", toggle));
+    REQUIRE(write_spare("Spare0"));
+    app_scene_authoring_refresh_content(s->scene);
+    REQUIRE(studio_assets_key(s, SDLK_DELETE, 0));
+    REQUIRE(spare_exists("Spare0") && spare_exists("SpareB"));
+    REQUIRE(!spare_exists("SpareA") && !spare_exists("SpareC") && undo_change(s));
+    char path[1024];
+    REQUIRE(spare_path("Spare0", path, sizeof path) && remove(path) == 0);
+    app_scene_authoring_refresh_content(s->scene);
+    REQUIRE(spare_exists("SpareA") && spare_exists("SpareC"));
+    return true;
+}
+
 /* Clicks and the keys select several assets, which Delete removes as one
    change that one Undo restores. */
 static bool select_and_delete(studio *s)
@@ -1626,15 +1662,7 @@ static bool select_and_delete(studio *s)
     REQUIRE(!spare_exists("SpareA") && spare_exists("SpareB") && !spare_exists("SpareC"));
     REQUIRE(unchanged_source());
     /* The toast's Undo, which restores both files. */
-    app_refactor *undo = s->refactor.undo, *redo = NULL;
-    REQUIRE(undo && s->refactor.undo_toast);
-    s->refactor.undo = NULL;
-    kit_toast_dismiss(s->kit, s->refactor.undo_toast);
-    s->refactor.undo_toast = 0;
-    char error[256] = "";
-    REQUIRE(app_scene_authoring_apply_refactor(s->scene, undo, &redo, error, sizeof error) == 0);
-    app_refactor_free(undo);
-    app_refactor_free(redo);
+    REQUIRE(undo_change(s));
     REQUIRE(spare_exists("SpareA") && spare_exists("SpareB") && spare_exists("SpareC"));
     edits++;
     return true;
@@ -1805,7 +1833,7 @@ static bool asset_selection_frame(void *state)
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
-    REQUIRE(frames <= 5);
+    REQUIRE(frames <= 6);
     switch (frames) {
         case 1:
             /* A file saved before the view setting kept list view as the
@@ -1818,15 +1846,17 @@ static bool asset_selection_frame(void *state)
             s->prefs.assets_list = true;
             s->assets_kind = REFERENCE_ASSET_PROTOTYPE;
             return true;
-        case 2:
-            REQUIRE(select_and_delete(s));
+        case 2: return select_and_delete(s);
+        case 3:
+            /* After a frame has drawn the restored assets. */
+            REQUIRE(delete_after_index_change(s));
             s->prefs.assets_list = false;
             return true;
-        case 3:
+        case 4:
             s->prefs.assets_list = true;
             snprintf(s->assets_filter, sizeof s->assets_filter, "SpareC");
             return true;
-        case 4: return grid_after_list_filter(s);
+        case 5: return grid_after_list_filter(s);
         default:
             /* The grid lays every tile out again. */
             REQUIRE(studio_assets_key(s, SDLK_LEFT, 0) && selection_is(s, "SpareB", ""));
@@ -2194,11 +2224,11 @@ TEST_CASE(asset_selection)
 {
     REQUIRE(write_spares());
     char *args[] = { (char *)executable, "--headless",
-                     "--frames",         "5",
+                     "--frames",         "6",
                      "--fixed-dt",       "0.016666666666666666",
                      "--project-root",   (char *)project };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && frames == 5 && edits == 1);
+    REQUIRE(callback_ok && frames == 6 && edits == 1);
     printf("Studio asset selection accepted\n");
     return true;
 }

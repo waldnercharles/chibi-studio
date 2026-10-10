@@ -131,11 +131,16 @@ void refactor_sync(app_scene_authoring *scene)
     scene_tabs_sync_current(scene);
 }
 
-/* The index, fresh with every edit, and each asset's saved file. */
-static char **saved_texts(app_scene_authoring *scene)
+void app_scene_authoring_refactor_index(app_scene_authoring *scene)
 {
     refactor_sync(scene);
     app_scene_authoring_refresh_asset_index(scene);
+}
+
+/* The index, fresh with every edit, and each asset's saved file. */
+static char **saved_texts(app_scene_authoring *scene)
+{
+    app_scene_authoring_refactor_index(scene);
     const reference_index *index = scene->asset_index;
     int count = reference_index_asset_count(index);
     char **texts = xcalloc((size_t)count + 1, sizeof *texts);
