@@ -19,6 +19,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Seconds of quiet that end an undo step of typing. */
+static const double TYPING_PAUSE = 1.0;
+/* Seconds between reads of the file for edits made outside Studio. */
+static const double DISK_POLL = 0.5;
+
 typedef struct
 {
     char *text, *metadata;
@@ -41,9 +46,9 @@ struct asset_code
     const behavior_asset *shared_asset;
     unsigned shared_revision;
     bool source_pending, replaying, runtime_held, graph_draft, native_view,
-        source_gesture;
+        source_gesture, typing;
     uint64_t execution_graph, execution_node;
-    double time, apply_due;
+    double time, apply_due, typed_at, refresh_due;
     kit_code_editor *editor;
     kit_code_span *spans;
     kit_code_marker *markers, *breakpoints;
@@ -166,16 +171,20 @@ static void adopt_working(asset_code *c, const authoring_sources *sources)
         navigation(c);
     }
 }
-static void diagnostic(asset_code *c, const script_diagnostic *d)
+static void mark(asset_code *c, const script_diagnostic *d, kit_code_severity severity)
 {
     apush(
         c->markers,
         ((kit_code_marker){ .line = d->range.line,
-                            .severity = KIT_CODE_ERROR,
+                            .severity = severity,
                             .message = d->message,
                             .start = d->range.start,
                             .end = d->range.end })
     );
+}
+static void diagnostic(asset_code *c, const script_diagnostic *d)
+{
+    mark(c, d, KIT_CODE_ERROR);
     if (!c->error[0]) {
         snprintf(c->error, sizeof c->error, "%s", d->message);
     }
@@ -206,7 +215,7 @@ static void breakpoint_markers(asset_code *c)
         apush(
             c->breakpoints,
             ((kit_code_marker){ .line = line,
-                                .severity = KIT_CODE_ERROR,
+                                .severity = KIT_CODE_BREAKPOINT_MARKER,
                                 .message = "Breakpoint (F9 to remove)",
                                 .start = o->range.start,
                                 .end = o->range.end,
@@ -224,6 +233,11 @@ static void decorate(asset_code *c)
         if (c->facts) {
             for (int i = 0; i < c->facts->diagnostic_count; i++) {
                 diagnostic(c, &c->facts->diagnostics[i]);
+            }
+            /* Unit mismatches warn; the source still runs. */
+            const script_analysis *analysis = c->facts->analysis;
+            for (int i = 0; i < analysis->warning_count; i++) {
+                mark(c, &analysis->warnings[i], KIT_CODE_WARNING);
             }
             int count = 0;
             authoring_highlight *spans = authoring_source_highlights(c->navigation, c->document, &count);
@@ -383,6 +397,7 @@ static source_snapshot snapshot_create(asset_code *c, const char *text)
 static void record(asset_code *c, const char *text)
 {
     c->source_gesture = false;
+    c->typing = false;
     while (acount(c->history) > c->step + 1) {
         snapshot_free(alast(c->history));
         apop(c->history);
@@ -484,6 +499,7 @@ bool asset_code_can_replay(const asset_code *c, bool redo)
 bool asset_code_replay(asset_code *c, bool redo, bool live)
 {
     c->source_gesture = false;
+    c->typing = false;
     if (!asset_code_can_replay(c, redo)) {
         return false;
     }
@@ -497,6 +513,18 @@ bool asset_code_replay(asset_code *c, bool redo, bool live)
     return true;
 }
 
+/* Replaces the newest step instead of adding one. */
+static bool amendable(const asset_code *c)
+{
+    return c->step > 0 && c->step == acount(c->history) - 1;
+}
+
+static void amend_step(asset_code *c, const char *text)
+{
+    snapshot_free(c->history[c->step]);
+    c->history[c->step] = snapshot_create(c, text);
+}
+
 static bool replace_source(asset_code *c, const char *before, const char *text, const char *metadata, bool amend)
 {
     if (strcmp(before, c->text)) {
@@ -505,8 +533,7 @@ static bool replace_source(asset_code *c, const char *before, const char *text, 
     follow(c, text, false);
     understand_with_metadata(c, text, metadata);
     if (amend) {
-        snapshot_free(c->history[c->step]);
-        c->history[c->step] = snapshot_create(c, text);
+        amend_step(c, text);
     } else {
         record(c, text);
     }
@@ -522,8 +549,7 @@ bool asset_code_replace_with_metadata(asset_code *c, const char *before, const c
 
 bool asset_code_edit_source(asset_code *c, const char *before, const char *text, const char *metadata, bool coalesce)
 {
-    bool amend = coalesce && c->source_gesture && c->step > 0 &&
-                 c->step == acount(c->history) - 1;
+    bool amend = coalesce && c->source_gesture && amendable(c);
     if (!replace_source(c, before, text, metadata, amend)) {
         return false;
     }
@@ -700,7 +726,9 @@ static void understand_with_metadata(asset_code *c, const char *text, const char
                 : layout ? xstrdup(layout)
                          : NULL;
     free(layout);
-    c->source_pending = true;
+    /* Only text a graph follows waits for validation; other KDL is checked
+       as it parses. */
+    c->source_pending = c->native_view || c->candidate;
     c->replaying = false;
     c->graph_draft = false;
     decorate(c);
@@ -910,7 +938,7 @@ void asset_code_set_source_world(asset_code *c, game_preview_world *world, const
                 c->disk_metadata = c->metadata ? xstrdup(c->metadata) : NULL;
             }
         }
-        c->source_pending = true;
+        c->source_pending = c->native_view || c->candidate;
         decorate(c);
         return;
     }
@@ -1377,6 +1405,7 @@ bool asset_code_save(asset_code *c, char *error, size_t size)
     free(c->observed_metadata);
     c->observed_metadata = c->metadata ? xstrdup(c->metadata) : NULL;
     c->runtime_held = false;
+    c->typing = false;
     valid_overlay(c, true);
     c->error[0] = 0;
     return true;
@@ -1456,9 +1485,40 @@ static bool starts_completion(const char *before, const char *after, int cursor)
            typed == '"';
 }
 
+/* Typing joins the step before it until a pause, a caret move, a save or
+   another kind of edit, so undo takes back a burst instead of one
+   character. */
+static void typed(asset_code *c, const char *text, bool typing)
+{
+    if (c->typing && typing && c->time - c->typed_at < TYPING_PAUSE && amendable(c)) {
+        amend_step(c, text);
+    } else {
+        record(c, text);
+    }
+    c->typing = typing;
+    c->typed_at = c->time;
+}
+
+/* The symbol under the pointer while the primary modifier is held, when it
+   has a definition to go to: Mod+click's underline. */
+static void link_symbol(const asset_code *c, kit_code_desc *desc)
+{
+    int at = kit_code_link(c->editor);
+    const authoring_reference *reference = at >= 0 && c->navigation
+                                             ? authoring_navigation_at(c->navigation, c->document, at)
+                                             : NULL;
+    if (reference && authoring_navigation_definition(c->navigation, reference->target)) {
+        desc->link_start = reference->location.range.start;
+        desc->link_end = reference->location.range.end;
+    }
+}
+
 kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const kit_code_desc *preferences, bool live)
 {
-    asset_code_refresh(c);
+    if (c->time >= c->refresh_due || c->time < c->refresh_due - DISK_POLL) {
+        c->refresh_due = c->time + DISK_POLL;
+        asset_code_refresh(c);
+    }
     free(c->hover);
     c->hover = c->native_view
                  ? (c->navigation
@@ -1518,6 +1578,9 @@ kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const ki
                                            : c->completions.start;
     desc.hover = c->hover;
     desc.history = true;
+    /* KDL names take hyphens; .chibi names are C's. */
+    desc.word_chars = c->native_view ? NULL : "-";
+    link_symbol(c, &desc);
     kit_code_result result = kit_code(k, key, c->editor, &desc);
     afree(shown_markers);
     afree(shown_spans);
@@ -1526,16 +1589,19 @@ kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const ki
         char *text = edited_text(c);
         /* A programmatic follow also changes the widget revision. */
         if (strcmp(text, c->text)) {
-            asked |= !(result.events & KIT_CODE_COMPLETED) &&
+            bool typing = !(result.events & (KIT_CODE_COMPLETED | KIT_CODE_STEP));
+            asked |= typing &&
                      starts_completion(c->text, text, kit_code_cursor(c->editor));
             understand(c, text);
-            record(c, text);
+            typed(c, text, typing);
             c->apply_due = c->time + 0.2;
             valid_overlay(c, live);
         } else {
             result.events &= ~KIT_CODE_CHANGED;
         }
         free(text);
+    } else if (result.events & KIT_CODE_CURSOR) {
+        c->typing = false;
     }
     if (result.events & (KIT_CODE_UNDO | KIT_CODE_REDO)) {
         asset_code_replay(c, result.events & KIT_CODE_REDO, live);

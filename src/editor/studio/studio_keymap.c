@@ -18,6 +18,14 @@ static const fixed_key FIXED[] = {
     /* studio_scene.c and workspace/scene_viewport.c: multi-selection */
     { "Scene", "Add an object to the selection, or take it out", "Shift+Click Mod+Click" },
     { "Scene", "Add a marquee's objects to the selection", "Shift+Drag Mod+Drag" },
+    /* studio_scene.c and workspace/scene_gizmo.c: the view and the tools */
+    { "Scene", "Pan while held, with a drag", "Space" },
+    { "Scene", "Zoom around the pointer", "Mod+Scroll" },
+    { "Scene", "Grab: constrain to X or Y, again to free it", "X Y" },
+    { "Scene", "Grab: place, or cancel", "Return Escape" },
+    { "Scene", "Invert snapping while dragging", "Ctrl" },
+    { "Scene", "Scale: keep the aspect ratio", "Shift" },
+    { "Scene", "Scale: from the center", "Alt" },
     { "Outliner", "Add a row to the selection, or take it out", "Mod+Click" },
     { "Outliner", "Select the rows from the last clicked one", "Shift+Click" },
     /* studio_graph_input.c, studio_graph_find.c, studio_graph_nav.c */
@@ -57,14 +65,15 @@ static const fixed_key FIXED[] = {
     { "Members", "Duplicate variable", "Shift+D Mod+D" },
     { "Members", "Drag in as a Set node", "Alt" },
     /* kit_code.c, studio_code.c */
-    { "Text Editor", "Go to definition", "F12" },
-    { "Text Editor", "Find references", "Shift+F12" },
+    { "Text Editor", "Go to definition", "Mod+Click" },
+    { "Text Editor", "Toggle breakpoint", "F9" },
     { "Text Editor", "Suggest completions", "Ctrl+Space" },
     { "Text Editor", "Back and forward", "Mod+[ Mod+]" },
     { "Text Editor", "Start and end of the text", "Ctrl+Home Ctrl+End", "Mod+Up Mod+Down" },
     { "Text Editor", "Find: next result", "Return Down" },
     { "Text Editor", "Find: previous result", "Shift+Return Up" },
     { "Text Editor", "Find: back to the text", "Escape" },
+    { "Text Editor", "Find again: next and previous match", "F3 Shift+F3" },
     /* studio_assets.c */
     { "Assets", "Rename", "F2" },
     { "Assets", "Delete", "X Backspace Delete" },

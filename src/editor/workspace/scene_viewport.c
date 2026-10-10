@@ -14,6 +14,8 @@
 #include "render/ui.h"
 #include "runtime/camera.h"
 #include "runtime/component_catalog.h"
+#include "runtime/tilemap.h"
+#include "runtime/transform_propagation.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -24,10 +26,14 @@
 #include <string.h>
 #include <sys/stat.h>
 
-static float actor_orientation(const ecs_world *world, ecs_entity entity)
+/* Where the viewport shows an entity: its exact world placement, since edits
+ * and loads move it before any engine frame propagates them. The angle turns
+ * the other way, as the viewport's y points down. */
+static GameGlobalTransform2D actor_pose(const ecs_world *world, ecs_entity entity)
 {
-    const GameOrientation *orientation = GAME_GameOrientation_get_const(world, entity);
-    return orientation ? -orientation->radians : 0;
+    GameGlobalTransform2D pose = game_transform_world_2d(world, entity);
+    pose.radians = -pose.radians;
+    return pose;
 }
 
 static render_scene3d_camera camera3d(engine_viewport *viewport)
@@ -75,6 +81,25 @@ static bool appearance_bounds(
 
 static bool visual_bounds(const ecs_world *world, ecs_entity entity, bool effects, CF_Aabb *bounds)
 {
+    const GameTilemap *map = GAME_GameTilemap_get_const(world, entity);
+    if (map) {
+        GameGlobalTransform2D shown = game_transform_world_2d(world, entity);
+        CF_V2 min, max;
+        if (!tilemap_bounds(
+                map->columns,
+                map->rows,
+                map->frame_width,
+                map->frame_height,
+                (CF_V2){ shown.position.x, shown.position.y },
+                shown.radians,
+                &min,
+                &max
+            )) {
+            return false;
+        }
+        *bounds = (CF_Aabb){ { min.x, -max.y }, { max.x, -min.y } };
+        return true;
+    }
     const GameMeshSurface2D *mesh = GAME_GameMeshSurface2D_get_const(world, entity);
     const GameSdfSurface3D *sdf = GAME_GameSdfSurface3D_get_const(world, entity);
     if ((mesh && mesh->enabled) || (sdf && sdf->enabled)) {
@@ -87,14 +112,72 @@ static bool visual_bounds(const ecs_world *world, ecs_entity entity, bool effect
         return true;
     }
     const GameAppearance *appearance = GAME_GameAppearance_get_const(world, entity);
-    return appearance && appearance_bounds(
-                             GAME_GameTransform_get_const(world, entity),
-                             appearance,
-                             GAME_GameShader_get_const(world, entity),
-                             actor_orientation(world, entity),
-                             effects,
-                             bounds
-                         );
+    if (!appearance || !GAME_GameTransform_get_const(world, entity)) {
+        return false;
+    }
+    GameGlobalTransform2D pose = actor_pose(world, entity);
+    return appearance_bounds(
+        &pose.position,
+        appearance,
+        GAME_GameShader_get_const(world, entity),
+        pose.radians,
+        effects,
+        bounds
+    );
+}
+
+bool scene_object_drawn(const ecs_world *world, ecs_entity entity)
+{
+    const GameMeshSurface2D *mesh = GAME_GameMeshSurface2D_get_const(world, entity);
+    const GameSdfSurface3D *sdf = GAME_GameSdfSurface3D_get_const(world, entity);
+    return GAME_GameAppearance_has(world, entity) ||
+           GAME_GameTilemap_get_const(world, entity) ||
+           (mesh && mesh->enabled) || (sdf && sdf->enabled);
+}
+
+/* An undrawn object's place, which its marker shows, as a box without
+   extent; false for a drawn object. */
+static bool marker_bounds(const ecs_world *world, ecs_entity entity, CF_Aabb *bounds)
+{
+    if (scene_object_drawn(world, entity) || !GAME_GameTransform_has(world, entity)) {
+        return false;
+    }
+    CF_V2 at = game_transform_world_2d(world, entity).position;
+    *bounds = (CF_Aabb){ { at.x, -at.y }, { at.x, -at.y } };
+    return true;
+}
+
+/* Whether canvas point (x, y) is on the entity's marker. */
+static bool marker_hit(const app_scene_authoring *scene, ecs_entity entity, float x, float y)
+{
+    CF_V2 at = game_transform_world_2d(scene->world, entity).position;
+    float reach = scene->gizmo.in.marker_radius * scene->selection_scale;
+    return hypotf(x - at.x, y + at.y) <= reach;
+}
+
+static bool tilemap_hit(const ecs_world *world, ecs_entity entity, CF_V2 point)
+{
+    const GameTilemap *map = GAME_GameTilemap_get_const(world, entity);
+    GameGlobalTransform2D shown = game_transform_world_2d(world, entity);
+    CF_V2 min, max;
+    if (!tilemap_bounds(
+            map->columns,
+            map->rows,
+            map->frame_width,
+            map->frame_height,
+            (CF_V2){ shown.position.x, shown.position.y },
+            shown.radians,
+            &min,
+            &max
+        )) {
+        return false;
+    }
+    float dx = point.x - shown.position.x, dy = point.y - shown.position.y;
+    float c = cosf(shown.radians), s = sinf(shown.radians);
+    CF_V2 local = { c * dx + s * dy, c * dy - s * dx };
+    return local.x >= 0 && local.y >= 0 &&
+           local.x < (float)map->columns * map->frame_width &&
+           local.y < (float)map->rows * map->frame_height;
 }
 
 /* Whether `entity` is among the `count` in `only`, or `only` is NULL. */
@@ -148,6 +231,19 @@ static bool fit_arena_view(engine_viewport *viewport, ecs_world *world, const ec
     return found;
 }
 
+/* Centers the view on `box`, around objects only markers show, keeping
+   its zoom unless they spread wider than it shows. */
+static void center_view(engine_viewport *viewport, CF_Aabb box)
+{
+    engine_viewport_view view;
+    engine_viewport_get_view(viewport, &view);
+    view.center_x = (box.min.x + box.max.x) * 0.5f;
+    view.center_y = (box.min.y + box.max.y) * 0.5f;
+    view.width = fmaxf(view.width, (box.max.x - box.min.x) * 1.2f);
+    view.height = fmaxf(view.height, (box.max.y - box.min.y) * 1.2f);
+    engine_viewport_set_view(viewport, &view);
+}
+
 bool fit_scene_view(engine_viewport *viewport, ecs_world *world, const ecs_entity *only, int count)
 {
     if (engine_viewport_perspective(viewport)) {
@@ -159,7 +255,7 @@ bool fit_scene_view(engine_viewport *viewport, ecs_world *world, const ecs_entit
         return false;
     }
     CF_Aabb total = { 0 };
-    bool found = false;
+    bool found = false, sized = false;
     ecs_entity entity;
     while (ecs_query_next(&query, &entity)) {
         if (!fits(only, count, entity)) {
@@ -170,9 +266,11 @@ bool fit_scene_view(engine_viewport *viewport, ecs_world *world, const ecs_entit
             continue;
         }
         CF_Aabb bounds;
-        if (!visual_bounds(world, entity, true, &bounds)) {
+        bool drawn = visual_bounds(world, entity, true, &bounds);
+        if (!drawn && !marker_bounds(world, entity, &bounds)) {
             continue;
         }
+        sized |= drawn;
         if (!found) {
             total = bounds;
         }
@@ -183,6 +281,10 @@ bool fit_scene_view(engine_viewport *viewport, ecs_world *world, const ecs_entit
         found = true;
     }
     ecs_query_end(&query);
+    if (found && !sized) {
+        center_view(viewport, total);
+        return true;
+    }
     if (found) {
         engine_viewport_fit(
             viewport,
@@ -213,7 +315,18 @@ ecs_entity pick_scene_entity(app_scene_authoring *scene, float x, float y, rende
         const GameMeshSurface2D *mesh = GAME_GameMeshSurface2D_get_const(scene->world, entity);
         const GameAppearance *appearance = GAME_GameAppearance_get_const(scene->world, entity);
         const GameSdfSurface3D *sdf = GAME_GameSdfSurface3D_get_const(scene->world, entity);
-        if ((mesh && mesh->enabled) || (sdf && sdf->enabled)) {
+        const GameTilemap *map = GAME_GameTilemap_get_const(scene->world, entity);
+        bool marked = !scene_object_drawn(scene->world, entity);
+        if (marked) {
+            /* A session shows no markers (app_scene_authoring_markers). */
+            if (runtime_session(scene) || !marker_hit(scene, entity, x, y)) {
+                continue;
+            }
+        } else if (map) {
+            if (!tilemap_hit(scene->world, entity, (CF_V2){ x, -y })) {
+                continue;
+            }
+        } else if ((mesh && mesh->enabled) || (sdf && sdf->enabled)) {
             render_mesh_surface surface = { 0 };
             char error[128];
             float height;
@@ -227,9 +340,10 @@ ecs_entity pick_scene_entity(app_scene_authoring *scene, float x, float y, rende
             if (!appearance) {
                 continue;
             }
-            const GameTransform *transform = GAME_GameTransform_get_const(scene->world, entity);
+            GameGlobalTransform2D pose = actor_pose(scene->world, entity);
+            const GameTransform *transform = &pose.position;
             CF_Aabb bounds;
-            float radians = actor_orientation(scene->world, entity);
+            float radians = pose.radians;
             CF_V2 local;
             const GameShader *shader = GAME_GameShader_get_const(scene->world, entity);
             bool custom_shape = shader &&
@@ -264,8 +378,12 @@ ecs_entity pick_scene_entity(app_scene_authoring *scene, float x, float y, rende
         if (!editable) {
             continue;
         }
-        int layer = appearance ? appearance->layer : 0;
-        /* Match the renderer's authored layer, then stable entity-slot order. */
+        /* Match the renderer's authored layer, then stable entity-slot order;
+           markers draw over the scene. */
+        int layer = marked     ? INT_MAX
+                  : map        ? map->layer
+                  : appearance ? appearance->layer
+                               : 0;
         if (picked.slot && (layer < picked_layer ||
                             (layer == picked_layer && entity.slot <= picked.slot))) {
             continue;
@@ -290,7 +408,8 @@ static bool selection_bounds(
         return render_scene3d_entity_bounds(scene->world, entity, corners) &&
                render_scene3d_screen_bounds(&camera, corners, bounds);
     }
-    if (!visual_bounds(scene->world, entity, false, bounds)) {
+    if (!visual_bounds(scene->world, entity, false, bounds) &&
+        !marker_bounds(scene->world, entity, bounds)) {
         return false;
     }
     engine_viewport_camera camera;
@@ -466,10 +585,14 @@ static void edit_scene_pointer(app_scene_authoring *scene, engine_viewport *view
        gizmo moves placed ones. */
     if (scene->dragging_actor && !scene->gizmo.active) {
         if (pointer.dragging) {
-            GameTransform position = {
-                scene->edit_before.x + pointer.world_x - scene->drag_origin.x,
-                scene->edit_before.y - pointer.world_y - scene->drag_origin.y,
-            };
+            GameTransform moved = scene_local_offset(
+                scene->world,
+                scene->edit_actor,
+                (GameTransform){ pointer.world_x - scene->drag_origin.x,
+                                 -pointer.world_y - scene->drag_origin.y }
+            );
+            GameTransform position = { scene->edit_before.x + moved.x,
+                                       scene->edit_before.y + moved.y };
             write_transform_edit(scene, scene->edit_actor, position);
         }
         if (pointer.released) {
@@ -496,6 +619,42 @@ static void edit_scene_pointer(app_scene_authoring *scene, engine_viewport *view
     if (pointer.released) {
         end_marquee(scene);
     }
+}
+
+/* The camera the view shows now: the scene's, a previewed prototype's or
+   the model preview's. */
+static scene_camera *shown_camera(app_scene_authoring *scene)
+{
+    switch (scene->camera_target) {
+        case -2: return &scene->model_camera;
+        case 0: return &scene->camera;
+        default:
+            assert(scene->camera_target > 0);
+            return &scene->prototypes[scene->camera_target - 1].camera;
+    }
+}
+
+void app_scene_authoring_framed(app_scene_authoring *scene)
+{
+    /* The next draw chooses the camera again, or for the first time, and
+       measures its framing. */
+    if (!scene->render_viewport || scene->camera_target == -1) {
+        return;
+    }
+    engine_viewport_view view;
+    engine_viewport_get_view(scene->render_viewport, &view);
+    shown_camera(scene)->framed = view.width;
+}
+
+float app_scene_authoring_zoom(app_scene_authoring *scene)
+{
+    if (scene->camera_target < 0 || !scene->render_viewport) {
+        return 0;
+    }
+    float framed = shown_camera(scene)->framed;
+    engine_viewport_view view;
+    engine_viewport_get_view(scene->render_viewport, &view);
+    return framed > 0 ? framed / view.width : 0;
 }
 
 int app_scene_authoring_draw_viewport(app_scene_authoring *scene, engine_viewport *viewport)
@@ -576,6 +735,24 @@ int app_scene_authoring_draw_viewport(app_scene_authoring *scene, engine_viewpor
             fit_entity.slot ? &fit_entity : NULL,
             1
         );
+    }
+    if (fit) {
+        app_scene_authoring_framed(scene);
+    }
+    /* A view restored from an earlier session or another tab reads its zoom
+       against the framing a fit would give. */
+    if (!model && camera->framed <= 0) {
+        engine_viewport_view restored;
+        engine_viewport_get_view(viewport, &restored);
+        fit_scene_view(
+            viewport,
+            preview ? game_prototype_preview_world(scene->prototype_preview)
+                    : scene->world,
+            NULL,
+            0
+        );
+        app_scene_authoring_framed(scene);
+        engine_viewport_set_view(viewport, &restored);
     }
     if (preview && scene->preview_follow &&
         (scene->preview_playing || scene->preview_step)) {
@@ -819,17 +996,7 @@ static void draw_arena_selection(
 static void outline_object(ecs_world *world, ecs_entity entity, float pixel, float margin, unsigned color)
 {
     CF_Aabb bounds;
-    const GameTransform *position = GAME_GameTransform_get_const(world, entity);
-    const GameAppearance *appearance = GAME_GameAppearance_get_const(world, entity);
-    if (!position || !appearance ||
-        !appearance_bounds(
-            position,
-            appearance,
-            GAME_GameShader_get_const(world, entity),
-            actor_orientation(world, entity),
-            false,
-            &bounds
-        )) {
+    if (!visual_bounds(world, entity, false, &bounds)) {
         return;
     }
     bounds.min.x -= margin * pixel;
@@ -890,6 +1057,10 @@ void app_scene_authoring_render(void *user)
         editing && !options->fog
     );
     render_skip hidden = scene_view_skip(scene, APP_SCENE_VIEW_HIDDEN, &scene->view_hidden);
+    /* Edits and loads move objects before any engine frame propagates them. */
+    if (game_transform_propagate(world) != ECS_OK) {
+        return;
+    }
     if (scene->render_viewport && engine_viewport_perspective(scene->render_viewport)) {
         render_scene3d_camera camera = camera3d(scene->render_viewport);
         app_scene_renderer_draw3d(
@@ -929,14 +1100,11 @@ void app_scene_authoring_render(void *user)
         if (render_skip_has(hidden, entity)) {
             continue;
         }
-        GameTransform pose = *GAME_GameTransform_get_const(world, entity);
-        if (runtime) {
-            engine_render_position(runtime, entity, &pose);
-        }
-        const GameTransform *transform = &pose;
+        GameGlobalTransform2D shown = engine_render_transform(runtime, world, entity);
+        const GameTransform *transform = &shown.position;
         const GameAppearance *appearance = GAME_GameAppearance_get_const(world, entity);
         CF_Aabb bounds;
-        float radians = actor_orientation(world, entity);
+        float radians = -shown.radians;
         if (!appearance_bounds(
                 transform,
                 appearance,

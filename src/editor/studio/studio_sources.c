@@ -1257,16 +1257,17 @@ static bool sync_collaboration(studio *s, const studio_panel_sync *at)
 /* ---------- New Project ---------- */
 
 /* `new_project`, the New Project dialog: the name the panel edits, and the
- * error, waiting and discard confirmation project operations own. */
+ * error, waiting and save confirmation project operations own. */
 static void add_new_project(yyjson_mut_doc *doc)
 {
-    static const char *const TEXTS[] = { "name", "error", "error_markup" };
+    static const char *const TEXTS[] = { "name",    "error",    "error_markup",
+                                         "confirm", "location", "folder" };
     yyjson_mut_val *page = root_object(doc, "new_project");
     for (size_t i = 0; i < sizeof TEXTS / sizeof *TEXTS; i++) {
         yyjson_mut_obj_add_str(doc, page, TEXTS[i], "");
     }
     yyjson_mut_obj_add_bool(doc, page, "waiting", false);
-    yyjson_mut_obj_add_bool(doc, page, "confirm_discard", false);
+    yyjson_mut_obj_add_bool(doc, page, "confirm_save", false);
 }
 
 /* Markup showing `text` as text, so names and paths never parse as tags. */
@@ -1296,18 +1297,26 @@ static bool sync_new_project(studio *s, const studio_panel_sync *at)
     const char *text = yyjson_mut_get_str(name);
     studio_new_project *dialog = &s->new_project;
     if (!at->preview && !dialog->focus && !dialog->waiting &&
-        !dialog->confirm_discard && strcmp(dialog->name, text)) {
+        !dialog->confirm_save && strcmp(dialog->name, text)) {
         snprintf(dialog->name, sizeof dialog->name, "%s", text);
         dialog->error[0] = '\0';
         dialog->created_root[0] = '\0';
     }
     yyjson_mut_val *error = yyjson_mut_obj_get(page, "error");
     yyjson_mut_val *waiting = yyjson_mut_obj_get(page, "waiting");
-    yyjson_mut_val *confirmation = yyjson_mut_obj_get(page, "confirm_discard");
+    yyjson_mut_val *confirmation = yyjson_mut_obj_get(page, "confirm_save");
+    yyjson_mut_val *confirm = yyjson_mut_obj_get(page, "confirm");
+    yyjson_mut_val *location = yyjson_mut_obj_get(page, "location");
+    yyjson_mut_val *folder = yyjson_mut_obj_get(page, "folder");
+    char shown[sizeof dialog->folder + 4];
+    studio_new_project_location(s, shown, sizeof shown);
     bool changed = strcmp(text, dialog->name) ||
                    strcmp(yyjson_mut_get_str(error), dialog->error) ||
+                   strcmp(yyjson_mut_get_str(confirm), dialog->confirm) ||
+                   strcmp(yyjson_mut_get_str(location), shown) ||
+                   strcmp(yyjson_mut_get_str(folder), dialog->folder) ||
                    yyjson_mut_get_bool(waiting) != dialog->waiting ||
-                   yyjson_mut_get_bool(confirmation) != dialog->confirm_discard;
+                   yyjson_mut_get_bool(confirmation) != dialog->confirm_save;
     if (!changed) {
         return false;
     }
@@ -1317,7 +1326,10 @@ static bool sync_new_project(studio *s, const studio_panel_sync *at)
     escape_markup(markup, sizeof markup, dialog->error);
     ui_data_set_text(at->doc, yyjson_mut_obj_get(page, "error_markup"), markup);
     yyjson_mut_set_bool(waiting, dialog->waiting);
-    yyjson_mut_set_bool(confirmation, dialog->confirm_discard);
+    ui_data_set_text(at->doc, confirm, dialog->confirm);
+    ui_data_set_text(at->doc, location, shown);
+    ui_data_set_text(at->doc, folder, dialog->folder);
+    yyjson_mut_set_bool(confirmation, dialog->confirm_save);
     return true;
 }
 
@@ -2031,6 +2043,9 @@ static hint_list editor_hints(studio *s)
     static const studio_hint BEHAVIOR[] = { { KIT_ICON_MOUSE, NULL, "Select" },
                                             { 0, "Shift+A", "Add" },
                                             { 0, "Q", "Straighten" } };
+    /* A read-only graph offers no edits; its header says why. */
+    static const studio_hint READONLY[] = { { KIT_ICON_MOUSE, NULL, "Select" },
+                                            { 0, "F", "Frame" } };
     /* While the game runs, the graph follows the object selected. */
     static const studio_hint DEBUGGING[] = {
         { KIT_ICON_MOUSE, NULL, "Select" },
@@ -2073,7 +2088,10 @@ static hint_list editor_hints(studio *s)
             if (s->graph.gesture == STUDIO_GRAPH_MOVE) {
                 return HINT_LIST(MOVING);
             }
-            return studio_session(s) ? HINT_LIST(DEBUGGING) : HINT_LIST(BEHAVIOR);
+            if (studio_session(s)) {
+                return HINT_LIST(DEBUGGING);
+            }
+            return sg_graph_readonly(s) ? HINT_LIST(READONLY) : HINT_LIST(BEHAVIOR);
         default: return HINT_LIST(OTHER);
     }
 }

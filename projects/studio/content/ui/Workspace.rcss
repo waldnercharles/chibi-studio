@@ -1,10 +1,9 @@
 /* Studio's workspace (studio_shell.c hosts it and binds `workspace`):
    Blender-style areas as floating panels on the app's backdrop with 6 dp
    gutters, the splitters between them, the drawer under the main areas and
-   the side column easing open and shut, and a maximized area filling it
-   all. Each area is a document of its own shown over its place
-   (#area-<key>), so a change inside one lays out only that one, and the
-   places here stay empty. This document lies over the areas and passes the
+   the side column, and a maximized area filling it all. Each area is a
+   document of its own shown over its place (#area-<key>), so a change
+   inside one lays out only that one, and the places here stay empty. This document lies over the areas and passes the
    pointer through everywhere but its splitters, so their hit areas reach
    past the gutters onto the areas beside them. */
 body { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display: flex; pointer-events: none; }
@@ -19,20 +18,21 @@ body { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display
 // The kit's box an area's document takes.
 .area-doc { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; }
 
-/* The drawer and the side column keep their last size and ease open and
-   shut (the drawer in 200 ms and 100 ms, the column in 200 ms), clipping
-   what they hold; their splitters move them directly. */
-.drawer {
-  display: flex; flex-direction: column; flex: 0 0 auto; height: 0dp; overflow: hidden;
-  transition: height 0.1s quadratic-out;
-}
-.drawer[data-open] { height: var(--drawer, 0dp); transition: height 0.2s quadratic-out; }
-.side { display: flex; flex: 0 0 auto; width: 0dp; overflow: hidden; transition: width 0.2s quadratic-out; }
+/* The drawer and the side column keep their last size and open and shut at
+   once, as VS Code's panels do, clipping what they hold; their splitters
+   move them directly. They toggle from the keyboard many times a session,
+   and easing their size would lay out every area and resize the viewport on
+   each frame of it (Emil: no motion for frequent, keyboard-driven changes;
+   animate transform and opacity only). Each area is a document of its own
+   placed over its place, so a transform here could not move it. */
+.drawer { display: flex; flex-direction: column; flex: 0 0 auto; height: 0dp; overflow: hidden; }
+.drawer[data-open] { height: var(--drawer, 0dp); }
+.side { display: flex; flex: 0 0 auto; width: 0dp; overflow: hidden; }
 .side[data-open] { width: var(--side, 0dp); }
 .side .column { flex: 1 1 0dp; min-width: 0dp; }
 // A maximized area fills the workspace.
 .workspace[data-max=drawer] .drawer, .workspace[data-max=outliner] .side, .workspace[data-max=properties] .side {
-  flex: 1 1 0dp; width: auto; height: auto; transition: none;
+  flex: 1 1 0dp; width: auto; height: auto;
 }
 
 /* Splitters: the 6 dp gutters between areas, which tint while hovered or
@@ -44,6 +44,3 @@ body { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; display
 .split[axis=y] .grip { left: 0dp; right: 0dp; top: 2dp; bottom: 2dp; }
 .split:hover .grip, .split[data-dragging] .grip { background-color: var(--primary-wash); }
 
-@media (theme: reduced-motion) {
-  .drawer, .drawer[data-open], .side { transition: none; }
-}

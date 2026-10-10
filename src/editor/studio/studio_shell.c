@@ -138,6 +138,10 @@ static void toast(studio *s, kit_toast_type type, const char *title, const char 
     char text[256];
     snprintf(text, sizeof text, description ? "%s: %s" : "%s", title, description);
     studio_record(s, type, text);
+    /* Save All reports once for every document it saved. */
+    if (type == KIT_TOAST_SUCCESS && s->saving_all) {
+        return;
+    }
     kit_toast(
         s->kit,
         0,
@@ -148,12 +152,24 @@ static void toast(studio *s, kit_toast_type type, const char *title, const char 
     );
 }
 
+void studio_saved(studio *s, const char *title, const char *description)
+{
+    toast(s, KIT_TOAST_SUCCESS, title, description);
+}
+
 void studio_error(studio *s, const char *title, const char *message)
 {
     toast(s, KIT_TOAST_ERROR, title, message);
 }
 
-void studio_save(studio *s)
+bool studio_save_held(const studio *s)
+{
+    return !studio_editable(s) || runtime_session(s->scene);
+}
+
+/* Saves the active document, or the behavior on the graph canvas while
+   `graph` says the canvas owns Save. */
+static void save_document(studio *s, bool graph)
 {
     app_scene_authoring *scene = s->scene;
     if (scene->document.kind == APP_EDITOR_DOCUMENT_BEHAVIOR) {
@@ -171,18 +187,21 @@ void studio_save(studio *s)
        document owns Save in that state; graph focus owns Save only while a
        different document is active. */
     if (studio_ui_buffer(s) &&
-        (!graph_focused(s) || scene->document.kind == APP_EDITOR_DOCUMENT_UI)) {
+        (!graph || scene->document.kind == APP_EDITOR_DOCUMENT_UI)) {
         studio_code_save(s);
         return;
     }
-    if (!studio_editable(s) || runtime_session(scene)) {
-        toast(s, KIT_TOAST_WARNING, "Stop the scene to save", NULL);
+    if (studio_save_held(s)) {
+        /* Save All says once, at its end, what the scene kept unsaved. */
+        if (!s->saving_all) {
+            toast(s, KIT_TOAST_WARNING, "Stop the scene to save", NULL);
+        }
         return;
     }
     finish_transform_edit(scene, false);
     s->problems_checked = false;
     const char *failure = scene->message[0] ? scene->message : NULL;
-    if (graph_focused(s) && scene->graph_document_kind == APP_EDITOR_DOCUMENT_BEHAVIOR) {
+    if (graph && scene->graph_document_kind == APP_EDITOR_DOCUMENT_BEHAVIOR) {
         char title[160];
         snprintf(title, sizeof title, "Saved %s", scene->graph_document_id);
         if (save_behavior_document(scene) == 0) {
@@ -228,6 +247,90 @@ void studio_save(studio *s)
     } else {
         toast(s, KIT_TOAST_ERROR, "Could not save", scene->message[0] ? scene->message : NULL);
     }
+}
+
+void studio_save(studio *s)
+{
+    save_document(s, graph_focused(s));
+}
+
+bool studio_save_tab(studio *s, int index)
+{
+    app_scene_authoring *scene = s->scene;
+    finish_transform_edit(scene, false);
+    if (index != scene->active_tab && scene_tabs_activate(scene, index) != 0) {
+        return false;
+    }
+    save_document(s, false);
+    return !scene_tabs_dirty(scene, &scene->tabs[index]);
+}
+
+int studio_tab_index(const studio *s, const char *key)
+{
+    for (int i = 0; i < acount(s->scene->tabs); i++) {
+        if (!strcmp(s->scene->tabs[i].key, key)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Reports Save All once: what it saved, and what a running scene kept
+   unsaved. `title` names the last document saved. */
+static void report_save_all(studio *s, char *title, size_t size, int saved, int unsaved)
+{
+    if (!unsaved) {
+        if (saved > 1) {
+            snprintf(title, size, "Saved %d documents", saved);
+        }
+        if (saved) {
+            toast(s, KIT_TOAST_SUCCESS, title, NULL);
+        }
+        return;
+    }
+    bool held = studio_save_held(s);
+    if (saved) {
+        snprintf(title, size, "Saved %d of %d documents", saved, saved + unsaved);
+        toast(s, KIT_TOAST_WARNING, title, held ? "Stop the scene to save the rest" : NULL);
+        return;
+    }
+    if (held) {
+        toast(s, KIT_TOAST_WARNING, "Stop the scene to save", NULL);
+    }
+}
+
+/* Saves each document with unsaved edits as Save would with it active, then
+   returns to the tab that was active, and reports once for all of them. A
+   running scene keeps only documents that do not apply live from saving. */
+bool studio_save_all(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    char *active = scene->active_tab >= 0
+                     ? xstrdup(scene->tabs[scene->active_tab].key)
+                     : NULL;
+    int saved = 0, unsaved = 0;
+    char title[192] = "";
+    s->saving_all = true;
+    for (int i = 0; i < acount(scene->tabs); i++) {
+        if (!scene_tabs_dirty(scene, &scene->tabs[i])) {
+            continue;
+        }
+        if (!studio_save_tab(s, i)) {
+            unsaved++;
+            continue;
+        }
+        snprintf(title, sizeof title, "Saved %s", scene->tabs[i].label);
+        saved++;
+    }
+    s->saving_all = false;
+    int back = active ? studio_tab_index(s, active) : -1;
+    if (back >= 0 && back != scene->active_tab) {
+        finish_transform_edit(scene, false);
+        scene_tabs_activate(scene, back);
+    }
+    free(active);
+    report_save_all(s, title, sizeof title, saved, unsaved);
+    return !studio_unsaved(s);
 }
 
 /* History and dirty state belong to the active document, not always the scene. */
@@ -458,6 +561,7 @@ void studio_frame_selection(studio *s)
         fit_scene_view(s->viewport, scene->world, entities, acount(entities));
         engine_viewport_get_view(s->viewport, &scene->camera.view);
         scene->camera.saved = true;
+        app_scene_authoring_framed(scene);
     }
     afree(entities);
 }
@@ -560,6 +664,7 @@ void studio_frame_all(studio *s)
     fit_scene_view(s->viewport, s->scene->world, NULL, 0);
     engine_viewport_get_view(s->viewport, &s->scene->camera.view);
     s->scene->camera.saved = true;
+    app_scene_authoring_framed(s->scene);
 }
 
 void studio_select_all(studio *s)
@@ -907,7 +1012,8 @@ static const struct
     uint32_t icon;
 } MENU_ITEMS[] = {
     { "newMenu", "New", 0 },
-    { "project", "Project", KIT_ICON_FOLDER },
+    /* An ellipsis: the dialog asks for a name before anything is made. */
+    { "project", "Project\xe2\x80\xa6", KIT_ICON_FOLDER },
 #ifdef __EMSCRIPTEN__
     { "openRecent", "Open Project", KIT_ICON_FOLDER },
 #else
@@ -1062,7 +1168,7 @@ static scene_prototype_asset *preview_candidate(studio *s)
 }
 
 /* What Play runs: the scene, or a preview of a prototype; fixed while a
-   session runs. The label morphs as the target changes. */
+   session runs. */
 static bool show_target(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *target)
 {
     app_scene_authoring *scene = s->scene;
@@ -1679,11 +1785,11 @@ bool studio_areas_moved(studio *s)
 }
 
 /* The workspace is authored: projects/studio's Workspace lays out the
-   areas' places, the splitters between them, the drawer and side column
-   easing open and shut, and a maximized area filling it all, from the
-   `workspace` source. It is a document of its own over the areas, so a
-   splitter's hit area reaches past its gutter onto theirs; everything else
-   in it passes the pointer through. */
+   areas' places, the splitters between them, the drawer and side column,
+   and a maximized area filling it all, from the `workspace` source. It is
+   a document of its own over the areas, so a splitter's hit area reaches
+   past its gutter onto theirs; everything else in it passes the pointer
+   through. */
 static void workspace(studio *s)
 {
     kit *k = s->kit;
@@ -1767,7 +1873,7 @@ static void track_pointer(studio *s)
 }
 
 /* editor/Components.kdl applies without a restart. An invalid edit keeps the
-   last valid file; components present generically while it is missing. */
+   last valid file; the engine's presentation applies while it is missing. */
 static void sync_presentation(studio *s)
 {
     studio_presentation *p = &s->presentation;

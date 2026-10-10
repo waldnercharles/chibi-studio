@@ -714,7 +714,8 @@ const char *studio_thumb_stage(studio *s)
 
 static game_prototype_preview_scene_entity entity_of(const game_prototype *prototype)
 {
-    return (game_prototype_preview_scene_entity){ .prototype = prototype };
+    return (game_prototype_preview_scene_entity){ .prototype = prototype,
+                                                  .parent = -1 };
 }
 
 /* One instance on the project's stage, fitted to the square, which spans at
@@ -811,6 +812,7 @@ static game_prototype_preview_scene_entity *scene_entities(studio *s, const game
             entities,
             ((game_prototype_preview_scene_entity){
                 .prototype = asset->prototype,
+                .parent = e->parent,
                 .components = e->components,
                 .behaviors = (const char *const *)e->behaviors,
                 .behavior_count = acount(e->behaviors),

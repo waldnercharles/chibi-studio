@@ -209,8 +209,9 @@ static void add_scene_document(app_scene_authoring *scene, reference_index *inde
     for (int i = 0; document && i < acount(document->entities); i++) {
         game_scene_entity *entity = &document->entities[i];
         scene_prototype_asset *base = find_prototype(scene, entity->prototype);
+        char *path = game_scene_document_entity_path(document, i);
         reference_object object = {
-            .name = entity->name,
+            .name = path,
             .prototype = entity->prototype,
             .base = base ? base->prototype : NULL,
             .overrides = entity->components,
@@ -218,6 +219,7 @@ static void add_scene_document(app_scene_authoring *scene, reference_index *inde
             .behavior_count = acount(entity->behaviors),
         };
         reference_index_add_object(index, source, &object);
+        free(path);
     }
     if (document) {
         reference_index_add_page(index, source, document->ui, scene->default_ui);

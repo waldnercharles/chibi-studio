@@ -429,13 +429,19 @@ extern "C"
         kit_toast_type type;
         const char *title;
         const char *description;
-        const char *action; /* one button, e.g. "Undo"; pressing it dismisses the toast */
+        /* Sonner's action and cancel: the primary button, e.g. "Undo" or
+           "Save", and a secondary one before it, e.g. "Discard". Pressing
+           either dismisses the toast. */
+        const char *action;
+        const char *cancel;
         double duration; /* seconds; 0 means 4, negative stays until closed */
     } kit_toast_desc;
     int kit_toast(kit *k, int id, const kit_toast_desc *desc);
     void kit_toast_dismiss(kit *k, int id);
     /* True once, the frame after the toast's action was pressed. */
     bool kit_toast_action(kit *k, int id);
+    /* True once, the frame after the toast's cancel was pressed. */
+    bool kit_toast_cancel(kit *k, int id);
 
     /* Drag and drop (dnd-kit), thin wrappers over the drag every document
      * shares (ui/drag.h), so kit and authored lists drag into each other. The
@@ -638,7 +644,8 @@ extern "C"
     typedef struct text_edit text_edit;
     void kit_code_apply(kit_code_editor *e, const text_edit *edits, int count);
     /* Inserts pasted text at the cursor or replaces the active selection.
-     * CRLF and CR line endings become LF; the paste is one undo step. */
+     * CRLF and CR line endings become LF; the paste is one undo step,
+     * reported with KIT_CODE_STEP. */
     void kit_code_paste(kit_code_editor *e, const char *text);
     /* The editor's own history. */
     void kit_code_undo(kit_code_editor *e);
@@ -655,9 +662,27 @@ extern "C"
     /* The byte whose glyph the pointer has rested on, or -1: what the next
      * frame's desc.hover describes. */
     int kit_code_hover(const kit_code_editor *e);
+    /* The byte under the pointer while the primary modifier is held, or -1:
+     * what the next frame's desc.link spans, the symbol a primary click
+     * goes to the definition of. */
+    int kit_code_link(const kit_code_editor *e);
     /* Vim's mode as its status line names it ("NORMAL", "INSERT",
      * "VISUAL"), or NULL with the standard keys. */
     const char *kit_code_mode(const kit_code_editor *e);
+    /* Reports `events` (KIT_CODE_*) at the next kit_code, as if the keys
+     * had asked: a host's command or menu item runs Go to Definition or
+     * Suggest through the same path. */
+    void kit_code_post(kit_code_editor *e, unsigned events);
+    /* A short message in a card under the caret, as VS Code's "No
+     * definition found", until the next key, press or cursor move. */
+    void kit_code_notice(kit_code_editor *e, const char *message);
+    /* Toggles a comment on the lines the selection touches, or the cursor's
+     * line, as VS Code's Toggle Line Comment: with `line` ("//"), each line
+     * gains or loses the prefix; without, `open` and `close` ("<!--",
+     * "-->") wrap or unwrap the lines as one block. The cursor and the
+     * selection keep their text; the change reports KIT_CODE_CHANGED and
+     * KIT_CODE_STEP. */
+    void kit_code_toggle_comment(kit_code_editor *e, const char *line, const char *open, const char *close);
 
     /* Events since the last kit_code for this editor. */
     enum
@@ -672,23 +697,32 @@ extern "C"
          * modifier and Z or Y, Vim's u and Control+R) and nothing changed. */
         KIT_CODE_UNDO = 1 << 6,
         KIT_CODE_REDO = 1 << 7,
-        /* Go to Definition (F12, or a primary click, which places the
-         * cursor first) and Find References (Shift+F12), at the cursor. */
+        /* Go to Definition (a primary click, which places the cursor
+         * first, or Vim gd) and Find References (Vim gr), at the cursor. */
         KIT_CODE_DEFINITION = 1 << 8,
         KIT_CODE_REFERENCES = 1 << 9,
-        /* Control+Space: complete at the cursor. */
+        /* Complete at the cursor (Control+Space or kit_code_post). */
         KIT_CODE_SUGGEST = 1 << 10,
         KIT_CODE_BREAKPOINT = 1 << 11,
-        KIT_CODE_RENAME = 1 << 12, /* F2, or Vim gR */
-        KIT_CODE_CALLS = 1 << 13,  /* Shift+Alt+H, or Vim gc */
+        KIT_CODE_RENAME = 1 << 12, /* Vim gR */
+        KIT_CODE_CALLS = 1 << 13,  /* Vim gc */
+        /* A secondary click, which moved the cursor there unless it fell
+         * in the selection: the host's context menu. */
+        KIT_CODE_MENU = 1 << 14,
+        /* With KIT_CODE_CHANGED: a paste or a toggled comment, which the
+         * host's history keeps as an undo step of its own instead of joining
+         * the typing around it. */
+        KIT_CODE_STEP = 1 << 15,
     };
     typedef struct kit_code_result
     {
         unsigned events;
-        /* A chord with the primary modifier the editor leaves to the host,
-         * in studio_chord notation ("Mod+S", "Mod+Shift+A"): Save, Search,
+        /* A chord the editor leaves to the host, in studio_chord notation
+         * ("Mod+S", "Shift+F12"): with the primary modifier, Save, Search,
          * UI Scale and the drawers always, anything the standard keys do not
-         * edit with, and on a Mac every Command chord in Vim but Z and V. */
+         * edit with, and on a Mac every Command chord in Vim but Z and V;
+         * the function keys but F9; and Shift+Alt+H. The
+         * host runs the command bound to it, as Go to Definition on F12. */
         char chord[32];
         int completion; /* the accepted item, or -1 */
         bool focused;   /* the editor holds the keyboard */
@@ -699,6 +733,8 @@ extern "C"
         KIT_CODE_ERROR,
         KIT_CODE_WARNING,
         KIT_CODE_INFO,
+        /* A breakpoint: a dot in the gutter, never underlined. */
+        KIT_CODE_BREAKPOINT_MARKER,
     } kit_code_severity;
     /* A diagnostic: a gutter mark and an underline whose message shows in
      * the hover card when the pointer rests on the line. */
@@ -754,6 +790,13 @@ extern "C"
         /* Lines run on past the right edge, which scrolls to the cursor and
          * with the wheel sideways, instead of wrapping. */
         bool no_wrap;
+        /* Characters besides letters, digits and '_' that a double click
+         * keeps in a word, as "-" in RCSS's names; NULL for none. */
+        const char *word_chars;
+        /* Bytes [link_start, link_end) of the symbol kit_code_link names,
+         * when it has a definition: underlined as a link, as VS Code does
+         * under Command or Control. */
+        int link_start, link_end;
         /* What the byte kit_code_hover names is: a title line, then detail
          * lines. It shows in a card under the pointer, after the diagnostics
          * of its line. */

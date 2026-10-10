@@ -67,6 +67,7 @@ typedef struct
 {
     engine_viewport_view view;
     bool saved;
+    float framed; /* the view's width when last framed, its 100% zoom */
 } scene_camera;
 
 /* What the Generated World preview reads, hashed. */
@@ -417,6 +418,8 @@ char **instance_behavior_names(app_scene_authoring *scene, ecs_entity entity);
 scene_prototype_asset *previewed_prototype(app_scene_authoring *scene);
 
 bool prototype_has_component_id(const game_prototype *prototype, ecs_component_id id);
+/* The registry's component `name`, or NULL. */
+const ecs_component_desc *component_descriptor(const app_scene_authoring *scene, const char *name);
 /* The live world and the prototype preview spawn the prototype as it is now. */
 int register_prototype_hosts(app_scene_authoring *scene, const game_prototype *prototype);
 
@@ -529,15 +532,32 @@ int actor_has_behavior(game_source_registry *sources, const scene_actor *actor, 
 int add_actor(app_scene_authoring *scene, const char *name, const char *prototype_name);
 /* Scene document entities (scene_document.c), as loading and the clipboard
    share them: whether this project can make one, with the message set when
-   not; one spawned as a new object named `name`, its actor last; and an
-   object written as one. */
+   not; one spawned as a new object named `name` under `parent` (a zero handle
+   for a root), its actor last; and the objects whose indices `actors` lists,
+   in order, written as entities. An object whose parent is not among them is
+   written as a root. */
 int scene_validate_entity(app_scene_authoring *scene, const game_scene_entity *entity);
-int scene_spawn_entity(app_scene_authoring *scene, const game_scene_entity *entity, const char *name);
-int scene_document_add_actor(
+int scene_spawn_entity(
+    app_scene_authoring *scene,
+    const game_scene_entity *entity,
+    const char *name,
+    ecs_entity parent
+);
+int scene_document_add_actors(
     app_scene_authoring *scene,
     game_scene_document *document,
-    const scene_actor *actor
+    const int *actors
 );
+/* Whether the object has children, which removing it would destroy. */
+bool scene_actor_has_children(app_scene_authoring *scene, const scene_actor *actor);
+/* Objects keep the scene's order, a parent before its children, so the
+   document and the actor array line up. The identity of the actor's parent,
+   or 0 for a root; and the index just past the actor's descendants. */
+uint64_t scene_actor_parent(app_scene_authoring *scene, const scene_actor *actor);
+int scene_actor_subtree_end(const app_scene_authoring *scene, int index);
+/* A world offset as the change it makes to the entity's local Transform,
+   turned into its parent's frame. */
+GameTransform scene_local_offset(const ecs_world *world, ecs_entity entity, GameTransform offset);
 /* The scene document's name: its file's, without the extension. */
 void scene_document_name(const app_scene_authoring *scene, char *name, size_t size);
 int add_instance_at(app_scene_authoring *scene, const char *prototype_name, const GameTransform *position);
@@ -668,7 +688,11 @@ void scene_view_rename(app_scene_authoring *scene, const char *from, const char 
 render_skip scene_view_skip(app_scene_authoring *scene, unsigned flags, uint64_t **buffer);
 /* The open scene's view state follows it to `path`, where it is saved. */
 void scene_view_save_as(app_scene_authoring *scene, const char *path);
-/* The topmost object at (x, y) in the 2D edit view that `skip` does not hold. */
+/* Whether the 2D view draws the entity: an appearance, a tilemap or an
+   enabled surface. The host marks the others (app_scene_authoring_markers). */
+bool scene_object_drawn(const ecs_world *world, ecs_entity entity);
+/* The topmost object at (x, y) in the 2D edit view that `skip` does not
+   hold; a marker over an undrawn object is above every drawn one. */
 ecs_entity pick_scene_entity(app_scene_authoring *scene, float x, float y, render_skip skip);
 /* The object a click at the pointer would pick, as of the Scene's last draw. */
 ecs_entity scene_pick_at_pointer(app_scene_authoring *scene, engine_viewport *viewport);

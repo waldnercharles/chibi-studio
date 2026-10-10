@@ -30,6 +30,8 @@ endif()
 # resting pointer, for hover; a horizontal offset for lines that do not wrap;
 # and no command line or airline while the command line is empty. A marker
 # that removes itself when text is typed inside it lives until it is done.
+# A marker can show as a dot in the indicator column, as a breakpoint does,
+# and underlines draw inside their line, so a diagnostic never moves the text.
 chibi_apply_patches("${zep_SOURCE_DIR}"
     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-integer-types.patch"
     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-wheel-scroll.patch"
@@ -39,7 +41,9 @@ chibi_apply_patches("${zep_SOURCE_DIR}"
     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-undo-pop.patch"
     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-change-inner-word.patch"
     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-host-view.patch"
-    "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-marker-self-clear.patch")
+    "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-marker-self-clear.patch"
+    "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-indicator-dot.patch"
+    "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-flat-underline.patch")
 
 set(ZEP_SOURCES "")
 foreach(name buffer commands display editor filesystem glyph_iterator indexer keymap

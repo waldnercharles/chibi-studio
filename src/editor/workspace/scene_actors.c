@@ -1,10 +1,12 @@
 #include "assets/scene_document.h"
 #include "authoring/material_prepare.h"
+#include "authoring/native_prototype.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/collab/collab.h"
 #include "editor/workspace/scene_internal.h"
 #include "runtime/component_catalog.h"
 #include "runtime/declared_components.h"
+#include "runtime/transform_propagation.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -59,6 +61,52 @@ void free_behavior_snapshots(game_prototype **snapshots)
         game_prototype_free(snapshots[i]);
     }
     afree(snapshots);
+}
+
+bool scene_actor_has_children(app_scene_authoring *scene, const scene_actor *actor)
+{
+    return ecs_pair_source_count(scene->world, ECS_CHILD_OF, actor->entity) != 0;
+}
+
+uint64_t scene_actor_parent(app_scene_authoring *scene, const scene_actor *actor)
+{
+    ecs_entity parent = ecs_parent(scene->world, actor->entity);
+    for (int i = 0; parent.slot && i < acount(scene->actors); i++) {
+        if (ecs_entity_to_u64(scene->actors[i].entity) == ecs_entity_to_u64(parent)) {
+            return scene->actors[i].identity;
+        }
+    }
+    return 0;
+}
+
+static bool descends_from(const app_scene_authoring *scene, ecs_entity entity, ecs_entity ancestor)
+{
+    for (ecs_entity at = ecs_parent(scene->world, entity); at.slot;
+         at = ecs_parent(scene->world, at)) {
+        if (ecs_entity_to_u64(at) == ecs_entity_to_u64(ancestor)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+GameTransform scene_local_offset(const ecs_world *world, ecs_entity entity, GameTransform offset)
+{
+    ecs_entity parent = game_transform_parent(world, entity);
+    float radians = parent.slot ? game_transform_world_2d(world, parent).radians : 0;
+    float c = cosf(radians), s = sinf(radians);
+    return (GameTransform){ c * offset.x + s * offset.y,
+                            c * offset.y - s * offset.x };
+}
+
+int scene_actor_subtree_end(const app_scene_authoring *scene, int index)
+{
+    int end = index + 1;
+    while (end < acount(scene->actors) &&
+           descends_from(scene, scene->actors[end].entity, scene->actors[index].entity)) {
+        end++;
+    }
+    return end;
 }
 
 int add_actor(app_scene_authoring *scene, const char *name, const char *prototype_name)
@@ -180,8 +228,15 @@ void remove_selected(app_scene_authoring *scene)
 }
 
 /* The object's components and behaviors, spawning as an instance of the
-   prototype whose identity is `identity`. */
-static av_value *actor_state_as(app_scene_authoring *scene, const scene_actor *actor, const char *identity)
+   prototype whose identity is `identity`, with `change` added with its
+   defaults or removed, unless NULL. */
+static av_value *actor_state_with(
+    app_scene_authoring *scene,
+    const scene_actor *actor,
+    const char *identity,
+    const ecs_component_desc *change,
+    bool add
+)
 {
     game_prototype *state = game_prototype_capture_entity(
         actor->name,
@@ -194,6 +249,13 @@ static av_value *actor_state_as(app_scene_authoring *scene, const scene_actor *a
     }
     free(state->identity);
     state->identity = xstrdup(identity);
+    int changed = !change ? 0
+                : add ? game_prototype_add_native_component(state, change)
+                      : game_prototype_remove_component(state, change->name);
+    if (changed != 0) {
+        game_prototype_free(state);
+        return NULL;
+    }
     game_source_registry *sources = scene->live->runtime->sources;
     for (int i = 0; i < game_source_attachment_count(sources); i++) {
         game_source_attachment_info info = game_source_attachment_at(sources, i);
@@ -210,6 +272,11 @@ static av_value *actor_state_as(app_scene_authoring *scene, const scene_actor *a
     return value;
 }
 
+static av_value *actor_state_as(app_scene_authoring *scene, const scene_actor *actor, const char *identity)
+{
+    return actor_state_with(scene, actor, identity, NULL, false);
+}
+
 static av_value *capture_actor_state(app_scene_authoring *scene, const scene_actor *actor)
 {
     return actor_state_as(scene, actor, actor->base->identity);
@@ -219,6 +286,27 @@ static bool actor_name_used(const app_scene_authoring *scene, const char *name)
 {
     for (int i = 0; i < acount(scene->actors); i++) {
         if (strcmp(scene->actors[i].name, name) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* Whether another child of `parent`, or another root when it is zero, is
+   named `name`. Names are unique only among siblings. */
+static bool sibling_named(
+    const app_scene_authoring *scene,
+    ecs_entity parent,
+    ecs_entity except,
+    const char *name
+)
+{
+    for (int i = 0; i < acount(scene->actors); i++) {
+        ecs_entity entity = scene->actors[i].entity;
+        if (ecs_entity_to_u64(entity) != ecs_entity_to_u64(except) &&
+            ecs_entity_to_u64(ecs_parent(scene->world, entity)) ==
+                ecs_entity_to_u64(parent) &&
+            !strcmp(scene->actors[i].name, name)) {
             return true;
         }
     }
@@ -420,6 +508,16 @@ int app_scene_authoring_delete_instance(app_scene_authoring *scene)
     }
     finish_transform_edit(scene, false);
     scene_actor *actor = selected_actor(scene);
+    /* Until the Outliner edits the hierarchy, a parent goes after its children. */
+    if (scene_actor_has_children(scene, actor)) {
+        snprintf(
+            scene->message,
+            sizeof scene->message,
+            "Delete %s's children first.",
+            actor->name
+        );
+        return -1;
+    }
     yyjson_mut_doc *action_doc = NULL;
     yyjson_mut_val *action_root = scene_action_root(scene, "instance.delete", &action_doc);
     yyjson_mut_obj_add_uint(action_doc, action_root, "actor", actor->identity);
@@ -450,10 +548,12 @@ int app_scene_authoring_delete_instance(app_scene_authoring *scene)
     ecs_entity entity = actor->entity;
     scene_actor_edit edit = { .index = scene->selected,
                               .identity = actor->identity,
+                              .parent = scene_actor_parent(scene, actor),
                               .name = name,
                               .prototype_name = prototype,
                               .base = base,
                               .state = state,
+                              .own_behaviors = actor->own_behaviors,
                               .retained = retained };
     int result = remove_actor_at(scene, scene->selected);
     if (!result) {
@@ -476,8 +576,12 @@ int app_scene_authoring_delete_instance(app_scene_authoring *scene)
 
 static int restore_actor(app_scene_authoring *scene, const scene_actor_edit *edit, ecs_entity *entity)
 {
-    if (actor_name_used(scene, edit->name) || edit->index < 0 ||
-        edit->index > acount(scene->actors)) {
+    scene_actor *parent = edit->parent ? scene_actor_by_identity(scene, edit->parent)
+                                       : NULL;
+    ecs_entity parent_entity = parent ? parent->entity : (ecs_entity){ 0 };
+    if ((edit->parent && !parent) || edit->index < 0 ||
+        edit->index > acount(scene->actors) ||
+        sibling_named(scene, parent_entity, (ecs_entity){ 0 }, edit->name)) {
         return -1;
     }
     char error[256];
@@ -510,8 +614,12 @@ static int restore_actor(app_scene_authoring *scene, const scene_actor_edit *edi
                           .name = xstrdup(edit->name),
                           .prototype_name = xstrdup(edit->prototype_name),
                           .base = base,
-                          .restored_state = state };
-    if (scene_retention_load(edit->retained, &actor.retained) != 0) {
+                          .restored_state = state,
+                          .own_behaviors = edit->own_behaviors };
+    if (scene_retention_load(edit->retained, &actor.retained) != 0 ||
+        (parent_entity.slot &&
+         (ecs_world_record_add_pair(scene->world, *entity, ECS_CHILD_OF, parent_entity, 0) ||
+          ecs_world_apply_commands(scene->world)))) {
         destroy_actor_entity(scene, *entity);
         free_actor(&actor);
         return -1;
@@ -566,8 +674,10 @@ int app_scene_authoring_duplicate_instance(app_scene_authoring *scene)
     av_value *state = capture_actor_state(scene, actor);
     av_value *base = game_prototype_to_value(actor->base);
     av_value *retained = scene_retention_save(actor->retained);
-    scene_actor_edit edit = { .index = acount(scene->actors),
+    /* The copy is its source's sibling, after the source's children. */
+    scene_actor_edit edit = { .index = scene_actor_subtree_end(scene, scene->selected),
                               .identity = created_identity,
+                              .parent = scene_actor_parent(scene, actor),
                               .name = name,
                               .prototype_name = prototype,
                               .base = base,
@@ -593,25 +703,42 @@ int app_scene_authoring_duplicate_instance(app_scene_authoring *scene)
     return result;
 }
 
-int scene_repoint_actor(app_scene_authoring *scene, int index, const char *prototype)
+/* Removes the object at `index` and adds it back as `state`, an instance of
+   `prototype` (`base`), keeping its name, place, identity and retained
+   components, and its behaviors list while its prototype stays, as one
+   Undo step. Takes `base` and `state`;
+   `prototype` may be the object's own, which removing it frees, so it is
+   copied first. */
+static int replace_actor(
+    app_scene_authoring *scene,
+    int index,
+    const char *prototype,
+    av_value *base,
+    av_value *state
+)
 {
-    scene_prototype_asset *asset = find_prototype(scene, prototype);
     scene_actor *actor = &scene->actors[index];
-    assert(asset && strcmp(actor->prototype_name, prototype));
+    /* Removing it would destroy its children. */
+    assert(!scene_actor_has_children(scene, actor));
     scene_actor_edit removed = {
         .index = index,
         .identity = actor->identity,
+        .parent = scene_actor_parent(scene, actor),
         .name = xstrdup(actor->name),
         .prototype_name = xstrdup(actor->prototype_name),
         .base = game_prototype_to_value(actor->base),
         .state = capture_actor_state(scene, actor),
+        .own_behaviors = actor->own_behaviors,
         .retained = scene_retention_save(actor->retained),
     };
     scene_actor_edit added = removed;
-    added.prototype_name = prototype;
-    added.base = game_prototype_to_value(asset->prototype);
-    added.state = actor_state_as(scene, actor, asset->prototype->identity);
+    added.prototype_name = xstrdup(prototype);
+    added.base = base;
+    added.state = state;
     added.created = true;
+    /* A new prototype's instance follows its behaviors. */
+    added.own_behaviors = removed.own_behaviors &&
+                          !strcmp(added.prototype_name, removed.prototype_name);
     ecs_entity old = actor->entity, entity = { 0 };
     int result = removed.state && added.state ? remove_actor_at(scene, index) : -1;
     if (result == 0 && restore_actor(scene, &added, &entity) != 0) {
@@ -619,22 +746,105 @@ int scene_repoint_actor(app_scene_authoring *scene, int index, const char *proto
         assert(result == 0);
         result = -1;
     }
-    if (result == 0) {
+    if (result == 0 && collab_record_history()) {
         scene_history_begin_group(scene->history);
         scene_history_push_actor(scene->history, old, &removed);
         scene_history_push_actor(scene->history, entity, &added);
         scene_history_end_group(scene->history);
+    }
+    if (result == 0) {
         scene->scene_dirty = true;
         asset_index_invalidate(scene);
     }
     free((char *)removed.name);
     free((char *)removed.prototype_name);
+    free((char *)added.prototype_name);
     av_value_free(removed.base);
     av_value_free(removed.state);
     av_value_free(removed.retained);
     av_value_free(added.base);
     av_value_free(added.state);
     return result;
+}
+
+int scene_repoint_actor(app_scene_authoring *scene, int index, const char *prototype)
+{
+    scene_prototype_asset *asset = find_prototype(scene, prototype);
+    scene_actor *actor = &scene->actors[index];
+    assert(asset && strcmp(actor->prototype_name, prototype));
+    return replace_actor(
+        scene,
+        index,
+        prototype,
+        game_prototype_to_value(asset->prototype),
+        actor_state_as(scene, actor, asset->prototype->identity)
+    );
+}
+
+static int edit_instance_component(app_scene_authoring *scene, const ecs_component_desc *desc, bool add)
+{
+    int index = scene->selected;
+    scene_actor *actor = &scene->actors[index];
+    return replace_actor(
+        scene,
+        index,
+        actor->prototype_name,
+        game_prototype_to_value(actor->base),
+        actor_state_with(scene, actor, actor->base->identity, desc, add)
+    );
+}
+
+static int collab_instance_component(app_scene_authoring *scene, const char *component_name, bool add)
+{
+    scene_actor *actor = selected_actor(scene);
+    const ecs_component_desc *desc = component_descriptor(scene, component_name);
+    if (!actor || !actor->identity || !desc ||
+        ecs_component_has(scene->world, actor->entity, desc->id) == add ||
+        (!add && prototype_has_component_id(actor->base, desc->id))) {
+        return -1;
+    }
+    if (scene_actor_has_children(scene, actor)) {
+        snprintf(
+            scene->message,
+            sizeof scene->message,
+            "%s has children, so its components can't change yet.",
+            actor->name
+        );
+        return -1;
+    }
+    finish_transform_edit(scene, false);
+    finish_property_edit(scene);
+    yyjson_mut_doc *action_doc = NULL;
+    yyjson_mut_val *action_root = scene_action_root(
+        scene,
+        add ? "instance.component_add" : "instance.component_remove",
+        &action_doc
+    );
+    yyjson_mut_obj_add_uint(action_doc, action_root, "actor", actor->identity);
+    yyjson_mut_obj_add_strcpy(action_doc, action_root, "component", component_name);
+    char *action = scene_action_write(action_doc);
+    collab_action_gate gate = action ? scene_action_begin(scene, action)
+                                     : COLLAB_ACTION_REJECT;
+    if (gate != COLLAB_ACTION_APPLY) {
+        free(action);
+        return gate == COLLAB_ACTION_PENDING ? 1 : -1;
+    }
+    int result = scene->runtime_snapshot_valid
+                   ? -1
+                   : edit_instance_component(scene, desc, add);
+    scene_action_finish(scene, action, result == 0);
+    free(action);
+    return result;
+}
+
+int app_scene_authoring_add_instance_component(app_scene_authoring *scene, const char *component_name)
+{
+    return collab_instance_component(scene, component_name, true);
+}
+
+int app_scene_authoring_remove_instance_component(app_scene_authoring *scene, const char *component_name)
+{
+    return collab_instance_component(scene, component_name, false);
 }
 
 /* The selected objects' identities, in scene order. The caller frees the
@@ -755,11 +965,12 @@ static void move_actor(app_scene_authoring *scene, ecs_entity entity, GameTransf
     if (!position) {
         return;
     }
+    GameTransform local = scene_local_offset(scene->world, entity, offset);
     begin_transform_edit(scene, entity);
     write_transform_edit(
         scene,
         entity,
-        (GameTransform){ position->x + offset.x, position->y + offset.y }
+        (GameTransform){ position->x + local.x, position->y + local.y }
     );
     finish_transform_edit(scene, false);
 }
@@ -781,7 +992,7 @@ int scene_duplicate_selection(app_scene_authoring *scene, GameTransform offset)
         if (result) {
             break;
         }
-        scene_actor *copy = &alast(scene->actors);
+        scene_actor *copy = selected_actor(scene);
         move_actor(scene, copy->entity, offset);
         apush(copies, copy->identity);
         active_copy = sources[i] == active ? copy->identity : active_copy;
@@ -799,12 +1010,14 @@ char *scene_copy_selection(app_scene_authoring *scene)
     char name[256];
     scene_document_name(scene, name, sizeof name);
     game_scene_document *document = game_scene_document_new(name);
-    int result = 0;
-    for (int i = 0; i < acount(scene->actors) && !result; i++) {
+    int *selected = NULL;
+    for (int i = 0; i < acount(scene->actors); i++) {
         if (scene_instance_selected(scene, i)) {
-            result = scene_document_add_actor(scene, document, &scene->actors[i]);
+            apush(selected, i);
         }
     }
+    int result = scene_document_add_actors(scene, document, selected);
+    afree(selected);
     char *text = !result && acount(document->entities)
                    ? game_scene_document_save(
                          document,
@@ -835,9 +1048,13 @@ static int spawn_pasted(app_scene_authoring *scene, const game_scene_document *d
 {
     int first = acount(scene->actors);
     for (int i = 0; i < acount(document->entities); i++) {
+        const game_scene_entity *entity = &document->entities[i];
+        ecs_entity parent = entity->parent >= 0
+                              ? scene->actors[first + entity->parent].entity
+                              : (ecs_entity){ 0 };
         char name[256];
-        if (paste_name(scene, &document->entities[i], name, sizeof name) != 0 ||
-            scene_spawn_entity(scene, &document->entities[i], name) != 0) {
+        if (paste_name(scene, entity, name, sizeof name) != 0 ||
+            scene_spawn_entity(scene, entity, name, parent) != 0) {
             while (acount(scene->actors) > first) {
                 remove_actor_at(scene, acount(scene->actors) - 1);
             }
@@ -854,7 +1071,8 @@ static GameTransform paste_move(app_scene_authoring *scene, int first, scene_pas
     for (int i = first; i < acount(scene->actors); i++) {
         const GameTransform
             *at = GAME_GameTransform_get_const(scene->world, scene->actors[i].entity);
-        if (at) {
+        /* Pasted children keep their place under their pasted parents. */
+        if (at && !ecs_parent(scene->world, scene->actors[i].entity).slot) {
             min = (CF_V2){ fminf(min.x, at->x), fminf(min.y, at->y) };
             max = (CF_V2){ fmaxf(max.x, at->x), fmaxf(max.y, at->y) };
         }
@@ -880,6 +1098,7 @@ static void record_created(app_scene_authoring *scene, int index)
     av_value *retained = scene_retention_save(actor->retained);
     scene_actor_edit edit = { .index = index,
                               .identity = actor->identity,
+                              .parent = scene_actor_parent(scene, actor),
                               .name = actor->name,
                               .prototype_name = actor->prototype_name,
                               .base = base,
@@ -936,7 +1155,7 @@ int scene_paste(app_scene_authoring *scene, const char *text, scene_paste_place 
     for (int i = first; i < acount(scene->actors); i++) {
         const GameTransform
             *at = GAME_GameTransform_get_const(scene->world, scene->actors[i].entity);
-        if (at) {
+        if (at && !ecs_parent(scene->world, scene->actors[i].entity).slot) {
             write_position(
                 scene,
                 scene->actors[i].entity,
@@ -982,7 +1201,7 @@ int app_scene_authoring_rename_instance(app_scene_authoring *scene, ecs_entity e
     }
     if (game_scene_entity_validate_name(
             name,
-            actor_name_used(scene, name),
+            sibling_named(scene, ecs_parent(scene->world, entity), entity, name),
             scene->message,
             sizeof scene->message
         )) {
@@ -1028,8 +1247,12 @@ int app_scene_authoring_rename_instance(app_scene_authoring *scene, ecs_entity e
 
 static void apply_physics_settings(app_scene_authoring *scene, game_physics_settings settings)
 {
-    game_physics_reset(scene->live->runtime->physics);
-    int result = game_physics_configure(scene->live->runtime->physics, settings);
+    game_preview_runtime *runtime = scene->live->runtime;
+    game_physics_reset(runtime->physics);
+    game_physics3d_reset(runtime->physics3d);
+    int result = game_physics_configure(runtime->physics, settings);
+    assert(result == 0);
+    result = game_physics3d_configure(runtime->physics3d, settings);
     assert(result == 0);
     scene->scene_dirty = true;
     asset_index_invalidate(scene);
@@ -1111,7 +1334,8 @@ static int replay_scene_edit_one(app_scene_authoring *scene, bool redo)
     const char *name = scene_history_peek_rename(scene->history, redo, &entity);
     if (name) {
         int index = actor_index(scene, entity);
-        if (index < 0 || actor_name_used(scene, name)) {
+        if (index < 0 ||
+            sibling_named(scene, ecs_parent(scene->world, entity), entity, name)) {
             return -1;
         }
         set_actor_name(scene, &scene->actors[index], name);

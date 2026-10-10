@@ -617,6 +617,7 @@ void sg_input_row(gd_rows *r, studio *s, node *n, int p)
     }
     if (kind == SG_INPUT_VALUE) {
         pin_row pr = { s, n, 0, p, id, d.readonly };
+        d.bindable = sg_input_bindable(s, n, p);
         value_row(r, &pr, &d);
         return;
     }
@@ -1606,6 +1607,18 @@ static void edit_inline_expression(studio *s, const ui_activation *a)
     }
 }
 
+/* Bind to Source: the row shows its source field, which the details frame
+   focuses, opening its list (studio_graph_details.c). */
+static void bind_input(studio *s, node *n, int p, const char *row)
+{
+    studio_graph *g = &s->graph;
+    g->bind_pin = n->input_pins[p].id;
+    g->bind_kit = NULL;
+    g->bind_focus = true;
+    g->details.bind_wait = 0;
+    snprintf(g->details.bind, sizeof g->details.bind, "%s", row);
+}
+
 static void edit_expression(studio *s, node *n, const ui_activation *a)
 {
     studio_graph *g = &s->graph;
@@ -1664,6 +1677,8 @@ void studio_node_details_action(studio *s, const char *action, const ui_activati
                 edit_inline_expression(s, a);
             } else if (!strcmp(action, "source")) {
                 sg_source_open(s, n, t.index, a->args[0], a->anchor ? rml_element_ref_get(a->anchor) : NULL);
+            } else if (!strcmp(action, "bind")) {
+                bind_input(s, n, t.index, a->args[0]);
             } else if (!strcmp(action, "cancel")) {
                 s->graph.input_edit_pin = s->graph.input_edit_node = 0;
             } else if (value) {

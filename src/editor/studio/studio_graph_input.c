@@ -1,6 +1,7 @@
 #include "graph/authoring/graph_edit.h"
 /* Graph canvas input: replayed window events, gestures and shortcuts. */
 #include "editor/studio/studio_graph_internal.h"
+#include "graph/model/local.h"
 #include "platform/cute.h"
 #include "support/array.h"
 #include "ui/input_feel.h"
@@ -88,6 +89,11 @@ static float drag_distance(const studio *s)
         g->in.mouse_x * zoom + g->surface.rect.x - g->press_x,
         g->in.mouse_y * zoom + g->surface.rect.y - g->press_y
     );
+}
+
+bool sg_link_dragging(const studio *s)
+{
+    return s->graph.gesture == STUDIO_GRAPH_LINK && drag_distance(s) >= FEEL_DRAG_DP;
 }
 
 static float segment_distance(float px, float py, float ax, float ay, float bx, float by)
@@ -274,6 +280,22 @@ static void begin_link(studio *s, node *n, int kind, int pin)
     g->link_pin = pin;
 }
 
+/* Node search opens where the node will land, at the pointer, rather than
+   across the window (Fitts; Blender's Add menu, Unreal's context menu). */
+static void open_node_search(studio *s, const char *placeholder)
+{
+    studio_graph *g = &s->graph;
+    float zoom = sg_zoom(s), scale = studio_pixel_ratio(s);
+    float box[4] = { (g->surface.rect.x + (g->world_x - g->x) * zoom) * scale,
+                     (g->surface.rect.y + (g->world_y - g->y) * zoom) * scale,
+                     0,
+                     0 };
+    g->spawn_pending = true;
+    g->spawn_x = g->world_x;
+    g->spawn_y = g->world_y;
+    studio_palette_open_box(s, STUDIO_PALETTE_NODES, placeholder, box);
+}
+
 static void end_link(studio *s, graph_hit hit)
 {
     studio_graph *g = &s->graph;
@@ -329,10 +351,7 @@ static void end_link(studio *s, graph_hit hit)
         e->spawn_link_pending = 1;
         e->spawn_link_pin = (ed_pin_view){ from, g->link_kind, g->link_pin };
         e->pending_snapshot = ed_snapshot(e);
-        g->spawn_pending = true;
-        g->spawn_x = g->world_x;
-        g->spawn_y = g->world_y;
-        studio_palette_open(s, STUDIO_PALETTE_NODES, "Add a node for this wire");
+        open_node_search(s, "Add a node for this wire");
     }
 }
 
@@ -730,10 +749,9 @@ static void release(studio *s, graph_hit hit)
                 g->menu_x = g->press_x;
                 g->menu_y = g->press_y;
             } else if (!sg_graph_readonly(s)) {
-                g->spawn_pending = true;
-                g->spawn_x = g->world_x;
-                g->spawn_y = g->world_y;
-                studio_palette_open(s, STUDIO_PALETTE_NODES, "Add a node");
+                open_node_search(s, "Add a node");
+            } else {
+                sg_refuse_edit(s);
             }
             break;
         }
@@ -962,6 +980,8 @@ void sg_pointer(studio *s)
     graph_hit hit = inside ? parse_hit(kit_hovered_path(g->kit)) : NO_HIT;
     bool on_control = inside && kit_pointer_on_control(g->kit);
     node *hovered = sg_node_by_id(s, hit.node);
+    uint64_t was_node = g->hover_node;
+    int was_kind = g->hover_kind, was_pin = g->hover_pin;
     g->hover_node = hovered ? hovered->id : 0;
     g->hover_kind = hovered && !on_control ? hit.kind : -1;
     g->hover_pin = hovered && !on_control ? hit.pin : -1;
@@ -980,6 +1000,10 @@ void sg_pointer(studio *s)
         g->hover_node = hit.node;
         g->hover_kind = hit.kind;
         g->hover_pin = hit.pin;
+    }
+    if (g->hover_node != was_node || g->hover_kind != was_kind ||
+        g->hover_pin != was_pin) {
+        g->hover_pin_since = g->in.time;
     }
     auto_pan(s);
     if (g->gesture == STUDIO_GRAPH_PAN) {
@@ -1020,6 +1044,119 @@ static node *renameable_hover(studio *s)
     return n && sg_pin_renameable(s, n, g->hover_kind, g->hover_pin) ? n : NULL;
 }
 
+/* Whether a drawn wire runs from one node to the other: a named value's
+   uses read its name instead of a wire. */
+static bool feeds(const graph *gr, const node *from, const node *to)
+{
+    for (int i = 0; i < acount(gr->edges); i++) {
+        const edge *ed = &gr->edges[i];
+        if (ed->from_id == from->id && ed->to_id == to->id &&
+            !graph_edge_is_local(gr, ed)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* Arrow keys walk the selection along wires (n8n): Right to the nearest
+   node it feeds, Left to the nearest feeding it, Up and Down to the nearest
+   above or below in its column. Shift keeps what was selected. */
+static void walk(studio *s, SDL_Keycode key, bool extend)
+{
+    editor *e = sg_graph_editor(s);
+    graph *gr = sg_active_graph(s);
+    node *from = e->front_node && ed_node_selected(e, e->front_node) ? e->front_node
+               : acount(e->selected) ? alast(e->selected)
+                                     : NULL;
+    float at[4], box[4];
+    if (!from || !sg_node_box(s, from, at)) {
+        return;
+    }
+    float fx = at[0] + at[2] / 2, fy = at[1] + at[3] / 2, best = INFINITY;
+    node *to = NULL;
+    for (int i = 0; i < acount(gr->nodes); i++) {
+        node *n = gr->nodes[i];
+        if (n == from || !sg_node_visible(gr, n) || !sg_node_box(s, n, box)) {
+            continue;
+        }
+        float x = box[0] + box[2] / 2, y = box[1] + box[3] / 2;
+        bool column = fabsf(x - fx) < (at[2] + box[2]) / 2;
+        bool fits = key == SDLK_RIGHT ? feeds(gr, from, n)
+                  : key == SDLK_LEFT  ? feeds(gr, n, from)
+                  : key == SDLK_UP    ? column && y < fy
+                                      : column && y > fy;
+        float distance = hypotf(x - fx, y - fy);
+        if (fits && distance < best) {
+            best = distance;
+            to = n;
+        }
+    }
+    if (!to) {
+        return;
+    }
+    if (!extend) {
+        ed_clear_selection(e);
+    }
+    ed_add_selected(e, to);
+    e->front_node = to;
+    sg_show_node(s, to, false);
+}
+
+/* M mutes the selection (Blender), or enables it when all of it is muted,
+   as one undo step. Code takes one declaration's edit at a time: the next
+   waits for the first to show in the graph. */
+static void mute_selection(studio *s)
+{
+    editor *e = sg_graph_editor(s);
+    int count = acount(e->selected);
+    if (!count) {
+        return;
+    }
+    bool muted = true;
+    for (int i = 0; i < count; i++) {
+        muted &= e->selected[i]->disabled != 0;
+    }
+    if (count == 1) {
+        sg_set_node_disabled(s, e->selected[0], !muted);
+        return;
+    }
+    if (editor_presentation(e)) {
+        sg_show_error(s, muted ? "Can't enable these nodes" : "Can't disable these nodes", "Code disables one node at a time.");
+        return;
+    }
+    ed_snapshot_before(e);
+    for (int i = 0; i < count; i++) {
+        graph_set_node_disabled(sg_active_graph(s), e->selected[i], !muted);
+    }
+}
+
+/* F9: breakpoints on the selected nodes that run (Unreal). */
+static void toggle_breakpoints(editor *e)
+{
+    bool snapshot = false;
+    for (int n = 0; n < acount(e->selected); n++) {
+        node *target = e->selected[n];
+        if (node_behavior_for(target) == NODE_BEHAVIOR_PURE) {
+            continue;
+        }
+        if (!snapshot) {
+            ed_snapshot_before(e);
+            snapshot = true;
+        }
+        graph_set_breakpoint(e->active_graph, target, !target->breakpoint);
+    }
+}
+
+/* An edit key on a read-only graph says why it does nothing. */
+static bool refused(studio *s)
+{
+    if (!sg_graph_readonly(s)) {
+        return false;
+    }
+    sg_refuse_edit(s);
+    return true;
+}
+
 void sg_shortcuts(studio *s)
 {
     studio_graph *g = &s->graph;
@@ -1030,10 +1167,11 @@ void sg_shortcuts(studio *s)
     /* F also places For Each with a click, so it frames once released. */
     if (g->frame_pending && !key_held(SDLK_F)) {
         g->frame_pending = false;
-        sg_frame_nodes(s, acount(e->selected) > 0, true);
+        sg_frame_again(s);
     }
-    if (!over || kit_wants_keyboard(s->kit) || kit_wants_keyboard(g->kit) ||
-        studio_palette_is_open(s)) {
+    /* A key a field, popup or palette took as it arrived stays its, even
+       when it let the keyboard go, as Escape closing a menu does. */
+    if (!over || s->typed || kit_wants_keyboard(g->kit) || studio_palette_is_open(s)) {
         return;
     }
     for (int i = 0; i < acount(s->keys); i++) {
@@ -1052,6 +1190,12 @@ void sg_shortcuts(studio *s)
             if (key == SDLK_ESCAPE) {
                 sg_cancel_gesture(s);
             }
+            continue;
+        }
+        /* At rest, Escape lets go of the selection, as in the Scene. */
+        if (bare && key == SDLK_ESCAPE) {
+            ed_clear_selection(e);
+            g->comment = 0;
             continue;
         }
         bool alt = s->keys[i].mod & SDL_KMOD_ALT;
@@ -1076,8 +1220,16 @@ void sg_shortcuts(studio *s)
             sg_rename_pin(s, renameable_hover(s), g->hover_pin);
         } else if (!mod && key == SDLK_F2 && event_hover(s)) {
             studio_refactor_rename_event(s, studio_event_renameable(s, event_hover(s)));
+        } else if (bare && key == SDLK_M) {
+            if (!refused(s)) {
+                mute_selection(s);
+            }
+        } else if (!mod && !alt && (key == SDLK_LEFT || key == SDLK_RIGHT || key == SDLK_UP || key == SDLK_DOWN)) {
+            walk(s, key, shift);
         } else if (!mod && !shift && key == SDLK_Q) {
-            sg_straighten(s);
+            if (!refused(s)) {
+                sg_straighten(s);
+            }
         } else if (!mod && key == SDLK_HOME) {
             sg_frame_nodes(s, false, true);
         } else if (mod && key == SDLK_A) {
@@ -1089,7 +1241,7 @@ void sg_shortcuts(studio *s)
                 }
             }
         } else if ((mod && key == SDLK_D) || (shift && key == SDLK_D)) {
-            if (!sg_graph_readonly(s)) {
+            if (!refused(s)) {
                 ed_duplicate_selected(e);
             }
         } else if (mod && key == SDLK_C) {
@@ -1099,35 +1251,28 @@ void sg_shortcuts(studio *s)
             sg_delete_selection(s);
         } else if (mod && key == SDLK_V) {
             sg_paste(s);
-        } else if (mod && key == SDLK_G && !sg_graph_readonly(s) && acount(e->selected)) {
-            sg_collapse(s, GRAPH_FUNCTION);
-        } else if ((shift && key == SDLK_A) || (bare && key == SDLK_TAB)) {
-            if (!sg_graph_readonly(s)) {
-                g->spawn_pending = true;
-                g->spawn_x = g->world_x;
-                g->spawn_y = g->world_y;
-                studio_palette_open(s, STUDIO_PALETTE_NODES, "Add a node");
+        } else if (mod && key == SDLK_G && acount(e->selected)) {
+            if (!refused(s)) {
+                sg_collapse(s, GRAPH_FUNCTION);
             }
-        } else if (!mod && !shift && key == SDLK_C && !sg_graph_readonly(s)) {
-            sg_frame_selection(s);
+        } else if ((shift && key == SDLK_A) || (bare && key == SDLK_TAB)) {
+            if (!refused(s)) {
+                open_node_search(s, "Add a node");
+            }
+        } else if (!mod && !shift && key == SDLK_C) {
+            if (!refused(s)) {
+                sg_frame_selection(s);
+            }
         } else if (!mod && !shift && key == SDLK_L) {
             /* Blender's Select Linked From (L) and To; Shift+L arranges. */
             sg_select_linked(s, !alt, false);
-        } else if (!mod && shift && key == SDLK_L && !sg_graph_readonly(s)) {
-            sg_arrange(s, false);
-        } else if (key == SDLK_F9 && !sg_graph_readonly(s)) {
-            /* Breakpoints on the selected nodes that run (Unreal). */
-            bool snapshot = false;
-            for (int n = 0; n < acount(e->selected); n++) {
-                node *target = e->selected[n];
-                if (node_behavior_for(target) == NODE_BEHAVIOR_PURE) {
-                    continue;
-                }
-                if (!snapshot) {
-                    ed_snapshot_before(e);
-                    snapshot = true;
-                }
-                graph_set_breakpoint(e->active_graph, target, !target->breakpoint);
+        } else if (!mod && shift && key == SDLK_L) {
+            if (!refused(s)) {
+                sg_arrange(s, false);
+            }
+        } else if (key == SDLK_F9) {
+            if (!refused(s)) {
+                toggle_breakpoints(e);
             }
         }
     }

@@ -1,8 +1,11 @@
 <div class="viewport">
   <div class="scene-surface" id="scene-surface"></div>
   <span class="camera-label" data-for="camera : scene_view.cameras" data-style-transform="camera.at" data-attrif-data-active="camera.active" data-attrif-data-disabled="camera.disabled" data-attrif-data-selected="camera.selected">{{ camera.name }}</span>
-  <div class="view-label" data-if="scene_view.labeled" presence><span class="dim">{{ scene_view.context }}</span></div>
-  <number-flow class="number-flow readout" data-when="scene_view.readout" data-attr-value="scene_view.zoom" grouping="" suffix="%"></number-flow>
+  <span class="marker icon" data-for="marker : scene_view.markers" data-style-transform="marker.at" data-attrif-data-active="marker.active" data-attrif-data-selected="marker.selected" data-attrif-data-hovered="marker.hovered" data-attrif-data-locked="marker.locked">{{ marker.icon }}</span>
+  <div class="tool-hint" data-if="scene_view.hint != ''" data-style-transform="scene_view.hintAt"><div class="tool-hint-box" data-style-width="scene_view.hintWidth"><div class="tool-hint-pill"><span class="icon">&#xea74;</span><span class="text">{{ scene_view.hint }}</span><button class="btn sm" data-if="scene_view.hintAddable" data-event-click="emit('scene.addMissing')"><span class="icon">&#xea60;</span><span class="label">{{ scene_view.hintAction }}</span></button></div></div></div>
+  <span class="delta-label" data-if="scene_view.delta != ''" data-style-transform="scene_view.deltaAt">{{ scene_view.delta }}</span>
+  <number-flow class="number-flow readout" data-when="scene_view.readout &amp;&amp; !scene_view.zooming" data-attr-value="scene_view.zoom" grouping="" suffix="%"></number-flow>
+  <span class="readout" data-if="scene_view.readout &amp;&amp; scene_view.zooming">{{ scene_view.zoomText }}</span>
   <span class="badge accent live-badge" data-if="scene_view.session">Live</span>
   <div class="model-preview" data-if="scene_view.modelPreview">
     <span class="badge accent">Model · {{ scene_view.model }}</span>

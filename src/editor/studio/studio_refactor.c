@@ -15,6 +15,7 @@
 #include "support/xalloc.h"
 #include "ui/popover.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,16 +81,48 @@ static asset_code *source_code(studio *s, const char *path)
     return NULL;
 }
 
+/* A rename across files edits the saved files, so it waits for Save. */
+static bool unsaved_source(studio *s, asset_code *code)
+{
+    if (!asset_code_dirty(code)) {
+        return false;
+    }
+    snprintf(
+        s->refactor.error,
+        sizeof s->refactor.error,
+        "Save %s before renaming across files",
+        content_basename(asset_code_path(code))
+    );
+    return true;
+}
+
+/* Whether renaming the symbol rewrites another file. */
+static bool crosses_files(const authoring_navigation *index, int document, const authoring_reference *reference)
+{
+    if (reference->target.kind == AUTHORING_PROGRAM) {
+        return true;
+    }
+    for (int i = 0; i < authoring_navigation_reference_count(index); i++) {
+        const authoring_reference *found = authoring_navigation_reference_at(index, i);
+        if (found->location.document != document &&
+            authoring_target_equal(found->target, reference->target)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void studio_refactor_source(studio *s, const char *path, int offset)
 {
     asset_code *code = source_code(s, path);
-    const authoring_navigation *index = code ? asset_code_navigation(code) : NULL;
+    assert(code);
+    const authoring_navigation *index = asset_code_navigation(code);
     const authoring_reference
         *reference = index
                        ? authoring_navigation_at(index, asset_code_document(code), offset)
                        : NULL;
     if (!reference || !authoring_navigation_definition(index, reference->target)) {
-        studio_report(s, "No editable symbol at this position");
+        kit_code_notice(asset_code_editor(code), "No symbol to rename here");
         return;
     }
     const char *name = authoring_navigation_name(index, reference->target);
@@ -110,6 +143,9 @@ void studio_refactor_source(studio *s, const char *path, int offset)
     snprintf(r->title, sizeof r->title, "%s", name ? name : "");
     snprintf(r->name, sizeof r->name, "%s", name ? name : "");
     r->source_before = xstrdup(asset_code_text(code));
+    if (crosses_files(index, asset_code_document(code), reference)) {
+        unsaved_source(s, code);
+    }
 }
 
 static void plan_source(studio *s, asset_code *code)
@@ -136,7 +172,7 @@ static void plan_source(studio *s, asset_code *code)
     for (int i = 0; i < rename->count; i++) {
         r->source_project |= rename->edits[i].document != document;
     }
-    if (r->source_project) {
+    if (r->source_project && !unsaved_source(s, code)) {
         app_scene_authoring_plan_source_rename(
             s->scene,
             index,
@@ -146,7 +182,7 @@ static void plan_source(studio *s, asset_code *code)
             r->error,
             sizeof r->error
         );
-    } else {
+    } else if (!r->source_project) {
         r->source_after = authoring_rename_document(
             rename,
             document,
@@ -315,9 +351,11 @@ static void apply_rename(studio *s)
     studio_refactor *r = &s->refactor;
     if (r->source_project) {
         asset_code *code = source_code(s, r->source_path);
-        if (!code || strcmp(r->source_before, asset_code_text(code)) ||
-            asset_code_dirty(code)) {
+        if (!code || strcmp(r->source_before, asset_code_text(code))) {
             snprintf(r->error, sizeof r->error, "Source changed; reopen Rename");
+            return;
+        }
+        if (unsaved_source(s, code)) {
             return;
         }
     }
@@ -345,6 +383,15 @@ bool studio_asset_refactorable(const reference_asset *asset)
             studio_asset_nameable(asset, REFERENCE_ASSET_UI));
 }
 
+bool studio_asset_deletable(studio *s, const reference_asset *asset)
+{
+    return studio_asset_refactorable(asset) &&
+           !(asset->path &&
+             source_catalog_source_path(s->scene->content_root, asset->path));
+}
+
+static const char CODE_UNDELETABLE[] = "Studio can't delete code assets yet";
+
 /* Deletes an asset's file, or an event definition's. */
 static void delete_asset(studio *s, reference_symbol symbol, const char *name)
 {
@@ -368,12 +415,136 @@ void studio_refactor_delete_asset(studio *s, int asset)
     if (!studio_asset_refactorable(found)) {
         return;
     }
+    if (!studio_asset_deletable(s, found)) {
+        refused(s, "Nothing deleted", CODE_UNDELETABLE);
+        return;
+    }
     reference_symbol symbol = { .kind = REFERENCE_SYMBOL_ASSET, .asset = asset };
     char name[128];
     snprintf(name, sizeof name, "%s", found->name);
     if (!studio_refactor_confirm_delete(s, symbol, name, STUDIO_MEMBER_NONE, 0)) {
         delete_asset(s, symbol, name);
     }
+}
+
+/* The first of the assets something still uses, or -1. */
+static int first_used(studio *s, const int *assets, int count)
+{
+    const reference_index *index = app_scene_authoring_asset_index(s->scene);
+    for (int i = 0; i < count; i++) {
+        const reference **uses = NULL;
+        refactor_blockers(
+            index,
+            (reference_symbol){ .kind = REFERENCE_SYMBOL_ASSET, .asset = assets[i] },
+            &uses
+        );
+        bool used = acount(uses) > 0;
+        afree(uses);
+        if (used) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* "Deleted A and B", or "Deleted A and 3 others". */
+static void deleted_title(const reference_index *index, const int *assets, int count, char *out, size_t size)
+{
+    const char *first = reference_index_asset_at(index, assets[0])->name;
+    if (count == 2) {
+        snprintf(
+            out,
+            size,
+            "Deleted %s and %s",
+            first,
+            reference_index_asset_at(index, assets[1])->name
+        );
+        return;
+    }
+    snprintf(out, size, "Deleted %s and %d others", first, count - 1);
+}
+
+/* The assets in the rebuilt index, which can number them differently from
+   the one they were selected in; NULL, refusing, when one is gone. */
+static int *find_assets(studio *s, const studio_asset_ref *refs, int count)
+{
+    app_scene_authoring_refactor_index(s->scene);
+    const reference_index *index = app_scene_authoring_asset_index(s->scene);
+    int *assets = NULL;
+    for (int i = 0; i < count; i++) {
+        int asset = reference_index_find_name(index, refs[i].kind, refs[i].name);
+        if (asset < 0) {
+            char error[256];
+            snprintf(error, sizeof error, "%s no longer exists", refs[i].name);
+            refused(s, "Nothing deleted", error);
+            afree(assets);
+            return NULL;
+        }
+        apush(assets, asset);
+    }
+    return assets;
+}
+
+/* Deletes the found assets as one change. */
+static void delete_found(studio *s, const int *assets, int count)
+{
+    int used = first_used(s, assets, count);
+    const reference_index *index = app_scene_authoring_asset_index(s->scene);
+    char title[192], error[256] = "";
+    for (int i = 0; i < count; i++) {
+        const reference_asset *asset = reference_index_asset_at(index, assets[i]);
+        if (!studio_asset_deletable(s, asset)) {
+            snprintf(error, sizeof error, "Studio can't delete %s", asset->name);
+            refused(s, "Nothing deleted", studio_asset_refactorable(asset) ? CODE_UNDELETABLE : error);
+            return;
+        }
+    }
+    if (used >= 0) {
+        snprintf(
+            error,
+            sizeof error,
+            "%s is still used; delete it alone to see where",
+            reference_index_asset_at(index, assets[used])->name
+        );
+        refused(s, "Nothing deleted", error);
+        return;
+    }
+    deleted_title(index, assets, count, title, sizeof title);
+    app_refactor *plan = NULL;
+    for (int i = 0; i < count; i++) {
+        app_refactor *one = NULL;
+        reference_symbol symbol = { .kind = REFERENCE_SYMBOL_ASSET,
+                                    .asset = assets[i] };
+        if (app_scene_authoring_plan_delete(s->scene, symbol, &one, error, sizeof error) !=
+            0) {
+            app_refactor_free(plan);
+            refused(s, "Nothing deleted", error);
+            return;
+        }
+        if (plan) {
+            app_refactor_join(plan, one);
+        } else {
+            plan = one;
+        }
+    }
+    apply(s, plan, title);
+    app_refactor_free(plan);
+}
+
+/* Deletes several unused assets as one change, which one Undo restores. A
+   used one refuses them all: the single delete lists where it is used. */
+void studio_refactor_delete_assets(studio *s, const studio_asset_ref *refs, int count)
+{
+    int *assets = find_assets(s, refs, count);
+    if (!assets) {
+        return;
+    }
+    if (count == 1) {
+        studio_refactor_delete_asset(s, assets[0]);
+    } else {
+        delete_found(s, assets, count);
+    }
+    afree(assets);
 }
 
 void studio_refactor_rename_asset(studio *s, int asset)

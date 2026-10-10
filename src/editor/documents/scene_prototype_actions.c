@@ -280,6 +280,15 @@ int scene_save_as_prototype(
     if (!scene_prototype_name_free(scene, name, error, size)) {
         return -1;
     }
+    if (scene_actor_has_children(scene, actor)) {
+        snprintf(
+            error,
+            size,
+            "%s has children, so it can't become a prototype yet",
+            actor->name
+        );
+        return -1;
+    }
     char *folder = prototype_folder(scene);
     mkdir(folder, FOLDER_MODE);
     free(folder);

@@ -1,11 +1,14 @@
 /* What the Scene view draws over an edited scene beside its selection:
  * GameCamera frames (Blender's camera frames, Unreal's camera frustums), the
  * selected GameFog grid's extent, and View Through Camera (Blender's
- * Numpad 0), which frames the view on a camera's span and dims the rest. */
-#include "editor/workspace/viewport.h"
+ * Numpad 0), which frames the view on a camera's span and dims the rest.
+ * It also finds the objects nothing draws, which the host marks with an icon
+ * (Godot's and Unity's gizmo icons). */
 #include "editor/workspace/scene_internal.h"
+#include "editor/workspace/viewport.h"
 #include "platform/cute.h"
 #include "runtime/component_catalog.h"
+#include "runtime/transform_propagation.h"
 
 #include <math.h>
 
@@ -33,12 +36,12 @@ static CF_Color packed(unsigned color)
 static bool camera_view(const ecs_world *world, ecs_entity entity, engine_viewport_view *out)
 {
     const GameCamera *camera = GAME_GameCamera_get_const(world, entity);
-    const GameTransform *position = GAME_GameTransform_get_const(world, entity);
-    if (!camera || !position) {
+    if (!camera || !GAME_GameTransform_get_const(world, entity)) {
         return false;
     }
-    *out = (engine_viewport_view){ position->x + camera->offset.x,
-                                   -position->y - camera->offset.y,
+    CF_V2 position = game_transform_world_2d(world, entity).position;
+    *out = (engine_viewport_view){ position.x + camera->offset.x,
+                                   -position.y - camera->offset.y,
                                    camera->width,
                                    camera->height,
                                    camera->focal_distance };
@@ -291,6 +294,46 @@ int app_scene_authoring_camera_labels(app_scene_authoring *scene, app_scene_came
             .disabled = GAME_GameCamera_get_const(scene->world, scene->actors[i].entity)
                             ->disabled,
             .selected = selected == &scene->actors[i],
+        };
+    }
+    return count;
+}
+
+int app_scene_authoring_markers(app_scene_authoring *scene, app_scene_marker *markers, int max)
+{
+    engine_viewport *viewport = scene->render_viewport;
+    /* Only the scene's own view shows its objects; a prototype or model
+       preview shows neither. */
+    if (!viewport || scene->camera_target != 0 || runtime_session(scene) ||
+        engine_viewport_perspective(viewport)) {
+        return 0;
+    }
+    engine_viewport_camera view;
+    engine_viewport_get_camera(viewport, &view);
+    float left = view.center_x - view.span_width * 0.5f;
+    float top = view.center_y + view.span_height * 0.5f;
+    int count = 0;
+    for (int i = 0; i < acount(scene->actors) && count < max; i++) {
+        ecs_entity entity = scene->actors[i].entity;
+        unsigned flags = app_scene_authoring_actor_view(scene, i);
+        if (!GAME_GameTransform_has(scene->world, entity) ||
+            scene_object_drawn(scene->world, entity) ||
+            (flags & APP_SCENE_VIEW_HIDDEN)) {
+            continue;
+        }
+        CF_V2 at = game_transform_world_2d(scene->world, entity).position;
+        float x = (at.x - left) / view.span_width;
+        float y = (top + at.y) / view.span_height;
+        if (!(x >= 0 && x < 1 && y >= 0 && y < 1)) {
+            continue;
+        }
+        markers[count++] = (app_scene_marker){
+            .actor = i,
+            .x = x,
+            .y = y,
+            .selected = scene_instance_selected(scene, i),
+            .active = i == scene->selected,
+            .locked = (flags & APP_SCENE_VIEW_LOCKED) != 0,
         };
     }
     return count;

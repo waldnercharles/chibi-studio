@@ -271,6 +271,24 @@ int app_scene_authoring_camera_labels(
     app_scene_camera_label *labels,
     int max
 );
+/* The Scene view's zoom against its last framing, which a fit, Frame or
+ * Reset Camera sets: 1 as framed, 2 twice as close. Call
+ * app_scene_authoring_framed after framing the view another way. 0 before
+ * the first framing and in the model preview. */
+float app_scene_authoring_zoom(app_scene_authoring *scene);
+void app_scene_authoring_framed(app_scene_authoring *scene);
+/* An object nothing draws, with no appearance, tilemap or surface, which a
+ * host marks with an icon a click on it picks (scene_tool_input's
+ * marker_radius). */
+typedef struct
+{
+    int actor;  /* in the scene's objects */
+    float x, y; /* its place in the view, fractions from its top-left */
+    bool selected, active, locked;
+} app_scene_marker;
+/* The objects to mark in the 2D view while the scene is edited, as of its
+ * last draw: their count, writing at most `max`. */
+int app_scene_authoring_markers(app_scene_authoring *scene, app_scene_marker *markers, int max);
 int app_scene_authoring_frame(app_scene_authoring *scene, double monotonic_time);
 int app_scene_authoring_move(app_scene_authoring *scene, float x, float y);
 /* Sample aiming independently of movement; points use game coordinates. */
@@ -303,6 +321,13 @@ void app_scene_authoring_set_actor_view(app_scene_authoring *scene, int actor, u
  * store to storage (game_save_open) and commits it. */
 typedef struct game_save game_save;
 game_save *app_scene_authoring_view_store(app_scene_authoring *scene);
+/* Adds a component with its defaults to the selected object, overriding its
+ * prototype, or removes one it added, as one Undo step. 1 while a
+ * collaboration host decides; -1 when the object has the component (or
+ * lacks it, or its prototype has it, for remove), was spawned while
+ * playing, or the scene runs. */
+int app_scene_authoring_add_instance_component(app_scene_authoring *scene, const char *component_name);
+int app_scene_authoring_remove_instance_component(app_scene_authoring *scene, const char *component_name);
 int app_scene_authoring_set_instance_behavior(
     app_scene_authoring *scene,
     const char *asset_name,

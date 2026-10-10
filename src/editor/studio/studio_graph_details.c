@@ -14,8 +14,9 @@
  *   ROW: { id, label, tip, about, control, def, text, placeholder, check,
  *          name, type, swatch, color, error, kind, drop, problem, value,
  *          shown, overridden, readonly, invalid, checked, integer, float,
- *          alpha, removable, heading, fixed, slot, alphaSlot, precision, container,
- *          min, max, step, axes: [AXIS], table: TABLE, sub: [ROW] }
+ *          alpha, removable, heading, fixed, bindable, slot, alphaSlot,
+ *          precision, container, min, max, step, axes: [AXIS], table: TABLE,
+ *          sub: [ROW] }
  *   AXIS: { key, label, slot, min, max, step, precision }
  *   TABLE: { label, icon, none, key, groups: [{ label, options: [{ value, label, icon }] }] }
  *
@@ -38,6 +39,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* Frames Bind to Source waits for a row to show its source field. */
+#define BIND_FRAMES 8
 
 /* Bytes a number's text member owns; a write rewrites it in place. */
 #define ROOM 32
@@ -151,7 +155,8 @@ static const char *const ROW_TEXTS[] = {
 static const char *const ROW_FLAGS[] = { "shown",   "overridden", "readonly",
                                          "invalid", "checked",    "integer",
                                          "float",   "alpha",      "removable",
-                                         "heading", "fixed",      NULL };
+                                         "heading", "fixed",      "bindable",
+                                         NULL };
 static const char *const ROW_INTS[] = { "slot", "alphaSlot", "precision", "container", NULL };
 static const char *const ROOMS[] = { "min", "max", "step", NULL };
 
@@ -425,6 +430,7 @@ yyjson_mut_val *gd_next_row(gd_rows *r, const gd_row *d)
     put_flag(v, row, "heading", d->heading);
     put_flag(v, row, "removable", d->removable);
     put_flag(v, row, "fixed", d->fixed);
+    put_flag(v, row, "bindable", d->bindable);
     return row;
 }
 
@@ -831,6 +837,44 @@ static bool shown(studio *s, const char *selector, const char *row, bool *showin
     return popover && popover_open(popover);
 }
 
+/* Bind to Source in Properties ends as its source list closes. */
+static void end_bind(studio *s)
+{
+    studio_graph *g = &s->graph;
+    g->bind_pin = 0;
+    g->bind_focus = false;
+    g->details.bind[0] = '\0';
+    g->details.redraw = true;
+}
+
+/* The source field Bind to Source swapped into its row takes the focus once
+   the tab has built it, which opens its list. The row keeps its value
+   editor when the field never shows, and returns to it when the field loses
+   the focus without a list. */
+static void bind_frame(studio *s)
+{
+    studio_graph *g = &s->graph;
+    rml_element *field = by_id(s, g->details.bind);
+    char role[16] = "";
+    if (field) {
+        rml_element_attribute(field, "role", role, sizeof role);
+    }
+    field = strcmp(role, "combobox") ? NULL : field;
+    if (g->bind_focus && field) {
+        g->bind_focus = false;
+        rml_element_focus(field, true);
+        return;
+    }
+    if (g->bind_focus && ++g->details.bind_wait >= BIND_FRAMES) {
+        end_bind(s);
+        return;
+    }
+    rml_element *focus = rml_context_focus_element(rml_backend_context(s->backend));
+    if (!g->bind_focus && !g->details.source[0] && (!field || focus != field)) {
+        end_bind(s);
+    }
+}
+
 /* The source list shows while the palette lists the field's sources; it
    closes with the palette, a press outside it or its field leaving. */
 static void source_frame(studio *s)
@@ -848,6 +892,9 @@ static void source_frame(studio *s)
     }
     if (listing) {
         studio_palette_close(s);
+    }
+    if (!g->bind_kit && !strcmp(g->details.source, g->details.bind)) {
+        end_bind(s);
     }
     g->details.source[0] = '\0';
     g->details.source_shown = false;
@@ -874,6 +921,9 @@ static void popup_frame(studio *s)
 void studio_graph_details_frame(studio *s)
 {
     studio_graph *g = &s->graph;
+    if (g->details.bind[0] && !g->bind_kit) {
+        bind_frame(s);
+    }
     if (g->details.source[0]) {
         source_frame(s);
     }

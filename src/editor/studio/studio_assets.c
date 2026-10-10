@@ -1,16 +1,17 @@
 /* Assets: every indexed asset, filtered by kind and name, as a grid of
- * thumbnails (Unity's Project window, Unreal's Content Browser) or, at the
- * size slider's smallest step, as a list grouped by kind (Unity's one-column
- * view). projects/studio's Assets shows either as a window of one List over
- * the `assets` source, and AssetsHeader the filters, the size and New. A
- * click selects, the arrows move the selection, Enter or a double-click
- * opens the asset, and F2 and Delete rename and delete it. Prototypes drag
- * into the Scene or the Outliner to place an instance; behaviors drag onto
- * an Outliner row to attach, and assets fields name onto those fields
- * (studio_drop.c). Resting on a tile shows a large preview, as Unreal's
- * Content Browser does. New makes an asset of any kind Studio indexes and
- * opens it, asking for its name in NewAsset (the `asset_menus` source, with
- * the row menu and New's kinds). */
+ * thumbnails (Unity's Project window, Unreal's Content Browser) or as a
+ * list (Unity's one-column view), either grouped by kind under headers that
+ * fold. projects/studio's Assets shows either as a window of one List over
+ * the `assets` source, and AssetsHeader the filters, the view, the size and
+ * New. A click selects, Shift and Ctrl (Cmd) extend and toggle the
+ * selection as the Outliner's do, the arrows move it, Enter or a
+ * double-click opens the asset, and F2 renames it and Delete deletes every
+ * asset selected. Prototypes drag into the Scene or the Outliner to place
+ * an instance; behaviors drag onto an Outliner row to attach, and assets
+ * fields name onto those fields (studio_drop.c). Resting on a tile shows a
+ * large preview, as Unreal's Content Browser does. New makes an asset of
+ * any kind Studio indexes and opens it, asking for its name in NewAsset
+ * (the `asset_menus` source, with the row menu and New's kinds). */
 #include "editor/studio/studio_internal.h"
 #include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/asset_index.h"
@@ -79,7 +80,7 @@ const char *studio_asset_kind_label(int kind)
 
 static bool grid_view(const studio *s)
 {
-    return s->prefs.assets_tile > STUDIO_ASSETS_LIST;
+    return !s->prefs.assets_list;
 }
 
 /* Rows of the list: a group header (asset < 0, kind set) or an asset. */
@@ -88,6 +89,14 @@ typedef struct
     int asset;
     int kind;
 } asset_row;
+
+/* Lines of the grid: a kind's header (count < 0), as the list heads each
+   kind's rows, or up to a line of its tiles from `first` of the tiles. */
+typedef struct
+{
+    int kind;
+    int first, count;
+} grid_line;
 
 static const reference_index *sort_index;
 
@@ -112,6 +121,8 @@ struct studio_assets_cache
     asset_row *rows;
     int *tiles;  /* the grid's assets: every match, in the list's order */
     int columns; /* the grid's, as the List last laid out */
+    grid_line *lines; /* the grid's, for those columns */
+    float *tops;      /* each line's top in dp, then the end of the last */
     int totals[REFERENCE_ASSET_KIND_COUNT];
     ui_list_state window;  /* the List's */
     char typed[128];       /* the filter as the header's field last showed it */
@@ -122,6 +133,7 @@ struct studio_assets_cache
 void studio_assets_free(studio *s)
 {
     struct studio_assets_cache *cache = s->assets_cache;
+    afree(s->assets_marked);
     if (!cache) {
         return;
     }
@@ -129,6 +141,8 @@ void studio_assets_free(studio *s)
     afree(cache->sorted);
     afree(cache->rows);
     afree(cache->tiles);
+    afree(cache->lines);
+    afree(cache->tops);
     rml_element_ref_destroy(cache->menu);
     free(cache);
     s->assets_cache = NULL;
@@ -142,6 +156,13 @@ static struct studio_assets_cache *cache_of(studio *s)
         s->assets_cache->window = (ui_list_state)UI_LIST_STATE_INIT;
     }
     return s->assets_cache;
+}
+
+/* Whether a kind's group shows its assets: unless folded, and always while
+   a name filter narrows them. */
+static bool kind_open(const studio *s, int kind)
+{
+    return !(s->assets_collapsed & (1u << kind)) || s->assets_filter[0];
 }
 
 /* Virtualized rows still need a sorted model. Reuse it during scrolling and
@@ -192,6 +213,7 @@ static struct studio_assets_cache *asset_rows(studio *s, const reference_index *
     memset(cache->totals, 0, sizeof cache->totals);
     aclear(cache->rows);
     aclear(cache->tiles);
+    aclear(cache->lines); /* until the grid lays the new tiles out */
     for (int m = 0; m < acount(cache->sorted); m++) {
         int id = cache->sorted[m];
         const reference_asset *asset = reference_index_asset_at(index, id);
@@ -206,7 +228,7 @@ static struct studio_assets_cache *asset_rows(studio *s, const reference_index *
             apush(cache->rows, ((asset_row){ -1, kind }));
         }
         previous_kind = kind;
-        if (!grouped || !(s->assets_collapsed & (1u << kind)) || s->assets_filter[0]) {
+        if (!grouped || kind_open(s, kind)) {
             apush(cache->rows, ((asset_row){ id, kind }));
         }
     }
@@ -215,25 +237,100 @@ static struct studio_assets_cache *asset_rows(studio *s, const reference_index *
 
 /* ---------- Selection ---------- */
 
+/* The selection is the primary asset (assets_selected), which F2, Enter and
+   the arrows act on, and the others marked with it, as the Outliner selects
+   objects: a click selects one, Shift extends from the anchor and Ctrl (Cmd
+   on a Mac) toggles one. */
+
+static bool same(const studio_asset_ref *ref, const reference_asset *asset)
+{
+    return (int)asset->kind == ref->kind && !strcmp(asset->name, ref->name);
+}
+
+static studio_asset_ref ref_of(const reference_asset *asset)
+{
+    studio_asset_ref ref = { .kind = (int)asset->kind };
+    snprintf(ref.name, sizeof ref.name, "%s", asset->name);
+    return ref;
+}
+
 static bool is_selected(const studio *s, const reference_asset *asset)
 {
     return s->assets_selected[0] && (int)asset->kind == s->assets_selected_kind &&
            !strcmp(asset->name, s->assets_selected);
 }
 
-static void select_asset(studio *s, const reference_asset *asset)
+static int marked_at(const studio *s, const reference_asset *asset)
 {
-    s->assets_selected_kind = (int)asset->kind;
-    snprintf(s->assets_selected, sizeof s->assets_selected, "%s", asset->name);
+    for (int i = 0; i < acount(s->assets_marked); i++) {
+        if (same(&s->assets_marked[i], asset)) {
+            return i;
+        }
+    }
+    return -1;
 }
 
-/* The assets in the order the view shows them: the grid's tiles, or the
-   list's asset rows. */
+/* Selected with the primary, which is selected itself. */
+static bool is_marked(const studio *s, const reference_asset *asset)
+{
+    return marked_at(s, asset) >= 0;
+}
+
+static void set_primary(studio *s, const studio_asset_ref *ref)
+{
+    s->assets_selected_kind = ref->kind;
+    snprintf(s->assets_selected, sizeof s->assets_selected, "%s", ref->name);
+}
+
+static studio_asset_ref primary(const studio *s)
+{
+    studio_asset_ref ref = { .kind = s->assets_selected_kind };
+    snprintf(ref.name, sizeof ref.name, "%s", s->assets_selected);
+    return ref;
+}
+
+/* Selects the asset alone, where Shift next extends from. */
+static void select_asset(studio *s, const reference_asset *asset)
+{
+    aclear(s->assets_marked);
+    s->assets_anchor = ref_of(asset);
+    set_primary(s, &s->assets_anchor);
+}
+
+/* Ctrl's click: adds the asset to the selection as its primary, or takes it
+   out, the last one marked becoming the primary (Unity's toggle). */
+static void toggle_asset(studio *s, const reference_asset *asset)
+{
+    int at = marked_at(s, asset);
+    if (at >= 0) {
+        adel(s->assets_marked, at);
+        return;
+    }
+    if (is_selected(s, asset)) {
+        studio_asset_ref next = { .kind = -1 };
+        if (acount(s->assets_marked)) {
+            next = apop(s->assets_marked);
+        }
+        set_primary(s, &next);
+        return;
+    }
+    if (s->assets_selected[0]) {
+        apush(s->assets_marked, primary(s));
+    }
+    s->assets_anchor = ref_of(asset);
+    set_primary(s, &s->assets_anchor);
+}
+
+/* The assets in the order the view shows them: the grid's tiles, but for
+   those of a collapsed kind, or the list's asset rows. */
 static int *shown_assets(const studio *s, const struct studio_assets_cache *cache)
 {
     int *shown = NULL;
-    for (int i = 0; grid_view(s) && i < acount(cache->tiles); i++) {
-        apush(shown, cache->tiles[i]);
+    for (int l = 0; grid_view(s) && l < acount(cache->lines); l++) {
+        const grid_line *line = &cache->lines[l];
+        for (int i = 0; i < line->count; i++) {
+            apush(shown, cache->tiles[line->first + i]);
+        }
     }
     for (int i = 0; !grid_view(s) && i < acount(cache->rows); i++) {
         if (cache->rows[i].asset >= 0) {
@@ -243,27 +340,66 @@ static int *shown_assets(const studio *s, const struct studio_assets_cache *cach
     return shown;
 }
 
-static int selected_position(const studio *s, const reference_index *index, const int *shown)
+static int position_of(const reference_index *index, const int *shown, const studio_asset_ref *ref)
 {
-    for (int i = 0; i < acount(shown); i++) {
-        if (is_selected(s, reference_index_asset_at(index, shown[i]))) {
+    for (int i = 0; ref->name[0] && i < acount(shown); i++) {
+        if (same(ref, reference_index_asset_at(index, shown[i]))) {
             return i;
         }
     }
     return -1;
 }
 
+static int selected_position(const studio *s, const reference_index *index, const int *shown)
+{
+    studio_asset_ref selected = primary(s);
+    return position_of(index, shown, &selected);
+}
+
+/* Shift's click or arrow: selects the shown assets from the anchor to
+   `to`, a place in `shown`, which becomes the primary. */
+static void extend_to(studio *s, const reference_index *index, const int *shown, int to)
+{
+    int from = position_of(index, shown, &s->assets_anchor);
+    from = from < 0 ? to : from;
+    aclear(s->assets_marked);
+    int step = from <= to ? 1 : -1;
+    for (int i = from; i != to; i += step) {
+        apush(s->assets_marked, ref_of(reference_index_asset_at(index, shown[i])));
+    }
+    studio_asset_ref last = ref_of(reference_index_asset_at(index, shown[to]));
+    set_primary(s, &last);
+}
+
+/* The grid line holding place `at` of the grid's shown tiles, and its
+   column there; -1 when none does. */
+static int line_of(const struct studio_assets_cache *cache, int at, int *column)
+{
+    for (int l = 0, seen = 0; at >= 0 && l < acount(cache->lines); l++) {
+        int count = cache->lines[l].count;
+        if (count > 0 && at < seen + count) {
+            *column = at - seen;
+            return l;
+        }
+        seen += count > 0 ? count : 0;
+    }
+    return -1;
+}
+
 /* The list row or grid line to scroll into view: the selection's, after the
    keyboard moved it; -1 otherwise. */
-static int reveal_row(studio *s, const reference_index *index, const struct studio_assets_cache *cache)
+static int reveal_row(studio *s, const struct studio_assets_cache *cache)
 {
+    const reference_index *index = cache->index;
     if (!s->assets_reveal) {
         return -1;
     }
     s->assets_reveal = false;
     if (grid_view(s)) {
-        int at = selected_position(s, index, cache->tiles);
-        return at < 0 ? -1 : at / cache->columns;
+        int *shown = shown_assets(s, cache), column;
+        int line = line_of(cache, selected_position(s, index, shown), &column);
+        afree(shown);
+        return line;
     }
     for (int i = 0; i < acount(cache->rows); i++) {
         if (cache->rows[i].asset >= 0 &&
@@ -305,18 +441,48 @@ static bool usage(
     return true;
 }
 
-/* Moves the selection `step` places in the view's order, within its ends.
-   Without one, End selects the last asset and any other step the first. */
-static void move_selection(studio *s, int step)
+/* Where a step of the arrows lands among the shown assets: `step` places
+   on, or with `lines` a line of the grid up or down, in the same column or
+   the last of a shorter line. Without a selection, a step back or down
+   lands on the first asset and End on the last. */
+static int stepped(const struct studio_assets_cache *cache, int at, int count, int step, int lines)
+{
+    if (at < 0) {
+        return step >= count ? count - 1 : 0;
+    }
+    if (!lines) {
+        at += step;
+        return at < 0 ? 0 : at >= count ? count - 1 : at;
+    }
+    int column, line = line_of(cache, at, &column);
+    int next = line + lines;
+    while (next >= 0 && next < acount(cache->lines) && cache->lines[next].count <= 0) {
+        next += lines;
+    }
+    if (next < 0 || next >= acount(cache->lines)) {
+        return at;
+    }
+    int seen = 0;
+    for (int l = 0; l < next; l++) {
+        seen += cache->lines[l].count > 0 ? cache->lines[l].count : 0;
+    }
+    int last = cache->lines[next].count - 1;
+    return seen + (column < last ? column : last);
+}
+
+/* Moves the selection, alone or, with Shift, extending it from the anchor. */
+static void move_selection(studio *s, int step, int lines, bool extend)
 {
     const reference_index *index = app_scene_authoring_asset_index(s->scene);
     int *shown = s->assets_cache ? shown_assets(s, s->assets_cache) : NULL;
     int count = acount(shown);
     if (count) {
-        int at = selected_position(s, index, shown);
-        at = at >= 0 ? at + step : step >= count ? count - 1 : 0;
-        at = at < 0 ? 0 : at >= count ? count - 1 : at;
-        select_asset(s, reference_index_asset_at(index, shown[at]));
+        int at = stepped(s->assets_cache, selected_position(s, index, shown), count, step, lines);
+        if (extend) {
+            extend_to(s, index, shown, at);
+        } else {
+            select_asset(s, reference_index_asset_at(index, shown[at]));
+        }
         s->assets_reveal = true;
         s->ui_schedule.wake = true;
     }
@@ -332,13 +498,22 @@ static void open_asset(studio *s, int asset)
     }
 }
 
+/* The cache when it shows the current index, else NULL. */
+static const struct studio_assets_cache *current_cache(studio *s)
+{
+    const struct studio_assets_cache *cache = s->assets_cache;
+    bool current = cache &&
+                   cache->index == app_scene_authoring_asset_index(s->scene) &&
+                   cache->revision == s->scene->asset_index_revision;
+    return current ? cache : NULL;
+}
+
 /* The selected asset while the view shows it, or -1: a filter or a
    collapsed group hides the selection from the keys too. */
 static int selected_asset(studio *s)
 {
-    const struct studio_assets_cache *cache = s->assets_cache;
-    if (!cache || cache->index != app_scene_authoring_asset_index(s->scene) ||
-        cache->revision != s->scene->asset_index_revision) {
+    const struct studio_assets_cache *cache = current_cache(s);
+    if (!cache) {
         return -1;
     }
     int *shown = shown_assets(s, cache);
@@ -346,6 +521,21 @@ static int selected_asset(studio *s)
     int asset = at < 0 ? -1 : shown[at];
     afree(shown);
     return asset;
+}
+
+/* Every selected asset the view shows, in its order. */
+static int *selected_assets(studio *s)
+{
+    const struct studio_assets_cache *cache = current_cache(s);
+    int *shown = cache ? shown_assets(s, cache) : NULL, *selected = NULL;
+    for (int i = 0; i < acount(shown); i++) {
+        const reference_asset *asset = reference_index_asset_at(cache->index, shown[i]);
+        if (is_selected(s, asset) || is_marked(s, asset)) {
+            apush(selected, shown[i]);
+        }
+    }
+    afree(shown);
+    return selected;
 }
 
 static bool open_selection(studio *s)
@@ -358,26 +548,26 @@ static bool open_selection(studio *s)
     return true;
 }
 
-/* The arrows move the selection (Left and Right only in the grid), Home and
-   End go to the ends and Enter opens it. */
-static bool navigation_key(studio *s, SDL_Keycode key)
+/* The arrows move the selection (Left and Right only in the grid, Up and
+   Down a line of it), Home and End go to the ends, and Enter opens it; Shift
+   extends the selection. */
+static bool navigation_key(studio *s, SDL_Keycode key, bool extend)
 {
     bool grid = grid_view(s);
-    int columns = grid && s->assets_cache ? s->assets_cache->columns : 1;
     int far = s->assets_cache ? acount(s->assets_cache->tiles) : 0;
     switch (key) {
-        case SDLK_UP: move_selection(s, -columns); return true;
-        case SDLK_DOWN: move_selection(s, columns); return true;
+        case SDLK_UP: move_selection(s, -1, grid ? -1 : 0, extend); return true;
+        case SDLK_DOWN: move_selection(s, 1, grid ? 1 : 0, extend); return true;
         case SDLK_LEFT:
         case SDLK_RIGHT:
             if (grid) {
-                move_selection(s, key == SDLK_LEFT ? -1 : 1);
+                move_selection(s, key == SDLK_LEFT ? -1 : 1, 0, extend);
             }
             return grid;
-        case SDLK_HOME: move_selection(s, -far); return true;
-        case SDLK_END: move_selection(s, far); return true;
+        case SDLK_HOME: move_selection(s, -far, 0, extend); return true;
+        case SDLK_END: move_selection(s, far, 0, extend); return true;
         case SDLK_RETURN:
-        case SDLK_KP_ENTER: return open_selection(s);
+        case SDLK_KP_ENTER: return !extend && open_selection(s);
         default: return false;
     }
 }
@@ -423,18 +613,35 @@ static void anchor_popover(studio *s, int asset)
     }
 }
 
+/* Deletes every selected asset the view shows, as one change. The assets go
+   by kind and name, since deleting rebuilds the index that numbers them. */
+static void delete_selection(studio *s)
+{
+    const struct studio_assets_cache *cache = current_cache(s);
+    int *assets = selected_assets(s);
+    studio_asset_ref *refs = NULL;
+    for (int i = 0; i < acount(assets); i++) {
+        apush(refs, ref_of(reference_index_asset_at(cache->index, assets[i])));
+    }
+    if (acount(refs)) {
+        studio_refactor_delete_assets(s, refs, acount(refs));
+    }
+    afree(refs);
+    afree(assets);
+}
+
 /* Keys act on the selection, as they do in the Outliner and the graph, so
    where the pointer rests never picks what F2 renames or Delete removes. */
 bool studio_assets_key(studio *s, SDL_Keycode key, SDL_Keymod mod)
 {
-    if (studio_designer_active(s) || studio_primary(s, mod) ||
-        (mod & (SDL_KMOD_ALT | SDL_KMOD_SHIFT))) {
+    if (studio_designer_active(s) || studio_primary(s, mod) || (mod & SDL_KMOD_ALT)) {
         return false;
     }
-    if (navigation_key(s, key)) {
+    bool shift = mod & SDL_KMOD_SHIFT;
+    if (navigation_key(s, key, shift)) {
         return true;
     }
-    int asset = selected_asset(s);
+    int asset = shift ? -1 : selected_asset(s);
     if (asset < 0) {
         return false;
     }
@@ -442,7 +649,7 @@ bool studio_assets_key(studio *s, SDL_Keycode key, SDL_Keymod mod)
         case SDLK_F2: studio_refactor_rename_asset(s, asset); break;
         case SDLK_X:
         case SDLK_DELETE:
-        case SDLK_BACKSPACE: studio_refactor_delete_asset(s, asset); break;
+        case SDLK_BACKSPACE: delete_selection(s); break;
         default: return false;
     }
     anchor_popover(s, asset);
@@ -719,6 +926,7 @@ static yyjson_mut_val *made(yyjson_mut_doc *doc, item_shape shape)
         case SHAPE_LINE:
             yyjson_mut_obj_add_bool(doc, item, "shown", false);
             yyjson_mut_obj_add_strcpy(doc, item, "top", "");
+            yyjson_mut_obj_add_val(doc, item, "head", made(doc, SHAPE_ITEM));
             yyjson_mut_obj_add_arr(doc, item, "tiles");
             break;
         case SHAPE_ENTRY:
@@ -753,6 +961,7 @@ typedef struct
     uint32_t icon, badge;
     float top; /* a row's */
     bool parent, open, loading, unresolved, unused;
+    bool marked; /* selected with the primary, whose key the view compares */
 } item_view;
 
 static void dp_text(char out[32], float value)
@@ -777,6 +986,8 @@ static bool show_item(yyjson_mut_doc *doc, yyjson_mut_val *item, const item_view
     changed |= ui_data_put_bool(item, "loading", v->loading);
     changed |= ui_data_put_bool(item, "unresolved", v->unresolved);
     changed |= ui_data_put_bool(item, "unused", v->unused);
+    changed |= ui_data_put_bool(item, "marked", v->marked);
+    changed |= ui_data_put_bool(item, "selected", v->marked);
     char top[32];
     dp_text(top, v->top);
     changed |= ui_data_put_text(doc, item, "top", top);
@@ -903,6 +1114,30 @@ static int resting(studio *s)
              : -1;
 }
 
+/* A kind's group header, in the list or the grid: its name, how many of
+   it match and a twisty that folds it. */
+static bool show_header_row(
+    studio *s,
+    yyjson_mut_doc *doc,
+    yyjson_mut_val *item,
+    const struct studio_assets_cache *cache,
+    int kind,
+    float top
+)
+{
+    char total[16];
+    snprintf(total, sizeof total, "%d", cache->totals[kind]);
+    item_view header = { .id = -1,
+                         .kind = kind,
+                         .label = KIND_LABELS[kind],
+                         .icon = KIND_ICONS[kind],
+                         .meta = total,
+                         .top = top,
+                         .parent = true,
+                         .open = kind_open(s, kind) };
+    return show_item(doc, item, &header);
+}
+
 /* A kind's group header, or an asset, as a list row. */
 static bool show_row(
     studio *s,
@@ -914,18 +1149,7 @@ static bool show_row(
 )
 {
     if (row.asset < 0) {
-        char total[16];
-        snprintf(total, sizeof total, "%d", cache->totals[row.kind]);
-        bool open = !(s->assets_collapsed & (1u << row.kind)) || s->assets_filter[0];
-        item_view header = { .id = -1,
-                             .kind = row.kind,
-                             .label = KIND_LABELS[row.kind],
-                             .icon = KIND_ICONS[row.kind],
-                             .meta = total,
-                             .top = top,
-                             .parent = true,
-                             .open = open };
-        return show_item(doc, item, &header);
+        return show_header_row(s, doc, item, cache, row.kind, top);
     }
     const reference_asset *asset = reference_index_asset_at(
         app_scene_authoring_asset_index(s->scene),
@@ -945,6 +1169,7 @@ static bool show_row(
         .unresolved = asset->unresolved,
         .top = top,
         .unused = counted && !cache->uses[row.asset],
+        .marked = is_marked(s, asset),
     };
     return show_item(doc, item, &v);
 }
@@ -993,11 +1218,11 @@ static bool show_list(
     studio *s,
     const studio_panel_sync *at,
     struct studio_assets_cache *cache,
-    rml_element *list,
-    int reveal
+    rml_element *list
 )
 {
     bool changed = fit(at->doc, member(at->variable, "lines"), 0, SHAPE_LINE);
+    int reveal = at->preview ? -1 : reveal_row(s, cache);
     int count = acount(cache->rows), first = 0;
     int length = count < UNLAID_ROWS ? count : UNLAID_ROWS;
     float row = list ? row_height(list) : 0;
@@ -1052,6 +1277,7 @@ static bool show_tile(
         .drag = studio_asset_draggable(asset) ? KIND_NAMES[asset->kind] : "",
         .about = about,
         .unresolved = asset->unresolved,
+        .marked = is_marked(s, asset),
     };
     return show_item(doc, item, &v);
 }
@@ -1064,7 +1290,45 @@ static int columns_fit(studio *s, rml_element *list, float tile_width)
     return fit < 1 ? 1 : fit;
 }
 
-/* Line `l` of the grid: its place in the spacer and its tiles. */
+/* The grid's lines for its columns: with every kind shown, each kind's
+   header and then, unless it is folded, its tiles in lines of their own, as
+   the list groups its rows (Unity's and Unreal's browsers group by kind);
+   one kind is lines of tiles alone. A header is a list row tall, a line a
+   tile and its gap. */
+static void layout_lines(const studio *s, struct studio_assets_cache *cache, float row)
+{
+    const reference_index *index = cache->index;
+    bool grouped = s->assets_kind < 0;
+    int count = acount(cache->tiles), columns = cache->columns;
+    float tile = (float)s->prefs.assets_tile + 2 * TILE_PAD + TILE_LABEL + TILE_GAP;
+    aclear(cache->lines);
+    aclear(cache->tops);
+    float top = 0;
+    for (int i = 0; i < count;) {
+        int kind = (int)reference_index_asset_at(index, cache->tiles[i])->kind;
+        int end = i;
+        while (end < count &&
+               (int)reference_index_asset_at(index, cache->tiles[end])->kind == kind) {
+            end++;
+        }
+        if (grouped) {
+            apush(cache->lines, ((grid_line){ kind, i, -1 }));
+            apush(cache->tops, top);
+            top += row;
+        }
+        for (int j = i; (!grouped || kind_open(s, kind)) && j < end; j += columns) {
+            apush(cache->lines, ((grid_line){ kind, j, end - j < columns ? end - j : columns }));
+            apush(cache->tops, top);
+            top += tile;
+        }
+        i = end;
+    }
+    apush(cache->tops, top);
+}
+
+/* Line `l` of the grid: its place in the spacer and its kind's header or
+   its tiles. A line keeps its header and tiles' slots, shown or hidden, so
+   a scroll that turns one into the other instances nothing. */
 static bool show_line(
     studio *s,
     yyjson_mut_doc *doc,
@@ -1074,19 +1338,20 @@ static bool show_line(
     bool ask
 )
 {
-    int columns = cache->columns, count = acount(cache->tiles);
-    float art = (float)s->prefs.assets_tile;
+    const grid_line *g = &cache->lines[l];
     char top[32];
-    dp_text(top, (float)l * (art + 2 * TILE_PAD + TILE_LABEL + TILE_GAP));
-    yyjson_mut_val *tiles = member(line, "tiles");
-    bool changed = fit(doc, tiles, columns, SHAPE_ITEM);
+    dp_text(top, cache->tops[l]);
+    yyjson_mut_val *tiles = member(line, "tiles"), *head = member(line, "head");
+    bool changed = fit(doc, tiles, cache->columns, SHAPE_ITEM);
     changed |= ui_data_put_bool(line, "shown", true);
     changed |= ui_data_put_text(doc, line, "top", top);
+    changed |= g->count < 0 ? show_header_row(s, doc, head, cache, g->kind, 0)
+                            : ui_data_put_bool(head, "shown", false);
     yyjson_mut_val *item;
     yyjson_mut_arr_iter it = yyjson_mut_arr_iter_with(tiles);
-    for (int i = l * columns; (item = yyjson_mut_arr_iter_next(&it)); i++) {
-        changed |= i < count ? show_tile(s, doc, item, cache, i, ask)
-                             : ui_data_put_bool(item, "shown", false);
+    for (int i = 0; (item = yyjson_mut_arr_iter_next(&it)); i++) {
+        changed |= i < g->count ? show_tile(s, doc, item, cache, g->first + i, ask)
+                                : ui_data_put_bool(item, "shown", false);
     }
     return changed;
 }
@@ -1096,23 +1361,24 @@ static bool show_grid(
     studio *s,
     const studio_panel_sync *at,
     struct studio_assets_cache *cache,
-    rml_element *list,
-    int reveal
+    rml_element *list
 )
 {
     bool changed = fit(at->doc, member(at->variable, "rows"), 0, SHAPE_ITEM);
-    float art = (float)s->prefs.assets_tile;
-    float height = art + 2 * TILE_PAD + TILE_LABEL;
+    float row = list ? row_height(list) : 0;
     if (list) {
-        cache->columns = columns_fit(s, list, art + 2 * TILE_PAD);
+        cache->columns = columns_fit(s, list, (float)s->prefs.assets_tile + 2 * TILE_PAD);
     }
-    int columns = cache->columns, count = acount(cache->tiles), first = 0;
-    int lines = (count + columns - 1) / columns;
+    layout_lines(s, cache, row > 0 ? row : UNLAID_ROW);
+    /* The selection's line among those just laid out. */
+    int reveal = at->preview ? -1 : reveal_row(s, cache);
+    int lines = acount(cache->lines), first = 0;
     int length = lines < UNLAID_LINES ? lines : UNLAID_LINES;
     if (list) {
         ui_list window = { .count = lines,
-                           .row = height + TILE_GAP,
-                           .reveal = reveal < 0 ? -1 : reveal / columns };
+                           .row = row > 0 ? row : UNLAID_ROW,
+                           .tops = cache->tops,
+                           .reveal = reveal };
         length = ui_list_window(list, &window, &cache->window, &first);
     }
     slot_window w = slots(at->doc, member(at->variable, "lines"), length, SHAPE_LINE, &changed);
@@ -1158,13 +1424,21 @@ static bool show_menu(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *menu)
             .checked = app_scene_authoring_spawn_break(s->scene, asset->name),
         };
     }
+    int *selected = selected_assets(s);
+    char remove[32] = "Delete";
+    if (acount(selected) > 1) {
+        snprintf(remove, sizeof remove, "Delete %d Assets", acount(selected));
+    }
+    afree(selected);
     if (studio_asset_refactorable(asset)) {
         entries[count++] = (entry_view){ .action = "rename",
                                          .label = "Rename",
                                          .icon = KIT_ICON_EDIT,
                                          .shortcut = "F2" };
+    }
+    if (studio_asset_deletable(s, asset)) {
         entries[count++] = (entry_view){ .action = "delete",
-                                         .label = "Delete",
+                                         .label = remove,
                                          .icon = KIT_ICON_TRASH,
                                          .shortcut = "X",
                                          .separator = true };
@@ -1224,10 +1498,9 @@ bool studio_assets_sync(studio *s, const studio_panel_sync *at)
     /* Before the List lays out, its rows are a guess: window them once it
        has. */
     s->ui_schedule.wake |= !at->preview && !list;
-    int reveal = at->preview ? -1 : reveal_row(s, index, cache);
     changed |= show_header(s, at->doc, at->variable);
-    changed |= grid_view(s) ? show_grid(s, at, cache, list, reveal)
-                            : show_list(s, at, cache, list, reveal);
+    changed |= grid_view(s) ? show_grid(s, at, cache, list)
+                            : show_list(s, at, cache, list);
     /* A project always has its start scene, so only filters empty the view. */
     bool filtered = s->assets_filter[0] || s->assets_kind >= 0;
     const char *empty = filtered && !acount(cache->tiles) ? "No assets match" : "";
@@ -1315,9 +1588,25 @@ static void open_menu(studio *s)
     }
 }
 
-/* A click selects an asset or opens or closes a kind's group. */
-static void click(studio *s, const reference_asset *asset, int kind)
+/* A click selects an asset, Shift's extends the selection to it and Ctrl's
+   (Cmd's on a Mac) toggles it; a click on a kind's header folds its group. */
+static void click(studio *s, const ui_activation *a, const reference_asset *asset, int kind)
 {
+    const struct studio_assets_cache *cache = current_cache(s);
+    if (asset && (a->modifiers & RML_KM_SHIFT) && cache) {
+        int *shown = shown_assets(s, cache);
+        studio_asset_ref clicked = ref_of(asset);
+        int at = position_of(cache->index, shown, &clicked);
+        if (at >= 0) {
+            extend_to(s, cache->index, shown, at);
+        }
+        afree(shown);
+        return;
+    }
+    if (asset && (a->modifiers & (s->mac ? RML_KM_META : RML_KM_CTRL))) {
+        toggle_asset(s, asset);
+        return;
+    }
     if (asset) {
         select_asset(s, asset);
         return;
@@ -1329,8 +1618,8 @@ static void click(studio *s, const reference_asset *asset, int kind)
 
 /* What the panel's rows, tiles, menus and header controls ask for:
  * click (asset, kind), open, menu, preview, references, spawnBreak, rename
- * and delete (asset), kind (-1 for all), tile (the size), clearFilter and
- * scroll. */
+ * and delete (asset), kind (-1 for all), tile (the size), view (0 for the
+ * grid, 1 for the list), clearFilter and scroll. */
 void studio_assets_action(studio *s, const char *action, const ui_activation *a)
 {
     int id = a->argc ? atoi(a->args[0]) : -1;
@@ -1340,11 +1629,14 @@ void studio_assets_action(studio *s, const char *action, const ui_activation *a)
         s->assets_kind = id >= -1 && id < REFERENCE_ASSET_KIND_COUNT ? id : -1;
     } else if (!strcmp(action, "tile") && a->has_value) {
         int tile = (int)lroundf(a->value);
-        s->prefs.assets_tile = tile < STUDIO_ASSETS_LIST ? STUDIO_ASSETS_LIST
+        s->prefs.assets_tile = tile < STUDIO_ASSETS_TILE_MIN ? STUDIO_ASSETS_TILE_MIN
                              : tile > STUDIO_ASSETS_TILE_MAX ? STUDIO_ASSETS_TILE_MAX
                                                              : tile;
+    } else if (!strcmp(action, "view")) {
+        s->prefs.assets_list = id == 1;
+        s->assets_reveal = true;
     } else if (!strcmp(action, "click")) {
-        click(s, asset, a->argc > 1 ? atoi(a->args[1]) : -1);
+        click(s, a, asset, a->argc > 1 ? atoi(a->args[1]) : -1);
     } else if (!strcmp(action, "clearFilter")) {
         s->assets_filter[0] = '\0';
         s->assets_kind = -1;
@@ -1355,7 +1647,10 @@ void studio_assets_action(studio *s, const char *action, const ui_activation *a)
     if (!strcmp(action, "open")) {
         open_asset(s, id);
     } else if (!strcmp(action, "menu")) {
-        select_asset(s, asset);
+        /* A right press keeps a selection it lands in, as Explorer's does. */
+        if (!is_selected(s, asset) && !is_marked(s, asset)) {
+            select_asset(s, asset);
+        }
         s->assets_menu = id;
         queue_menu(s, a);
     } else if (!strcmp(action, "preview")) {
@@ -1367,7 +1662,7 @@ void studio_assets_action(studio *s, const char *action, const ui_activation *a)
     } else if (!strcmp(action, "rename")) {
         studio_refactor_rename_asset(s, id);
     } else if (!strcmp(action, "delete")) {
-        studio_refactor_delete_asset(s, id);
+        delete_selection(s);
     }
 }
 

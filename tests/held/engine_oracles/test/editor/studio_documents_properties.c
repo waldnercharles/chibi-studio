@@ -813,7 +813,7 @@ static void asset_drop_assigns()
     studio *s = f.studio;
     s->maximized = -1;
     studio_active_layout(s)->editors[STUDIO_AREA_BOTTOM] = STUDIO_EDITOR_ASSETS;
-    s->prefs.assets_tile = STUDIO_ASSETS_LIST;
+    s->prefs.assets_list = true;
     s->applied = s->prefs;
     snprintf(s->assets_filter, sizeof s->assets_filter, "Bank");
     select_instance(f.scene, 0);

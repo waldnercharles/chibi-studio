@@ -17,6 +17,7 @@
 #include "platform/cute.h"
 #include "support/array.h"
 
+#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -142,6 +143,37 @@ bool sg_graph_readonly(const studio *s)
     const graph *g = sg_active_graph(s);
     return !g || g->math_expression || studio_code_graph_readonly(s) ||
            !behavior_asset_mutable(sg_graph_editor(s)->asset);
+}
+
+const char *sg_readonly_reason(const studio *s)
+{
+    const graph *g = sg_active_graph(s);
+    if (!g) {
+        return NULL;
+    }
+    if (g->math_expression) {
+        return "This graph shows a math expression. Edit the expression in its "
+               "node.";
+    }
+    if (studio_code_graph_readonly(s)) {
+        return "The code has errors or is being checked. The graph edits again "
+               "once it's valid.";
+    }
+    if (!behavior_asset_mutable(sg_graph_editor(s)->asset)) {
+        return "This asset can't be edited here.";
+    }
+    return NULL;
+}
+
+void sg_refuse_edit(studio *s)
+{
+    const char *reason = sg_readonly_reason(s);
+    assert(reason);
+    s->graph.readonly_toast = kit_toast(
+        s->kit,
+        s->graph.readonly_toast,
+        &(kit_toast_desc){ .type = KIT_TOAST_INFO, .title = "Read-only graph", .description = reason }
+    );
 }
 
 bool sg_node_visible(const graph *g, const node *n)
@@ -442,7 +474,7 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
             "mute",
             n->disabled ? "Enable" : "Disable",
             n->disabled ? KIT_ICON_EYE : KIT_ICON_EYE_OFF,
-            NULL,
+            "M",
             readonly
         )) {
         sg_set_node_disabled(s, n, !n->disabled);
@@ -524,12 +556,23 @@ static bool ensure_canvas(studio *s)
     return g->kit != NULL;
 }
 
+static bool graph_shown(const studio *s)
+{
+    const studio_graph *g = &s->graph;
+    const studio_layout *layout = &s->prefs.layouts[s->prefs.workspace];
+    return g->area >= 0 && (s->maximized < 0 || s->maximized == g->area) &&
+           layout->editors[g->area] == STUDIO_EDITOR_BEHAVIOR &&
+           s->areas[g->area].rect.w >= 1 && s->areas[g->area].rect.h >= 1 &&
+           g->surface.rect.w >= 1 && g->surface.rect.h >= 1 &&
+           studio_graph_active(s);
+}
+
 void studio_graph_frame(studio *s, double delta_seconds)
 {
     studio_graph *g = &s->graph;
     editor *e = sg_graph_editor(s);
     kit_rect r = g->surface.rect;
-    bool shown = g->area >= 0 && r.w >= 1 && r.h >= 1 && studio_graph_active(s);
+    bool shown = graph_shown(s);
     /* Nothing traces the debug target while no graph shows it. */
     app_scene_authoring_set_debug_hidden(s->scene, !shown);
     if (!shown || !ensure_canvas(s)) {
@@ -662,18 +705,18 @@ void studio_graph_free(studio *s)
 
 bool studio_graph_wants_keyboard(const studio *s)
 {
-    return s->graph.kit && kit_wants_keyboard(s->graph.kit);
+    return graph_shown(s) && s->graph.kit && kit_wants_keyboard(s->graph.kit);
 }
 
 bool studio_graph_accepts_text(const studio *s)
 {
-    return s->graph.kit && kit_accepts_text(s->graph.kit);
+    return graph_shown(s) && s->graph.kit && kit_accepts_text(s->graph.kit);
 }
 
 const char *studio_graph_cursor(const studio *s)
 {
     const studio_graph *g = &s->graph;
-    if (!g->kit || !(g->surface.hovered || g->captured)) {
+    if (!graph_shown(s) || !g->kit || !(g->surface.hovered || g->captured)) {
         return NULL;
     }
     if (g->gesture == STUDIO_GRAPH_PAN || g->gesture == STUDIO_GRAPH_MOVE) {
@@ -788,7 +831,8 @@ void studio_behavior_body(studio *s, int area)
     if (!visible_nodes(sg_active_graph(s))) {
         char hint[96];
         snprintf(hint, sizeof hint, "Add a node with %s or a right click", studio_chord(s, "Shift+A"));
-        kit_label(k, "empty", "graph-empty", hint);
+        const char *reason = sg_readonly_reason(s);
+        kit_label(k, "empty", "graph-empty", reason ? reason : hint);
     }
     studio_debug_call_stack(s);
     sg_find_panel(s);

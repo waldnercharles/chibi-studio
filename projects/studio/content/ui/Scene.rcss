@@ -1,11 +1,13 @@
 /* The Scene area (studio_scene.c): the scene's surface, native in
    #scene-surface, where the pointer, gizmos and camera stay in C, and over
    it what the `scene_view` source shows: each camera frame's name over its
-   top-left corner, moved by a transform as the camera pans so nothing lays
-   out, the label naming the scene and selection, the camera's zoom, Live
-   while a session runs, the generated world's progress and the notice line.
-   A guest Studio fills the surface and shows none of them. The scene keeps
-   dark roles in every theme (theme/viewport.rcss). */
+   top-left corner and each undrawn object's icon over its place, moved by a
+   transform as the camera pans so nothing lays out; why the tool's gizmo is
+   grey, below it; a gesture's change by the pointer; the camera's zoom; Live
+   while a session runs; the generated world's progress and the notice line.
+   The status bar names the scene and selection. A guest Studio fills the
+   surface and shows none of them. The scene keeps dark roles in every theme
+   (theme/viewport.rcss). */
 @import "theme/viewport.rcss";
 body.area-panel { padding: 0dp; overflow: hidden; }
 .viewport { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; background-color: var(--viewport); }
@@ -19,13 +21,39 @@ body.area-panel { padding: 0dp; overflow: hidden; }
 }
 .camera-label[data-active], .camera-label[data-selected] { color: var(--foreground); }
 .camera-label[data-disabled] { opacity: 0.6; }
-/* It leaves the game's view to its HUD while a session runs. */
-.view-label {
-    position: absolute; left: 12dp; bottom: 10dp; color: var(--foreground); font-size: var(--studio-font-11, 11dp);
-    pointer-events: none; opacity: 1; transition: opacity 0.14s cubic-out;
+/* An undrawn object's icon centered on its place, in a chip that reads on
+   any backdrop; the Scene picks it within MARKER_RADIUS_DP (10dp), and it
+   takes the selection's orange (scene_gizmo.h) as the outline would. */
+.marker {
+    position: absolute; left: 0dp; top: 0dp; width: 20dp; height: 20dp; margin: -10dp 0dp 0dp -10dp;
+    border-radius: 10dp; border: 1dp var(--line); background-color: var(--floating);
+    color: var(--muted-foreground); font-size: 13dp; line-height: 18dp; text-align: center;
+    pointer-events: none;
 }
-.view-label .dim { display: block; }
-.view-label[data-starting-style], .view-label[data-ending-style] { opacity: 0; }
+.marker[data-hovered] { color: var(--foreground); border-color: #ffa53a80; }
+.marker[data-selected] { color: #e0701c; border-color: #e0701c; }
+.marker[data-active] { color: #ffa53a; border-color: #ffa53a; }
+.marker[data-locked] { opacity: 0.5; }
+/* Why the tool's gizmo is grey, centered below it, with its one-click fix. */
+.tool-hint { position: absolute; left: 0dp; top: 0dp; width: 0dp; height: 0dp; }
+.tool-hint-box {
+    position: absolute; left: 0dp; top: 0dp; display: flex; justify-content: center;
+    pointer-events: none;
+}
+.tool-hint-pill {
+    display: flex; align-items: center; gap: 6dp; box-sizing: border-box; min-width: 0dp; max-width: 100%; padding: 2dp 2dp 2dp 8dp; border-radius: var(--r);
+    border: 1dp var(--line); background-color: var(--floating); pointer-events: auto;
+}
+.tool-hint-pill > .icon { color: var(--muted-foreground); font-size: 13dp; }
+.tool-hint-pill > .icon, .tool-hint-pill > .btn { flex: 0 0 auto; }
+.tool-hint-pill > .text { flex: 0 1 auto; min-width: 0dp; overflow: hidden; text-overflow: ellipsis; color: var(--foreground); font-size: var(--studio-font-11, 11dp); white-space: nowrap; }
+/* A gesture's change by the pointer. */
+.delta-label {
+    position: absolute; left: 0dp; top: 0dp; padding: 1dp 6dp; border-radius: var(--r);
+    background-color: var(--floating); color: var(--foreground);
+    font-family: var(--font-numeric); font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-16, 16dp);
+    white-space: nowrap; pointer-events: none;
+}
 .readout { position: absolute; right: 10dp; bottom: 8dp; color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); font-family: var(--font-numeric); pointer-events: none; }
 .live-badge { position: absolute; left: 12dp; bottom: 10dp; }
 .model-preview { position: absolute; top: 8dp; left: 12dp; display: flex; align-items: center; gap: 6dp; }

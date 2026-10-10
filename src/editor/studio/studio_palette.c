@@ -342,10 +342,10 @@ static void add_prefixes(studio_palette_entry **picks)
 /* ---------- Recent use ---------- */
 
 /* Where `key` is among the recent items, or -1. */
-static int recent_index(const studio_prefs *prefs, const char *key)
+static int recent_index(const studio_recent *recent, const char *key)
 {
-    for (int i = 0; key[0] && i < STUDIO_RECENT_COUNT && prefs->recent[i].key[0]; i++) {
-        if (!strcmp(prefs->recent[i].key, key)) {
+    for (int i = 0; key[0] && i < STUDIO_RECENT_COUNT && recent[i].key[0]; i++) {
+        if (!strcmp(recent[i].key, key)) {
             return i;
         }
     }
@@ -357,7 +357,7 @@ static int recent_index(const studio_prefs *prefs, const char *key)
    word it names. */
 static int boost(const studio_prefs *prefs, const char *key)
 {
-    int i = recent_index(prefs, key);
+    int i = recent_index(prefs->recent, key);
     if (i < 0) {
         return 0;
     }
@@ -365,29 +365,28 @@ static int boost(const studio_prefs *prefs, const char *key)
     return 40 * uses + 100 * (STUDIO_RECENT_COUNT - i) / STUDIO_RECENT_COUNT;
 }
 
-/* Moves `key` to the front, counting the use. */
-static void remember(studio_prefs *prefs, const char *key)
+void studio_palette_remember(studio_recent *recent, const char *key)
 {
     if (!key[0]) {
         return;
     }
-    int i = recent_index(prefs, key);
-    studio_recent used = { .uses = i >= 0 ? prefs->recent[i].uses + 1 : 1 };
+    int i = recent_index(recent, key);
+    studio_recent used = { .uses = i >= 0 ? recent[i].uses + 1 : 1 };
     snprintf(used.key, sizeof used.key, "%s", key);
     int last = i >= 0 ? i : STUDIO_RECENT_COUNT - 1;
-    memmove(&prefs->recent[1], &prefs->recent[0], (size_t)last * sizeof *prefs->recent);
-    prefs->recent[0] = used;
+    memmove(&recent[1], &recent[0], (size_t)last * sizeof *recent);
+    recent[0] = used;
 }
 
-/* With nothing typed, the items chosen recently lead, most recent first,
-   under Recent. */
-static void recent_first(const studio *s, studio_palette_entry **picks)
+void studio_palette_recent_first(const studio_recent *recent, int limit, studio_palette_entry **picks)
 {
     studio_palette_entry *ordered = NULL;
     bool *taken = xcalloc((size_t)acount(*picks) + 1, sizeof *taken);
-    for (int r = 0; r < STUDIO_RECENT_COUNT && s->prefs.recent[r].key[0]; r++) {
+    for (int r = 0;
+         r < STUDIO_RECENT_COUNT && recent[r].key[0] && acount(ordered) < limit;
+         r++) {
         for (int i = 0; i < acount(*picks); i++) {
-            if (!taken[i] && !strcmp((*picks)[i].key, s->prefs.recent[r].key)) {
+            if (!taken[i] && !strcmp((*picks)[i].key, recent[r].key)) {
                 apush(ordered, (*picks)[i]);
                 snprintf(alast(ordered).group, sizeof alast(ordered).group, "Recent");
                 taken[i] = true;
@@ -413,7 +412,7 @@ static void recent_first(const studio *s, studio_palette_entry **picks)
 void studio_search_choose(studio *s, const studio_palette_entry *p)
 {
     app_scene_authoring *scene = s->scene;
-    remember(&s->prefs, p->key);
+    studio_palette_remember(s->prefs.recent, p->key);
     switch ((pick_kind)p->kind) {
         case PICK_COMMAND:
             studio_command_run(s, (studio_command)p->index);
@@ -455,6 +454,28 @@ void studio_search_choose(studio *s, const studio_palette_entry *p)
             break;
         }
     }
+}
+
+const char *studio_search_verb(const studio_palette_entry *p)
+{
+    switch ((pick_kind)p->kind) {
+        case PICK_COMMAND: return "Run";
+        case PICK_SETTING:
+            return studio_settings[p->index].type == STUDIO_SETTING_BOOL
+                     ? "Toggle"
+                     : "Open";
+        case PICK_OBJECT:
+        case PICK_COMPONENT:
+        case PICK_ELEMENT: return "Select";
+        case PICK_SCENARIO: return "Replay";
+        case PICK_PREFIX: return "Filter";
+        case PICK_ASSET:
+        case PICK_PROJECT:
+        case PICK_GRAPH:
+        case PICK_NODE:
+        case PICK_RULE: return "Open";
+    }
+    return "Open";
 }
 
 /* ---------- The search's results ---------- */
@@ -513,6 +534,6 @@ void studio_search_entries(studio *s, const char *query, studio_palette_entry **
         (*picks)[i].boost = boost(&s->prefs, (*picks)[i].key);
     }
     if (scope == SCOPE_ALL && !rest[0]) {
-        recent_first(s, picks);
+        studio_palette_recent_first(s->prefs.recent, STUDIO_RECENT_COUNT, picks);
     }
 }

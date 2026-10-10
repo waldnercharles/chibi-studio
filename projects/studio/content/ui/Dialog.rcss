@@ -1,6 +1,9 @@
 /* A modal dialog: a backdrop whose press emits Close, and a panel holding
    the use's children. class="window" makes it nearly window-sized, as a
-   preferences window, with the children filling it. Both fade in. */
+   preferences window, with the children filling it. The backdrop fades in;
+   the panel fades and grows from 96%, never from nothing, so it arrives
+   from where it sits (Emil: modals enter with scale 0.95 to 1 and opacity,
+   ease-out, under 200 ms). */
 body {
   position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp;
   display: flex; overflow: auto;
@@ -12,7 +15,7 @@ body {
 .dialog-panel {
   position: relative; margin: auto; padding: 12dp; color: var(--foreground); background-color: var(--popover);
   border: 1dp var(--popover-edge); border-radius: var(--r-lg); box-shadow: var(--shadow-overlay);
-  animation: 0.14s cubic-out 1 dialog-fade;
+  animation: 0.16s cubic-out 1 dialog-enter;
 }
 body.window .dialog-panel {
   display: flex; flex-direction: column; width: 88%; max-width: 1000dp; height: 86%; max-height: 720dp;
@@ -21,6 +24,10 @@ body.window .dialog-panel {
 @keyframes dialog-fade {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+@keyframes dialog-enter {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }
 @media (theme: reduced-motion) {
   .dialog-backdrop, .dialog-panel { animation: none; }

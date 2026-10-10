@@ -4,12 +4,13 @@
  * snapping to the grid, and the grid under the scene. Gizmos keep their size
  * on screen. A gesture writes the fields it changes live and records them as
  * one Undo step when it ends. */
-#include "editor/workspace/viewport.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/workspace/scene_internal.h"
+#include "editor/workspace/viewport.h"
 #include "platform/cute.h"
 #include "render/grid_2d.h"
 #include "runtime/component_catalog.h"
+#include "runtime/transform_propagation.h"
 #include "support/array.h"
 
 #include <assert.h>
@@ -25,7 +26,10 @@ static const float SQUARE = 14;
 static const float RING_RADIUS = 64;
 static const float HANDLE = 9;
 static const float LINE = 2;
-static const float SLOP = 5;
+/* How far past a part a press still takes it: the arrows and handles, and
+   either side of the ring, which is thinner. */
+static const float SLOP = 8;
+static const float RING_SLOP = 10;
 /* The smallest size a resize leaves, in world units. */
 static const float MIN_SIZE = 1;
 
@@ -60,9 +64,10 @@ enum
 struct scene_gizmo_target
 {
     ecs_entity entity;
-    CF_V2 position;
-    float angle; /* canvas radians: gameplay's negated */
+    CF_V2 position; /* in the world, as the canvas shows it */
+    float angle;    /* canvas radians: gameplay's negated */
     bool oriented;
+    GameGlobalTransform2D parent; /* where its parent places it; zero for a root */
     CF_V2 size; /* its visual's width and height; zero without one */
     int field[FIELD_COUNT]; /* index in the gesture's fields, or -1 */
 };
@@ -151,12 +156,16 @@ static const ecs_component_desc *sized_component(
 
 static scene_gizmo_target target_of(const ecs_world *world, ecs_entity entity)
 {
-    const GameTransform *transform = GAME_GameTransform_get_const(world, entity);
-    const GameOrientation *orientation = GAME_GameOrientation_get_const(world, entity);
-    scene_gizmo_target target = { .entity = entity,
-                                  .position = { transform->x, -transform->y },
-                                  .angle = orientation ? -orientation->radians : 0,
-                                  .oriented = orientation != NULL };
+    GameGlobalTransform2D pose = game_transform_world_2d(world, entity);
+    ecs_entity parent = game_transform_parent(world, entity);
+    scene_gizmo_target target = {
+        .entity = entity,
+        .position = { pose.position.x, -pose.position.y },
+        .angle = -pose.radians,
+        .oriented = GAME_GameOrientation_get_const(world, entity) != NULL,
+        .parent = parent.slot ? game_transform_world_2d(world, parent)
+                              : (GameGlobalTransform2D){ 0 },
+    };
     const char *height;
     const ecs_component_desc *size = sized_component(world, entity, &height);
     if (size) {
@@ -173,15 +182,31 @@ static scene_gizmo_target target_of(const ecs_world *world, ecs_entity entity)
     return target;
 }
 
-/* The selected objects with a position, as they are now. The caller frees
-   the array. */
+/* Whether a selected object places `entity`, which then moves with it. */
+static bool placed_by_selection(const app_scene_authoring *scene, ecs_entity entity)
+{
+    for (ecs_entity at = game_transform_parent(scene->world, entity); at.slot;
+         at = game_transform_parent(scene->world, at)) {
+        for (int i = 0; i < acount(scene->actors); i++) {
+            if (ecs_entity_to_u64(scene->actors[i].entity) == ecs_entity_to_u64(at) &&
+                scene_instance_selected(scene, i)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/* The selected objects with a position, as they are now, leaving out those a
+   selected parent carries. The caller frees the array. */
 static scene_gizmo_target *selection_targets(const app_scene_authoring *scene)
 {
     scene_gizmo_target *targets = NULL;
     for (int i = 0; i < acount(scene->actors); i++) {
         ecs_entity entity = scene->actors[i].entity;
         if (scene_instance_selected(scene, i) &&
-            GAME_GameTransform_get_const(scene->world, entity)) {
+            GAME_GameTransform_get_const(scene->world, entity) &&
+            !placed_by_selection(scene, entity)) {
             apush(targets, target_of(scene->world, entity));
         }
     }
@@ -252,6 +277,48 @@ bool scene_gizmo_enabled(app_scene_authoring *scene)
     return enabled;
 }
 
+/* The resize handle nearest canvas point `at` within its slop, which on a
+   small box overlaps its neighbours'. */
+static int handle_near(const gizmo_frame *frame, CF_V2 at, float pixel)
+{
+    int part = SCENE_GIZMO_NONE;
+    float best = HANDLE / 2 + SLOP;
+    for (int h = 0; frame->sized && h < 8; h++) {
+        float distance = cf_len(cf_sub(at, handle_at(frame, h, pixel))) / pixel;
+        if (distance <= best) {
+            best = distance;
+            part = SCENE_GIZMO_HANDLE + h;
+        }
+    }
+    return part;
+}
+
+bool scene_gizmo_hint(app_scene_authoring *scene, scene_tool_hint *hint)
+{
+    scene_tool tool = scene->gizmo.in.tool;
+    engine_viewport *viewport = scene->render_viewport;
+    if ((tool != SCENE_TOOL_ROTATE && tool != SCENE_TOOL_SCALE) || !viewport ||
+        engine_viewport_perspective(viewport) || !scene_can_move(scene)) {
+        return false;
+    }
+    scene_gizmo_target *targets = selection_targets(scene);
+    gizmo_frame frame;
+    bool grey = frame_of(targets, &frame) && !tool_enabled(tool, &frame);
+    afree(targets);
+    if (!grey) {
+        return false;
+    }
+    engine_viewport_camera camera;
+    engine_viewport_get_camera(viewport, &camera);
+    *hint = (scene_tool_hint){
+        .missing = tool == SCENE_TOOL_ROTATE ? &GAME_COMPONENT_GameOrientation
+                                             : &GAME_COMPONENT_GameAppearance,
+        .x = (frame.pivot.x - camera.center_x) / camera.span_width + 0.5f,
+        .y = (camera.center_y - frame.pivot.y) / camera.span_height + 0.5f,
+    };
+    return true;
+}
+
 /* The gizmo's part at canvas point `at` for a canvas of `pixel` units per
    pixel. */
 static int part_at(scene_tool tool, const gizmo_frame *frame, CF_V2 at, float pixel)
@@ -270,17 +337,10 @@ static int part_at(scene_tool tool, const gizmo_frame *frame, CF_V2 at, float pi
             }
             return SCENE_GIZMO_NONE;
         case SCENE_TOOL_ROTATE:
-            return frame->oriented && fabsf(cf_len(d) - RING_RADIUS) <= SLOP
+            return frame->oriented && fabsf(cf_len(d) - RING_RADIUS) <= RING_SLOP
                      ? SCENE_GIZMO_RING
                      : SCENE_GIZMO_NONE;
-        case SCENE_TOOL_SCALE:
-            for (int h = 0; frame->sized && h < 8; h++) {
-                CF_V2 offset = cf_sub(at, handle_at(frame, h, pixel));
-                if (cf_len(offset) / pixel <= HANDLE / 2 + SLOP) {
-                    return SCENE_GIZMO_HANDLE + h;
-                }
-            }
-            return SCENE_GIZMO_NONE;
+        case SCENE_TOOL_SCALE: return handle_near(frame, at, pixel);
         default: return SCENE_GIZMO_NONE;
     }
 }
@@ -357,10 +417,14 @@ static void set(app_scene_authoring *scene, const scene_gizmo_target *target, in
     }
 }
 
+/* Moves the target to canvas point `at`, written in its parent's frame. */
 static void place(app_scene_authoring *scene, const scene_gizmo_target *target, CF_V2 at)
 {
-    set(scene, target, GIZMO_FIELD_X, at.x);
-    set(scene, target, GIZMO_FIELD_Y, -at.y);
+    CF_V2 from_parent = { at.x - target->parent.position.x,
+                          -at.y - target->parent.position.y };
+    float c = cosf(target->parent.radians), s = sinf(target->parent.radians);
+    set(scene, target, GIZMO_FIELD_X, c * from_parent.x + s * from_parent.y);
+    set(scene, target, GIZMO_FIELD_Y, c * from_parent.y - s * from_parent.x);
 }
 
 static bool snapping(const scene_gizmo *g)
@@ -373,6 +437,19 @@ static float shown(float value)
 {
     float rounded = roundf(value * 100) / 100;
     return rounded == 0 ? 0 : rounded;
+}
+
+/* The status bar's line for the change so far: what the gesture does and
+   its delta, which the label by the pointer shows alone. */
+static void describe(scene_gizmo *g, const char *verb)
+{
+    snprintf(g->status, sizeof g->status, "%s %s", verb, g->delta);
+}
+
+/* The gesture reports nothing more until it changes something again. */
+static void quiet(scene_gizmo *g)
+{
+    g->status[0] = g->delta[0] = '\0';
 }
 
 void scene_gizmo_begin(app_scene_authoring *scene, scene_gizmo_part part, CF_V2 at)
@@ -412,7 +489,7 @@ void scene_gizmo_begin(app_scene_authoring *scene, scene_gizmo_part part, CF_V2 
         g->grip = cf_sub(side, rotated(cf_sub(at, frame.center), -frame.angle));
     }
     g->dirty = scene->scene_dirty;
-    g->status[0] = '\0';
+    quiet(g);
     for (int i = 0; i < acount(targets); i++) {
         add_fields(scene, &targets[i], part);
     }
@@ -440,7 +517,8 @@ static void move_selection(app_scene_authoring *scene, CF_V2 at)
     for (int i = 0; i < acount(g->targets); i++) {
         place(scene, &g->targets[i], cf_add(g->targets[i].position, d));
     }
-    snprintf(g->status, sizeof g->status, "Move  \xce\x94x %g  \xce\x94y %g", shown(d.x), shown(-d.y));
+    snprintf(g->delta, sizeof g->delta, "\xce\x94x %g  \xce\x94y %g", shown(d.x), shown(-d.y));
+    describe(g, "Move");
 }
 
 static void rotate_selection(app_scene_authoring *scene, CF_V2 at)
@@ -463,9 +541,10 @@ static void rotate_selection(app_scene_authoring *scene, CF_V2 at)
     for (int i = 0; i < acount(g->targets); i++) {
         const scene_gizmo_target *t = &g->targets[i];
         place(scene, t, cf_add(g->pivot, rotated(cf_sub(t->position, g->pivot), -delta)));
-        set(scene, t, FIELD_RADIANS, -t->angle + delta);
+        set(scene, t, FIELD_RADIANS, -t->angle + delta - t->parent.radians);
     }
-    snprintf(g->status, sizeof g->status, "Rotate %g\xc2\xb0", roundf(delta * 1800 / CF_PI) / 10);
+    snprintf(g->delta, sizeof g->delta, "%g\xc2\xb0", roundf(delta * 1800 / CF_PI) / 10);
+    describe(g, "Rotate");
 }
 
 /* The box's new size along one axis for the handle at `edge` on `side`
@@ -534,21 +613,23 @@ static void resize_selection(app_scene_authoring *scene, CF_V2 at)
     if (acount(g->targets) == 1) {
         const scene_gizmo_target *t = &g->targets[0];
         snprintf(
-            g->status,
-            sizeof g->status,
-            "Size %g \xc3\x97 %g",
+            g->delta,
+            sizeof g->delta,
+            "%g \xc3\x97 %g",
             shown(t->size.x * factor.x),
             shown(t->size.y * factor.y)
         );
+        describe(g, "Size");
         return;
     }
     snprintf(
-        g->status,
-        sizeof g->status,
-        "Scale %g%% \xc3\x97 %g%%",
+        g->delta,
+        sizeof g->delta,
+        "%g%% \xc3\x97 %g%%",
         shown(factor.x * 100),
         shown(factor.y * 100)
     );
+    describe(g, "Scale");
 }
 
 void scene_gizmo_update(app_scene_authoring *scene, CF_V2 at)
@@ -607,7 +688,7 @@ void scene_gizmo_finish(app_scene_authoring *scene, bool cancel)
             );
         }
         scene->scene_dirty = g->dirty;
-        g->status[0] = '\0';
+        quiet(g);
         afree(fields);
         return;
     }
@@ -615,7 +696,7 @@ void scene_gizmo_finish(app_scene_authoring *scene, bool cancel)
        records them, as Properties' live edits record nothing. */
     if (scene->runtime_snapshot_valid) {
         snprintf(g->report, sizeof g->report, "%s", g->status);
-        g->status[0] = '\0';
+        quiet(g);
         afree(fields);
         return;
     }
@@ -631,7 +712,7 @@ void scene_gizmo_finish(app_scene_authoring *scene, bool cancel)
         scene_history_end_group(scene->history);
     }
     snprintf(g->report, sizeof g->report, "%s", g->status);
-    g->status[0] = '\0';
+    quiet(g);
     afree(fields);
 }
 

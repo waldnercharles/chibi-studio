@@ -496,6 +496,23 @@ static void process_input(studio *s, rml_input input)
     rml_backend_process_input(s->backend, &input);
 }
 
+/* A scroll gesture ends when its wheel events pause this long. */
+#define SCROLL_GESTURE_GAP 0.3
+
+/* Whether a wheel event belongs to a trackpad's two-finger scroll. SDL names
+   neither device, but a mouse wheel turns whole notches on one axis, while a
+   trackpad scrolls fractions of one and sideways too; once a gesture looks
+   like a trackpad's, it stays one until it pauses. A high-resolution wheel
+   turning fractions, or a tilted one, scrolls as a trackpad does. */
+static bool trackpad_scroll(studio *s, const SDL_MouseWheelEvent *wheel)
+{
+    bool continues = s->time - s->wheel_at < SCROLL_GESTURE_GAP;
+    bool fractional = wheel->x != 0 || wheel->y != roundf(wheel->y);
+    s->wheel_trackpad = (continues && s->wheel_trackpad) || fractional;
+    s->wheel_at = s->time;
+    return s->wheel_trackpad;
+}
+
 static bool forward_input(studio *s)
 {
     kit_frame_input *in = &s->in;
@@ -506,7 +523,8 @@ static bool forward_input(studio *s)
         in->pressed[b] = in->released[b] = false;
         in->press_position[b] = false;
     }
-    in->wheel = s->zoom_wheel = s->pinch = 0;
+    in->wheel = s->zoom_wheel = s->scene_wheel = s->pinch = 0;
+    s->scroll_x = s->scroll_y = 0;
     asetlen(s->keys, 0);
     asetlen(s->game_input, 0);
     s->nav_button = 0;
@@ -525,10 +543,16 @@ static bool forward_input(studio *s)
             s->shortcut_recording = 0;
             recording = false;
             s->mods = SDL_KMOD_NONE;
+            /* A Space let go in another window neither plays nor pans. */
+            s->space_down = s->scene_nav.space_play = s->scene_nav.space_drag = false;
             continue;
         }
-        if (recording && (e->type == SDL_EVENT_KEY_DOWN || e->type == SDL_EVENT_KEY_UP ||
-                          e->type == SDL_EVENT_TEXT_INPUT)) {
+        /* Space lifts as its key does, while a chord records too. */
+        bool key = e->type == SDL_EVENT_KEY_DOWN || e->type == SDL_EVENT_KEY_UP;
+        if (key && e->key.key == SDLK_SPACE) {
+            s->space_down = e->type == SDL_EVENT_KEY_DOWN;
+        }
+        if (recording && (key || e->type == SDL_EVENT_TEXT_INPUT)) {
             if (e->type != SDL_EVENT_TEXT_INPUT) {
                 s->mods = e->key.mod;
             }
@@ -596,8 +620,15 @@ static bool forward_input(studio *s)
                 in->wheel += notches;
                 /* The modifiers as the wheel turned: a key released later in
                    the same frame must not undo the gesture. */
-                if (studio_primary(s, s->mods) || (s->mods & SDL_KMOD_CTRL)) {
+                bool zooms = studio_primary(s, s->mods) || (s->mods & SDL_KMOD_CTRL);
+                if (zooms) {
                     s->zoom_wheel += notches;
+                }
+                if (trackpad_scroll(s, &e->wheel) && !zooms) {
+                    s->scroll_x += e->wheel.x;
+                    s->scroll_y += e->wheel.y;
+                } else {
+                    s->scene_wheel += notches;
                 }
                 input.type = RML_INPUT_POINTER_WHEEL;
                 input.wheel_x = -e->wheel.x;
@@ -803,6 +834,12 @@ static void draw_viewport(studio *s)
         input.released[b] = s->surface.released[b];
     }
     studio_scene_view(s, &input);
+    /* An Outliner row the pointer rests on outlines its object, as the
+       Scene's own hover does (Unity's and Godot's cross-highlight). */
+    ecs_entity row = studio_outliner_hovered(s);
+    if (row.slot) {
+        s->scene->hovered = row;
+    }
     if (studio_canvas_draw(s, &input)) {
         engine_viewport_set_host_input(s->viewport, NULL);
         return;
@@ -1297,16 +1334,17 @@ static void run(studio *s, double delta_seconds, float width, float height)
     }
     /* This frame's keys reached whatever had the keyboard as they arrived:
        a field that Escape or Enter just released still had them. */
-    bool typed = s->typing;
+    s->typed = s->typing;
     s->typing = kit_wants_keyboard(s->kit) || studio_graph_wants_keyboard(s);
-    typed |= s->typing;
+    s->typed |= s->typing;
     bool toolbar_shortcuts = !studio_graph_wants_keyboard(s) &&
                              !s->shortcut_recording && studio_ui_shortcut_focus(s);
-    if (!typed || toolbar_shortcuts) {
+    if (!s->typed || toolbar_shortcuts) {
         studio_shortcuts(s, false);
     } else if (field_chords(s)) {
         studio_shortcuts(s, true);
     }
+    studio_scene_space_release(s);
     bool prefs_dirty = s->theme_switching > 0 ||
                        !studio_prefs_equal(&s->prefs, &s->applied);
     apply_prefs(s, false);

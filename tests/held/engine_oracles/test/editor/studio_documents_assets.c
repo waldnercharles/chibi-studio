@@ -41,7 +41,7 @@ static void assets_cache_follows_explicit_refresh()
     studio *s = f.studio;
     s->maximized = STUDIO_AREA_TOP;
     studio_active_layout(s)->editors[STUDIO_AREA_TOP] = STUDIO_EDITOR_ASSETS;
-    s->prefs.assets_tile = STUDIO_ASSETS_LIST;
+    s->prefs.assets_list = true;
     s->applied = s->prefs;
     frames(&f, 6);
     reference_index_add_asset(f.scene->asset_index, REFERENCE_ASSET_BEHAVIOR, "QaRefreshCache", NULL, "qa-cache-probe");
@@ -140,6 +140,7 @@ static void scrolled_grid_shows_tiles()
     studio_assets_free(s);
     studio_active_layout(s)->editors[STUDIO_AREA_TOP] = STUDIO_EDITOR_ASSETS;
     s->prefs.assets_tile = STUDIO_ASSETS_TILE;
+    s->prefs.assets_list = false;
     s->applied = s->prefs;
     frames(&f, 6);
     rml_element *list = studio_element(s, "#assets-list");

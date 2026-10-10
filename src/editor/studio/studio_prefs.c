@@ -49,6 +49,8 @@ catch(_)
 #endif
 
 #define PREFS_VERSION 2
+/* Before Assets had a view setting, its smallest tile size listed them. */
+#define PREVIOUS_ASSETS_LIST 40
 
 /* An area showing a panel saves as {"panel": "<name>"}. */
 static const char *const EDITORS[STUDIO_EDITOR_COUNT] = {
@@ -106,6 +108,16 @@ studio_prefs studio_prefs_default()
     return p;
 }
 
+static bool recent_equal(const studio_recent *a, const studio_recent *b)
+{
+    for (int i = 0; i < STUDIO_RECENT_COUNT; i++) {
+        if (strcmp(a[i].key, b[i].key) || a[i].uses != b[i].uses) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool studio_prefs_equal(const studio_prefs *a, const studio_prefs *b)
 {
     for (int i = 0; i < studio_setting_count; i++) {
@@ -119,11 +131,9 @@ bool studio_prefs_equal(const studio_prefs *a, const studio_prefs *b)
             return false;
         }
     }
-    for (int i = 0; i < STUDIO_RECENT_COUNT; i++) {
-        if (strcmp(a->recent[i].key, b->recent[i].key) ||
-            a->recent[i].uses != b->recent[i].uses) {
-            return false;
-        }
+    if (!recent_equal(a->recent, b->recent) ||
+        !recent_equal(a->recent_nodes, b->recent_nodes)) {
+        return false;
     }
     for (int w = 0; w < STUDIO_WORKSPACE_COUNT; w++) {
         const studio_layout *x = &a->layouts[w], *y = &b->layouts[w];
@@ -140,7 +150,7 @@ bool studio_prefs_equal(const studio_prefs *a, const studio_prefs *b)
         }
     }
     return a->workspace == b->workspace && a->tool == b->tool &&
-           a->assets_tile == b->assets_tile;
+           a->assets_tile == b->assets_tile && a->assets_list == b->assets_list;
 }
 
 static int name_index(const char *const *names, int count, yyjson_val *value, int fallback)
@@ -272,6 +282,21 @@ static void read_layout(studio_layout *l, yyjson_val *layout)
     }
 }
 
+static void read_recent(studio_recent *recent, yyjson_val *items)
+{
+    for (int i = 0, n = 0; n < STUDIO_RECENT_COUNT && i < (int)yyjson_arr_size(items);
+         i++) {
+        yyjson_val *item = yyjson_arr_get(items, (size_t)i);
+        const char *key = yyjson_get_str(yyjson_obj_get(item, "key"));
+        yyjson_val *uses = yyjson_obj_get(item, "uses");
+        if (key && key[0] && strlen(key) < sizeof recent[n].key &&
+            yyjson_is_int(uses) && yyjson_get_int(uses) > 0) {
+            snprintf(recent[n].key, sizeof recent[n].key, "%s", key);
+            recent[n++].uses = yyjson_get_int(uses);
+        }
+    }
+}
+
 studio_prefs studio_prefs_read(const char *json)
 {
     studio_prefs p = studio_prefs_default();
@@ -298,21 +323,17 @@ studio_prefs studio_prefs_read(const char *json)
             snprintf(p.shortcuts[c], sizeof p.shortcuts[c], "%s", chord);
         }
     }
-    yyjson_val *recent = yyjson_obj_get(yyjson_obj_get(root, "palette"), "recent");
-    for (int i = 0, n = 0; n < STUDIO_RECENT_COUNT && i < (int)yyjson_arr_size(recent);
-         i++) {
-        yyjson_val *item = yyjson_arr_get(recent, (size_t)i);
-        const char *key = yyjson_get_str(yyjson_obj_get(item, "key"));
-        yyjson_val *uses = yyjson_obj_get(item, "uses");
-        if (key && key[0] && strlen(key) < sizeof p.recent[n].key &&
-            yyjson_is_int(uses) && yyjson_get_int(uses) > 0) {
-            snprintf(p.recent[n].key, sizeof p.recent[n].key, "%s", key);
-            p.recent[n++].uses = yyjson_get_int(uses);
-        }
-    }
+    yyjson_val *palette = yyjson_obj_get(root, "palette");
+    read_recent(p.recent, yyjson_obj_get(palette, "recent"));
+    read_recent(p.recent_nodes, yyjson_obj_get(palette, "recentNodes"));
     p.tool = name_index(TOOLS, SCENE_TOOL_COUNT, value_at(root, "scene.tool"), SCENE_TOOL_SELECT);
-    yyjson_val *tile = yyjson_obj_get(yyjson_obj_get(root, "assets"), "tileSize");
-    p.assets_tile = (int)number(tile, (float)p.assets_tile, STUDIO_ASSETS_LIST, STUDIO_ASSETS_TILE_MAX);
+    yyjson_val *assets = yyjson_obj_get(root, "assets");
+    yyjson_val *tile = yyjson_obj_get(assets, "tileSize");
+    p.assets_tile = (int)number(tile, (float)p.assets_tile, STUDIO_ASSETS_TILE_MIN, STUDIO_ASSETS_TILE_MAX);
+    yyjson_val *view = yyjson_obj_get(assets, "view");
+    p.assets_list = view ? yyjson_is_str(view) && !strcmp(yyjson_get_str(view), "list")
+                         : yyjson_is_int(tile) &&
+                               yyjson_get_int(tile) == PREVIOUS_ASSETS_LIST;
     yyjson_val *layout = yyjson_obj_get(root, "layout");
     p.workspace = workspace_index(yyjson_obj_get(layout, "workspace"), STUDIO_WORKSPACE_VERTICAL_SPLIT);
     yyjson_val *presets = yyjson_obj_get(layout, "presets");
@@ -410,6 +431,15 @@ static void keep_unknown(
     }
 }
 
+static void write_recent(const studio_recent *recent, yyjson_mut_doc *doc, yyjson_mut_val *items)
+{
+    for (int i = 0; i < STUDIO_RECENT_COUNT && recent[i].key[0]; i++) {
+        yyjson_mut_val *item = yyjson_mut_arr_add_obj(doc, items);
+        yyjson_mut_obj_add_strcpy(doc, item, "key", recent[i].key);
+        yyjson_mut_obj_add_int(doc, item, "uses", recent[i].uses);
+    }
+}
+
 static void write_layout(const studio_layout *l, yyjson_mut_doc *doc, yyjson_mut_val *layout)
 {
     yyjson_mut_obj_add_bool(doc, layout, "sideOpen", l->side_open);
@@ -448,14 +478,11 @@ char *studio_prefs_write(const studio_prefs *p, const char *saved)
         }
     }
     yyjson_mut_val *palette = yyjson_mut_obj_add_obj(doc, root, "palette");
-    yyjson_mut_val *recent = yyjson_mut_obj_add_arr(doc, palette, "recent");
-    for (int i = 0; i < STUDIO_RECENT_COUNT && p->recent[i].key[0]; i++) {
-        yyjson_mut_val *item = yyjson_mut_arr_add_obj(doc, recent);
-        yyjson_mut_obj_add_strcpy(doc, item, "key", p->recent[i].key);
-        yyjson_mut_obj_add_int(doc, item, "uses", p->recent[i].uses);
-    }
+    write_recent(p->recent, doc, yyjson_mut_obj_add_arr(doc, palette, "recent"));
+    write_recent(p->recent_nodes, doc, yyjson_mut_obj_add_arr(doc, palette, "recentNodes"));
     yyjson_mut_val *assets = yyjson_mut_obj_add_obj(doc, root, "assets");
     yyjson_mut_obj_add_int(doc, assets, "tileSize", p->assets_tile);
+    yyjson_mut_obj_add_str(doc, assets, "view", p->assets_list ? "list" : "grid");
     yyjson_mut_val *layout = yyjson_mut_obj_add_obj(doc, root, "layout");
     yyjson_mut_obj_add_str(doc, layout, "workspace", WORKSPACES[p->workspace]);
     yyjson_mut_val *presets = yyjson_mut_obj_add_obj(doc, layout, "presets");

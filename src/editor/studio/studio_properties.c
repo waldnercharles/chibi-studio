@@ -624,6 +624,13 @@ static void move(studio *s, scene_actor *actor, int axis, double v, bool active,
 
 /* ---------- Values from the panel ---------- */
 
+bool properties_angle(const type_field *field)
+{
+    const char *unit = field->unit;
+    return !strcmp(field->name, "radians") ||
+           (unit && !strncmp(unit, "rad", 3) && (!unit[3] || unit[3] == '/'));
+}
+
 static bool parse_integer64(const char *text, pin_value *value)
 {
     while (isspace((unsigned char)*text)) {
@@ -704,7 +711,7 @@ static bool parse_field(
         case PIN_F32:
         case PIN_F64: {
             double v = strtod(text, NULL);
-            v = !strcmp(field->name, "radians") ? v * M_PI / 180 : v;
+            v = properties_angle(field) ? v * M_PI / 180 : v;
             if (value->type == PIN_F32) {
                 value->f = (float)v;
             } else {
@@ -936,7 +943,7 @@ static void reset_field(studio *s, scene_actor *actor)
 {
     app_scene_authoring *scene = s->scene;
     const ecs_component_desc *desc = properties_component(scene, s->context.component);
-    if (!desc) {
+    if (!desc || desc->derived_from) {
         return;
     }
     game_prototype_component added;
@@ -1019,33 +1026,80 @@ static void apply(studio *s)
 
 /* ---------- Components ---------- */
 
+bool studio_can_add_component(studio *s)
+{
+    properties_subject subject;
+    properties_subject_of(s, &subject);
+    return subject.asset ||
+           (subject.actor && subject.actor->identity && !subject.multi);
+}
+
+/* Add Component adds to the prototype a prototype document shows, or to the
+   one placed object selected, as an override of its prototype (Unity's and
+   Godot's Add Component on an instance). */
 void studio_add_component_open(studio *s)
 {
+    assert(studio_can_add_component(s));
+    properties_subject subject;
+    properties_subject_of(s, &subject);
+    s->components.object = subject.asset ? 0 : subject.actor->identity;
     snprintf(
         s->components.prototype,
         sizeof s->components.prototype,
         "%s",
-        selected_prototype(s->scene)->prototype->name
+        subject.asset ? subject.asset->prototype->name : ""
     );
     studio_palette_open(s, STUDIO_PALETTE_COMPONENTS, "Search components");
 }
 
-static void add_component(studio *s, const char *prototype, const ecs_component_desc *desc)
+/* Adds to the target and names it in `target`: 0, 1 while a collaboration
+   host decides, or -1 with why in Studio's error. */
+static int add_to_target(studio *s, const ecs_component_desc *desc, char target[128])
 {
-    if (!studio_editable(s)) {
-        return;
+    app_scene_authoring *scene = s->scene;
+    if (!s->components.object) {
+        snprintf(target, 128, "%s", s->components.prototype);
+        int added = app_scene_authoring_add_prototype_component(scene, target, desc->name);
+        if (added < 0) {
+            studio_error(s, "Could not add component", scene->prototype_message);
+        }
+        return added;
     }
-    if (app_scene_authoring_add_prototype_component(s->scene, prototype, desc->name) != 0) {
-        studio_error(s, "Could not add component", s->scene->prototype_message);
+    scene_actor *actor = scene_actor_by_identity(scene, s->components.object);
+    if (!actor) {
+        return -1;
+    }
+    select_instance(scene, (int)(actor - scene->actors));
+    /* Adding replaces the object, and its name with it. */
+    snprintf(target, 128, "%s", actor->name);
+    int added = app_scene_authoring_add_instance_component(scene, desc->name);
+    if (added < 0) {
+        studio_error(s, "Could not add component", scene->message);
+    }
+    return added;
+}
+
+static void add_component(studio *s, const ecs_component_desc *desc)
+{
+    char target[128];
+    if (!studio_editable(s) || add_to_target(s, desc, target) != 0) {
         return;
     }
     char label[128], report[320];
     editor_component_label(desc->name, label, sizeof label);
-    snprintf(report, sizeof report, "Added %s to %s", label, prototype);
+    snprintf(report, sizeof report, "Added %s to %s", label, target);
     studio_report(s, report);
     /* Its panel shows, open, as Unity adds a component. */
     s->tab = properties_tab_of(s, desc);
     snprintf(s->components.added, sizeof s->components.added, "%s", desc->name);
+}
+
+void studio_add_component_to_selection(studio *s, const ecs_component_desc *desc)
+{
+    scene_actor *actor = selected_actor(s->scene);
+    assert(actor && actor->identity);
+    s->components.object = actor->identity;
+    add_component(s, desc);
 }
 
 /* A component the prototype lacks, as the palette lists it. */
@@ -1056,6 +1110,35 @@ typedef struct
     int index; /* in the registry */
 } component_choice;
 
+/* The fields an entry lists before it counts the rest. */
+#define ABOUT_FIELDS 4
+
+/* An entry's second line, which tells components with like names apart:
+   their first fields, as "Speed · Lifetime · Rate". The SDK gives
+   components no description yet; once it does, that takes this place. */
+static void component_about(const ecs_component_desc *desc, char *out, size_t size)
+{
+    const type_desc *type = desc->type;
+    out[0] = '\0';
+    if (!type->field_count) {
+        snprintf(out, size, "A tag, with no values");
+        return;
+    }
+    size_t used = 0;
+    for (int i = 0; i < type->field_count && i < ABOUT_FIELDS; i++) {
+        char label[64];
+        editor_identifier_label(type->fields[i].name, label, sizeof label);
+        used += (size_t)snprintf(out + used, size - used, "%s%s", i ? " \xc2\xb7 " : "", label);
+        if (used >= size) {
+            return;
+        }
+    }
+    int rest = type->field_count - ABOUT_FIELDS;
+    if (rest > 0) {
+        snprintf(out + used, size - used, " \xc2\xb7 %d more", rest);
+    }
+}
+
 static int by_tab_and_label(const void *a, const void *b)
 {
     const component_choice *x = a, *y = b;
@@ -1065,14 +1148,22 @@ static int by_tab_and_label(const void *a, const void *b)
 void studio_component_entries(studio *s, studio_palette_entry **entries)
 {
     app_scene_authoring *scene = s->scene;
-    scene_prototype_asset *asset = find_prototype(scene, s->components.prototype);
+    scene_prototype_asset *asset = s->components.object
+                                     ? NULL
+                                     : find_prototype(scene, s->components.prototype);
+    scene_actor *actor = s->components.object
+                           ? scene_actor_by_identity(scene, s->components.object)
+                           : NULL;
     int current = s->tab >= STUDIO_TAB_OBJECT && s->tab <= STUDIO_TAB_GAMEPLAY
                     ? s->tab - STUDIO_TAB_OBJECT
                     : 0;
     component_choice *choices = NULL;
-    for (int i = 0; asset && i < scene->registry.component_count; i++) {
+    for (int i = 0; (asset || actor) && i < scene->registry.component_count; i++) {
         const ecs_component_desc *desc = scene->registry.components[i];
-        if (prototype_has_component_id(asset->prototype, desc->id)) {
+        /* The engine computes a derived component from its source. */
+        if (desc->derived_from ||
+            (asset ? prototype_has_component_id(asset->prototype, desc->id)
+                   : ecs_component_has(scene->world, actor->entity, desc->id))) {
             continue;
         }
         component_choice choice = {
@@ -1096,6 +1187,7 @@ void studio_component_entries(studio *s, studio_palette_entry **entries)
             choices[i].label
         );
         snprintf(e->keywords, sizeof e->keywords, "%s", desc->name);
+        component_about(desc, e->about, sizeof e->about);
         e->icon = TAB_ICONS[tab];
         e->index = choices[i].index;
     }
@@ -1104,11 +1196,18 @@ void studio_component_entries(studio *s, studio_palette_entry **entries)
 
 void studio_component_choose(studio *s, const studio_palette_entry *entry)
 {
-    add_component(
-        s,
-        s->components.prototype,
-        s->scene->registry.components[entry->index]
+    add_component(s, s->scene->registry.components[entry->index]);
+}
+
+static void removed_toast(studio *s, const char *title)
+{
+    kit_toast_dismiss(s->kit, s->components.toast);
+    s->components.toast = kit_toast(
+        s->kit,
+        0,
+        &(kit_toast_desc){ .title = title, .action = "Undo", .duration = 6 }
     );
+    studio_record(s, KIT_TOAST_DEFAULT, title);
 }
 
 /* Destructive edits offer Undo in a toast while they are still the latest
@@ -1127,14 +1226,48 @@ static void remove_component(studio *s, scene_prototype_asset *asset)
         studio_error(s, "Could not remove component", s->scene->prototype_message);
         return;
     }
-    kit_toast_dismiss(s->kit, s->components.toast);
-    s->components.toast = kit_toast(
-        s->kit,
-        0,
-        &(kit_toast_desc){ .title = title, .action = "Undo", .duration = 6 }
-    );
+    removed_toast(s, title);
     s->components.step = alast(asset->undo);
-    studio_record(s, KIT_TOAST_DEFAULT, title);
+    s->components.scene_step = 0;
+}
+
+/* An object removes only a component it added; its prototype's stay. */
+static void remove_object_component(studio *s, const scene_actor *actor)
+{
+    const char *name = s->components.menu;
+    char label[128], title[320];
+    editor_component_label(name, label, sizeof label);
+    snprintf(title, sizeof title, "Removed %s from %s", label, actor->name);
+    int removed = app_scene_authoring_remove_instance_component(s->scene, name);
+    if (removed < 0) {
+        studio_error(s, "Could not remove component", s->scene->message);
+    }
+    if (removed != 0) {
+        return;
+    }
+    removed_toast(s, title);
+    s->components.scene_step = scene_history_step_id(s->scene->history, false);
+}
+
+static bool removal_current(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    if (s->components.scene_step) {
+        return scene->document.kind == APP_EDITOR_DOCUMENT_SCENE &&
+               scene_history_step_id(scene->history, false) == s->components.scene_step;
+    }
+    scene_prototype_asset *asset = scene->document.kind == APP_EDITOR_DOCUMENT_PROTOTYPE
+                                     ? selected_prototype(scene)
+                                     : NULL;
+    return asset && acount(asset->undo) && alast(asset->undo) == s->components.step;
+}
+
+static int undo_removal(studio *s)
+{
+    if (s->components.scene_step) {
+        return replay_scene_edit(s->scene, false);
+    }
+    return prototype_undo(s->scene);
 }
 
 void studio_component_toast(studio *s)
@@ -1143,14 +1276,10 @@ void studio_component_toast(studio *s)
     if (!toast) {
         return;
     }
-    scene_prototype_asset *asset = s->scene->document.kind == APP_EDITOR_DOCUMENT_PROTOTYPE
-                                     ? selected_prototype(s->scene)
-                                     : NULL;
-    bool current = asset && acount(asset->undo) &&
-                   alast(asset->undo) == s->components.step;
+    bool current = removal_current(s);
     if (kit_toast_action(s->kit, toast)) {
         s->components.toast = 0;
-        if (current && studio_editable(s) && prototype_undo(s->scene) == 0) {
+        if (current && studio_editable(s) && undo_removal(s) == 0) {
             studio_report(s, "Undo");
         }
         return;
@@ -1163,13 +1292,18 @@ void studio_component_toast(studio *s)
 
 /* A component panel's menu, its ⋯ or a right press on its head (Unity's
    component menu, Blender's modifier menu): Remove Component on a
-   prototype, Keep Changes on a running object. */
+   prototype or a component an object added, Keep Changes on a running
+   object. */
 static void component_action(studio *s)
 {
     properties_subject subject;
     properties_subject_of(s, &subject);
     if (subject.asset && !subject.locked) {
         remove_component(s, subject.asset);
+        return;
+    }
+    if (subject.actor && !subject.locked && !subject.multi && !studio_live(s)) {
+        remove_object_component(s, subject.actor);
         return;
     }
     for (int i = 0;
@@ -1262,6 +1396,27 @@ static void narrow_selection(studio *s, const char *prototype)
     }
 }
 
+/* Selects the object an entity field names (studio_properties_view.c),
+   as Unity's object field pings its object. */
+static void reveal(studio *s, const properties_row *row)
+{
+    pin_value value = { 0 };
+    if (row->kind != PROPERTIES_OBJECT ||
+        ecs_component_read_field(
+            s->scene->world,
+            ecs_entity_from_u64(row->entity),
+            row->component,
+            row->field,
+            &value
+        ) != ECS_OK ||
+        value.type != PIN_HANDLE || !value.u64) {
+        return;
+    }
+    /* A placed object selects as the Outliner selects it; a spawned one as
+       a pick in the Scene does. */
+    app_scene_authoring_select_entity(s->scene, ecs_entity_from_u64(value.u64));
+}
+
 /* ---------- Menus ---------- */
 
 /* The element that sent `a`, while it lasts. */
@@ -1270,16 +1425,22 @@ static rml_element *sender(const ui_activation *a)
     return a->anchor ? rml_element_ref_get(a->anchor) : NULL;
 }
 
-/* Shows the Properties menu `id` at the pointer, from the document that sent
-   `a`. */
+/* Shows the Properties menu `id` from the document that sent `a`: under the
+   button that opened it, as Base UI anchors a menu to its trigger, so a
+   keyboard press opens it there too; at the pointer for a right press. */
 static void show_menu(const ui_activation *a, const char *id)
 {
     rml_element *from = sender(a);
     rml_element *menu = from ? rml_element_by_id(rml_element_owner_document(from), id)
                              : NULL;
-    if (menu) {
-        popover_show(menu, &(popover_anchor){ .side = POPOVER_POINT, .box = { a->x, a->y, 0, 0 } });
+    if (!menu) {
+        return;
     }
+    if (!strcmp(rml_element_tag_name(from), "button")) {
+        popover_show(menu, &(popover_anchor){ .side = POPOVER_BELOW, .element = from, .trigger = from });
+        return;
+    }
+    popover_show(menu, &(popover_anchor){ .side = POPOVER_POINT, .box = { a->x, a->y, 0, 0 } });
 }
 
 /* A right press on a field opens its menu: Reset and Apply to Prototype. */
@@ -1303,9 +1464,15 @@ static void component_menu(studio *s, const char *key, const ui_activation *a)
         const ecs_component_desc *d = s->scene->registry.components[i];
         desc = !strcmp(properties_panel_key(d->name), key) ? d : desc;
     }
-    bool menu = subject.asset ||
-                (studio_live(s) && subject.actor && subject.actor->identity);
-    if (!desc || !menu) {
+    if (!desc || desc->derived_from) {
+        return;
+    }
+    game_prototype_component added;
+    bool own = subject.actor && !subject.multi &&
+               properties_base(subject.actor, desc, &added) == &added;
+    bool menu = subject.asset || (subject.actor && subject.actor->identity &&
+                                  (studio_live(s) || own));
+    if (!menu) {
         return;
     }
     snprintf(s->components.menu, sizeof s->components.menu, "%s", desc->name);
@@ -1444,6 +1611,8 @@ void studio_properties_action(studio *s, const char *action, const ui_activation
         }
     } else if (!strcmp(action, "narrow")) {
         narrow_selection(s, arg);
+    } else if (!strcmp(action, "reveal") && parsed) {
+        reveal(s, &row);
     } else if (!strcmp(action, "openBehavior")) {
         if (!s->scene->graph_document_id || strcmp(s->scene->graph_document_id, arg)) {
             app_scene_authoring_open_behavior(s->scene, arg);

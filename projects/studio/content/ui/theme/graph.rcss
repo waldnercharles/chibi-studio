@@ -63,7 +63,9 @@ body.graph-canvas:not(.dark) {
 .gnode[data-active] { border-color: var(--active-object); }
 .gnode[data-dim] { opacity: 0.45; }
 .gnode[data-breakpoint] .gnode-head { border-left: 4dp #e5534b; }
-.gnode[data-disabled] { opacity: 0.5; }
+/* A disabled (muted) node reads apart from an unused, dimmed one: its title
+   greys and is struck through, and its wires draw red (Blender). */
+.gnode[data-disabled] { opacity: 0.6; }
 
 .gnode-head {
     position: relative; display: flex; align-items: center; gap: 6dp; height: var(--studio-height-24, 24dp); padding: 0dp 10dp;
@@ -88,6 +90,9 @@ body.graph-canvas:not(.dark) {
 .gnode[data-kind=expression] .gnode-head { background-color: var(--n-expr); }
 
 body.graph-canvas:not(.dark) .gnode-head, body.graph-canvas:not(.dark) .gnode-head .icon { color: #28313e; }
+.gnode[data-disabled] .gnode-head { background-color: var(--muted); }
+.gnode[data-disabled] .gnode-head, .gnode[data-disabled] .gnode-head .icon { color: var(--muted-foreground); }
+.gnode[data-disabled] .gnode-head .title { text-decoration: line-through; }
 
 /* Rows sit on a fixed pitch, which pin_y assumes: row i's socket is at head (24)
    + pad (4) + (i + 0.5) * 22 below the node's border, after any code. Execution
@@ -101,8 +106,14 @@ body.graph-canvas:not(.dark) .gnode-head, body.graph-canvas:not(.dark) .gnode-he
 .ghalf.out { padding-right: 10dp; margin-left: auto; justify-content: flex-end; }
 /* Labels and fields stay inside the node; the full label remains in its tooltip. */
 .gpin-label { display: block; flex: 0 1 auto; min-width: 0dp; max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--muted-foreground); white-space: nowrap; line-height: var(--studio-line-22, 22dp); }
+.gpin-label[data-fits] { overflow: visible; text-overflow: clip; }
+.out > .gpin-label { text-align: right; }
+/* A half row sizes to its label, which a percentage cap would collapse. */
+.ghalf > .gpin-label { flex-shrink: 0; max-width: none; }
 [data-hover] > .gpin-label { color: var(--foreground); }
 .grow .field { flex: 1 1 auto; min-width: 0dp; height: var(--studio-height-18, 18dp); }
+/* A refused entry stays red while focused (field.rcss rings a focused one). */
+.grow .field.autocomplete[data-invalid] { border-color: var(--destructive); }
 .grow.out .field { flex: 0 0 64dp; }
 .grow .field .part { height: var(--studio-height-16, 16dp); line-height: var(--studio-line-16, 16dp); }
 /* Compact graph fields have a 16 dp inner box. Shell input padding would
@@ -117,7 +128,6 @@ body.graph-canvas:not(.dark) .gnode-head, body.graph-canvas:not(.dark) .gnode-he
     font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-18, 18dp); overflow: hidden;
 }
 .grow .chip .icon { flex: 0 0 auto; width: 12dp; font-size: 11dp; line-height: var(--studio-line-18, 18dp); color: var(--faint-foreground); }
-.chip-text { display: block; flex: 1 1 auto; min-width: 0dp; white-space: nowrap; overflow: hidden; }
 .grow .chip.source { color: var(--tok-name); }
 .graph-inline-values { min-width: 320dp; max-width: 480dp; max-height: 460dp; overflow-y: auto; }
 .graph-inline-heading { display: block; margin: 2dp 4dp 6dp; color: var(--muted-foreground); font-size: var(--studio-font-11, 11dp); font-weight: 600; }
@@ -126,6 +136,9 @@ body.graph-canvas:not(.dark) .gnode-head, body.graph-canvas:not(.dark) .gnode-he
 .graph-inline-row { display: flex; align-items: center; gap: 8dp; min-height: 26dp; padding: 2dp 4dp; }
 .graph-inline-label { display: block; flex: 0 0 104dp; overflow: hidden; color: var(--muted-foreground); white-space: nowrap; }
 .graph-inline-row .field { flex: 1 1 auto; min-width: 0dp; }
+/* Bind to Source sits after a compound value's editor, quiet until hovered. */
+.grow .gbind { flex: 0 0 auto; color: var(--faint-foreground); }
+.grow .gbind:hover { color: var(--foreground); }
 /* A variadic node's last row adds a pin on its side (Unreal's Add pin). */
 .gadd .btn { color: var(--faint-foreground); }
 
@@ -168,7 +181,7 @@ body.graph-canvas:not(.dark) .gnode-head, body.graph-canvas:not(.dark) .gnode-he
 .socket kit-dot { position: absolute; left: 3dp; top: 3dp; width: 10dp; height: 10dp; }
 
 /* Level of detail: far out, pins and values give way to titles. */
-body.far .gpin-label, body.far .grow .field, body.far .grow .chip, body.far .grow .check, body.far .grow .segmented, body.far .gcode, body.far .gadd { visibility: hidden; }
+body.far .gpin-label, body.far .grow .field, body.far .grow .chip, body.far .grow .check, body.far .grow .segmented, body.far .gcode, body.far .gadd, body.far .gbind { visibility: hidden; }
 body.far .gnode-head .title { font-size: var(--studio-font-16, 16dp); }
 
 /* Comment frames (studio_graph_comment.c): a tint layer keyed by the frame's
@@ -216,10 +229,6 @@ body.far .gbubble { visibility: hidden; }
 }
 
 .marquee { position: absolute; border: 1dp var(--primary-edge); background-color: var(--primary-soft); }
-.link-error {
-    position: absolute; padding: 2dp 8dp; border-radius: var(--r); background-color: var(--notice);
-    color: var(--notice-fg); font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-16, 16dp); white-space: nowrap;
-}
 
 /* A wire's reroute point: a 14 dp hit area centered on the point. */
 .greroute { position: absolute; width: 14dp; height: var(--studio-height-14, 14dp); margin-left: -7dp; margin-top: -7dp; cursor: move; }

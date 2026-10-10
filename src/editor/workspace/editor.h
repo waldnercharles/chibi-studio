@@ -156,6 +156,9 @@ int editor_reload_source_presentation_document(
     const char *key
 );
 
+/* The graph the document `key` shows, or showed when it was left; false
+ * before its first visit. The default graph's id is 0. */
+bool editor_document_graph(const editor *, const char *key, uint64_t *graph_id);
 /* Workspace visits retain document Undo/Redo and working values by stable key. */
 int editor_visit_behavior_asset(
     editor *e,

@@ -17,9 +17,10 @@
     <button class="seg" data-attrif-data-pressed="graph_header.view == 1" data-event-click="emit('graph_header.view', 1)">Code</button>
     <button class="seg" data-attrif-data-pressed="graph_header.view == 2" data-event-click="emit('graph_header.view', 2)">Both</button>
   </div>
+  <span class="badge" data-if="graph_header.readonlyAbout != ''" data-tip="Read-only" data-attr-data-tip-about="graph_header.readonlyAbout">Read-only</span>
   <div class="spacer"></div>
   <button class="btn subtle sm debug-target" data-if="graph_header.debug" popovertarget="debug-targets" aria-haspopup="listbox" data-tip="Debug target" data-attr-data-tip-about="graph_header.targetAbout"><span class="icon">&#xebf8;</span><morph-text class="label">{{ graph_header.target }}</morph-text></button>
-  <number-flow class="number-flow readout" data-if="graph_view.zoomShown" data-attr-value="graph_view.zoom" precision="0" prefix="" suffix="%"></number-flow>
+  <button class="btn sm zoom" data-if="graph_view.zoomShown" data-tip="Zoom to 100%" data-event-click="emit('graph_header.zoomActual')"><number-flow class="number-flow readout" data-if="!graph_view.zooming" data-attr-value="graph_view.zoom" precision="0" prefix="" suffix="%"></number-flow><span class="readout" data-if="graph_view.zooming">{{ graph_view.zoom }}%</span></button>
   <button class="btn icon-only" popovertarget="graph-actions" aria-haspopup="menu" data-tip="Graph"><span class="icon">&#xea7c;</span></button>
   <button class="btn icon-only" data-tip="Arrange" data-attr-data-kbd="graph_header.arrangeKbd" data-attrif-data-disabled="graph_header.readonly" data-event-click="emit('graph_header.arrange')"><span class="icon">&#xebeb;</span></button>
   <button class="btn icon-only" data-tip="Find" data-attr-data-kbd="commands.find.shortcut" data-attr-data-state="graph_header.find ? 'on' : ''" data-event-click="emit('graph_header.find')"><span class="icon">&#xea6d;</span></button>

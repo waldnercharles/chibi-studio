@@ -172,6 +172,7 @@ static bool launch(studio_ui *ui, char *error, size_t size)
             entities,
             ((game_prototype_preview_scene_entity){
                 .prototype = prototype,
+                .parent = e->parent,
                 .components = e->components,
                 .behaviors = (const char *const *)e->behaviors,
                 .behavior_count = acount(e->behaviors),
@@ -551,9 +552,9 @@ static bool send_activations(studio *s, ui_mount *mount, ecs_entity entity)
         ui->wake = true;
         if (!strcmp(ui_mount_name(mount), "NewProject") &&
             (!strncmp(a.event, "newProject.", 11) || !strcmp(a.event, "Close"))) {
-            bool confirmation = s->new_project.confirm_discard;
+            bool confirmation = s->new_project.confirm_save;
             studio_new_project_action(s, !strcmp(a.event, "Close") ? "cancel" : a.event + 11);
-            if (!confirmation && s->new_project.confirm_discard) {
+            if (!confirmation && s->new_project.confirm_save) {
                 game_entities_request_event(
                     game_prototype_preview_entities(ui->world),
                     entity,
@@ -852,6 +853,12 @@ void studio_ui_panel_detach(studio *s, const char *name)
     if (p) {
         ui_mount_detach(p->mount);
     }
+}
+
+bool studio_ui_panel_holds(studio *s, const char *name, rml_element *element)
+{
+    panel *p = s->ui ? find_panel(s->ui, name) : NULL;
+    return p && p->mount && ui_mount_holds(p->mount, element);
 }
 
 /* The alias takes when the mount binds the host to the data model, as a

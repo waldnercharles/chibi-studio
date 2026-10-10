@@ -1,0 +1,38 @@
+--- a/include/zep/range_markers.h
++++ b/include/zep/range_markers.h
+@@ -47,6 +47,7 @@
+     CursorTipAtLine = (1 << 5), // Tooltip shown if the user cursor is on the Mark line
+     Indicator = (1 << 6), // Show an indicator on the left side
+     Timed = (1 << 7),
++    IndicatorDot = (1 << 8), // Show a dot on the left side, as a breakpoint
+     All = Underline | Tooltip | TooltipAtLine | CursorTip | CursorTipAtLine | Indicator | Background,
+     CompileError = Tooltip | CursorTip | Indicator | Background,
+     BackgroundMark = Background
+--- a/src/window.cpp
++++ b/src/window.cpp
+@@ -1097,6 +1097,25 @@
+                                 m_pBuffer->GetTheme().GetColor(marker->GetHighlightColor()));
+                         }
+                     }
++                    else if (marker->displayType & RangeMarkerDisplayType::IndicatorDot)
++                    {
++                        // A dot on the row where the marker starts, one rect per pixel row.
++                        auto start = marker->GetRange().first;
++                        if (start >= lineInfo.lineByteRange.first && start < std::max(lineInfo.lineByteRange.second, lineInfo.lineByteRange.first + 1))
++                        {
++                            display.SetClipRect(m_indicatorRegion->rect);
++                            const auto& color = m_pBuffer->GetTheme().GetColor(marker->GetHighlightColor());
++                            float radius = std::floor(std::min(m_indicatorRegion->rect.Width(), float(display.GetFont(ZepTextType::Text).GetPixelHeight())) * 0.3f);
++                            float cx = m_indicatorRegion->rect.Center().x;
++                            float cy = ToWindowY(lineInfo.yOffsetPx + lineInfo.padding.x) + display.GetFont(ZepTextType::Text).GetPixelHeight() * 0.5f;
++                            for (float y = -radius; y < radius; y += 1.0f)
++                            {
++                                float mid = y + 0.5f;
++                                float half = std::sqrt(std::max(0.0f, radius * radius - mid * mid));
++                                display.DrawRectFilled(NRectf(NVec2f(cx - half, cy + y), NVec2f(cx + half, cy + y + 1.0f)), color);
++                            }
++                        }
++                    }
+                     return true;
+                 });
+             }

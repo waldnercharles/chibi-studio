@@ -96,7 +96,8 @@ typedef enum
     STUDIO_COMMAND_SEARCH,
     STUDIO_COMMAND_SETTINGS,
     STUDIO_COMMAND_SAVE,
-    STUDIO_COMMAND_RELOAD,
+    STUDIO_COMMAND_SAVE_ALL,
+    STUDIO_COMMAND_REVERT,
     STUDIO_COMMAND_UNDO,
     STUDIO_COMMAND_REDO,
     STUDIO_COMMAND_DUPLICATE,
@@ -191,6 +192,17 @@ typedef enum
     STUDIO_COMMAND_FRAME_ALL,
     STUDIO_COMMAND_FIND,
     STUDIO_COMMAND_KEYBOARD_SHORTCUTS,
+    STUDIO_COMMAND_DOCUMENTATION,
+    STUDIO_COMMAND_REPORT_ISSUE,
+    STUDIO_COMMAND_ABOUT,
+    /* The Text Editor's language commands (studio_code.c), on VS Code's keys */
+    STUDIO_COMMAND_GO_TO_DEFINITION,
+    STUDIO_COMMAND_FIND_REFERENCES,
+    STUDIO_COMMAND_RENAME_SYMBOL,
+    STUDIO_COMMAND_CALL_HIERARCHY,
+    STUDIO_COMMAND_NEXT_PROBLEM,
+    STUDIO_COMMAND_PREVIOUS_PROBLEM,
+    STUDIO_COMMAND_TOGGLE_LINE_COMMENT,
     /* The object clipboard and extending the Outliner's selection */
     STUDIO_COMMAND_COPY,
     STUDIO_COMMAND_CUT,
@@ -252,6 +264,7 @@ typedef struct
 {
     char shortcuts[STUDIO_COMMAND_COUNT][STUDIO_CHORD_SIZE]; /* empty uses the default */
     studio_recent recent[STUDIO_RECENT_COUNT]; /* most recent first; an empty key ends them */
+    studio_recent recent_nodes[STUDIO_RECENT_COUNT]; /* node search's, kept apart */
     studio_theme theme;
     bool comfortable;
     bool reduced_motion;
@@ -281,11 +294,12 @@ typedef struct
     bool scene_lighting;
     bool scene_fog;
     bool scene_cameras;
-    int assets_tile; /* Assets' thumbnail size in dp; STUDIO_ASSETS_LIST lists them */
+    int assets_tile; /* Assets' thumbnail size in dp */
+    bool assets_list; /* Assets lists its assets by kind instead of tiling them */
 } studio_prefs;
 
-/* Assets' thumbnail slider: its smallest step shows the list. */
-#define STUDIO_ASSETS_LIST 40
+/* Assets' thumbnail slider. */
+#define STUDIO_ASSETS_TILE_MIN 48
 #define STUDIO_ASSETS_TILE 96
 #define STUDIO_ASSETS_TILE_MAX 160
 
@@ -449,6 +463,7 @@ typedef struct
     bool focused;
     bool captured; /* a press began in the canvas and is held */
     float zoom, x, y;
+    double wheel_zoomed; /* when a wheel or pinch last zoomed */
     struct
     {
         float zoom, x, y;
@@ -488,6 +503,16 @@ typedef struct
     kit_rect inline_anchor;
     uint64_t inline_anchor_node, inline_anchor_pin;
     kit *inline_anchor_kit;
+    /* Bind to Source: a vector, color or compound input whose value editor
+       gives way to its source field until its list closes, the canvas kit
+       showing it (NULL in Properties), and whether the field still waits
+       for the focus. */
+    uint64_t bind_pin;
+    kit *bind_kit;
+    bool bind_focus;
+    int readonly_toast; /* the toast a refused edit shows, kept as one */
+    uint64_t refused_pin; /* an input whose field refused `refused` on Enter */
+    char refused[256];
     uint64_t menu_comment;
     uint64_t comment; /* the selected comment frame, shown while no node is */
     bool press_toggle;
@@ -505,6 +530,7 @@ typedef struct
     char link_error[160];
     uint64_t hover_node;
     int hover_kind, hover_pin; /* -1 without a socket */
+    double hover_pin_since;    /* when the pointer reached that socket */
     int hover_edge;            /* edge index under the pointer, or -1 */
     bool space;
     double value_edit_frame; /* a value gesture has an open undo snapshot */
@@ -588,6 +614,8 @@ typedef struct
         char choosing[GD_ROW_ID_MAX]; /* the row whose choice is open */
         char source[GD_ROW_ID_MAX];   /* the row whose source list is open */
         char popup[GD_ROW_ID_MAX];    /* the row whose popover is open */
+        char bind[GD_ROW_ID_MAX];     /* the row Bind to Source opened */
+        int bind_wait;                /* frames it waited for the field */
         uint64_t source_node;         /* that input's node and pin */
         int source_pin;
         bool source_shown; /* its list's popover showed */
@@ -698,7 +726,7 @@ typedef struct
 /* The open project's editor/Components.kdl, re-read when it changes. */
 typedef struct
 {
-    component_presentation hints; /* the last valid file; empty while it is missing */
+    component_presentation hints; /* the last valid file; empty (the engine's) while it is missing */
     file_watch watch;
 } studio_presentation;
 
@@ -724,11 +752,34 @@ typedef struct
 
 typedef struct
 {
-    bool open, focus, waiting, confirm_discard;
+    bool open, focus, waiting, confirm_save;
+    char confirm[448]; /* the question confirm_save asks */
+    char folder[1024]; /* where the project is created; empty on the web */
     char name[128];
     char error[192];
     char created_root[1024];
 } studio_new_project;
+
+/* What waits on the answer to "Save … before …?" */
+typedef enum
+{
+    STUDIO_UNSAVED_NONE,
+    STUDIO_UNSAVED_OPEN_PROJECT,
+    STUDIO_UNSAVED_CLOSE_TAB,
+    STUDIO_UNSAVED_QUIT,
+} studio_unsaved_action;
+
+/* The one unsaved-changes prompt: a toast whose action saves and whose
+ * cancel discards before `action` goes ahead (studio_projects.c). */
+typedef struct
+{
+    int toast;
+    studio_unsaved_action action;
+    int project;    /* the project Open Project opens */
+    char tab[1024]; /* the key of the tab Close Tab closes */
+    char before[192]; /* what the action does, as "quitting" */
+    bool quit;        /* Quit may go ahead */
+} studio_unsaved_prompt;
 
 /* Workstream I: the code editor of one open document part, which keeps its
  * cursor, scroll and Vim state while another part shows. */
@@ -752,8 +803,6 @@ typedef struct
     int reveal_wait;      /* frames until that line is laid out */
     int overwrite_toast;  /* offers to save over a file changed on disk */
     char overwrite[1024]; /* that file */
-    int close_toast;      /* confirms closing a document with unsaved edits */
-    char close[1024];     /* that document's tab key */
     /* Workstream I: a code editor (kit_code) per open document part, and
        the one shown with the document and part it holds (the designer
        follows its cursor). */
@@ -763,6 +812,14 @@ typedef struct
     char editor_path[1024];
     ui_part editor_part;
     int reveal_offset; /* a byte of the part to reveal instead, or -1 */
+    char reveal_notice[256]; /* shown at the revealed place, as F8's problem */
+    /* The text's context menu (CodeMenu.rml), while it shows. */
+    struct
+    {
+        bool open, opening, mounted;
+    } menu;
+    double capture_due; /* when a moved caret is captured, or 0 */
+    char capture_path[1024]; /* the source whose caret moved */
     /* The shown part's text parsed (assets/ui_source.h), the spans that
        highlight it, and each part's problems as markers (ui_code_markers). */
     ui_source *source;
@@ -862,6 +919,14 @@ typedef struct studio_gallery
     ui_list_state list;       /* its asset List's window */
     studio_gallery_item *bin; /* Collected, in order (support/array.h) */
 } studio_gallery;
+
+/* An asset as Assets selects it: by kind and name, which outlive the asset
+   index's numbering (studio_assets.c). */
+typedef struct studio_asset_ref
+{
+    int kind; /* reference_asset_kind */
+    char name[128];
+} studio_asset_ref;
 
 /* A Properties panel the user folded or opened (studio_properties.c). */
 typedef struct studio_fold
@@ -967,9 +1032,8 @@ struct studio
     char *open_project; /* root chosen to open, until the application takes it */
     char *tab_menu_key; /* the document under the tab context menu, owned */
     studio_disk_toast *disk_toasts; /* files that changed on disk under unsaved edits */
-    int discard_toast;   /* toast confirming unsaved changes are discarded */
-    int discard_project; /* the project that toast opens */
-    int quit_toast;      /* toast confirming Quit discards unsaved changes */
+    studio_unsaved_prompt unsaved_prompt;
+    bool saving_all;        /* Save All runs: saves report once, at its end */
     char window_title[320]; /* as last set */
     struct
     {
@@ -1049,6 +1113,8 @@ struct studio
     int assets_menu;           /* the asset under the row menu */
     int assets_selected_kind;  /* the selected asset's reference_asset_kind */
     char assets_selected[128]; /* the selected asset's name, or "" */
+    studio_asset_ref *assets_marked; /* selected with it (support/array.h) */
+    studio_asset_ref assets_anchor; /* where Shift extends the selection from */
     bool assets_reveal; /* scroll the selection into view on the next emission */
     int assets_rest;    /* the tile the pointer rests on, or -1 */
     double assets_rest_since;
@@ -1116,11 +1182,20 @@ struct studio
     kit_surface_input surface;
     struct
     {
-        float zoom; /* magnification of the Scene's frame, game UI included; 1 fits */
+        float zoom; /* magnification of the Canvas's frame; 1 fits */
         float x, y; /* the center shown, as fractions of the frame */
         float u, v; /* the pointer last frame, as fractions of the Scene area */
         bool panning;
     } view;
+    /* The Scene's camera navigation beyond the viewport's own wheel and middle
+       drag (studio_scene.c). */
+    struct
+    {
+        bool space_play;   /* Space went down over the Scene: Play on release */
+        bool space_panned; /* a drag panned while Space was down */
+        bool space_drag;   /* the left button pans until released */
+        double zoomed_at;  /* when a wheel or a pinch last zoomed the camera */
+    } scene_nav;
     studio_graph graph;
     studio_members members;
     studio_refactor refactor;
@@ -1139,6 +1214,14 @@ struct studio
     SDL_Keymod mods;   /* modifier state as of the last replayed key event */
     int nav_button; /* mouse button 4 (-1, Back) or 5 (1, Forward) this frame */
     float zoom_wheel; /* the wheel turned with Mod or Ctrl held this frame */
+    /* This frame's wheel as the Scene hears it: a mouse wheel's notches, and
+       a trackpad's scroll with Mod or Ctrl held, zoom (scene_wheel); a
+       trackpad's scroll without them pans (scroll_x, scroll_y). */
+    float scene_wheel;
+    float scroll_x, scroll_y;
+    bool wheel_trackpad; /* the scroll gesture in progress is a trackpad's */
+    double wheel_at;     /* when its last wheel event arrived */
+    bool space_down;     /* Space is held, as its key events say */
     float pinch;      /* the log of this frame's trackpad pinch scale, or 0 */
     int undo_toast;   /* toast offering Undo for undo_toast_group */
     uint64_t undo_toast_group;
@@ -1196,6 +1279,7 @@ struct studio
     bool guest_keys;  /* a press in the guest gave it the keyboard */
     bool guest_capture; /* a button pressed in the guest is held */
     bool typing;        /* a field or the graph had the keyboard last frame */
+    bool typed; /* this frame's keys reached a field or popup, which may have let go */
     bool scene_status;  /* the status bar shows a Scene gesture's change */
     /* ---------- Rename objects and prototype components ---------- */
     struct
@@ -1207,11 +1291,13 @@ struct studio
     } rename;
     struct
     {
-        char prototype[128]; /* the one Add Component adds to */
+        uint64_t object;     /* the placed object Add Component adds to, or 0 */
+        char prototype[128]; /* else the prototype it adds to */
         char added[128];     /* the component added last, whose panel opens */
         char menu[128];      /* the component whose panel menu is open */
         int toast;           /* offers Undo after Remove Component */
         const av_value *step; /* the removal's undo snapshot; never dereferenced */
+        uint64_t scene_step;  /* else an object's removal's scene step */
     } components;
     struct
     {
@@ -1384,6 +1470,8 @@ rml_element *studio_ui_dialog(studio *s, const char *key, const char *name);
 /* Lets panel `name`'s mount go before the kit removes its host, when a
    panel shown on demand closes. */
 void studio_ui_panel_detach(studio *s, const char *name);
+/* Whether `element` is in panel `name`'s document, false while it shows none. */
+bool studio_ui_panel_holds(studio *s, const char *name, rml_element *element);
 /* The Studio scene's panels, each an editor type an area can show. */
 int studio_ui_panel_count(const studio *s);
 const char *studio_ui_panel_name(const studio *s, int index);
@@ -1485,12 +1573,22 @@ bool studio_search_lists_anew(const char *was, const char *query);
 /* The query without its prefix. */
 const char *studio_search_query(const char *query);
 void studio_search_choose(studio *s, const studio_palette_entry *entry);
+/* Moves `key` to the front of the recently chosen items, counting the use;
+   an empty key is none. */
+void studio_palette_remember(studio_recent *recent, const char *key);
+/* With nothing typed, up to `limit` entries chosen recently lead, most recent
+   first, under Recent. */
+void studio_palette_recent_first(const studio_recent *recent, int limit, studio_palette_entry **entries);
+/* What choosing `entry` does, as a verb for the palette's Enter hint. */
+const char *studio_search_verb(const studio_palette_entry *entry);
 
 /* Content changed on disk (studio_disk.c): reloads it and raises failures and
    unsaved conflicts as toasts. */
 void studio_disk_frame(studio *s);
 void studio_disk_free(studio *s);
-void studio_reload(studio *s);
+/* File ▸ Revert File: reloads the active document from its file, asking first
+   while it has unsaved edits. */
+void studio_revert(studio *s);
 
 /* Projects (studio_projects.c). */
 #ifdef __EMSCRIPTEN__
@@ -1500,7 +1598,8 @@ bool web_projects_available();
 void studio_projects_load(studio *s);
 void studio_projects_free(studio *s);
 bool studio_project_current(const studio *s, int index);
-/* Opens projects[index] after the frame, once unsaved changes are discarded. */
+/* Opens projects[index] after the frame, once unsaved changes are saved or
+   discarded. */
 void studio_open_project(studio *s, int index);
 #ifndef __EMSCRIPTEN__
 /* Asks for a project folder in the platform's dialog, then opens it. */
@@ -1508,12 +1607,15 @@ void studio_pick_project();
 /* Opens the project in `folder`, or says why it cannot. */
 void studio_open_project_folder(studio *s, const char *folder);
 #endif
-/* Opens a project once its discard is confirmed; on the web, also tells the
-   page whether leaving would lose edits. */
+/* Answers the unsaved-changes prompt; on the web, also tells the page
+   whether leaving would lose edits. */
 void studio_projects_frame(studio *s);
 void studio_new_project_frame(studio *s);
 void studio_new_project_open(studio *s);
 void studio_new_project_action(studio *s, const char *action);
+/* The folder New Project creates in, with the home folder as ~ and, when
+   long, its leading folders as an ellipsis. */
+void studio_new_project_location(const studio *s, char *out, size_t size);
 void studio_ui_new_project(studio *s);
 
 /* Shell. */
@@ -1548,12 +1650,19 @@ bool studio_matches(const char *query, const char *text);
 /* Editors emit into an area body; headers into the area header. */
 void studio_scene_header(studio *s, int area);
 void studio_scene_body(studio *s, int area);
-/* Shows the part of the frame the view zoom does, as fractions of it, on
-   the surface emitted last. */
+/* Shows the part of the Canvas's frame its page zoom does, as fractions of
+   it, on the surface emitted last. */
 void studio_view_crop(studio *s);
-/* Takes the view zoom's gestures from the Scene area's pointer in `input`,
- * given in area points, and leaves it in the frame's points. */
+/* Takes the Scene area's navigation from its pointer in `input`, given in
+ * area points: in the Canvas, the page zoom's gestures, leaving the pointer
+ * in the frame's points; in the Scene, the camera's zoom from the wheel and
+ * a pinch, and its pan from a trackpad's scroll and a Space drag. */
 void studio_scene_view(studio *s, engine_viewport_host_input *input);
+/* Space over the Scene pans while held with a drag, so a Play it presses
+   waits for its release: true when `key` is that Space, held back. */
+bool studio_scene_space(studio *s, studio_key key);
+/* Plays once the held-back Space lifts, unless it panned; every frame. */
+void studio_scene_space_release(studio *s);
 /* The Outliner (studio_outliner.c): its header's filter and Add, and its
  * body, the authored Outliner panel in each area showing it, whose
  * behaviors call the editor nodes (studio_nodes.c). */
@@ -1571,6 +1680,8 @@ void studio_set_object_view(studio *s, int actor, unsigned flag, bool on);
 void studio_isolate(studio *s, int actor);
 /* Asks the panels that list objects to show the active one (RevealObject). */
 void studio_reveal_selection(studio *s);
+/* The object whose Outliner row the pointer rests on, or none. */
+ecs_entity studio_outliner_hovered(studio *s);
 /* Hide in Editor (Blender's H, Shift+H and Alt+H): hides the selected objects,
  * or the others, from the Scene's edit view, or shows them all again. */
 void studio_hide(studio *s, bool selected);
@@ -1603,10 +1714,16 @@ void studio_graph_palette(studio *s);
 bool studio_graph_can_replay(studio *s, bool redo);
 void studio_graph_history(studio *s, bool redo);
 bool studio_graph_active(const studio *s);
+/* No graph is open, or the open one refuses edits (sg_readonly_reason). */
+bool sg_graph_readonly(const studio *s);
 /* Opens Find in graph. */
 void studio_graph_find(studio *s);
 /* Opens the Text Editor's find widget. */
 void studio_code_find(studio *s);
+/* The Text Editor's language commands (STUDIO_COMMAND_GO_TO_DEFINITION
+ * through STUDIO_COMMAND_TOGGLE_LINE_COMMENT) on the document it shows. */
+bool studio_code_command_enabled(studio *s, studio_command command);
+void studio_code_command(studio *s, studio_command command);
 /* The graph node Properties shows, or 0. */
 uint64_t studio_graph_node(const studio *s);
 /* The comment frame selected on the canvas while no node is, or 0. */
@@ -1738,6 +1855,9 @@ void studio_record(studio *s, kit_toast_type kind, const char *text);
    named elsewhere, a missing asset has no file, and nothing indexes the
    imports of a stylesheet. */
 bool studio_asset_refactorable(const reference_asset *asset);
+/* Refactorable and declarative: the uses of an executable source live in
+   code, which no delete plans yet. */
+bool studio_asset_deletable(studio *s, const reference_asset *asset);
 /* Renames an event, its definition when it has one, and what sends and
    handles it; host events keep their names. */
 bool studio_code_replace(
@@ -1766,6 +1886,9 @@ bool studio_refactor_confirm_delete(
     uint64_t id
 );
 void studio_refactor_delete_asset(studio *s, int asset);
+/* Deletes several assets at once, with one Undo; refused while any of them
+   is still used, which deleting it alone lists. */
+void studio_refactor_delete_assets(studio *s, const studio_asset_ref *refs, int count);
 /* The popover (Refactor.rml) and the Undo toast; call every frame. */
 void studio_refactor_frame(studio *s);
 void studio_refactor_free(studio *s);
@@ -1851,6 +1974,9 @@ int studio_command_for_key(
     studio_editor editor,
     bool mac
 );
+/* The command a key runs in `editor` now: the debugger's commands only
+ * while it pauses, so F10 steps a frame otherwise. */
+int studio_key_command(const studio *s, studio_key key, studio_editor editor);
 const char *studio_command_chord(const studio_prefs *prefs, studio_command command);
 const char *studio_command_default_chord(studio_command command);
 const char *studio_command_context(studio_command command);
@@ -1873,6 +1999,20 @@ bool studio_shortcut_record(studio_prefs *prefs, int *recording, studio_key key,
 
 /* What commands run (studio_shell.c). */
 void studio_save(studio *s);
+/* Saves tab `index` as Save would with it active, leaving it active; true
+   when it has no unsaved edits after. */
+bool studio_save_tab(studio *s, int index);
+/* Saves every document with unsaved edits and returns to the active tab;
+   true when nothing is left unsaved. */
+bool studio_save_all(studio *s);
+/* True while a running scene keeps documents from saving; text, which
+   applies live, still saves. */
+bool studio_save_held(const studio *s);
+/* The open tab with this key, or -1. */
+int studio_tab_index(const studio *s, const char *key);
+/* Reports a document saved: in Output, and in a toast except while Save All
+   runs, which reports once. */
+void studio_saved(studio *s, const char *title, const char *description);
 void studio_history(studio *s, bool redo);
 void studio_runtime(studio *s, app_runtime_command command);
 /* Record Gameplay toggles: it restarts the scene and records, then saves the
@@ -1971,9 +2111,11 @@ ui_buffer *studio_ui_buffer(studio *s);
  * on disk. */
 void studio_code_save(studio *s);
 app_disk_result studio_code_reload_path(studio *s, const char *path);
-/* Closes a document's tab, asking first when it has unsaved edits, which
- * closing discards. */
+/* Closes a document's tab, asking first whether to save its unsaved edits
+ * (studio_projects.c). */
 void studio_close_tab(studio *s, int tab);
+/* Closes a document's tab, discarding its unsaved edits. */
+void studio_discard_tab(studio *s, int tab);
 /* Workstream C: frees the Text Editor's code editor. */
 void studio_code_free(studio *s);
 /* Workstream I: opens a place in a UI document's part, as Go to Definition
@@ -2594,10 +2736,14 @@ void studio_rename_object(studio *s);
 /* Names the object `entity` authors, as one Undo step; a refused name
  * toasts why. */
 void studio_rename_commit(studio *s, uint64_t entity, const char *name);
+/* Whether Properties shows a prototype, or one placed object, to add to. */
+bool studio_can_add_component(studio *s);
 /* Add Component (Unity's Inspector): the palette lists the components the
- * open prototype lacks, by the Properties tab each shows in, the current
- * tab's first. */
+ * prototype or object lacks, by the Properties tab each shows in, the
+ * current tab's first. */
 void studio_add_component_open(studio *s);
+/* Adds `desc` to the one placed object selected, as Add Component does. */
+void studio_add_component_to_selection(studio *s, const ecs_component_desc *desc);
 void studio_component_entries(studio *s, studio_palette_entry **entries);
 void studio_component_choose(studio *s, const studio_palette_entry *entry);
 /* Runs the Undo a Remove Component toast offers; call every frame. */
@@ -2933,6 +3079,9 @@ void studio_code_header_action(studio *s, const char *action, const ui_activatio
 void studio_code_find_add(yyjson_mut_doc *doc);
 bool studio_code_find_sync(studio *s, const studio_panel_sync *at);
 void studio_code_find_action(studio *s, const char *action, const ui_activation *a);
+/* Runs F3 or Shift+F3 pressed in the focused find field, which the
+ * shortcuts otherwise leave to it; false for any other key. */
+bool studio_code_find_key(studio *s, studio_key key);
 
 /* ---------- Graph chrome (workstream G1) ---------- */
 

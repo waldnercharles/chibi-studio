@@ -637,6 +637,7 @@ static void assets(studio_bench *b)
     s->maximized = STUDIO_AREA_TOP;
     studio_active_layout(s)->editors[STUDIO_AREA_TOP] = STUDIO_EDITOR_ASSETS;
     s->prefs.assets_tile = STUDIO_ASSETS_TILE;
+    s->prefs.assets_list = false;
     frames(b, 4);
     for (int i = 0; i < 600 && studio_thumbs_pending(s); i++) {
         frames(b, 1);
@@ -656,10 +657,11 @@ static void assets(studio_bench *b)
     frames(b, 2);
     assets_case(b, ASSETS_SELECT, "Assets grid: select another tile");
     assets_case(b, ASSETS_IDLE, "Assets grid: UI frame, nothing changed");
-    s->prefs.assets_tile = STUDIO_ASSETS_LIST;
+    s->prefs.assets_list = true;
     frames(b, 4);
     assets_case(b, ASSETS_LIST, "Assets list: scroll a row");
     s->prefs.assets_tile = STUDIO_ASSETS_TILE;
+    s->prefs.assets_list = false;
     s->maximized = -1;
     frames(b, 2);
 }

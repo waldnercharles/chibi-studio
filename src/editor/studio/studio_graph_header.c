@@ -220,8 +220,10 @@ static bool shows_target(const studio *s)
 
 void studio_graph_header_add(yyjson_mut_doc *doc)
 {
-    static const char *const TEXTS[] = { "backKbd",     "forwardKbd", "target",
-                                         "targetAbout", "arrangeKbd", NULL };
+    static const char *const TEXTS[] = { "backKbd",    "forwardKbd",
+                                         "target",     "targetAbout",
+                                         "arrangeKbd", "readonlyAbout",
+                                         NULL };
     static const char *const FLAGS[] = { "open",     "back",       "forward",
                                          "renaming", "debug",      "readonly",
                                          "find",     "sourceView", NULL };
@@ -325,6 +327,8 @@ bool studio_graph_header_sync(studio *s, const studio_panel_sync *at)
     changed |= ui_data_put_text(at->doc, h, "forwardKbd", studio_chord(s, "Alt+\xe2\x86\x92"));
     changed |= ui_data_put_text(at->doc, h, "arrangeKbd", studio_chord(s, "Shift+L"));
     changed |= ui_data_put_bool(h, "readonly", sg_graph_readonly(s));
+    const char *reason = sg_readonly_reason(s);
+    changed |= ui_data_put_text(at->doc, h, "readonlyAbout", reason ? reason : "");
     changed |= ui_data_put_bool(h, "find", s->graph.find.open);
     s->graph.renaming = renaming(s);
     changed |= ui_data_put_bool(h, "renaming", s->graph.renaming);
@@ -494,6 +498,7 @@ void studio_graph_view_add(yyjson_mut_doc *doc)
     yyjson_mut_val *v = yyjson_mut_obj_add_obj(doc, yyjson_mut_doc_get_root(doc), "graph_view");
     yyjson_mut_obj_add_real(doc, v, "zoom", 0);
     yyjson_mut_obj_add_bool(doc, v, "zoomShown", false);
+    yyjson_mut_obj_add_bool(doc, v, "zooming", false);
     yyjson_mut_obj_add_bool(doc, v, "align", false);
     add_items(doc, v, ITEMS);
     yyjson_mut_val *alignment = yyjson_mut_obj_add_obj(doc, v, "alignment");
@@ -552,7 +557,8 @@ bool studio_graph_view_sync(studio *s, const studio_panel_sync *at)
     bool shown = studio_graph_active(s) && s->graph.kit && s->graph.surface.rect.w > 0;
     bool changed = ui_data_put_bool(v, "zoomShown", shown);
     if (shown) {
-        changed |= ui_data_put_number(v, "zoom", roundf(sg_zoom(s) * 100));
+        changed |= ui_data_put_number(v, "zoom", roundf(sg_zoom_readout(s) * 100));
+        changed |= ui_data_put_bool(v, "zooming", sg_wheel_zooming(s));
     }
     return studio_graph_active(s) ? show_actions(s, at->doc, v) || changed : changed;
 }
@@ -856,6 +862,8 @@ static bool menu_action(studio *s, const char *action, const ui_activation *a)
         sg_frame_nodes(s, false, true);
     } else if (!strcmp(action, "frame")) {
         sg_frame_nodes(s, false, true);
+    } else if (!strcmp(action, "zoomActual")) {
+        sg_zoom_actual(s);
     } else if (!strcmp(action, "find")) {
         studio_graph_find(s);
     } else {

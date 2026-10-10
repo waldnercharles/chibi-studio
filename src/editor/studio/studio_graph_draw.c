@@ -2,12 +2,15 @@
 #include "graph/authoring/graph_edit.h"
 /* Graph canvas rendering: nodes, pins, wires and comments as kit elements. */
 #include "editor/studio/studio_graph_internal.h"
+#include "editor/studio/studio_members_internal.h"
 #include "editor/ui/highlight.h"
 #include "editor/ui/labels.h"
 #include "graph/authoring/describe.h"
 #include "graph/model/local.h"
 #include "graph/nodes/behavior_expression.h"
+#include "graph/nodes/conv_nodes.h"
 #include "support/array.h"
+#include "ui/input_feel.h"
 #include "ui/rml.h"
 
 #include <assert.h>
@@ -30,17 +33,20 @@ typedef struct
     uint32_t exec;      /* execution sockets and wires */
     uint32_t exec_idle; /* an unwired execution socket */
     uint32_t hot;       /* a hovered or offered socket's ring */
+    uint32_t selected;  /* a selected wire, as graph.rcss's --selected-object */
+    uint32_t invalid;   /* a refused connection, and wires of a muted node */
     uint32_t grid, grid_major;
     float shade; /* data type colors darken on light canvases */
 } canvas_palette;
 
-static const canvas_palette DARK = { 0x2b2b2fffu, 0x111113ffu,
-                                     0xe8e8eaffu, 0x8a8a90ffu,
-                                     0xffffffffu, 0xffffff0au,
-                                     0xffffff14u, 1 };
+static const canvas_palette DARK = {
+    0x2b2b2fffu, 0x111113ffu, 0xe8e8eaffu, 0x8a8a90ffu, 0xffffffffu,
+    0xe0701cffu, 0xe5534bffu, 0xffffff0au, 0xffffff14u, 1
+};
 static const canvas_palette LIGHT = { 0xfbfbfcffu, 0xfbfbfcffu, 0x52525bffu,
-                                      0xa1a1aaffu, 0x18181bffu, 0x0000000du,
-                                      0x0000001au, 0.8f };
+                                      0xa1a1aaffu, 0x18181bffu, 0xe0701cffu,
+                                      0xc93c37ffu, 0x0000000du, 0x0000001au,
+                                      0.8f };
 
 static const canvas_palette *palette(const studio *s)
 {
@@ -60,7 +66,7 @@ static const float PIN_COLORS[][3] = {
     [PIN_I64] = { 0.413575f, 0.770f, 0.429609f },
     [PIN_U64] = { 0.413575f, 0.770f, 0.429609f },
     [PIN_F32] = { 0.65f, 0.85f, 0.39f },
-    [PIN_F64] = { 0.65f, 0.85f, 0.39f },
+    [PIN_F64] = { 0.42f, 0.68f, 0.22f },
     [PIN_NAME] = { 0.73f, 0.57f, 0.90f },
     [PIN_HANDLE] = { 0.36f, 0.77f, 0.85f },
     [PIN_STR] = { 0.91f, 0.48f, 0.73f },
@@ -180,13 +186,18 @@ static kit_dot_desc socket_dot(const studio *s, const pin_spec *spec, bool conne
 /* Watched pins, and the pin under the pointer, show their value in a bubble
    beside the socket unless an editor already shows it (Unreal). While the
    debug target runs, values are live, and with Show Live Values every data
-   output shows its value in a quieter chip (Unreal's watches everywhere). */
+   output shows its value in a quieter chip (Unreal's watches everywhere).
+   A hovered pin's bubble waits as a tooltip does, so sweeping across a
+   node doesn't flicker, except while values are live. */
 static void emit_watch(studio *s, node *n, bool input, int p, const pin_parts *parts, bool hovered)
 {
-    kit *k = s->graph.kit;
+    studio_graph *g = &s->graph;
+    kit *k = g->kit;
     editor *e = sg_graph_editor(s);
     bool live = eval_view_live(e->ev);
-    bool bubble = (parts->spec->flags & PIN_FLAG_WATCH) || hovered;
+    bool settled = g->in.time - g->hover_pin_since >= FEEL_TOOLTIP_DELAY;
+    bool bubble = (parts->spec->flags & PIN_FLAG_WATCH) ||
+                  (hovered && (live || settled));
     bool chip = !input && live && s->prefs.live_values && !sg_far(s);
     bool edited = parts->value != VALUE_NONE && parts->value != VALUE_CHIP;
     /* Previews can't read bindings, so a bound input shows only a run's value. */
@@ -235,8 +246,7 @@ static bool node_dim(studio *s, node *n)
 {
     studio_graph *g = &s->graph;
     return sg_is_unused(g, n->id) && !problem_of(g, n->id) &&
-           !ed_node_selected(sg_graph_editor(s), n) &&
-           g->gesture != STUDIO_GRAPH_LINK;
+           !ed_node_selected(sg_graph_editor(s), n) && !sg_link_dragging(s);
 }
 
 /* One pin: a row, half an execution row, or a socket in the title. Input
@@ -254,8 +264,7 @@ static void emit_pin(studio *s, node *n, int kind, int p, const char *cls, float
     snprintf(key, sizeof key, input ? "i%d" : "o%d", p);
     bool hovered = g->hover_node == n->id && g->hover_kind == kind &&
                    g->hover_pin == p;
-    node *link_from = g->gesture == STUDIO_GRAPH_LINK ? sg_node_by_id(s, g->link_node)
-                                                      : NULL;
+    node *link_from = sg_link_dragging(s) ? sg_node_by_id(s, g->link_node) : NULL;
     bool source = link_from == n && g->link_kind == kind && g->link_pin == p;
     bool fits = link_from &&
                 sg_pins_compatible(link_from, g->link_kind, g->link_pin, n, kind, p);
@@ -266,8 +275,13 @@ static void emit_pin(studio *s, node *n, int kind, int p, const char *cls, float
                                                 : 1;
     kit_push(k, key, NULL, cls);
     kit_flag(k, "data-hover", hovered);
+    /* Colors alone don't tell types apart, and outputs go unlabeled: a
+       socket and its label tip the pin's type (Unreal). */
+    char type[96];
+    sm_type_label(parts.spec, type, sizeof type);
     if (!input || !(parts.spec->flags & PIN_FLAG_SETTING)) {
         kit_push(k, "s", "span", "socket");
+        kit_tip(k, parts.label, NULL, type);
         kit_dot_desc dot = socket_dot(s, parts.spec, parts.connected || parts.inline_source, hovered, alpha);
         kit_dot(k, "d", NULL, &dot);
         kit_pop(k);
@@ -282,12 +296,20 @@ static void emit_pin(studio *s, node *n, int kind, int p, const char *cls, float
         char *expression = n->desc == &NODE_BehaviorExpression
                              ? studio_code_expression(s, n)
                              : NULL;
-        kit_tip(k, parts.label, NULL, expression);
+        char about[512];
+        snprintf(about, sizeof about, "%s%s%s", type, expression ? " · " : "", expression ? expression : "");
+        kit_tip(k, parts.label, NULL, about);
         free(expression);
-        if (input && label_width > 0 && !sg_pin_exec(n, kind, p)) {
-            snprintf(width, sizeof width, "%.0fdp", label_width);
-            kit_style(k, "width", width);
-        }
+        /* Input labels share their column's width; others take their own,
+           since a clipping label would shrink to nothing. Zoomed out, hinted
+           text can draw a little wider than it measured at 100%: a label
+           whose column fits spills into the gap rather than truncating. */
+        bool column = input && label_width > 0 && !sg_pin_exec(n, kind, p);
+        float fit = column ? label_width
+                           : ceilf(sg_text_width(s, parts.label, 12, 400));
+        snprintf(width, sizeof width, "%.0fdp", fit);
+        kit_style(k, "width", width);
+        kit_flag(k, "data-fits", column ? !l.label_clipped : fit <= l.w - 2 * EDGE - 2 * SOCKET_PAD);
     }
     emit_watch(s, n, input, p, &parts, hovered);
     if (input && parts.spec->kind == PIN_DATA &&
@@ -393,6 +415,7 @@ static void emit_code(studio *s, node *n, const node_layout *l)
     int starts[CODE_LINES], length = (int)strlen(code);
     int count = sg_code_lines(s, code, sg_code_room(l), starts);
     kit_push(k, "code", NULL, "gcode");
+    bool clipped = false; /* a line ran past its room as last laid out */
     for (int i = 0; i < count; i++) {
         int end = i + 1 < count ? starts[i + 1] : length;
         while (end > starts[i] && code[end - 1] == ' ') {
@@ -403,8 +426,9 @@ static void emit_code(studio *s, node *n, const node_layout *l)
         snprintf(line, sizeof line, "%.*s", end - starts[i], code + starts[i]);
         highlight_markup(HIGHLIGHT_EXPRESSION, line, markup, sizeof markup);
         kit_markup(k, key, "gcode-line", markup);
+        rml_element *el = kit_item_element(k);
+        clipped |= rml_element_scroll_width(el) > rml_element_client_width(el) + 0.5f;
     }
-    free(code);
     kit_button_desc edit = { .icon = KIT_ICON_EDIT,
                              .variant = KIT_GHOST,
                              .size = KIT_SM,
@@ -415,6 +439,9 @@ static void emit_code(studio *s, node *n, const node_layout *l)
         sg_begin_expression_edit(s, k, n, 0);
     }
     kit_pop(k);
+    /* Zoomed out past OPEN_ZOOM_MIN a line can clip: its tip shows it all. */
+    kit_tip(k, clipped ? "Expression" : NULL, NULL, clipped ? code : NULL);
+    free(code);
     if (!sg_graph_readonly(s) && kit_item_clicked(k)) {
         sg_begin_expression_edit(s, k, n, 0);
     }
@@ -711,7 +738,10 @@ static void emit_wires(studio *s)
         if (sg_is_unused(g, from->id) || sg_is_unused(g, to->id)) {
             alpha *= 0.5f;
         }
-        kit_wire wire = { .color = pin_color(s, spec, alpha),
+        bool muted = from->disabled || to->disabled;
+        kit_wire wire = { .color = muted ? (palette(s)->invalid & ~255u) |
+                                               (uint32_t)lroundf(alpha * 255)
+                                         : pin_color(s, spec, alpha),
                           .width = (exec ? 2.5f : 1.5f) + (attached && focus ? 0.5f : 0),
                           .flags = ed->conversion ? KIT_WIRE_DASHED : 0 };
         /* Model anchors remain available when endpoint nodes are culled. */
@@ -719,7 +749,7 @@ static void emit_wires(studio *s)
         sg_socket_at(s, to, ED_PIN_INPUT, tp, &wire.to_x, &wire.to_y);
         emit_activity(s, ed, spec, &wire);
         if (ed_link_selected(e, &ref)) {
-            wire.color = 0xffa53aff;
+            wire.color = palette(s)->selected;
             wire.flow_color = wire.flow_color ? wire.color : 0;
         }
         if (g->gesture == STUDIO_GRAPH_MOVE && g->insert_edge == i) {
@@ -771,6 +801,13 @@ static void emit_wires(studio *s)
     afree(via_first);
 }
 
+/* A snapped preview that will need a conversion dashes, as the wire it
+   makes will. */
+static unsigned converts(const pin_spec *out, const pin_spec *in)
+{
+    return out->kind == PIN_DATA && conversion_for_pins(out, in) ? KIT_WIRE_DASHED : 0;
+}
+
 static void emit_front(studio *s)
 {
     studio_graph *g = &s->graph;
@@ -803,7 +840,7 @@ static void emit_front(studio *s)
     bool snap = over && g->hover_kind >= 0 &&
                 sg_pins_compatible(from, g->link_kind, g->link_pin, over, g->hover_kind, g->hover_pin);
     bool invalid = over && g->hover_kind >= 0 && !snap;
-    kit_wire wire = { .color = invalid ? 0xe5534bff : pin_color(s, spec, 1),
+    kit_wire wire = { .color = invalid ? palette(s)->invalid : pin_color(s, spec, 1),
                       .width = spec->kind == PIN_EXEC ? 2.5f : 2,
                       .to_x = g->world_x,
                       .to_y = g->world_y,
@@ -815,12 +852,14 @@ static void emit_front(studio *s)
         wire.from_y = anchor_y;
         if (snap) {
             sg_socket_at(s, over, g->hover_kind, g->hover_pin, &wire.to_x, &wire.to_y);
+            wire.flags = converts(spec, &over->input_pins[g->hover_pin]);
         }
     } else {
         wire.to_x = anchor_x;
         wire.to_y = anchor_y;
         if (snap) {
             sg_socket_at(s, over, g->hover_kind, g->hover_pin, &wire.from_x, &wire.from_y);
+            wire.flags = converts(&over->output_pins[g->hover_pin], spec);
         }
     }
     kit_wires(
