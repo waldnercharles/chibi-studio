@@ -22,6 +22,13 @@ platform does, a few frames apart. The source must gain only whitespace: Enter
 types newlines and never accepts a completion nobody asked for. It runs twelve
 hidden frames and saves nothing.
 
+`studio-acceptance --unit-warnings --project-root PATH` takes another disposable
+copy. It shows Counter in the Text Editor and replaces its source with one that
+assigns a speed (u/s) to a radius (u). By the next hidden frame that line must
+carry a warning underline, "Units differ: u = u/s", starting at the assignment,
+and the editor must report no error: the source still runs. It runs four hidden
+frames and saves nothing.
+
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
 
