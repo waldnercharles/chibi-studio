@@ -1,0 +1,512 @@
+name: Chibi merge policy
+
+on:
+  workflow_call:
+    inputs:
+      gate_ready:
+        type: boolean
+        default: false
+      post_merge_workflows:
+        type: string
+        default: "[]"
+
+permissions:
+  contents: write
+  actions: write
+  checks: write
+  issues: write
+  pull-requests: write
+
+# Coalesced pending events are safe: each retained run rereads all open PRs,
+# and direct merges refresh approval/hold state instead of replaying event data.
+concurrency:
+  group: chibi-merge-policy-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  apply-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          CHIBI_REVIEW_GATE_READY: ${{ inputs.gate_ready }}
+          CHIBI_POST_MERGE_WORKFLOWS: ${{ inputs.post_merge_workflows }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const gateName = "Chibi review approval";
+            const autoMergeLabel = "chibi-auto-merge";
+            const noAutoMergeLabel = "chibi-no-auto-merge";
+            const codexLogin = "chatgpt-codex-connector[bot]";
+            const copilotLogin = "copilot-pull-request-reviewer[bot]";
+            const githubActionsAppId = 15368;
+            const gateConfigured = process.env.CHIBI_REVIEW_GATE_READY === "true";
+            const postMergeWorkflows = JSON.parse(process.env.CHIBI_POST_MERGE_WORKFLOWS || "[]");
+            const repository = (await github.rest.repos.get({ owner, repo })).data;
+            const defaultBranch = repository.default_branch;
+            const gateReady = gateConfigured && !repository.allow_auto_merge;
+            const permissionCache = new Map();
+
+            async function isMaintainer(login) {
+              if (!permissionCache.has(login)) {
+                try {
+                  const { data } = await github.rest.repos.getCollaboratorPermissionLevel({ owner, repo, username: login });
+                  permissionCache.set(login, data.permission === "admin" || data.role_name === "maintain");
+                } catch {
+                  permissionCache.set(login, false);
+                }
+              }
+              return permissionCache.get(login);
+            }
+
+            async function isAllowedReviewer(review) {
+              if (review.user?.login === copilotLogin) return true;
+              return review.user?.type === "User" && await isMaintainer(review.user.login);
+            }
+
+            const boundaryPrefix = "<!-- chibi-review-boundary ";
+            function boundaryBody(boundary) {
+              return `${boundaryPrefix}${JSON.stringify(boundary)} -->`;
+            }
+
+            async function reviewBoundary(pr) {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner, repo, issue_number: pr.number, per_page: 100,
+              });
+              const marker = comments.filter(comment =>
+                comment.user?.login === "github-actions[bot]" && comment.body?.startsWith(boundaryPrefix)
+              ).sort((a, b) => b.id - a.id)[0];
+              if (!marker) return { comments, after: 0 };
+              let boundary;
+              try {
+                boundary = JSON.parse(marker.body.slice(boundaryPrefix.length, -4));
+              } catch {
+                return { comments, blocked: true };
+              }
+              if (boundary.pending) {
+                if (pr.base.ref !== boundary.base) return { comments, blocked: true };
+                boundary = { head: pr.head.sha, base: pr.base.ref, at: new Date().toISOString(), pending: false };
+                const { data } = await github.rest.issues.updateComment({
+                  owner, repo, comment_id: marker.id, body: boundaryBody(boundary),
+                });
+                marker.updated_at = data.updated_at;
+              }
+              const after = Math.max(Date.parse(boundary.at), Date.parse(marker.updated_at));
+              return { comments, after, blocked: !Number.isFinite(after) };
+            }
+
+            async function freshApproval(pr) {
+              const boundary = await reviewBoundary(pr);
+              if (boundary.blocked) return null;
+              const reviews = await github.paginate(github.rest.pulls.listReviews, {
+                owner, repo, pull_number: pr.number, per_page: 100,
+              });
+              const otherReviews = reviews.filter(review => review.user?.login !== pr.user?.login);
+              for (const review of otherReviews) {
+                if (review.state !== "CHANGES_REQUESTED" || !await isAllowedReviewer(review)) continue;
+                const cleared = otherReviews.some(later =>
+                  later.user?.login === review.user?.login &&
+                  later.submitted_at > review.submitted_at &&
+                  ["APPROVED", "DISMISSED"].includes(later.state)
+                );
+                if (!cleared) return null;
+              }
+
+              const currentReviews = otherReviews.filter(review =>
+                review.commit_id === pr.head.sha && Date.parse(review.submitted_at) > boundary.after
+              );
+              const copilotReview = currentReviews.filter(review => review.user?.login === copilotLogin)
+                .sort((a, b) => Date.parse(b.submitted_at) - Date.parse(a.submitted_at) || b.id - a.id)[0];
+              if (copilotReview?.state === "APPROVED" ||
+                  (copilotReview?.state === "COMMENTED" && /^### 🟢 Approved\s*$/m.test(copilotReview.body || ""))) {
+                return "Copilot";
+              }
+              for (const review of currentReviews) {
+                if (review.state === "APPROVED" && review.user?.type === "User" && await isMaintainer(review.user.login)) {
+                  return `maintainer @${review.user.login}`;
+                }
+              }
+
+              const summary = boundary.comments.filter(comment =>
+                comment.user?.login === codexLogin &&
+                comment.body?.includes("<!-- codex-pull-request-review-summary -->")
+              ).sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at) || b.id - a.id)[0];
+              if (!summary) return null;
+              const reviewRows = summary.body.split("\n").filter(line =>
+                line.startsWith("|") && /\*\*[^*]*Review\*\*/.test(line)
+              );
+              if (reviewRows.length === 0) return null;
+              let reviewedAt = 0;
+              for (const row of reviewRows) {
+                const reviewedHead = row.match(/`([a-f0-9]{7,40})`/i)?.[1];
+                const completedAt = Date.parse(row.match(/datetime="([^"]+)"/)?.[1]);
+                if (!row.includes("✅ **Completed**") || !reviewedHead || !pr.head.sha.startsWith(reviewedHead) ||
+                    !Number.isFinite(completedAt) || completedAt <= boundary.after) return null;
+                reviewedAt = Math.max(reviewedAt, completedAt);
+              }
+
+              const reactions = await github.paginate(github.rest.reactions.listForIssue, {
+                owner, repo, issue_number: pr.number, per_page: 100,
+              });
+              return reactions.some(reaction =>
+                reaction.user?.login === codexLogin && reaction.content === "+1" &&
+                Date.parse(reaction.created_at) >= reviewedAt
+              ) ? "ChatGPT via Codex review" : null;
+            }
+
+            async function updateGate(pr) {
+              const runs = await github.paginate(github.rest.checks.listForRef, {
+                owner, repo, ref: pr.head.sha, per_page: 100,
+              });
+              let gate = runs
+                .filter(run => run.name === gateName && run.app?.id === githubActionsAppId)
+                .sort((a, b) =>
+                  Date.parse(b.started_at || b.completed_at) - Date.parse(a.started_at || a.completed_at)
+                )[0];
+              if (!gate) {
+                gate = (await github.rest.checks.create({
+                  owner, repo, name: gateName, head_sha: pr.head.sha,
+                  status: "in_progress", started_at: new Date().toISOString(),
+                  details_url: pr.html_url,
+                  output: { title: "Checking approval", summary: "Checking current-head reviews." },
+                })).data;
+              }
+
+              const pulls = await github.paginate(github.rest.pulls.list, {
+                owner, repo, state: "open", per_page: 100,
+              });
+              const siblings = pulls.filter(candidate => candidate.head.sha === pr.head.sha);
+              const outcomes = await Promise.all(siblings.map(async sibling => {
+                const held = sibling.base.ref !== defaultBranch || hasHold(sibling) || !(await dependenciesMerged(sibling));
+                const approval = gateReady && !held
+                  ? await freshApproval(sibling)
+                  : null;
+                return { number: sibling.number, held, approval };
+              }));
+              const blocked = outcomes.find(outcome => outcome.held);
+              const waiting = outcomes.find(outcome => !outcome.approval);
+              const approved = gateReady && outcomes.length > 0 && outcomes.every(outcome => !outcome.held && outcome.approval);
+              const summary = repository.allow_auto_merge
+                ? "Disable repository native auto-merge so every merge receives a fresh policy evaluation."
+                : !gateReady
+                  ? "Approval gate setup is not complete."
+                  : approved
+                    ? `Head ${pr.head.sha} is approved across ${outcomes.length} open pull request(s).`
+                    : blocked
+                      ? `Approval is blocked by hold or an open dependency on pull request #${blocked.number}.`
+                      : waiting
+                        ? `Pull request #${waiting.number} awaits a current-head approval from Copilot or a maintainer, or a current-head Codex review followed by 👍 from ${codexLogin}.`
+                        : "No open pull request shares this head commit.";
+              await github.rest.checks.update({
+                owner, repo, check_run_id: gate.id,
+                name: gateName,
+                status: "completed",
+                conclusion: approved ? "success" : "failure",
+                details_url: pr.html_url,
+                output: {
+                  title: approved ? "Approval received" : "Approval required",
+                  summary,
+                },
+              });
+              core.info(`#${pr.number}: ${summary}`);
+              return approved;
+            }
+
+            function hasHold(pr) {
+              if (pr.draft) return true;
+              const labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
+              if (labels.includes(noAutoMergeLabel)) return true;
+              if (labels.some(label => /^(hold|blocked|wip|do[- ]?not[- ]?merge)$/i.test(label))) return true;
+              const body = pr.body || "";
+              return /(?:^|\n)[ \t]*(?:hold|blocked)[ \t]*(?::.*)?$/im.test(body) ||
+                /\b(?:do not merge|don't merge)\b/i.test(body);
+            }
+
+            async function dependenciesMerged(pr) {
+              const body = pr.body || "";
+              const targets = new Map();
+              const addTarget = target => {
+                const [reference, rawNumber] = target.split("#");
+                const parts = reference ? reference.split("/") : [];
+                const dependencyOwner = parts.length > 1 ? parts.at(-2) : owner;
+                const dependencyRepo = parts.length > 0 ? parts.at(-1) : repo;
+                const number = Number(rawNumber);
+                targets.set(`${dependencyOwner}/${dependencyRepo}#${number}`, {
+                  owner: dependencyOwner, repo: dependencyRepo, number,
+                });
+              };
+              const directives = body.matchAll(/\b(?:depends on|stacked on|must merge (?:after|with(?: or after)?))\s+((?:[A-Za-z0-9_.-]+\/)?[A-Za-z0-9_.-]+#[0-9]+|#[0-9]+)\b/gi);
+              for (const match of directives) addTarget(match[1]);
+              if (/\bmust merge with or after it\b/i.test(body)) {
+                for (const match of body.matchAll(/(?:([A-Za-z0-9_.-]+)\/)?([A-Za-z0-9_.-]+)#([0-9]+)\b/g)) {
+                  addTarget(`${match[1] ? `${match[1]}/` : ""}${match[2]}#${match[3]}`);
+                }
+              }
+
+              for (const target of targets.values()) {
+                try {
+                  const issue = (await github.rest.issues.get({
+                    owner: target.owner, repo: target.repo, issue_number: target.number,
+                  })).data;
+                  if (issue.pull_request) {
+                    const dependency = (await github.rest.pulls.get({
+                      owner: target.owner, repo: target.repo, pull_number: target.number,
+                    })).data;
+                    if (!dependency.merged) return false;
+                  } else if (issue.state !== "closed") {
+                    return false;
+                  }
+                } catch {
+                  return false;
+                }
+              }
+              return true;
+            }
+
+            async function mergedParentHead(parent) {
+              if (!parent.merge_commit_sha) return false;
+              try {
+                const mergedCommit = (await github.rest.repos.getCommit({ owner, repo, ref: parent.merge_commit_sha })).data;
+                // A normal merge records its source head directly, even when its
+                // result includes base changes absent from the source tree.
+                if (mergedCommit.parents.some(commit => commit.sha === parent.head.sha)) return true;
+                const [commits, archivedHead] = await Promise.all([
+                  github.paginate(github.rest.pulls.listCommits, { owner, repo, pull_number: parent.number, per_page: 100 }),
+                  github.rest.git.getRef({ owner, repo, ref: `pull/${parent.number}/head` }),
+                ]);
+                const last = commits.at(-1);
+                const committedAt = Date.parse(last?.commit.committer.date);
+                const mergedAt = Date.parse(parent.merged_at);
+                return commits.length === parent.commits && last?.sha === parent.head.sha &&
+                  archivedHead.data.object.sha === parent.head.sha && Number.isFinite(committedAt) &&
+                  Number.isFinite(mergedAt) && committedAt <= mergedAt;
+              } catch (error) {
+                if (error.status === 404) return false;
+                throw error;
+              }
+            }
+
+            async function retargetMergedParent(pr) {
+              if (!gateReady || pr.base.ref === defaultBranch || hasHold(pr) || !(await dependenciesMerged(pr))) return pr;
+              const parents = await github.paginate(github.rest.pulls.list, {
+                owner, repo, state: "all", head: `${owner}:${pr.base.ref}`, per_page: 100,
+              });
+              const owners = parents.filter(parent => parent.number !== pr.number &&
+                parent.head.ref === pr.base.ref && parent.head.repo?.id === repository.id);
+              if (owners.length !== 1 || !owners[0].merged_at) {
+                core.info(`#${pr.number}: waiting for an unambiguous merged parent of base ${pr.base.ref}.`);
+                return pr;
+              }
+              const parent = (await github.rest.pulls.get({ owner, repo, pull_number: owners[0].number })).data;
+              if (!parent.merged || parent.head.ref !== pr.base.ref || parent.head.repo?.id !== repository.id ||
+                  parent.head.sha !== pr.base.sha || parent.base.repo?.id !== repository.id ||
+                  parent.base.ref === pr.base.ref || parent.base.ref === pr.head.ref) return pr;
+              const current = (await github.rest.pulls.get({ owner, repo, pull_number: pr.number })).data;
+              if (current.state !== "open" || current.head.sha !== pr.head.sha || current.base.ref !== pr.base.ref ||
+                  current.base.sha !== parent.head.sha || hasHold(current) || !(await dependenciesMerged(current))) return current;
+              if (!await mergedParentHead(parent)) {
+                core.info(`#${pr.number}: cannot verify parent #${parent.number} source head at merge; automatic retargeting is held.`);
+                return current;
+              }
+              const comparison = (await github.rest.repos.compareCommitsWithBasehead({
+                owner, repo, basehead: `${parent.head.sha}...${current.head.sha}`,
+              })).data;
+              if (!["ahead", "identical"].includes(comparison.status) || comparison.merge_base_commit?.sha !== parent.head.sha) {
+                core.info(`#${pr.number}: base parent #${parent.number} is not an ancestor of the current head.`);
+                return current;
+              }
+              // Persist a blocking marker before changing the base. If finalization
+              // fails, reviewBoundary recovers only after observing the target base.
+              const boundary = { head: current.head.sha, base: parent.base.ref, at: new Date().toISOString(), pending: true };
+              const marker = (await github.rest.issues.createComment({
+                owner, repo, issue_number: current.number, body: boundaryBody(boundary),
+              })).data;
+              const { data } = await github.rest.pulls.update({
+                owner, repo, pull_number: current.number, base: parent.base.ref,
+              });
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: marker.id,
+                body: boundaryBody({ head: data.head.sha, base: data.base.ref, at: new Date().toISOString(), pending: false }),
+              });
+              core.info(`Retargeted #${pr.number} from merged parent #${parent.number} to ${parent.base.ref}; approval and checks will be evaluated again.`);
+              return data;
+            }
+
+            async function hasAutoMerge(pr) {
+              const result = await github.graphql(
+                `query($id: ID!) { node(id: $id) { ... on PullRequest { autoMergeRequest { enabledAt } } } }`,
+                { id: pr.node_id }
+              );
+              return Boolean(result.node?.autoMergeRequest);
+            }
+
+            async function disableAutoMerge(pr) {
+              if (!await hasAutoMerge(pr)) return;
+              await github.graphql(
+                `mutation($id: ID!) { disablePullRequestAutoMerge(input: { pullRequestId: $id }) { pullRequest { id } } }`,
+                { id: pr.node_id }
+              );
+            }
+
+            async function ensureAutoMergeLabel() {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: autoMergeLabel });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({
+                  owner, repo, name: autoMergeLabel, color: "1d76db",
+                  description: "Opt this pull request into automatic merge after approval and required checks.",
+                });
+              }
+              await ensureLabel(noAutoMergeLabel, "Keep this pull request out of automatic merging.");
+            }
+
+            function matchesPath(path, pattern) {
+              if (pattern === "**.md") return path.endsWith(".md");
+              if (pattern.endsWith("/**")) return path.startsWith(pattern.slice(0, -2));
+              return path === pattern;
+            }
+
+            async function relayPostMergeWorkflows() {
+              if (context.eventName !== "schedule" || postMergeWorkflows.length === 0) return;
+              const markerLabel = "chibi-post-merge-dispatched";
+              await ensureLabel(markerLabel, "Record workflows relayed after an auto-merge.");
+              const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+              for (let page = 1; ; page++) {
+                const { data: mergedPulls } = await github.rest.pulls.list({
+                  owner, repo, state: "closed", base: defaultBranch,
+                  sort: "updated", direction: "desc", per_page: 100, page,
+                });
+                if (mergedPulls.length === 0) break;
+                let pastCutoff = false;
+                for (const pr of mergedPulls) {
+                  if (Date.parse(pr.updated_at) < cutoff) {
+                    pastCutoff = true;
+                    continue;
+                  }
+                  if (!pr.merged_at || Date.parse(pr.merged_at) < cutoff) continue;
+                  const labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
+                  if (!labels.includes(autoMergeLabel) || labels.includes(markerLabel)) continue;
+
+                  const files = await github.paginate(github.rest.pulls.listFiles, {
+                    owner, repo, pull_number: pr.number, per_page: 100,
+                  });
+                  const changedPaths = files.map(file => file.filename);
+                  for (const spec of postMergeWorkflows) {
+                    const shouldRun = spec.include?.length
+                      ? changedPaths.some(path => spec.include.some(pattern => matchesPath(path, pattern)))
+                      : changedPaths.some(path => !spec.ignore?.some(pattern => matchesPath(path, pattern)));
+                    if (!shouldRun) continue;
+
+                    const priorRuns = await github.rest.actions.listWorkflowRuns({
+                      owner, repo, workflow_id: spec.workflow,
+                      event: "push", head_sha: pr.merge_commit_sha, per_page: 1,
+                    });
+                    if (priorRuns.data.workflow_runs.length > 0) continue;
+                    await github.rest.actions.createWorkflowDispatch({
+                      owner, repo, workflow_id: spec.workflow, ref: defaultBranch, inputs: {},
+                    });
+                    core.info(`Dispatched ${spec.workflow} for merged pull request #${pr.number}.`);
+                  }
+                  await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: [markerLabel] });
+                }
+                if (pastCutoff || mergedPulls.length < 100) break;
+              }
+            }
+
+            async function ensureLabel(name, description) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({ owner, repo, name, color: "ededed", description });
+              }
+            }
+
+            async function enrollNewPullRequest(pr) {
+              if (!gateReady) return;
+              const labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
+              if (labels.includes(noAutoMergeLabel)) return;
+              await ensureAutoMergeLabel();
+              if (!labels.includes(autoMergeLabel)) {
+                await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: [autoMergeLabel] });
+              }
+            }
+
+            async function applyAutoMerge(pr) {
+              const labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
+              const optedIn = labels.includes(autoMergeLabel);
+              if (!optedIn || !gateReady || pr.base.ref !== defaultBranch || hasHold(pr) || !(await dependenciesMerged(pr))) return;
+
+              const current = (await github.rest.pulls.get({ owner, repo, pull_number: pr.number })).data;
+              if (current.state !== "open" || current.base.ref !== defaultBranch || current.head.sha !== pr.head.sha) return;
+              if (hasHold(current) || !(await dependenciesMerged(current))) return;
+
+              const approved = await updateGate(current);
+              if (!approved) return;
+
+              const latest = (await github.rest.pulls.get({ owner, repo, pull_number: pr.number })).data;
+              if (latest.state !== "open" || latest.base.ref !== defaultBranch || latest.head.sha !== current.head.sha) return;
+              const latestLabels = latest.labels.map(label => typeof label === "string" ? label : label.name);
+              if (!latestLabels.includes(autoMergeLabel) || latestLabels.includes(noAutoMergeLabel)) return;
+              if (hasHold(latest) || !(await dependenciesMerged(latest))) return;
+              if (!await freshApproval(latest)) {
+                await updateGate(latest);
+                return;
+              }
+
+              try {
+                const result = await github.rest.pulls.merge({
+                  owner, repo, pull_number: latest.number, sha: latest.head.sha, merge_method: "squash",
+                });
+                core.info(result.data.merged
+                  ? `Merged pull request #${latest.number} after a fresh approval check.`
+                  : `Merge deferred for pull request #${latest.number}: ${result.data.message}`);
+              } catch (error) {
+                if (error.status === 405 || error.status === 409) {
+                  core.info(`Merge deferred for pull request #${latest.number}: ${error.message}`);
+                  return;
+                }
+                throw error;
+              }
+            }
+
+            await relayPostMergeWorkflows();
+            // Every retained invocation reconciles all PRs because concurrency can
+            // replace pending events for different PRs with the newest event.
+            const pulls = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: "open", per_page: 100,
+            });
+            const pullNumbers = pulls.map(pr => pr.number);
+
+            for (const number of pullNumbers) {
+              let pr;
+              try {
+                pr = (await github.rest.pulls.get({ owner, repo, pull_number: number })).data;
+              } catch (error) {
+                if (error.status === 404) continue;
+                throw error;
+              }
+              let labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
+              if (pr.state !== "open") continue;
+              await disableAutoMerge(pr);
+              pr = await retargetMergedParent(pr);
+              labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
+
+              await enrollNewPullRequest(pr);
+              if (gateReady && !labels.includes(autoMergeLabel) && !labels.includes(noAutoMergeLabel)) {
+                pr = (await github.rest.pulls.get({ owner, repo, pull_number: number })).data;
+                labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
+              }
+
+              if (!labels.includes(autoMergeLabel) && !labels.includes(noAutoMergeLabel) && await hasAutoMerge(pr)) {
+                await ensureAutoMergeLabel();
+                await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: [autoMergeLabel] });
+                pr = (await github.rest.pulls.get({ owner, repo, pull_number: number })).data;
+                labels = pr.labels.map(label => typeof label === "string" ? label : label.name);
+              }
+
+              await updateGate(pr);
+              await applyAutoMerge(pr);
+            }
