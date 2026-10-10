@@ -554,7 +554,7 @@ static bool graph_visibility_frame(void *state)
     return true;
 }
 
-#define GRAPH_KEY_FRAMES 10
+#define GRAPH_KEY_FRAMES 13
 
 static bool selected_only(editor *e, uint64_t id)
 {
@@ -609,13 +609,50 @@ static bool output_labels_show(studio *s, graph *gr)
     return true;
 }
 
+/* Chooses node search's last entry with nothing typed, as the palette
+   does, which leaves the command palette's recent items as they were. */
+static bool choose_node(studio *s, char *key, size_t size)
+{
+    studio_recent commands[STUDIO_RECENT_COUNT];
+    memcpy(commands, s->prefs.recent, sizeof commands);
+    studio_palette_entry *entries = NULL;
+    studio_graph_palette_entries(s, "", &entries);
+    REQUIRE(acount(entries) > 1);
+    studio_palette_entry chosen = alast(entries);
+    afree(entries);
+    snprintf(key, size, "%s", chosen.key);
+    studio_graph_palette_choose(s, &chosen);
+    REQUIRE(!memcmp(commands, s->prefs.recent, sizeof commands));
+    return true;
+}
+
+/* The node chosen last leads node search under Recent, and stays there
+   through saved preferences. */
+static bool leads_search(studio *s, const char *key)
+{
+    studio_palette_entry *entries = NULL;
+    studio_graph_palette_entries(s, "", &entries);
+    REQUIRE(acount(entries) && !strcmp(entries[0].key, key));
+    REQUIRE(!strcmp(entries[0].group, "Recent"));
+    afree(entries);
+    char *json = studio_prefs_write(&s->prefs, NULL);
+    studio_prefs saved = studio_prefs_read(json);
+    free(json);
+    REQUIRE(!strcmp(saved.recent_nodes[0].key, key));
+    REQUIRE(studio_prefs_equal(&saved, &s->prefs));
+    return true;
+}
+
 /* Graph keys, through SDL as the platform sends them: Right walks the
    selection along a wire to the node it feeds and Left to the nearest node
    feeding that one, Escape at rest clears the selection, and M asks the
-   source to disable the selection, which refuses and says why. */
+   source to disable the selection, which refuses and says why; with two
+   nodes selected, M refuses before editing either. Escape closing the node
+   menu keeps the selection, and Tab opens node search. */
 static bool graph_keys_frame(void *state)
 {
     static uint64_t from, to;
+    static char chosen[96];
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
@@ -658,6 +695,29 @@ static bool graph_keys_frame(void *state)
     } else if (frames == 7) {
         /* Counter's statements aren't declarations a source can disable. */
         REQUIRE(!sg_node_by_id(s, to)->disabled && e->connect_error[0]);
+        sg_select_only(e, sg_node_by_id(s, from));
+        ed_add_selected(e, sg_node_by_id(s, to));
+        REQUIRE(press_key(SDLK_M));
+    } else if (frames == 8) {
+        REQUIRE(!sg_node_by_id(s, from)->disabled && !sg_node_by_id(s, to)->disabled);
+        REQUIRE(strstr(alast(s->records).text, "one node at a time"));
+        sg_select_only(e, sg_node_by_id(s, to));
+        s->graph.menu_node = to;
+        s->graph.menu_edge = -1;
+        s->graph.menu_x = s->graph.menu_y = 100;
+        s->graph.menu_request = true;
+        s->ui_schedule.wake = true;
+    } else if (frames == 9) {
+        REQUIRE(s->graph.menu_open);
+        REQUIRE(press_key(SDLK_ESCAPE));
+    } else if (frames == 10) {
+        REQUIRE(!s->graph.menu_open && selected_only(e, to));
+        REQUIRE(press_key(SDLK_TAB));
+    } else if (frames == 11) {
+        REQUIRE(s->palette.client == STUDIO_PALETTE_NODES && s->graph.spawn_pending);
+        REQUIRE(choose_node(s, chosen, sizeof chosen));
+    } else if (frames == 12) {
+        REQUIRE(leads_search(s, chosen));
         keys++;
     }
     return true;

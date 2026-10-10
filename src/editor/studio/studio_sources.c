@@ -2031,6 +2031,9 @@ static hint_list editor_hints(studio *s)
     static const studio_hint BEHAVIOR[] = { { KIT_ICON_MOUSE, NULL, "Select" },
                                             { 0, "Shift+A", "Add" },
                                             { 0, "Q", "Straighten" } };
+    /* A read-only graph offers no edits; its header says why. */
+    static const studio_hint READONLY[] = { { KIT_ICON_MOUSE, NULL, "Select" },
+                                            { 0, "F", "Frame" } };
     /* While the game runs, the graph follows the object selected. */
     static const studio_hint DEBUGGING[] = {
         { KIT_ICON_MOUSE, NULL, "Select" },
@@ -2073,7 +2076,10 @@ static hint_list editor_hints(studio *s)
             if (s->graph.gesture == STUDIO_GRAPH_MOVE) {
                 return HINT_LIST(MOVING);
             }
-            return studio_session(s) ? HINT_LIST(DEBUGGING) : HINT_LIST(BEHAVIOR);
+            if (studio_session(s)) {
+                return HINT_LIST(DEBUGGING);
+            }
+            return sg_graph_readonly(s) ? HINT_LIST(READONLY) : HINT_LIST(BEHAVIOR);
         default: return HINT_LIST(OTHER);
     }
 }

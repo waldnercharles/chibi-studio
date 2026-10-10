@@ -1097,19 +1097,59 @@ static void walk(studio *s, SDL_Keycode key, bool extend)
     sg_show_node(s, to, false);
 }
 
-/* M mutes the selection (Blender), or enables it when all of it is muted. */
+/* M mutes the selection (Blender), or enables it when all of it is muted,
+   as one undo step. Code takes one declaration's edit at a time: the next
+   waits for the first to show in the graph. */
 static void mute_selection(studio *s)
 {
     editor *e = sg_graph_editor(s);
+    int count = acount(e->selected);
+    if (!count) {
+        return;
+    }
     bool muted = true;
-    for (int i = 0; i < acount(e->selected); i++) {
+    for (int i = 0; i < count; i++) {
         muted &= e->selected[i]->disabled != 0;
     }
-    for (int i = 0; i < acount(e->selected); i++) {
-        if (!sg_set_node_disabled(s, e->selected[i], !muted)) {
-            return;
-        }
+    if (count == 1) {
+        sg_set_node_disabled(s, e->selected[0], !muted);
+        return;
     }
+    if (editor_presentation(e)) {
+        sg_show_error(s, muted ? "Can't enable these nodes" : "Can't disable these nodes", "Code disables one node at a time.");
+        return;
+    }
+    ed_snapshot_before(e);
+    for (int i = 0; i < count; i++) {
+        graph_set_node_disabled(sg_active_graph(s), e->selected[i], !muted);
+    }
+}
+
+/* F9: breakpoints on the selected nodes that run (Unreal). */
+static void toggle_breakpoints(editor *e)
+{
+    bool snapshot = false;
+    for (int n = 0; n < acount(e->selected); n++) {
+        node *target = e->selected[n];
+        if (node_behavior_for(target) == NODE_BEHAVIOR_PURE) {
+            continue;
+        }
+        if (!snapshot) {
+            ed_snapshot_before(e);
+            snapshot = true;
+        }
+        graph_set_breakpoint(e->active_graph, target, !target->breakpoint);
+    }
+}
+
+/* An edit key on a read-only graph says why it does nothing. */
+static bool refused(studio *s)
+{
+    if (!sg_graph_readonly(s)) {
+        return false;
+    }
+    sg_refuse_edit(s);
+    return true;
 }
 
 void sg_shortcuts(studio *s)
@@ -1124,8 +1164,9 @@ void sg_shortcuts(studio *s)
         g->frame_pending = false;
         sg_frame_again(s);
     }
-    if (!over || kit_wants_keyboard(s->kit) || kit_wants_keyboard(g->kit) ||
-        studio_palette_is_open(s)) {
+    /* A key a field, popup or palette took as it arrived stays its, even
+       when it let the keyboard go, as Escape closing a menu does. */
+    if (!over || s->typed || kit_wants_keyboard(g->kit) || studio_palette_is_open(s)) {
         return;
     }
     for (int i = 0; i < acount(s->keys); i++) {
@@ -1174,14 +1215,16 @@ void sg_shortcuts(studio *s)
             sg_rename_pin(s, renameable_hover(s), g->hover_pin);
         } else if (!mod && key == SDLK_F2 && event_hover(s)) {
             studio_refactor_rename_event(s, studio_event_renameable(s, event_hover(s)));
-        } else if (bare && key == SDLK_M && sg_graph_readonly(s)) {
-            sg_refuse_edit(s);
         } else if (bare && key == SDLK_M) {
-            mute_selection(s);
+            if (!refused(s)) {
+                mute_selection(s);
+            }
         } else if (!mod && !alt && (key == SDLK_LEFT || key == SDLK_RIGHT || key == SDLK_UP || key == SDLK_DOWN)) {
             walk(s, key, shift);
         } else if (!mod && !shift && key == SDLK_Q) {
-            sg_straighten(s);
+            if (!refused(s)) {
+                sg_straighten(s);
+            }
         } else if (!mod && key == SDLK_HOME) {
             sg_frame_nodes(s, false, true);
         } else if (mod && key == SDLK_A) {
@@ -1193,9 +1236,7 @@ void sg_shortcuts(studio *s)
                 }
             }
         } else if ((mod && key == SDLK_D) || (shift && key == SDLK_D)) {
-            if (sg_graph_readonly(s)) {
-                sg_refuse_edit(s);
-            } else {
+            if (!refused(s)) {
                 ed_duplicate_selected(e);
             }
         } else if (mod && key == SDLK_C) {
@@ -1205,34 +1246,28 @@ void sg_shortcuts(studio *s)
             sg_delete_selection(s);
         } else if (mod && key == SDLK_V) {
             sg_paste(s);
-        } else if (mod && key == SDLK_G && !sg_graph_readonly(s) && acount(e->selected)) {
-            sg_collapse(s, GRAPH_FUNCTION);
+        } else if (mod && key == SDLK_G && acount(e->selected)) {
+            if (!refused(s)) {
+                sg_collapse(s, GRAPH_FUNCTION);
+            }
         } else if ((shift && key == SDLK_A) || (bare && key == SDLK_TAB)) {
-            if (sg_graph_readonly(s)) {
-                sg_refuse_edit(s);
-            } else {
+            if (!refused(s)) {
                 open_node_search(s, "Add a node");
             }
-        } else if (!mod && !shift && key == SDLK_C && !sg_graph_readonly(s)) {
-            sg_frame_selection(s);
+        } else if (!mod && !shift && key == SDLK_C) {
+            if (!refused(s)) {
+                sg_frame_selection(s);
+            }
         } else if (!mod && !shift && key == SDLK_L) {
             /* Blender's Select Linked From (L) and To; Shift+L arranges. */
             sg_select_linked(s, !alt, false);
-        } else if (!mod && shift && key == SDLK_L && !sg_graph_readonly(s)) {
-            sg_arrange(s, false);
-        } else if (key == SDLK_F9 && !sg_graph_readonly(s)) {
-            /* Breakpoints on the selected nodes that run (Unreal). */
-            bool snapshot = false;
-            for (int n = 0; n < acount(e->selected); n++) {
-                node *target = e->selected[n];
-                if (node_behavior_for(target) == NODE_BEHAVIOR_PURE) {
-                    continue;
-                }
-                if (!snapshot) {
-                    ed_snapshot_before(e);
-                    snapshot = true;
-                }
-                graph_set_breakpoint(e->active_graph, target, !target->breakpoint);
+        } else if (!mod && shift && key == SDLK_L) {
+            if (!refused(s)) {
+                sg_arrange(s, false);
+            }
+        } else if (key == SDLK_F9) {
+            if (!refused(s)) {
+                toggle_breakpoints(e);
             }
         }
     }

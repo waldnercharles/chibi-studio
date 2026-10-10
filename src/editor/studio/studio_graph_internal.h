@@ -145,7 +145,6 @@ void sg_node_menu(studio *s, sg_menu *m, node *n);
 /* Model access (studio_graph.c). */
 editor *sg_graph_editor(const studio *s);
 graph *sg_active_graph(const studio *s);
-bool sg_graph_readonly(const studio *s);
 /* Why the graph is read-only, for its header and refusals; NULL when it
    isn't. */
 const char *sg_readonly_reason(const studio *s);

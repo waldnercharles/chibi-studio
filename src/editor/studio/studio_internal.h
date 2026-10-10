@@ -252,6 +252,7 @@ typedef struct
 {
     char shortcuts[STUDIO_COMMAND_COUNT][STUDIO_CHORD_SIZE]; /* empty uses the default */
     studio_recent recent[STUDIO_RECENT_COUNT]; /* most recent first; an empty key ends them */
+    studio_recent recent_nodes[STUDIO_RECENT_COUNT]; /* node search's, kept apart */
     studio_theme theme;
     bool comfortable;
     bool reduced_motion;
@@ -1210,6 +1211,7 @@ struct studio
     bool guest_keys;  /* a press in the guest gave it the keyboard */
     bool guest_capture; /* a button pressed in the guest is held */
     bool typing;        /* a field or the graph had the keyboard last frame */
+    bool typed; /* this frame's keys reached a field or popup, which may have let go */
     bool scene_status;  /* the status bar shows a Scene gesture's change */
     /* ---------- Rename objects and prototype components ---------- */
     struct
@@ -1503,7 +1505,10 @@ const char *studio_search_query(const char *query);
 void studio_search_choose(studio *s, const studio_palette_entry *entry);
 /* Moves `key` to the front of the recently chosen items, counting the use;
    an empty key is none. */
-void studio_palette_remember(studio_prefs *prefs, const char *key);
+void studio_palette_remember(studio_recent *recent, const char *key);
+/* With nothing typed, up to `limit` entries chosen recently lead, most recent
+   first, under Recent. */
+void studio_palette_recent_first(const studio_recent *recent, int limit, studio_palette_entry **entries);
 
 /* Content changed on disk (studio_disk.c): reloads it and raises failures and
    unsaved conflicts as toasts. */
@@ -1622,6 +1627,8 @@ void studio_graph_palette(studio *s);
 bool studio_graph_can_replay(studio *s, bool redo);
 void studio_graph_history(studio *s, bool redo);
 bool studio_graph_active(const studio *s);
+/* No graph is open, or the open one refuses edits (sg_readonly_reason). */
+bool sg_graph_readonly(const studio *s);
 /* Opens Find in graph. */
 void studio_graph_find(studio *s);
 /* Opens the Text Editor's find widget. */

@@ -1297,12 +1297,12 @@ static void run(studio *s, double delta_seconds, float width, float height)
     }
     /* This frame's keys reached whatever had the keyboard as they arrived:
        a field that Escape or Enter just released still had them. */
-    bool typed = s->typing;
+    s->typed = s->typing;
     s->typing = kit_wants_keyboard(s->kit) || studio_graph_wants_keyboard(s);
-    typed |= s->typing;
+    s->typed |= s->typing;
     bool toolbar_shortcuts = !studio_graph_wants_keyboard(s) &&
                              !s->shortcut_recording && studio_ui_shortcut_focus(s);
-    if (!typed || toolbar_shortcuts) {
+    if (!s->typed || toolbar_shortcuts) {
         studio_shortcuts(s, false);
     } else if (field_chords(s)) {
         studio_shortcuts(s, true);
