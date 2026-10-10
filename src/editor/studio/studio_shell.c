@@ -175,7 +175,7 @@ static bool tab_held(const scene_document_tab *tab)
            tab->kind != APP_EDITOR_DOCUMENT_UI && !tab->source_dirty;
 }
 
-bool studio_unsaved_held(studio *s, int index)
+bool studio_unsaved_held(const studio *s, int index)
 {
     app_scene_authoring *scene = s->scene;
     if (!studio_save_held(s)) {
