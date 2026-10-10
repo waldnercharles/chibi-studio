@@ -1208,14 +1208,30 @@ static int problem_byte(const char *text, const kit_code_marker *marker)
                                        : line_offset(text, marker->line);
 }
 
-/* The nearest problem after the byte, or before it going back, or -1. */
-static int problem_from(const char *text, const kit_code_marker *markers, int from, int direction)
+/* The index of the problem F8 last went to in a document's part while the
+   caret stays where it went, else -1. */
+static int problem_kept(const studio_code *c, const void *document, int part, int cursor)
 {
+    const studio_code_problem *p = &c->problem;
+    bool kept = p->document == document && p->part == part && p->at == cursor;
+    return kept ? p->index : -1;
+}
+
+/* The nearest problem after the byte, or before it going back, or -1.
+   Problems on one byte take turns in their order, from `kept` when it is
+   one of them. */
+static int problem_from(const char *text, const kit_code_marker *markers, int from, int kept, int direction)
+{
+    bool on = kept >= 0 && kept < acount(markers) &&
+              problem_byte(text, &markers[kept]) == from;
+    int tie = on ? kept : direction > 0 ? INT_MAX : -1;
     int found = -1, best = 0;
     for (int i = 0; i < acount(markers); i++) {
         int at = problem_byte(text, &markers[i]);
-        bool beyond = direction > 0 ? at > from : at < from;
-        if (beyond && (found < 0 || (direction > 0 ? at < best : at > best))) {
+        bool beyond = direction > 0 ? at > from || (at == from && i > tie)
+                                    : at < from || (at == from && i < tie);
+        bool nearer = found < 0 || (direction > 0 ? at < best : at >= best);
+        if (beyond && nearer) {
             found = i;
             best = at;
         }
@@ -1223,28 +1239,30 @@ static int problem_from(const char *text, const kit_code_marker *markers, int fr
     return found;
 }
 
-/* The problem after or before the byte, wrapping past the text's end. */
-static int problem_around(const char *text, const kit_code_marker *markers, int from, int direction)
+/* The first problem past the text's start going on, or the last going
+   back. */
+static int problem_edge(const char *text, const kit_code_marker *markers, int direction)
 {
-    int found = problem_from(text, markers, from, direction);
-    return found >= 0
-             ? found
-             : problem_from(text, markers, direction > 0 ? -1 : INT_MAX, direction);
+    return problem_from(text, markers, direction > 0 ? -1 : INT_MAX, -1, direction);
 }
 
 /* F8 in an asset's source: the caret on the next problem, its message
-   beside it. */
-static void step_asset_problem(asset_code *code, int direction)
+   beside it, wrapping past the text's end. */
+static void step_asset_problem(studio_code *c, asset_code *code, int direction)
 {
     kit_code_editor *e = asset_code_editor(code);
     const kit_code_marker *markers = asset_code_markers(code);
     const char *text = kit_code_text(e, NULL);
-    int found = problem_around(text, markers, kit_code_cursor(e), direction);
+    int cursor = kit_code_cursor(e);
+    int found = problem_from(text, markers, cursor, problem_kept(c, code, -1, cursor), direction);
+    found = found >= 0 ? found : problem_edge(text, markers, direction);
     if (found < 0) {
         kit_code_notice(e, "No problems");
         return;
     }
-    kit_code_set_cursor(e, problem_byte(text, &markers[found]));
+    int at = problem_byte(text, &markers[found]);
+    c->problem = (studio_code_problem){ code, -1, found, at };
+    move_caret(e, at);
     kit_code_notice(e, markers[found].message);
 }
 
@@ -1255,19 +1273,19 @@ static void step_ui_problem(studio *s, ui_buffer *b, int direction)
 {
     studio_code *c = &s->code;
     ui_part part = b->part, other = part == UI_PART_RML ? UI_PART_RCSS : UI_PART_RML;
+    int cursor = kit_code_cursor(c->editor);
     int found = problem_from(
         kit_code_text(c->editor, NULL),
         c->markers[part],
-        kit_code_cursor(c->editor),
+        cursor,
+        problem_kept(c, b, part, cursor),
         direction
     );
     if (found < 0 && acount(c->markers[other])) {
         part = other;
     }
     const char *text = ui_buffer_text(b, part);
-    found = found >= 0
-              ? found
-              : problem_from(text, c->markers[part], direction > 0 ? -1 : INT_MAX, direction);
+    found = found >= 0 ? found : problem_edge(text, c->markers[part], direction);
     if (found < 0) {
         kit_code_notice(c->editor, "No problems");
         return;
@@ -1275,6 +1293,7 @@ static void step_ui_problem(studio *s, ui_buffer *b, int direction)
     const kit_code_marker *marker = &c->markers[part][found];
     c->reveal = marker->line;
     c->reveal_offset = problem_byte(text, marker);
+    c->problem = (studio_code_problem){ b, part, found, c->reveal_offset };
     c->reveal_wait = part != b->part ? REVEAL_FRAMES : 0;
     snprintf(c->reveal_notice, sizeof c->reveal_notice, "%s", marker->message);
     b->part = part;
@@ -2165,7 +2184,7 @@ void studio_code_command(studio *s, studio_command command)
         case STUDIO_COMMAND_PREVIOUS_PROBLEM: {
             int direction = command == STUDIO_COMMAND_NEXT_PROBLEM ? 1 : -1;
             if (code) {
-                step_asset_problem(code, direction);
+                step_asset_problem(&s->code, code, direction);
             } else {
                 step_ui_problem(s, shown(s)->ui, direction);
             }

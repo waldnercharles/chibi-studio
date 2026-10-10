@@ -793,6 +793,15 @@ typedef struct
     char *synced;
 } studio_code_editor;
 
+/* The problem F8 last went to (studio_code.c), so problems that share a
+ * byte each take a turn: its document (an asset_code or a ui_buffer), the
+ * document's part (-1 for an asset), the marker's index and its byte. */
+typedef struct
+{
+    const void *document;
+    int part, index, at;
+} studio_code_problem;
+
 /* UI documents (workstream D). The Text Editor (studio_code.c) shows the
  * active UI document and keeps the last one while a document of another kind
  * is active. */
@@ -813,6 +822,7 @@ typedef struct
     ui_part editor_part;
     int reveal_offset; /* a byte of the part to reveal instead, or -1 */
     char reveal_notice[256]; /* shown at the revealed place, as F8's problem */
+    studio_code_problem problem;
     /* The text's context menu (CodeMenu.rml), while it shows. */
     struct
     {
