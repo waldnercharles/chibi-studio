@@ -524,12 +524,23 @@ static bool ensure_canvas(studio *s)
     return g->kit != NULL;
 }
 
+static bool graph_shown(const studio *s)
+{
+    const studio_graph *g = &s->graph;
+    const studio_layout *layout = &s->prefs.layouts[s->prefs.workspace];
+    return g->area >= 0 && (s->maximized < 0 || s->maximized == g->area) &&
+           layout->editors[g->area] == STUDIO_EDITOR_BEHAVIOR &&
+           s->areas[g->area].rect.w >= 1 && s->areas[g->area].rect.h >= 1 &&
+           g->surface.rect.w >= 1 && g->surface.rect.h >= 1 &&
+           studio_graph_active(s);
+}
+
 void studio_graph_frame(studio *s, double delta_seconds)
 {
     studio_graph *g = &s->graph;
     editor *e = sg_graph_editor(s);
     kit_rect r = g->surface.rect;
-    bool shown = g->area >= 0 && r.w >= 1 && r.h >= 1 && studio_graph_active(s);
+    bool shown = graph_shown(s);
     /* Nothing traces the debug target while no graph shows it. */
     app_scene_authoring_set_debug_hidden(s->scene, !shown);
     if (!shown || !ensure_canvas(s)) {
@@ -662,18 +673,18 @@ void studio_graph_free(studio *s)
 
 bool studio_graph_wants_keyboard(const studio *s)
 {
-    return s->graph.kit && kit_wants_keyboard(s->graph.kit);
+    return graph_shown(s) && s->graph.kit && kit_wants_keyboard(s->graph.kit);
 }
 
 bool studio_graph_accepts_text(const studio *s)
 {
-    return s->graph.kit && kit_accepts_text(s->graph.kit);
+    return graph_shown(s) && s->graph.kit && kit_accepts_text(s->graph.kit);
 }
 
 const char *studio_graph_cursor(const studio *s)
 {
     const studio_graph *g = &s->graph;
-    if (!g->kit || !(g->surface.hovered || g->captured)) {
+    if (!graph_shown(s) || !g->kit || !(g->surface.hovered || g->captured)) {
         return NULL;
     }
     if (g->gesture == STUDIO_GRAPH_PAN || g->gesture == STUDIO_GRAPH_MOVE) {
