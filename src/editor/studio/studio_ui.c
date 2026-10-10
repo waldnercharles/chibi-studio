@@ -172,6 +172,7 @@ static bool launch(studio_ui *ui, char *error, size_t size)
             entities,
             ((game_prototype_preview_scene_entity){
                 .prototype = prototype,
+                .parent = e->parent,
                 .components = e->components,
                 .behaviors = (const char *const *)e->behaviors,
                 .behavior_count = acount(e->behaviors),

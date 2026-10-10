@@ -963,6 +963,7 @@ static av_value *history_edits(av_doc *doc, const scene_edit *edits)
             }
             av_obj_add_int(doc, item, "index", actor->index);
             av_obj_add_bool(doc, item, "created", actor->created);
+            av_obj_add_bool(doc, item, "own_behaviors", actor->own_behaviors);
             history_text(doc, item, "name", actor->name);
             history_text(doc, item, "prototype", actor->prototype_name);
             av_obj_add_val(doc, item, "base", av_clone(doc, actor->base));
@@ -1102,6 +1103,7 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
             actor->identity = av_get_uint(identity);
             actor->index = av_get_int(av_obj_get(item, "index"));
             actor->created = av_get_bool(av_obj_get(item, "created"));
+            actor->own_behaviors = av_get_bool(av_obj_get(item, "own_behaviors"));
             actor->name = history_copy_text(item, "name");
             actor->prototype_name = history_copy_text(item, "prototype");
             av_value *base = av_obj_get(item, "base");

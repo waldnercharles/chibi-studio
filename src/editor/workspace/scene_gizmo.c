@@ -4,12 +4,13 @@
  * snapping to the grid, and the grid under the scene. Gizmos keep their size
  * on screen. A gesture writes the fields it changes live and records them as
  * one Undo step when it ends. */
-#include "editor/workspace/viewport.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/workspace/scene_internal.h"
+#include "editor/workspace/viewport.h"
 #include "platform/cute.h"
 #include "render/grid_2d.h"
 #include "runtime/component_catalog.h"
+#include "runtime/transform_propagation.h"
 #include "support/array.h"
 
 #include <assert.h>
@@ -60,9 +61,10 @@ enum
 struct scene_gizmo_target
 {
     ecs_entity entity;
-    CF_V2 position;
-    float angle; /* canvas radians: gameplay's negated */
+    CF_V2 position; /* in the world, as the canvas shows it */
+    float angle;    /* canvas radians: gameplay's negated */
     bool oriented;
+    GameGlobalTransform2D parent; /* where its parent places it; zero for a root */
     CF_V2 size; /* its visual's width and height; zero without one */
     int field[FIELD_COUNT]; /* index in the gesture's fields, or -1 */
 };
@@ -151,12 +153,16 @@ static const ecs_component_desc *sized_component(
 
 static scene_gizmo_target target_of(const ecs_world *world, ecs_entity entity)
 {
-    const GameTransform *transform = GAME_GameTransform_get_const(world, entity);
-    const GameOrientation *orientation = GAME_GameOrientation_get_const(world, entity);
-    scene_gizmo_target target = { .entity = entity,
-                                  .position = { transform->x, -transform->y },
-                                  .angle = orientation ? -orientation->radians : 0,
-                                  .oriented = orientation != NULL };
+    GameGlobalTransform2D pose = game_transform_world_2d(world, entity);
+    ecs_entity parent = game_transform_parent(world, entity);
+    scene_gizmo_target target = {
+        .entity = entity,
+        .position = { pose.position.x, -pose.position.y },
+        .angle = -pose.radians,
+        .oriented = GAME_GameOrientation_get_const(world, entity) != NULL,
+        .parent = parent.slot ? game_transform_world_2d(world, parent)
+                              : (GameGlobalTransform2D){ 0 },
+    };
     const char *height;
     const ecs_component_desc *size = sized_component(world, entity, &height);
     if (size) {
@@ -173,15 +179,31 @@ static scene_gizmo_target target_of(const ecs_world *world, ecs_entity entity)
     return target;
 }
 
-/* The selected objects with a position, as they are now. The caller frees
-   the array. */
+/* Whether a selected object places `entity`, which then moves with it. */
+static bool placed_by_selection(const app_scene_authoring *scene, ecs_entity entity)
+{
+    for (ecs_entity at = game_transform_parent(scene->world, entity); at.slot;
+         at = game_transform_parent(scene->world, at)) {
+        for (int i = 0; i < acount(scene->actors); i++) {
+            if (ecs_entity_to_u64(scene->actors[i].entity) == ecs_entity_to_u64(at) &&
+                scene_instance_selected(scene, i)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/* The selected objects with a position, as they are now, leaving out those a
+   selected parent carries. The caller frees the array. */
 static scene_gizmo_target *selection_targets(const app_scene_authoring *scene)
 {
     scene_gizmo_target *targets = NULL;
     for (int i = 0; i < acount(scene->actors); i++) {
         ecs_entity entity = scene->actors[i].entity;
         if (scene_instance_selected(scene, i) &&
-            GAME_GameTransform_get_const(scene->world, entity)) {
+            GAME_GameTransform_get_const(scene->world, entity) &&
+            !placed_by_selection(scene, entity)) {
             apush(targets, target_of(scene->world, entity));
         }
     }
@@ -357,10 +379,14 @@ static void set(app_scene_authoring *scene, const scene_gizmo_target *target, in
     }
 }
 
+/* Moves the target to canvas point `at`, written in its parent's frame. */
 static void place(app_scene_authoring *scene, const scene_gizmo_target *target, CF_V2 at)
 {
-    set(scene, target, GIZMO_FIELD_X, at.x);
-    set(scene, target, GIZMO_FIELD_Y, -at.y);
+    CF_V2 from_parent = { at.x - target->parent.position.x,
+                          -at.y - target->parent.position.y };
+    float c = cosf(target->parent.radians), s = sinf(target->parent.radians);
+    set(scene, target, GIZMO_FIELD_X, c * from_parent.x + s * from_parent.y);
+    set(scene, target, GIZMO_FIELD_Y, c * from_parent.y - s * from_parent.x);
 }
 
 static bool snapping(const scene_gizmo *g)
@@ -463,7 +489,7 @@ static void rotate_selection(app_scene_authoring *scene, CF_V2 at)
     for (int i = 0; i < acount(g->targets); i++) {
         const scene_gizmo_target *t = &g->targets[i];
         place(scene, t, cf_add(g->pivot, rotated(cf_sub(t->position, g->pivot), -delta)));
-        set(scene, t, FIELD_RADIANS, -t->angle + delta);
+        set(scene, t, FIELD_RADIANS, -t->angle + delta - t->parent.radians);
     }
     snprintf(g->status, sizeof g->status, "Rotate %g\xc2\xb0", roundf(delta * 1800 / CF_PI) / 10);
 }
