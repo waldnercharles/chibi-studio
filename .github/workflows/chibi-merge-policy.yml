@@ -1,0 +1,32 @@
+name: Chibi merge policy
+
+on:
+  push:
+    branches: [main]
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review, edited, converted_to_draft, labeled, unlabeled]
+  pull_request_review:
+    types: [submitted, dismissed]
+  issues:
+    types: [labeled, unlabeled]
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  policy:
+    uses: ./.github/workflows/chibi-merge-policy-reusable.yml
+    with:
+      gate_ready: ${{ vars.CHIBI_REVIEW_GATE_READY == 'true' }}
+    permissions:
+      contents: read
+      checks: write
+      issues: write
+      pull-requests: write
