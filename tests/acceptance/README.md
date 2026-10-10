@@ -28,7 +28,9 @@ unsaved.
 `studio-acceptance --kdl-keys --project-root PATH` takes another disposable copy.
 It shows the open scene in the Text Editor, types Enter at the end of its KDL
 and saves it: KDL that reads settles without waiting on a graph, so Save writes
-it into the disposable copy. It runs ten hidden frames.
+it into the disposable copy. Another Enter and a paste follow within the typing
+pause, and two undos return to the saved text: Save ends the typing burst and a
+paste is an undo step of its own. It runs fourteen hidden frames.
 
 `studio-acceptance --scene-hierarchy --project-root PATH` takes another
 disposable copy. Its first hidden frame loads a scene whose ship holds a turret

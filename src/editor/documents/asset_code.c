@@ -46,7 +46,7 @@ struct asset_code
     const behavior_asset *shared_asset;
     unsigned shared_revision;
     bool source_pending, replaying, runtime_held, graph_draft, native_view,
-        source_gesture, typing, step_next;
+        source_gesture, typing;
     uint64_t execution_graph, execution_node;
     double time, apply_due, typed_at, refresh_due;
     kit_code_editor *editor;
@@ -479,12 +479,6 @@ const char *asset_code_text(const asset_code *c)
 kit_code_editor *asset_code_editor(asset_code *c)
 {
     return c->editor;
-}
-
-void asset_code_toggle_comment(asset_code *c)
-{
-    kit_code_toggle_comment(c->editor, "//", NULL, NULL);
-    c->step_next = true;
 }
 
 bool asset_code_can_replay(const asset_code *c, bool redo)
@@ -1402,6 +1396,7 @@ bool asset_code_save(asset_code *c, char *error, size_t size)
     free(c->observed_metadata);
     c->observed_metadata = c->metadata ? xstrdup(c->metadata) : NULL;
     c->runtime_held = false;
+    c->typing = false;
     valid_overlay(c, true);
     c->error[0] = 0;
     return true;
@@ -1481,11 +1476,11 @@ static bool starts_completion(const char *before, const char *after, int cursor)
            typed == '"';
 }
 
-/* Typing joins the step before it until a pause, a caret move or another
-   kind of edit, so undo takes back a burst instead of one character. */
+/* Typing joins the step before it until a pause, a caret move, a save or
+   another kind of edit, so undo takes back a burst instead of one
+   character. */
 static void typed(asset_code *c, const char *text, bool typing)
 {
-    typing = typing && !c->step_next;
     if (c->typing && typing && c->time - c->typed_at < TYPING_PAUSE && amendable(c)) {
         amend_step(c, text);
     } else {
@@ -1493,7 +1488,6 @@ static void typed(asset_code *c, const char *text, bool typing)
     }
     c->typing = typing;
     c->typed_at = c->time;
-    c->step_next = false;
 }
 
 /* The symbol under the pointer while the primary modifier is held, when it
@@ -1586,10 +1580,11 @@ kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const ki
         char *text = edited_text(c);
         /* A programmatic follow also changes the widget revision. */
         if (strcmp(text, c->text)) {
-            asked |= !(result.events & KIT_CODE_COMPLETED) &&
+            bool typing = !(result.events & (KIT_CODE_COMPLETED | KIT_CODE_STEP));
+            asked |= typing &&
                      starts_completion(c->text, text, kit_code_cursor(c->editor));
             understand(c, text);
-            typed(c, text, !(result.events & KIT_CODE_COMPLETED));
+            typed(c, text, typing);
             c->apply_due = c->time + 0.2;
             valid_overlay(c, live);
         } else {

@@ -638,7 +638,8 @@ extern "C"
     typedef struct text_edit text_edit;
     void kit_code_apply(kit_code_editor *e, const text_edit *edits, int count);
     /* Inserts pasted text at the cursor or replaces the active selection.
-     * CRLF and CR line endings become LF; the paste is one undo step. */
+     * CRLF and CR line endings become LF; the paste is one undo step,
+     * reported with KIT_CODE_STEP. */
     void kit_code_paste(kit_code_editor *e, const char *text);
     /* The editor's own history. */
     void kit_code_undo(kit_code_editor *e);
@@ -673,8 +674,8 @@ extern "C"
      * line, as VS Code's Toggle Line Comment: with `line` ("//"), each line
      * gains or loses the prefix; without, `open` and `close` ("<!--",
      * "-->") wrap or unwrap the lines as one block. The cursor and the
-     * selection keep their text; the change is one undo step and reports
-     * KIT_CODE_CHANGED. */
+     * selection keep their text; the change reports KIT_CODE_CHANGED and
+     * KIT_CODE_STEP. */
     void kit_code_toggle_comment(kit_code_editor *e, const char *line, const char *open, const char *close);
 
     /* Events since the last kit_code for this editor. */
@@ -702,6 +703,10 @@ extern "C"
         /* A secondary click, which moved the cursor there unless it fell
          * in the selection: the host's context menu. */
         KIT_CODE_MENU = 1 << 14,
+        /* With KIT_CODE_CHANGED: a paste or a toggled comment, which the
+         * host's history keeps as an undo step of its own instead of joining
+         * the typing around it. */
+        KIT_CODE_STEP = 1 << 15,
     };
     typedef struct kit_code_result
     {

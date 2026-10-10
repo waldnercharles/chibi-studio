@@ -2101,15 +2101,14 @@ bool studio_code_command_enabled(studio *s, studio_command command)
 
 /* Comments the selected lines: // in sources and KDL, block comments in
    RML and RCSS, each line or the lines as one block. */
-static void toggle_comment(studio *s, asset_code *code)
+static void toggle_comment(studio *s, kit_code_editor *e, asset_code *code)
 {
     if (code) {
-        asset_code_toggle_comment(code);
+        kit_code_toggle_comment(e, "//", NULL, NULL);
         return;
     }
     bool rml = s->code.editor_part == UI_PART_RML;
-    kit_code_toggle_comment(s->code.editor, NULL, rml ? "<!--" : "/*", rml ? "-->" : "*/");
-    s->code.step_next = true;
+    kit_code_toggle_comment(e, NULL, rml ? "<!--" : "/*", rml ? "-->" : "*/");
 }
 
 /* Navigation goes to the editor as the request its keys used to make, so
@@ -2144,7 +2143,9 @@ void studio_code_command(studio *s, studio_command command)
             }
             break;
         }
-        case STUDIO_COMMAND_TOGGLE_LINE_COMMENT: toggle_comment(s, code); break;
+        case STUDIO_COMMAND_TOGGLE_LINE_COMMENT:
+            toggle_comment(s, e, code);
+            break;
         default: assert(!"a Text Editor command"); break;
     }
     s->code.menu.open = false;
@@ -2277,10 +2278,9 @@ static bool take_edits(studio *s, ui_buffer *b, studio_code_editor *shown, ui_pa
 {
     studio_code *c = &s->code;
     c->replayed = false;
-    bool completed = (events & KIT_CODE_COMPLETED) || c->step_next;
+    bool completed = events & (KIT_CODE_COMPLETED | KIT_CODE_STEP);
     bool typed_completion = false;
     if (events & (KIT_CODE_CHANGED | KIT_CODE_COMPLETED)) {
-        c->step_next = false;
         text_edit edit;
         ui_code_change change;
         if (ui_code_prepare(b, part, shown->editor, shown->synced, &change, &edit)) {

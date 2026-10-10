@@ -1058,6 +1058,7 @@ void kit_code_paste(kit_code_editor *e, const char *text)
     assert(start <= INT_MAX && end <= INT_MAX);
     text_edit edit = { (int)start, (int)end, normalized };
     apply(e, &edit, 1, start + (long)length);
+    e->result.events |= KIT_CODE_STEP;
     if (selected && !e->vim) {
         zep_select(e->zep, start + (long)length, start + (long)length);
     }
@@ -1209,6 +1210,7 @@ void kit_code_toggle_comment(kit_code_editor *e, const char *line, const char *o
             zep_press_key(e->zep, ZEP_KEY_ESCAPE, 0);
         }
         apply(e, edits, count, moved(cursor, edits, count));
+        e->result.events |= KIT_CODE_STEP;
         if (selected && !e->vim) {
             zep_select(e->zep, moved(anchor, edits, count), moved(cursor, edits, count));
         }

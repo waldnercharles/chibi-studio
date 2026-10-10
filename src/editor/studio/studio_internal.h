@@ -772,7 +772,6 @@ typedef struct
     ui_part editor_part;
     int reveal_offset; /* a byte of the part to reveal instead, or -1 */
     char reveal_notice[256]; /* shown at the revealed place, as F8's problem */
-    bool step_next;          /* the next edit is an undo step of its own */
     /* The text's context menu (CodeMenu.rml), while it shows. */
     struct
     {

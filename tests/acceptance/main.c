@@ -259,7 +259,7 @@ static bool source_edit_frame(void *state)
 /* The Text Editor settles before the keys, which leave frames between them
    for the completion list to open, then comments a line. */
 #define KEY_FRAMES 21
-#define KDL_FRAMES 10
+#define KDL_FRAMES 14
 #define TEXT(x) #x
 #define FRAMES_TEXT(x) TEXT(x)
 
@@ -390,6 +390,23 @@ static bool code_keys_frame(void *state)
     return true;
 }
 
+/* After Save, an Enter and a paste are undo steps of their own: Save ends
+   the typing burst and a paste never joins one. */
+static bool undoes_to_save(asset_code *code)
+{
+    char *disk = file_read_text(asset_code_path(code));
+    REQUIRE(disk);
+    size_t saved = strlen(disk);
+    REQUIRE(strlen(asset_code_text(code)) == saved + 2);
+    REQUIRE(asset_code_replay(code, false, false));
+    bool enter = strlen(asset_code_text(code)) == saved + 1;
+    REQUIRE(asset_code_replay(code, false, false));
+    bool undone = !strcmp(asset_code_text(code), disk);
+    free(disk);
+    REQUIRE(enter && undone);
+    return true;
+}
+
 /* Enter at the end of the open scene's KDL settles without waiting on a
    graph, so Save writes it. */
 static bool kdl_keys_frame(void *state)
@@ -406,11 +423,15 @@ static bool kdl_keys_frame(void *state)
     if (frames == 4) {
         s->code.find.refocus = true;
         kit_code_set_cursor(asset_code_editor(scene), (int)strlen(asset_code_text(scene)));
-    } else if (frames == 6) {
+    } else if (frames == 6 || frames == 10) {
         REQUIRE(press_key(SDLK_RETURN));
         keys++;
-    } else if (frames == KDL_FRAMES) {
+    } else if (frames == 8) {
         REQUIRE(scene_saves(s));
+    } else if (frames == 12) {
+        kit_code_paste(asset_code_editor(scene), "x");
+    } else if (frames == KDL_FRAMES) {
+        REQUIRE(undoes_to_save(scene));
     }
     return true;
 }
@@ -828,7 +849,7 @@ TEST_CASE(kdl_enter_saves)
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
     REQUIRE(callback_ok);
     REQUIRE(unchanged_source());
-    REQUIRE(frames == KDL_FRAMES && keys == 1);
+    REQUIRE(frames == KDL_FRAMES && keys == 2);
     printf("Studio KDL keys accepted: frames=%d keys=%d\n", frames, keys);
     return true;
 }
