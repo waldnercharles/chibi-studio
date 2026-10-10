@@ -12,6 +12,7 @@
 #include "graph/authoring/local_edit.h"
 #include "graph/nodes/core_nodes.h"
 #include "graph/nodes/vector_nodes.h"
+#include "runtime/scenes/physics3d.h"
 #include "support/array.h"
 #include "support/file_io.h"
 #include "support/xalloc.h"
@@ -43,6 +44,7 @@ static enum {
     GRAPH_KEYS,
     UNIT_WARNINGS,
     SCENE_HIERARCHY,
+    SCENE_PHYSICS,
     ASSET_SELECTION,
     SCENE_VIEWPORT,
     PLAY_KEYS,
@@ -1530,6 +1532,63 @@ static bool scene_hierarchy_frame(void *state)
     return true;
 }
 
+static const char physics_crate[] = "name \"Crate3D\"\ncomponents {\n"
+                                    "    GAME.GameBody3D type=\"Dynamic\"\n"
+                                    "    GAME.GameCollider3D {\n"
+                                    "        category 1\n"
+                                    "        mask 1\n"
+                                    "        size x=32.0 y=32.0 z=32.0\n"
+                                    "    }\n"
+                                    "    GAME.GameTransform3D {\n"
+                                    "        scale x=1.0 y=1.0 z=1.0\n"
+                                    "    }\n"
+                                    "}\n";
+static const char
+    physics_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
+                      "    - name=\"Crate\" prototype=\"Crate3D\"\n"
+                      "}\n";
+
+/* Whether 3D physics holds a moving body for the scene's first object. */
+static bool moving_3d(app_scene_authoring *scene)
+{
+    CF_Quat rotation;
+    CF_V3 translation;
+    return game_physics3d_interpolation(
+        scene->live->runtime->physics3d,
+        scene->actors[0].entity,
+        1,
+        &rotation,
+        &translation
+    );
+}
+
+/* Changing the scene's physics settings, and undoing it, rebuild the 3D world
+   as well as the 2D one. */
+static bool scene_physics_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= 2);
+    if (frames == 2) {
+        return true;
+    }
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(app_scene_authoring_register_prototype(scene, physics_crate, NULL) == 0);
+    REQUIRE(scene_authoring_load_text(scene, physics_scene, NULL) == 0);
+    game_physics3d *physics = scene->live->runtime->physics3d;
+    REQUIRE(game_physics3d_tick(physics, 1.0f / 60) == 0 && moving_3d(scene));
+    game_physics_settings settings = game_physics_configuration(
+        scene->live->runtime->physics
+    );
+    settings.sleep = !settings.sleep;
+    REQUIRE(app_scene_authoring_set_physics(scene, settings) == 0 && !moving_3d(scene));
+    REQUIRE(game_physics3d_tick(physics, 1.0f / 60) == 0 && moving_3d(scene));
+    REQUIRE(replay_scene_edit(scene, false) == 0 && !moving_3d(scene));
+    edits++;
+    return true;
+}
+
 /* Three unused prototypes, the only ones; Assets deletes declarative assets
    (executable sources go through their own refactors). */
 static const char *const spares[] = { "SpareA", "SpareB", "SpareC" };
@@ -2066,6 +2125,7 @@ bool studio_acceptance_frame(void *state)
         case GRAPH_KEYS: callback_ok = graph_keys_frame(state); break;
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
+        case SCENE_PHYSICS: callback_ok = scene_physics_frame(state); break;
         case ASSET_SELECTION: callback_ok = asset_selection_frame(state); break;
         case SCENE_VIEWPORT: callback_ok = scene_viewport_frame(state); break;
         case PLAY_KEYS: callback_ok = play_keys_frame(state); break;
@@ -2220,6 +2280,18 @@ TEST_CASE(scene_hierarchy)
     return true;
 }
 
+TEST_CASE(scene_physics)
+{
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         "2",
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == 2 && edits == 1);
+    printf("Studio scene physics accepted\n");
+    return true;
+}
+
 TEST_CASE(asset_selection)
 {
     REQUIRE(write_spares());
@@ -2316,18 +2388,21 @@ int main(int argc, char **argv)
     bool keys_mode = argc == 4 && !strcmp(argv[1], "--graph-keys");
     bool units = argc == 4 && !strcmp(argv[1], "--unit-warnings");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
+    bool physics = argc == 4 && !strcmp(argv[1], "--scene-physics");
     bool assets = argc == 4 && !strcmp(argv[1], "--asset-selection");
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
     bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
     bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
-    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility && !keys_mode &&
-         !units && !hierarchy && !assets && !viewport && !playing && !prompting) ||
+    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
+         !keys_mode && !units && !hierarchy && !physics && !assets &&
+         !viewport && !playing && !prompting) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
             "--graph-visibility|--graph-keys|--unit-warnings|--scene-hierarchy|"
+            "--scene-physics|"
             "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts "
             "--project-root PATH | --scene-cursors\n"
         );
@@ -2353,6 +2428,7 @@ int main(int argc, char **argv)
          : keys_mode   ? GRAPH_KEYS
          : units       ? UNIT_WARNINGS
          : hierarchy   ? SCENE_HIERARCHY
+         : physics     ? SCENE_PHYSICS
          : assets      ? ASSET_SELECTION
          : viewport    ? SCENE_VIEWPORT
          : playing     ? PLAY_KEYS
@@ -2368,6 +2444,7 @@ int main(int argc, char **argv)
         case GRAPH_KEYS: RUN_TEST_CASE(graph_keys); break;
         case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
+        case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics); break;
         case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;
         case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
         case PLAY_KEYS: RUN_TEST_CASE(play_keys); break;
