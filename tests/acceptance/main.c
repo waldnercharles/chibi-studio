@@ -4,6 +4,7 @@
 #include "authoring/source_presentation.h"
 #include "editor/collab/collab.h"
 #include "editor/documents/asset_code.h"
+#include "editor/studio/studio_graph_internal.h"
 #include "editor/studio/studio_internal.h"
 #include "editor/workspace/scene_internal.h"
 #include "support/array.h"
@@ -32,6 +33,7 @@ static enum {
     CODE_KEYS,
     EXPORT_GAME,
     GRAPH_VISIBILITY,
+    GRAPH_KEYS,
     SCENE_HIERARCHY
 } mode;
 static char exported[1024]; /* the export Studio reported */
@@ -551,6 +553,79 @@ static bool graph_visibility_frame(void *state)
     return true;
 }
 
+#define GRAPH_KEY_FRAMES 10
+
+static bool selected_only(editor *e, uint64_t id)
+{
+    REQUIRE(acount(e->selected) == 1 && e->selected[0]->id == id);
+    return true;
+}
+
+/* One node is selected, and it feeds the node with this id. */
+static bool selected_feeds(editor *e, const graph *gr, uint64_t id)
+{
+    REQUIRE(acount(e->selected) == 1);
+    for (int i = 0; i < acount(gr->edges); i++) {
+        if (gr->edges[i].from_id == e->selected[0]->id && gr->edges[i].to_id == id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* Graph keys, through SDL as the platform sends them: Right walks the
+   selection along a wire to the node it feeds and Left to the nearest node
+   feeding that one, Escape at rest clears the selection, and M asks the
+   source to disable the selection, which refuses and says why. */
+static bool graph_keys_frame(void *state)
+{
+    static uint64_t from, to;
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= GRAPH_KEY_FRAMES);
+    if (frames == 1) {
+        studio_show_editor(s, STUDIO_EDITOR_BEHAVIOR);
+        return true;
+    }
+    if (frames == 2) {
+        return true;
+    }
+    editor *e = sg_graph_editor(s);
+    graph *gr = sg_active_graph(s);
+    REQUIRE(e && gr && s->graph.area >= 0);
+    s->focus_area = s->graph.area;
+    if (frames == 3) {
+        for (int i = 0; i < acount(gr->edges) && !to; i++) {
+            node *a = sg_node_by_id(s, gr->edges[i].from_id);
+            node *b = sg_node_by_id(s, gr->edges[i].to_id);
+            if (sg_node_visible(gr, a) && sg_node_visible(gr, b)) {
+                from = a->id;
+                to = b->id;
+            }
+        }
+        REQUIRE(to);
+        sg_select_only(e, sg_node_by_id(s, from));
+        REQUIRE(press_key(SDLK_RIGHT));
+    } else if (frames == 4) {
+        REQUIRE(selected_only(e, to));
+        REQUIRE(press_key(SDLK_LEFT));
+    } else if (frames == 5) {
+        REQUIRE(selected_feeds(e, gr, to));
+        REQUIRE(press_key(SDLK_ESCAPE));
+    } else if (frames == 6) {
+        REQUIRE(!acount(e->selected));
+        sg_select_only(e, sg_node_by_id(s, to));
+        ed_clear_connect_error(e);
+        REQUIRE(press_key(SDLK_M));
+    } else if (frames == 7) {
+        /* Counter's statements aren't declarations a source can disable. */
+        REQUIRE(!sg_node_by_id(s, to)->disabled && e->connect_error[0]);
+        keys++;
+    }
+    return true;
+}
+
 #define EXPORTED "Exported game: "
 
 /* Frame 1 runs Export Game; frame 2 waits for the exporter to exit; frame 3's
@@ -713,6 +788,7 @@ bool studio_acceptance_frame(void *state)
         case GRAPH_VISIBILITY:
             callback_ok = graph_visibility_frame(state);
             break;
+        case GRAPH_KEYS: callback_ok = graph_keys_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
     }
     return callback_ok;
@@ -761,6 +837,21 @@ TEST_CASE(graph_visibility_and_document_pair)
     REQUIRE(callback_ok && frames == 10);
     REQUIRE(unchanged_source());
     printf("\nStudio graph visibility accepted: frames=%d\n", frames);
+    return true;
+}
+
+TEST_CASE(graph_keys)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(GRAPH_KEY_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == GRAPH_KEY_FRAMES && keys == 1);
+    REQUIRE(unchanged_source());
+    printf("Studio graph keys accepted: frames=%d\n", frames);
     return true;
 }
 
@@ -830,14 +921,17 @@ int main(int argc, char **argv)
     bool code_keys = argc == 4 && !strcmp(argv[1], "--code-keys");
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
+    bool keys_mode = argc == 4 && !strcmp(argv[1], "--graph-keys");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
-    if ((!source_edit && !code_keys && !exporting && !visibility && !hierarchy) ||
+    if ((!source_edit && !code_keys && !exporting && !visibility &&
+         !keys_mode && !hierarchy) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--export-game|--graph-visibility|"
-            "--scene-hierarchy --project-root PATH | --scene-cursors\n"
+            "--graph-keys|--scene-hierarchy --project-root PATH | "
+            "--scene-cursors\n"
         );
         return 2;
     }
@@ -857,6 +951,7 @@ int main(int argc, char **argv)
          : code_keys   ? CODE_KEYS
          : exporting   ? EXPORT_GAME
          : visibility  ? GRAPH_VISIBILITY
+         : keys_mode   ? GRAPH_KEYS
                        : SCENE_HIERARCHY;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
@@ -865,6 +960,7 @@ int main(int argc, char **argv)
         case GRAPH_VISIBILITY:
             RUN_TEST_CASE(graph_visibility_and_document_pair);
             break;
+        case GRAPH_KEYS: RUN_TEST_CASE(graph_keys); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
     }
     pu_print_stats();

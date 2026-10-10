@@ -50,6 +50,15 @@ framing, foreground layer priority, hidden-state filtering and selecting empty
 cells as part of one layer. They are removed before rendering. No source save or
 playback occurs.
 
+`studio-acceptance --graph-keys --project-root PATH` takes a disposable copy
+and runs ten hidden fixed-dt frames on Counter's Tick graph. With the graph
+area focused it queues keys through SDL, as the platform does: Right moves the
+selection along a wire to the node it feeds, Left to the nearest node feeding
+that one, Escape at rest clears the selection, and M asks the source to disable
+the selection, which Counter's statement refuses with a reason while the node
+stays enabled. Pointer hit-testing and framing are not exercised, and nothing
+is saved.
+
 `studio-acceptance --export-game --project-root PATH` accepts another disposable
 copy. Its first hidden frame runs the Export Game command, which needs the SDK's
 `chibi`, `chibi-compile` and `chibi-player` that the build copies beside it. The
