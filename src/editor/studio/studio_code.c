@@ -2573,14 +2573,18 @@ static void asset_requests(studio *s, asset_code *code, unsigned events)
     }
 }
 
-/* The symbol under the pointer while the primary modifier is held:
-   Mod+click's underline. */
-static void link_symbol(const studio_code *c, const kit_code_editor *e, kit_code_desc *desc)
+/* The symbol under the pointer while the primary modifier is held, when
+   Go to Definition has somewhere else to go from it: Mod+click's
+   underline, as the asset sources' (asset_code.c). */
+static void link_symbol(studio *s, const ui_buffer *b, const kit_code_editor *e, kit_code_desc *desc)
 {
+    studio_code *c = &s->code;
     int at = kit_code_link(e);
     ui_source_symbol symbol = at >= 0 ? ui_source_symbol_at(c->source, at)
                                       : (ui_source_symbol){ .kind = UI_SYMBOL_NONE };
-    if (symbol.kind != UI_SYMBOL_NONE) {
+    ui_code_place place;
+    if (symbol.kind != UI_SYMBOL_NONE &&
+        ui_code_definition(b, c->source, at, project(s, b->path, false), &place)) {
         desc->link_start = symbol.start;
         desc->link_end = symbol.end;
     }
@@ -2697,7 +2701,7 @@ void studio_code_body(studio *s, int)
         .hover = c->hover,
         .word_chars = "-", /* RML's and RCSS's names take hyphens */
     };
-    link_symbol(c, e, &desc);
+    link_symbol(s, b, e, &desc);
     kit_code_result r = kit_code(k, "text", e, &desc);
     if (c->find.refocus) {
         kit_focus(k);
