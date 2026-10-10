@@ -180,16 +180,26 @@ jobs:
                       : waiting
                         ? `Pull request #${waiting.number} awaits a current-head approval from Copilot or a maintainer, or a current-head Codex review followed by 👍 from ${codexLogin}.`
                         : "No open pull request shares this head commit.";
-              // Commit statuses remain eligible even when this head already has
-              // a Copilot Actions suite from the excluded dynamic workflow event.
-              await github.rest.repos.createCommitStatus({
-                owner, repo, sha: pr.head.sha, context: gateName,
-                state: approved ? "success" : "failure",
-                target_url: `${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId}`,
-                description: approved
-                  ? "Current-head review approval received."
-                  : "Approval required; see policy run for hold, dependency, or review details.",
-              });
+              const state = approved ? "success" : "failure";
+              const description = summary.slice(0, 140);
+              let previous;
+              for await (const page of github.paginate.iterator(github.rest.repos.listCommitStatusesForRef, {
+                owner, repo, ref: pr.head.sha, per_page: 100,
+              })) {
+                previous = page.data.find(status =>
+                  status.context === gateName && status.creator?.login === "github-actions[bot]"
+                );
+                if (previous) break;
+              }
+              // Commit statuses remain eligible when this head has a Copilot
+              // dynamic suite. Reuse unchanged decisions to avoid GitHub's
+              // limit of 1,000 statuses per SHA and context.
+              if (previous?.state !== state || previous.description !== description) {
+                await github.rest.repos.createCommitStatus({
+                  owner, repo, sha: pr.head.sha, context: gateName, state, description,
+                  target_url: `${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId}`,
+                });
+              }
               core.info(`#${pr.number}: ${summary}`);
               return approved;
             }
