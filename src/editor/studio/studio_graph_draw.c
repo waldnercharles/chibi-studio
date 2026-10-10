@@ -30,17 +30,20 @@ typedef struct
     uint32_t exec;      /* execution sockets and wires */
     uint32_t exec_idle; /* an unwired execution socket */
     uint32_t hot;       /* a hovered or offered socket's ring */
+    uint32_t selected;  /* a selected wire, as graph.rcss's --selected-object */
+    uint32_t invalid;   /* a refused connection, and wires of a muted node */
     uint32_t grid, grid_major;
     float shade; /* data type colors darken on light canvases */
 } canvas_palette;
 
-static const canvas_palette DARK = { 0x2b2b2fffu, 0x111113ffu,
-                                     0xe8e8eaffu, 0x8a8a90ffu,
-                                     0xffffffffu, 0xffffff0au,
-                                     0xffffff14u, 1 };
+static const canvas_palette DARK = {
+    0x2b2b2fffu, 0x111113ffu, 0xe8e8eaffu, 0x8a8a90ffu, 0xffffffffu,
+    0xe0701cffu, 0xe5534bffu, 0xffffff0au, 0xffffff14u, 1
+};
 static const canvas_palette LIGHT = { 0xfbfbfcffu, 0xfbfbfcffu, 0x52525bffu,
-                                      0xa1a1aaffu, 0x18181bffu, 0x0000000du,
-                                      0x0000001au, 0.8f };
+                                      0xa1a1aaffu, 0x18181bffu, 0xe0701cffu,
+                                      0xc93c37ffu, 0x0000000du, 0x0000001au,
+                                      0.8f };
 
 static const canvas_palette *palette(const studio *s)
 {
@@ -721,7 +724,10 @@ static void emit_wires(studio *s)
         if (sg_is_unused(g, from->id) || sg_is_unused(g, to->id)) {
             alpha *= 0.5f;
         }
-        kit_wire wire = { .color = pin_color(s, spec, alpha),
+        bool muted = from->disabled || to->disabled;
+        kit_wire wire = { .color = muted ? (palette(s)->invalid & ~255u) |
+                                               (uint32_t)lroundf(alpha * 255)
+                                         : pin_color(s, spec, alpha),
                           .width = (exec ? 2.5f : 1.5f) + (attached && focus ? 0.5f : 0),
                           .flags = ed->conversion ? KIT_WIRE_DASHED : 0 };
         /* Model anchors remain available when endpoint nodes are culled. */
@@ -729,7 +735,7 @@ static void emit_wires(studio *s)
         sg_socket_at(s, to, ED_PIN_INPUT, tp, &wire.to_x, &wire.to_y);
         emit_activity(s, ed, spec, &wire);
         if (ed_link_selected(e, &ref)) {
-            wire.color = 0xffa53aff;
+            wire.color = palette(s)->selected;
             wire.flow_color = wire.flow_color ? wire.color : 0;
         }
         if (g->gesture == STUDIO_GRAPH_MOVE && g->insert_edge == i) {
@@ -813,7 +819,7 @@ static void emit_front(studio *s)
     bool snap = over && g->hover_kind >= 0 &&
                 sg_pins_compatible(from, g->link_kind, g->link_pin, over, g->hover_kind, g->hover_pin);
     bool invalid = over && g->hover_kind >= 0 && !snap;
-    kit_wire wire = { .color = invalid ? 0xe5534bff : pin_color(s, spec, 1),
+    kit_wire wire = { .color = invalid ? palette(s)->invalid : pin_color(s, spec, 1),
                       .width = spec->kind == PIN_EXEC ? 2.5f : 2,
                       .to_x = g->world_x,
                       .to_y = g->world_y,

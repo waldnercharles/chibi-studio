@@ -1020,6 +1020,21 @@ static node *renameable_hover(studio *s)
     return n && sg_pin_renameable(s, n, g->hover_kind, g->hover_pin) ? n : NULL;
 }
 
+/* M mutes the selection (Blender), or enables it when all of it is muted. */
+static void mute_selection(studio *s)
+{
+    editor *e = sg_graph_editor(s);
+    bool muted = true;
+    for (int i = 0; i < acount(e->selected); i++) {
+        muted &= e->selected[i]->disabled != 0;
+    }
+    for (int i = 0; i < acount(e->selected); i++) {
+        if (!sg_set_node_disabled(s, e->selected[i], !muted)) {
+            return;
+        }
+    }
+}
+
 void sg_shortcuts(studio *s)
 {
     studio_graph *g = &s->graph;
@@ -1076,6 +1091,8 @@ void sg_shortcuts(studio *s)
             sg_rename_pin(s, renameable_hover(s), g->hover_pin);
         } else if (!mod && key == SDLK_F2 && event_hover(s)) {
             studio_refactor_rename_event(s, studio_event_renameable(s, event_hover(s)));
+        } else if (bare && key == SDLK_M && !sg_graph_readonly(s)) {
+            mute_selection(s);
         } else if (!mod && !shift && key == SDLK_Q) {
             sg_straighten(s);
         } else if (!mod && key == SDLK_HOME) {

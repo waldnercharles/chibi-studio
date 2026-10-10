@@ -63,7 +63,9 @@ body.graph-canvas:not(.dark) {
 .gnode[data-active] { border-color: var(--active-object); }
 .gnode[data-dim] { opacity: 0.45; }
 .gnode[data-breakpoint] .gnode-head { border-left: 4dp #e5534b; }
-.gnode[data-disabled] { opacity: 0.5; }
+/* A disabled (muted) node reads apart from an unused, dimmed one: its title
+   greys and is struck through, and its wires draw red (Blender). */
+.gnode[data-disabled] { opacity: 0.6; }
 
 .gnode-head {
     position: relative; display: flex; align-items: center; gap: 6dp; height: var(--studio-height-24, 24dp); padding: 0dp 10dp;
@@ -88,6 +90,9 @@ body.graph-canvas:not(.dark) {
 .gnode[data-kind=expression] .gnode-head { background-color: var(--n-expr); }
 
 body.graph-canvas:not(.dark) .gnode-head, body.graph-canvas:not(.dark) .gnode-head .icon { color: #28313e; }
+.gnode[data-disabled] .gnode-head { background-color: var(--muted); }
+.gnode[data-disabled] .gnode-head, .gnode[data-disabled] .gnode-head .icon { color: var(--muted-foreground); }
+.gnode[data-disabled] .gnode-head .title { text-decoration: line-through; }
 
 /* Rows sit on a fixed pitch, which pin_y assumes: row i's socket is at head (24)
    + pad (4) + (i + 0.5) * 22 below the node's border, after any code. Execution

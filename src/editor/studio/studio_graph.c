@@ -442,7 +442,7 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
             "mute",
             n->disabled ? "Enable" : "Disable",
             n->disabled ? KIT_ICON_EYE : KIT_ICON_EYE_OFF,
-            NULL,
+            "M",
             readonly
         )) {
         sg_set_node_disabled(s, n, !n->disabled);
