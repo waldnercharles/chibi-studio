@@ -35,19 +35,6 @@ jobs:
             const githubActionsAppId = 15368;
             const gateReady = process.env.CHIBI_REVIEW_GATE_READY === "true";
             const defaultBranch = (await github.rest.repos.get({ owner, repo })).data.default_branch;
-            const permissionCache = new Map();
-
-            async function isMaintainer(login) {
-              if (!permissionCache.has(login)) {
-                try {
-                  const { data } = await github.rest.repos.getCollaboratorPermissionLevel({ owner, repo, username: login });
-                  permissionCache.set(login, ["admin", "maintain", "write"].includes(data.permission));
-                } catch {
-                  permissionCache.set(login, false);
-                }
-              }
-              return permissionCache.get(login);
-            }
 
             async function hasFreshApproval(pr, gateCreatedAt) {
               const reviews = await github.paginate(github.rest.pulls.listReviews, {
@@ -69,7 +56,7 @@ jobs:
               const approvals = currentReviews.filter(review => review.state === "APPROVED");
               for (const review of approvals) {
                 if (review.user?.login === copilotLogin) return "Copilot";
-                if (review.user?.type === "User" && await isMaintainer(review.user.login)) {
+                if (review.user?.type === "User" && ["OWNER", "COLLABORATOR"].includes(review.author_association)) {
                   return `maintainer @${review.user.login}`;
                 }
               }
