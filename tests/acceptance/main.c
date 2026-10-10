@@ -14,6 +14,7 @@
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_process.h>
 #include <SDL3/SDL_video.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,7 +27,13 @@ static const char *project;
 static const char *executable;
 static int frames, edits, undos, redos, keys;
 static bool callback_ok = true;
-static enum { SOURCE_EDIT, CODE_KEYS, EXPORT_GAME, GRAPH_VISIBILITY } mode;
+static enum {
+    SOURCE_EDIT,
+    CODE_KEYS,
+    EXPORT_GAME,
+    GRAPH_VISIBILITY,
+    SCENE_HIERARCHY
+} mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
     "behavior Counter {\n"
@@ -507,6 +514,126 @@ static bool export_frame(void *state)
     return true;
 }
 
+/* A ship with a turret, and a root that shares the turret's name. */
+static const char
+    nested_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
+                     "    - name=\"Ship\" prototype=\"Hull\" { (array)children "
+                     "{ - name=\"Turret\" prototype=\"Hull\"; }; }\n"
+                     "    - name=\"Turret\" prototype=\"Hull\"\n"
+                     "}\n";
+
+/* A turned ship whose turret sits ten units ahead of it. */
+static const char turned_scene[] =
+    "version 1\nname \"Scene\"\n(array)entities {\n"
+    "    - name=\"Ship\" prototype=\"Hull\" { components { GameTransform "
+    "x=100.0 y=0.0; "
+    "GameOrientation radians=1.5707964; }; (array)children { - name=\"Turret\" "
+    "prototype=\"Hull\" { components { GameTransform x=10.0 y=0.0; }; }; }; }\n"
+    "}\n";
+
+static bool child_of(app_scene_authoring *scene, int child, int parent)
+{
+    return ecs_entity_to_u64(ecs_parent(scene->world, scene->actors[child].entity)) ==
+           ecs_entity_to_u64(scene->actors[parent].entity);
+}
+
+/* The scene's text, as its document would save it. */
+static bool saves_as(app_scene_authoring *scene, const char *expected)
+{
+    char error[256];
+    game_scene_document *document = game_scene_document_load(expected, error, sizeof error);
+    char *canonical = document
+                        ? game_scene_document_save(document, (ecs_component_catalog){ 0 })
+                        : NULL;
+    char *text = scene_authoring_scene_text(scene);
+    bool same = canonical && text && !strcmp(canonical, text);
+    if (!same) {
+        fprintf(stderr, "Studio hierarchy acceptance saved:\n%s\n", text ? text : "(nothing)");
+    }
+    free(canonical);
+    free(text);
+    game_scene_document_free(document);
+    return same;
+}
+
+/* Children load under their parent and keep it through save, undo and
+   duplication; a parent waits for its children to go first. */
+static bool scene_hierarchy_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= 2);
+    if (frames == 2) {
+        return true;
+    }
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(
+        app_scene_authoring_register_prototype(
+            scene,
+            "name \"Hull\"\ncomponents {\n    GameTransform x=0 y=0\n    "
+            "GameOrientation "
+            "radians=0\n    GameAppearance shape=\"Box\" width=4.0 "
+            "height=4.0\n}\n",
+            NULL
+        ) == 0
+    );
+    REQUIRE(scene_authoring_load_text(scene, nested_scene, NULL) == 0);
+    REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0));
+    REQUIRE(!ecs_parent(scene->world, scene->actors[2].entity).slot);
+    REQUIRE(saves_as(scene, nested_scene));
+    /* Changing an object's components replaces it, which a parent waits for
+       too; a child keeps its parent through the change and its undo. */
+    scene->selected = 0;
+    REQUIRE(app_scene_authoring_add_instance_component(scene, "GameVelocity") != 0);
+    REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0));
+    scene->selected = 1;
+    REQUIRE(app_scene_authoring_add_instance_component(scene, "GameVelocity") == 0);
+    REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0));
+    REQUIRE(replay_scene_edit(scene, false) == 0);
+    REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0) && saves_as(scene, nested_scene));
+    scene->selected = 0;
+    REQUIRE(app_scene_authoring_delete_instance(scene) != 0 && acount(scene->actors) == 3);
+    scene->selected = 1;
+    REQUIRE(app_scene_authoring_delete_instance(scene) == 0 && acount(scene->actors) == 2);
+    REQUIRE(replay_scene_edit(scene, false) == 0);
+    REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0) && saves_as(scene, nested_scene));
+    scene->selected = 1;
+    REQUIRE(app_scene_authoring_duplicate_instance(scene) == 0);
+    REQUIRE(acount(scene->actors) == 4 && scene->selected == 2 && child_of(scene, 2, 0));
+    char expected[512];
+    snprintf(
+        expected,
+        sizeof expected,
+        "version 1\nname \"Scene\"\n(array)entities {\n"
+        "    - name=\"Ship\" prototype=\"Hull\" { (array)children { - "
+        "name=\"Turret\" prototype=\"Hull\"; "
+        "- name=\"%s\" prototype=\"Hull\"; }; }\n"
+        "    - name=\"Turret\" prototype=\"Hull\"\n}\n",
+        scene->actors[2].name
+    );
+    REQUIRE(saves_as(scene, expected));
+    /* The turned ship carries its turret to (100, 10), which the canvas, its
+       y pointing down, shows at (100, -10). */
+    REQUIRE(scene_authoring_load_text(scene, turned_scene, NULL) == 0);
+    ecs_entity turret = scene->actors[1].entity;
+    REQUIRE(
+        ecs_entity_to_u64(pick_scene_entity(scene, 100, -10, (render_skip){ 0 })) ==
+        ecs_entity_to_u64(turret)
+    );
+    /* Nothing shows where the turret would sit without its ship. */
+    REQUIRE(!pick_scene_entity(scene, 10, 0, (render_skip){ 0 }).slot);
+    /* A copy moved ten units along the world's x moves along the ship's -y. */
+    scene->selected = 1;
+    REQUIRE(scene_duplicate_selection(scene, (GameTransform){ 10, 0 }) == 0);
+    const GameTransform *
+        moved = GAME_GameTransform_get_const(scene->world, selected_actor(scene)->entity);
+    REQUIRE(child_of(scene, scene->selected, 0));
+    REQUIRE(fabsf(moved->x - 10) < 1e-3f && fabsf(moved->y + 10) < 1e-3f);
+    edits++;
+    return true;
+}
+
 bool studio_acceptance_frame(void *state)
 {
     switch (mode) {
@@ -516,6 +643,7 @@ bool studio_acceptance_frame(void *state)
         case GRAPH_VISIBILITY:
             callback_ok = graph_visibility_frame(state);
             break;
+        case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
     }
     return callback_ok;
 }
@@ -609,6 +737,18 @@ TEST_CASE(scene_gizmo_cursors)
     return true;
 }
 
+TEST_CASE(scene_hierarchy)
+{
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         "2",
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == 2 && edits == 1);
+    printf("Studio scene hierarchy accepted\n");
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
@@ -620,13 +760,14 @@ int main(int argc, char **argv)
     bool code_keys = argc == 4 && !strcmp(argv[1], "--code-keys");
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
-    if ((!source_edit && !code_keys && !exporting && !visibility) ||
+    bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
+    if ((!source_edit && !code_keys && !exporting && !visibility && !hierarchy) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
-            "--source-edit|--code-keys|--export-game|--graph-visibility "
-            "--project-root PATH | --scene-cursors\n"
+            "--source-edit|--code-keys|--export-game|--graph-visibility|"
+            "--scene-hierarchy --project-root PATH | --scene-cursors\n"
         );
         return 2;
     }
@@ -644,8 +785,9 @@ int main(int argc, char **argv)
     pu_display_time(true);
     mode = source_edit ? SOURCE_EDIT
          : code_keys   ? CODE_KEYS
+         : exporting   ? EXPORT_GAME
          : visibility  ? GRAPH_VISIBILITY
-                       : EXPORT_GAME;
+                       : SCENE_HIERARCHY;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -653,6 +795,7 @@ int main(int argc, char **argv)
         case GRAPH_VISIBILITY:
             RUN_TEST_CASE(graph_visibility_and_document_pair);
             break;
+        case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
     }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;

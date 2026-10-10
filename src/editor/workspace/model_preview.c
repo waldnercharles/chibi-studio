@@ -375,7 +375,8 @@ int scene_model_preview_start(app_scene_authoring *scene, const char *name)
     game_prototype_preview_scene_entity entities[4];
     for (int i = 0; i < 4; i++) {
         entities[i] = (game_prototype_preview_scene_entity){
-            .prototype = preview->fixtures[i]
+            .prototype = preview->fixtures[i],
+            .parent = -1,
         };
     }
     if (game_prototype_preview_launch_scene(
