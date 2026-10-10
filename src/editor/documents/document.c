@@ -125,6 +125,19 @@ static int visit_document(
     return 0;
 }
 
+uint64_t editor_document_graph(const editor *e, const char *key)
+{
+    if (e->document_key && !strcmp(e->document_key, key)) {
+        return e->active_graph->graph_id;
+    }
+    for (int i = 0; i < acount(e->documents); i++) {
+        if (!strcmp(e->documents[i].key, key)) {
+            return e->documents[i].location.graph_id;
+        }
+    }
+    return 0;
+}
+
 int editor_visit_behavior_asset(editor *e, const behavior_asset *source, uint64_t graph_id, const char *key)
 {
     return visit_document(e, source, NULL, graph_id, key);

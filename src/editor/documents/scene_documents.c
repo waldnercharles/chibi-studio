@@ -286,6 +286,39 @@ static int sync_open_behavior(app_scene_authoring *scene)
     return 0;
 }
 
+static bool holds_event(const graph *gr)
+{
+    for (int i = 0; i < acount(gr->nodes); i++) {
+        const node *n = gr->nodes[i];
+        if (n->desc->display_class == NODE_DISPLAY_EVENT && n->reference_name[0]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* A behavior opens on the graph it was left on, else on its default graph
+   when that holds an event, else on its first handler: Blueprint's event
+   graph is where the events are. */
+static graph *start_graph(app_scene_authoring *scene, const behavior_asset *asset, const char *key)
+{
+    uint64_t left = editor_document_graph(scene->graph_editor, key);
+    graph *shown = left ? behavior_asset_find_graph(asset, left) : NULL;
+    if (shown) {
+        return shown;
+    }
+    graph *main = behavior_asset_find_graph(asset, 0);
+    if (!main || holds_event(main)) {
+        return main;
+    }
+    for (int i = 0; i < acount(asset->graphs); i++) {
+        if (asset->graphs[i]->kind == GRAPH_EVENT && holds_event(asset->graphs[i])) {
+            return asset->graphs[i];
+        }
+    }
+    return main;
+}
+
 int open_behavior_graph(app_scene_authoring *scene, const char *asset_name)
 {
     game_preview_definition *target = game_preview_find_definition(scene->live, asset_name);
@@ -293,18 +326,18 @@ int open_behavior_graph(app_scene_authoring *scene, const char *asset_name)
         return -1;
     }
     behavior_asset *working = target->working;
-    graph *default_graph = behavior_asset_find_graph(working, 0);
-    int opened = !default_graph ? -1
+    graph *start = start_graph(scene, working, asset_name);
+    int opened = !start ? -1
                : target->working_presentation ? editor_visit_source_presentation(
                                                     scene->graph_editor,
                                                     target->working_presentation,
-                                                    default_graph->graph_id,
+                                                    start->graph_id,
                                                     asset_name
                                                 )
                                               : editor_visit_behavior_asset(
                                                     scene->graph_editor,
                                                     working,
-                                                    default_graph->graph_id,
+                                                    start->graph_id,
                                                     asset_name
                                                 );
     if (opened != 0) {
