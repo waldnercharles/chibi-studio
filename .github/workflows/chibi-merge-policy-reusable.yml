@@ -14,6 +14,7 @@ permissions:
   contents: write
   actions: write
   statuses: write
+  checks: write
   issues: write
   pull-requests: write
 
@@ -155,6 +156,20 @@ jobs:
             }
 
             async function updateGate(pr) {
+              const oldChecks = await github.paginate(github.rest.checks.listForRef, {
+                owner, repo, ref: pr.head.sha, per_page: 100,
+              });
+              for (const check of oldChecks) {
+                if (check.name !== "Chibi review approval" || check.app?.slug !== "github-actions" ||
+                    check.status !== "completed" || check.conclusion !== "failure") continue;
+                await github.rest.checks.update({
+                  owner, repo, check_run_id: check.id, status: "completed", conclusion: "neutral",
+                  output: {
+                    title: "Approval waiting (advisory)",
+                    summary: "Manual merging is allowed. Automatic merging still waits for fresh approval.",
+                  },
+                });
+              }
               const pulls = await github.paginate(github.rest.pulls.list, {
                 owner, repo, state: "open", per_page: 100,
               });
@@ -180,7 +195,7 @@ jobs:
                       : waiting
                         ? `Pull request #${waiting.number} awaits a current-head approval from Copilot or a maintainer, or a current-head Codex review followed by thumbs-up from ${codexLogin}.`
                         : "No open pull request shares this head commit.";
-              const state = approved ? "success" : "failure";
+              const state = approved ? "success" : "pending";
               const description = summary.slice(0, 140);
               let previous;
               for await (const page of github.paginate.iterator(github.rest.repos.listCommitStatusesForRef, {
@@ -384,6 +399,8 @@ jobs:
                     owner, repo, pull_number: pr.number, per_page: 100,
                   });
                   const changedPaths = files.map(file => file.filename);
+                  let deferred = false;
+                  const workflows = [];
                   for (const spec of postMergeWorkflows) {
                     const shouldRun = spec.include?.length
                       ? changedPaths.some(path => spec.include.some(pattern => matchesPath(path, pattern)))
@@ -395,10 +412,24 @@ jobs:
                       event: "push", head_sha: pr.merge_commit_sha, per_page: 1,
                     });
                     if (priorRuns.data.workflow_runs.length > 0) continue;
-                    await github.rest.actions.createWorkflowDispatch({
-                      owner, repo, workflow_id: spec.workflow, ref: defaultBranch, inputs: {},
+                    const { data: workflow } = await github.rest.actions.getWorkflow({
+                      owner, repo, workflow_id: spec.workflow,
                     });
-                    core.info(`Dispatched ${spec.workflow} for merged pull request #${pr.number}.`);
+                    if (workflow.state !== "active") {
+                      deferred = true;
+                      core.info(`Deferred ${spec.workflow} for merged pull request #${pr.number}: workflow is ${workflow.state}.`);
+                      continue;
+                    }
+                    workflows.push(spec.workflow);
+                  }
+                  // Preflight every relevant workflow before dispatching any of
+                  // them, so a disabled workflow cannot cause repeated publishes.
+                  if (deferred) continue;
+                  for (const workflow of workflows) {
+                    await github.rest.actions.createWorkflowDispatch({
+                      owner, repo, workflow_id: workflow, ref: defaultBranch, inputs: {},
+                    });
+                    core.info(`Dispatched ${workflow} for merged pull request #${pr.number}.`);
                   }
                   await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: [markerLabel] });
                 }
