@@ -23,9 +23,9 @@ body, body.area-panel { width: 100%; height: 100%; margin: 0dp; padding: 0dp; ov
 .field.text:focus { background-color: var(--field-edit); border-color: var(--ring); }
 .identity .name-field .field.text:focus { background-color: var(--field-edit); border-color: var(--ring); }
 /* An object a handle names (studio_properties_view.c): a click selects it,
-   so it reads as a field with a locate mark, and None or a removed object
-   rests like a read-only field. */
-.entity-field[data-placeholder] .value, .entity-field[data-readonly] .lead { color: var(--muted-foreground); }
+   so it reads as a field with a locate mark, and None, a removed object or
+   several objects' different ones (a dash) rest like a read-only field. */
+.entity-field[data-placeholder] .value, .entity-field[data-mixed] .value, .entity-field[data-readonly] .lead { color: var(--muted-foreground); }
 .entity-field[data-readonly] { cursor: arrow; }
 /* A panel's head folds it, but for its menu. A long title ends in an
    ellipsis on one line, so every head keeps one height. */

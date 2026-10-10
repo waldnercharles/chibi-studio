@@ -34,8 +34,11 @@ body.area-panel { padding: 0dp; overflow: hidden; }
 .marker[data-selected] { color: #e0701c; border-color: #e0701c; }
 .marker[data-active] { color: #ffa53a; border-color: #ffa53a; }
 .marker[data-locked] { opacity: 0.5; }
-/* Why the tool's gizmo is grey, centered below it, with its one-click fix. */
-.tool-hint { position: absolute; left: 0dp; top: 0dp; width: 0dp; height: 0dp; }
+/* Why the tool's gizmo is grey, centered below it, with its one-click fix.
+   It fades in and out (presence) as the selection gains or loses what the
+   tool needs. */
+.tool-hint { position: absolute; left: 0dp; top: 0dp; width: 0dp; height: 0dp; opacity: 1; transition: opacity 0.14s cubic-out; }
+.tool-hint[data-starting-style], .tool-hint[data-ending-style] { opacity: 0; }
 .tool-hint-box {
     position: absolute; left: 0dp; top: 0dp; display: flex; justify-content: center;
     pointer-events: none;

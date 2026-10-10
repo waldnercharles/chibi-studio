@@ -49,12 +49,17 @@ under the ship, and that a duplicate of the turret becomes the ship's next
 child. With the ship turned a quarter
 turn, it checks that picking finds the turret at its world position and nothing
 at its unturned one, and that a duplicate offset in world space keeps the right
-local offset. It saves no file.
+local offset. Its project declares a Link component naming an object;
+with two objects selected whose Links name different objects, the third
+frame checks that Properties shows Link's Target as a read-only dash and
+that clicking it selects nothing, and that once both name one object a
+click selects it. It saves no file.
 
 `studio-acceptance --scene-viewport --project-root PATH` takes another
-disposable copy and runs fourteen hidden fixed-dt frames. It loads a box with a
+disposable copy and runs nineteen hidden fixed-dt frames. It loads a box with a
 spot inside it that nothing draws, and checks that the spot is listed for a
-marker and picks above the box, that a resize handle and the rotate ring take
+marker and picks above the box, that fitting it for a thumbnail finds nothing
+to draw while framing it in the Scene centers on its place, that a resize handle and the rotate ring take
 a press a few pixels past them, and that a resize labels its size by the
 pointer and cancels back. After Frame All the zoom reads 100%. Through queued
 SDL events it checks that a whole wheel notch zooms the camera, that a
@@ -68,7 +73,10 @@ While the game plays, the wheel, a trackpad's fraction included, reaches its
 UI, and the undrawn spot, which shows no marker then, picks nothing. Stopped,
 it loads 300 undrawn spots and checks that the Scene shows a marker for each.
 It then narrows the Scene to 240 dp beside the Text Editor and checks that the
-rotate tool's hint and its Add button stay inside it. It saves no file.
+rotate tool's hint and its Add button stay inside it, and that after the Move
+tool takes over the hint fades out with its text. With the box and spot loaded
+again, a marquee dragged through queued SDL events from below the box over the
+spot marker's edge, short of its center, selects the spot. It saves no file.
 
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
@@ -118,7 +126,9 @@ Ctrl-click (Cmd on a Mac) rows and extend the selection with Shift and the
 arrows, checking the selection after each. Delete then removes the two selected
 prototypes' files as one change, and that change's undo puts both back. Counter
 stays untouched. A filter the list takes then leaves the grid's arrows on the
-tiles it shows. Pointer hit-testing and the Undo toast's button are not
+tiles it shows. A field of one constant value, added with the spares, then
+shows its flat picture in the grid rather than the kind's icon within twelve
+frames. Pointer hit-testing and the Undo toast's button are not
 exercised.
 
 `studio-acceptance --export-game --project-root PATH` accepts another disposable

@@ -6,6 +6,8 @@
 #include "editor/documents/asset_code.h"
 #include "editor/studio/studio_graph_internal.h"
 #include "editor/studio/studio_internal.h"
+#include "editor/studio/studio_properties_internal.h"
+#include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/asset_refactor.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/authoring/graph_edit.h"
@@ -1518,6 +1520,31 @@ static bool export_frame(void *state)
     return true;
 }
 
+/* Writes `text` to `file` in the content folder `folder`, which it makes. */
+static bool write_content(const char *folder, const char *file, const char *text)
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/%s", project, folder);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    REQUIRE(mkdir(path, 0777) == 0);
+    length = snprintf(path, sizeof path, "%s/content/%s/%s", project, folder, file);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    FILE *out = fopen(path, "wb");
+    REQUIRE(out);
+    bool written = fputs(text, out) >= 0;
+    REQUIRE(fclose(out) == 0 && written);
+    return true;
+}
+
+/* A component naming another object, which the game sets as it runs. */
+static const char
+    link_component[] = "component Link {\n    target: entity\n}\n";
+static const char
+    linked_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
+                     "    - name=\"A\" prototype=\"Linker\"\n"
+                     "    - name=\"B\" prototype=\"Linker\"\n"
+                     "}\n";
+
 /* A ship with a turret, and a root that shares the turret's name. */
 static const char
     nested_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
@@ -1560,6 +1587,79 @@ static bool saves_as(app_scene_authoring *scene, const char *expected)
     return same;
 }
 
+/* The Link component the project declares, or 0. */
+static ecs_component_id link_id(app_scene_authoring *scene)
+{
+    for (int i = 0; i < ecs_world_component_count(scene->world); i++) {
+        const ecs_component_desc *desc = ecs_world_component_at(scene->world, i);
+        if (desc && !strcmp(desc->name, "Link")) {
+            return desc->id;
+        }
+    }
+    return 0;
+}
+
+/* Sets `actor`'s Link to name `target`, as the game would. */
+static bool link_to(app_scene_authoring *scene, int actor, int target)
+{
+    pin_value value = { .type = PIN_HANDLE,
+                        .type_name = "ecs.entity",
+                        .u64 = ecs_entity_to_u64(scene->actors[target].entity) };
+    REQUIRE(
+        ecs_component_write_field(scene->world, scene->actors[actor].entity, link_id(scene), 0, value) == ECS_OK
+    );
+    return true;
+}
+
+/* A and B, both selected, naming each other, and Properties showing
+   their Link's Target. */
+static bool select_crossed_links(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(
+        app_scene_authoring_register_prototype(scene, "name \"Linker\"\ncomponents {\n    Link\n    GameTransform x=0 y=0\n}\n", NULL) ==
+        0
+    );
+    REQUIRE(scene_authoring_load_text(scene, linked_scene, NULL) == 0);
+    REQUIRE(acount(scene->actors) == 2 && link_id(scene));
+    REQUIRE(link_to(scene, 0, 1) && link_to(scene, 1, 0));
+    REQUIRE(app_scene_authoring_select_entity(scene, scene->actors[0].entity) == 0);
+    scene->actors[1].marked = true;
+    REQUIRE(scene_selection_count(scene) == 2);
+    /* A search opens the panels holding what it finds. */
+    snprintf(s->property_search, sizeof s->property_search, "Target");
+    return true;
+}
+
+/* A's Link row in Properties reads as the selection's: a dash that selects
+   nothing while A and B name different objects; B once both name it. */
+static bool mixed_link(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    rml_element *field = studio_element(s, ".entity-field");
+    REQUIRE(field);
+    char text[64] = "";
+    rml_element_inner_rml(studio_element(s, ".entity-field .value"), text, sizeof text);
+    REQUIRE(!strcmp(text, "\xe2\x80\x94"));
+    REQUIRE(rml_element_has_attribute(field, "data-mixed"));
+    REQUIRE(rml_element_has_attribute(field, "data-readonly"));
+    ui_activation reveal = { .argc = 1 };
+    properties_row_id(
+        &(properties_row){ .kind = PROPERTIES_OBJECT,
+                           .entity = ecs_entity_to_u64(scene->actors[0].entity),
+                           .component = link_id(scene),
+                           .field = 0 },
+        reveal.args[0]
+    );
+    studio_properties_action(s, "reveal", &reveal);
+    REQUIRE(scene->selected == 0 && scene_selection_count(scene) == 2);
+    REQUIRE(link_to(scene, 1, 1));
+    studio_properties_action(s, "reveal", &reveal);
+    REQUIRE(scene->selected == 1 && scene_selection_count(scene) == 1);
+    s->property_search[0] = '\0';
+    return true;
+}
+
 /* Children load under their parent and keep it through save, undo and
    duplication; a parent waits for its children to go first. */
 static bool scene_hierarchy_frame(void *state)
@@ -1567,9 +1667,12 @@ static bool scene_hierarchy_frame(void *state)
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
-    REQUIRE(frames <= 2);
+    REQUIRE(frames <= 3);
     if (frames == 2) {
         return true;
+    }
+    if (frames == 3) {
+        return mixed_link(s);
     }
     app_scene_authoring *scene = s->scene;
     REQUIRE(
@@ -1635,7 +1738,7 @@ static bool scene_hierarchy_frame(void *state)
     REQUIRE(child_of(scene, scene->selected, 0));
     REQUIRE(fabsf(moved->x - 10) < 1e-3f && fabsf(moved->y + 10) < 1e-3f);
     edits++;
-    return true;
+    return select_crossed_links(s);
 }
 
 /* Three unused prototypes, the only ones; Assets deletes declarative assets
@@ -1789,7 +1892,7 @@ static const char marked_scene
 #define CROWD_ROWS 15
 #define CROWD (CROWD_COLUMNS * CROWD_ROWS)
 #define CROWD_LINE 128 /* room for each spot's line of the scene */
-#define VIEWPORT_FRAMES 14
+#define VIEWPORT_FRAMES 19
 /* The narrow Scene the hint must fit: under the hint box's 320 dp. */
 #define NARROW_SCENE_DP 240.0f
 
@@ -1848,6 +1951,13 @@ static bool marker_and_gizmo(studio *s)
         ecs_entity_to_u64(pick_scene_entity(scene, -15, 15, (render_skip){ 0 })) ==
         ecs_entity_to_u64(box)
     );
+    /* A thumbnail fits only what draws, so the spot alone fits nothing;
+       the Scene frames it by its marker, at its place. */
+    REQUIRE(!fit_scene_view(s->viewport, scene->world, &spot, 1));
+    REQUIRE(frame_scene_view(s->viewport, scene->world, &spot, 1));
+    engine_viewport_view framed;
+    engine_viewport_get_view(s->viewport, &framed);
+    REQUIRE(framed.center_x == 5 && framed.center_y == -5);
     REQUIRE(app_scene_authoring_select_entity(scene, box) == 0);
     /* The right edge's handle sits at (20, 0); the ring 64 pixels out. */
     scene->gizmo.in.tool = SCENE_TOOL_SCALE;
@@ -1940,12 +2050,37 @@ static bool grid_after_list_filter(studio *s)
     return true;
 }
 
+/* A field of one value everywhere, whose thumbnail is one flat color. */
+static const char flat_field
+    [] = "version 3\nname \"Flat\"\ndomain \"field\"\nid_counter 10\n"
+         "(array)graphs {\n    - {\n        kind \"event\"\n"
+         "        name \"\"\n        (array)nodes {\n"
+         "            - id=1 type=\"Field Constant\" { inputs Value=-1.0; }\n"
+         "            - id=4 type=\"Field Output\"\n        }\n"
+         "        (array)edges {\n            - from=\"1.Value\" "
+         "to=\"4.Value\"\n"
+         "        }\n    }\n}\n";
+#define ASSET_FRAMES 12
+static bool flat_shown;
+
+/* The grid shows fields; the flat field's thumbnail shows its picture
+   rather than the kind's icon. */
+static bool flat_field_shows(studio *s)
+{
+    s->prefs.assets_list = false;
+    s->assets_kind = REFERENCE_ASSET_FIELD;
+    int flat = reference_index_find_name(app_scene_authoring_asset_index(s->scene), REFERENCE_ASSET_FIELD, "Flat");
+    REQUIRE(flat >= 0);
+    flat_shown |= studio_thumb_cached(s, flat) != NULL;
+    return true;
+}
+
 static bool asset_selection_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
-    REQUIRE(frames <= 6);
+    REQUIRE(frames <= ASSET_FRAMES);
     switch (frames) {
         case 1:
             /* A file saved before the view setting kept list view as the
@@ -1969,10 +2104,11 @@ static bool asset_selection_frame(void *state)
             snprintf(s->assets_filter, sizeof s->assets_filter, "SpareC");
             return true;
         case 5: return grid_after_list_filter(s);
-        default:
+        case 6:
             /* The grid lays every tile out again. */
             REQUIRE(studio_assets_key(s, SDLK_LEFT, 0) && selection_is(s, "SpareB", ""));
             return true;
+        default: return flat_field_shows(s);
     }
 }
 
@@ -2049,6 +2185,47 @@ static bool inside_scene(studio *s, const char *selector)
     return true;
 }
 
+/* The hint a tool no longer needs fades out (presence) as it was. Then the
+   box and spot load again, nothing selected, framed. */
+static bool hint_leaves(studio *s)
+{
+    rml_element *hint = studio_element(s, ".tool-hint");
+    REQUIRE(hint && rml_element_is_visible(hint, false));
+    REQUIRE(rml_element_has_attribute(hint, "data-ending-style"));
+    REQUIRE(element_says(s, ".tool-hint-pill .text", "No Orientation to rotate"));
+    REQUIRE(scene_authoring_load_text(s->scene, marked_scene, NULL) == 0);
+    studio_command_run(s, STUDIO_COMMAND_DESELECT);
+    REQUIRE(scene_selection_count(s->scene) == 0);
+    studio_frame_all(s);
+    return true;
+}
+
+/* A marquee drawn from empty space below the box over the spot marker's
+   lower right, short of its center, takes the spot. */
+static bool marquee_edge(studio *s)
+{
+    static float x, y, reach;
+    app_scene_authoring *scene = s->scene;
+    if (frames == 17) {
+        app_scene_marker marker;
+        REQUIRE(app_scene_authoring_markers(scene, &marker, 1) == 1 && marker.actor == 1);
+        kit_rect r = s->surface.rect;
+        x = (r.x + marker.x * r.w) * s->prefs.ui_scale;
+        y = (r.y + marker.y * r.h) * s->prefs.ui_scale;
+        reach = scene->gizmo.in.marker_radius;
+        float bottom = (r.y + r.h) * s->prefs.ui_scale - 2;
+        REQUIRE(bottom > y + 2 * reach);
+        REQUIRE(push_mouse(SDL_EVENT_MOUSE_MOTION, x + reach, bottom, 0, 0));
+        return push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x + reach, bottom, 0, 0);
+    }
+    if (frames == 18) {
+        REQUIRE(scene->marquee);
+        return push_mouse(SDL_EVENT_MOUSE_MOTION, x + 0.6f * reach, y + 0.6f * reach, 0, 0);
+    }
+    REQUIRE(scene->marquee && scene_instance_selected(scene, 1));
+    return push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x + 0.6f * reach, y + 0.6f * reach, 0, 0);
+}
+
 /* Every undrawn object shows its marker, however many there are, and in a
    Scene narrowed under the hint's box the rotate tool's hint for a spot
    with no orientation, and its Add, stay inside it. */
@@ -2072,11 +2249,18 @@ static bool crowd_and_narrow(studio *s)
             REQUIRE(s->surface.rect.w > 0 && s->surface.rect.w < 320);
             studio_frame_all(s);
             return true;
-        case VIEWPORT_FRAMES:
+        case 14:
             REQUIRE(scene_markers(s) == CROWD);
             REQUIRE(element_says(s, ".tool-hint-pill .text", "No Orientation to rotate"));
             REQUIRE(inside_scene(s, ".tool-hint-pill"));
-            return inside_scene(s, ".tool-hint-pill .btn");
+            REQUIRE(inside_scene(s, ".tool-hint-pill .btn"));
+            studio_command_run(s, STUDIO_COMMAND_MOVE_TOOL);
+            return true;
+        /* The gizmo takes the tool a frame after the command. */
+        case 16: return hint_leaves(s);
+        case 17:
+        case 18:
+        case VIEWPORT_FRAMES: return marquee_edge(s);
         default: return true;
     }
 }
@@ -2336,12 +2520,13 @@ TEST_CASE(scene_gizmo_cursors)
 
 TEST_CASE(scene_hierarchy)
 {
+    REQUIRE(write_content("components", "Link.chibi", link_component));
     char *args[] = { (char *)executable, "--headless",
-                     "--frames",         "2",
+                     "--frames",         "3",
                      "--fixed-dt",       "0.016666666666666666",
                      "--project-root",   (char *)project };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && frames == 2 && edits == 1);
+    REQUIRE(callback_ok && frames == 3 && edits == 1);
     printf("Studio scene hierarchy accepted\n");
     return true;
 }
@@ -2349,12 +2534,13 @@ TEST_CASE(scene_hierarchy)
 TEST_CASE(asset_selection)
 {
     REQUIRE(write_spares());
+    REQUIRE(write_content("fields", "Flat.kdl", flat_field));
     char *args[] = { (char *)executable, "--headless",
-                     "--frames",         "6",
+                     "--frames",         FRAMES_TEXT(ASSET_FRAMES),
                      "--fixed-dt",       "0.016666666666666666",
                      "--project-root",   (char *)project };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && frames == 6 && edits == 1);
+    REQUIRE(callback_ok && frames == ASSET_FRAMES && edits == 1 && flat_shown);
     printf("Studio asset selection accepted\n");
     return true;
 }
