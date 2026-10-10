@@ -1983,7 +1983,8 @@
     "src/editor/studio/studio_model.c": {
       "current_source_sha256": "39a9058723dc404161174ada9b9d1ebd6d2044b381efe6e0296fb5544fd0a003",
       "sha256": "707f0ab24f8bc93152036656b611a259d1140a716de31e92774dc4318c1768aa",
-      "source_path": "src/editor/studio/studio_model.c"
+      "source_path": "src/editor/studio/studio_model.c",
+      "consumer_sha256": "ba12d45434fbd47a0e146f959658d2dfa8b7858b2c187cebd398e82416ef0885"
     },
     "src/editor/studio/studio_node_calls.c": {
       "current_source_sha256": "c512a78fda114be112fab7d6fa5e9e417720f964e61a2941f77cb3ad6e33500d",
