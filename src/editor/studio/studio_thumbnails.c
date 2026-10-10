@@ -638,10 +638,8 @@ static void finish(studio *s, studio_thumbs *t, int slot, bool drawn)
         t->busy = 0;
     }
     if (drawn) {
-        /* A picture shows once it is read back and seen to hold more than
-           one color: a prototype nothing of which draws on its stage, or a
-           scene with no lighting yet, renders as one flat color, which says
-           less than its kind's icon (read_pictures). */
+        /* A picture shows once it is read back, and a world's once seen to
+           hold more than one color (take_picture). */
         e->drawn = t->frame;
     } else if (e->shown) {
         /* An older picture no longer shows the asset, as an emptied graph. */
@@ -701,12 +699,16 @@ static bool flat(const CF_Pixel *pixels, int count)
     return true;
 }
 
-/* A picture read back, which shows unless it is flat, and goes to disk
-   when it shows saved content; false when it was flat. */
+/* A picture read back, which shows and goes to disk when it shows saved
+   content. A world's picture that came out flat, as a scene with no
+   lighting yet renders, says less than its kind's icon and fails instead:
+   its renderer cannot tell whether what it drew shows. Other kinds say
+   when they draw nothing, so their flat picture, as a constant field's,
+   shows. False when it failed. */
 static bool take_picture(studio *s, studio_thumbs *t, int slot, const CF_Pixel *pixels)
 {
     thumb *e = &t->slots[slot];
-    if (flat(pixels, e->side * e->side)) {
+    if (studio_thumb_needs_world(e->kind) && flat(pixels, e->side * e->side)) {
         e->state = THUMB_FAILED;
         t->stats.blank++;
         if (e->shown) {

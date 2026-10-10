@@ -6,6 +6,7 @@
 #include "editor/documents/asset_code.h"
 #include "editor/studio/studio_graph_internal.h"
 #include "editor/studio/studio_internal.h"
+#include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/asset_refactor.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/authoring/graph_edit.h"
@@ -1410,6 +1411,22 @@ static bool export_frame(void *state)
     return true;
 }
 
+/* Writes `text` to `file` in the content folder `folder`, which it makes. */
+static bool write_content(const char *folder, const char *file, const char *text)
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/%s", project, folder);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    REQUIRE(mkdir(path, 0777) == 0);
+    length = snprintf(path, sizeof path, "%s/content/%s/%s", project, folder, file);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    FILE *out = fopen(path, "wb");
+    REQUIRE(out);
+    bool written = fputs(text, out) >= 0;
+    REQUIRE(fclose(out) == 0 && written);
+    return true;
+}
+
 /* A ship with a turret, and a root that shares the turret's name. */
 static const char
     nested_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
@@ -1835,12 +1852,37 @@ static bool grid_after_list_filter(studio *s)
     return true;
 }
 
+/* A field of one value everywhere, whose thumbnail is one flat color. */
+static const char flat_field
+    [] = "version 3\nname \"Flat\"\ndomain \"field\"\nid_counter 10\n"
+         "(array)graphs {\n    - {\n        kind \"event\"\n"
+         "        name \"\"\n        (array)nodes {\n"
+         "            - id=1 type=\"Field Constant\" { inputs Value=-1.0; }\n"
+         "            - id=4 type=\"Field Output\"\n        }\n"
+         "        (array)edges {\n            - from=\"1.Value\" "
+         "to=\"4.Value\"\n"
+         "        }\n    }\n}\n";
+#define ASSET_FRAMES 12
+static bool flat_shown;
+
+/* The grid shows fields; the flat field's thumbnail shows its picture
+   rather than the kind's icon. */
+static bool flat_field_shows(studio *s)
+{
+    s->prefs.assets_list = false;
+    s->assets_kind = REFERENCE_ASSET_FIELD;
+    int flat = reference_index_find_name(app_scene_authoring_asset_index(s->scene), REFERENCE_ASSET_FIELD, "Flat");
+    REQUIRE(flat >= 0);
+    flat_shown |= studio_thumb_cached(s, flat) != NULL;
+    return true;
+}
+
 static bool asset_selection_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
-    REQUIRE(frames <= 6);
+    REQUIRE(frames <= ASSET_FRAMES);
     switch (frames) {
         case 1:
             /* A file saved before the view setting kept list view as the
@@ -1864,10 +1906,11 @@ static bool asset_selection_frame(void *state)
             snprintf(s->assets_filter, sizeof s->assets_filter, "SpareC");
             return true;
         case 5: return grid_after_list_filter(s);
-        default:
+        case 6:
             /* The grid lays every tile out again. */
             REQUIRE(studio_assets_key(s, SDLK_LEFT, 0) && selection_is(s, "SpareB", ""));
             return true;
+        default: return flat_field_shows(s);
     }
 }
 
@@ -2278,12 +2321,13 @@ TEST_CASE(scene_hierarchy)
 TEST_CASE(asset_selection)
 {
     REQUIRE(write_spares());
+    REQUIRE(write_content("fields", "Flat.kdl", flat_field));
     char *args[] = { (char *)executable, "--headless",
-                     "--frames",         "6",
+                     "--frames",         FRAMES_TEXT(ASSET_FRAMES),
                      "--fixed-dt",       "0.016666666666666666",
                      "--project-root",   (char *)project };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && frames == 6 && edits == 1);
+    REQUIRE(callback_ok && frames == ASSET_FRAMES && edits == 1 && flat_shown);
     printf("Studio asset selection accepted\n");
     return true;
 }

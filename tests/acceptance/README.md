@@ -115,7 +115,9 @@ Ctrl-click (Cmd on a Mac) rows and extend the selection with Shift and the
 arrows, checking the selection after each. Delete then removes the two selected
 prototypes' files as one change, and that change's undo puts both back. Counter
 stays untouched. A filter the list takes then leaves the grid's arrows on the
-tiles it shows. Pointer hit-testing and the Undo toast's button are not
+tiles it shows. A field of one constant value, added with the spares, then
+shows its flat picture in the grid rather than the kind's icon within twelve
+frames. Pointer hit-testing and the Undo toast's button are not
 exercised.
 
 `studio-acceptance --export-game --project-root PATH` accepts another disposable

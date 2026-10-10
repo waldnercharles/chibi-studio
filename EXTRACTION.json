@@ -2184,7 +2184,7 @@
       "current_source_sha256": "bdf3cac1d4d96dfad830008d00d694a7d8d7dc664cd2e53abd0e6f821f043c4c",
       "sha256": "bdf3cac1d4d96dfad830008d00d694a7d8d7dc664cd2e53abd0e6f821f043c4c",
       "source_path": "src/editor/studio/studio_thumbnails.c",
-      "consumer_sha256": "b9981cf00d359ce07802838efcef2f52dada004eff20ae98c05193d8182996ba"
+      "consumer_sha256": "c5a414d100308e0bcfc60f67233e5314e37f9852f657778acd551f73d57c2e61"
     },
     "src/editor/studio/studio_thumbnails.h": {
       "current_source_sha256": "31a8861ef91e9bd4e02ad15e615700b2fb872660851db589d6329f3319cf45aa",
