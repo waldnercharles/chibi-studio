@@ -25,6 +25,7 @@
 #include <SDL3/SDL_process.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
+#include <errno.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1522,13 +1523,14 @@ static bool export_frame(void *state)
     return true;
 }
 
-/* Writes `text` to `file` in the content folder `folder`, which it makes. */
+/* Writes `text` to `file` in the content folder `folder`, which it makes if
+   needed. */
 static bool write_content(const char *folder, const char *file, const char *text)
 {
     char path[1024];
     int length = snprintf(path, sizeof path, "%s/content/%s", project, folder);
     REQUIRE(length > 0 && (size_t)length < sizeof path);
-    REQUIRE(mkdir(path, 0777) == 0);
+    REQUIRE(mkdir(path, 0777) == 0 || errno == EEXIST);
     length = snprintf(path, sizeof path, "%s/content/%s/%s", project, folder, file);
     REQUIRE(length > 0 && (size_t)length < sizeof path);
     FILE *out = fopen(path, "wb");
@@ -2369,39 +2371,21 @@ static const char shared_problem[] = "behavior Counter {\n"
 static const char crepe_lines[] = "probe \"Cr\xc3\xaa\"\nprobe \"Cre\"\n";
 /* Class names long enough to fill the text's first row, where the pointer
    rests on them. */
-#define LONG_NAME                                                              \
+#define LONG_CLASS                                                             \
     "-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrs" \
     "tuvwxyz"
-static const char probe_rml[] = "<div class=\"lonely" LONG_NAME "\"></div>\n";
-
-static bool write_content(const char *name, const char *text)
-{
-    char path[1024];
-    int length = snprintf(path, sizeof path, "%s/content/%s", project, name);
-    REQUIRE(length > 0 && (size_t)length < sizeof path);
-    FILE *file = fopen(path, "wb");
-    REQUIRE(file);
-    bool written = fputs(text, file) >= 0;
-    REQUIRE(fclose(file) == 0 && written);
-    return true;
-}
+static const char probe_rml[] = "<div class=\"lonely" LONG_CLASS "\"></div>\n";
 
 /* A prototype whose name is not ASCII, which completes in the scene's
    strings, and a UI document with a class its styles define and one they
    do not. */
 static bool write_glyph_content()
 {
-    char folder[1024];
-    for (int i = 0; i < 2; i++) {
-        int length = snprintf(folder, sizeof folder, "%s/content/%s", project, i ? "ui" : "prototypes");
-        REQUIRE(length > 0 && (size_t)length < sizeof folder);
-        REQUIRE(mkdir(folder, 0777) == 0);
-    }
     REQUIRE(
-        write_content("prototypes/Cr\xc3\xaapes.kdl", "name \"Cr\xc3\xaapes\"\ncomponents {\n    (object)GAME.GameTransform\n}\n")
+        write_content("prototypes", "Cr\xc3\xaapes.kdl", "name \"Cr\xc3\xaapes\"\ncomponents {\n    (object)GAME.GameTransform\n}\n")
     );
-    REQUIRE(write_content("ui/Probe.rml", probe_rml));
-    REQUIRE(write_content("ui/Probe.rcss", ".known" LONG_NAME " { color: red; }\n"));
+    REQUIRE(write_content("ui", "Probe.rml", probe_rml));
+    REQUIRE(write_content("ui", "Probe.rcss", ".known" LONG_CLASS " { color: red; }\n"));
     return true;
 }
 
@@ -2624,7 +2608,7 @@ static bool code_glyphs_frame(void *state)
             int under = kit_code_link(s->code.editor);
             REQUIRE(
                 name && under > name - text &&
-                under < (int)(name - text + strlen("lonely" LONG_NAME))
+                under < (int)(name - text + strlen("lonely" LONG_CLASS))
             );
             REQUIRE(!linked(s));
             /* The class its styles define takes its place under the
@@ -2638,7 +2622,7 @@ static bool code_glyphs_frame(void *state)
             return true;
         }
         case 26:
-            REQUIRE(strstr(kit_code_text(s->code.editor, NULL), "known" LONG_NAME));
+            REQUIRE(strstr(kit_code_text(s->code.editor, NULL), "known" LONG_CLASS));
             REQUIRE(linked(s));
             return push_key(SDLK_LCTRL, SDL_KMOD_NONE, false);
         default: return true;
