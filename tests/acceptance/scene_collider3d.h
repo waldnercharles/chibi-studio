@@ -38,7 +38,7 @@ static const char
                        "    - name=\"Ball\" prototype=\"Ball\"\n"
                        "    - name=\"Pill\" prototype=\"Pill\"\n"
                        "}\n";
-#define COLLIDER_FRAMES 26
+#define COLLIDER_FRAMES 28
 static const CF_V3 CRATE_AT = { 0, 50, 0 };
 static const CF_V3 BALL_AT = { 200, 50, 0 };
 static const CF_V3 PILL_AT = { -200, 50, 0 };
@@ -259,7 +259,7 @@ static bool scene_collider3d_frame(void *state)
             );
             REQUIRE(collider_now(s, 0)->size.x > 60);
             return press_key(SDLK_H);
-        case COLLIDER_FRAMES:
+        case 26:
             REQUIRE(app_scene_authoring_actor_view(scene, 0) & APP_SCENE_VIEW_HIDDEN);
             REQUIRE(!scene->gizmo.active);
             REQUIRE(near_v3(collider_now(s, 0)->size, (CF_V3){ 50, 50, 50 }, 0));
@@ -267,8 +267,20 @@ static bool scene_collider3d_frame(void *state)
             REQUIRE(scene->scene_dirty == dirty);
             REQUIRE(scene_history_can_undo(scene->history) == can_undo);
             REQUIRE(scene_history_can_redo(scene->history) == can_redo);
-            edits++;
             return button_at(s, SDL_BUTTON_LEFT, false, to);
+        /* Show Colliders outlines every object's collider with nothing
+           selected. */
+        case 27:
+            REQUIRE(!scene->view_options.colliders);
+            studio_command_run(s, STUDIO_COMMAND_DESELECT);
+            studio_command_run(s, STUDIO_COMMAND_SHOW_COLLIDERS);
+            look_at(s, CRATE_AT, 0.5f, -0.4f);
+            return true;
+        case COLLIDER_FRAMES:
+            REQUIRE(studio_command_checked(s, STUDIO_COMMAND_SHOW_COLLIDERS) == 1);
+            REQUIRE(scene->view_options.colliders);
+            edits++;
+            return true;
         default: return true;
     }
 }

@@ -862,7 +862,8 @@ static void draw_viewport(studio *s)
         (app_scene_view_options){ .generated_world = s->prefs.scene_world,
                                   .lighting = s->prefs.scene_lighting,
                                   .fog = s->prefs.scene_fog,
-                                  .cameras = s->prefs.scene_cameras }
+                                  .cameras = s->prefs.scene_cameras,
+                                  .colliders = s->prefs.scene_colliders }
     );
     /* Escape leaves View Through Camera, as Blender's Numpad 0 again. */
     if (input.escape && (input.focused || input.hovered)) {

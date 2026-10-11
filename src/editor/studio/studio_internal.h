@@ -183,6 +183,7 @@ typedef enum
     STUDIO_COMMAND_SHOW_LIGHTING,
     STUDIO_COMMAND_SHOW_FOG,
     STUDIO_COMMAND_SHOW_CAMERAS,
+    STUDIO_COMMAND_SHOW_COLLIDERS,
     STUDIO_COMMAND_VIEW_THROUGH_CAMERA,
     /* Hide in Editor (studio_outliner.c) */
     STUDIO_COMMAND_HIDE_SELECTED,
@@ -301,6 +302,7 @@ typedef struct
     bool scene_lighting;
     bool scene_fog;
     bool scene_cameras;
+    bool scene_colliders;
     int assets_tile; /* Assets' thumbnail size in dp */
     bool assets_list; /* Assets lists its assets by kind instead of tiling them */
 } studio_prefs;

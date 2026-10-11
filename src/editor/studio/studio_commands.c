@@ -610,6 +610,14 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                                   "bounds overlay",
                                       .icon = KIT_ICON_CAMERA,
                                       .phase = SHORTCUT_EDITOR },
+    [STUDIO_COMMAND_SHOW_COLLIDERS] = { .id = "showColliders",
+                                        .label = "Show Colliders",
+                                        .menu = "Colliders",
+                                        .context = "Global",
+                                        .keywords = "scene view physics "
+                                                    "collision debug overlay",
+                                        .icon = KIT_ICON_PHYSICS,
+                                        .phase = SHORTCUT_EDITOR },
     /* Blender's Numpad 0; Shift+C where there is no keypad. */
     [STUDIO_COMMAND_VIEW_THROUGH_CAMERA] = { .id = "viewThroughCamera",
                                              .label = "View Through Camera",
@@ -1244,6 +1252,7 @@ int studio_command_checked(studio *s, studio_command command)
         case STUDIO_COMMAND_SHOW_LIGHTING: return s->prefs.scene_lighting;
         case STUDIO_COMMAND_SHOW_FOG: return s->prefs.scene_fog;
         case STUDIO_COMMAND_SHOW_CAMERAS: return s->prefs.scene_cameras;
+        case STUDIO_COMMAND_SHOW_COLLIDERS: return s->prefs.scene_colliders;
         case STUDIO_COMMAND_SHOW_LIVE_VALUES: return s->prefs.live_values;
         case STUDIO_COMMAND_VIEW_THROUGH_CAMERA:
             return app_scene_authoring_viewing_through_camera(s->scene);
@@ -1643,6 +1652,9 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
             break;
         case STUDIO_COMMAND_SHOW_CAMERAS:
             s->prefs.scene_cameras = !s->prefs.scene_cameras;
+            break;
+        case STUDIO_COMMAND_SHOW_COLLIDERS:
+            s->prefs.scene_colliders = !s->prefs.scene_colliders;
             break;
         case STUDIO_COMMAND_SHOW_LIVE_VALUES:
             s->prefs.live_values = !s->prefs.live_values;

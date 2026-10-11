@@ -6,8 +6,8 @@
 
 /* A 3D view's colliders (scene_collider3d.c): the selection's Collider3D
  * outlines, and with the Select tool handles on the active object's that
- * drag its extents, one Undo step per drag. Objects the view hides show
- * neither. */
+ * drag its extents, one Undo step per drag. The Colliders view option
+ * outlines every object's. Objects the view hides show none of these. */
 
 /* The handle at canvas point `at`, or SCENE_GIZMO_NONE. */
 int scene_collider3d_part(app_scene_authoring *scene, const scene_view3d *view, CF_V2 at);

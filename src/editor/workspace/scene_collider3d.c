@@ -3,8 +3,9 @@
  * handle on each side of the active object's that drags its extent along
  * that axis. The collider stays centered on its object, so its opposite
  * side follows. A drag writes the one field it changes live and records it
- * as one Undo step when it ends (scene_gizmo.c). Hulls and meshes show no
- * outline. */
+ * as one Undo step when it ends (scene_gizmo.c). With the Colliders view
+ * option, as Unreal's Collision show flag, every object's collider is
+ * outlined fainter. Hulls and meshes show no outline. */
 #include "editor/workspace/scene_collider3d.h"
 
 #include "editor/workspace/scene_internal.h"
@@ -29,6 +30,8 @@ static const float LEAST = 0.01f;
 static const float FLAT = 1e-6f;
 
 static const unsigned COLLIDER_COLOR = 0x8CE07AFFu;
+/* Opaque, since overlapping segments would show their joins. */
+static const unsigned UNSELECTED_COLOR = 0x5E9652FFu;
 static const CF_V3 UNIT_AXES[3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
 
 /* An object's collider as it stands in the world. */
@@ -396,23 +399,57 @@ static void draw_handles(const scene_gizmo *g, const scene_view3d *view, const c
     }
 }
 
+static void draw_collider(const scene_view3d *view, const collider3d *c, float width)
+{
+    switch (c->collider->shape) {
+        case GAME_COLLIDER3D_BOX: draw_box(view, c, width); break;
+        case GAME_COLLIDER3D_SPHERE: draw_sphere(view, c, width); break;
+        default: draw_capsule(view, c, width); break;
+    }
+}
+
+/* The Colliders view option: every shown object's collider, the game's
+   spawned ones too, under the selection's brighter outlines. */
+static void draw_every_collider(
+    app_scene_authoring *scene,
+    const scene_view3d *view,
+    render_skip hidden,
+    float width
+)
+{
+    ecs_component_id required[] = { GAME_COMPONENT_GameCollider3D.id,
+                                    GAME_COMPONENT_GameTransform3D.id };
+    ecs_query query;
+    if (ecs_query_begin(scene->world, &query, required, 2) != ECS_OK) {
+        return;
+    }
+    cf_draw_push_color(packed(UNSELECTED_COLOR));
+    ecs_entity entity;
+    while (ecs_query_next(&query, &entity)) {
+        collider3d c;
+        if (!render_skip_has(hidden, entity) && collider_of(scene->world, entity, &c)) {
+            draw_collider(view, &c, width);
+        }
+    }
+    cf_draw_pop_color();
+    ecs_query_end(&query);
+}
+
 void scene_collider3d_draw(app_scene_authoring *scene, render_skip hidden)
 {
     scene_view3d view = scene_view3d_of(scene);
     float width = LINE * view.pixel;
+    if (scene->view_options.colliders) {
+        draw_every_collider(scene, &view, hidden, width);
+    }
     cf_draw_push_color(packed(COLLIDER_COLOR));
     for (int i = -1; i < acount(scene->actors); i++) {
         ecs_entity entity = i < 0 ? scene->runtime_selected : scene->actors[i].entity;
         bool selected = i < 0 ? entity.slot != 0 : scene_instance_selected(scene, i);
         collider3d c;
-        if (!selected || render_skip_has(hidden, entity) ||
-            !collider_of(scene->world, entity, &c)) {
-            continue;
-        }
-        switch (c.collider->shape) {
-            case GAME_COLLIDER3D_BOX: draw_box(&view, &c, width); break;
-            case GAME_COLLIDER3D_SPHERE: draw_sphere(&view, &c, width); break;
-            default: draw_capsule(&view, &c, width); break;
+        if (selected && !render_skip_has(hidden, entity) &&
+            collider_of(scene->world, entity, &c)) {
+            draw_collider(&view, &c, width);
         }
     }
     cf_draw_pop_color();

@@ -241,6 +241,7 @@ typedef struct
     bool lighting; /* HRC lighting; off shows material colors unlit */
     bool fog;      /* the fog of war as the game starts */
     bool cameras;  /* each GameCamera's frame, labeled */
+    bool colliders; /* every Collider3D's outline, not only the selection's */
 } app_scene_view_options;
 void app_scene_authoring_set_view_options(app_scene_authoring *scene, app_scene_view_options options);
 /* The generated world has waited on regeneration or streaming long enough to
