@@ -2017,7 +2017,7 @@
       "current_source_sha256": "4db01dfa4c90272a5d0a0deb7e3cb46b23f2e2e24986c38029e1b2d137264374",
       "sha256": "37bf9d494b1f81971417da1e762d8748f64ecf596e30a6334f39305df658a5d6",
       "source_path": "src/editor/studio/studio_host.c",
-      "consumer_sha256": "f7a17432f601693452fcdad4f6950fb1abad85c79f8f1982f1b66af20f3b7885"
+      "consumer_sha256": "99afdfbef2b52ca3ef17e116617923a13e0a5fe8ba73eca56b841e26e29aa6fb"
     },
     "src/editor/studio/studio_inspect.c": {
       "current_source_sha256": "b1755ebef5f619db6e4cd06afd8005228fa79b8a03188c949c6b8bd9531c5e07",

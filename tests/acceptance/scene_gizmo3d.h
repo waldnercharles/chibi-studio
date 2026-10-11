@@ -1,8 +1,9 @@
-/* scene_collider3d.h shares this file's views and gestures. */
+/* The transform gizmo's fixed acceptance workload. */
 #ifndef STUDIO_ACCEPTANCE_SCENE_GIZMO3D_H
 #define STUDIO_ACCEPTANCE_SCENE_GIZMO3D_H
 
 #include "runtime/transform_propagation.h"
+#include "scene_3d.h"
 
 /* A 3D scene for the gizmo: a cube a Transform3D places, turned a
    quarter about Y so its X runs along the world's -Z, a block a Transform
@@ -41,6 +42,12 @@ static const char gem_prototype[] = "name \"Gem\"\ncomponents {\n"
                                     "    GameGeometry3D primitive=0 width=50.0 "
                                     "depth=50.0 height=50.0\n"
                                     "}\n";
+static const char
+    warped_prototype[] = "name \"Warped\"\ncomponents { GameTransform3D { "
+                         "scale x=2 y=1 z=1; }; }\n";
+static const char
+    collapsed_prototype[] = "name \"Collapsed\"\ncomponents { GameTransform3D "
+                            "{ scale x=0 y=1 z=1; }; }\n";
 static const char gizmo_scene
     [] = "version 1\nname \"Scene\"\npresentation \"3d\"\n"
          "(array)entities {\n"
@@ -48,25 +55,18 @@ static const char gizmo_scene
          "    - name=\"Turner\" prototype=\"Turner\"\n"
          "    - name=\"Mirror\" prototype=\"Mirror\" { (array)children "
          "{ - name=\"Gem\" prototype=\"Gem\"; }; }\n"
+         "    - name=\"Warped\" prototype=\"Warped\" { (array)children "
+         "{ - name=\"WarpedCube\" prototype=\"Cube\"; }; }\n"
+         "    - name=\"Collapsed\" prototype=\"Collapsed\" { (array)children "
+         "{ - name=\"CollapsedCube\" prototype=\"Cube\"; }; }\n"
          "}\n";
-#define GIZMO_FRAMES 38
+#define GIZMO_FRAMES 42
 static const CF_V3 CUBE_AT = { 0, 50, 0 };
 static const CF_V3 TURNER_AT = { 200, 50, 0 };
 static const CF_V3 GEM_AT = { 0, 50, 300 };
 static const float TOP_PITCH = -1.5533430f;
 /* A view across the cube's own X, the world's -Z. */
 static const float SIDE_YAW = 2.07f;
-
-/* Looks at `pivot` from 600 units, turned `yaw` and tilted `pitch`. */
-static void look_at(studio *s, CF_V3 pivot, float yaw, float pitch)
-{
-    editor_camera camera = editor_camera_get(s->viewport);
-    camera.pivot = pivot;
-    camera.yaw = yaw;
-    camera.pitch = pitch;
-    camera.distance = 600;
-    editor_camera_set(s->viewport, &camera);
-}
 
 /* The gizmo's arrows' length at `point`: 80 pixels at its depth. */
 static float gizmo_length(studio *s, CF_V3 point)
@@ -78,32 +78,49 @@ static float gizmo_length(studio *s, CF_V3 point)
     return 80 * 2 * depth * tanf(camera.fov * 0.5f) / (float)height;
 }
 
-/* `from` moved `distance` along `axis`, on screen. */
-static CF_V2 shown_along(studio *s, CF_V3 from, CF_V3 axis, float distance)
-{
-    return shown_at(s, cf_add_v3(from, cf_mul_v3_f(axis, distance)));
-}
-
 static GameTransform3D cube_now(studio *s)
 {
     return *GAME_GameTransform3D_get_const(s->scene->world, s->scene->actors[0].entity);
 }
 
-/* Undo takes a gesture back in one step. */
+/* Redo restores every typed field as one gesture; leave it undone for the caller. */
 static bool undoes(studio *s)
 {
     REQUIRE(!s->scene->gizmo.active);
+    GameTransform3D cube = cube_now(s);
+    GameTransform3D gem = *GAME_GameTransform3D_get_const(
+        s->scene->world,
+        s->scene->actors[3].entity
+    );
+    float radians = GAME_GameOrientation_get_const(
+                        s->scene->world,
+                        s->scene->actors[1].entity
+    )
+                        ->radians;
+    studio_command_run(s, STUDIO_COMMAND_UNDO);
+    REQUIRE(scene_history_can_redo(s->scene->history));
+    studio_command_run(s, STUDIO_COMMAND_REDO);
+    GameTransform3D redone_cube = cube_now(s);
+    const GameTransform3D *redone_gem = GAME_GameTransform3D_get_const(
+        s->scene->world,
+        s->scene->actors[3].entity
+    );
+    REQUIRE(!memcmp(&cube, &redone_cube, sizeof cube));
+    REQUIRE(!memcmp(&gem, redone_gem, sizeof gem));
+    REQUIRE(
+        GAME_GameOrientation_get_const(s->scene->world, s->scene->actors[1].entity)
+            ->radians == radians
+    );
     studio_command_run(s, STUDIO_COMMAND_UNDO);
     return true;
 }
 
-/* The quarter turn counterclockwise on screen that Rotate's Y ring takes
-   seen from above, off the X and Z rings, which show edge-on there. */
+/* A world quarter turn along the visible front of Rotate's Y ring. */
 static bool grab_y_ring(studio *s, CF_V3 pivot, CF_V2 *from, CF_V2 *to)
 {
     float radius = gizmo_length(s, pivot);
-    *from = shown_along(s, pivot, (CF_V3){ 0.70710678f, 0, -0.70710678f }, radius);
-    *to = shown_along(s, pivot, (CF_V3){ -0.70710678f, 0, -0.70710678f }, radius);
+    *from = shown_along(s, pivot, (CF_V3){ -0.70710678f, 0, 0.70710678f }, radius);
+    *to = shown_along(s, pivot, (CF_V3){ 0.70710678f, 0, 0.70710678f }, radius);
     return button_at(s, SDL_BUTTON_LEFT, true, *from);
 }
 
@@ -126,6 +143,8 @@ static bool scene_gizmo3d_frame(void *state)
 {
     static CF_V2 from, to;
     static GameGlobalTransform3D before;
+    static bool dirty, can_undo, can_redo;
+    static int scene_area;
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
@@ -138,6 +157,10 @@ static bool scene_gizmo3d_frame(void *state)
             REQUIRE(app_scene_authoring_register_prototype(scene, turner_prototype, NULL) == 0);
             REQUIRE(app_scene_authoring_register_prototype(scene, mirror_prototype, NULL) == 0);
             REQUIRE(app_scene_authoring_register_prototype(scene, gem_prototype, NULL) == 0);
+            REQUIRE(app_scene_authoring_register_prototype(scene, warped_prototype, NULL) == 0);
+            REQUIRE(
+                app_scene_authoring_register_prototype(scene, collapsed_prototype, NULL) == 0
+            );
             REQUIRE(scene_authoring_load_text(scene, gizmo_scene, NULL) == 0);
             s->prefs.tool = SCENE_TOOL_MOVE;
             s->prefs.scene_snap = false;
@@ -147,6 +170,14 @@ static bool scene_gizmo3d_frame(void *state)
             return true;
         case 3:
             REQUIRE(engine_viewport_perspective(s->viewport));
+            select_instance(scene, 5);
+            scene->gizmo.in.tool = SCENE_TOOL_ROTATE;
+            REQUIRE(!scene_gizmo3d_enabled(scene));
+            scene->gizmo.in.tool = SCENE_TOOL_MOVE;
+            REQUIRE(scene_gizmo3d_enabled(scene));
+            select_instance(scene, 7);
+            REQUIRE(!scene_gizmo3d_enabled(scene));
+            select_instance(scene, 0);
             look_at(s, CUBE_AT, 0.5f, -0.4f);
             return true;
         case 4:
@@ -185,8 +216,8 @@ static bool scene_gizmo3d_frame(void *state)
             REQUIRE(near_v3(cube_now(s).position, CUBE_AT, 0));
             s->prefs.tool = SCENE_TOOL_ROTATE;
             select_instance(scene, 1);
-            /* From above, where the Y ring shows round. */
-            look_at(s, TURNER_AT, 0, TOP_PITCH);
+            /* An oblique ring's world quarter turn is not a screen-polar quarter turn. */
+            look_at(s, TURNER_AT, 0, -0.65f);
             return true;
         case 16: return grab_y_ring(s, TURNER_AT, &from, &to);
         case 17:
@@ -276,6 +307,9 @@ static bool scene_gizmo3d_frame(void *state)
             return true;
         }
         case 32: {
+            dirty = scene->scene_dirty;
+            can_undo = scene_history_can_undo(scene->history);
+            can_redo = scene_history_can_redo(scene->history);
             float grab = 0.6f * gizmo_length(s, CUBE_AT);
             from = shown_along(s, CUBE_AT, x, grab);
             to = shown_along(s, CUBE_AT, x, grab + 100);
@@ -292,8 +326,51 @@ static bool scene_gizmo3d_frame(void *state)
             return button_at(s, SDL_BUTTON_LEFT, false, to);
         case 36:
             REQUIRE(near_v3(cube_now(s).position, CUBE_AT, 0));
+            REQUIRE(scene->scene_dirty == dirty);
+            REQUIRE(scene_history_can_undo(scene->history) == can_undo);
+            REQUIRE(scene_history_can_redo(scene->history) == can_redo);
+            return button_at(s, SDL_BUTTON_LEFT, true, from);
+        case 37:
+        case 40: return move_to(s, to);
+        case 38: {
+            REQUIRE(scene->gizmo.active && cube_now(s).position.x > 50);
+            SDL_Event event = { .window = { .type = SDL_EVENT_WINDOW_FOCUS_LOST,
+                                            .windowID = window_id() } };
+            REQUIRE(SDL_PushEvent(&event));
             return true;
-        case GIZMO_FRAMES: edits++; return true;
+        }
+        case 39: {
+            REQUIRE(!scene->gizmo.active && !s->in.down[0]);
+            REQUIRE(near_v3(cube_now(s).position, CUBE_AT, 0));
+            SDL_Event event = { .window = { .type = SDL_EVENT_WINDOW_FOCUS_GAINED,
+                                            .windowID = window_id() } };
+            REQUIRE(SDL_PushEvent(&event));
+            REQUIRE(scene->scene_dirty == dirty);
+            REQUIRE(scene_history_can_undo(scene->history) == can_undo);
+            REQUIRE(scene_history_can_redo(scene->history) == can_redo);
+            return button_at(s, SDL_BUTTON_LEFT, true, from);
+        }
+        case 41:
+            REQUIRE(scene->gizmo.active && cube_now(s).position.x > 50);
+            scene_area = -1;
+            for (int i = 0; i < STUDIO_AREA_COUNT; i++) {
+                if (studio_active_layout(s)->editors[i] == STUDIO_EDITOR_SCENE) {
+                    REQUIRE(scene_area < 0);
+                    scene_area = i;
+                }
+            }
+            REQUIRE(scene_area >= 0);
+            studio_area_show(s, scene_area, STUDIO_EDITOR_OUTPUT, NULL);
+            return true;
+        case GIZMO_FRAMES:
+            REQUIRE(!scene->gizmo.active);
+            REQUIRE(near_v3(cube_now(s).position, CUBE_AT, 0));
+            REQUIRE(scene->scene_dirty == dirty);
+            REQUIRE(scene_history_can_undo(scene->history) == can_undo);
+            REQUIRE(scene_history_can_redo(scene->history) == can_redo);
+            studio_area_show(s, scene_area, STUDIO_EDITOR_SCENE, NULL);
+            edits++;
+            return button_at(s, SDL_BUTTON_LEFT, false, to);
         default: return true;
     }
 }
@@ -306,7 +383,7 @@ TEST_CASE(gizmo_3d)
                      "--project-root",   (char *)project };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
     REQUIRE(callback_ok && frames == GIZMO_FRAMES && edits == 1);
-    printf("Studio 3D gizmo accepted: frames=%d\n", frames);
+    printf("\nStudio 3D gizmo accepted: frames=%d\n", frames);
     return true;
 }
 

@@ -544,6 +544,7 @@ static bool forward_input(studio *s)
             recording = false;
             s->mods = SDL_KMOD_NONE;
             studio_scene_camera_focus_lost(s);
+            scene_gizmo_finish(s->scene, true);
             /* A Space let go in another window neither plays nor pans. */
             s->space_down = s->scene_nav.space_play = s->scene_nav.space_drag = false;
             continue;
@@ -803,12 +804,14 @@ static void draw_viewport(studio *s)
        scene again, so it names none until it draws. */
     if (s->guest) {
         studio_scene_camera_cancel(s);
+        scene_gizmo_finish(s->scene, true);
         rml_backend_set_texture(s->backend, "viewport", 0);
         return;
     }
     int area = area_showing(s, STUDIO_EDITOR_SCENE);
     if (area < 0 || s->surface.rect.w <= 0 || s->surface.rect.h <= 0) {
         studio_scene_camera_cancel(s);
+        scene_gizmo_finish(s->scene, true);
         engine_viewport_set_host_input(s->viewport, NULL);
         return;
     }
@@ -848,6 +851,7 @@ static void draw_viewport(studio *s)
         s->scene->hovered = row;
     }
     if (studio_canvas_draw(s, &input)) {
+        scene_gizmo_finish(s->scene, true);
         engine_viewport_set_host_input(s->viewport, NULL);
         return;
     }

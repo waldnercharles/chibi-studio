@@ -58,9 +58,15 @@ static CF_Color packed(unsigned color)
 
 static bool outlined(const GameCollider3D *collider)
 {
-    return collider->shape == GAME_COLLIDER3D_BOX ||
-           collider->shape == GAME_COLLIDER3D_SPHERE ||
-           collider->shape == GAME_COLLIDER3D_CAPSULE;
+    switch (collider->shape) {
+        case GAME_COLLIDER3D_BOX:
+            return isfinite(collider->size.x) && isfinite(collider->size.y) &&
+                   isfinite(collider->size.z);
+        case GAME_COLLIDER3D_SPHERE: return isfinite(collider->radius);
+        case GAME_COLLIDER3D_CAPSULE:
+            return isfinite(collider->radius) && isfinite(collider->height);
+        default: return false;
+    }
 }
 
 /* `entity`'s box, sphere or capsule, placed as physics places it: centered
@@ -76,6 +82,9 @@ static bool collider_of(const ecs_world *world, ecs_entity entity, collider3d *o
     *out = (collider3d){ .collider = collider };
     cf_m4_decompose(game_transform_matrix_3d(&global), &out->center, &out->turn, &scale);
     out->scale = cf_abs_v3(scale);
+    if (!isfinite(cf_len_v3(out->center)) || !isfinite(cf_len_v3(out->scale))) {
+        return false;
+    }
     return out->scale.x > FLAT && out->scale.y > FLAT && out->scale.z > FLAT;
 }
 
@@ -139,8 +148,15 @@ static bool handle_shown(const scene_view3d *view, const collider3d *c, int h)
 {
     CF_V3 out = handle_direction(c, h);
     CF_V3 to_eye = cf_sub_v3(view->camera.eye, c->center);
-    return cf_dot_v3(out, to_eye) >= -BACK * cf_len_v3(to_eye) &&
-           scene_view3d_world_per_pixel(view, handle_point(c, h)) > 0;
+    CF_V3 point = handle_point(c, h);
+    if (cf_dot_v3(out, to_eye) < -BACK * cf_len_v3(to_eye) ||
+        scene_view3d_world_per_pixel(view, point) <= 0) {
+        return false;
+    }
+    CF_Ray3 ray = { .p = view->camera.eye,
+                    .d = cf_norm_v3(cf_sub_v3(point, view->camera.eye)) };
+    float along;
+    return scene_view3d_line_param(c->center, out, ray, &along);
 }
 
 /* The collider the handles drag: the active authored object's, when the
@@ -194,7 +210,6 @@ static const char *dragged_field(const GameCollider3D *collider, int h)
 
 bool scene_collider3d_begin(app_scene_authoring *scene, int part, const scene_view3d *view, CF_Ray3 ray)
 {
-    finish_transform_edit(scene, false);
     collider3d c;
     if (!active_collider(scene, hidden_now(scene), &c)) {
         return false;
@@ -203,20 +218,20 @@ bool scene_collider3d_begin(app_scene_authoring *scene, int part, const scene_vi
     scene_gizmo *g = &scene->gizmo;
     CF_V3 direction = handle_direction(&c, h);
     float along = 0;
-    scene_view3d_line_param(c.center, direction, ray, &along);
-    scene_gizmo3d_start(scene, part, scene_view3d_on_screen(view, handle_point(&c, h)));
+    if (!scene_view3d_line_param(c.center, direction, ray, &along)) {
+        return false;
+    }
+    const char *name = dragged_field(c.collider, h);
     float reach = component(reach_of(&c), handle_axis(h));
+    CF_V2 origin = scene_view3d_on_screen(view, handle_point(&c, h));
+    finish_transform_edit(scene, false);
+    scene_gizmo3d_start(scene, part, origin);
     g->space = (scene_gizmo_space){ .pivot = c.center,
                                     .axes = { direction },
                                     .along = along,
                                     .length = reach };
     /* The gesture writes one field, its first. */
-    int field = scene_gizmo_record(
-        scene,
-        selected_scene_entity(scene),
-        &GAME_COMPONENT_GameCollider3D,
-        dragged_field(c.collider, h)
-    );
+    int field = scene_gizmo_record(scene, selected_scene_entity(scene), &GAME_COMPONENT_GameCollider3D, name);
     assert(field == 0);
     return true;
 }
@@ -246,8 +261,11 @@ void scene_collider3d_drag(app_scene_authoring *scene, CF_Ray3 ray)
     const scene_gizmo_space *space = &g->space;
     collider3d c;
     float along;
-    if (!collider_of(scene->world, selected_scene_entity(scene), &c) ||
-        !scene_view3d_line_param(space->pivot, space->axes[0], ray, &along)) {
+    if (!active_collider(scene, hidden_now(scene), &c)) {
+        scene_gizmo_finish(scene, true);
+        return;
+    }
+    if (!scene_view3d_line_param(space->pivot, space->axes[0], ray, &along)) {
         return;
     }
     float reach = space->length + along - space->along;
