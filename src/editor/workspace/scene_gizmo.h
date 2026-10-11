@@ -2,9 +2,11 @@
 #define CHIBI_EDITOR_SCENE_GIZMO_H
 
 #include "editor/workspace/viewport.h"
+#include "platform/cute.h"
 #include "runtime/engine.h"
 
 #include <cute_math.h>
+#include <cute_math3d.h>
 #include <stdbool.h>
 
 /* The Scene's transform tools, as Unity's and Godot's Q, W, E and R. */
@@ -21,6 +23,14 @@ typedef enum
    object brighter than the rest. */
 #define SCENE_ACTIVE_COLOR 0xFFA53AFFu
 #define SCENE_SELECTED_COLOR 0xE0701CFFu
+
+/* The gizmos' axes, Unity's and Blender's: X red, Y green and Z blue; a
+   dragged part, and a disabled one. */
+#define SCENE_GIZMO_X_COLOR 0xE0727AFFu
+#define SCENE_GIZMO_Y_COLOR 0x82C46BFFu
+#define SCENE_GIZMO_Z_COLOR 0x6E9BF5FFu
+#define SCENE_GIZMO_DRAGGED_COLOR 0xFFD75EFFu
+#define SCENE_GIZMO_DISABLED_COLOR 0x9AA3B266u
 
 /* Overlays' antialiasing, in screen pixels. */
 #define SCENE_OVERLAY_AA 1.5f
@@ -42,6 +52,8 @@ typedef struct
     bool alt;        /* held: a resize keeps the center */
     bool axis_x;     /* pressed: a modal move follows X only, or again freely */
     bool axis_y;
+    bool local;   /* a 3D view's Move and Rotate follow the active object's
+                     axes; Scale always does */
     bool confirm; /* Enter confirms a modal move */
     bool cancel;  /* Escape or a right press cancels a gesture */
     float marker_radius; /* how far from an undrawn object its marker icon
@@ -56,11 +68,52 @@ typedef enum
     SCENE_GIZMO_AXIS_X,
     SCENE_GIZMO_AXIS_Y,
     SCENE_GIZMO_RING,
-    SCENE_GIZMO_HANDLE, /* the first of eight resize handles, from the bottom left counterclockwise */
+    /* A 3D view's (scene_gizmo3d.c): the move arrows along X, Y and Z, the
+       squares that move across the other two axes, the center that moves
+       across the view, the rings about each axis, and the scale handles
+       along each axis and the center's uniform scale. */
+    SCENE_GIZMO_ARROW_X,
+    SCENE_GIZMO_ARROW_Y,
+    SCENE_GIZMO_ARROW_Z,
+    SCENE_GIZMO_PLANE_X,
+    SCENE_GIZMO_PLANE_Y,
+    SCENE_GIZMO_PLANE_Z,
+    SCENE_GIZMO_SCREEN,
+    SCENE_GIZMO_RING_X,
+    SCENE_GIZMO_RING_Y,
+    SCENE_GIZMO_RING_Z,
+    SCENE_GIZMO_SCALE_X,
+    SCENE_GIZMO_SCALE_Y,
+    SCENE_GIZMO_SCALE_Z,
+    SCENE_GIZMO_SCALE_ALL,
+    /* The first of six handles on a 3D collider's extents (scene_collider3d.c),
+       along its +X, -X, +Y, -Y, +Z and -Z. */
+    SCENE_GIZMO_FACE,
+    /* The first of eight resize handles, from the bottom left counterclockwise. */
+    SCENE_GIZMO_HANDLE = SCENE_GIZMO_FACE + 6,
 } scene_gizmo_part;
 
+/* Whether `part` is a 3D view's. */
+bool scene_gizmo_spatial(int part);
+
 typedef struct scene_gizmo_target scene_gizmo_target;
+typedef struct scene_gizmo_target3d scene_gizmo_target3d;
 typedef struct scene_gizmo_field scene_gizmo_field;
+
+/* A 3D view's gesture as it began, in world units. */
+typedef struct
+{
+    CF_V3 pivot;
+    CF_V3 axes[3]; /* the gizmo's X, Y and Z: the world's or the active object's */
+    CF_V3 grab;    /* where the pointer's ray met the dragged part */
+    float along;   /* where along a dragged arrow it did */
+    float length;  /* the gizmo's arrows, as long as they show */
+    bool local;    /* the axes are the active object's */
+    CF_V2 tangent; /* a ring seen near edge-on turns as the pointer moves
+                      along this, its direction on screen at the grab; zero
+                      for one that turns with the pointer's angle */
+    scene_gizmo_target3d *targets; /* array */
+} scene_gizmo_space;
 
 /* The gesture in progress: what it started from and the fields it writes.
    Every gesture is one Undo step. */
@@ -86,6 +139,7 @@ typedef struct
     float tilt; /* the gizmo box's angle when last hovered */
     bool dirty; /* the scene's dirty state when the gesture began */
     scene_gizmo_target *targets; /* array */
+    scene_gizmo_space space;     /* a 3D view's gesture */
     scene_gizmo_field *fields;   /* array */
     char status[96]; /* the gesture's change so far, for the status bar */
     char delta[64];  /* that change alone, for a label by the pointer */
@@ -135,8 +189,38 @@ void scene_gizmo_draw(app_scene_authoring *scene);
    `angle`: Move's four arrows, an axis's or a handle's resize direction and
    the ring's hand; NULL for none. */
 const char *scene_gizmo_part_cursor(int part, float angle);
+/* Part `part` in `color`: yellow while dragged, lighter while hovered. */
+CF_Color scene_gizmo_color(const scene_gizmo *g, int part, unsigned color);
 /* The cursor for the part dragged, else hovered, or NULL. */
 const char *scene_gizmo_cursor(const app_scene_authoring *scene);
+/* A 3D view's gizmo (scene_gizmo3d.c): hovering and dragging its parts,
+   true when it took the pointer, as scene_gizmo_pointer. */
+bool scene_gizmo3d_pointer(app_scene_authoring *scene, const engine_viewport_pointer *pointer);
+/* Whether the selection has what the tool edits in a 3D view. */
+bool scene_gizmo3d_enabled(app_scene_authoring *scene);
+/* The tool's gizmo over the selection in a 3D view. */
+void scene_gizmo3d_draw(app_scene_authoring *scene);
+
+/* Starts a 3D view's gesture on `part` from canvas point `origin`. */
+void scene_gizmo3d_start(app_scene_authoring *scene, int part, CF_V2 origin);
+/* For scene_gizmo3d.c and scene_collider3d.c: records field `field` of
+   `component` on `entity` as the gesture writes it, returning its index in the
+   gesture, or -1 when the entity lacks the component. */
+int scene_gizmo_record(
+    app_scene_authoring *scene,
+    ecs_entity entity,
+    const ecs_component_desc *component,
+    const char *field
+);
+/* Writes recorded field `index`, live and for the gesture's Undo step. */
+void scene_gizmo_write(app_scene_authoring *scene, int index, pin_value value);
+/* The recorded field's value as the gesture began. */
+pin_value scene_gizmo_started(const app_scene_authoring *scene, int index);
+/* The status bar's line for the change so far: `verb` and the delta. */
+void scene_gizmo_describe(scene_gizmo *g, const char *verb);
+/* Snapping, as the settings and Ctrl have it. */
+bool scene_gizmo_snapping(const scene_gizmo *g);
+
 /* `value` at the nearest multiple of `increment`. */
 float scene_snap(float value, float increment);
 

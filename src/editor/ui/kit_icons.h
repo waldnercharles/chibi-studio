@@ -60,6 +60,7 @@ enum
     KIT_ICON_ZOOM_OUT = 0xeb82,     /* nf-cod-zoom_out */
     KIT_ICON_GRID = 0xf02c1,        /* nf-md-grid */
     KIT_ICON_MAGNET = 0xf0347,      /* nf-md-magnet */
+    KIT_ICON_AXES = 0xf0d49,        /* nf-md-axis_arrow */
     KIT_ICON_OVERLAY = 0xeb2f,      /* nf-cod-preview */
     KIT_ICON_MOUSE = 0xf037d,       /* nf-md-mouse */
     KIT_ICON_UNDO = 0xf054c,        /* nf-md-undo */

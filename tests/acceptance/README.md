@@ -140,6 +140,38 @@ view, a press on the block above a level view's horizon selects it and drags
 nothing, and a view's lens survives a checkpoint, while a checkpoint saved
 before views had a lens still reads. It saves no file.
 
+`studio-acceptance --scene-gizmo3d --project-root PATH` takes another
+disposable copy and runs forty-two hidden fixed-dt frames on a 3D scene of
+a cube a Transform3D places, turned a quarter about Y, a block a Transform
+raises, turned by an Orientation, and a gem whose parent turns it a quarter
+about Y and mirrors its X. Through queued SDL presses and drags on the gizmo's
+handles it checks that Move's X arrow moves the cube along the world's X, and
+onto the grid with snapping on, and along the cube's own X in Local Space;
+that a quarter turn of Rotate's Y ring, seen obliquely, turns the block's
+Orientation by a quarter; and that dragging Scale's X handle out as far again
+doubles the cube's own X scale. Also from above, dragging along the X ring,
+which shows edge-on as a line, turns the cube a quarter about X, and a
+quarter turn of the Y ring turns the mirrored gem a quarter about the world's
+Y in place. Rotation is disabled under a nonuniform parent, and a singular
+parent offers no editable gizmo. Each drag is one Undo/Redo step restoring the
+complete typed fields. Escape and focus loss during a move restore the cube;
+hiding the Scene cancels the live gesture without changing history or dirty
+state. It saves no file.
+
+`studio-acceptance --scene-collider3d --project-root PATH` takes another
+disposable copy and runs twenty-six hidden fixed-dt frames on a 3D scene of a
+crate whose Collider3D box its Transform3D stretches twice along X, a sphere
+and a capsule. With the Select tool it drags the active object's collider
+handles through queued SDL presses: the crate's -X side out by a quarter of
+its stretched width widens the box's size by half, the ball's top raises its
+radius, and the capsule's top dragged past its middle, with snapping on,
+leaves it no shorter than its two caps. Each drag is one typed Undo/Redo step;
+Escape restores a live box edit without changing history or dirty state. A
+ray parallel to a handle's axis or a nonfinite box size starts no edit. A hidden
+crate takes no drag;
+pressing Hide Selected during a live edit cancels it without changing history
+or dirty state. It saves no file.
+
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
 
