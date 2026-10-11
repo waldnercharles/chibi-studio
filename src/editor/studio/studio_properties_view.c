@@ -723,17 +723,6 @@ static void mixed_entity_row(rows *r, row_desc d)
     put_text(r->v, table, "none", "None");
 }
 
-/* The entity path the links give a component's field, or NULL. */
-static const char *link_path(const game_prototype_link *links, const ecs_component_desc *desc, int field)
-{
-    for (int i = 0; i < acount(links); i++) {
-        if (links[i].component == desc && links[i].field == field) {
-            return links[i].path;
-        }
-    }
-    return NULL;
-}
-
 /* What an entity field's tooltip says about where its object comes from. */
 static const char *entity_problem(const char *name, const char *path, bool unresolved, char *text, size_t size)
 {
@@ -1015,7 +1004,7 @@ static void object_field(
                  .overridden = properties_overridden(scene, actor, component, index),
                  .mixed = properties_mixed(s, actor, desc->id, index, &value),
                  .readonly = locked },
-        .path = link_path(actor->paths, desc, index),
+        .path = scene_link_path(actor->paths, desc->id, index),
         .placed = true
     };
     field_row(r, &f);
@@ -1217,7 +1206,7 @@ static void prototype_field(
         .component = component,
         .index = index,
         .row = { .id = id, .label = label, .about = field->description, .readonly = locked },
-        .path = link_path(asset->prototype->links, component->desc, index)
+        .path = scene_link_path(asset->prototype->links, component->desc->id, index)
     };
     pin_read_field(component->data, field, &f.value);
     field_row(r, &f);

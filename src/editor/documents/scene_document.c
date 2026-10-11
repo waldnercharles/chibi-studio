@@ -53,16 +53,41 @@ void scene_override_path(av_doc *doc, av_value *overrides, const game_prototype_
     av_obj_set(doc, fields, link->component->type->fields[link->field].name, av_str(doc, link->path));
 }
 
+const char *scene_link_path(const game_prototype_link *links, ecs_component_id component, int field)
+{
+    for (int i = 0; i < acount(links); i++) {
+        if (links[i].component->id == component && links[i].field == field) {
+            return links[i].path;
+        }
+    }
+    return NULL;
+}
+
+/* Whether the actor's authored state has the component: while the scene
+   runs, its snapshot's. */
+static bool authored_component(
+    app_scene_authoring *scene,
+    const scene_actor *actor,
+    const ecs_component_desc *desc
+)
+{
+    if (!scene->runtime_snapshot_valid) {
+        return ecs_component_has(scene->world, actor->entity, desc->id);
+    }
+    for (int i = 0; i < acount(actor->runtime_snapshot->components); i++) {
+        if (actor->runtime_snapshot->components[i].desc == desc) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /* Adds the entity paths the actor's fields name, for the components it
    still has: its live handles never save. */
 static void add_paths(av_doc *doc, av_value *overrides, app_scene_authoring *scene, const scene_actor *actor)
 {
     for (int i = 0; i < acount(actor->paths); i++) {
-        if (ecs_component_has(
-                scene->world,
-                actor->entity,
-                actor->paths[i].component->id
-            )) {
+        if (authored_component(scene, actor, actor->paths[i].component)) {
             scene_override_path(doc, overrides, &actor->paths[i]);
         }
     }

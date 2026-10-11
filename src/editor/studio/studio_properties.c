@@ -410,6 +410,11 @@ int *properties_others(studio *s, ecs_component_id component)
     return others;
 }
 
+static bool same_path(const char *a, const char *b)
+{
+    return a == b || (a && b && !strcmp(a, b));
+}
+
 bool properties_mixed(
     studio *s,
     const scene_actor *actor,
@@ -422,17 +427,17 @@ bool properties_mixed(
         return false;
     }
     int *others = properties_others(s, component);
+    /* Objects naming different paths differ though none resolves. */
+    const char *path = scene_link_path(actor->paths, component, field);
     bool differs = false;
     for (int i = 0; i < acount(others) && !differs; i++) {
+        const scene_actor *each = &s->scene->actors[others[i]];
+        const char *named = scene_link_path(each->paths, component, field);
         pin_value other = { 0 };
-        differs = ecs_component_read_field(
-                      s->scene->world,
-                      s->scene->actors[others[i]].entity,
-                      component,
-                      field,
-                      &other
-                  ) == ECS_OK &&
-                  !pin_value_equal(&other, value);
+        differs = (ecs_component_read_field(s->scene->world, each->entity, component, field, &other) ==
+                       ECS_OK &&
+                   !pin_value_equal(&other, value)) ||
+                  !same_path(path, named);
     }
     afree(others);
     return differs;

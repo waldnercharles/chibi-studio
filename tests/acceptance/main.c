@@ -1560,6 +1560,15 @@ static const char
                    "{ Link target=\"Ship.Turret\"; }; }\n"
                    "}\n";
 
+/* A and B name paths no object has. */
+static const char
+    unresolved_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
+                         "    - name=\"A\" prototype=\"Linker\" { components "
+                         "{ Link target=\"Nowhere\"; }; }\n"
+                         "    - name=\"B\" prototype=\"Linker\" { components "
+                         "{ Link target=\"Elsewhere\"; }; }\n"
+                         "}\n";
+
 /* A ship with a turret, and a root that shares the turret's name. */
 static const char
     nested_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
@@ -1666,7 +1675,18 @@ static bool names_by_path(app_scene_authoring *scene)
     bool restored = app_scene_authoring_restore_checkpoint(scene, checkpoint) == 0;
     free(checkpoint);
     REQUIRE(restored && links(scene, 2, 1) && saves_as(scene, path_scene));
+    /* Editing the Linker rewrites A's fields from it, and A names the turret again. */
+    pin_value moved = { .type = PIN_F32, .f = 5 };
+    REQUIRE(
+        write_prototype_field(scene, find_prototype(scene, "Linker"), "GameTransform", "x", moved) == 0
+    );
+    REQUIRE(links(scene, 2, 1));
     REQUIRE(app_scene_authoring_runtime_command(scene, APP_RUNTIME_SCENE, APP_RUNTIME_PLAY) == 0);
+    /* A run that removes A's Link still saves the authored path. */
+    REQUIRE(
+        ecs_world_record_remove(scene->world, scene->actors[2].entity, link_id(scene), 0) == ECS_OK
+    );
+    REQUIRE(ecs_world_apply_commands(scene->world) == ECS_OK && saves_as(scene, path_scene));
     REQUIRE(app_scene_authoring_runtime_command(scene, APP_RUNTIME_SCENE, APP_RUNTIME_STOP) == 0);
     REQUIRE(child_of(scene, 1, 0) && links(scene, 2, 1) && saves_as(scene, path_scene));
     scene->selected = 2;
@@ -1685,6 +1705,12 @@ static bool select_crossed_links(studio *s)
 {
     app_scene_authoring *scene = s->scene;
     REQUIRE(names_by_path(scene));
+    /* Objects naming different paths read as mixed, though neither resolves. */
+    REQUIRE(scene_authoring_load_text(scene, unresolved_scene, NULL) == 0);
+    REQUIRE(app_scene_authoring_select_entity(scene, scene->actors[0].entity) == 0);
+    scene->actors[1].marked = true;
+    pin_value none = { .type = PIN_HANDLE, .type_name = "ecs.entity" };
+    REQUIRE(properties_mixed(s, &scene->actors[0], link_id(scene), 0, &none));
     REQUIRE(scene_authoring_load_text(scene, linked_scene, NULL) == 0);
     REQUIRE(acount(scene->actors) == 2 && link_id(scene));
     REQUIRE(link_to(scene, 0, 1) && link_to(scene, 1, 0));

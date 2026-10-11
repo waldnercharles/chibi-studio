@@ -542,6 +542,8 @@ int add_actor(app_scene_authoring *scene, const char *name, const char *prototyp
    in order, written as entities. An object whose parent is not among them is
    written as a root. */
 int scene_validate_entity(app_scene_authoring *scene, const game_scene_entity *entity);
+/* The entity path the links give a component's field, or NULL. */
+const char *scene_link_path(const game_prototype_link *links, ecs_component_id component, int field);
 /* Writes the link's entity path into the overrides of its component. */
 void scene_override_path(av_doc *doc, av_value *overrides, const game_prototype_link *link);
 /* The entity paths the actor's fields name, as components values, or NULL
