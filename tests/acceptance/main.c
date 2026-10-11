@@ -56,7 +56,8 @@ static enum {
     PLAY_KEYS,
     PROMPTS,
     CODE_FOLLOWUPS,
-    CODE_GLYPHS
+    CODE_GLYPHS,
+    PANEL_IDLE
 } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
@@ -2814,6 +2815,8 @@ static bool code_glyphs_frame(void *state)
     }
 }
 
+#include "panel_idle.h"
+
 bool studio_acceptance_frame(void *state)
 {
     switch (mode) {
@@ -2835,6 +2838,7 @@ bool studio_acceptance_frame(void *state)
         case PROMPTS: callback_ok = prompts_frame(state); break;
         case CODE_FOLLOWUPS: callback_ok = code_followups_frame(state); break;
         case CODE_GLYPHS: callback_ok = code_glyphs_frame(state); break;
+        case PANEL_IDLE: callback_ok = panel_idle_frame(state); break;
     }
     return callback_ok;
 }
@@ -3149,10 +3153,11 @@ int main(int argc, char **argv)
     bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
     bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
     bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
+    bool idle = argc == 4 && !strcmp(argv[1], "--panel-idle");
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
          !keys_mode && !labels && !units && !hierarchy && !physics && !assets &&
-         !viewport && !playing && !prompting && !followups && !glyphs) ||
+         !viewport && !playing && !prompting && !followups && !glyphs && !idle) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
@@ -3161,7 +3166,7 @@ int main(int argc, char **argv)
             "--graph-visibility|--graph-keys|--graph-labels|--unit-warnings|"
             "--scene-hierarchy|--scene-physics|"
             "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts|"
-            "--code-followups|--code-glyphs "
+            "--code-followups|--code-glyphs|--panel-idle "
             "--project-root PATH | --scene-cursors\n"
         );
         return 2;
@@ -3193,6 +3198,7 @@ int main(int argc, char **argv)
          : playing     ? PLAY_KEYS
          : prompting   ? PROMPTS
          : followups   ? CODE_FOLLOWUPS
+         : idle        ? PANEL_IDLE
                        : CODE_GLYPHS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
@@ -3213,6 +3219,7 @@ int main(int argc, char **argv)
         case PROMPTS: RUN_TEST_CASE(unsaved_prompts); break;
         case CODE_FOLLOWUPS: RUN_TEST_CASE(code_followups); break;
         case CODE_GLYPHS: RUN_TEST_CASE(code_glyphs); break;
+        case PANEL_IDLE: RUN_TEST_CASE(panel_idle); break;
     }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;

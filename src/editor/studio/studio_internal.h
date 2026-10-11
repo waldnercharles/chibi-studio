@@ -1078,6 +1078,12 @@ struct studio
         float width, height, ratio;
         bool wake;
     } ui_schedule;
+    /* Model construction work, independent of frame timing. */
+    struct
+    {
+        uint64_t properties_fields, property_overrides, property_choices;
+        uint64_t properties_mixed_lists, asset_rows, inspector_reads, target_choices;
+    } panel_work;
     studio_area areas[STUDIO_AREA_COUNT];
     int hover_area;
     int focus_area;

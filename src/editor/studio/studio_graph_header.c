@@ -12,6 +12,7 @@
 #include "assets/reference_adapters.h"
 #include "editor/studio/studio_graph_internal.h"
 #include "support/array.h"
+#include "ui/popover.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -651,6 +652,7 @@ static void prototype_choices(studio *s, target_group *groups)
    when spawned per prototype, then the scene's and the spawned instances. */
 static void target_choices(studio *s, target_group *groups)
 {
+    s->panel_work.target_choices++;
     app_scene_authoring *scene = s->scene;
     game_source_registry *behaviors = scene->active_runtime_target == APP_RUNTIME_PREVIEW
                                        ? game_prototype_preview_sources(scene->prototype_preview)
@@ -708,6 +710,14 @@ static bool show_group(yyjson_mut_doc *doc, yyjson_mut_val *shown, const target_
    groups its items named. */
 bool studio_graph_targets_sync(studio *s, const studio_panel_sync *at)
 {
+    /* The choice list has no submenus. Read the owning popover stack rather
+       than the DOM's data-open, which remains during its closing animation.
+       Rebuild on every open sync so live owners and their labels stay current. */
+    rml_element *popup = at->preview ? NULL
+                                     : popover_top(rml_backend_context(s->backend));
+    if (!at->preview && (!popup || strcmp(rml_element_id(popup), "debug-targets"))) {
+        return false;
+    }
     target_group groups[GROUP_COUNT] = { 0 };
     for (int i = 0; i < GROUP_COUNT; i++) {
         groups[i].label = GROUP_LABELS[i];
@@ -885,8 +895,11 @@ void studio_graph_header_action(studio *s, const char *action, const ui_activati
         studio_find_document_references(s);
     } else if (!strcmp(action, "asset")) {
         open_asset(s, argument(a));
+    } else if (!strcmp(action, "targets")) {
+        studio_ui_resync(s, "graph_targets");
     } else if (!strcmp(action, "target")) {
         choose_target(s, argument(a));
+        studio_ui_resync(s, "graph_targets");
     } else if (!graph_action(s, action, a)) {
         menu_action(s, action, a);
     }

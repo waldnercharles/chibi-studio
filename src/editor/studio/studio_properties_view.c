@@ -32,11 +32,12 @@
 #include "editor/documents/component_properties.h"
 #include "editor/studio/studio_properties_internal.h"
 #include "editor/ui/labels.h"
-#include "types/value_format.h"
 #include "graph/model/registry.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
+#include "types/value_format.h"
 #include "ui/drag.h"
+#include "ui/popover.h"
 
 #include <assert.h>
 #include <float.h>
@@ -402,6 +403,7 @@ typedef struct row_desc
 static yyjson_mut_val *next_row(rows *r, const row_desc *d)
 {
     view *v = r->v;
+    v->s->panel_work.properties_fields++;
     yyjson_mut_val *row = item_at(v, r->list, r->count++, ITEM_ROW);
     put_flag(v, row, "shown", true);
     put_text(v, row, "id", d->id);
@@ -1430,6 +1432,7 @@ static void behaviors(view *v, const properties_subject *subject)
     put_flag(v, b, "open", open);
     put_flag(v, b, "locked", subject->locked);
     put_text(v, b, "why", why ? why : "");
+    s->panel_work.property_choices++;
     char **names = instance_behavior_names(scene, subject->actor->entity);
     yyjson_mut_val *list = member(b, "rows");
     size_t count = 0;
@@ -1497,6 +1500,7 @@ static void field_menu(view *v, const properties_subject *subject)
                       (properties_overridden(s->scene, other, base, s->context.field) ||
                        (position && properties_overridden(s->scene, other, base, 1)));
     }
+    s->panel_work.property_overrides += target && actor->identity;
     game_prototype_field *applicable = target && actor->identity
                                          ? game_prototype_instance_overrides(
                                                actor->base,
@@ -1731,7 +1735,13 @@ bool studio_properties_sync(studio *s, const studio_panel_sync *at)
     header(&v);
     tabs(&v, available);
     body(&v, &subject);
-    field_menu(&v, &subject);
+    /* This menu has no submenus. The popover stack owns openness, including
+       dismissal before the closing animation has shed data-open. */
+    rml_element *popup = at->preview ? NULL
+                                     : popover_top(rml_backend_context(s->backend));
+    if (at->preview || (popup && !strcmp(rml_element_id(popup), "field-menu"))) {
+        field_menu(&v, &subject);
+    }
     component_menu(&v, &subject);
     afree(v.shown);
     if (v.values_changed) {

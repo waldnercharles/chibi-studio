@@ -194,6 +194,57 @@ it. A click on Discard then quits without writing the scene. The clicks are
 pointer motion, press and release queued through SDL over the toast's buttons. The initial Counter bytes are
 restored afterwards.
 
+`studio-acceptance --panel-idle --project-root PATH` takes a disposable copy
+and runs ten hidden fixed-dt frames with two actors. Properties, Assets,
+Inspector and BehaviorHeader each synchronize eight times at five points in
+editing, playback and stop. The test compares their JSON before and after those
+unchanged inputs and reports construction counts and diagnostic timings. It
+requires zero closed-menu target/override construction and zero temporary
+multiselection lists. Open target choices still refresh every time.
+
+The same run changes selection, edits a numeric property through its production
+change action, checks mixed axes for single and multiple selections, opens and
+reopens the override menu, filters Assets, and reads
+changed Inspector attributes/styles. It clicks the debug-target trigger through
+SDL, closes with Escape, opens with Return, and checks rendered entity options
+and search focus. Runtime detach/attach while closed must appear immediately on
+reopen. The small Assets fixture exercises scroll handling but does not establish
+movement through a large virtualized list. These checks establish panel behavior
+and work counts, not whole-application or CUT-50 aggregate speedup.
+
+The engine supervisor admits this fixed workload separately from the older
+Studio suites. From the engine checkout, after copying `tests/acceptance/project`
+as a copy-on-write clone to a disposable directory:
+
+```sh
+CHIBI_STUDIO_BUILD=/absolute/studio-build \
+CHIBI_STUDIO_IDLE_PROJECT=/absolute/disposable-project \
+python3 tools/test_policy.py tool studio-panel-idle
+```
+
+The binary comes from this Studio checkout against the installed SDK. The
+supervisor enforces one 60-second deadline including in-process fixture
+initialization. The external project copy and build happen beforehand. It does
+not admit other projects, selectors, or a Studio suite.
+
+The initial macOS comparison used the same two-actor workload against Studio
+`d10222d` and the candidate, with an installed engine SDK from `f3ff608`.
+The baseline retained every behavioral assertion and omitted only the new
+work-count and initially-empty-menu expectations. Per eight running syncs:
+
+| Construction | Baseline | Candidate |
+| --- | ---: | ---: |
+| Temporary multi-selection lists | 24 | 0 |
+| Closed field-menu override lists | 8 | 0 |
+| Closed debug-target choice lists | 8 | 0 |
+| Open debug-target choice lists | 8 | 8 |
+| Property fields / cached asset rows / Inspector reads | 16 / 0 / 8 | 16 / 0 / 8 |
+
+Assets already reuse their indexed rows. Inspector still reads live DOM and
+styles because there is no complete input revision for those values. Timing
+output is diagnostic; these small runs support the construction counts, not an
+elapsed-time performance claim.
+
 Execution requires explicit root coordination and independent admission under the
 60-second GPU policy. Merely building this target does not run it. A whole UI
 suite is not implied. The vendored pico_unit header preserves its upstream license

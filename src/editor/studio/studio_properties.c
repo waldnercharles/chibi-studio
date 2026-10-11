@@ -399,6 +399,7 @@ bool properties_multi(studio *s, const scene_actor *actor)
 
 int *properties_others(studio *s, ecs_component_id component)
 {
+    s->panel_work.properties_mixed_lists++;
     app_scene_authoring *scene = s->scene;
     int *others = NULL;
     for (int i = 0; i < acount(scene->actors); i++) {
@@ -421,21 +422,20 @@ bool properties_mixed(
     if (!properties_multi(s, actor)) {
         return false;
     }
-    int *others = properties_others(s, component);
-    bool differs = false;
-    for (int i = 0; i < acount(others) && !differs; i++) {
+    app_scene_authoring *scene = s->scene;
+    for (int i = 0; i < acount(scene->actors); i++) {
+        if (i == scene->selected || !scene_instance_selected(scene, i) ||
+            !ecs_component_has(scene->world, scene->actors[i].entity, component)) {
+            continue;
+        }
         pin_value other = { 0 };
-        differs = ecs_component_read_field(
-                      s->scene->world,
-                      s->scene->actors[others[i]].entity,
-                      component,
-                      field,
-                      &other
-                  ) == ECS_OK &&
-                  !pin_value_equal(&other, value);
+        if (ecs_component_read_field(scene->world, scene->actors[i].entity, component, field, &other) ==
+                ECS_OK &&
+            !pin_value_equal(&other, value)) {
+            return true;
+        }
     }
-    afree(others);
-    return differs;
+    return false;
 }
 
 /* ---------- Writes ---------- */
