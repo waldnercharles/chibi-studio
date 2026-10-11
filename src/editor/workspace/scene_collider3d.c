@@ -37,7 +37,7 @@ static const CF_V3 UNIT_AXES[3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
 /* An object's collider as it stands in the world. */
 typedef struct
 {
-    const GameCollider3D *collider;
+    const Collider3D *collider;
     CF_V3 center;
     CF_Quat turn;
     CF_V3 scale; /* its world scale's magnitude along each axis */
@@ -59,14 +59,14 @@ static CF_Color packed(unsigned color)
     return cf_make_color_rgba(color >> 24, color >> 16, color >> 8, color);
 }
 
-static bool outlined(const GameCollider3D *collider)
+static bool outlined(const Collider3D *collider)
 {
     switch (collider->shape) {
-        case GAME_COLLIDER3D_BOX:
+        case COLLIDER3D_BOX:
             return isfinite(collider->size.x) && isfinite(collider->size.y) &&
                    isfinite(collider->size.z);
-        case GAME_COLLIDER3D_SPHERE: return isfinite(collider->radius);
-        case GAME_COLLIDER3D_CAPSULE:
+        case COLLIDER3D_SPHERE: return isfinite(collider->radius);
+        case COLLIDER3D_CAPSULE:
             return isfinite(collider->radius) && isfinite(collider->height);
         default: return false;
     }
@@ -76,14 +76,14 @@ static bool outlined(const GameCollider3D *collider)
    on the entity and scaled by its world scale. */
 static bool collider_of(const ecs_world *world, ecs_entity entity, collider3d *out)
 {
-    const GameCollider3D *collider = GAME_GameCollider3D_get_const(world, entity);
-    if (!collider || !GAME_GameTransform3D_has(world, entity) || !outlined(collider)) {
+    const Collider3D *collider = Collider3D_get_const(world, entity);
+    if (!collider || !Transform3D_has(world, entity) || !outlined(collider)) {
         return false;
     }
-    GameGlobalTransform3D global = game_transform_world_3d(world, entity);
+    GlobalTransform3D global = transform_world_3d(world, entity);
     CF_V3 scale;
     *out = (collider3d){ .collider = collider };
-    cf_m4_decompose(game_transform_matrix_3d(&global), &out->center, &out->turn, &scale);
+    cf_m4_decompose(transform_matrix_3d(&global), &out->center, &out->turn, &scale);
     out->scale = cf_abs_v3(scale);
     if (!isfinite(cf_len_v3(out->center)) || !isfinite(cf_len_v3(out->scale))) {
         return false;
@@ -104,11 +104,11 @@ static float capsule_scale(const collider3d *c)
 /* How far the collider reaches from its center along each of its axes. */
 static CF_V3 reach_of(const collider3d *c)
 {
-    const GameCollider3D *collider = c->collider;
+    const Collider3D *collider = c->collider;
     switch (collider->shape) {
-        case GAME_COLLIDER3D_BOX:
+        case COLLIDER3D_BOX:
             return cf_mul_v3_f(cf_mul_v3(collider->size, c->scale), 0.5f);
-        case GAME_COLLIDER3D_SPHERE: {
+        case COLLIDER3D_SPHERE: {
             float r = collider->radius * sphere_scale(c);
             return (CF_V3){ r, r, r };
         }
@@ -201,12 +201,12 @@ int scene_collider3d_part(app_scene_authoring *scene, const scene_view3d *view, 
 
 /* The field handle `h` drags: a box's size, a capsule's height along its
    Y, else the radius. */
-static const char *dragged_field(const GameCollider3D *collider, int h)
+static const char *dragged_field(const Collider3D *collider, int h)
 {
-    if (collider->shape == GAME_COLLIDER3D_BOX) {
+    if (collider->shape == COLLIDER3D_BOX) {
         return "size";
     }
-    return collider->shape == GAME_COLLIDER3D_CAPSULE && handle_axis(h) == 1
+    return collider->shape == COLLIDER3D_CAPSULE && handle_axis(h) == 1
              ? "height"
              : "radius";
 }
@@ -234,7 +234,7 @@ bool scene_collider3d_begin(app_scene_authoring *scene, int part, const scene_vi
                                     .along = along,
                                     .length = reach };
     /* The gesture writes one field, its first. */
-    int field = scene_gizmo_record(scene, selected_scene_entity(scene), &GAME_COMPONENT_GameCollider3D, name);
+    int field = scene_gizmo_record(scene, selected_scene_entity(scene), &COMPONENT_Collider3D, name);
     assert(field == 0);
     return true;
 }
@@ -242,11 +242,11 @@ bool scene_collider3d_begin(app_scene_authoring *scene, int part, const scene_vi
 /* `reach` from the center as the field holds it. */
 static float field_value(const collider3d *c, int h, float reach)
 {
-    const GameCollider3D *collider = c->collider;
+    const Collider3D *collider = c->collider;
     int k = handle_axis(h);
     switch (collider->shape) {
-        case GAME_COLLIDER3D_BOX: return 2 * reach / component(c->scale, k);
-        case GAME_COLLIDER3D_SPHERE: return reach / sphere_scale(c);
+        case COLLIDER3D_BOX: return 2 * reach / component(c->scale, k);
+        case COLLIDER3D_SPHERE: return reach / sphere_scale(c);
         default: break;
     }
     if (k == 1) {
@@ -279,7 +279,7 @@ void scene_collider3d_drag(app_scene_authoring *scene, CF_Ray3 ray)
     int h = g->active - SCENE_GIZMO_FACE;
     float value = field_value(&c, h, fmaxf(reach, LEAST));
     const char *field = dragged_field(c.collider, h);
-    if (c.collider->shape != GAME_COLLIDER3D_BOX) {
+    if (c.collider->shape != COLLIDER3D_BOX) {
         scene_gizmo_write(scene, 0, (pin_value){ .type = PIN_F32, .f = value });
         snprintf(g->delta, sizeof g->delta, "%s %g", field, shown(value));
         scene_gizmo_describe(g, "Collider");
@@ -402,8 +402,8 @@ static void draw_handles(const scene_gizmo *g, const scene_view3d *view, const c
 static void draw_collider(const scene_view3d *view, const collider3d *c, float width)
 {
     switch (c->collider->shape) {
-        case GAME_COLLIDER3D_BOX: draw_box(view, c, width); break;
-        case GAME_COLLIDER3D_SPHERE: draw_sphere(view, c, width); break;
+        case COLLIDER3D_BOX: draw_box(view, c, width); break;
+        case COLLIDER3D_SPHERE: draw_sphere(view, c, width); break;
         default: draw_capsule(view, c, width); break;
     }
 }
@@ -417,8 +417,8 @@ static void draw_every_collider(
     float width
 )
 {
-    ecs_component_id required[] = { GAME_COMPONENT_GameCollider3D.id,
-                                    GAME_COMPONENT_GameTransform3D.id };
+    ecs_component_id required[] = { COMPONENT_Collider3D.id,
+                                    COMPONENT_Transform3D.id };
     ecs_query query;
     if (ecs_query_begin(scene->world, &query, required, 2) != ECS_OK) {
         return;

@@ -6,8 +6,8 @@
 /* A 3D scene of one block 100 units on a side, standing at x 200. */
 static const char
     block_prototype[] = "name \"Block\"\ncomponents {\n"
-                        "    GameTransform x=200 y=0\n"
-                        "    GameGeometry3D primitive=0 width=100.0 "
+                        "    Transform x=200 y=0\n"
+                        "    Geometry3D primitive=0 width=100.0 "
                         "depth=100.0 height=100.0 elevation=50.0\n"
                         "}\n";
 static const char
@@ -253,10 +253,7 @@ static bool scene_camera_frame(void *state)
         case LOOK_FRAME + 10:
             /* Selected, and not dragged: the press had no ground to start from. */
             REQUIRE(scene_selection_count(scene) == 1 && scene->selected == 0);
-            REQUIRE(
-                GAME_GameTransform_get_const(scene->world, scene->actors[0].entity)
-                    ->x == 200
-            );
+            REQUIRE(Transform_get_const(scene->world, scene->actors[0].entity)->x == 200);
             return checkpoint_keeps_lens(s);
         case 25:
             REQUIRE(button_at(s, SDL_BUTTON_RIGHT, true, (CF_V2){ 0, 0 }));

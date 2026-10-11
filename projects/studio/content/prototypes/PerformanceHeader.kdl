@@ -1,4 +1,4 @@
 name "PerformanceHeader"
 components {
-    GAME.GameUi document="PerformanceHeader" hidden=#true
+    Ui document="PerformanceHeader" hidden=#true
 }

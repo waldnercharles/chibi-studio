@@ -326,7 +326,7 @@ static bool apply_prototype_field(app_scene_authoring *scene, yyjson_val *root, 
     const char *component_name = text(root, "component");
     const char *field_name = text(root, "field");
     scene_prototype_asset *asset = prototype ? find_prototype(scene, prototype) : NULL;
-    game_prototype_component *component = NULL;
+    prototype_component *component = NULL;
     if (asset) {
         for (int i = 0; i < acount(asset->prototype->components); i++) {
             if (!strcmp(asset->prototype->components[i].desc->name, component_name)) {
@@ -468,16 +468,16 @@ bool scene_collab_apply_action(app_scene_authoring *scene, const char *json, cha
         const char *name = text(root, "name");
         yyjson_val *x = yyjson_obj_get(root, "x"), *y = yyjson_obj_get(root, "y");
         uint64_t identity = yyjson_get_uint(yyjson_obj_get(root, "actor"));
-        GameTransform position = { 0 };
-        GameTransform *position_ptr = NULL;
+        Transform position = { 0 };
+        Transform *position_ptr = NULL;
         if (yyjson_is_num(x) || yyjson_is_num(y)) {
             if (!yyjson_is_num(x) || !yyjson_is_num(y) ||
                 !isfinite(yyjson_get_num(x)) || !isfinite(yyjson_get_num(y))) {
                 fail(error, error_size, "Instance position is invalid");
                 goto done;
             }
-            position = (GameTransform){ (float)yyjson_get_num(x),
-                                        (float)yyjson_get_num(y) };
+            position = (Transform){ (float)yyjson_get_num(x),
+                                    (float)yyjson_get_num(y) };
             position_ptr = &position;
         }
         if (!prototype || !name || !identity ||
@@ -560,8 +560,8 @@ bool scene_collab_apply_action(app_scene_authoring *scene, const char *json, cha
             goto done;
         }
         finish_transform_edit(scene, false);
-        GameTransform before = *GAME_GameTransform_get_const(scene->world, actor->entity);
-        GameTransform after = { (float)yyjson_get_num(x), (float)yyjson_get_num(y) };
+        Transform before = *Transform_get_const(scene->world, actor->entity);
+        Transform after = { (float)yyjson_get_num(x), (float)yyjson_get_num(y) };
         write_position(scene, actor->entity, after);
         scene->scene_dirty = true;
         ok = true;

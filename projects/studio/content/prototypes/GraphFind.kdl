@@ -1,4 +1,4 @@
 name "GraphFind"
 components {
-    GAME.GameUi document="GraphFind" hidden=#true
+    Ui document="GraphFind" hidden=#true
 }

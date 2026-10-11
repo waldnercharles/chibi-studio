@@ -144,7 +144,7 @@ static void source_problem(studio_ui_problem **out, const char *path, script_ran
 
 static void source_project_problems(studio *s)
 {
-    const authoring_sources *sources = game_preview_sources_working(s->scene->live);
+    const authoring_sources *sources = preview_sources_working(s->scene->live);
     if (!sources) {
         return;
     }

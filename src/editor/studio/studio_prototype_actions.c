@@ -98,7 +98,7 @@ static void undo_toast(studio *s)
     }
 }
 
-static void apply(studio *s, scene_actor *actor, const game_prototype_field *fields, int count)
+static void apply(studio *s, scene_actor *actor, const prototype_field *fields, int count)
 {
     char prototype[256];
     snprintf(prototype, sizeof prototype, "%s", actor->prototype_name);
@@ -113,14 +113,14 @@ static void apply(studio *s, scene_actor *actor, const game_prototype_field *fie
     offer_undo(s, title, reach ? description : NULL);
 }
 
-void studio_apply_field(studio *s, scene_actor *actor, game_prototype_field field)
+void studio_apply_field(studio *s, scene_actor *actor, prototype_field field)
 {
     if (studio_prototype_action_actor(s) == actor) {
         apply(s, actor, &field, 1);
     }
 }
 
-static bool skipped(const game_prototype_field *list, game_prototype_field field)
+static bool skipped(const prototype_field *list, prototype_field field)
 {
     for (int i = 0; i < acount(list); i++) {
         if (list[i].component == field.component && list[i].field == field.field) {
@@ -132,15 +132,15 @@ static bool skipped(const game_prototype_field *list, game_prototype_field field
 
 /* A checkbox per overridden field, labeled as Properties labels it, with the
    instance's value. Returns the checked ones; the caller frees them. */
-static game_prototype_field *field_rows(studio *s, scene_actor *actor, const game_prototype_field *fields)
+static prototype_field *field_rows(studio *s, scene_actor *actor, const prototype_field *fields)
 {
     kit *k = s->kit;
     struct studio_prototype_action *a = &s->prototype_action;
-    game_prototype_field *checked = NULL;
+    prototype_field *checked = NULL;
     for (int i = 0; i < acount(fields); i++) {
         const ecs_component_desc *desc = fields[i].component;
         const type_field *field = &desc->type->fields[fields[i].field];
-        game_prototype_component component = { .desc = desc };
+        prototype_component component = { .desc = desc };
         char component_label[96], field_label[96], label[200], key[16];
         editor_component_label(desc->name, component_label, sizeof component_label);
         property_label(&component, field, field_label, sizeof field_label);
@@ -193,12 +193,12 @@ static void apply_popover(studio *s)
     char text[320];
     snprintf(text, sizeof text, "Apply to %s", actor->prototype_name);
     kit_menu_group(k, "title", text);
-    game_prototype_field *fields = game_prototype_instance_overrides(
+    prototype_field *fields = prototype_instance_overrides(
         actor->base,
         s->scene->world,
         actor->entity
     );
-    game_prototype_field *checked = field_rows(s, actor, fields);
+    prototype_field *checked = field_rows(s, actor, fields);
     int count = acount(checked),
         reach = scene_override_reach(s->scene, actor, checked, count);
     /* What applying does is a note under the fields, not a row that looks
@@ -237,7 +237,7 @@ static bool enter_pressed(const studio *s)
     return false;
 }
 
-static void save(studio *s, scene_actor *actor)
+static void save_actor(studio *s, scene_actor *actor)
 {
     struct studio_prototype_action *a = &s->prototype_action;
     char from[256];
@@ -289,7 +289,7 @@ static void save_popover(studio *s)
     kit_popup_end(k);
     a->shown = true;
     if (chosen || entered) {
-        save(s, actor);
+        save_actor(s, actor);
     }
 }
 

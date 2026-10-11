@@ -37,10 +37,10 @@ static uint64_t hash_bytes(uint64_t hash, const void *data, size_t count)
 static bool generation_source(const ecs_world *world, ecs_entity entity)
 {
     const ecs_component_id sources[] = {
-        GAME_COMPONENT_GameDestructible.id,
-        GAME_COMPONENT_GameFluidVolume.id,
-        GAME_COMPONENT_MaterialFluidWorld.id,
-        GAME_COMPONENT_MaterialDestructionWorld.id,
+        COMPONENT_Destructible.id,
+        COMPONENT_FluidVolume.id,
+        COMPONENT_MaterialFluidWorld.id,
+        COMPONENT_MaterialDestructionWorld.id,
     };
     for (size_t i = 0; i < sizeof sources / sizeof *sources; i++) {
         if (ecs_component_has(world, entity, sources[i])) {
@@ -75,15 +75,15 @@ static scene_world_inputs generation_inputs(app_scene_authoring *scene)
                                   UINT64_C(14695981039346656037) };
     for (int i = 0; i < acount(scene->actors); i++) {
         ecs_entity entity = scene->actors[i].entity;
-        if (GAME_MaterialTerrain_get_const(world, entity)) {
+        if (MaterialTerrain_get_const(world, entity)) {
             inputs.terrain = hash_entity(inputs.terrain, world, entity);
         } else if (generation_source(world, entity)) {
             inputs.sources = hash_entity(inputs.sources, world, entity);
         }
     }
-    material_fields *fields = game_materials_fields(scene->live->runtime->materials);
-    for (int i = 0; i < game_preview_definition_count(scene->live); i++) {
-        game_preview_definition *definition = game_preview_definition_at(scene->live, i);
+    material_fields *fields = materials_fields(scene->live->runtime->materials);
+    for (int i = 0; i < preview_definition_count(scene->live); i++) {
+        preview_definition *definition = preview_definition_at(scene->live, i);
         if (definition->working->domain == BEHAVIOR_DOMAIN_FIELD) {
             unsigned revision = material_field_revision(fields, definition->name);
             inputs.terrain = hash_bytes(inputs.terrain, &revision, sizeof revision);
@@ -96,20 +96,20 @@ void scene_world_preview_discard(app_scene_authoring *scene)
 {
     scene_world_preview *preview = &scene->world_preview;
     if (preview->built) {
-        game_materials_reset(scene->live->runtime->materials);
+        materials_reset(scene->live->runtime->materials);
     }
     *preview = (scene_world_preview){ 0 };
 }
 
 /* Terrain streams around the editor's view as well as the scene's cameras. */
-static void stream_view(game_materials *materials, const engine_viewport_camera *camera)
+static void stream_view(materials *materials, const engine_viewport_camera *camera)
 {
     float radius = 0.5f * hypotf(camera->span_width, camera->span_height);
     material_stream_view view = { camera->center_x,
                                   -camera->center_y,
                                   fminf(radius, PREVIEW_STREAM_RADIUS),
                                   0 };
-    game_materials_set_stream_views(materials, &view, 1);
+    materials_set_stream_views(materials, &view, 1);
 }
 
 /* Prepares the materials, and keeps streaming terrain into the view for a
@@ -117,13 +117,13 @@ static void stream_view(game_materials *materials, const engine_viewport_camera 
 static void generate(app_scene_authoring *scene, const engine_viewport_camera *view)
 {
     scene_world_preview *preview = &scene->world_preview;
-    game_materials *materials = scene->live->runtime->materials;
+    materials *materials = scene->live->runtime->materials;
     stream_view(materials, view);
     double start = now_seconds();
     const char *error = NULL;
     do {
-        error = game_materials_prepare(materials);
-    } while (!error && game_materials_streaming(materials) &&
+        error = materials_prepare(materials);
+    } while (!error && materials_streaming(materials) &&
              now_seconds() - start < PREVIEW_FRAME_SECONDS);
     snprintf(preview->error, sizeof preview->error, "%s", error ? error : "");
 }
@@ -152,9 +152,9 @@ void scene_world_preview_update(app_scene_authoring *scene, const engine_viewpor
     /* Terrain streams again only when its own sources change. */
     if (preview->dirty && now - preview->changed_at >= PREVIEW_DEBOUNCE_SECONDS) {
         if (preview->terrain_dirty) {
-            game_materials_reset(scene->live->runtime->materials);
+            materials_reset(scene->live->runtime->materials);
         } else {
-            game_materials_reset_except_terrain(scene->live->runtime->materials);
+            materials_reset_except_terrain(scene->live->runtime->materials);
         }
         preview->dirty = preview->terrain_dirty = false;
     }
@@ -162,7 +162,7 @@ void scene_world_preview_update(app_scene_authoring *scene, const engine_viewpor
         preview->built = true;
         generate(scene, view);
     }
-    bool waiting = game_materials_streaming(scene->live->runtime->materials);
+    bool waiting = materials_streaming(scene->live->runtime->materials);
     preview->waiting_since = !waiting               ? 0
                            : preview->waiting_since ? preview->waiting_since
                                                     : now;

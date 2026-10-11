@@ -20,15 +20,15 @@ typedef struct
     ecs_entity entity;
     uint64_t group;
     uint64_t step; /* the group's id, or this lone edit's own; 0 once restored */
-    GameTransform before;
-    GameTransform after;
+    Transform before;
+    Transform after;
     scene_field_edit *fields;
     scene_actor_edit *actor;
     scene_behavior_edit *behaviors;
     scene_prototype_edit *prototype;
     av_value *hierarchy_before, *hierarchy_after;
     bool physics;
-    game_physics_settings physics_before, physics_after;
+    physics_settings physics_before, physics_after;
     char *name_before, *name_after; /* a rename, when name_after is set */
     scene_path_ref *renamed_paths;  /* the entity paths the rename rewrote */
 } scene_edit;
@@ -160,7 +160,7 @@ uint64_t scene_history_step_id(const scene_history *history, bool redo)
     return acount(edits) ? alast(edits).step : 0;
 }
 
-bool scene_history_push(scene_history *history, ecs_entity entity, GameTransform before, GameTransform after)
+bool scene_history_push(scene_history *history, ecs_entity entity, Transform before, Transform after)
 {
     assert(history && entity.slot);
     assert(isfinite(before.x) && isfinite(before.y));
@@ -630,10 +630,10 @@ bool scene_history_can_undo(const scene_history *history)
     return acount(history->undo) > 0;
 }
 
-bool scene_history_push_physics(scene_history *history, game_physics_settings before, game_physics_settings after)
+bool scene_history_push_physics(scene_history *history, physics_settings before, physics_settings after)
 {
-    assert(game_physics_settings_valid(before) && game_physics_settings_valid(after));
-    if (game_physics_settings_equal(before, after)) {
+    assert(physics_settings_valid(before) && physics_settings_valid(after));
+    if (physics_settings_equal(before, after)) {
         return false;
     }
     apush(
@@ -648,7 +648,7 @@ bool scene_history_push_physics(scene_history *history, game_physics_settings be
     return true;
 }
 
-const game_physics_settings *scene_history_peek_physics(const scene_history *history, bool redo)
+const physics_settings *scene_history_peek_physics(const scene_history *history, bool redo)
 {
     const scene_edit *edits = redo ? history->redo : history->undo;
     if (!acount(edits) || !alast(edits).physics) {
@@ -702,7 +702,7 @@ static int apply_edit(scene_history *history, ecs_world *world, ecs_entity *out_
             assert(result == ECS_OK);
         }
     } else {
-        GameTransform *transform = GAME_GameTransform_get(world, edit.entity);
+        Transform *transform = Transform_get(world, edit.entity);
         if (!transform) {
             return -1;
         }
@@ -1039,8 +1039,8 @@ static av_value *history_edits(av_doc *doc, const scene_edit *edits)
             av_obj_add_val(doc, object, "hierarchy_after", av_clone(doc, edit->hierarchy_after));
         }
         if (edit->physics) {
-            av_obj_add_val(doc, object, "physics_before", game_physics_settings_write(doc, edit->physics_before));
-            av_obj_add_val(doc, object, "physics_after", game_physics_settings_write(doc, edit->physics_after));
+            av_obj_add_val(doc, object, "physics_before", physics_settings_write(doc, edit->physics_before));
+            av_obj_add_val(doc, object, "physics_after", physics_settings_write(doc, edit->physics_after));
         }
         double positions[] = { edit->before.x,
                                edit->before.y,
@@ -1181,8 +1181,8 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
         av_value *physics = av_obj_get(object, "physics_before");
         if (physics) {
             av_value *next = av_obj_get(object, "physics_after");
-            if (!next || !game_physics_settings_read(physics, &out->physics_before) ||
-                !game_physics_settings_read(next, &out->physics_after)) {
+            if (!next || !physics_settings_read(physics, &out->physics_before) ||
+                !physics_settings_read(next, &out->physics_after)) {
                 return false;
             }
             out->entity = (ecs_entity){ 0 };
@@ -1192,8 +1192,8 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
         if (!history_read_position(av_obj_get(object, "position"), position)) {
             return false;
         }
-        out->before = (GameTransform){ position[0], position[1] };
-        out->after = (GameTransform){ position[2], position[3] };
+        out->before = (Transform){ position[0], position[1] };
+        out->after = (Transform){ position[2], position[3] };
         av_value *fields = av_obj_get(object, "fields");
         if (!av_is_arr(fields)) {
             return false;

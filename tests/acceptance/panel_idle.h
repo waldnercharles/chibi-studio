@@ -141,7 +141,7 @@ static bool panel_idle_refresh(studio *s, studio_sources *sources, ui_data *data
     before = panel_idle_json(data, "propertyValues");
     properties_row row = { .kind = PROPERTIES_OBJECT,
                            .entity = ecs_entity_to_u64(scene->actors[1].entity),
-                           .component = GAME_COMPONENT_GameTransform.id,
+                           .component = COMPONENT_Transform.id,
                            .field = 0 };
     ui_activation change = { .argc = 4 };
     properties_row_id(&row, change.args[0]);
@@ -149,7 +149,7 @@ static bool panel_idle_refresh(studio *s, studio_sources *sources, ui_data *data
     snprintf(change.args[2], sizeof change.args[2], "0");
     snprintf(change.args[3], sizeof change.args[3], "x");
     studio_properties_action(s, "change", &change);
-    REQUIRE(GAME_GameTransform_get(scene->world, scene->actors[1].entity)->x == 7);
+    REQUIRE(Transform_get(scene->world, scene->actors[1].entity)->x == 7);
     studio_sources_resync(s, sources, data, "properties");
     after = panel_idle_json(data, "propertyValues");
     REQUIRE(before && after && strcmp(before, after));
@@ -157,7 +157,7 @@ static bool panel_idle_refresh(studio *s, studio_sources *sources, ui_data *data
     free(after);
     snprintf(change.args[1], sizeof change.args[1], "3");
     studio_properties_action(s, "change", &change);
-    REQUIRE(GAME_GameTransform_get(scene->world, scene->actors[1].entity)->x == 3);
+    REQUIRE(Transform_get(scene->world, scene->actors[1].entity)->x == 3);
     REQUIRE(app_scene_authoring_select_entity(scene, scene->actors[0].entity) == 0);
     scene->actors[1].marked = true;
     studio_sources_resync(s, sources, data, "properties");
@@ -330,8 +330,8 @@ static bool panel_idle_frame(void *state)
             REQUIRE(
                 app_scene_authoring_register_prototype(
                     scene,
-                    "name \"IdleProbe\"\ncomponents {\n    GameTransform x=0 "
-                    "y=0\n    GameVelocity\n}\n(array)behaviors \"Counter\"\n",
+                    "name \"IdleProbe\"\ncomponents {\n    Transform x=0 "
+                    "y=0\n    Velocity\n}\n(array)behaviors \"Counter\"\n",
                     NULL
                 ) == 0
             );
@@ -341,7 +341,7 @@ static bool panel_idle_frame(void *state)
                     "version 1\nname \"Start\"\n(array)entities {\n"
                     "    - name=\"First\" prototype=\"IdleProbe\"\n"
                     "    - name=\"Second\" prototype=\"IdleProbe\" { "
-                    "components { GameTransform x=3 y=0; }; }\n}\n",
+                    "components { Transform x=3 y=0; }; }\n}\n",
                     NULL
                 ) == 0
             );
@@ -350,7 +350,7 @@ static bool panel_idle_frame(void *state)
             scene->actors[1].marked = true;
             REQUIRE(scene_selection_count(scene) == 2);
             s->context.entity = ecs_entity_to_u64(scene->actors[0].entity);
-            s->context.component = GAME_COMPONENT_GameTransform.id;
+            s->context.component = COMPONENT_Transform.id;
             s->context.field = 0;
             snprintf(s->property_search, sizeof s->property_search, "Position");
             studio_behavior_show(s, 2);
@@ -437,15 +437,15 @@ static bool panel_idle_frame(void *state)
             int attached = panel_idle_target_count(&data);
             REQUIRE(attached == 2);
             popover_hide(popup);
-            game_source_registry *registry = s->scene->live->runtime->sources;
+            source_registry *registry = s->scene->live->runtime->sources;
             ecs_entity entity = s->scene->actors[0].entity;
-            REQUIRE(game_source_detach(registry, entity, "Counter") == 1);
+            REQUIRE(source_detach(registry, entity, "Counter") == 1);
             popover_show(popup, &anchor);
             studio_sources_resync(s, &sources, &data, "graph_targets");
             REQUIRE(panel_idle_target_count(&data) == attached - 1);
             popover_hide(popup);
             REQUIRE(
-                game_source_attach(
+                source_attach(
                     registry,
                     entity,
                     "Counter",

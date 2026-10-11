@@ -779,7 +779,7 @@ static void entity_row(rows *r, row_desc d, uint64_t handle, const char *path, b
 typedef struct field_source
 {
     const ecs_component_desc *desc;
-    const game_prototype_component *component;
+    const prototype_component *component;
     int index;
     pin_value value;
     row_desc row;
@@ -962,13 +962,7 @@ static void field_row(rows *r, const field_source *f)
 
 /* An object's field, edited in its world: the running one while the scene
    runs. A gesture's other editor (collaboration) shows what it sent. */
-static void object_field(
-    rows *r,
-    scene_actor *actor,
-    const game_prototype_component *component,
-    int index,
-    bool locked
-)
+static void object_field(rows *r, scene_actor *actor, const prototype_component *component, int index, bool locked)
 {
     studio *s = r->v->s;
     app_scene_authoring *scene = s->scene;
@@ -1013,11 +1007,10 @@ static void object_field(
 }
 
 /* An object's position, one row of two axes as the Scene moves it. */
-static void position_row(rows *r, scene_actor *actor, const game_prototype_component *component, bool locked)
+static void position_row(rows *r, scene_actor *actor, const prototype_component *component, bool locked)
 {
     studio *s = r->v->s;
-    const GameTransform
-        *position = GAME_GameTransform_get_const(s->scene->world, actor->entity);
+    const Transform *position = Transform_get_const(s->scene->world, actor->entity);
     if (!studio_matches(s->property_search, "Position")) {
         return;
     }
@@ -1030,7 +1023,7 @@ static void position_row(rows *r, scene_actor *actor, const game_prototype_compo
             .label = LABELS[i],
             .value = shown.f,
             .shape = { .min = -FLT_MAX, .max = FLT_MAX, .step = 1, .precision = 2, .single = true },
-            .mixed = properties_mixed(s, actor, GAME_COMPONENT_GameTransform.id, i, &shown),
+            .mixed = properties_mixed(s, actor, COMPONENT_Transform.id, i, &shown),
             .overridden = properties_overridden(s->scene, actor, component, i)
         };
     }
@@ -1038,7 +1031,7 @@ static void position_row(rows *r, scene_actor *actor, const game_prototype_compo
     properties_row_id(
         &(properties_row){ .kind = PROPERTIES_OBJECT,
                            .entity = ecs_entity_to_u64(actor->entity),
-                           .component = GAME_COMPONENT_GameTransform.id },
+                           .component = COMPONENT_Transform.id },
         id
     );
     vector_row(
@@ -1112,13 +1105,13 @@ static void end_panel(rows *r)
 }
 
 /* Whether the search finds the component or any field it shows. */
-static bool found(studio *s, const game_prototype_component *component, const char *title)
+static bool found(studio *s, const prototype_component *component, const char *title)
 {
     const ecs_component_desc *desc = component->desc;
     if (!s->property_search[0] || studio_matches(s->property_search, title)) {
         return true;
     }
-    if (desc->id == GAME_COMPONENT_GameTransform.id &&
+    if (desc->id == COMPONENT_Transform.id &&
         studio_matches(s->property_search, "Position")) {
         return true;
     }
@@ -1134,8 +1127,8 @@ static bool found(studio *s, const game_prototype_component *component, const ch
 static void component_panel(view *v, scene_actor *actor, const ecs_component_desc *desc, bool locked)
 {
     studio *s = v->s;
-    game_prototype_component added;
-    const game_prototype_component *component = properties_base(actor, desc, &added);
+    prototype_component added;
+    const prototype_component *component = properties_base(actor, desc, &added);
     char title[128], badge[16] = "";
     editor_component_label(desc->name, title, sizeof title);
     if (!found(s, component, title)) {
@@ -1173,7 +1166,7 @@ static void component_panel(view *v, scene_actor *actor, const ecs_component_des
     rows r = next_panel(v, &d);
     const void *data = ecs_component_data_const(s->scene->world, actor->entity, desc->id);
     for (int i = 0; d.open && i < desc->type->field_count; i++) {
-        if (desc->id == GAME_COMPONENT_GameTransform.id) {
+        if (desc->id == COMPONENT_Transform.id) {
             position_row(&r, actor, component, locked);
             break;
         }
@@ -1184,10 +1177,10 @@ static void component_panel(view *v, scene_actor *actor, const ecs_component_des
     end_panel(&r);
 }
 
-static void prototype_field(
+static void show_prototype_field(
     rows *r,
     scene_prototype_asset *asset,
-    const game_prototype_component *component,
+    const prototype_component *component,
     int index,
     bool locked
 )
@@ -1217,9 +1210,9 @@ static void prototype_field(
 static void prototype_panels(view *v, scene_prototype_asset *asset, bool locked)
 {
     studio *s = v->s;
-    game_prototype *prototype = asset->prototype;
+    prototype *prototype = asset->prototype;
     for (int i = 0; i < acount(prototype->components); i++) {
-        const game_prototype_component *component = &prototype->components[i];
+        const prototype_component *component = &prototype->components[i];
         const ecs_component_desc *desc = component->desc;
         char title[128];
         editor_component_label(desc->name, title, sizeof title);
@@ -1236,7 +1229,7 @@ static void prototype_panels(view *v, scene_prototype_asset *asset, bool locked)
         rows r = next_panel(v, &d);
         for (int f = 0; d.open && f < desc->type->field_count; f++) {
             if (property_field_visible(desc, &desc->type->fields[f], component->data)) {
-                prototype_field(&r, asset, component, f, locked);
+                show_prototype_field(&r, asset, component, f, locked);
             }
         }
         end_panel(&r);
@@ -1288,7 +1281,7 @@ static void scene_panels(view *v, bool locked)
         }
         end_panel(&ui);
     }
-    game_physics_settings physics = game_physics_configuration(scene->live->runtime->physics);
+    physics_settings physics = physics_configuration(scene->live->runtime->physics);
     bool open = properties_open(s, "physics");
     rows r = next_panel(
         v,
@@ -1303,10 +1296,10 @@ static void scene_panels(view *v, bool locked)
         } NUMBERS[] = {
             { SCENE_WORKERS,
               "Workers",
-              { .min = 0, .max = GAME_PHYSICS_WORKER_MAX, .step = 1, .integer = true } },
+              { .min = 0, .max = PHYSICS_WORKER_MAX, .step = 1, .integer = true } },
             { SCENE_SUBSTEPS,
               "Substeps",
-              { .min = 1, .max = GAME_PHYSICS_SUBSTEP_MAX, .step = 1, .integer = true } },
+              { .min = 1, .max = PHYSICS_SUBSTEP_MAX, .step = 1, .integer = true } },
         };
         static const struct
         {
@@ -1414,7 +1407,7 @@ static void selection_identity(view *v)
     trim(v, chips, count);
 }
 
-static void prototype_identity(view *v, const game_prototype *prototype)
+static void show_prototype_identity(view *v, const prototype *prototype)
 {
     studio *s = v->s;
     int instances = 0, components = acount(prototype->components);
@@ -1510,22 +1503,22 @@ static void field_menu(view *v, const properties_subject *subject)
         bool selected = other == actor ||
                         (subject->multi && scene_instance_selected(s->scene, a) &&
                          ecs_component_has(s->scene->world, other->entity, desc->id));
-        game_prototype_component added;
-        const game_prototype_component *base = properties_base(other, desc, &added);
+        prototype_component added;
+        const prototype_component *base = properties_base(other, desc, &added);
         /* Position resets both axes. */
-        bool position = desc->id == GAME_COMPONENT_GameTransform.id;
+        bool position = desc->id == COMPONENT_Transform.id;
         overridden |= selected &&
                       (properties_overridden(s->scene, other, base, s->context.field) ||
                        (position && properties_overridden(s->scene, other, base, 1)));
     }
     s->panel_work.property_overrides += target && actor->identity;
-    game_prototype_field *applicable = target && actor->identity
-                                         ? game_prototype_instance_overrides(
-                                               actor->base,
-                                               s->scene->world,
-                                               actor->entity
-                                           )
-                                         : NULL;
+    prototype_field *applicable = target && actor->identity
+                                    ? prototype_instance_overrides(
+                                          actor->base,
+                                          s->scene->world,
+                                          actor->entity
+                                      )
+                                    : NULL;
     for (int i = 0; i < acount(applicable); i++) {
         apply |= applicable[i].component == desc &&
                  applicable[i].field == s->context.field;
@@ -1691,7 +1684,7 @@ static void body(view *v, const properties_subject *subject)
         out = (shown){ .view = "prototype", .identity = "", .note = "", .add = true };
         if (s->tab == STUDIO_TAB_OBJECT) {
             out.identity = "prototype";
-            prototype_identity(v, subject->asset->prototype);
+            show_prototype_identity(v, subject->asset->prototype);
         }
         prototype_panels(v, subject->asset, subject->locked);
         add_button(v, subject);

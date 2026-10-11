@@ -31,12 +31,10 @@ static authoring_scene_node *capture_nodes(const app_scene_authoring *scene)
     authoring_scene_node *nodes = NULL;
     for (int i = 0; i < acount(scene->actors); i++) {
         const scene_actor *actor = &scene->actors[i];
-        const GameTransform
-            *position = GAME_GameTransform_get_const(scene->world, actor->entity);
-        const GameOrientation
-            *orientation = GAME_GameOrientation_get_const(scene->world, actor->entity);
-        const GameTransform3D
-            *spatial = GAME_GameTransform3D_get_const(scene->world, actor->entity);
+        const Transform *position = Transform_get_const(scene->world, actor->entity);
+        const Orientation
+            *orientation = Orientation_get_const(scene->world, actor->entity);
+        const Transform3D *spatial = Transform3D_get_const(scene->world, actor->entity);
         ecs_entity parent = ecs_parent(scene->world, actor->entity);
         int parent_index = node_index(nodes, acount(nodes), parent);
         if (parent.slot && parent_index < 0) {
@@ -106,7 +104,7 @@ static av_value *capture_hierarchy(
             );
         }
         if (node->has_transform_3d) {
-            const GameTransform3D *t = &node->transform_3d;
+            const Transform3D *t = &node->transform_3d;
             float values[] = { t->position.x, t->position.y, t->position.z,
                                t->rotation.x, t->rotation.y, t->rotation.z,
                                t->rotation.w, t->scale.x,    t->scale.y,
@@ -162,7 +160,7 @@ static bool read_nodes(app_scene_authoring *scene, av_value *root, authoring_sce
                 return false;
             }
             node.has_transform_2d = true;
-            node.position = (GameTransform){ values[0], values[1] };
+            node.position = (Transform){ values[0], values[1] };
         }
         av_value *orientation = av_obj_get(item, "orientation");
         if (orientation) {
@@ -179,7 +177,7 @@ static bool read_nodes(app_scene_authoring *scene, av_value *root, authoring_sce
                 return false;
             }
             node.has_transform_3d = true;
-            node.transform_3d = (GameTransform3D){
+            node.transform_3d = (Transform3D){
                 .position = { values[0], values[1], values[2] },
                 .rotation = { values[3], values[4], values[5], values[6] },
                 .scale = { values[7], values[8], values[9] }
@@ -262,27 +260,9 @@ static void apply_nodes(app_scene_authoring *scene, const authoring_scene_node *
             result = ecs_world_record_name(scene->world, node->entity, node->name, 1);
             assert(result == ECS_OK);
         }
-        record_pose(
-            scene->world,
-            node->entity,
-            GAME_COMPONENT_GameTransform.id,
-            node->has_transform_2d,
-            &node->position
-        );
-        record_pose(
-            scene->world,
-            node->entity,
-            GAME_COMPONENT_GameOrientation.id,
-            node->has_orientation,
-            &node->orientation
-        );
-        record_pose(
-            scene->world,
-            node->entity,
-            GAME_COMPONENT_GameTransform3D.id,
-            node->has_transform_3d,
-            &node->transform_3d
-        );
+        record_pose(scene->world, node->entity, COMPONENT_Transform.id, node->has_transform_2d, &node->position);
+        record_pose(scene->world, node->entity, COMPONENT_Orientation.id, node->has_orientation, &node->orientation);
+        record_pose(scene->world, node->entity, COMPONENT_Transform3D.id, node->has_transform_3d, &node->transform_3d);
         scene_actor *actor = scene_actor_by_identity(scene, scene_actor_identity(scene, node->entity));
         assert(actor);
         apush(ordered, *actor);
@@ -306,7 +286,7 @@ static void apply_nodes(app_scene_authoring *scene, const authoring_scene_node *
     afree(scene->actors);
     scene->actors = ordered;
     scene_link_paths(scene);
-    result = game_transform_propagate(scene->world);
+    result = transform_propagate(scene->world);
     assert(result == ECS_OK);
     scene->scene_dirty = true;
     asset_index_invalidate(scene);

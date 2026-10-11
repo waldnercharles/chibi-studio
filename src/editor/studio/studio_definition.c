@@ -44,7 +44,7 @@ static void open_event(studio *s, reference_symbol event, const char *name)
         open_asset(s, declared->source, name);
         return;
     }
-    report(s, game_host_event_reserved(name) ? "%s is a host event" : "No definition for %s", name);
+    report(s, host_event_reserved(name) ? "%s is a host event" : "No definition for %s", name);
 }
 
 static void peek(studio *s, const char *component)

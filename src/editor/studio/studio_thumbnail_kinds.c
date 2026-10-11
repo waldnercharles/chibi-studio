@@ -4,7 +4,7 @@
 /* What each kind of asset looks like in its thumbnail:
  * - a scene, its start state a few frames in, framed as the Scene view
  *   frames a scene it opens, its objects fitted, widened to what its
- *   GameCamera sees, as Godot's scene previews fit their content; its
+ *   Camera sees, as Godot's scene previews fit their content; its
  *   streamed terrain fills the frame first, and it is lit at the Scene
  *   view's scale, then shrinks;
  * - a prototype, one instance fitted on the project's stage (its lighting
@@ -93,8 +93,8 @@
    few at a time: behaviors by stage, then systems and prototypes. */
 typedef struct
 {
-    game_prototype_preview *preview;
-    game_prototype_registry registry;
+    prototype_preview *preview;
+    prototype_registry registry;
     int stage, next; /* what it copies next; WORLD_STAGES once it has all */
     uint64_t edits;  /* the asset index generation whose edits it holds */
     bool failed;
@@ -117,8 +117,8 @@ typedef struct
    each step, then it runs a frame a step and draws. */
 typedef struct
 {
-    game_scene_document *scene; /* NULL while none runs */
-    game_prototype_preview_scene_entity *entities;
+    scene_document *scene; /* NULL while none runs */
+    prototype_preview_scene_entity *entities;
     engine_viewport_view view; /* what it frames */
     int side;                  /* its picture's, before it shrinks */
     double started;            /* Studio's time when it launched */
@@ -186,14 +186,14 @@ static graph *largest_graph(const behavior_asset *asset)
 /* The working copy of a graph asset with unsaved edits, or NULL. */
 static const behavior_asset *unsaved_graph(studio *s, const char *name)
 {
-    game_preview_definition *d = game_preview_find_definition(s->scene->live, name);
+    preview_definition *d = preview_find_definition(s->scene->live, name);
     return d && d->unsaved ? d->working : NULL;
 }
 
 /* A copy of the graph asset's working copy, or its file's. */
 static behavior_asset *graph_asset(studio *s, const studio_thumb_job *job)
 {
-    game_preview_definition *definition = game_preview_find_definition(s->scene->live, job->name);
+    preview_definition *definition = preview_find_definition(s->scene->live, job->name);
     if (definition && definition->working_presentation) {
         return authoring_source_presentation_take_view(
             authoring_source_presentation_clone(definition->working_presentation)
@@ -386,9 +386,7 @@ static bool render_document(studio *s, studio_thumb_renderers *r, const studio_t
 static bool render_field(studio *s, const studio_thumb_job *job, CF_Canvas canvas)
 {
     int side = job->side;
-    const material_fields *fields = game_materials_fields(
-        s->scene->live->runtime->materials
-    );
+    const material_fields *fields = materials_fields(s->scene->live->runtime->materials);
     float *values = xmalloc((size_t)side * side * sizeof *values);
     char error[256];
     field_grid grid = { side, side, FIELD_EXTENT / (float)side, 0, 0 };
@@ -449,9 +447,9 @@ static double now_seconds()
     return (double)cf_get_ticks() / (double)cf_get_tick_frequency();
 }
 
-static void world_free(thumb_world *w)
+static void thumb_world_free(thumb_world *w)
 {
-    game_prototype_preview_free(w->preview);
+    prototype_preview_free(w->preview);
     *w = (thumb_world){ 0 };
 }
 
@@ -460,15 +458,15 @@ static void world_free(thumb_world *w)
  * the last applied generation. */
 static bool copy_sources(studio *s, thumb_world *w)
 {
-    game_preview_world *live = s->scene->live;
-    const authoring_sources *working = game_preview_sources_working(live);
-    const authoring_sources *applied = game_preview_sources_applied(live);
+    preview_world *live = s->scene->live;
+    const authoring_sources *working = preview_sources_working(live);
+    const authoring_sources *applied = preview_sources_applied(live);
     if (!working && !applied) {
         return true;
     }
     bool use_applied = !working || !authoring_sources_valid(working);
-    int result = game_preview_sources_mirror(
-        game_prototype_preview_live(w->preview),
+    int result = preview_sources_mirror(
+        prototype_preview_live(w->preview),
         live,
         use_applied,
         w->error,
@@ -483,10 +481,7 @@ static bool copy_sources(studio *s, thumb_world *w)
 static void copy_prototypes(studio *s, thumb_world *w)
 {
     for (int i = 0; i < acount(s->scene->prototypes); i++) {
-        game_prototype_preview_register_prototype(
-            w->preview,
-            s->scene->prototypes[i].prototype
-        );
+        prototype_preview_register_prototype(w->preview, s->scene->prototypes[i].prototype);
     }
 }
 
@@ -495,20 +490,20 @@ static void copy_prototypes(studio *s, thumb_world *w)
    with, untouched. */
 static bool world_fill(studio *s, thumb_world *w, double deadline)
 {
-    game_preview_world *live = s->scene->live;
+    preview_world *live = s->scene->live;
     while (w->stage < WORLD_STAGES - 1) {
-        if (w->next >= game_preview_definition_count(live)) {
+        if (w->next >= preview_definition_count(live)) {
             w->stage++;
             w->next = 0;
             continue;
         }
-        game_preview_definition *d = game_preview_definition_at(live, w->next++);
+        preview_definition *d = preview_definition_at(live, w->next++);
         behavior_domain domain = d->working->domain;
         if (d->working_presentation || shader_domain(domain) ||
             stage_of(domain) != w->stage) {
             continue;
         }
-        game_prototype_preview_register_behavior(w->preview, d->name, d->working);
+        prototype_preview_register_behavior(w->preview, d->name, d->working);
         if (now_seconds() >= deadline) {
             return false;
         }
@@ -527,15 +522,15 @@ static bool world_fill(studio *s, thumb_world *w, double deadline)
    again, and a changed system or prototype replaces its copy. */
 static bool world_refresh(studio *s, thumb_world *w)
 {
-    game_preview_world *live = s->scene->live;
+    preview_world *live = s->scene->live;
     for (int stage = 0; stage < WORLD_STAGES - 1; stage++) {
-        for (int i = 0; i < game_preview_definition_count(live); i++) {
-            game_preview_definition *d = game_preview_definition_at(live, i);
+        for (int i = 0; i < preview_definition_count(live); i++) {
+            preview_definition *d = preview_definition_at(live, i);
             behavior_domain domain = d->working->domain;
             char message[256];
             if (!d->working_presentation && !shader_domain(domain) &&
                 stage_of(domain) == stage) {
-                game_prototype_preview_update_behavior(w->preview, d->name, d->working, true, message, sizeof message);
+                prototype_preview_update_behavior(w->preview, d->name, d->working, true, message, sizeof message);
             }
         }
     }
@@ -548,13 +543,13 @@ static bool world_refresh(studio *s, thumb_world *w)
 
 /* The world once it holds the authored state, or NULL while it copies a
    step's share of it. */
-static game_prototype_preview *world_ready(studio *s, studio_thumb_renderers *r)
+static prototype_preview *world_ready(studio *s, studio_thumb_renderers *r)
 {
     thumb_world *w = &r->world;
     uint64_t edits = s->scene->asset_index_generation;
     if (!w->preview) {
         w->registry = app_component_registry();
-        w->preview = game_prototype_preview_new(&w->registry);
+        w->preview = prototype_preview_new(&w->registry);
         w->edits = edits;
     }
     if (w->failed && w->edits == edits) {
@@ -577,10 +572,10 @@ static game_prototype_preview *world_ready(studio *s, studio_thumb_renderers *r)
     return w->preview;
 }
 
-static bool run_frames(game_prototype_preview *preview)
+static bool run_frames(prototype_preview *preview)
 {
     for (int frame = 0; frame <= SCENE_FRAMES; frame++) {
-        if (game_prototype_preview_tick(preview, frame * FRAME_SECONDS) != 0) {
+        if (prototype_preview_tick(preview, frame * FRAME_SECONDS) != 0) {
             return false;
         }
     }
@@ -592,7 +587,7 @@ static bool run_frames(game_prototype_preview *preview)
    running frame rate. Unlit surfaces show at least `ambient`. */
 static void still_lighting(ecs_world *world, float ambient)
 {
-    ecs_component_id component = GAME_COMPONENT_GameHRC2D.id;
+    ecs_component_id component = COMPONENT_HRC2D.id;
     ecs_query query;
     if (!ecs_world_component(world, component) ||
         ecs_query_begin(world, &query, &component, 1) != ECS_OK) {
@@ -600,7 +595,7 @@ static void still_lighting(ecs_world *world, float ambient)
     }
     ecs_entity entity;
     while (ecs_query_next(&query, &entity)) {
-        GameHRC2D *lighting = GAME_GameHRC2D_get(world, entity);
+        HRC2D *lighting = HRC2D_get(world, entity);
         lighting->radiance_hysteresis = lighting->bounce_hysteresis = 0;
         lighting->adaptive = false;
         lighting->ambient = fmaxf(lighting->ambient, ambient);
@@ -652,11 +647,11 @@ static void widen_view(engine_viewport *viewport, float span)
     engine_viewport_set_view(viewport, &view);
 }
 
-static bool draw_world(thumb_view *view, game_prototype_preview *preview, CF_Canvas canvas)
+static bool draw_world(thumb_view *view, prototype_preview *preview, CF_Canvas canvas)
 {
-    ecs_world *world = game_prototype_preview_world(preview);
-    const game_particles *particles = game_prototype_preview_particles(preview);
-    const engine *runtime = game_prototype_preview_runtime(preview);
+    ecs_world *world = prototype_preview_world(preview);
+    const particles *particles = prototype_preview_particles(preview);
+    const engine *runtime = prototype_preview_runtime(preview);
     engine_viewport_camera camera;
     engine_viewport_get_camera(view->viewport, &camera);
     cf_draw_push();
@@ -694,12 +689,12 @@ static bool draw_world(thumb_view *view, game_prototype_preview *preview, CF_Can
 /* ---------- Prototypes and materials ---------- */
 
 /* The project's lighting and material worlds: the first prototype holding
-   GameHRC2D, as Neon Swarm's HRC, or NULL. */
-static const game_prototype *stage_prototype(app_scene_authoring *scene)
+   HRC2D, as Neon Swarm's HRC, or NULL. */
+static const prototype *stage_prototype(app_scene_authoring *scene)
 {
     for (int i = 0; i < acount(scene->prototypes); i++) {
-        const game_prototype *p = scene->prototypes[i].prototype;
-        if (prototype_has_component_id(p, GAME_COMPONENT_GameHRC2D.id)) {
+        const prototype *p = scene->prototypes[i].prototype;
+        if (prototype_has_component_id(p, COMPONENT_HRC2D.id)) {
             return p;
         }
     }
@@ -708,14 +703,14 @@ static const game_prototype *stage_prototype(app_scene_authoring *scene)
 
 const char *studio_thumb_stage(studio *s)
 {
-    const game_prototype *stage = stage_prototype(s->scene);
+    const prototype *stage = stage_prototype(s->scene);
     return stage ? stage->name : NULL;
 }
 
-static game_prototype_preview_scene_entity entity_of(const game_prototype *prototype)
+static prototype_preview_scene_entity entity_of(const prototype *native_prototype)
 {
-    return (game_prototype_preview_scene_entity){ .prototype = prototype,
-                                                  .parent = -1 };
+    return (prototype_preview_scene_entity){ .prototype = native_prototype,
+                                             .parent = -1 };
 }
 
 /* One instance on the project's stage, fitted to the square, which spans at
@@ -724,34 +719,34 @@ static game_prototype_preview_scene_entity entity_of(const game_prototype *proto
 static bool render_instance(
     studio *s,
     studio_thumb_renderers *r,
-    const game_prototype *prototype,
+    const prototype *native_prototype,
     const studio_thumb_job *job,
     CF_Canvas canvas
 )
 {
-    game_prototype_preview *preview = r->world.preview;
-    const game_prototype *stage = stage_prototype(s->scene);
-    game_prototype_preview_scene_entity entities[2] = { entity_of(prototype) };
+    prototype_preview *preview = r->world.preview;
+    const prototype *stage = stage_prototype(s->scene);
+    prototype_preview_scene_entity entities[2] = { entity_of(native_prototype) };
     int count = 1;
-    if (stage && stage != prototype) {
+    if (stage && stage != native_prototype) {
         entities[count++] = entity_of(stage);
     }
     char error[256];
-    game_prototype_preview_stop(preview);
-    bool drawn = game_prototype_preview_launch_scene(preview, entities, count, error, sizeof error) ==
+    prototype_preview_stop(preview);
+    bool drawn = prototype_preview_launch_scene(preview, entities, count, error, sizeof error) ==
                      0 &&
                  run_frames(preview);
-    ecs_world *world = game_prototype_preview_world(preview);
-    ecs_entity entity = game_prototype_preview_entity(preview);
+    ecs_world *world = prototype_preview_world(preview);
+    ecs_entity entity = prototype_preview_entity(preview);
     thumb_view *view = view_for(r, job);
-    engine_viewport_set_perspective(view->viewport, drawn && GAME_GameGeometry3D_has(world, entity));
+    engine_viewport_set_perspective(view->viewport, drawn && Geometry3D_has(world, entity));
     drawn = drawn && fit_scene_view(view->viewport, world, &entity, 1);
     if (drawn) {
         widen_view(view->viewport, PROTOTYPE_MIN_SPAN);
         still_lighting(world, PROTOTYPE_AMBIENT);
         drawn = draw_world(view, preview, canvas);
     }
-    game_prototype_preview_stop(preview);
+    prototype_preview_stop(preview);
     return drawn;
 }
 
@@ -770,39 +765,39 @@ static bool render_material(studio *s, studio_thumb_renderers *r, const studio_t
         snprintf(
             text,
             sizeof text,
-            "name \"Swatch\"\ncomponents {\n    GAME.GameGeometry3D "
+            "name \"Swatch\"\ncomponents {\n    Geometry3D "
             "depth=100.0 height=100.0 primitive=%d width=100.0\n    "
-            "GAME.GameShader material=\"%s\" parameters=\"\" shape=\"\"\n    "
-            "(object)GAME.GameTransform\n}\n",
-            (int)GAME_PRIMITIVE_SPHERE,
+            "Shader material=\"%s\" parameters=\"\" shape=\"\"\n    "
+            "(object)Transform\n}\n",
+            (int)PRIMITIVE_SPHERE,
             job->name
         );
     } else {
         snprintf(
             text,
             sizeof text,
-            "name \"Swatch\"\ncomponents {\n    GAME.GameAppearance "
+            "name \"Swatch\"\ncomponents {\n    Appearance "
             "color=0xffffffff height=100.0 shape=\"Circle\" width=100.0\n    "
-            "GAME.GameMaterial scene=0xffffffff\n    GAME.GameShader "
+            "Material scene=0xffffffff\n    Shader "
             "material=\"%s\" parameters=\"\" shape=\"\"\n    "
-            "(object)GAME.GameTransform\n}\n",
+            "(object)Transform\n}\n",
             job->name
         );
     }
-    game_prototype *swatch = game_prototype_load(text, &r->world.registry, error, sizeof error);
+    prototype *swatch = prototype_load(text, &r->world.registry, error, sizeof error);
     bool drawn = swatch && render_instance(s, r, swatch, job, canvas);
-    game_prototype_free(swatch);
+    prototype_free(swatch);
     return drawn;
 }
 
 /* ---------- Scenes ---------- */
 
 /* The scene's objects as its file lists them, with the authored prototypes. */
-static game_prototype_preview_scene_entity *scene_entities(studio *s, const game_scene_document *scene)
+static prototype_preview_scene_entity *scene_entities(studio *s, const scene_document *scene)
 {
-    game_prototype_preview_scene_entity *entities = NULL;
+    prototype_preview_scene_entity *entities = NULL;
     for (int i = 0; i < acount(scene->entities); i++) {
-        const game_scene_entity *e = &scene->entities[i];
+        const scene_entity *e = &scene->entities[i];
         scene_prototype_asset *asset = find_prototype(s->scene, e->prototype);
         if (!asset) {
             afree(entities);
@@ -810,7 +805,7 @@ static game_prototype_preview_scene_entity *scene_entities(studio *s, const game
         }
         apush(
             entities,
-            ((game_prototype_preview_scene_entity){
+            ((prototype_preview_scene_entity){
                 .prototype = asset->prototype,
                 .parent = e->parent,
                 .components = e->components,
@@ -825,16 +820,16 @@ static game_prototype_preview_scene_entity *scene_entities(studio *s, const game
 static void run_end(studio_thumb_renderers *r)
 {
     if (r->run.scene) {
-        game_prototype_preview_stop(r->world.preview);
+        prototype_preview_stop(r->world.preview);
     }
     afree(r->run.entities);
-    game_scene_document_free(r->run.scene);
+    scene_document_free(r->run.scene);
     r->run = (scene_run){ 0 };
 }
 
 /* The scene at `path` as its open document holds it with unsaved edits, or
    NULL. */
-static game_scene_document *unsaved_scene(studio *s, const char *path)
+static scene_document *unsaved_scene(studio *s, const char *path)
 {
     app_scene_authoring *scene = s->scene;
     for (int i = 0; i < acount(scene->tabs); i++) {
@@ -850,7 +845,7 @@ static game_scene_document *unsaved_scene(studio *s, const char *path)
         }
         char error[256];
         return tab->scene_dirty && tab->scene_value
-                 ? game_scene_document_load_value(tab->scene_value, error, sizeof error)
+                 ? scene_document_load_value(tab->scene_value, error, sizeof error)
                  : NULL;
     }
     return NULL;
@@ -888,20 +883,20 @@ static int scene_side(float span, int side)
    under the stream budget too, so no step prepares them all at once. */
 static void frame_scene(studio_thumb_renderers *r, const studio_thumb_job *job)
 {
-    game_prototype_preview *preview = r->world.preview;
-    ecs_world *world = game_prototype_preview_world(preview);
+    prototype_preview *preview = r->world.preview;
+    ecs_world *world = prototype_preview_world(preview);
     thumb_view *view = view_for(r, job);
     bool perspective = r->run.scene->perspective;
     engine_viewport_set_perspective(view->viewport, perspective);
-    int count = game_prototype_preview_entity_count(preview);
+    int count = prototype_preview_entity_count(preview);
     ecs_entity *objects = xmalloc((size_t)count * sizeof *objects);
     for (int i = 0; i < count; i++) {
-        objects[i] = game_prototype_preview_entity_at(preview, i);
+        objects[i] = prototype_preview_entity_at(preview, i);
     }
     bool fitted = fit_scene_view(view->viewport, world, objects, count);
     free(objects);
     engine_viewport_view camera;
-    if (game_camera_view(world, game_prototype_preview_runtime(preview), &camera) > 0) {
+    if (camera_view(world, prototype_preview_runtime(preview), &camera) > 0) {
         if (fitted && !perspective) {
             widen_to(view->viewport, &camera);
         } else {
@@ -916,36 +911,36 @@ static void frame_scene(studio_thumb_renderers *r, const studio_thumb_job *job)
                                     -seen.center_y,
                                     0.5f * fmaxf(seen.span_width, seen.span_height),
                                     0 };
-    game_materials *materials = game_prototype_preview_live(preview)->runtime->materials;
-    game_materials_set_stream_views(materials, &stream, 1);
-    game_materials_set_stream_deferred(materials, true);
+    materials *materials = prototype_preview_live(preview)->runtime->materials;
+    materials_set_stream_views(materials, &stream, 1);
+    materials_set_stream_deferred(materials, true);
 }
 
 /* Loads the scene, its unsaved edits or its file, and launches it. */
 static studio_thumb_step scene_start(studio *s, studio_thumb_renderers *r, const studio_thumb_job *job)
 {
-    game_prototype_preview *preview = world_ready(s, r);
+    prototype_preview *preview = world_ready(s, r);
     if (!preview) {
         return r->world.failed ? STUDIO_THUMB_BLANK : STUDIO_THUMB_BUSY;
     }
     char error[256];
-    game_scene_document *scene = unsaved_scene(s, job->path);
+    scene_document *scene = unsaved_scene(s, job->path);
     if (!scene) {
         char *text = text_file_read(job->path);
-        scene = text ? game_scene_document_load(text, error, sizeof error) : NULL;
+        scene = text ? scene_document_load(text, error, sizeof error) : NULL;
         free(text);
     }
-    game_prototype_preview_scene_entity *entities = scene && acount(scene->entities)
-                                                      ? scene_entities(s, scene)
-                                                      : NULL;
+    prototype_preview_scene_entity *entities = scene && acount(scene->entities)
+                                                 ? scene_entities(s, scene)
+                                                 : NULL;
     r->run = (scene_run){ .scene = scene,
                           .entities = entities,
                           .started = s->time,
                           .frame = -1 };
-    game_prototype_preview_stop(preview);
+    prototype_preview_stop(preview);
     bool running = entities &&
-                   game_prototype_preview_configure_physics(preview, scene->physics) == 0 &&
-                   game_prototype_preview_launch_scene(preview, entities, acount(entities), error, sizeof error) ==
+                   prototype_preview_configure_physics(preview, scene->physics) == 0 &&
+                   prototype_preview_launch_scene(preview, entities, acount(entities), error, sizeof error) ==
                        0;
     if (!running) {
         run_end(r);
@@ -957,15 +952,15 @@ static studio_thumb_step scene_start(studio *s, studio_thumb_renderers *r, const
 
 /* Streams terrain for a step's share; true once none waits, or when it
    cannot stream. */
-static bool stream(game_prototype_preview *preview)
+static bool stream(prototype_preview *preview)
 {
-    game_materials *materials = game_prototype_preview_live(preview)->runtime->materials;
+    materials *materials = prototype_preview_live(preview)->runtime->materials;
     double deadline = now_seconds() + STEP_SECONDS;
     const char *error = NULL;
     do {
-        error = game_materials_prepare(materials);
-    } while (!error && game_materials_streaming(materials) && now_seconds() < deadline);
-    return error || !game_materials_streaming(materials);
+        error = materials_prepare(materials);
+    } while (!error && materials_streaming(materials) && now_seconds() < deadline);
+    return error || !materials_streaming(materials);
 }
 
 /* Copies `source` over all of `destination`. */
@@ -1002,7 +997,7 @@ static void shrink(thumb_view *view, CF_Canvas canvas, int side)
    the last shrinks into the thumbnail and no half lit picture shows. */
 static bool draw_pass(studio_thumb_renderers *r, const studio_thumb_job *job, CF_Canvas canvas)
 {
-    game_prototype_preview *preview = r->world.preview;
+    prototype_preview *preview = r->world.preview;
     thumb_view *view = view_at(&r->scene, r->run.side);
     if (!view->picture.id) {
         view->picture = cf_make_canvas(cf_canvas_defaults(view->side, view->side));
@@ -1010,7 +1005,7 @@ static bool draw_pass(studio_thumb_renderers *r, const studio_thumb_job *job, CF
     }
     engine_viewport_set_perspective(view->viewport, r->run.scene->perspective);
     engine_viewport_set_view(view->viewport, &r->run.view);
-    still_lighting(game_prototype_preview_world(preview), 0);
+    still_lighting(prototype_preview_world(preview), 0);
     bool drawn = draw_world(view, preview, view->picture);
     if (drawn && r->run.pass == LIGHT_PASSES - 1) {
         shrink(view, canvas, job->side);
@@ -1032,23 +1027,20 @@ static studio_thumb_step render_scene(
     if (!r->run.scene) {
         return scene_start(s, r, job);
     }
-    game_prototype_preview *preview = r->world.preview;
+    prototype_preview *preview = r->world.preview;
     if (r->run.frame < 0) {
         bool capped = s->time - r->run.started >= STREAM_CAP_SECONDS;
         r->run.frame = stream(preview) || capped ? 0 : -1;
         return STUDIO_THUMB_BUSY;
     }
     if (r->run.frame <= SCENE_FRAMES) {
-        bool ran = game_prototype_preview_tick(preview, r->run.frame++ * FRAME_SECONDS) ==
-                   0;
+        bool ran = prototype_preview_tick(preview, r->run.frame++ * FRAME_SECONDS) == 0;
         if (!ran) {
             run_end(r);
         }
         return ran ? STUDIO_THUMB_BUSY : STUDIO_THUMB_BLANK;
     }
-    bool waiting = game_materials_streaming(
-        game_prototype_preview_live(preview)->runtime->materials
-    );
+    bool waiting = materials_streaming(prototype_preview_live(preview)->runtime->materials);
     if (waiting && r->run.partial && !stream(preview)) {
         return STUDIO_THUMB_BUSY;
     }
@@ -1119,20 +1111,16 @@ studio_thumb_step studio_thumb_render(
 
 static char *unsaved_scene_text(studio *s, const char *path)
 {
-    game_scene_document *scene = unsaved_scene(s, path);
-    char *text = scene ? game_scene_document_save(
-                             scene,
-                             project_components()
-                         )
-                       : NULL;
-    game_scene_document_free(scene);
+    scene_document *scene = unsaved_scene(s, path);
+    char *text = scene ? scene_document_save(scene, project_components()) : NULL;
+    scene_document_free(scene);
     return text;
 }
 
 static char *unsaved_prototype_text(studio *s, const char *name)
 {
     const scene_prototype_asset *asset = find_prototype(s->scene, name);
-    return asset && asset->dirty ? game_prototype_save(asset->prototype) : NULL;
+    return asset && asset->dirty ? prototype_save(asset->prototype) : NULL;
 }
 
 static char *unsaved_graph_text(studio *s, const char *name)
@@ -1164,7 +1152,7 @@ void studio_thumb_renderers_free(studio_thumb_renderers *r)
         return;
     }
     run_end(r);
-    world_free(&r->world);
+    thumb_world_free(&r->world);
     for (int i = 0; i < STUDIO_THUMB_SIZE_COUNT; i++) {
         view_free(&r->views[i]);
     }

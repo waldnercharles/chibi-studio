@@ -92,10 +92,10 @@ int app_refactor_mentions(const app_refactor *plan)
 /* Whether Studio holds edits of the file it has not saved. */
 static bool unsaved(app_scene_authoring *scene, const char *path)
 {
-    for (int i = 0; i < game_preview_definition_count(scene->live); i++) {
-        game_preview_definition *definition = game_preview_definition_at(scene->live, i);
+    for (int i = 0; i < preview_definition_count(scene->live); i++) {
+        preview_definition *definition = preview_definition_at(scene->live, i);
         if (definition->unsaved &&
-            scene_same_file(game_preview_definition_path(definition), path)) {
+            scene_same_file(preview_definition_path(definition), path)) {
             return true;
         }
     }
@@ -351,15 +351,13 @@ static int plan_symbol(
                       source_catalog_source_path(scene->content_root, selected->path);
     bool declaration = selected && selected->path && name &&
                        symbol.kind == REFERENCE_SYMBOL_ASSET &&
-                       game_preview_sources_working(scene->live) &&
+                       preview_sources_working(scene->live) &&
                        (selected->kind == REFERENCE_ASSET_PROTOTYPE ||
                         selected->kind == REFERENCE_ASSET_EVENT);
     if (executable || declaration) {
         int result = -1;
         if (name && symbol.kind == REFERENCE_SYMBOL_ASSET) {
-            const authoring_sources *sources = game_preview_sources_working(
-                scene->live
-            );
+            const authoring_sources *sources = preview_sources_working(scene->live);
             authoring_document *documents = NULL;
             for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
                 const authoring_source *source = authoring_sources_at(sources, i);
@@ -697,7 +695,7 @@ int app_scene_authoring_apply_refactor(
             );
         }
     }
-    game_preview_source_staging *stages[2] = { 0 };
+    preview_source_staging *stages[2] = { 0 };
     int valid = acount(source_edits)
                   ? scene_stage_source_edits(scene, source_edits, acount(source_edits), stages, NULL, error, error_size)
                   : 0;

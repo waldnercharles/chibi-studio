@@ -21,7 +21,7 @@ void invalidate_runtime_snapshot(app_scene_authoring *scene)
     scene_kept_clear(scene);
     scene->runtime_selected = (ecs_entity){ 0 };
     for (int i = 0; i < acount(scene->actors); i++) {
-        game_prototype_free(scene->actors[i].runtime_snapshot);
+        prototype_free(scene->actors[i].runtime_snapshot);
         scene->actors[i].runtime_snapshot = NULL;
         scene->actors[i].runtime_parent = 0;
     }
@@ -33,10 +33,10 @@ static int capture_runtime_snapshot(app_scene_authoring *scene)
     if (scene->runtime_snapshot_valid) {
         return 0;
     }
-    game_prototype **snapshots = NULL;
+    prototype **snapshots = NULL;
     for (int i = 0; i < acount(scene->actors); i++) {
         scene_actor *actor = &scene->actors[i];
-        game_prototype *captured = game_prototype_capture_entity(
+        prototype *captured = prototype_capture_entity(
             actor->prototype_name,
             scene->world,
             actor->entity,
@@ -49,8 +49,8 @@ static int capture_runtime_snapshot(app_scene_authoring *scene)
         free(captured->identity);
         captured->identity = xstrdup(actor->base->identity);
         char error[256];
-        game_prototype *snapshot = game_prototype_clone(captured, error, sizeof error);
-        game_prototype_free(captured);
+        prototype *snapshot = prototype_clone(captured, error, sizeof error);
+        prototype_free(captured);
         if (!snapshot) {
             goto fail;
         }
@@ -61,13 +61,9 @@ static int capture_runtime_snapshot(app_scene_authoring *scene)
         );
         for (int j = 0; j < count; j++) {
             scene_debug_attachment info;
-            if (scene_debug_attachment_at(
-                    scene->live->runtime->sources,
-                    actor->entity,
-                    j,
-                    &info
-                ) != 0 ||
-                game_prototype_add_graph(snapshot, info.asset_name) != 0) {
+            if (scene_debug_attachment_at(scene->live->runtime->sources, actor->entity, j, &info) !=
+                    0 ||
+                prototype_add_graph(snapshot, info.asset_name) != 0) {
                 goto fail;
             }
         }
@@ -90,11 +86,11 @@ static int restart_runtime_actor(app_scene_authoring *scene, scene_actor *actor)
 {
     uint64_t parent = scene_actor_parent(scene, actor);
     assert(actor->runtime_snapshot);
-    const game_prototype_spawn_hooks hooks = { attach_prototype_behavior, scene };
+    const prototype_spawn_hooks hooks = { attach_prototype_behavior, scene };
     char error[256];
     ecs_entity entity = { 0 };
     if (!authoring_prototype_parameters(scene->live->runtime->entities, actor->runtime_snapshot, error, sizeof error) ||
-        game_prototype_spawn(actor->runtime_snapshot, scene->world, &hooks, &entity, error, sizeof error) !=
+        prototype_spawn(actor->runtime_snapshot, scene->world, &hooks, &entity, error, sizeof error) !=
             ECS_OK) {
         return -1;
     }
@@ -121,7 +117,7 @@ static void destroy_replaced(app_scene_authoring *scene, ecs_entity *replaced)
 {
     for (int i = acount(replaced) - 1; i >= 0; i--) {
         if (ecs_entity_is_alive(scene->world, replaced[i])) {
-            game_source_detach_entity(scene->live->runtime->sources, replaced[i]);
+            source_detach_entity(scene->live->runtime->sources, replaced[i]);
             ecs_world_destroy_entity(scene->world, replaced[i]);
         }
     }
@@ -141,8 +137,8 @@ static int restart_runtime(app_scene_authoring *scene)
     editor_set_inspection_blocked(scene->graph_editor, true);
     scene->live->runtime->deferred = true;
     scene->runtime_selected = (ecs_entity){ 0 };
-    game_entities_reset(scene->live->runtime->entities);
-    game_particles_clear(scene->live->runtime->particles);
+    entities_reset(scene->live->runtime->entities);
+    particles_clear(scene->live->runtime->particles);
     /* Parents come before their children. */
     ecs_entity *replaced = NULL;
     for (int i = 0; i < acount(scene->actors); i++) {
@@ -161,7 +157,7 @@ static int restart_runtime(app_scene_authoring *scene)
     }
     /* The respawned objects name each other again. */
     scene_link_paths(scene);
-    if (game_entities_rebuild_global_bindings(scene->live->runtime->entities) != 0) {
+    if (entities_rebuild_global_bindings(scene->live->runtime->entities) != 0) {
         snprintf(scene->message, sizeof scene->message, "Global binding names must be unique.");
         return -1;
     }
@@ -206,7 +202,7 @@ void scene_kept_drop(app_scene_authoring *scene)
 static void keep_component(
     app_scene_authoring *scene,
     ecs_entity entity,
-    const game_prototype_component *authored,
+    const prototype_component *authored,
     scene_kept *kept
 )
 {
@@ -238,9 +234,9 @@ int scene_keep_changes(app_scene_authoring *scene, const ecs_component_desc *onl
         return -1;
     }
     scene_kept kept = { .actor = actor->identity, .only = only };
-    const game_prototype *authored = actor->runtime_snapshot;
+    const prototype *authored = actor->runtime_snapshot;
     for (int i = 0; i < acount(authored->components); i++) {
-        const game_prototype_component *component = &authored->components[i];
+        const prototype_component *component = &authored->components[i];
         if (component->data && (!only || component->desc->id == only->id) &&
             ecs_component_has(scene->world, actor->entity, component->desc->id)) {
             keep_component(scene, actor->entity, component, &kept);
@@ -361,7 +357,7 @@ int app_scene_authoring_set_runtime_target(app_scene_authoring *scene, app_runti
 
 const ecs_world *app_scene_authoring_preview_world(const app_scene_authoring *scene)
 {
-    return game_prototype_preview_world(scene->prototype_preview);
+    return prototype_preview_world(scene->prototype_preview);
 }
 
 int app_scene_authoring_preview_prototype(app_scene_authoring *scene, const char *prototype_name)
@@ -381,25 +377,25 @@ int app_scene_authoring_preview_prototype(app_scene_authoring *scene, const char
     bool loop = continuing ? scene->preview_loop
                            : prototype_has_component_id(
                                  asset->prototype,
-                                 GAME_COMPONENT_GameProjectile.id
+                                 COMPONENT_Projectile.id
                              );
     bool follow = continuing ? scene->preview_follow : loop;
     char error[256] = "";
     finish_transform_edit(scene, true);
     app_scene_authoring_stop_prototype_preview(scene);
-    int configured = game_prototype_preview_configure_physics(
+    int configured = prototype_preview_configure_physics(
         scene->prototype_preview,
-        game_physics_configuration(scene->live->runtime->physics)
+        physics_configuration(scene->live->runtime->physics)
     );
     assert(configured == 0);
     /* Source behaviors reach the preview's world as their sources publish
        (scene_stage_source_edits); only graph behaviors are copied here. */
-    for (int i = 0; i < game_preview_definition_count(scene->live); i++) {
-        game_preview_definition *definition = game_preview_definition_at(scene->live, i);
+    for (int i = 0; i < preview_definition_count(scene->live); i++) {
+        preview_definition *definition = preview_definition_at(scene->live, i);
         if (definition->working_presentation) {
             continue;
         }
-        if (game_prototype_preview_update_behavior(
+        if (prototype_preview_update_behavior(
                 scene->prototype_preview,
                 definition->name,
                 definition->applied,
@@ -421,16 +417,16 @@ int app_scene_authoring_preview_prototype(app_scene_authoring *scene, const char
         );
         return -1;
     }
-    int result = game_prototype_preview_launch(scene->prototype_preview, asset->prototype, error, sizeof error);
+    int result = prototype_preview_launch(scene->prototype_preview, asset->prototype, error, sizeof error);
     if (result == ECS_OK) {
         scene->active_runtime_target = APP_RUNTIME_PREVIEW;
-        scene->preview_prototype_id = xstrdup(game_prototype_identity(asset->prototype));
+        scene->preview_prototype_id = xstrdup(prototype_identity(asset->prototype));
         scene->runtime_preview_prototype = (int)(asset - scene->prototypes);
-        const GameTransform *origin = GAME_GameTransform_get_const(
-            game_prototype_preview_world(scene->prototype_preview),
-            game_prototype_preview_entity(scene->prototype_preview)
+        const Transform *origin = Transform_get_const(
+            prototype_preview_world(scene->prototype_preview),
+            prototype_preview_entity(scene->prototype_preview)
         );
-        scene->preview_origin = origin ? *origin : (GameTransform){ 0 };
+        scene->preview_origin = origin ? *origin : (Transform){ 0 };
     }
     scene->preview_playing = result == ECS_OK;
     scene->preview_loop = loop;
@@ -453,8 +449,8 @@ void app_scene_authoring_stop_prototype_preview(app_scene_authoring *scene)
             scene->debug_sessions[APP_RUNTIME_PREVIEW]++;
             editor_set_inspector(scene->graph_editor, NULL, 0);
         }
-        render_shader_clear_world(game_prototype_preview_world(scene->prototype_preview));
-        game_prototype_preview_stop(scene->prototype_preview);
+        render_shader_clear_world(prototype_preview_world(scene->prototype_preview));
+        prototype_preview_stop(scene->prototype_preview);
         scene_model_preview_free(scene);
         free(scene->preview_prototype_id);
         scene->preview_prototype_id = NULL;
@@ -514,7 +510,11 @@ int app_scene_authoring_runtime_command(
                 return -1;
             }
             scene->live->runtime->deferred = false;
-            if (game_source_begin(scene->live->runtime->sources, scene->live->runtime->now, scene->live->runtime->delta) != 0) {
+            if (source_begin(
+                    scene->live->runtime->sources,
+                    scene->live->runtime->now,
+                    scene->live->runtime->delta
+                ) != 0) {
                 *playing = false;
                 *step = false;
                 engine_set_playing(scene->runtime, false);
@@ -522,7 +522,7 @@ int app_scene_authoring_runtime_command(
                     scene->message,
                     sizeof scene->message,
                     "Scene Begin failed: %s. Stop to return to editing.",
-                    game_source_error(scene->live->runtime->sources)
+                    source_error(scene->live->runtime->sources)
                 );
                 return -1;
             }
@@ -554,12 +554,16 @@ int app_scene_authoring_runtime_command(
             return 0;
         }
         scene->live->runtime->deferred = false;
-        if (game_source_begin(scene->live->runtime->sources, scene->live->runtime->now, scene->live->runtime->delta) != 0) {
+        if (source_begin(
+                scene->live->runtime->sources,
+                scene->live->runtime->now,
+                scene->live->runtime->delta
+            ) != 0) {
             snprintf(
                 scene->message,
                 sizeof scene->message,
                 "Scene Begin failed: %s. Stop to return to editing.",
-                game_source_error(scene->live->runtime->sources)
+                source_error(scene->live->runtime->sources)
             );
             return -1;
         }
@@ -570,13 +574,13 @@ int app_scene_authoring_runtime_command(
         scene->active_runtime_target = APP_RUNTIME_PREVIEW;
         *playing = command == APP_RUNTIME_PLAY;
         *step = false;
-        return engine_set_playing(game_prototype_preview_runtime(scene->prototype_preview), *playing);
+        return engine_set_playing(prototype_preview_runtime(scene->prototype_preview), *playing);
     }
     if (command == APP_RUNTIME_STEP) {
         scene->active_runtime_target = APP_RUNTIME_PREVIEW;
         *playing = false;
         *step = true;
-        engine *preview = game_prototype_preview_runtime(scene->prototype_preview);
+        engine *preview = prototype_preview_runtime(scene->prototype_preview);
         engine_set_playing(preview, false);
         return engine_step(preview);
     }
@@ -596,7 +600,7 @@ int app_scene_authoring_runtime_command(
 void app_scene_authoring_set_time_scale(app_scene_authoring *scene, double scale)
 {
     engine_set_time_scale(scene->runtime, scale);
-    engine_set_time_scale(game_prototype_preview_runtime(scene->prototype_preview), scale);
+    engine_set_time_scale(prototype_preview_runtime(scene->prototype_preview), scale);
 }
 
 double app_scene_authoring_time_scale(const app_scene_authoring *scene)
@@ -607,7 +611,7 @@ double app_scene_authoring_time_scale(const app_scene_authoring *scene)
 const engine_frame_timing *app_scene_authoring_runtime_timing(const app_scene_authoring *scene)
 {
     engine *runtime = scene->active_runtime_target == APP_RUNTIME_PREVIEW
-                        ? game_prototype_preview_runtime(scene->prototype_preview)
+                        ? prototype_preview_runtime(scene->prototype_preview)
                         : scene->runtime;
     return engine_last_timing(runtime);
 }
@@ -622,11 +626,11 @@ app_runtime_state app_scene_authoring_runtime_state(const app_scene_authoring *s
     state.playing = state.target == APP_RUNTIME_PREVIEW ? scene->preview_playing
                                                         : scene->runtime_playing;
     ecs_world *world = NULL;
-    game_source_registry *behaviors = NULL;
+    source_registry *behaviors = NULL;
     if (state.target == APP_RUNTIME_PREVIEW) {
-        world = game_prototype_preview_world(scene->prototype_preview);
-        behaviors = game_prototype_preview_sources(scene->prototype_preview);
-        state.selected_entity = game_prototype_preview_entity(scene->prototype_preview);
+        world = prototype_preview_world(scene->prototype_preview);
+        behaviors = prototype_preview_sources(scene->prototype_preview);
+        state.selected_entity = prototype_preview_entity(scene->prototype_preview);
         state.message = scene->prototype_message;
     } else {
         world = scene->world;
@@ -671,7 +675,7 @@ static ecs_entity watch_spawns(app_scene_authoring *scene)
 {
     ecs_entity *running = NULL, spawned = { 0 };
     uint64_t *ids = NULL;
-    game_entities_copy_live(scene->live->runtime->entities, &running);
+    entities_copy_live(scene->live->runtime->entities, &running);
     for (int i = 0; i < acount(running); i++) {
         uint64_t id = ecs_entity_to_u64(running[i]);
         const char *prototype = seen(scene, id)
@@ -750,18 +754,18 @@ int app_scene_authoring_frame(app_scene_authoring *scene, double monotonic_time)
     }
     preview_behavior_edits(scene);
     int result = 0;
-    ecs_entity preview_entity = game_prototype_preview_entity(scene->prototype_preview);
-    engine *preview_runtime = game_prototype_preview_runtime(scene->prototype_preview);
+    ecs_entity preview_entity = prototype_preview_entity(scene->prototype_preview);
+    engine *preview_runtime = prototype_preview_runtime(scene->prototype_preview);
     engine_set_focus(preview_runtime, engine_get_focus(scene->runtime));
     if (preview_entity.slot) {
-        result = game_prototype_preview_tick(scene->prototype_preview, monotonic_time);
+        result = prototype_preview_tick(scene->prototype_preview, monotonic_time);
         if (result < 0) {
             snprintf(scene->prototype_message, sizeof scene->prototype_message, "%s", engine_error(preview_runtime));
         }
     }
     if (scene->preview_loop && scene->preview_playing && result >= 0 &&
         (engine_last_timing(preview_runtime)->simulation_time >= 2.0 ||
-         !ecs_entity_is_alive(game_prototype_preview_world(scene->prototype_preview), preview_entity))) {
+         !ecs_entity_is_alive(prototype_preview_world(scene->prototype_preview), preview_entity))) {
         scene_prototype_asset *asset = previewed_prototype(scene);
         if (asset) {
             result = app_scene_authoring_preview_prototype(
@@ -798,10 +802,10 @@ int app_scene_authoring_input(app_scene_authoring *scene, const char *action, do
     }
     if (scene->active_runtime_target == APP_RUNTIME_PREVIEW) {
         engine_set_focus(
-            game_prototype_preview_runtime(scene->prototype_preview),
+            prototype_preview_runtime(scene->prototype_preview),
             engine_get_focus(scene->runtime)
         );
-        return game_prototype_preview_input(scene->prototype_preview, action, value, pressed, NULL);
+        return prototype_preview_input(scene->prototype_preview, action, value, pressed, NULL);
     }
     return engine_dispatch_input(scene->runtime, action, value, pressed, NULL);
 }
@@ -818,10 +822,10 @@ int app_scene_authoring_move(app_scene_authoring *scene, float x, float y)
     }
     if (preview) {
         engine_set_focus(
-            game_prototype_preview_runtime(scene->prototype_preview),
+            prototype_preview_runtime(scene->prototype_preview),
             engine_get_focus(scene->runtime)
         );
-        return game_prototype_preview_sample_movement(scene->prototype_preview, x, y);
+        return prototype_preview_sample_movement(scene->prototype_preview, x, y);
     }
     return engine_sample_movement(scene->runtime, x, y);
 }
@@ -829,7 +833,7 @@ int app_scene_authoring_move(app_scene_authoring *scene, float x, float y)
 static int sample_aim(app_scene_authoring *scene, CF_V2 value, bool firing, bool point)
 {
     engine *runtime = scene->active_runtime_target == APP_RUNTIME_PREVIEW
-                        ? game_prototype_preview_runtime(scene->prototype_preview)
+                        ? prototype_preview_runtime(scene->prototype_preview)
                         : scene->runtime;
     engine_set_focus(runtime, engine_get_focus(scene->runtime));
     return engine_sample_aim(runtime, value, firing, point);

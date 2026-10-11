@@ -1378,12 +1378,12 @@ static bool enabled_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_FRAME: return selection;
         case STUDIO_COMMAND_APPLY_OVERRIDES: {
             scene_actor *actor = studio_prototype_action_actor(s);
-            game_prototype_field *overrides = actor ? game_prototype_instance_overrides(
-                                                          actor->base,
-                                                          s->scene->world,
-                                                          actor->entity
-                                                      )
-                                                    : NULL;
+            prototype_field *overrides = actor ? prototype_instance_overrides(
+                                                     actor->base,
+                                                     s->scene->world,
+                                                     actor->entity
+                                                 )
+                                               : NULL;
             bool any = acount(overrides) > 0;
             afree(overrides);
             return any;

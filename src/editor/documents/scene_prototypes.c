@@ -14,16 +14,16 @@
 #include <string.h>
 #include <sys/stat.h>
 
-int register_prototype_hosts(app_scene_authoring *scene, const game_prototype *prototype)
+int register_prototype_hosts(app_scene_authoring *scene, const prototype *native_prototype)
 {
-    if (game_entities_register(scene->live->runtime->entities, prototype) != 0 ||
-        game_prototype_preview_register_prototype(scene->prototype_preview, prototype) !=
+    if (entities_register(scene->live->runtime->entities, native_prototype) != 0 ||
+        prototype_preview_register_prototype(scene->prototype_preview, native_prototype) !=
             0) {
         snprintf(
             scene->prototype_message,
             sizeof scene->prototype_message,
             "Could not update runtime prototype %s.",
-            prototype->name
+            native_prototype->name
         );
         return -1;
     }
@@ -40,7 +40,7 @@ static int detach_prototype_behavior(
         return -1;
     }
     scene_prototype_asset *asset = find_prototype(scene, prototype_name);
-    if (!asset || !game_prototype_has_graph(asset->prototype, asset_name)) {
+    if (!asset || !prototype_has_graph(asset->prototype, asset_name)) {
         return -1;
     }
     if (scene->runtime_snapshot_valid &&
@@ -49,18 +49,18 @@ static int detach_prototype_behavior(
         return -1;
     }
     prototype_history_before(scene, asset->prototype);
-    if (game_prototype_remove_graph(asset->prototype, asset_name) != 0) {
+    if (prototype_remove_graph(asset->prototype, asset_name) != 0) {
         return -1;
     }
-    game_source_registry *behaviors = scene->live->runtime->sources;
+    source_registry *behaviors = scene->live->runtime->sources;
     char error[256];
     for (int i = 0; i < acount(scene->actors); i++) {
         scene_actor *actor = &scene->actors[i];
         if (strcmp(actor->prototype_name, prototype_name) != 0) {
             continue;
         }
-        game_source_detach(behaviors, actor->entity, asset_name);
-        game_prototype *base = game_prototype_clone(asset->prototype, error, sizeof error);
+        source_detach(behaviors, actor->entity, asset_name);
+        prototype *base = prototype_clone(asset->prototype, error, sizeof error);
         if (!base) {
             snprintf(
                 scene->prototype_message,
@@ -71,7 +71,7 @@ static int detach_prototype_behavior(
             );
             return -1;
         }
-        game_prototype_free(actor->base);
+        prototype_free(actor->base);
         actor->base = base;
     }
     asset->dirty = 1;
@@ -109,10 +109,10 @@ int app_scene_authoring_detach_prototype_behavior(
     return result;
 }
 
-bool prototype_has_component_id(const game_prototype *prototype, ecs_component_id id)
+bool prototype_has_component_id(const prototype *native_prototype, ecs_component_id id)
 {
-    for (int i = 0; i < acount(prototype->components); i++) {
-        if (prototype->components[i].desc->id == id) {
+    for (int i = 0; i < acount(native_prototype->components); i++) {
+        if (native_prototype->components[i].desc->id == id) {
             return true;
         }
     }
@@ -121,12 +121,12 @@ bool prototype_has_component_id(const game_prototype *prototype, ecs_component_i
 
 static int refresh_prototype_actor(
     app_scene_authoring *scene,
-    const game_prototype *prototype,
+    const prototype *native_prototype,
     scene_actor *actor
 )
 {
     char error[256];
-    av_value *overrides = game_prototype_capture_overrides_value(
+    av_value *overrides = prototype_capture_overrides_value(
         actor->base,
         scene->world,
         actor->entity
@@ -136,18 +136,18 @@ static int refresh_prototype_actor(
     }
     for (int i = 0; i < acount(actor->base->components); i++) {
         const ecs_component_desc *desc = actor->base->components[i].desc;
-        if (prototype_has_component_id(prototype, desc->id) ||
+        if (prototype_has_component_id(native_prototype, desc->id) ||
             !ecs_component_has(scene->world, actor->entity, desc->id)) {
             continue;
         }
         scene_retention_remove(&actor->retained, desc->name);
-        av_value *values = game_prototype_entity_component_value(
+        av_value *values = prototype_entity_component_value(
             scene->world,
             actor->entity,
             desc,
             &scene->registry
         );
-        av_value *defaults = game_prototype_component_value(actor->base, desc->name);
+        av_value *defaults = prototype_component_value(actor->base, desc->name);
         assert(values && defaults);
         /* Only the instance's own values are worth keeping for the
            component's return; the prototype's come back with it. */
@@ -166,7 +166,7 @@ static int refresh_prototype_actor(
     for (int i = 0; i < scene->registry.component_count; i++) {
         const ecs_component_desc *desc = scene->registry.components[i];
         if (desc && prototype_has_component_id(actor->base, desc->id) &&
-            !prototype_has_component_id(prototype, desc->id) &&
+            !prototype_has_component_id(native_prototype, desc->id) &&
             ecs_component_has(scene->world, actor->entity, desc->id) &&
             ecs_world_record_remove(scene->world, actor->entity, desc->id, (uint64_t)i + 1) !=
                 ECS_OK) {
@@ -174,8 +174,8 @@ static int refresh_prototype_actor(
             return -1;
         }
     }
-    for (int i = 0; i < acount(prototype->components); i++) {
-        const game_prototype_component *component = &prototype->components[i];
+    for (int i = 0; i < acount(native_prototype->components); i++) {
+        const prototype_component *component = &native_prototype->components[i];
         if (!ecs_component_has(scene->world, actor->entity, component->desc->id) &&
             ecs_world_record_add(scene->world, actor->entity, component->desc->id, NULL, (uint64_t)i + 1) !=
                 ECS_OK) {
@@ -187,8 +187,8 @@ static int refresh_prototype_actor(
         av_value_free(overrides);
         return -1;
     }
-    for (int i = 0; i < acount(prototype->components); i++) {
-        const game_prototype_component *component = &prototype->components[i];
+    for (int i = 0; i < acount(native_prototype->components); i++) {
+        const prototype_component *component = &native_prototype->components[i];
         for (int field = 0; field < component->desc->type->field_count; field++) {
             pin_value value;
             pin_read_field(component->data, &component->desc->type->fields[field], &value);
@@ -204,7 +204,7 @@ static int refresh_prototype_actor(
             }
         }
     }
-    if (game_prototype_apply_components_value(
+    if (prototype_apply_components_value(
             scene->world,
             actor->entity,
             overrides,
@@ -219,7 +219,7 @@ static int refresh_prototype_actor(
     for (int i = 0; i < scene->registry.component_count; i++) {
         const ecs_component_desc *desc = scene->registry.components[i];
         if (desc && prototype_has_component_id(actor->base, desc->id) &&
-            !prototype_has_component_id(prototype, desc->id) &&
+            !prototype_has_component_id(native_prototype, desc->id) &&
             ecs_component_has(scene->world, actor->entity, desc->id) &&
             ecs_world_record_remove(scene->world, actor->entity, desc->id, (uint64_t)i + 1) !=
                 ECS_OK) {
@@ -231,16 +231,16 @@ static int refresh_prototype_actor(
         av_value_free(overrides);
         return -1;
     }
-    if (restore_retained_components(scene, actor, prototype) != 0) {
+    if (restore_retained_components(scene, actor, native_prototype) != 0) {
         av_value_free(overrides);
         return -1;
     }
-    game_prototype *base = game_prototype_clone(prototype, error, sizeof error);
+    prototype *base = prototype_clone(native_prototype, error, sizeof error);
     if (!base) {
         av_value_free(overrides);
         return -1;
     }
-    game_prototype_free(actor->base);
+    prototype_free(actor->base);
     actor->base = base;
     av_value_free(overrides);
     return 0;
@@ -281,7 +281,7 @@ int write_prototype_field(
     pin_value value
 )
 {
-    if (game_prototype_write_field(asset->prototype, component, field, value) != 0) {
+    if (prototype_write_field(asset->prototype, component, field, value) != 0) {
         return -1;
     }
     asset->dirty = 1;
@@ -298,7 +298,7 @@ int app_scene_authoring_read_prototype_field(
 )
 {
     scene_prototype_asset *asset = find_prototype(scene, prototype_name);
-    return asset ? game_prototype_read_field(asset->prototype, component, field, value)
+    return asset ? prototype_read_field(asset->prototype, component, field, value)
                  : -1;
 }
 
@@ -366,7 +366,7 @@ const ecs_component_desc *component_descriptor(const app_scene_authoring *scene,
     return NULL;
 }
 
-int restore_retained_components(app_scene_authoring *scene, scene_actor *actor, const game_prototype *prototype)
+int restore_retained_components(app_scene_authoring *scene, scene_actor *actor, const prototype *native_prototype)
 {
     for (int i = 0; i < acount(actor->retained); i++) {
         scene_retained_component *retained = &actor->retained[i];
@@ -380,11 +380,11 @@ int restore_retained_components(app_scene_authoring *scene, scene_actor *actor, 
             }
             continue;
         }
-        if (!prototype_has_component_id(prototype, desc->id)) {
+        if (!prototype_has_component_id(native_prototype, desc->id)) {
             continue;
         }
-        av_value *defaults = game_prototype_component_value(prototype, desc->name);
-        av_value *values = game_prototype_rebase_component_value(
+        av_value *defaults = prototype_component_value(native_prototype, desc->name);
+        av_value *values = prototype_rebase_component_value(
             retained->values,
             retained->defaults,
             defaults
@@ -413,8 +413,8 @@ static int edit_components(
 )
 {
     prototype_history_before(scene, asset->prototype);
-    int result = add ? game_prototype_add_native_component(asset->prototype, desc)
-                     : game_prototype_remove_component(asset->prototype, desc->name);
+    int result = add ? prototype_add_native_component(asset->prototype, desc)
+                     : prototype_remove_component(asset->prototype, desc->name);
     assert(result == 0);
     asset->dirty = 1;
     asset_index_invalidate(scene);
@@ -508,17 +508,17 @@ static int restore_prototype(
         return 0;
     }
     char error[256];
-    av_value *current = game_prototype_to_value(asset->prototype);
+    av_value *current = prototype_to_value(asset->prototype);
     av_value *snapshot = (*from)[last];
-    game_prototype *prototype = game_prototype_load_value(snapshot, &scene->registry, error, sizeof error);
-    if (!prototype) {
+    prototype *native_prototype = prototype_load_value(snapshot, &scene->registry, error, sizeof error);
+    if (!native_prototype) {
         av_value_free(current);
         return -1;
     }
     adel(*from, last);
     apush(*to, current);
-    game_prototype_free(asset->prototype);
-    asset->prototype = prototype;
+    prototype_free(asset->prototype);
+    asset->prototype = native_prototype;
     asset->dirty = 1;
     asset_index_invalidate(scene);
     if (refresh_prototype_instances(scene, asset) != 0) {
@@ -541,21 +541,21 @@ int prototype_redo(app_scene_authoring *scene)
     return asset ? restore_prototype(scene, asset, &asset->redo, &asset->undo) : -1;
 }
 
-static int append_prototype_asset(app_scene_authoring *scene, game_prototype *prototype, const char *path)
+static int append_prototype_asset(app_scene_authoring *scene, prototype *native_prototype, const char *path)
 {
-    if (!scene || !prototype || !prototype->name ||
-        find_prototype(scene, prototype->name)) {
-        game_prototype_free(prototype);
+    if (!scene || !native_prototype || !native_prototype->name ||
+        find_prototype(scene, native_prototype->name)) {
+        prototype_free(native_prototype);
         return -1;
     }
     scene_prototype_asset asset = {
         .path = path ? xstrdup(path) : NULL,
-        .prototype = prototype,
+        .prototype = native_prototype,
         .dirty = path ? 0 : 1,
     };
-    if (register_prototype_hosts(scene, prototype) != 0) {
+    if (register_prototype_hosts(scene, native_prototype) != 0) {
         free(asset.path);
-        game_prototype_free(prototype);
+        prototype_free(native_prototype);
         return -1;
     }
     apush(scene->prototypes, asset);
@@ -571,8 +571,8 @@ int app_scene_authoring_register_prototype(app_scene_authoring *scene, const cha
         return -1;
     }
     char error[256];
-    game_prototype *prototype = game_prototype_load(json, &scene->registry, error, sizeof error);
-    return append_prototype_asset(scene, prototype, path);
+    prototype *native_prototype = prototype_load(json, &scene->registry, error, sizeof error);
+    return append_prototype_asset(scene, native_prototype, path);
 }
 
 int app_scene_authoring_save_prototype(
@@ -589,7 +589,7 @@ int app_scene_authoring_save_prototype(
         snprintf(scene->prototype_message, sizeof scene->prototype_message, "Prototype path is already open.");
         return -1;
     }
-    char *json = game_prototype_save(asset->prototype);
+    char *json = prototype_save(asset->prototype);
     if (!json) {
         return -1;
     }
@@ -620,12 +620,12 @@ static int prototype_attach_behavior(
         return -1;
     }
     scene_prototype_asset *asset = find_prototype(scene, prototype_name);
-    game_source_registry *behaviors = scene->live->runtime->sources;
+    source_registry *behaviors = scene->live->runtime->sources;
     if (!asset || !asset->prototype) {
         snprintf(scene->prototype_message, sizeof scene->prototype_message, "Prototype not found.");
         return -1;
     }
-    if (!game_source_registered(behaviors, asset_name)) {
+    if (!source_registered(behaviors, asset_name)) {
         snprintf(
             scene->prototype_message,
             sizeof scene->prototype_message,
@@ -634,7 +634,7 @@ static int prototype_attach_behavior(
         );
         return -1;
     }
-    if (game_prototype_has_graph(asset->prototype, asset_name)) {
+    if (prototype_has_graph(asset->prototype, asset_name)) {
         snprintf(
             scene->prototype_message,
             sizeof scene->prototype_message,
@@ -650,7 +650,7 @@ static int prototype_attach_behavior(
         return -1;
     }
     prototype_history_before(scene, asset->prototype);
-    if (game_prototype_add_graph(asset->prototype, asset_name) != 0) {
+    if (prototype_add_graph(asset->prototype, asset_name) != 0) {
         snprintf(
             scene->prototype_message,
             sizeof scene->prototype_message,
@@ -662,7 +662,7 @@ static int prototype_attach_behavior(
     }
 
     scene_actor **actors = NULL;
-    game_prototype **snapshots = NULL;
+    prototype **snapshots = NULL;
     scene_actor **attached = NULL;
     char error[256];
     for (int i = 0; i < acount(scene->actors); i++) {
@@ -670,7 +670,7 @@ static int prototype_attach_behavior(
         if (strcmp(actor->prototype_name, prototype_name) != 0) {
             continue;
         }
-        game_prototype *snapshot = game_prototype_clone(asset->prototype, error, sizeof error);
+        prototype *snapshot = prototype_clone(asset->prototype, error, sizeof error);
         if (!snapshot) {
             snprintf(
                 scene->prototype_message,
@@ -680,7 +680,7 @@ static int prototype_attach_behavior(
                 error
             );
             free_behavior_snapshots(snapshots);
-            game_prototype_remove_graph(asset->prototype, asset_name);
+            prototype_remove_graph(asset->prototype, asset_name);
             afree(actors);
             afree(attached);
             return -1;
@@ -692,7 +692,7 @@ static int prototype_attach_behavior(
         if (actor_has_behavior(behaviors, actors[i], asset_name)) {
             continue;
         }
-        if (game_source_attach(
+        if (source_attach(
                 behaviors,
                 actors[i]->entity,
                 asset_name,
@@ -707,10 +707,10 @@ static int prototype_attach_behavior(
                 asset_name
             );
             for (int j = 0; j < acount(attached); j++) {
-                game_source_detach(behaviors, attached[j]->entity, asset_name);
+                source_detach(behaviors, attached[j]->entity, asset_name);
             }
             free_behavior_snapshots(snapshots);
-            game_prototype_remove_graph(asset->prototype, asset_name);
+            prototype_remove_graph(asset->prototype, asset_name);
             afree(actors);
             afree(attached);
             return -1;
@@ -718,7 +718,7 @@ static int prototype_attach_behavior(
         apush(attached, actors[i]);
     }
     for (int i = 0; i < acount(actors); i++) {
-        game_prototype_free(actors[i]->base);
+        prototype_free(actors[i]->base);
         actors[i]->base = snapshots[i];
         snapshots[i] = NULL;
     }

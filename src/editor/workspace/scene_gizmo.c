@@ -63,7 +63,7 @@ struct scene_gizmo_target
     CF_V2 position; /* in the world, as the canvas shows it */
     float angle;    /* canvas radians: gameplay's negated */
     bool oriented;
-    GameGlobalTransform2D parent; /* where its parent places it; zero for a root */
+    GlobalTransform2D parent; /* where its parent places it; zero for a root */
     CF_V2 size; /* its visual's width and height; zero without one */
     int field[FIELD_COUNT]; /* index in the gesture's fields, or -1 */
 };
@@ -145,28 +145,28 @@ static const ecs_component_desc *sized_component(
     const char **height
 )
 {
-    const GameMeshSurface2D *mesh = GAME_GameMeshSurface2D_get_const(world, entity);
-    if (mesh && mesh->enabled && GAME_GameGeometry3D_has(world, entity)) {
+    const MeshSurface2D *mesh = MeshSurface2D_get_const(world, entity);
+    if (mesh && mesh->enabled && Geometry3D_has(world, entity)) {
         *height = "depth";
-        return &GAME_COMPONENT_GameGeometry3D;
+        return &COMPONENT_Geometry3D;
     }
     *height = "height";
-    return ecs_component_has(world, entity, GAME_COMPONENT_GameAppearance.id)
-             ? &GAME_COMPONENT_GameAppearance
+    return ecs_component_has(world, entity, COMPONENT_Appearance.id)
+             ? &COMPONENT_Appearance
              : NULL;
 }
 
 static scene_gizmo_target target_of(const ecs_world *world, ecs_entity entity)
 {
-    GameGlobalTransform2D pose = game_transform_world_2d(world, entity);
-    ecs_entity parent = game_transform_parent(world, entity);
+    GlobalTransform2D pose = transform_world_2d(world, entity);
+    ecs_entity parent = transform_parent(world, entity);
     scene_gizmo_target target = {
         .entity = entity,
         .position = { pose.position.x, -pose.position.y },
         .angle = -pose.radians,
-        .oriented = GAME_GameOrientation_get_const(world, entity) != NULL,
-        .parent = parent.slot ? game_transform_world_2d(world, parent)
-                              : (GameGlobalTransform2D){ 0 },
+        .oriented = Orientation_get_const(world, entity) != NULL,
+        .parent = parent.slot ? transform_world_2d(world, parent)
+                              : (GlobalTransform2D){ 0 },
     };
     const char *height;
     const ecs_component_desc *size = sized_component(world, entity, &height);
@@ -187,8 +187,8 @@ static scene_gizmo_target target_of(const ecs_world *world, ecs_entity entity)
 /* Whether a selected object places `entity`, which then moves with it. */
 static bool placed_by_selection(const app_scene_authoring *scene, ecs_entity entity)
 {
-    for (ecs_entity at = game_transform_parent(scene->world, entity); at.slot;
-         at = game_transform_parent(scene->world, at)) {
+    for (ecs_entity at = transform_parent(scene->world, entity); at.slot;
+         at = transform_parent(scene->world, at)) {
         for (int i = 0; i < acount(scene->actors); i++) {
             if (ecs_entity_to_u64(scene->actors[i].entity) == ecs_entity_to_u64(at) &&
                 scene_instance_selected(scene, i)) {
@@ -207,7 +207,7 @@ static scene_gizmo_target *selection_targets(const app_scene_authoring *scene)
     for (int i = 0; i < acount(scene->actors); i++) {
         ecs_entity entity = scene->actors[i].entity;
         if (scene_instance_selected(scene, i) &&
-            GAME_GameTransform_get_const(scene->world, entity) &&
+            Transform_get_const(scene->world, entity) &&
             !placed_by_selection(scene, entity)) {
             apush(targets, target_of(scene->world, entity));
         }
@@ -316,8 +316,7 @@ bool scene_gizmo_hint(app_scene_authoring *scene, scene_tool_hint *hint)
     engine_viewport_camera camera;
     engine_viewport_get_camera(viewport, &camera);
     *hint = (scene_tool_hint){
-        .missing = tool == SCENE_TOOL_ROTATE ? &GAME_COMPONENT_GameOrientation
-                                             : &GAME_COMPONENT_GameAppearance,
+        .missing = tool == SCENE_TOOL_ROTATE ? &COMPONENT_Orientation : &COMPONENT_Appearance,
         .x = (frame.pivot.x - camera.center_x) / camera.span_width + 0.5f,
         .y = (camera.center_y - frame.pivot.y) / camera.span_height + 0.5f,
     };
@@ -443,10 +442,10 @@ static void add_field(
 /* The fields dragging `part` writes on `target`. */
 static void add_fields(app_scene_authoring *scene, scene_gizmo_target *target, int part)
 {
-    add_field(scene, target, GIZMO_FIELD_X, &GAME_COMPONENT_GameTransform, "x");
-    add_field(scene, target, GIZMO_FIELD_Y, &GAME_COMPONENT_GameTransform, "y");
+    add_field(scene, target, GIZMO_FIELD_X, &COMPONENT_Transform, "x");
+    add_field(scene, target, GIZMO_FIELD_Y, &COMPONENT_Transform, "y");
     if (part == SCENE_GIZMO_RING) {
-        add_field(scene, target, FIELD_RADIANS, &GAME_COMPONENT_GameOrientation, "radians");
+        add_field(scene, target, FIELD_RADIANS, &COMPONENT_Orientation, "radians");
     }
     if (part < SCENE_GIZMO_HANDLE || target->size.x <= 0) {
         return;
@@ -456,9 +455,9 @@ static void add_fields(app_scene_authoring *scene, scene_gizmo_target *target, i
     add_field(scene, target, FIELD_WIDTH, size, "width");
     add_field(scene, target, FIELD_HEIGHT, size, height);
     /* Collision follows the visual it was made for. */
-    add_field(scene, target, FIELD_COLLIDER_WIDTH, &GAME_COMPONENT_GameCollider, "width");
-    add_field(scene, target, FIELD_COLLIDER_HEIGHT, &GAME_COMPONENT_GameCollider, "height");
-    add_field(scene, target, FIELD_COLLIDER_RADIUS, &GAME_COMPONENT_GameCollider, "radius");
+    add_field(scene, target, FIELD_COLLIDER_WIDTH, &COMPONENT_Collider, "width");
+    add_field(scene, target, FIELD_COLLIDER_HEIGHT, &COMPONENT_Collider, "height");
+    add_field(scene, target, FIELD_COLLIDER_RADIUS, &COMPONENT_Collider, "radius");
 }
 
 static float started(const scene_gizmo *g, const scene_gizmo_target *target, int slot)

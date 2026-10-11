@@ -1,4 +1,4 @@
 name "Data"
 components {
-    GAME.GameUi document="SavedData" hidden=#true
+    Ui document="SavedData" hidden=#true
 }

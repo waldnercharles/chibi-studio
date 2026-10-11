@@ -378,7 +378,7 @@ static bool ed_event_handled(const editor *e, const char *name)
 static void ed_search_host_events(const editor *e, ed_search_match **matches, const char *filter)
 {
     for (int i = 0; i < e->event_catalog_count; i++) {
-        const game_host_event_desc *event = &e->event_catalog[i];
+        const host_event_desc *event = &e->event_catalog[i];
         if (ed_event_handled(e, event->name)) {
             continue;
         }
@@ -400,7 +400,7 @@ static void ed_search_host_events(const editor *e, ed_search_match **matches, co
     }
 }
 
-/* Events GameUi documents send, found by their name and by what the player
+/* Events Ui documents send, found by their name and by what the player
  * does to send them. */
 static void ed_search_ui_events(const editor *e, ed_search_match **matches, const char *filter)
 {
@@ -422,7 +422,7 @@ static void ed_search_ui_events(const editor *e, ed_search_match **matches, cons
     }
 }
 
-/* The values GameUi documents bind under self, as Set UI Data nodes that set
+/* The values Ui documents bind under self, as Set UI Data nodes that set
    them: "Set items" in UI Data, found by the document and its rows' fields. */
 static void ed_search_ui_data(const editor *e, ed_search_match **matches, const char *filter)
 {
@@ -729,7 +729,7 @@ static node *spawn_match(editor *e, const ed_search_match *match)
         graph_set_pin_container(g, n, 1, set ? 1 : 0, v->container);
     }
     if (match->host_event) {
-        const game_host_event_desc *signature = &e->event_catalog[match->host_event - 1];
+        const host_event_desc *signature = &e->event_catalog[match->host_event - 1];
         graph_set_node_reference(g, n, 0, signature->name);
         ed_event_add_declared_params(e, n, signature);
     }

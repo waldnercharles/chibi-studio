@@ -1,5 +1,5 @@
 name "OutlinerHeader"
 components {
-    GAME.GameUi document="OutlinerHeader" hidden=#true
+    Ui document="OutlinerHeader" hidden=#true
 }
 (array)behaviors "OutlinerHeaderInput"

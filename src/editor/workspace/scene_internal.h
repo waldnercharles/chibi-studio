@@ -26,12 +26,12 @@ typedef struct
     ecs_entity entity;
     char *name;
     char *prototype_name;
-    game_prototype *base;
-    game_prototype *runtime_snapshot;
+    prototype *base;
+    prototype *runtime_snapshot;
     uint64_t runtime_parent; /* the parent's identity when runtime_snapshot was taken */
-    game_prototype *restored_state;
+    prototype *restored_state;
     scene_retained_component *retained;
-    game_prototype_link *paths; /* the entities the scene names in its fields */
+    prototype_link *paths; /* the entities the scene names in its fields */
     bool own_behaviors; /* the scene lists its behaviors instead of the prototype's */
     bool marked;
 } scene_actor;
@@ -133,7 +133,7 @@ typedef struct
 typedef struct
 {
     char *path;
-    game_prototype *prototype;
+    prototype *prototype;
     int dirty;
     scene_camera camera;
     av_value **undo;
@@ -183,20 +183,20 @@ struct app_scene_authoring
     engine_viewport *render_viewport;
     bool perspective;
     ecs_world *world;
-    game_preview_world *live;
-    game_preview_definition *definition;
+    preview_world *live;
+    preview_definition *definition;
     const behavior_asset *editor_working;
     editor *graph_editor;
     unsigned editor_revision_seen;
     const behavior_asset *editor_behavior_asset_seen;
-    game_preview_definition *editor_definition_seen;
+    preview_definition *editor_definition_seen;
     bool editor_state_seen;
     bool behavior_apply_pending;
     bool preview_retry;
     char preview_message[256];
     app_scene_prototype_resolve_fn resolve_prototype;
     void *resolve_user;
-    game_prototype_registry registry;
+    prototype_registry registry;
     editor_choices component_choices;
     editor_choices type_choices;
     editor_choices image_choices; /* Labels and names borrow content paths. */
@@ -204,7 +204,7 @@ struct app_scene_authoring
     editor_choices global_choices; /* Names and labels are owned by this scene. */
     char *system_path;
     engine *runtime;
-    game_prototype_preview *prototype_preview;
+    prototype_preview *prototype_preview;
     scene_model_preview *model_preview;
     scene_camera model_camera;
     char *preview_prototype_id;
@@ -266,7 +266,7 @@ struct app_scene_authoring
     bool preview_step;
     bool preview_loop;
     bool preview_follow;
-    GameTransform preview_origin;
+    Transform preview_origin;
     app_runtime_target active_runtime_target;
     scene_camera camera;
     int camera_target;
@@ -279,11 +279,11 @@ struct app_scene_authoring
     scene_field_edit property_edit;
     scene_field_target *property_others; /* array; recorded with the edit as one step */
     bool property_dirty;
-    GameTransform edit_before;
-    GameTransform edit_after;
+    Transform edit_before;
+    Transform edit_after;
     bool edit_dirty;
     bool dragging_actor;       /* a viewport gesture is in progress */
-    GameTransform drag_origin; /* where a paused run's spawned object was grabbed */
+    Transform drag_origin; /* where a paused run's spawned object was grabbed */
     scene_gizmo gizmo;
     bool marquee;
     bool marquee_visible;
@@ -311,7 +311,7 @@ struct app_scene_authoring
     bool tabs_transitioning;
     bool scene_tab_restoring;
     /* Editor view state (scene_view.c). */
-    game_save *view_store;  /* by scene path; the host persists it */
+    save *view_store;       /* by scene path; the host persists it */
     char *view_path;        /* the scene `view` was read for */
     uint64_t view_revision; /* of view_store when `view` was read or written */
     scene_view_entry *view; /* sorted by name */
@@ -333,7 +333,7 @@ void scene_notice(app_scene_authoring *scene);
 /* Document I/O is shared by disk commands and saved workspace checkpoints. */
 /* The open scene as saving would write it, leaving an edit in progress open,
    so reading it changes nothing. Owned; NULL when an object does not save. */
-game_scene_document *scene_authoring_document(app_scene_authoring *scene);
+scene_document *scene_authoring_document(app_scene_authoring *scene);
 av_value *scene_authoring_scene_value(app_scene_authoring *scene);
 char *scene_authoring_scene_text(app_scene_authoring *scene);
 int scene_authoring_load_value(app_scene_authoring *scene, av_value *value, const char *path);
@@ -401,7 +401,7 @@ void scene_property_value_free(pin_value *value);
 
 void finish_property_edit(app_scene_authoring *scene);
 void finish_transform_edit(app_scene_authoring *scene, bool cancel);
-void write_transform_edit(app_scene_authoring *scene, ecs_entity entity, GameTransform position);
+void write_transform_edit(app_scene_authoring *scene, ecs_entity entity, Transform position);
 /* Fits the `count` objects in `only` in the view, or every object when
    `only` is NULL; false when none of them draws. */
 bool fit_scene_view(engine_viewport *viewport, ecs_world *world, const ecs_entity *only, int count);
@@ -423,11 +423,11 @@ void free_behavior_names(char **names);
 char **instance_behavior_names(app_scene_authoring *scene, ecs_entity entity);
 scene_prototype_asset *previewed_prototype(app_scene_authoring *scene);
 
-bool prototype_has_component_id(const game_prototype *prototype, ecs_component_id id);
+bool prototype_has_component_id(const prototype *prototype, ecs_component_id id);
 /* The registry's component `name`, or NULL. */
 const ecs_component_desc *component_descriptor(const app_scene_authoring *scene, const char *name);
 /* The live world and the prototype preview spawn the prototype as it is now. */
-int register_prototype_hosts(app_scene_authoring *scene, const game_prototype *prototype);
+int register_prototype_hosts(app_scene_authoring *scene, const prototype *prototype);
 
 /* Hierarchy edits use actor identities in history/checkpoints, never ECS slots. */
 int scene_restore_hierarchy(app_scene_authoring *scene, av_value *value);
@@ -443,12 +443,12 @@ int scene_move_actors(
 /* ---------- Prototype actions (scene_prototype_actions.c) ---------- */
 
 /* How many other instances of its prototype take one of the fields from
-   `source` (game_prototype_instance_overrides), and so change when they are
+   `source` (prototype_instance_overrides), and so change when they are
    applied. */
 int scene_override_reach(
     const app_scene_authoring *scene,
     const scene_actor *source,
-    const game_prototype_field *fields,
+    const prototype_field *fields,
     int count
 );
 /* Copies the instance's fields into its prototype; the instances that
@@ -457,7 +457,7 @@ int scene_override_reach(
 int scene_apply_overrides(
     app_scene_authoring *scene,
     scene_actor *source,
-    const game_prototype_field *fields,
+    const prototype_field *fields,
     int count
 );
 /* Replaces prototype `name` with its definition `value`, as its scene Undo
@@ -480,7 +480,7 @@ int scene_save_as_prototype(
    place, values, behaviors and identity, as one Undo step that removes it
    and adds it back (scene_actors.c). */
 int scene_repoint_actor(app_scene_authoring *scene, int index, const char *prototype);
-void prototype_history_before(app_scene_authoring *scene, game_prototype *prototype);
+void prototype_history_before(app_scene_authoring *scene, prototype *prototype);
 /* The prototype a running scene entity was made from, or NULL. */
 const char *scene_entity_prototype(const app_scene_authoring *scene, ecs_entity entity);
 const char *runtime_entity_label(const app_scene_authoring *scene, ecs_entity entity);
@@ -514,7 +514,7 @@ void scene_toggle_instance(app_scene_authoring *scene, int index);
 void scene_select_range(app_scene_authoring *scene, const int *rows, int from, int to);
 /* Duplicates the selected objects `offset` away as one Undo step; the copies
    become the selection, the active object's copy active. */
-int scene_duplicate_selection(app_scene_authoring *scene, GameTransform offset);
+int scene_duplicate_selection(app_scene_authoring *scene, Transform offset);
 /* The selected objects as scene text: a scene document of their entities,
    each its prototype, overridden fields and behaviors, as the clipboard
    carries them. NULL without a selection. */
@@ -524,8 +524,8 @@ char *scene_copy_selection(app_scene_authoring *scene);
    on it. */
 typedef struct
 {
-    const GameTransform *center;
-    GameTransform offset;
+    const Transform *center;
+    Transform offset;
     float snap;
 } scene_paste_place;
 /* Adds the objects scene text `text` holds, keeping their layout and names
@@ -545,7 +545,7 @@ int write_prototype_field(
 );
 #define APP_SCENE_DOCUMENT_ID "Scene"
 
-int actor_has_behavior(game_source_registry *sources, const scene_actor *actor, const char *asset_name);
+int actor_has_behavior(source_registry *sources, const scene_actor *actor, const char *asset_name);
 int add_actor(app_scene_authoring *scene, const char *name, const char *prototype_name);
 /* Scene document entities (scene_document.c), as loading and the clipboard
    share them: whether this project can make one, with the message set when
@@ -553,11 +553,11 @@ int add_actor(app_scene_authoring *scene, const char *name, const char *prototyp
    for a root), its actor last; and the objects whose indices `actors` lists,
    in order, written as entities. An object whose parent is not among them is
    written as a root. */
-int scene_validate_entity(app_scene_authoring *scene, const game_scene_entity *entity);
+int scene_validate_entity(app_scene_authoring *scene, const scene_entity *entity);
 /* The entity path the links give a component's field, or NULL. */
-const char *scene_link_path(const game_prototype_link *links, ecs_component_id component, int field);
+const char *scene_link_path(const prototype_link *links, ecs_component_id component, int field);
 /* Writes the link's entity path into the overrides of its component. */
-void scene_override_path(av_doc *doc, av_value *overrides, const game_prototype_link *link);
+void scene_override_path(av_doc *doc, av_value *overrides, const prototype_link *link);
 /* The entity paths the actor's fields name, as components values, or NULL
    when it names none. */
 av_value *scene_actor_paths(app_scene_authoring *scene, const scene_actor *actor);
@@ -582,15 +582,11 @@ bool scene_rename_recorded_paths(
 );
 int scene_spawn_entity(
     app_scene_authoring *scene,
-    const game_scene_entity *entity,
+    const scene_entity *entity,
     const char *name,
     ecs_entity parent
 );
-int scene_document_add_actors(
-    app_scene_authoring *scene,
-    game_scene_document *document,
-    const int *actors
-);
+int scene_document_add_actors(app_scene_authoring *scene, scene_document *document, const int *actors);
 /* Whether the object has children, which removing it would destroy. */
 bool scene_actor_has_children(app_scene_authoring *scene, const scene_actor *actor);
 /* Objects keep the scene's order, a parent before its children, so the
@@ -601,17 +597,17 @@ uint64_t scene_actor_parent(app_scene_authoring *scene, const scene_actor *actor
 int scene_actor_subtree_end(const app_scene_authoring *scene, int index);
 /* A world offset as the change it makes to the entity's local Transform,
    turned into its parent's frame. */
-GameTransform scene_local_offset(const ecs_world *world, ecs_entity entity, GameTransform offset);
+Transform scene_local_offset(const ecs_world *world, ecs_entity entity, Transform offset);
 /* The scene document's name: its file's, without the extension. */
 void scene_document_name(const app_scene_authoring *scene, char *name, size_t size);
-int add_instance_at(app_scene_authoring *scene, const char *prototype_name, const GameTransform *position);
-game_prototype_registry app_component_registry(void);
+int add_instance_at(app_scene_authoring *scene, const char *prototype_name, const Transform *position);
+prototype_registry app_component_registry(void);
 int apply_components_value(app_scene_authoring *scene, ecs_entity entity, av_value *components);
 int attach_prototype_behavior(ecs_world *world, ecs_entity entity, const char *asset_name, void *user);
 void clear_prototype_history(scene_prototype_asset *asset);
 char *content_path_join(const char *base, const char *name);
 scene_prototype_asset *find_prototype(app_scene_authoring *scene, const char *name);
-void free_behavior_snapshots(game_prototype **snapshots);
+void free_behavior_snapshots(prototype **snapshots);
 void invalidate_runtime_snapshot(app_scene_authoring *scene);
 int load_system_asset(app_scene_authoring *scene, const char *path, bool reload);
 int open_behavior_asset(app_scene_authoring *scene, const char *asset_name);
@@ -631,7 +627,7 @@ int reload_prototype_asset(app_scene_authoring *scene, scene_prototype_asset *as
 void remove_selected(app_scene_authoring *scene);
 int replay_scene_edit(app_scene_authoring *scene, bool redo);
 const ecs_component_desc *resolve_system_component(const char *name, void *);
-int restore_retained_components(app_scene_authoring *scene, scene_actor *actor, const game_prototype *prototype);
+int restore_retained_components(app_scene_authoring *scene, scene_actor *actor, const prototype *prototype);
 int save_active_document(app_scene_authoring *scene);
 /* Writes a content file and records it, so it does not reload as a change on disk. */
 av_doc *scene_code_document_path(
@@ -672,18 +668,18 @@ int scene_publish_source_edits_restart(
     size_t size
 );
 int scene_publish_sources(app_scene_authoring *, const char *restart_path, char *error, size_t size);
-typedef struct game_preview_source_staging game_preview_source_staging;
+typedef struct preview_source_staging preview_source_staging;
 /* Two output stages, initialized to NULL. Failure discards any completed stage. */
 int scene_stage_source_edits(
     app_scene_authoring *,
     const source_catalog_edit *,
     int count,
-    game_preview_source_staging **stages,
+    preview_source_staging **stages,
     const char *restart_path,
     char *error,
     size_t size
 );
-void scene_finish_source_edits(app_scene_authoring *, game_preview_source_staging **stages, bool commit);
+void scene_finish_source_edits(app_scene_authoring *, preview_source_staging **stages, bool commit);
 int save_behavior_document(app_scene_authoring *scene);
 void select_prototype(app_scene_authoring *scene, int index);
 void set_behavior_component_context(app_scene_authoring *scene, const char *asset_name);
@@ -691,7 +687,7 @@ int sync_behavior_working(app_scene_authoring *scene);
 void refresh_asset_catalog(app_scene_authoring *scene);
 void sync_editor_inspection(app_scene_authoring *scene);
 const char *system_component_name(ecs_component_id id, void *);
-void write_position(app_scene_authoring *scene, ecs_entity entity, GameTransform position);
+void write_position(app_scene_authoring *scene, ecs_entity entity, Transform position);
 /* Replaces the file with `text` at once; on the web the workspace server
  * keeps it too. */
 int write_file_atomic(const char *path, const char *text);
@@ -714,12 +710,7 @@ void scene_disk_note(app_scene_authoring *scene, const char *path);
 void scene_disk_follow(app_scene_authoring *scene, const scene_move *moves, int count);
 /* In Studio's own project, prepares `world` with the editor nodes and binds
    their service; otherwise does nothing. */
-int scene_attach_studio_nodes(
-    app_scene_authoring *scene,
-    game_preview_world *world,
-    char *error,
-    size_t size
-);
+int scene_attach_studio_nodes(app_scene_authoring *scene, preview_world *world, char *error, size_t size);
 
 /* ---------- Editor view state (scene_view.c) ---------- */
 
