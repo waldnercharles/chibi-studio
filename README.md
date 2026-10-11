@@ -6,9 +6,11 @@ It consumes an installed Chibi SDK. Engine, compiler, renderer, shared UI backen
 and native runtime implementations remain in their owning SDK packages.
 
 `EXTRACTION.json` records every copied source's original path and SHA-256 hash.
-The original files are held in the engine repository through installed-consumer
-acceptance. Preserved test oracles live in `tests/held/engine_oracles`. Agent and contributor
-rules are in `AGENTS.md`.
+Preserved test oracles live in `tests/held/engine_oracles`; they are held coverage,
+not passing tests. Agent and contributor rules are in `AGENTS.md`.
+The engine's [current status](https://github.com/waldnercharles/chibi/blob/main/docs/status.md)
+tracks implemented capabilities, remaining work, ownership and evidence limits
+across repositories.
 
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
@@ -50,12 +52,18 @@ against the SDK in `PREFIX` (default `~/.local`) and installs `chibi-dev` into
 `PREFIX/bin` on `PATH`, `chibi-dev` opens the project in the working directory.
 On Windows, run the Makefile's three CMake commands directly.
 
-The standalone application has compiled and linked against an installed SDK.
-Two hidden startup frames passed. A separately compiled acceptance target passed
-four hidden frames with one real source edit, undo back to the clean original,
-and redo, checking source, semantic facts and the graph projection. This covers
-the production edit/history handlers and UI rendering; pointer hit testing, web
-execution and final packaged-distribution acceptance remain unverified.
+The [acceptance inventory](tests/acceptance/README.md) describes bounded source
+edit/history, keyboard, scene hierarchy, dirty-prompt and asset-selection cases.
+Some use queued SDL pointer events; others call production handlers and explicitly
+omit hit testing. Test source is not a current execution result.
+
+Recorded evidence includes the October 8 four-frame source edit/undo/redo check
+and [PR #53](https://github.com/waldnercharles/chibi-studio/pull/53)'s sixteen
+selectors at `243fdc6`, followed by a narrower rerun at `64c0b3b`.
+[CI run 38088359470](https://github.com/waldnercharles/chibi-studio/actions/runs/38088359470)
+at `d10222d`, using engine `fd69f0bf`, passed bounded starter and Studio-project
+startup, installed startup and game export. These results do not establish all
+interactions on that revision or full packaged-distribution acceptance.
 
 Studio owns its frame timing log and profiling wrappers. Profiling is disabled
 by default. `CHIBI_STUDIO_TRACY=ON` requires an installed Tracy package exporting
@@ -85,8 +93,12 @@ site can include a separately built worker site in `threads/`. The serial entry
 passes its own same-origin fallback URL. A standalone worker site reports missing
 worker/isolation support and can accept an explicit `serial-url` query parameter.
 The serial and worker archives must each come from their matching SDK build.
-The serial browser product has compiled and linked against the pinned Emscripten
-SDK. Browser interaction and the threaded product remain unverified.
+The serial product is built and published by the workflow below.
+[Publish run 38088359471](https://github.com/waldnercharles/chibi-studio/actions/runs/38088359471)
+built and deployed `d10222d` using engine `fd69f0bf`. Publication is separate
+from current edit/save/reload, input, export and revision-isolation acceptance in
+a browser. That work is assigned in the current status entrypoint; threaded
+product acceptance remains separate.
 
 ## Automatic browser distribution
 
