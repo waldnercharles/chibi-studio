@@ -59,6 +59,7 @@ static enum {
     SCENE_PHYSICS,
     ASSET_SELECTION,
     SCENE_VIEWPORT,
+    SCENE_CAMERA,
     PLAY_KEYS,
     PROMPTS,
     CODE_FOLLOWUPS,
@@ -2184,7 +2185,10 @@ static bool push_mouse(Uint32 type, float x, float y, float wheel_x, float wheel
    unit per pixel. */
 static int part_under(app_scene_authoring *scene, float x, float y)
 {
-    engine_viewport_pointer pointer = { .world_x = x, .world_y = y, .world_per_pixel = 0.1f };
+    engine_viewport_pointer pointer = { .world_x = x,
+                                        .world_y = y,
+                                        .world_per_pixel = 0.1f,
+                                        .grounded = true };
     scene_gizmo_pointer(scene, scene->render_viewport, &pointer);
     return scene->gizmo.hover;
 }
@@ -2227,11 +2231,13 @@ static bool marker_and_gizmo(studio *s)
     scene->gizmo.in.snap = false;
     engine_viewport_pointer pointer = { .world_x = 20,
                                         .world_per_pixel = 0.1f,
+                                        .grounded = true,
                                         .pressed = true,
                                         .down = true };
     REQUIRE(scene_gizmo_pointer(scene, scene->render_viewport, &pointer));
     pointer = (engine_viewport_pointer){ .world_x = 30,
                                          .world_per_pixel = 0.1f,
+                                         .grounded = true,
                                          .down = true,
                                          .dragging = true };
     REQUIRE(scene_gizmo_pointer(scene, scene->render_viewport, &pointer));
@@ -3232,6 +3238,7 @@ static bool code_glyphs_frame(void *state)
 
 #include "outliner_move.h"
 #include "panel_idle.h"
+#include "scene_camera.h"
 #include "scene_move.h"
 
 bool studio_acceptance_frame(void *state)
@@ -3258,6 +3265,7 @@ bool studio_acceptance_frame(void *state)
         case SCENE_PHYSICS: callback_ok = scene_physics_frame(state); break;
         case ASSET_SELECTION: callback_ok = asset_selection_frame(state); break;
         case SCENE_VIEWPORT: callback_ok = scene_viewport_frame(state); break;
+        case SCENE_CAMERA: callback_ok = scene_camera_frame(state); break;
         case PLAY_KEYS: callback_ok = play_keys_frame(state); break;
         case PROMPTS: callback_ok = prompts_frame(state); break;
         case CODE_FOLLOWUPS: callback_ok = code_followups_frame(state); break;
@@ -3625,6 +3633,7 @@ int main(int argc, char **argv)
     bool physics = argc == 4 && !strcmp(argv[1], "--scene-physics");
     bool assets = argc == 4 && !strcmp(argv[1], "--asset-selection");
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
+    bool camera = argc == 4 && !strcmp(argv[1], "--scene-camera");
     bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
     bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
     bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
@@ -3632,9 +3641,9 @@ int main(int argc, char **argv)
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
          !keys_mode && !labels && !units && !hierarchy && !scene_move_mode &&
-         !outliner_move_mode && !physics && !assets && !viewport && !playing &&
-         !prompting && !followups && !glyphs && !idle && !graph_pointer_mode &&
-         !asset_pointer_mode && !debugging) ||
+         !outliner_move_mode && !physics && !assets && !viewport && !camera &&
+         !playing && !prompting && !followups && !glyphs && !idle &&
+         !graph_pointer_mode && !asset_pointer_mode && !debugging) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
@@ -3643,7 +3652,8 @@ int main(int argc, char **argv)
             "--graph-visibility|--graph-keys|--graph-pointer|--asset-pointer|--"
             "graph-labels|--unit-warnings|"
             "--scene-hierarchy|--scene-move|--outliner-move|--scene-physics|"
-            "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts|"
+            "--asset-selection|--scene-viewport|--scene-camera|--play-keys|--"
+            "unsaved-prompts|"
             "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
             "history "
             "--project-root PATH | --scene-cursors\n"
@@ -3679,6 +3689,7 @@ int main(int argc, char **argv)
          : physics            ? SCENE_PHYSICS
          : assets             ? ASSET_SELECTION
          : viewport           ? SCENE_VIEWPORT
+         : camera             ? SCENE_CAMERA
          : playing            ? PLAY_KEYS
          : prompting          ? PROMPTS
          : followups          ? CODE_FOLLOWUPS
@@ -3706,6 +3717,7 @@ int main(int argc, char **argv)
         case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics); break;
         case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;
         case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
+        case SCENE_CAMERA: RUN_TEST_CASE(camera_navigation); break;
         case PLAY_KEYS: RUN_TEST_CASE(play_keys); break;
         case PROMPTS: RUN_TEST_CASE(unsaved_prompts); break;
         case CODE_FOLLOWUPS: RUN_TEST_CASE(code_followups); break;

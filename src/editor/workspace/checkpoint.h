@@ -60,21 +60,47 @@ static inline void checkpoint_free_strings(char **strings)
     afree(strings);
 }
 
+/* A view as nine numbers, then its lens's twelve: eye, forward, up, field
+   of view and clips. */
+#define CHECKPOINT_CAMERA_VALUES 21
+
 static inline yyjson_mut_val *checkpoint_camera(yyjson_mut_doc *doc, engine_viewport_view view)
 {
-    double values[] = { view.center_x, view.center_y,         view.width,
-                        view.height,   view.focal_distance,   view.yaw,
-                        view.pitch,    view.target_elevation, view.roll };
-    return yyjson_mut_arr_with_real(doc, values, 9);
+    engine_viewport_lens lens = view.lens;
+    double values[CHECKPOINT_CAMERA_VALUES] = { view.center_x,
+                                                view.center_y,
+                                                view.width,
+                                                view.height,
+                                                view.focal_distance,
+                                                view.yaw,
+                                                view.pitch,
+                                                view.target_elevation,
+                                                view.roll,
+                                                lens.eye.x,
+                                                lens.eye.y,
+                                                lens.eye.z,
+                                                lens.forward.x,
+                                                lens.forward.y,
+                                                lens.forward.z,
+                                                lens.up.x,
+                                                lens.up.y,
+                                                lens.up.z,
+                                                lens.fov,
+                                                lens.near_clip,
+                                                lens.far_clip };
+    return yyjson_mut_arr_with_real(doc, values, CHECKPOINT_CAMERA_VALUES);
 }
 
+/* Reads a view checkpoint_camera wrote, or the nine numbers of one saved
+   before views kept their lens. */
 static inline bool checkpoint_read_camera(yyjson_val *array, engine_viewport_view *view)
 {
-    if (!yyjson_is_arr(array) || yyjson_arr_size(array) != 9) {
+    size_t count = yyjson_arr_size(array);
+    if (!yyjson_is_arr(array) || (count != 9 && count != CHECKPOINT_CAMERA_VALUES)) {
         return false;
     }
-    float values[9];
-    for (int i = 0; i < 9; i++) {
+    float values[CHECKPOINT_CAMERA_VALUES] = { 0 };
+    for (size_t i = 0; i < count; i++) {
         yyjson_val *value = yyjson_arr_get(array, i);
         if (!yyjson_is_num(value) || !isfinite(yyjson_get_num(value))) {
             return false;
@@ -87,9 +113,26 @@ static inline bool checkpoint_read_camera(yyjson_val *array, engine_viewport_vie
     if (values[4] < 0 || (values[4] > 0 && values[4] <= 1)) {
         return false;
     }
-    *view = (engine_viewport_view){ values[0], values[1], values[2],
-                                    values[3], values[4], values[5],
-                                    values[6], values[7], values[8] };
+    float fov = values[18], near_clip = values[19], far_clip = values[20];
+    if (fov < 0 || fov >= CF_PI || (near_clip > 0) != (far_clip > 0) ||
+        (near_clip > 0 && far_clip <= near_clip)) {
+        return false;
+    }
+    *view = (engine_viewport_view){ values[0],
+                                    values[1],
+                                    values[2],
+                                    values[3],
+                                    values[4],
+                                    values[5],
+                                    values[6],
+                                    values[7],
+                                    values[8],
+                                    { .eye = { values[9], values[10], values[11] },
+                                      .forward = { values[12], values[13], values[14] },
+                                      .up = { values[15], values[16], values[17] },
+                                      .fov = fov,
+                                      .near_clip = near_clip,
+                                      .far_clip = far_clip } };
     return true;
 }
 

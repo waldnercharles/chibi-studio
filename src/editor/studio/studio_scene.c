@@ -189,9 +189,16 @@ static void space_pan(studio *s, engine_viewport_host_input *input)
 
 /* The Scene's camera zooms toward the pointer for a mouse wheel and a pinch
    alike, and pans for a trackpad's scroll, the middle button and Space with
-   a drag (Figma). */
+   a drag (Figma); a 3D view's also orbits and flies. */
 static void scene_view(studio *s, engine_viewport_host_input *input)
 {
+    if (engine_viewport_perspective(s->viewport)) {
+        zoom_camera(s, input);
+        space_pan(s, input);
+        studio_scene_camera_frame(s, input);
+        return;
+    }
+    studio_scene_camera_cancel(s);
     zoom_camera(s, input);
     scroll_camera(s, input->width);
     space_pan(s, input);
@@ -200,6 +207,7 @@ static void scene_view(studio *s, engine_viewport_host_input *input)
 void studio_scene_view(studio *s, engine_viewport_host_input *input)
 {
     if (studio_previewed_ui(s)) {
+        studio_scene_camera_cancel(s);
         canvas_view(s, input);
         return;
     }

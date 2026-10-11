@@ -102,6 +102,7 @@ set(STUDIO_SOURCES
     src/editor/studio/studio_properties_view.c
     src/editor/studio/studio_prototype_actions.c
     src/editor/studio/studio_refactor.c
+    src/editor/studio/studio_scene_camera.c
     src/editor/studio/studio_scene.c
     src/editor/studio/studio_settings.c
     src/editor/studio/studio_shell.c
@@ -121,6 +122,7 @@ set(STUDIO_SOURCES
     src/editor/workspace/asset_refactor.c
     src/editor/workspace/asset_refactor_source.c
     src/editor/workspace/editor.c
+    src/editor/workspace/editor_camera.c
     src/editor/workspace/game_presentation.c
     src/editor/workspace/gameplay_input.c
     src/editor/workspace/input.c
