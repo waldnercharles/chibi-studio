@@ -1254,13 +1254,16 @@ int app_scene_authoring_rename_instance(app_scene_authoring *scene, ecs_entity e
     /* Stopping respawns the objects, so the index finds it again. */
     actor = scene_actor_by_identity(scene, identity);
     assert(actor);
+    scene_path_ref *paths = scene_rename_paths(scene, actor, name);
     bool recorded = !collab_record_history() || scene_history_push_rename(
                                                     scene->history,
                                                     actor->entity,
                                                     actor->name,
-                                                    name
+                                                    name,
+                                                    paths
                                                 );
     assert(recorded);
+    afree(paths);
     set_actor_name(scene, actor, name);
     scene_authoring_select_document(scene, APP_EDITOR_DOCUMENT_SCENE, APP_SCENE_DOCUMENT_ID);
     scene_action_finish(scene, action, true);
@@ -1358,7 +1361,13 @@ static int replay_scene_edit_one(app_scene_authoring *scene, bool redo)
     if (name) {
         int index = actor_index(scene, entity);
         if (index < 0 ||
-            sibling_named(scene, ecs_parent(scene->world, entity), entity, name)) {
+            sibling_named(scene, ecs_parent(scene->world, entity), entity, name) ||
+            !scene_rename_recorded_paths(
+                scene,
+                &scene->actors[index],
+                name,
+                scene_history_peek_rename_paths(scene->history, redo)
+            )) {
             return -1;
         }
         set_actor_name(scene, &scene->actors[index], name);

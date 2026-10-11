@@ -3,6 +3,7 @@
 #include "authoring/application_catalog.h"
 #include "authoring/behavior_loader.h"
 #include "authoring/preview_source.h"
+#include "editor/collab/actions_scene.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
 #include "runtime/declared_components.h"
@@ -618,6 +619,100 @@ void scene_link_paths(app_scene_authoring *scene)
             link_path(scene, &scene->actors[i], &scene->actors[i].paths[j]);
         }
     }
+}
+
+/* The path that names the actor from the scene's roots, were it named
+   `name`; the caller frees it. */
+static char *actor_path(app_scene_authoring *scene, const scene_actor *actor, const char *name)
+{
+    uint64_t parent = scene_actor_parent(scene, actor);
+    if (!parent) {
+        return xstrdup(name);
+    }
+    const scene_actor *holder = scene_actor_by_identity(scene, parent);
+    assert(holder);
+    char *above = actor_path(scene, holder, holder->name);
+    size_t size = strlen(above) + strlen(name) + 2;
+    char *path = xmalloc(size);
+    snprintf(path, size, "%s.%s", above, name);
+    free(above);
+    return path;
+}
+
+/* Whether the path names the object at `from` or one below it. */
+static bool names_below(const char *path, const char *from)
+{
+    size_t length = strlen(from);
+    return !strncmp(path, from, length) && (!path[length] || path[length] == '.');
+}
+
+/* Moves the link's path, which names the object at `from` or one below it,
+   to name that object at `to`. */
+static void move_link(game_prototype_link *link, const char *from, const char *to)
+{
+    const char *rest = link->path + strlen(from);
+    size_t size = strlen(to) + strlen(rest) + 1;
+    char *path = xmalloc(size);
+    snprintf(path, size, "%s%s", to, rest);
+    free(link->path);
+    link->path = path;
+}
+
+static game_prototype_link *ref_link(app_scene_authoring *scene, scene_path_ref ref)
+{
+    scene_actor *actor = scene_actor_by_identity(scene, ref.actor);
+    for (int i = 0; actor && i < acount(actor->paths); i++) {
+        game_prototype_link *link = &actor->paths[i];
+        if (link->component->id == ref.component && link->field == ref.field) {
+            return link;
+        }
+    }
+    return NULL;
+}
+
+scene_path_ref *scene_rename_paths(app_scene_authoring *scene, const scene_actor *actor, const char *name)
+{
+    char *from = actor_path(scene, actor, actor->name);
+    char *to = actor_path(scene, actor, name);
+    scene_path_ref *renamed = NULL;
+    for (int i = 0; i < acount(scene->actors); i++) {
+        scene_actor *holder = &scene->actors[i];
+        for (int j = 0; j < acount(holder->paths); j++) {
+            game_prototype_link *link = &holder->paths[j];
+            if (names_below(link->path, from)) {
+                move_link(link, from, to);
+                apush(
+                    renamed,
+                    ((scene_path_ref){ holder->identity, link->component->id, link->field })
+                );
+            }
+        }
+    }
+    free(from);
+    free(to);
+    return renamed;
+}
+
+bool scene_rename_recorded_paths(
+    app_scene_authoring *scene,
+    const scene_actor *actor,
+    const char *name,
+    const scene_path_ref *paths
+)
+{
+    char *from = actor_path(scene, actor, actor->name);
+    char *to = actor_path(scene, actor, name);
+    bool found = true;
+    for (int i = 0; found && i < acount(paths); i++) {
+        game_prototype_link *link = ref_link(scene, paths[i]);
+        found = link && names_below(link->path, from);
+    }
+    for (int i = 0; found && i < acount(paths); i++) {
+        move_link(ref_link(scene, paths[i]), from, to);
+    }
+    free(from);
+    free(to);
+    return found;
 }
 
 int scene_authoring_load_value(app_scene_authoring *scene, av_value *value, const char *path)

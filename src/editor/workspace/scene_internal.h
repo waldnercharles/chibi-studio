@@ -553,6 +553,22 @@ av_value *scene_actor_paths(app_scene_authoring *scene, const scene_actor *actor
 /* Writes each actor's paths into its fields: the handle of the actor each
    names, or zero when no actor has that path. */
 void scene_link_paths(app_scene_authoring *scene);
+/* Before the actor is renamed to `name`, moves the paths that name it or an
+   object below it to its new name, as Godot moves NodePaths: every such
+   path, returning those it moved (support/array.h); or only
+   those a rename recorded, failing with nothing moved when one is gone or
+   no longer names the actor. */
+scene_path_ref *scene_rename_paths(
+    app_scene_authoring *scene,
+    const scene_actor *actor,
+    const char *name
+);
+bool scene_rename_recorded_paths(
+    app_scene_authoring *scene,
+    const scene_actor *actor,
+    const char *name,
+    const scene_path_ref *paths
+);
 int scene_spawn_entity(
     app_scene_authoring *scene,
     const game_scene_entity *entity,

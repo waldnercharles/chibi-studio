@@ -119,18 +119,29 @@ bool scene_history_push_prototype(scene_history *history, const scene_prototype_
 const scene_prototype_edit *scene_history_peek_prototype(const scene_history *history, bool redo);
 void scene_history_complete_prototype(scene_history *history, bool redo);
 
-/* Records an already-applied rename of the entity's object; history owns
- * copies of the names. An unchanged name preserves both stacks. The app
- * replays it: peek returns the name the head gives the object (before on
- * Undo, after on Redo), or NULL unless the head is a rename; complete only
- * after success. */
+/* A handle field of an object, by the object's identity. */
+typedef struct
+{
+    uint64_t actor;
+    ecs_component_id component;
+    int field;
+} scene_path_ref;
+
+/* Records an already-applied rename of the entity's object and the entity
+ * paths it rewrote (support/array.h, or NULL); history owns copies. An
+ * unchanged name preserves both stacks. The app replays it: peek returns the
+ * name the head gives the object (before on Undo, after on Redo), or NULL
+ * unless the head is a rename, and peek_rename_paths the paths to rewrite
+ * with it; complete only after success. */
 bool scene_history_push_rename(
     scene_history *history,
     ecs_entity entity,
     const char *before,
-    const char *after
+    const char *after,
+    const scene_path_ref *paths
 );
 const char *scene_history_peek_rename(const scene_history *history, bool redo, ecs_entity *entity);
+const scene_path_ref *scene_history_peek_rename_paths(const scene_history *history, bool redo);
 void scene_history_complete_rename(scene_history *history, bool redo);
 
 bool scene_history_can_undo(const scene_history *history);

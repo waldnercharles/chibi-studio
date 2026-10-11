@@ -1560,6 +1560,17 @@ static const char
                    "{ Link target=\"Ship.Turret\"; }; }\n"
                    "}\n";
 
+/* A names the turret, and B a gun the ship does not have. */
+static const char renamed_scene
+    [] = "version 1\nname \"Scene\"\n(array)entities {\n"
+         "    - name=\"Ship\" prototype=\"Hull\" { (array)children "
+         "{ - name=\"Turret\" prototype=\"Hull\"; }; }\n"
+         "    - name=\"A\" prototype=\"Linker\" { components "
+         "{ Link target=\"Ship.Turret\"; }; }\n"
+         "    - name=\"B\" prototype=\"Linker\" { components "
+         "{ Link target=\"Ship.Gun\"; }; }\n"
+         "}\n";
+
 /* A and B name paths no object has. */
 static const char
     unresolved_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
@@ -1646,9 +1657,52 @@ static bool links(app_scene_authoring *scene, int actor, int target)
            (target < 0 ? 0 : ecs_entity_to_u64(scene->actors[target].entity));
 }
 
+/* Whether `actor`'s Link names `path`. */
+static bool targets(app_scene_authoring *scene, int actor, const char *path)
+{
+    const char *named = scene_link_path(scene->actors[actor].paths, link_id(scene), 0);
+    return named && !strcmp(named, path);
+}
+
+/* Renaming an object moves the paths that name it or an object below it,
+   and Undo and Redo, also after a checkpoint, move back only those. */
+static bool renames_paths(app_scene_authoring *scene)
+{
+    REQUIRE(scene_authoring_load_text(scene, renamed_scene, NULL) == 0);
+    REQUIRE(links(scene, 2, 1) && links(scene, 3, -1));
+    REQUIRE(app_scene_authoring_rename_instance(scene, scene->actors[1].entity, "Gun") == 0);
+    REQUIRE(targets(scene, 2, "Ship.Gun") && targets(scene, 3, "Ship.Gun"));
+    REQUIRE(links(scene, 2, 1) && links(scene, 3, 1));
+    REQUIRE(app_scene_authoring_rename_instance(scene, scene->actors[0].entity, "Hull") == 0);
+    REQUIRE(
+        targets(scene, 2, "Hull.Gun") && targets(scene, 3, "Hull.Gun") &&
+        links(scene, 2, 1)
+    );
+    REQUIRE(replay_scene_edit(scene, false) == 0);
+    REQUIRE(targets(scene, 2, "Ship.Gun") && targets(scene, 3, "Ship.Gun"));
+    char *checkpoint = app_scene_authoring_checkpoint(scene);
+    REQUIRE(checkpoint);
+    bool restored = app_scene_authoring_restore_checkpoint(scene, checkpoint) == 0;
+    free(checkpoint);
+    REQUIRE(restored);
+    /* B named the gun before the turret took its name, so it keeps it. */
+    REQUIRE(replay_scene_edit(scene, false) == 0);
+    REQUIRE(targets(scene, 2, "Ship.Turret") && targets(scene, 3, "Ship.Gun"));
+    REQUIRE(links(scene, 2, 1) && links(scene, 3, -1));
+    REQUIRE(replay_scene_edit(scene, true) == 0);
+    REQUIRE(
+        targets(scene, 2, "Ship.Gun") && targets(scene, 3, "Ship.Gun") &&
+        links(scene, 2, 1)
+    );
+    char *text = scene_authoring_scene_text(scene);
+    bool saved = text && !strstr(text, "Ship.Turret");
+    free(text);
+    REQUIRE(saved);
+    return true;
+}
+
 /* A Link the scene names by path holds the turret, and the path saves
-   through undo, a duplicate, a rename that leaves it naming nothing, a
-   checkpoint and a run of the scene. */
+   through undo, a duplicate, a rename, a checkpoint and a run of the scene. */
 static bool names_by_path(app_scene_authoring *scene)
 {
     REQUIRE(
@@ -1662,8 +1716,9 @@ static bool names_by_path(app_scene_authoring *scene)
     REQUIRE(replay_scene_edit(scene, false) == 0);
     REQUIRE(acount(scene->actors) == 3 && links(scene, 2, 1) && saves_as(scene, path_scene));
     REQUIRE(app_scene_authoring_rename_instance(scene, scene->actors[1].entity, "Gun") == 0);
-    REQUIRE(links(scene, 2, -1));
+    REQUIRE(links(scene, 2, 1) && targets(scene, 2, "Ship.Gun"));
     REQUIRE(replay_scene_edit(scene, false) == 0 && links(scene, 2, 1));
+    REQUIRE(saves_as(scene, path_scene));
     /* Deleting the turret leaves the path naming nothing, as does redoing it. */
     scene->selected = 1;
     REQUIRE(app_scene_authoring_delete_instance(scene) == 0 && links(scene, 1, -1));
@@ -1715,7 +1770,7 @@ static bool names_by_path(app_scene_authoring *scene)
 static bool select_crossed_links(studio *s)
 {
     app_scene_authoring *scene = s->scene;
-    REQUIRE(names_by_path(scene));
+    REQUIRE(names_by_path(scene) && renames_paths(scene));
     /* Objects naming different paths read as mixed, though neither resolves. */
     REQUIRE(scene_authoring_load_text(scene, unresolved_scene, NULL) == 0);
     REQUIRE(app_scene_authoring_select_entity(scene, scene->actors[0].entity) == 0);
@@ -1758,10 +1813,11 @@ static bool mixed_link(studio *s)
     REQUIRE(link_to(scene, 1, 1));
     studio_properties_action(s, "reveal", &reveal);
     REQUIRE(scene->selected == 1 && scene_selection_count(scene) == 1);
-    /* A alone, naming by path a turret renamed away. */
+    /* A alone, naming by path a turret that was deleted. */
     REQUIRE(scene_authoring_load_text(scene, path_scene, NULL) == 0);
-    REQUIRE(app_scene_authoring_rename_instance(scene, scene->actors[1].entity, "Gun") == 0);
-    REQUIRE(app_scene_authoring_select_entity(scene, scene->actors[2].entity) == 0);
+    scene->selected = 1;
+    REQUIRE(app_scene_authoring_delete_instance(scene) == 0 && acount(scene->actors) == 2);
+    REQUIRE(app_scene_authoring_select_entity(scene, scene->actors[1].entity) == 0);
     return true;
 }
 
