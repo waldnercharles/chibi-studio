@@ -2385,7 +2385,7 @@
       "current_source_sha256": "9ca880f393fd1fba61077bb6a52647105586c0ac18c6d007282a0672604e22db",
       "sha256": "3723b1a07058a05b99e5bfc683ecfbc4c6b1292e2b781c5cf3e37d57d1587a75",
       "source_path": "src/editor/workspace/scene_actors.c",
-      "consumer_sha256": "1d0af2d08e0497ed914ac6413a948b8a50b23b724247257124730ff884639738"
+      "consumer_sha256": "f3cc747540011db58a7bfc185aae1b16ce83c4237197eb59f44fabed7f3c1aa9"
     },
     "src/editor/workspace/scene_asset_drop.c": {
       "current_source_sha256": "068cafc2d0558fcccba9dc115eae52ef648c9f72aa134636f949b8ef9319df13",

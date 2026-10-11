@@ -561,6 +561,8 @@ int app_scene_authoring_delete_instance(app_scene_authoring *scene)
                               .paths = scene_actor_paths(scene, actor) };
     int result = remove_actor_at(scene, scene->selected);
     if (!result) {
+        /* Paths that named it name nothing now. */
+        scene_link_paths(scene);
         /* An object added later under this name starts shown. */
         scene_view_rename(scene, name, NULL);
         bool recorded = !collab_record_history() ||
@@ -1376,6 +1378,7 @@ static int replay_scene_edit_one(app_scene_authoring *scene, bool redo)
                 if (ecs_entity_to_u64(scene->actors[i].entity) ==
                     ecs_entity_to_u64(entity)) {
                     result = remove_actor_at(scene, i);
+                    scene_link_paths(scene);
                     break;
                 }
             }

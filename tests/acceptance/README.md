@@ -81,7 +81,7 @@ click selects it. A Link the scene names by the path Ship.Turret holds the
 turret once loaded, and the path saves again after the object's deletion is
 undone, through a checkpoint, and after the scene plays and stops, which
 leaves the turret under its ship; a duplicate names the turret too. Renamed
-away, the turret leaves the Link naming nothing until the rename is undone,
+away or deleted, the turret leaves the Link naming nothing until that is undone,
 and the fourth frame checks that Properties shows the path as a problem. It
 saves no file.
 

@@ -1655,6 +1655,12 @@ static bool names_by_path(app_scene_authoring *scene)
     REQUIRE(app_scene_authoring_rename_instance(scene, scene->actors[1].entity, "Gun") == 0);
     REQUIRE(links(scene, 2, -1));
     REQUIRE(replay_scene_edit(scene, false) == 0 && links(scene, 2, 1));
+    /* Deleting the turret leaves the path naming nothing, as does redoing it. */
+    scene->selected = 1;
+    REQUIRE(app_scene_authoring_delete_instance(scene) == 0 && links(scene, 1, -1));
+    REQUIRE(replay_scene_edit(scene, false) == 0 && links(scene, 2, 1));
+    REQUIRE(replay_scene_edit(scene, true) == 0 && links(scene, 1, -1));
+    REQUIRE(replay_scene_edit(scene, false) == 0 && links(scene, 2, 1));
     char *checkpoint = app_scene_authoring_checkpoint(scene);
     REQUIRE(checkpoint);
     bool restored = app_scene_authoring_restore_checkpoint(scene, checkpoint) == 0;
