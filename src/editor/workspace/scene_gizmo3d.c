@@ -8,7 +8,9 @@
  * object without one stands at its Transform, raised to its Geometry3D's
  * elevation and turned about Y by its Orientation, which is all such an
  * object can turn by; its Geometry3D's width, height and depth size it. */
+#include "editor/workspace/scene_collider3d.h"
 #include "editor/workspace/scene_internal.h"
+#include "editor/workspace/scene_view3d.h"
 #include "platform/cute.h"
 #include "render/scene3d.h"
 #include "runtime/component_catalog.h"
@@ -42,8 +44,8 @@ static const float FORESHORTENED = 0.2f;
 /* The smallest factor a scale leaves, and the step it snaps to. */
 static const float MIN_FACTOR = 0.01f;
 static const float SCALE_STEP = 0.1f;
-/* A ray this close to parallel to an arrow, or to a square's plane, meets
-   it nowhere it could be dragged to. */
+/* A ray this close to parallel to a square's plane meets it nowhere it
+   could be dragged to. */
 static const float PARALLEL = 1e-3f;
 
 static const unsigned CENTER_COLOR = 0xE8E8E8FF;
@@ -88,15 +90,6 @@ struct scene_gizmo_target3d
     int field[FIELD_COUNT];       /* index in the gesture's fields, or -1 */
 };
 
-/* What the view shows, for placing the gizmo on screen. */
-typedef struct
-{
-    render_scene3d_camera camera;
-    engine_viewport_camera frame;
-    CF_V3 forward;
-    float pixel; /* canvas units per pixel */
-} view3d;
-
 /* Where the selection's gizmo stands. */
 typedef struct
 {
@@ -119,56 +112,10 @@ static CF_Quat rotation_of(CF_Quat q)
                                                         : cf_quat_norm(q);
 }
 
-static view3d view_of(const app_scene_authoring *scene)
-{
-    view3d view = { .pixel = scene->selection_scale > 0 ? scene->selection_scale : 1 };
-    engine_viewport_get_camera3d(scene->render_viewport, &view.camera);
-    engine_viewport_get_camera(scene->render_viewport, &view.frame);
-    const float *v = view.camera.view.elements;
-    view.forward = (CF_V3){ -v[2], -v[6], -v[10] };
-    return view;
-}
-
-/* A world point's place on the canvas the overlays draw on. */
-static CF_V2 on_screen(const view3d *view, CF_V3 point)
-{
-    CF_V3 ndc = render_scene3d_project(&view->camera, point);
-    return (CF_V2){ view->frame.center_x + ndc.x * view->frame.span_width * 0.5f,
-                    view->frame.center_y + ndc.y * view->frame.span_height * 0.5f };
-}
-
-static CF_V2 pointer_at(const view3d *view, const engine_viewport_pointer *pointer)
-{
-    return (CF_V2){
-        view->frame.center_x + pointer->ndc_x * view->frame.span_width * 0.5f,
-        view->frame.center_y + pointer->ndc_y * view->frame.span_height * 0.5f
-    };
-}
-
-/* The world's units per pixel at `point`'s depth, or zero behind the eye. */
-static float world_per_pixel(const view3d *view, CF_V3 point)
-{
-    float depth = cf_dot_v3(cf_sub_v3(point, view->camera.eye), view->forward);
-    if (depth <= 0) {
-        return 0;
-    }
-    /* NDC's height of 2 spans the canvas's height and the frustum's. */
-    float tangent = 1 / view->camera.projection.elements[5];
-    return 2 * depth * tangent * view->pixel / view->frame.span_height;
-}
-
 /* Whether `axis` points toward the eye from `point`. */
-static bool facing(const view3d *view, CF_V3 point, CF_V3 axis)
+static bool facing(const scene_view3d *view, CF_V3 point, CF_V3 axis)
 {
     return cf_dot_v3(axis, cf_sub_v3(view->camera.eye, point)) >= 0;
-}
-
-static float segment_distance(CF_V2 p, CF_V2 a, CF_V2 b)
-{
-    CF_V2 ab = cf_sub(b, a);
-    float span = cf_dot(ab, ab);
-    float t = span > 0 ? cf_clamp01(cf_dot(cf_sub(p, a), ab) / span) : 0;
-    return cf_len(cf_sub(p, cf_add(a, cf_mul_v2_f(ab, t))));
 }
 
 /* ---------- Targets ---------- */
@@ -305,7 +252,7 @@ static bool recordable(const ecs_world *world, const scene_gizmo_target3d *t)
 
 static bool gizmo_of(
     const app_scene_authoring *scene,
-    const view3d *view,
+    const scene_view3d *view,
     const scene_gizmo_target3d *targets,
     gizmo3d *out
 )
@@ -330,7 +277,7 @@ static bool gizmo_of(
         out->axes[k] = out->local ? cf_mul_q_v3(turn, UNIT_AXES[k]) : UNIT_AXES[k];
         out->turnable[k] = turnable(targets, out->axes[k]);
     }
-    out->length = ARROW_LENGTH * world_per_pixel(view, out->pivot);
+    out->length = ARROW_LENGTH * scene_view3d_world_per_pixel(view, out->pivot);
     return out->length > 0;
 }
 
@@ -357,15 +304,16 @@ static CF_V3 along(const gizmo3d *gizmo, int k, float fraction)
 }
 
 /* Whether arrow or handle `k` shows long enough on screen to take. */
-static bool arrow_shown(const view3d *view, const gizmo3d *gizmo, int k)
+static bool arrow_shown(const scene_view3d *view, const gizmo3d *gizmo, int k)
 {
-    CF_V2 a = on_screen(view, gizmo->pivot), b = on_screen(view, along(gizmo, k, 1));
+    CF_V2 a = scene_view3d_on_screen(view, gizmo->pivot),
+          b = scene_view3d_on_screen(view, along(gizmo, k, 1));
     return cf_len(cf_sub(b, a)) >= FORESHORTENED * ARROW_LENGTH * view->pixel;
 }
 
 /* The corners of the square across the axes other than `k`, on their sides
    toward the eye. */
-static void plane_corners(const view3d *view, const gizmo3d *gizmo, int k, CF_V2 corners[4])
+static void plane_corners(const scene_view3d *view, const gizmo3d *gizmo, int k, CF_V2 corners[4])
 {
     int i = (k + 1) % 3, j = (k + 2) % 3;
     float si = facing(view, gizmo->pivot, gizmo->axes[i]) ? 1 : -1;
@@ -379,11 +327,11 @@ static void plane_corners(const view3d *view, const gizmo3d *gizmo, int k, CF_V2
             cf_mul_v3_f(gizmo->axes[i], si * spans[c][0] * gizmo->length),
             cf_mul_v3_f(gizmo->axes[j], sj * spans[c][1] * gizmo->length)
         );
-        corners[c] = on_screen(view, cf_add_v3(gizmo->pivot, offset));
+        corners[c] = scene_view3d_on_screen(view, cf_add_v3(gizmo->pivot, offset));
     }
 }
 
-static bool plane_shown(const view3d *view, const gizmo3d *gizmo, int k)
+static bool plane_shown(const scene_view3d *view, const gizmo3d *gizmo, int k)
 {
     CF_V3 to_eye = cf_norm_v3(cf_sub_v3(view->camera.eye, gizmo->pivot));
     return fabsf(cf_dot_v3(gizmo->axes[k], to_eye)) >= FORESHORTENED;
@@ -414,7 +362,7 @@ static CF_V3 ring_point(const gizmo3d *gizmo, int k, float angle)
 
 /* Whether ring `k` shows at `angle`: a ring shows its half toward the eye,
    as Unity's, and all of itself while it faces the eye. */
-static bool ring_front(const view3d *view, const gizmo3d *gizmo, int k, float angle)
+static bool ring_front(const scene_view3d *view, const gizmo3d *gizmo, int k, float angle)
 {
     CF_V3 out = cf_sub_v3(ring_point(gizmo, k, angle), gizmo->pivot);
     CF_V3 to_eye = cf_sub_v3(view->camera.eye, gizmo->pivot);
@@ -428,7 +376,7 @@ static float segment_angle(int segment)
 
 /* How far `at` is from ring `k` on screen, and the angle on the ring of
    the segment nearest it. */
-static float ring_distance(const view3d *view, const gizmo3d *gizmo, int k, CF_V2 at, float *angle)
+static float ring_distance(const scene_view3d *view, const gizmo3d *gizmo, int k, CF_V2 at, float *angle)
 {
     float best = INFINITY;
     for (int s = 0; s < RING_SEGMENTS; s++) {
@@ -436,9 +384,9 @@ static float ring_distance(const view3d *view, const gizmo3d *gizmo, int k, CF_V
         if (!ring_front(view, gizmo, k, (a + b) / 2)) {
             continue;
         }
-        CF_V2 from = on_screen(view, ring_point(gizmo, k, a));
-        CF_V2 to = on_screen(view, ring_point(gizmo, k, b));
-        float distance = segment_distance(at, from, to);
+        CF_V2 from = scene_view3d_on_screen(view, ring_point(gizmo, k, a));
+        CF_V2 to = scene_view3d_on_screen(view, ring_point(gizmo, k, b));
+        float distance = scene_view3d_segment_distance(at, from, to);
         if (distance < best) {
             best = distance;
             *angle = (a + b) / 2;
@@ -448,36 +396,40 @@ static float ring_distance(const view3d *view, const gizmo3d *gizmo, int k, CF_V
 }
 
 /* Whether ring `k` shows too thin to follow the pointer's angle around it. */
-static bool ring_edge_on(const view3d *view, const gizmo3d *gizmo, int k)
+static bool ring_edge_on(const scene_view3d *view, const gizmo3d *gizmo, int k)
 {
     return !plane_shown(view, gizmo, k);
 }
 
 /* The direction a positive turn moves ring `k`'s point at `angle` on
    screen. A ring's points advance with their angle about its axis. */
-static CF_V2 ring_tangent(const view3d *view, const gizmo3d *gizmo, int k, float angle)
+static CF_V2 ring_tangent(const scene_view3d *view, const gizmo3d *gizmo, int k, float angle)
 {
     const float step = CF_PI / RING_SEGMENTS;
-    CF_V2 ahead = on_screen(view, ring_point(gizmo, k, angle + step));
-    CF_V2 behind = on_screen(view, ring_point(gizmo, k, angle - step));
+    CF_V2 ahead = scene_view3d_on_screen(view, ring_point(gizmo, k, angle + step));
+    CF_V2 behind = scene_view3d_on_screen(view, ring_point(gizmo, k, angle - step));
     return cf_safe_norm(cf_sub(ahead, behind));
 }
 
-static bool in_center(const view3d *view, const gizmo3d *gizmo, CF_V2 at, float size)
+static bool in_center(const scene_view3d *view, const gizmo3d *gizmo, CF_V2 at, float size)
 {
-    CF_V2 d = cf_sub(at, on_screen(view, gizmo->pivot));
+    CF_V2 d = cf_sub(at, scene_view3d_on_screen(view, gizmo->pivot));
     float half = (size / 2 + 1) * view->pixel;
     return fabsf(d.x) <= half && fabsf(d.y) <= half;
 }
 
 /* The arrow, or scale handle, of `first` + k nearest `at` within its slop. */
-static int nearest_arrow(const view3d *view, const gizmo3d *gizmo, CF_V2 at, int first)
+static int nearest_arrow(const scene_view3d *view, const gizmo3d *gizmo, CF_V2 at, int first)
 {
     int part = SCENE_GIZMO_NONE;
     float best = SLOP * view->pixel;
-    CF_V2 pivot = on_screen(view, gizmo->pivot);
+    CF_V2 pivot = scene_view3d_on_screen(view, gizmo->pivot);
     for (int k = 0; k < 3; k++) {
-        float distance = segment_distance(at, pivot, on_screen(view, along(gizmo, k, 1)));
+        float distance = scene_view3d_segment_distance(
+            at,
+            pivot,
+            scene_view3d_on_screen(view, along(gizmo, k, 1))
+        );
         if (arrow_shown(view, gizmo, k) && distance <= best) {
             best = distance;
             part = first + k;
@@ -486,7 +438,7 @@ static int nearest_arrow(const view3d *view, const gizmo3d *gizmo, CF_V2 at, int
     return part;
 }
 
-static int part_at(scene_tool tool, const view3d *view, const gizmo3d *gizmo, CF_V2 at)
+static int part_at(scene_tool tool, const scene_view3d *view, const gizmo3d *gizmo, CF_V2 at)
 {
     switch (tool) {
         case SCENE_TOOL_MOVE:
@@ -663,21 +615,6 @@ static void scale_target(app_scene_authoring *scene, const scene_gizmo_target3d 
     }
 }
 
-/* Where along arrow `k` the ray passes nearest it, or false while the ray
-   runs along it. */
-static bool arrow_param(const scene_gizmo_space *space, int k, CF_Ray3 ray, float *t)
-{
-    CF_V3 axis = space->axes[k];
-    float b = cf_dot_v3(axis, ray.d);
-    float denominator = 1 - b * b;
-    if (denominator < PARALLEL) {
-        return false;
-    }
-    CF_V3 w = cf_sub_v3(space->pivot, ray.p);
-    *t = (b * cf_dot_v3(ray.d, w) - cf_dot_v3(axis, w)) / denominator;
-    return true;
-}
-
 /* Where the ray meets the plane through the pivot across `normal`. */
 static bool plane_hit(CF_V3 pivot, CF_V3 normal, CF_Ray3 ray, CF_V3 *hit)
 {
@@ -691,25 +628,34 @@ static bool plane_hit(CF_V3 pivot, CF_V3 normal, CF_Ray3 ray, CF_V3 *hit)
 }
 
 /* The plane a part drags across: a square's, or the view's for the center. */
-static CF_V3 drag_normal(const scene_gizmo_space *space, const view3d *view, int part)
+static CF_V3 drag_normal(const scene_gizmo_space *space, const scene_view3d *view, int part)
 {
     return part == SCENE_GIZMO_SCREEN ? view->forward
                                       : space->axes[part - SCENE_GIZMO_PLANE_X];
 }
 
-static CF_Ray3 ray_of(const view3d *view, const engine_viewport_pointer *pointer)
-{
-    return render_scene3d_ray(&view->camera, (CF_V2){ pointer->ndc_x, pointer->ndc_y });
-}
-
 /* The pointer's angle about the pivot on screen. */
-static float screen_angle(const view3d *view, CF_V3 pivot, CF_V2 at)
+static float screen_angle(const scene_view3d *view, CF_V3 pivot, CF_V2 at)
 {
-    CF_V2 d = cf_sub(at, on_screen(view, pivot));
+    CF_V2 d = cf_sub(at, scene_view3d_on_screen(view, pivot));
     return atan2f(d.y, d.x);
 }
 
-static bool begin(app_scene_authoring *scene, int part, const view3d *view, const engine_viewport_pointer *pointer)
+void scene_gizmo3d_start(app_scene_authoring *scene, int part, CF_V2 origin)
+{
+    scene_gizmo *g = &scene->gizmo;
+    g->active = part;
+    g->modal = g->moved = false;
+    g->reselect = -1;
+    g->primary = 0;
+    g->origin = origin;
+    g->turn = 0;
+    g->dirty = scene->scene_dirty;
+    g->status[0] = g->delta[0] = '\0';
+    scene->dragging_actor = true;
+}
+
+static bool begin(app_scene_authoring *scene, int part, const scene_view3d *view, const engine_viewport_pointer *pointer)
 {
     finish_transform_edit(scene, false);
     scene_gizmo *g = &scene->gizmo;
@@ -724,9 +670,14 @@ static bool begin(app_scene_authoring *scene, int part, const view3d *view, cons
                                     .local = gizmo.local,
                                     .targets = targets };
     memcpy(g->space.axes, gizmo.axes, sizeof gizmo.axes);
-    CF_Ray3 ray = ray_of(view, pointer);
+    CF_Ray3 ray = scene_view3d_ray(view, pointer);
     if (part >= SCENE_GIZMO_ARROW_X && part <= SCENE_GIZMO_ARROW_Z &&
-        !arrow_param(&g->space, part - SCENE_GIZMO_ARROW_X, ray, &g->space.along)) {
+        !scene_view3d_line_param(
+            g->space.pivot,
+            g->space.axes[part - SCENE_GIZMO_ARROW_X],
+            ray,
+            &g->space.along
+        )) {
         g->space.along = 0;
     }
     if ((part >= SCENE_GIZMO_PLANE_X && part <= SCENE_GIZMO_SCREEN) &&
@@ -738,25 +689,18 @@ static bool begin(app_scene_authoring *scene, int part, const view3d *view, cons
         )) {
         g->space.grab = gizmo.pivot;
     }
-    g->active = part;
-    g->modal = g->moved = false;
-    g->reselect = -1;
+    scene_gizmo3d_start(scene, part, scene_view3d_pointer_at(view, pointer));
     g->primary = primary_of(scene, targets);
-    g->origin = pointer_at(view, pointer);
     int ring = part - SCENE_GIZMO_RING_X;
     if (ring >= 0 && ring < 3 && ring_edge_on(view, &gizmo, ring)) {
         float angle = 0;
         ring_distance(view, &gizmo, ring, g->origin, &angle);
         g->space.tangent = ring_tangent(view, &gizmo, ring, angle);
     }
-    g->turn = 0;
     g->last = screen_angle(view, gizmo.pivot, g->origin);
-    g->dirty = scene->scene_dirty;
-    g->status[0] = g->delta[0] = '\0';
     for (int i = 0; i < acount(targets); i++) {
         add_fields(scene, &targets[i], g->in.tool);
     }
-    scene->dragging_actor = true;
     return true;
 }
 
@@ -779,7 +723,7 @@ static float shown(float value)
     return rounded == 0 ? 0 : rounded;
 }
 
-static void move_selection(app_scene_authoring *scene, const view3d *view, CF_Ray3 ray)
+static void move_selection(app_scene_authoring *scene, const scene_view3d *view, CF_Ray3 ray)
 {
     scene_gizmo *g = &scene->gizmo;
     const scene_gizmo_space *space = &g->space;
@@ -787,7 +731,7 @@ static void move_selection(app_scene_authoring *scene, const view3d *view, CF_Ra
     if (g->active <= SCENE_GIZMO_ARROW_Z) {
         int k = g->active - SCENE_GIZMO_ARROW_X;
         float t;
-        if (!arrow_param(space, k, ray, &t)) {
+        if (!scene_view3d_line_param(space->pivot, space->axes[k], ray, &t)) {
             return;
         }
         delta = cf_mul_v3_f(space->axes[k], t - space->along);
@@ -826,7 +770,7 @@ static void move_selection(app_scene_authoring *scene, const view3d *view, CF_Ra
     scene_gizmo_describe(g, "Move");
 }
 
-static void rotate_selection(app_scene_authoring *scene, const view3d *view, CF_V2 at)
+static void rotate_selection(app_scene_authoring *scene, const scene_view3d *view, CF_V2 at)
 {
     scene_gizmo *g = &scene->gizmo;
     const scene_gizmo_space *space = &g->space;
@@ -860,7 +804,7 @@ static void rotate_selection(app_scene_authoring *scene, const view3d *view, CF_
 
 /* How far the pointer has scaled the selection: along the dragged handle
    as it shows on screen, or right and up from the center. */
-static float scale_factor(const scene_gizmo *g, const view3d *view, CF_V2 at)
+static float scale_factor(const scene_gizmo *g, const scene_view3d *view, CF_V2 at)
 {
     const scene_gizmo_space *space = &g->space;
     CF_V2 d = cf_sub(at, g->origin);
@@ -872,7 +816,10 @@ static float scale_factor(const scene_gizmo *g, const view3d *view, CF_V2 at)
     } else {
         int k = g->active - SCENE_GIZMO_SCALE_X;
         CF_V3 tip = cf_add_v3(space->pivot, cf_mul_v3_f(space->axes[k], space->length));
-        CF_V2 handle = cf_sub(on_screen(view, tip), on_screen(view, space->pivot));
+        CF_V2 handle = cf_sub(
+            scene_view3d_on_screen(view, tip),
+            scene_view3d_on_screen(view, space->pivot)
+        );
         reach = cf_len(handle);
         moved = reach > 0 ? cf_dot(d, handle) / reach : 0;
     }
@@ -883,7 +830,7 @@ static float scale_factor(const scene_gizmo *g, const view3d *view, CF_V2 at)
     return fmaxf(factor, MIN_FACTOR);
 }
 
-static void scale_selection(app_scene_authoring *scene, const view3d *view, CF_V2 at)
+static void scale_selection(app_scene_authoring *scene, const scene_view3d *view, CF_V2 at)
 {
     scene_gizmo *g = &scene->gizmo;
     const scene_gizmo_space *space = &g->space;
@@ -916,16 +863,18 @@ static void scale_selection(app_scene_authoring *scene, const view3d *view, CF_V
 static void drag(app_scene_authoring *scene, const engine_viewport_pointer *pointer)
 {
     scene_gizmo *g = &scene->gizmo;
-    view3d view = view_of(scene);
+    scene_view3d view = scene_view3d_of(scene);
     if (pointer->dragging) {
         g->moved = true;
-        CF_V2 at = pointer_at(&view, pointer);
+        CF_V2 at = scene_view3d_pointer_at(&view, pointer);
         if (g->active <= SCENE_GIZMO_SCREEN) {
-            move_selection(scene, &view, ray_of(&view, pointer));
+            move_selection(scene, &view, scene_view3d_ray(&view, pointer));
         } else if (g->active <= SCENE_GIZMO_RING_Z) {
             rotate_selection(scene, &view, at);
-        } else {
+        } else if (g->active <= SCENE_GIZMO_SCALE_ALL) {
             scale_selection(scene, &view, at);
+        } else {
+            scene_collider3d_drag(scene, scene_view3d_ray(&view, pointer));
         }
     }
     if (pointer->released) {
@@ -934,7 +883,7 @@ static void drag(app_scene_authoring *scene, const engine_viewport_pointer *poin
 }
 
 /* The part under the pointer for the selection as it is now. */
-static int hovered_part(app_scene_authoring *scene, const view3d *view, CF_V2 at)
+static int hovered_part(app_scene_authoring *scene, const scene_view3d *view, CF_V2 at)
 {
     scene_gizmo_target3d *targets = selection_targets(scene);
     gizmo3d gizmo;
@@ -952,16 +901,23 @@ bool scene_gizmo3d_pointer(app_scene_authoring *scene, const engine_viewport_poi
         drag(scene, pointer);
         return true;
     }
-    view3d view = view_of(scene);
-    bool visible = g->in.tool != SCENE_TOOL_SELECT && pointer->world_per_pixel > 0 &&
+    scene_view3d view = scene_view3d_of(scene);
+    CF_V2 at = scene_view3d_pointer_at(&view, pointer);
+    bool visible = pointer->world_per_pixel > 0 &&
                    (pointer->hovered || pointer->pressed);
-    g->hover = visible ? hovered_part(scene, &view, pointer_at(&view, pointer))
-                       : SCENE_GIZMO_NONE;
+    /* Select shows the active object's collider handles; the rest their gizmos. */
+    bool select = g->in.tool == SCENE_TOOL_SELECT;
+    g->hover = !visible ? SCENE_GIZMO_NONE
+             : select   ? scene_collider3d_part(scene, &view, at)
+                        : hovered_part(scene, &view, at);
     if (!pointer->pressed || g->hover == SCENE_GIZMO_NONE) {
         return false;
     }
     scene_authoring_select_document(scene, APP_EDITOR_DOCUMENT_SCENE, APP_SCENE_DOCUMENT_ID);
-    if (begin(scene, g->hover, &view, pointer)) {
+    bool began = select
+                   ? scene_collider3d_begin(scene, g->hover, &view, scene_view3d_ray(&view, pointer))
+                   : begin(scene, g->hover, &view, pointer);
+    if (began) {
         drag(scene, pointer);
     }
     return true;
@@ -969,15 +925,20 @@ bool scene_gizmo3d_pointer(app_scene_authoring *scene, const engine_viewport_poi
 
 /* ---------- Drawing ---------- */
 
-static void draw_arrows(const scene_gizmo *g, const view3d *view, const gizmo3d *gizmo)
+static void draw_arrows(const scene_gizmo *g, const scene_view3d *view, const gizmo3d *gizmo)
 {
-    CF_V2 pivot = on_screen(view, gizmo->pivot);
+    CF_V2 pivot = scene_view3d_on_screen(view, gizmo->pivot);
     for (int k = 0; k < 3; k++) {
         if (!arrow_shown(view, gizmo, k)) {
             continue;
         }
         cf_draw_push_color(scene_gizmo_color(g, SCENE_GIZMO_ARROW_X + k, AXIS_COLORS[k]));
-        cf_draw_arrow(pivot, on_screen(view, along(gizmo, k, 1)), LINE * view->pixel, ARROW_HEAD * view->pixel);
+        cf_draw_arrow(
+            pivot,
+            scene_view3d_on_screen(view, along(gizmo, k, 1)),
+            LINE * view->pixel,
+            ARROW_HEAD * view->pixel
+        );
         cf_draw_pop_color();
     }
     for (int k = 0; k < 3; k++) {
@@ -1003,7 +964,7 @@ static void draw_arrows(const scene_gizmo *g, const view3d *view, const gizmo3d 
     cf_draw_pop_color();
 }
 
-static void draw_rings(const scene_gizmo *g, const view3d *view, const gizmo3d *gizmo)
+static void draw_rings(const scene_gizmo *g, const scene_view3d *view, const gizmo3d *gizmo)
 {
     for (int k = 0; k < 3; k++) {
         int part = SCENE_GIZMO_RING_X + k;
@@ -1016,8 +977,8 @@ static void draw_rings(const scene_gizmo *g, const view3d *view, const gizmo3d *
             float a = segment_angle(s), b = segment_angle(s + 1);
             if (ring_front(view, gizmo, k, (a + b) / 2)) {
                 cf_draw_line(
-                    on_screen(view, ring_point(gizmo, k, a)),
-                    on_screen(view, ring_point(gizmo, k, b)),
+                    scene_view3d_on_screen(view, ring_point(gizmo, k, a)),
+                    scene_view3d_on_screen(view, ring_point(gizmo, k, b)),
                     width
                 );
             }
@@ -1034,15 +995,15 @@ static void draw_cube(CF_V2 at, float size, CF_Color color)
     cf_draw_pop_color();
 }
 
-static void draw_scale(const scene_gizmo *g, const view3d *view, const gizmo3d *gizmo)
+static void draw_scale(const scene_gizmo *g, const scene_view3d *view, const gizmo3d *gizmo)
 {
-    CF_V2 pivot = on_screen(view, gizmo->pivot);
+    CF_V2 pivot = scene_view3d_on_screen(view, gizmo->pivot);
     for (int k = 0; k < 3; k++) {
         if (!arrow_shown(view, gizmo, k)) {
             continue;
         }
         CF_Color color = scene_gizmo_color(g, SCENE_GIZMO_SCALE_X + k, AXIS_COLORS[k]);
-        CF_V2 tip = on_screen(view, along(gizmo, k, 1));
+        CF_V2 tip = scene_view3d_on_screen(view, along(gizmo, k, 1));
         cf_draw_push_color(color);
         cf_draw_line(pivot, tip, LINE * view->pixel);
         cf_draw_pop_color();
@@ -1057,7 +1018,7 @@ void scene_gizmo3d_draw(app_scene_authoring *scene)
     if (g->in.tool == SCENE_TOOL_SELECT || g->modal) {
         return;
     }
-    view3d view = view_of(scene);
+    scene_view3d view = scene_view3d_of(scene);
     scene_gizmo_target3d *targets = selection_targets(scene);
     gizmo3d gizmo;
     if (gizmo_of(scene, &view, targets, &gizmo)) {

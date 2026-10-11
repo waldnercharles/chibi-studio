@@ -3,6 +3,7 @@
 #include "editor/collab/actions_scene.h"
 #include "editor/workspace/editor_camera.h"
 #include "editor/workspace/model_preview.h"
+#include "editor/workspace/scene_collider3d.h"
 #include "editor/workspace/scene_internal.h"
 #include "editor/workspace/viewport.h"
 #include "platform/cute.h"
@@ -1122,6 +1123,7 @@ void app_scene_authoring_render(void *user)
             draw_arena_selection(scene, world, &camera, hidden);
             float pixel = scene->selection_scale > 0 ? scene->selection_scale : 1;
             cf_draw_push_shape_aa(SCENE_OVERLAY_AA * pixel * cf_app_get_pixel_scale());
+            scene_collider3d_draw(scene);
             scene_gizmo3d_draw(scene);
             cf_draw_pop_shape_aa();
         }

@@ -86,7 +86,11 @@ typedef enum
     SCENE_GIZMO_SCALE_Y,
     SCENE_GIZMO_SCALE_Z,
     SCENE_GIZMO_SCALE_ALL,
-    SCENE_GIZMO_HANDLE, /* the first of eight resize handles, from the bottom left counterclockwise */
+    /* The first of six handles on a 3D collider's extents (scene_collider3d.c),
+       along its +X, -X, +Y, -Y, +Z and -Z. */
+    SCENE_GIZMO_FACE,
+    /* The first of eight resize handles, from the bottom left counterclockwise. */
+    SCENE_GIZMO_HANDLE = SCENE_GIZMO_FACE + 6,
 } scene_gizmo_part;
 
 /* Whether `part` is a 3D view's. */
@@ -197,9 +201,11 @@ bool scene_gizmo3d_enabled(app_scene_authoring *scene);
 /* The tool's gizmo over the selection in a 3D view. */
 void scene_gizmo3d_draw(app_scene_authoring *scene);
 
-/* For scene_gizmo3d.c: records field `field` of `component` on `entity` as
-   the gesture writes it, returning its index in the gesture, or -1 when the
-   entity lacks the component. */
+/* Starts a 3D view's gesture on `part` from canvas point `origin`. */
+void scene_gizmo3d_start(app_scene_authoring *scene, int part, CF_V2 origin);
+/* For scene_gizmo3d.c and scene_collider3d.c: records field `field` of
+   `component` on `entity` as the gesture writes it, returning its index in the
+   gesture, or -1 when the entity lacks the component. */
 int scene_gizmo_record(
     app_scene_authoring *scene,
     ecs_entity entity,

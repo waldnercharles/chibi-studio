@@ -1,3 +1,7 @@
+/* scene_collider3d.h shares this file's views and gestures. */
+#ifndef STUDIO_ACCEPTANCE_SCENE_GIZMO3D_H
+#define STUDIO_ACCEPTANCE_SCENE_GIZMO3D_H
+
 #include "runtime/transform_propagation.h"
 
 /* A 3D scene for the gizmo: a cube a Transform3D places, turned a
@@ -305,3 +309,5 @@ TEST_CASE(gizmo_3d)
     printf("Studio 3D gizmo accepted: frames=%d\n", frames);
     return true;
 }
+
+#endif

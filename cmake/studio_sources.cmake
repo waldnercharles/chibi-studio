@@ -136,11 +136,13 @@ set(STUDIO_SOURCES
     src/editor/workspace/tree_watch.c
     src/editor/workspace/scene_debug.c
     src/editor/workspace/scene_gizmo.c
+    src/editor/workspace/scene_collider3d.c
     src/editor/workspace/scene_gizmo3d.c
     src/editor/workspace/scene_overlays.c
     src/editor/workspace/scene_runtime.c
     src/editor/workspace/scene_tabs.c
     src/editor/workspace/scene_view.c
+    src/editor/workspace/scene_view3d.c
     src/editor/workspace/scene_viewport.c
     src/editor/workspace/scene_world_preview.c
     src/editor/workspace/viewport.c

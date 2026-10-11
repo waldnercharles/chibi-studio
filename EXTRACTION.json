@@ -2440,7 +2440,7 @@
       "current_source_sha256": "0e46bb27044d1fa98f416d6148c6b87d41b2ad6ab6c9a36763d216a5e7c57c3d",
       "sha256": "0e46bb27044d1fa98f416d6148c6b87d41b2ad6ab6c9a36763d216a5e7c57c3d",
       "source_path": "src/editor/workspace/scene_gizmo.h",
-      "consumer_sha256": "359fe71d4f4d81fc9921417919dfb1a59ba01a3635d2e64be386725308442cea"
+      "consumer_sha256": "7ca10c9cb37b7e4564f02b5eba222cc33586034d1e8fb2da92e78be63f8b1fca"
     },
     "src/editor/workspace/scene_internal.h": {
       "consumer_replacements": [
@@ -2481,7 +2481,7 @@
       "current_source_sha256": "f2a2f0d495ea6a286f1dfd898f3904d55eedfdb9093f9ef79d9f16115503a482",
       "sha256": "c487c7af89a66c3beb36270f2751356d3c5429ccccef8268ef518557da7a5210",
       "source_path": "src/editor/workspace/scene_viewport.c",
-      "consumer_sha256": "3d6bf04620f17269be19705e9f7370b817812bca91ba8897f7bd6800974237a7"
+      "consumer_sha256": "1134fd496bf0942bcccebcd88a2f07cd694f841e7182496cd1981691e7bb387f"
     },
     "src/editor/workspace/scene_world_preview.c": {
       "current_source_sha256": "0dc6c273fa210be49c28651ae1788498f1a081196d48c7803891f0ac847da9db",
