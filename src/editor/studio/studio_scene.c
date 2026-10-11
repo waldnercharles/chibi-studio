@@ -214,6 +214,15 @@ static const CF_V3 FLY_STEPS[] = { { 0, 0, 1 }, { -1, 0, 0 }, { 0, 0, -1 },
                                    { 1, 0, 0 }, { 0, -1, 0 }, { 0, 1, 0 } };
 #define FLY_KEY_COUNT ((int)(sizeof FLY_KEYS / sizeof *FLY_KEYS))
 
+/* A right press on a 3D view that this frame's camera turns into a look,
+   which its fly keys belong to already. */
+static bool look_pending(const studio *s)
+{
+    return s->scene_nav.camera_drag == CAMERA_IDLE && s->in.pressed[1] &&
+           s->surface.hovered && engine_viewport_perspective(s->viewport) &&
+           camera_free(s) && s->scene->gizmo.active == SCENE_GIZMO_NONE;
+}
+
 bool studio_scene_fly_key(studio *s, const SDL_KeyboardEvent *key)
 {
     for (int i = 0; i < FLY_KEY_COUNT; i++) {
@@ -227,13 +236,20 @@ bool studio_scene_fly_key(studio *s, const SDL_KeyboardEvent *key)
             return held;
         }
         /* The button as of this key, which a look lifted elsewhere ends. */
-        if (s->scene_nav.camera_drag != CAMERA_LOOK || !s->in.down[1]) {
+        bool looking = s->scene_nav.camera_drag == CAMERA_LOOK || look_pending(s);
+        if (!looking || !s->in.down[1]) {
             return false;
         }
         s->scene_nav.fly_keys |= bit;
         return true;
     }
     return false;
+}
+
+void studio_scene_stop_camera(studio *s)
+{
+    s->scene_nav.camera_drag = CAMERA_IDLE;
+    s->scene_nav.fly_keys = 0;
 }
 
 bool studio_scene_flying(const studio *s)

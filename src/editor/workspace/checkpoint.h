@@ -95,8 +95,11 @@ static inline yyjson_mut_val *checkpoint_camera(yyjson_mut_doc *doc, engine_view
    before views kept their lens. */
 static inline bool checkpoint_read_camera(yyjson_val *array, engine_viewport_view *view)
 {
+    if (!yyjson_is_arr(array)) {
+        return false;
+    }
     size_t count = yyjson_arr_size(array);
-    if (!yyjson_is_arr(array) || (count != 9 && count != CHECKPOINT_CAMERA_VALUES)) {
+    if (count != 9 && count != CHECKPOINT_CAMERA_VALUES) {
         return false;
     }
     float values[CHECKPOINT_CAMERA_VALUES] = { 0 };

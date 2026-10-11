@@ -1697,6 +1697,9 @@ void studio_scene_space_release(studio *s);
 bool studio_scene_fly_key(studio *s, const SDL_KeyboardEvent *key);
 /* Whether the right button looks around a 3D view, and the fly keys fly. */
 bool studio_scene_flying(const studio *s);
+/* Ends the camera's drag and its fly keys, as when the window loses focus
+   and their releases may never arrive. */
+void studio_scene_stop_camera(studio *s);
 /* The Outliner (studio_outliner.c): its header's filter and Add, and its
  * body, the authored Outliner panel in each area showing it, whose
  * behaviors call the editor nodes (studio_nodes.c). */

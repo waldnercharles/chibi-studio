@@ -545,6 +545,8 @@ static bool forward_input(studio *s)
             s->mods = SDL_KMOD_NONE;
             /* A Space let go in another window neither plays nor pans. */
             s->space_down = s->scene_nav.space_play = s->scene_nav.space_drag = false;
+            /* Nor do buttons and fly keys let go there keep the camera moving. */
+            studio_scene_stop_camera(s);
             continue;
         }
         /* Space lifts as its key does, while a chord records too. */

@@ -2549,13 +2549,16 @@ static bool checkpoint_keeps_lens(studio *s)
     kept = checkpoint_read_camera(yyjson_doc_get_root(old), &read);
     yyjson_doc_free(old);
     REQUIRE(kept && read.width == 3 && cf_dot_v3(read.lens.forward, read.lens.forward) == 0);
+    /* A snapshot without a camera is rejected rather than read. */
+    REQUIRE(!checkpoint_read_camera(NULL, &read));
     return true;
 }
 
 /* A 3D view's camera: Alt with a left drag orbits the pivot and selects
    nothing, the middle button pans so the pivot follows the pointer, the
    wheel dollies toward the pointer, keeping the point under it, and the
-   right button looks while W flies forward and switches no tool. Frame
+   right button looks while W, pressed in the same frame, flies forward and
+   switches no tool, until the window loses focus. Frame
    then centers the block along the turned direction, a press above a
    level view's horizon still selects and drags nothing, and a checkpoint
    keeps the lens. */
@@ -2637,11 +2640,13 @@ static bool scene_camera_frame(void *state)
             REQUIRE(near(shown_at(s, anchored).y, anchor.y, 1e-3f));
             return true;
         case LOOK_FRAME:
+            /* W in the frame the look starts flies as well. */
             before = camera;
-            return button_at(s, SDL_BUTTON_RIGHT, true, (CF_V2){ 0, 0 });
-        case LOOK_FRAME + 1:
-            REQUIRE(studio_scene_flying(s));
+            REQUIRE(button_at(s, SDL_BUTTON_RIGHT, true, (CF_V2){ 0, 0 }));
             return push_key(SDLK_W, SDL_KMOD_NONE, true);
+        case LOOK_FRAME + 1:
+            REQUIRE(studio_scene_flying(s) && s->scene_nav.fly_keys);
+            return true;
         case LOOK_FRAME + 4: {
             /* W flew along the view, and stayed out of the Move tool. */
             CF_V3 moved = cf_sub_v3(camera.pivot, before.pivot);
@@ -2651,33 +2656,40 @@ static bool scene_camera_frame(void *state)
                 0.01f * before.distance
             );
             REQUIRE(near(camera.yaw, before.yaw, 1e-5f));
-            REQUIRE(push_key(SDLK_W, SDL_KMOD_NONE, false));
-            return push_button(SDL_BUTTON_RIGHT, false, 0, 0);
+            /* The window loses focus with both held: their releases may
+               never arrive, and the camera stops. */
+            SDL_Event lost = { .window = { .type = SDL_EVENT_WINDOW_FOCUS_LOST,
+                                           .windowID = window_id() } };
+            return SDL_PushEvent(&lost);
         }
         case LOOK_FRAME + 5:
             REQUIRE(!studio_scene_flying(s) && !s->scene_nav.fly_keys);
+            REQUIRE(push_key(SDLK_W, SDL_KMOD_NONE, false));
+            return push_button(SDL_BUTTON_RIGHT, false, 0, 0);
+        case LOOK_FRAME + 6:
+            REQUIRE(!studio_scene_flying(s) && s->prefs.tool == SCENE_TOOL_SELECT);
             before = camera;
             studio_command_run(s, STUDIO_COMMAND_FRAME_ALL);
             REQUIRE(near_v3(editor_camera_get(s->viewport).pivot, (CF_V3){ 200, 50, 0 }, 1e-2f));
             REQUIRE(near(editor_camera_get(s->viewport).yaw, before.yaw, 1e-4f));
             return true;
-        case LOOK_FRAME + 6:
+        case LOOK_FRAME + 7:
             /* Level at the block's middle: its upper half is above the horizon. */
             camera.pitch = 0;
             camera.pivot = (CF_V3){ 200, 50, 0 };
             camera.distance = 600;
             editor_camera_set(s->viewport, &camera);
             return true;
-        case LOOK_FRAME + 7:
+        case LOOK_FRAME + 8:
             anchor = shown_at(s, (CF_V3){ 200, 85, 0 });
             REQUIRE(anchor.y > 0);
             return button_at(s, SDL_BUTTON_LEFT, true, anchor);
-        case LOOK_FRAME + 8:
+        case LOOK_FRAME + 9:
             /* Down onto the ground before the press lifts. */
             return move_to(s, (CF_V2){ anchor.x, -0.5f });
-        case LOOK_FRAME + 9:
-            return button_at(s, SDL_BUTTON_LEFT, false, (CF_V2){ anchor.x, -0.5f });
         case LOOK_FRAME + 10:
+            return button_at(s, SDL_BUTTON_LEFT, false, (CF_V2){ anchor.x, -0.5f });
+        case LOOK_FRAME + 11:
             /* Selected, and not dragged: the press had no ground to start from. */
             REQUIRE(scene_selection_count(scene) == 1 && scene->selected == 0);
             REQUIRE(
