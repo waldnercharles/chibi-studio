@@ -26,6 +26,7 @@
 #include "editor/studio/studio_internal.h"
 #include "editor/studio/studio_thumbnails.h"
 #include "editor/ui/highlight.h"
+#include "editor/workspace/editor_internal.h"
 #include "support/array.h"
 #include "support/text_rank.h"
 #include "support/text_search.h"
@@ -260,8 +261,14 @@ static void choose(studio *s, int place)
 /* What the entries list: the assets and the scene's objects. */
 static uint64_t inputs_of(const studio *s)
 {
+    const authoring_source_presentation *presentation = editor_presentation(
+        s->scene->graph_editor
+    );
+    uint64_t source = presentation ? authoring_source_edit_generation(presentation)
+                                   : 0;
     return s->scene->asset_index_revision * 1099511628211ull ^
-           (uint64_t)acount(s->scene->actors);
+           (uint64_t)s->scene->graph_editor->asset_catalog_revision * 16777619ull ^
+           (uint64_t)acount(s->scene->actors) ^ source;
 }
 
 /* Ranks the entries into rows, each group's heading before its first. */

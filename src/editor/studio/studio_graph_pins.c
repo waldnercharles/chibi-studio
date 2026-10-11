@@ -464,6 +464,30 @@ void sg_pin_menu(studio *s, sg_menu *m, node *n, int kind, int p)
     char label[128];
     studio_code_pin_label(s, n, pin_of(n, kind, p), label, sizeof label);
     sg_menu_title(m, label);
+    node *source = NULL;
+    int source_pin;
+    editor *e = sg_graph_editor(s);
+    const graph *target = kind == ED_PIN_INPUT &&
+                                  graph_input_source(sg_active_graph(s), n, p, &source, &source_pin)
+                            ? editor_graph_call_target(e, source)
+                            : NULL;
+    if (target) {
+        if (sg_menu_item(
+                m,
+                "open-function",
+                target->kind == GRAPH_MACRO ? "Open Macro" : "Open Function",
+                KIT_ICON_FUNCTION,
+                NULL,
+                false
+            )) {
+            editor_open_graph_call(e, source->id);
+            return;
+        }
+        if (sg_inline_call_item(s, m, source)) {
+            return;
+        }
+        sg_menu_separator(m);
+    }
     if (sg_pin_renameable(s, n, kind, p) &&
         sg_menu_item(m, "rename", "Rename", KIT_ICON_EDIT, "F2", false)) {
         sg_rename_pin(s, n, p);

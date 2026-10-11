@@ -1,8 +1,9 @@
 #include "assets/ui_events.h"
+#include "authoring/preview.h"
 #include "editor/graph/eval_view.h"
 #include "editor/workspace/editor_internal.h"
-#include "graph/document/serialize.h"
 #include "graph/compiler/validation.h"
+#include "graph/document/serialize.h"
 #include "graph/model/registry.h"
 #include "support/xalloc.h"
 
@@ -291,9 +292,32 @@ void editor_set_prototype_catalog(editor *e, const char *const *names, int count
 
 void editor_set_asset_catalog(editor *e, const behavior_asset *const *assets, int count)
 {
+    bool changed = acount(e->asset_catalog) != count;
+    for (int i = 0; !changed && i < count; i++) {
+        changed = e->asset_catalog[i] != assets[i];
+    }
+    if (!changed) {
+        return;
+    }
     aclear(e->asset_catalog);
     for (int i = 0; i < count; i++) {
         apush(e->asset_catalog, assets[i]);
+    }
+    e->asset_catalog_revision++;
+}
+
+void editor_refresh_asset_catalog(editor *e, preview_world *world)
+{
+    int previous = acount(e->asset_catalog), count = preview_definition_count(world);
+    bool changed = previous != count;
+    asetlen(e->asset_catalog, count);
+    for (int i = 0; i < count; i++) {
+        const behavior_asset *asset = preview_definition_at(world, i)->working;
+        changed |= i >= previous || e->asset_catalog[i] != asset;
+        e->asset_catalog[i] = asset;
+    }
+    if (changed) {
+        e->asset_catalog_revision++;
     }
 }
 
@@ -302,4 +326,3 @@ void ed_refresh_values(editor *e)
 {
     eval_view_set_inspector(e->ev, ed_display_inspector(e), e->inspection_owner, e->presentation);
 }
-

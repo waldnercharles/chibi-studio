@@ -1036,6 +1036,12 @@ const authoring_source *asset_code_graph_source(const asset_code *c, const edito
 }
 bool asset_code_sync_graph(asset_code *c, editor *e, bool live)
 {
+    /* Preparing source replaces the world's working presentations, including
+       library assets borrowed by the palette. Refresh even for invalid drafts
+       or unchanged graph state before the editor can read those assets. */
+    if (c->world) {
+        editor_refresh_asset_catalog(e, c->world);
+    }
     if (!c->native_view && !c->shared && !c->source_pending && !asset_code_dirty(c)) {
         c->shared = behavior_asset_clone(editor_behavior_asset(e));
         c->shared_asset = editor_behavior_asset(e);

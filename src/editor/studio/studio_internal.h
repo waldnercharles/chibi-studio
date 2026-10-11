@@ -576,6 +576,13 @@ typedef struct
     bool menu_open;    /* GraphMenu.rml shows (studio_graph_menu.c) */
     bool menu_opening; /* show its popover at menu_x, menu_y this frame */
     bool menu_mounted; /* its document showed last frame */
+    struct
+    {
+        uint64_t generation, origin;
+        unsigned edit, assets;
+        bool checked, readonly, eligible;
+        char reason[512];
+    } inline_call;    /* exact source preflight cached while the menu is open */
     uint64_t *unused; /* nodes no event reaches or whose values nothing reads */
     char expression_error[192]; /* why the last expression edit was refused */
     struct
@@ -663,6 +670,9 @@ typedef struct
     studio_member_kind kind; /* the selected member */
     uint64_t id;             /* its graph, variable or local ID */
     uint64_t shown_node;     /* graph node selection last seen */
+    char source_renamed[257]; /* follow a source variable into its next generation */
+    uint64_t source_rename_generation;
+    bool source_reveal; /* reveal a newly created declaration after source adoption */
     studio_member_kind rename_kind;
     uint64_t rename_id;
     bool rename_focus;  /* scroll the row being named into view */
@@ -2149,6 +2159,8 @@ bool studio_code_graph_readonly(const studio *s);
 char *studio_code_expression(const studio *s, const node *n);
 bool studio_code_expression_replace(studio *, const node *, const char *, char *, size_t);
 bool studio_code_edit_source(void *, const authoring_edit_request *, bool coalesce, char *, size_t);
+/* Builds and discards a checked source candidate; no draft/history mutation. */
+bool studio_code_check_edit(const studio *, const authoring_edit_request *, char *, size_t);
 void studio_code_graph_label(const studio *s, const graph *g, char *out, size_t size);
 void studio_code_pin_label(const studio *s, const node *n, const pin_spec *pin, char *out, size_t size);
 char *studio_code_expression_resolve(
@@ -2159,6 +2171,7 @@ char *studio_code_expression_resolve(
     size_t size
 );
 void studio_code_reveal_node(studio *s, const studio_node_ref *at);
+void studio_code_reveal_graph(studio *s);
 int studio_behavior_view(const studio *s);
 void studio_behavior_show(studio *s, int view);
 /* Opens the UI document `path` belongs to (ui_buffer_document) at a 1-based

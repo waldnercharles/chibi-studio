@@ -133,6 +133,7 @@ struct editor
     void *open_asset_user;
     const char **prototype_catalog; /* Owned array, borrowed project names. */
     const behavior_asset **asset_catalog; /* Owned array, borrowed project assets. */
+    unsigned asset_catalog_revision;
 
     behavior_asset **undo;
     behavior_asset **redo;

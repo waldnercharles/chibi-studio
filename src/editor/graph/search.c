@@ -502,6 +502,51 @@ static void ed_search_events(const editor *e, ed_search_match **matches, const c
     }
 }
 
+static void search_source_variables(const editor *e, ed_search_match **matches, const char *filter)
+{
+    if (!e->presentation) {
+        return;
+    }
+    for (int i = 0; i < authoring_source_presentation_origin_count(e->presentation);
+         i++) {
+        const source_presentation_origin
+            *o = authoring_source_presentation_origin_at(e->presentation, i);
+        if (o->kind != SOURCE_PRESENTATION_SYMBOL || o->pin || o->function >= 0 ||
+            (o->operation != SCRIPT_STATE && o->operation != SCRIPT_SHARED_STATE)) {
+            continue;
+        }
+        graph *g = behavior_asset_find_graph(e->asset, o->graph);
+        node *declaration = graph_node_by_id(g, o->node);
+        if (!declaration || !declaration->output_count) {
+            continue;
+        }
+        for (int set = 0; set < 2; set++) {
+            if (set && !o->writable) {
+                continue;
+            }
+            const node_desc *desc = set ? &NODE_SetVariable : &NODE_GetVariable;
+            pin_spec data = declaration->output_pins[0];
+            data.name = "Value";
+            pin_spec inputs[] = { { .name = "Exec", .type = PIN_FLOW, .kind = PIN_EXEC },
+                                  data };
+            pin_spec then = { .name = "Then", .type = PIN_FLOW, .kind = PIN_EXEC };
+            node_desc signature = *desc;
+            signature.inputs = set ? inputs : NULL;
+            signature.input_count = set ? 2 : 0;
+            signature.outputs = set ? &then : &data;
+            signature.output_count = 1;
+            ed_search_match match = { .desc = desc,
+                                      .source_variable = declaration->reference_id,
+                                      .source_variable_name = declaration->desc->name,
+                                      .category = "Variables" };
+            char label[256];
+            editor_identifier_label(match.source_variable_name, label, sizeof label);
+            snprintf(match.name, sizeof match.name, "%s %s", set ? "Set" : "Get", label);
+            ed_add_search_match(e, matches, match, &signature, filter);
+        }
+    }
+}
+
 ed_search_match *ed_search_matches(const editor *e, const char *filter)
 {
     ed_search_match *matches = NULL;
@@ -663,6 +708,9 @@ ed_search_match *ed_search_matches(const editor *e, const char *filter)
             snprintf(match.name, sizeof match.name, "Spawn %s", match.prototype);
             ed_add_search_match(e, &matches, match, spawn, filter);
         }
+    }
+    if (!shader) {
+        search_source_variables(e, &matches, filter);
     }
     if (acount(matches) > 1) {
         qsort(matches, (size_t)acount(matches), sizeof *matches, ed_search_match_cmp);
@@ -904,6 +952,12 @@ bool ed_source_spawn_match(editor *e, const ed_search_match *match)
                                      : NULL,
         .field = match->field
     };
+    if (match->source_variable) {
+        request.kind = match->desc == &NODE_SetVariable
+                         ? AUTHORING_EDIT_CREATE_VARIABLE_SET
+                         : AUTHORING_EDIT_CREATE_VARIABLE_GET;
+        request.symbol = match->source_variable;
+    }
     if (match->event || match->host_event || match->ui_event) {
         request.kind = AUTHORING_EDIT_CREATE_EVENT;
     }

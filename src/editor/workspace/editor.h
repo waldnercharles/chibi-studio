@@ -4,13 +4,14 @@
 #include "authoring/source_edit.h"
 #include "editor/graph/eval_view.h"
 #include "editor/ui/choices.h"
+#include "execution/inspection.h"
 #include "graph/document/events.h"
 #include "graph/model/behavior_asset.h"
 #include "graph/nodes/behavior_expression.h"
-#include "execution/inspection.h"
 
 typedef struct editor editor;
 typedef struct authoring_source_presentation authoring_source_presentation;
+typedef struct preview_world preview_world;
 struct ui_event;
 struct ui_data_binding;
 
@@ -190,6 +191,8 @@ int editor_open_graph(editor *e, uint64_t graph_id);
 int editor_delete_graph(editor *e, uint64_t graph_id);
 /* Drill into an authored call; Back restores the caller view and selects the call. */
 int editor_open_graph_call(editor *e, uint64_t node_id);
+/* Resolved local callee in the current source presentation or authored graph. */
+const graph *editor_graph_call_target(const editor *, const node *);
 int editor_graph_back(editor *e);
 /* Callers that Back can return to, oldest first. */
 int editor_graph_history_count(const editor *e);
@@ -229,6 +232,7 @@ void editor_set_prototype_catalog(editor *e, const char *const *names, int count
 /* `assets` stay borrowed until the next call, so a host that frees one sets
  * the catalog again before the editor runs. */
 void editor_set_asset_catalog(editor *e, const behavior_asset *const *assets, int count);
+void editor_refresh_asset_catalog(editor *e, preview_world *world);
 
 /* Commits editor revision bookkeeping using the host clock. Runtime execution
  * and captured inspection values belong to the scene or prototype runtime. */

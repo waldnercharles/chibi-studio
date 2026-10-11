@@ -109,8 +109,11 @@ static bool fit(yyjson_mut_doc *doc, yyjson_mut_val *array, int length, item_sha
     return had != length;
 }
 
-static uint32_t graph_icon(const graph *gr)
+static uint32_t graph_icon(const editor *e, const graph *gr)
 {
+    if (editor_presentation(e) && gr == e->asset->graph) {
+        return KIT_ICON_VARIABLE;
+    }
     return gr->kind == GRAPH_FUNCTION ? KIT_ICON_FUNCTION
          : gr->kind == GRAPH_MACRO    ? KIT_ICON_EXPRESSION
                                       : KIT_ICON_EVENT;
@@ -281,7 +284,7 @@ static bool show_crumbs(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *h)
     char label[256];
     studio_code_graph_label(s, gr, label, sizeof label);
     changed |= ui_data_put_text(doc, shown, "label", label);
-    changed |= put_glyph(doc, shown, "icon", graph_icon(gr));
+    changed |= put_glyph(doc, shown, "icon", graph_icon(sg_graph_editor(s), gr));
     return show_callers(s, doc, yyjson_mut_obj_get(h, "callers")) || changed;
 }
 
@@ -387,32 +390,70 @@ static bool show_assets(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *m)
     return changed;
 }
 
-/* The picker's graphs. An expression's generated function belongs to its
-   node, which opens it; listing them would repeat every expression here. */
+enum
+{
+    PICKER_EVENTS,
+    PICKER_VARIABLES,
+    PICKER_FUNCTIONS,
+    PICKER_MACROS,
+    PICKER_GROUPS,
+};
+
+static int graph_group(const editor *e, const graph *g)
+{
+    if (editor_presentation(e) && g == e->asset->graph) {
+        return PICKER_VARIABLES;
+    }
+    return g->kind == GRAPH_FUNCTION ? PICKER_FUNCTIONS
+         : g->kind == GRAPH_MACRO    ? PICKER_MACROS
+                                     : PICKER_EVENTS;
+}
+
+/* Events stay ahead of helpers regardless of declaration order. Generated
+   expression graphs belong to their node; only list one while it is open. */
 static bool show_graphs(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *array)
 {
     editor *e = sg_graph_editor(s);
     const graph *gr = sg_active_graph(s);
-    int count = 0;
+    static const char *const labels[PICKER_GROUPS] = { "Events",
+                                                       "Variables",
+                                                       "Functions",
+                                                       "Macros" };
+    int counts[PICKER_GROUPS] = { 0 }, groups = 0;
     for (int i = 0; i < acount(e->asset->graphs); i++) {
-        count += !e->asset->graphs[i]->math_expression || e->asset->graphs[i] == gr;
+        const graph *g = e->asset->graphs[i];
+        if (!g->math_expression || g == gr) {
+            counts[graph_group(e, g)]++;
+        }
     }
-    bool changed = fit(doc, array, count, SHAPE_ITEM);
+    for (int i = 0; i < PICKER_GROUPS; i++) {
+        groups += counts[i] != 0;
+    }
+    bool changed = fit(doc, array, groups, SHAPE_GROUP);
     yyjson_mut_arr_iter it = yyjson_mut_arr_iter_with(array);
-    for (int i = 0; i < acount(e->asset->graphs); i++) {
-        const graph *item = e->asset->graphs[i];
-        if (item->math_expression && item != gr) {
+    for (int group = 0; group < PICKER_GROUPS; group++) {
+        if (!counts[group]) {
             continue;
         }
-        char id[24];
-        snprintf(id, sizeof id, "%llu", (unsigned long long)item->graph_id);
-        char label[256];
-        studio_code_graph_label(s, item, label, sizeof label);
-        header_item shown = { .id = id,
-                              .label = label,
-                              .icon = graph_icon(item),
-                              .current = item == gr };
-        changed |= put_item(doc, yyjson_mut_arr_iter_next(&it), &shown);
+        yyjson_mut_val *section = yyjson_mut_arr_iter_next(&it);
+        changed |= ui_data_put_text(doc, section, "label", labels[group]);
+        yyjson_mut_val *options = yyjson_mut_obj_get(section, "options");
+        changed |= fit(doc, options, counts[group], SHAPE_ITEM);
+        yyjson_mut_arr_iter choices = yyjson_mut_arr_iter_with(options);
+        for (int i = 0; i < acount(e->asset->graphs); i++) {
+            const graph *item = e->asset->graphs[i];
+            if ((item->math_expression && item != gr) || graph_group(e, item) != group) {
+                continue;
+            }
+            char id[24], label[256];
+            snprintf(id, sizeof id, "%llu", (unsigned long long)item->graph_id);
+            studio_code_graph_label(s, item, label, sizeof label);
+            header_item shown = { .id = id,
+                                  .label = label,
+                                  .icon = graph_icon(e, item),
+                                  .current = item == gr };
+            changed |= put_item(doc, yyjson_mut_arr_iter_next(&choices), &shown);
+        }
     }
     return changed;
 }
@@ -826,7 +867,9 @@ static bool graph_action(studio *s, const char *action, const ui_activation *a)
     editor *e = sg_graph_editor(s);
     graph *gr = sg_active_graph(s);
     if (!strcmp(action, "graph")) {
-        editor_open_graph(e, strtoull(argument(a), NULL, 10));
+        if (editor_open_graph(e, strtoull(argument(a), NULL, 10)) == 0) {
+            studio_code_reveal_graph(s);
+        }
     } else if (!strcmp(action, "caller")) {
         editor_graph_ancestor(e, atoi(argument(a)));
     } else if (!strcmp(action, "newFunction") || !strcmp(action, "newMacro")) {

@@ -10,7 +10,8 @@
 
 bool studio_node_definable(const studio *s, const node *n)
 {
-    return ed_is_graph_call(n) || studio_node_referable(s, n);
+    return editor_graph_call_target(sg_graph_editor(s), n) ||
+           ed_is_graph_call(n) || studio_node_referable(s, n);
 }
 
 static void report(studio *s, const char *format, const char *name)
@@ -57,7 +58,7 @@ static void peek(studio *s, const char *component)
 
 void studio_go_to_definition(studio *s, node *n)
 {
-    if (ed_is_graph_call(n)) {
+    if (editor_graph_call_target(sg_graph_editor(s), n) || ed_is_graph_call(n)) {
         editor_open_graph_call(sg_graph_editor(s), n->id);
         return;
     }

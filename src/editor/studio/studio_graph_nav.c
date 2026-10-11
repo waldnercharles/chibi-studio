@@ -60,6 +60,12 @@ static void see(studio_graph *g, const studio_visit *visit)
     apush(g->shown, *visit);
 }
 
+void sg_nav_follow_source(studio *s)
+{
+    studio_visit visit = here(s);
+    see(&s->graph, &visit);
+}
+
 /* Records a changed graph and its breadcrumb. Source visits synchronize
    the displayed graph separately without adding a graph history entry. */
 void sg_nav_track(studio *s)
@@ -81,6 +87,7 @@ void sg_nav_track(studio *s)
     }
     see(g, &visit);
     push(g, &visit);
+    studio_code_reveal_graph(s);
 }
 
 static bool open_visit(studio *s, const studio_visit *visit)
@@ -116,6 +123,7 @@ static bool open_visit(studio *s, const studio_visit *visit)
     }
     ed_restore_callers(e, visit->callers, visit->caller_count);
     see(&s->graph, visit);
+    studio_code_reveal_graph(s);
     return true;
 }
 

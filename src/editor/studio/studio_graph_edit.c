@@ -329,7 +329,9 @@ void sg_paste(studio *s)
             const source_presentation_origin *selected = authoring_source_presentation_origin(
                 e->presentation, e->active_graph->graph_id, anchor->id, 0
             );
-            if (selected && selected->kind == SOURCE_PRESENTATION_STATEMENT) {
+            if (selected && (selected->kind == SOURCE_PRESENTATION_STATEMENT ||
+                             (selected->kind == SOURCE_PRESENTATION_EXPRESSION &&
+                              node_behavior_for(anchor) == NODE_BEHAVIOR_EXEC))) {
                 origin = selected->identity;
                 kind = AUTHORING_EDIT_INSERT_AFTER;
             }

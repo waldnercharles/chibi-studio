@@ -167,13 +167,31 @@ int editor_open_graph(editor *e, uint64_t graph_id)
     return published ? result : -1;
 }
 
+const graph *editor_graph_call_target(const editor *e, const node *call)
+{
+    if (!e || !call || !e->active_graph) {
+        return NULL;
+    }
+    if (e->presentation) {
+        uint64_t target = authoring_source_presentation_call_graph(
+            e->presentation,
+            e->active_graph->graph_id,
+            call->id
+        );
+        return target ? behavior_asset_find_graph(e->asset, target) : NULL;
+    }
+    return ed_is_graph_call(call) && !call->reference_asset
+             ? behavior_asset_find_graph(e->asset, call->reference_id)
+             : NULL;
+}
+
 int editor_open_graph_call(editor *e, uint64_t node_id)
 {
     if (!e || !e->active_graph) {
         return -1;
     }
     node *call = graph_node_by_id(e->active_graph, node_id);
-    if (!ed_is_graph_call(call)) {
+    if (!call || (!e->presentation && !ed_is_graph_call(call))) {
         return -1;
     }
     if (call->reference_asset) {
@@ -186,10 +204,11 @@ int editor_open_graph_call(editor *e, uint64_t node_id)
         free(name);
         return result;
     }
-    graph *target = behavior_asset_find_graph(e->asset, call->reference_id);
+    const graph *resolved = editor_graph_call_target(e, call);
+    graph *target = resolved ? behavior_asset_find_graph(e->asset, resolved->graph_id)
+                             : NULL;
     if (!target || target == e->active_graph ||
-        (call->desc == &NODE_CallMacro ? target->kind != GRAPH_MACRO
-                                       : target->kind != GRAPH_FUNCTION)) {
+        (target->kind != GRAPH_MACRO && target->kind != GRAPH_FUNCTION)) {
         return -1;
     }
     if (acount(e->graph_callers) == ED_CALLER_LIMIT) {

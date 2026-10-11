@@ -188,16 +188,15 @@ void sg_frame_again(studio *s)
         fabsf(g->x - camera[1]) < 1 && fabsf(g->y - camera[2]) < 1) {
         selection = false;
     }
-    sg_frame_nodes(s, selection, true);
+    sg_frame_nodes(s, selection, false);
 }
 
 /* The room left above and beside a graph's start when it opens at
    OPEN_ZOOM_MIN. */
 static const float OPEN_MARGIN = 32;
 
-/* A graph opens fitted when that leaves its nodes legible; otherwise at a
-   legible zoom with its top-left corner in view, where its events start, as
-   Unreal opens a graph. Frame All (Home) still fits everything. */
+/* A graph opens fitted when legible, otherwise at its entry. A local value
+   may sit above or to the left of the execution flow. */
 void sg_frame_open(studio *s)
 {
     studio_graph *g = &s->graph;
@@ -209,17 +208,25 @@ void sg_frame_open(studio *s)
         return;
     }
     float zoom = OPEN_ZOOM_MIN * 12.0f / s->prefs.standard_font_size;
+    graph *gr = sg_active_graph(s);
+    node *entry = graph_node_by_id(gr, gr->entry_id);
+    float box[4];
+    if (entry && sg_node_box(s, entry, box)) {
+        lo[0] = box[0];
+        lo[1] = box[1];
+    }
     camera_to(s, zoom, lo[0] - OPEN_MARGIN, lo[1] - OPEN_MARGIN, false);
 }
 
-/* A node near the edges, where overlays sit, is not in view (VS Code's reveal
-   in center if outside the viewport). */
+/* Source and keyboard navigation reveal immediately. A node near the edges,
+   where overlays sit, is not in view. */
 void sg_show_node(studio *s, node *n, bool frame)
 {
     static const float INSET = 0.2f;
     studio_graph *g = &s->graph;
+    g->camera.active = false;
     if (frame) {
-        sg_frame_nodes(s, true, true);
+        sg_frame_nodes(s, true, false);
         return;
     }
     float zoom = sg_zoom(s);
@@ -230,7 +237,7 @@ void sg_show_node(studio *s, node *n, bool frame)
         box[1] + box[3] <= g->y + h * (1 - INSET)) {
         return;
     }
-    camera_to(s, g->zoom, box[0] + box[2] / 2 - w / 2, box[1] + box[3] / 2 - h / 2, true);
+    camera_to(s, g->zoom, box[0] + box[2] / 2 - w / 2, box[1] + box[3] / 2 - h / 2, false);
 }
 
 static studio_graph_view *view_for(studio_graph *g, uint64_t graph_id)

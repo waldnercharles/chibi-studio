@@ -30,6 +30,7 @@
 #include "editor/collab/collab.h"
 #include "editor/studio/studio_graph_internal.h"
 #include "editor/workspace/editor_internal.h"
+#include "graph/authoring/graph_edit.h"
 #include "graph/document/serialize.h"
 #include "support/array.h"
 #include "support/asset_text.h"
@@ -79,6 +80,7 @@ static scene_document_tab *active_asset(studio *s)
 
 static void capture_asset(studio *s, asset_code *code)
 {
+    refresh_asset_catalog(s->scene);
     for (int i = 0; i < acount(s->scene->tabs); i++) {
         scene_document_tab *tab = &s->scene->tabs[i];
         if (!tab->path || strcmp(tab->path, asset_code_path(code))) {
@@ -114,6 +116,7 @@ bool studio_code_replace(studio *s, const char *path, const char *before, const 
 static asset_code *asset_context(studio *s, asset_code *code)
 {
     asset_code_set_source_world(code, s->scene->live, s->scene->content_root);
+    refresh_asset_catalog(s->scene);
     return code;
 }
 
@@ -622,6 +625,7 @@ void studio_code_frame(studio *s)
         asset_code *code = asset_editor(s, tab);
         if (code) {
             asset_code_time(code, s->time);
+            refresh_asset_catalog(s->scene);
         }
         if (code) {
             bool pending = asset_code_pending(code);
@@ -713,6 +717,32 @@ bool studio_code_graph_readonly(const studio *s)
 {
     const asset_code *code = graph_code(s);
     return code && asset_code_graph_blocked(code);
+}
+
+bool studio_code_check_edit(const studio *s, const authoring_edit_request *request, char *error, size_t size)
+{
+    editor *e = sg_graph_editor(s);
+    const asset_code *code = graph_code(s);
+    /* Navigation and optional layout can advance the editor revision without
+     * changing executable source. Use the commit path's source generation. */
+    const authoring_source *source = code ? asset_code_source(code) : NULL;
+    if (!source || !source->valid || !e->presentation ||
+        strcmp(authoring_source_presentation_text(e->presentation), asset_code_text(code))) {
+        snprintf(error, size, "Apply or repair the source draft before editing this graph");
+        return false;
+    }
+    authoring_edit_result result = { 0 };
+    bool accepted = authoring_source_edit(
+        source->analysis,
+        asset_code_catalog(code),
+        e->presentation,
+        request,
+        &result,
+        error,
+        size
+    );
+    authoring_edit_result_free(&result);
+    return accepted;
 }
 
 bool studio_code_edit_source(void *user, const authoring_edit_request *request, bool coalesce, char *error, size_t size)
@@ -851,6 +881,10 @@ void studio_code_pin_label(const studio *s, const node *n, const pin_spec *pin, 
 void studio_code_graph_label(const studio *s, const graph *g, char *out, size_t size)
 {
     const behavior_asset *asset = sg_graph_editor(s)->asset;
+    if (editor_presentation(sg_graph_editor(s)) && g == asset->graph) {
+        snprintf(out, size, "Variables");
+        return;
+    }
     for (int i = 0; g->math_expression && i < acount(asset->graphs); i++) {
         const graph *owner = asset->graphs[i];
         for (int j = 0; j < acount(owner->nodes); j++) {
@@ -957,6 +991,9 @@ void studio_behavior_show(studio *s, int view)
         s->maximized = area;
         s->focus_area = area;
     }
+    if (view != 0) {
+        studio_code_reveal_graph(s);
+    }
     s->ui_schedule.wake = true;
     if (action) {
         collab_actions_finish(action, true);
@@ -994,6 +1031,66 @@ void studio_code_reveal_node(studio *s, const studio_node_ref *at)
     if (code && asset_code_location(code, at->graph_id, at->node_id, &start, &end)) {
         move_caret(code, start);
     }
+}
+
+/* Both views open at the same declaration. The root has variables rather
+   than an entry, so use its first source origin. */
+void studio_code_reveal_graph(studio *s)
+{
+    if (!studio_graph_active(s)) {
+        return;
+    }
+    const editor *e = sg_graph_editor(s);
+    const graph *g = sg_active_graph(s);
+    studio_node_ref at = { .graph_id = g->graph_id, .node_id = g->entry_id };
+    const authoring_source_presentation *view = editor_presentation(e);
+    if (!view) {
+        return;
+    }
+    for (int i = 0;
+         !at.node_id && i < authoring_source_presentation_origin_count(view);
+         i++) {
+        const source_presentation_origin *origin = authoring_source_presentation_origin_at(view, i);
+        if (origin->graph == g->graph_id && origin->node && !origin->pin) {
+            at.node_id = origin->node;
+        }
+    }
+    if (!at.node_id) {
+        asset_code *code = graph_code(s);
+        if (code && studio_behavior_view(s) != 0) {
+            move_caret(code, 0);
+        }
+        return;
+    }
+    snprintf(at.asset, sizeof at.asset, "%s", s->scene->graph_document_id);
+    studio_code_reveal_node(s, &at);
+}
+
+/* Source navigation uses the SDK's semantic ranges and keeps keyboard focus
+   in the text. Mark it as a source visit so graph tracking does not move the
+   caret back to the function's entry. */
+static void follow_asset_cursor(studio *s, asset_code *code)
+{
+    uint64_t graph_id, node_id;
+    if (studio_behavior_view(s) != 2 || code != graph_code(s) ||
+        !asset_code_node_at(code, kit_code_cursor(asset_code_editor(code)), &graph_id, &node_id)) {
+        return;
+    }
+    editor *e = sg_graph_editor(s);
+    if (editor_open_graph(e, graph_id) != 0) {
+        return;
+    }
+    graph *g = sg_active_graph(s);
+    node *n = graph_node_by_id(g, node_id);
+    if (!n) {
+        return;
+    }
+    n = graph_inline_owner(g, n);
+    sg_select_only(e, n);
+    e->front_node = n;
+    s->graph.reveal = n->id;
+    s->graph.reveal_frame = false;
+    sg_nav_follow_source(s);
 }
 
 /* ---------- Opening ---------- */
@@ -2757,6 +2854,9 @@ void studio_code_body(studio *s, int)
             capture_asset(s, code);
             s->code.capture_due = 0;
         } else if (r.events & KIT_CODE_CURSOR) {
+            if (r.focused) {
+                follow_asset_cursor(s, code);
+            }
             s->code.capture_due = s->time + CAPTURE_REST;
             snprintf(
                 s->code.capture_path,

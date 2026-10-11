@@ -494,7 +494,8 @@ static void press(studio *s, int button, graph_hit hit, bool on_control)
         sg_edit_bubble(s, n->id);
         return;
     }
-    if (n && g->double_click && ed_is_graph_call(n)) {
+    if (n && g->double_click &&
+        (editor_graph_call_target(e, n) || ed_is_graph_call(n))) {
         /* Double-click enters a call (Blender's Tab); Back returns. */
         editor_open_graph_call(e, n->id);
         return;
@@ -680,6 +681,12 @@ static void release(studio *s, graph_hit hit)
                 ed_remove_selected(e, n);
             } else if (n && !(g->in.modifiers & (KIT_MOD_SHIFT | KIT_MOD_CTRL | KIT_MOD_META))) {
                 sg_select_only(e, n);
+            }
+            if (n && ed_node_selected(e, n)) {
+                studio_node_ref at = { .graph_id = sg_active_graph(s)->graph_id,
+                                       .node_id = n->id };
+                snprintf(at.asset, sizeof at.asset, "%s", s->scene->graph_document_id);
+                studio_code_reveal_node(s, &at);
             }
             break;
         }
@@ -1100,6 +1107,9 @@ static void walk(studio *s, SDL_Keycode key, bool extend)
     ed_add_selected(e, to);
     e->front_node = to;
     sg_show_node(s, to, false);
+    studio_node_ref source = { .graph_id = gr->graph_id, .node_id = to->id };
+    snprintf(source.asset, sizeof source.asset, "%s", s->scene->graph_document_id);
+    studio_code_reveal_node(s, &source);
 }
 
 /* M mutes the selection (Blender), or enables it when all of it is muted,
@@ -1231,7 +1241,7 @@ void sg_shortcuts(studio *s)
                 sg_straighten(s);
             }
         } else if (!mod && key == SDLK_HOME) {
-            sg_frame_nodes(s, false, true);
+            sg_frame_nodes(s, false, false);
         } else if (mod && key == SDLK_A) {
             graph *gr = sg_active_graph(s);
             ed_clear_selection(e);

@@ -302,11 +302,14 @@ static uint32_t folded_chip(const studio *s, node *n, int p, char *out, size_t s
     node *source = NULL;
     int source_pin;
     if (graph_input_source(sg_active_graph(s), n, p, &source, &source_pin) &&
-        source->desc == &NODE_BehaviorExpression) {
+        (editor_presentation(sg_graph_editor(s)) ||
+         source->desc == &NODE_BehaviorExpression)) {
         char *readable = studio_code_expression(s, source);
-        snprintf(out, size, "%s", readable ? readable : "");
-        free(readable);
-        return 0;
+        if (readable) {
+            snprintf(out, size, "%s", readable);
+            free(readable);
+            return 0;
+        }
     }
     char text[256];
     behavior_expression_read *reads = NULL;
@@ -424,11 +427,14 @@ static float value_width(const studio *s, const pin_parts *parts)
         case VALUE_NUMBER: width = 64; break;
         case VALUE_COMPOUND: width = 96; break;
         case VALUE_CHIP:
-            width = sg_text_width(s, parts->chip, 11, 400) + 12 +
-                    (parts->chip_icon ? 16 : 0) +
+            width = sg_text_width(s, parts->chip, parts->source_select ? 12 : 11, 400) +
+                    12 + (parts->chip_icon ? 16 : 0) +
                     (parts->connected || parts->spec->binding ? 2 : 0);
             if (parts->inline_source || (!parts->connected && !parts->spec->binding)) {
                 width = fminf(width, 200);
+            }
+            if (parts->source_select) {
+                width = fmaxf(width, 96);
             }
             break;
         default: break;
@@ -444,7 +450,8 @@ static float value_width(const studio *s, const pin_parts *parts)
 static node_form form_of(const studio *s, node *n)
 {
     graph *gr = sg_active_graph(s);
-    if (!s->prefs.compact_nodes || ed_is_graph_call(n)) {
+    if (!s->prefs.compact_nodes || ed_is_graph_call(n) ||
+        n->desc->display_class == NODE_DISPLAY_FUNCTION) {
         return FORM_FULL;
     }
     int inputs = 0, outputs = 0, output = -1;
@@ -599,6 +606,35 @@ static node_layout measure_operator(const studio *s, node *n, node_layout l, con
     return l;
 }
 
+/* Named calls and reads are already explained by their title and pins. Only
+   expressions whose structure needs source text get a code body. */
+static bool source_body(const studio *s, const node *n)
+{
+    const editor *e = sg_graph_editor(s);
+    const authoring_source_presentation *view = editor_presentation(e);
+    if (!view) {
+        return true;
+    }
+    const source_presentation_origin *origin = authoring_source_presentation_origin(
+        view,
+        e->active_graph->graph_id,
+        n->id,
+        0
+    );
+    if (!origin || origin->kind != SOURCE_PRESENTATION_EXPRESSION) {
+        return false;
+    }
+    switch (origin->operation) {
+        case SCRIPT_EXPR_CALL:
+        case SCRIPT_EXPR_MEMBER:
+        case SCRIPT_EXPR_COMPONENT:
+        case SCRIPT_EXPR_SYMBOL:
+        case SCRIPT_EXPR_CONSTANT:
+        case SCRIPT_EXPR_NIL: return false;
+        default: return true;
+    }
+}
+
 static node_layout measure_node(const studio *s, node *n)
 {
     graph *gr = sg_active_graph(s);
@@ -658,7 +694,7 @@ static node_layout measure_node(const studio *s, node *n)
             2 * SOCKET_PAD + l.label + (l.label > 0 && values > 0 ? PART_GAP : 0) + values
         );
     }
-    char *code = studio_code_expression(s, n);
+    char *code = source_body(s, n) ? studio_code_expression(s, n) : NULL;
     if (code) {
         width = fmaxf(width, code_width(s, code) + CODE_INSET);
     }

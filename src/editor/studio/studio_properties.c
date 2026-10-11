@@ -188,6 +188,7 @@ void properties_follow_tabs(studio *s, const properties_subject *subject, bool a
     /* The Node tab follows the graph selection, as Object follows the
        scene's: a newly selected node shows its details, a newly selected
        object its components; Member follows the Members selection. */
+    uint64_t member = studio_member_shown(s);
     uint64_t node = studio_graph_node(s) ? studio_graph_node(s)
                                          : studio_graph_comment(s);
     app_editor_document_kind kind = app_scene_authoring_document(scene).kind;
@@ -197,7 +198,7 @@ void properties_follow_tabs(studio *s, const properties_subject *subject, bool a
                           editor_behavior_asset(s->scene->graph_editor)->domain ==
                               BEHAVIOR_DOMAIN_MODEL;
     available[STUDIO_TAB_NODE] = graph && (node != 0 || model_document);
-    if (node && node != s->shown_node) {
+    if (node && node != s->shown_node && !(s->tab == STUDIO_TAB_MEMBER && member)) {
         s->tab = STUDIO_TAB_NODE;
     } else if (
         s->tab == STUDIO_TAB_NODE && scene->selected != s->shown_actor &&
@@ -208,7 +209,6 @@ void properties_follow_tabs(studio *s, const properties_subject *subject, bool a
         /* A selection made from none, as a marquee makes one, shows it. */
         s->tab = STUDIO_TAB_OBJECT;
     }
-    uint64_t member = studio_member_shown(s);
     available[STUDIO_TAB_MEMBER] = graph && member != 0;
     if (member && member != s->shown_member) {
         s->tab = STUDIO_TAB_MEMBER;

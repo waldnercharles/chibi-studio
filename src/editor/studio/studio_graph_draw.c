@@ -44,7 +44,7 @@ static const canvas_palette DARK = {
     0xe0701cffu, 0xe5534bffu, 0xffffff0au, 0xffffff14u, 1
 };
 static const canvas_palette LIGHT = { 0xfbfbfcffu, 0xfbfbfcffu, 0x52525bffu,
-                                      0xa1a1aaffu, 0x18181bffu, 0xe0701cffu,
+                                      0xa1a1aaffu, 0x18181bffu, 0xbc540cffu,
                                       0xc93c37ffu, 0x0000000du, 0x0000001au,
                                       0.8f };
 
@@ -645,6 +645,7 @@ static void emit_node(studio *s, node *n)
     emit_dp(k, "width", l.w);
     kit_attr(k, "data-kind", sg_node_kind(s, n));
     kit_attr(k, "data-form", FORMS[l.form]);
+    kit_flag(k, "data-hover", g->hover_node == n->id);
     kit_flag(k, "data-selected", ed_node_selected(e, n));
     kit_flag(k, "data-active", e->front_node == n && ed_node_selected(e, n) && acount(e->selected) > 1);
     kit_flag(k, "data-disabled", n->disabled != 0);
@@ -653,6 +654,11 @@ static void emit_node(studio *s, node *n)
     kit_flag(k, "data-error", problem && problem->error);
     kit_flag(k, "data-warning", problem && !problem->error);
     kit_flag(k, "data-paused", paused);
+    /* An outer ring leaves the node's bounds and pin anchors fixed while
+       distinguishing selection from diagnostics on its own border. */
+    if (ed_node_selected(e, n)) {
+        kit_leaf(k, "selection", NULL, "gselection");
+    }
     sg_emit_bubble(s, n);
     if (l.form == FORM_OPERATOR) {
         emit_operator(s, n, &l);
@@ -735,7 +741,12 @@ static void emit_wires(studio *s)
         bool attached = ed_node_selected(e, from) || ed_node_selected(e, to) ||
                         g->hover_node == from->id || g->hover_node == to->id ||
                         g->hover_edge == i || ed_link_selected(e, &ref);
-        float alpha = !focus || attached ? 1 : 0.35f;
+        /* Keep the execution spine readable while tracing a selected node;
+           unrelated data dependencies can recede further. */
+        float alpha = attached ? 1
+                    : focus    ? (exec ? 0.6f : 0.25f)
+                    : exec     ? 1
+                               : 0.8f;
         if (sg_is_unused(g, from->id) || sg_is_unused(g, to->id)) {
             alpha *= 0.5f;
         }
@@ -743,7 +754,7 @@ static void emit_wires(studio *s)
         kit_wire wire = { .color = muted ? (palette(s)->invalid & ~255u) |
                                                (uint32_t)lroundf(alpha * 255)
                                          : pin_color(s, spec, alpha),
-                          .width = (exec ? 2.5f : 1.5f) + (attached && focus ? 0.5f : 0),
+                          .width = (exec ? 3.0f : 1.5f) + (attached && focus ? 0.5f : 0),
                           .flags = ed->conversion ? KIT_WIRE_DASHED : 0 };
         /* Model anchors remain available when endpoint nodes are culled. */
         sg_socket_at(s, from, ED_PIN_OUTPUT, fp, &wire.from_x, &wire.from_y);
@@ -842,7 +853,7 @@ static void emit_front(studio *s)
                 sg_pins_compatible(from, g->link_kind, g->link_pin, over, g->hover_kind, g->hover_pin);
     bool invalid = over && g->hover_kind >= 0 && !snap;
     kit_wire wire = { .color = invalid ? palette(s)->invalid : pin_color(s, spec, 1),
-                      .width = spec->kind == PIN_EXEC ? 2.5f : 2,
+                      .width = spec->kind == PIN_EXEC ? 3.0f : 2,
                       .to_x = g->world_x,
                       .to_y = g->world_y,
                       .from_x = g->world_x,

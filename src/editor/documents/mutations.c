@@ -435,10 +435,16 @@ static void ed_drop_replaced_source(editor *e, const ed_pin_view *output, const 
 
 static const source_presentation_origin *source_statement(editor *e, const node *n)
 {
-    const source_presentation_origin *origin = authoring_source_presentation_origin(
-        e->presentation, e->active_graph->graph_id, n->id, 0
-    );
-    return origin && origin->kind == SOURCE_PRESENTATION_STATEMENT ? origin : NULL;
+    for (int i = 0; i < authoring_source_presentation_origin_count(e->presentation);
+         i++) {
+        const source_presentation_origin
+            *origin = authoring_source_presentation_origin_at(e->presentation, i);
+        if (!origin->pin && origin->graph == e->active_graph->graph_id &&
+            origin->node == n->id && origin->kind == SOURCE_PRESENTATION_STATEMENT) {
+            return origin;
+        }
+    }
+    return NULL;
 }
 static bool source_connect(editor *e, const ed_pin_view *output, const ed_pin_view *input)
 {
@@ -455,6 +461,9 @@ static bool source_connect(editor *e, const ed_pin_view *output, const ed_pin_vi
         const source_presentation_origin *producer = authoring_source_presentation_origin(
             e->presentation, e->active_graph->graph_id, output->n->id, out->id
         );
+        if (producer && producer->kind == SOURCE_PRESENTATION_EXPRESSION) {
+            producer = source_statement(e, output->n);
+        }
         const source_presentation_origin *consumer = source_statement(e, input->n);
         if (!producer || !consumer || consumer->operation == SCRIPT_STMT_BLOCK) {
             ed_show_error(e, "Move a whole statement to a source flow position or body");

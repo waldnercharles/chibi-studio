@@ -1167,6 +1167,7 @@ static uint64_t ui_state(studio *s)
         e ? editor_edit_revision(e) : 0,
         e && editor_has_pending_edits(e),
         (uintptr_t)g,
+        g ? g->lifetime_id : 0,
         g ? graph_topology_revision(g) : 0,
         e ? (uint64_t)acount(e->selected) : 0,
         e ? (uint64_t)acount(e->selected_links) : 0,

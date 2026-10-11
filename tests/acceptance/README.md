@@ -18,6 +18,37 @@ The final frame renders both graph and code views before normal host shutdown. T
 consumer edit-handler integration and UI rendering; it does not hit-test pointer
 input. No source save, scenario, playback or screenshot occurs.
 
+Within the first frame it also opens a tiny temporary draft with two calls and a
+branch. It checks that named calls have no duplicate code body and that a small
+value call folds into the setter's editable Value row without a Target input.
+It connects the calls in a different order and moves one into the branch body
+through normal graph gestures. The folded Value pin's context menu opens the
+function and returns to its caller, then inlines its body through the source edit
+transaction. Palette Get/Set entries create source reads and writes. Members
+selects the source declaration, renders its typed Initial property, renames it,
+and mounts the actual Members template, dispatches the Variables + button and
+consumes its queued Rml activation, adding and selecting a bool declaration while
+clearing the Members filter and queuing graph framing and Members-list reveal. It renames the declaration Level through Properties
+and changes its
+type to Entity through the existing type picker callbacks, with no synthetic
+Initial input. A second actual Variables + click with Level selected and filtered
+creates and selects an Entity declaration, clears the filter, and is undone.
+After source synchronization, the test invalidates cached node identities and
+checks that Properties retains Member, then follows an explicitly selected
+different graph node. Undo-all also checks that the current presentation contains
+only the original integer Count declaration. Each edit is checked and undone, then the clean Counter
+fixture is restored before the expression edit above. These interactions
+use the same draft, four host frames and three fixture files. The Add binding
+uses eight finite panel composition passes inside the first frame, and the draft
+starts with an authored comment to exercise lexical body lookup; none adds a
+GPU render. The Members list is constrained to64dp to force overflow; two
+post-adoption composition/layout passes per Add check that the selected row is
+fully visible after its content grows. One additional FrameProbe declaration is left visible after the
+first two frames in Both, then deselected and undone in the third frame. The
+fourth frame checks that its graph card disappeared and the graph texture
+revision changed. This uses the
+same four host frames and adds one source edit and undo.
+
 `studio-acceptance --code-keys --project-root PATH` takes another disposable copy.
 It shows Counter in the Text Editor, focuses it and places the cursor after the
 event's closing brace, then queues two Enter key presses through SDL, as the
@@ -177,7 +208,18 @@ It saves no file.
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
 
 `studio-acceptance --graph-visibility --project-root PATH` takes a disposable
-copy and runs ten hidden fixed-dt frames. It checks that maximizing Code and
+copy and runs ten hidden fixed-dt frames. A tiny Counter variant puts a helper
+before two handlers: the initial graph still opens on Tick, the picker groups
+Events before Variables and Functions, and the root is labeled Variables.
+Selecting Begin in Both reveals its declaration; revealing a statement selects
+its node and corresponding source while a graph field keeps keyboard focus.
+Source reveals and keyboard framing interrupt camera motion immediately; framing
+also settles immediately with reduced motion enabled.
+Moving the focused source caret to a statement selects its graph/node without
+moving the caret back to the declaration or taking focus from the text.
+A temporary distant statement tests that initial framing keeps the handler's
+entry visible. A behavior without state checks that selecting its empty Variables
+root returns the source to the document start, then undo restores Counter. The node position and fixture source are restored. It checks that maximizing Code and
 replacing the graph area with Scene stop graph context updates and rendering,
 and that showing Both resumes them. Selecting Both from a scene source must
 activate the graph's Counter document; returning to the scene preserves its
