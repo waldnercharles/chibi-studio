@@ -159,7 +159,7 @@ hiding the Scene cancels the live gesture without changing history or dirty
 state. It saves no file.
 
 `studio-acceptance --scene-collider3d --project-root PATH` takes another
-disposable copy and runs twenty-six hidden fixed-dt frames on a 3D scene of a
+disposable copy and runs twenty-eight hidden fixed-dt frames on a 3D scene of a
 crate whose Collider3D box its Transform3D stretches twice along X, a sphere
 and a capsule. With the Select tool it drags the active object's collider
 handles through queued SDL presses: the crate's -X side out by a quarter of
@@ -170,7 +170,8 @@ Escape restores a live box edit without changing history or dirty state. A
 ray parallel to a handle's axis or a nonfinite box size starts no edit. A hidden
 crate takes no drag;
 pressing Hide Selected during a live edit cancels it without changing history
-or dirty state. It saves no file.
+or dirty state. Show Colliders then turns on the Scene view's Colliders option.
+It saves no file.
 
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.

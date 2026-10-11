@@ -13,6 +13,7 @@
     <use ui="MenuCommand" data-alias-command="commands.showLighting"/>
     <use ui="MenuCommand" data-alias-command="commands.showFog"/>
     <use ui="MenuCommand" data-alias-command="commands.showCameraFrames"/>
+    <use ui="MenuCommand" data-alias-command="commands.showColliders"/>
   </use>
   <div class="tool-group">
     <button class="btn icon-only" data-attr-data-state="commands.selectTool.checked ? 'on' : ''" data-attr-data-tip="commands.selectTool.menu" data-attr-data-kbd="commands.selectTool.shortcut" data-event-click="emit('studio.selectTool')"><span class="icon">{{ commands.selectTool.icon }}</span></button>
