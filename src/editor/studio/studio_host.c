@@ -279,14 +279,14 @@ static int kit_button_index(Uint8 button)
 /* Records a key press without the primary modifier, which Studio's shortcuts
  * keep, or typed text, in order, as input for the game documents in the Scene
  * area. The text stays SDL's, valid until the next frame's events. */
-static void game_input(studio *s, const rml_input *input, const SDL_Event *e)
+static void handle_input(studio *s, const rml_input *input, const SDL_Event *e)
 {
     bool key = input->type == RML_INPUT_KEY_PRESS && !studio_primary(s, e->key.mod);
     bool paste = input->type == RML_INPUT_KEY_PRESS && e->type == SDL_EVENT_KEY_DOWN &&
                  e->key.key == SDLK_V && studio_primary(s, e->key.mod) &&
                  s->viewport && engine_viewport_ui_typing(s->viewport);
     if (key || paste || input->type == RML_INPUT_TEXT_INPUT) {
-        apush(s->game_input, *input);
+        apush(s->input, *input);
     }
 }
 
@@ -526,7 +526,7 @@ static bool forward_input(studio *s)
     in->wheel = s->zoom_wheel = s->scene_wheel = s->pinch = 0;
     s->scroll_x = s->scroll_y = 0;
     asetlen(s->keys, 0);
-    asetlen(s->game_input, 0);
+    asetlen(s->input, 0);
     s->nav_button = 0;
     bool host_input = false;
     bool recording = s->shortcut_recording != 0;
@@ -674,7 +674,7 @@ static bool forward_input(studio *s)
             process_input(s, input);
         }
         apush(s->graph.events, input);
-        game_input(s, &input, e);
+        handle_input(s, &input, e);
     }
     asetlen(s->events, 0);
     SDL_Keymod mod = s->mods;
@@ -742,7 +742,7 @@ static void sync_cursor(studio *s)
 
 /* Whether a text field has focus in the game documents that hear the Scene
  * area's keys: the Canvas preview's while it shows, else the scene's. */
-static bool game_typing(const studio *s)
+static bool typing(const studio *s)
 {
     const studio_canvas *c = studio_previewed_ui(s) ? s->canvas : NULL;
     engine_viewport *viewport = c ? c->viewport : s->viewport;
@@ -751,8 +751,7 @@ static bool game_typing(const studio *s)
 
 static bool accepts_text(studio *s)
 {
-    return kit_accepts_text(s->kit) || studio_graph_accepts_text(s) ||
-           game_typing(s);
+    return kit_accepts_text(s->kit) || studio_graph_accepts_text(s) || typing(s);
 }
 
 /* SDL delivers text only while text input is started; follow RmlUi keyboard
@@ -824,8 +823,8 @@ static void draw_viewport(studio *s)
         .modifiers = rml_key_modifiers(s, s->mods),
         .escape = studio_key_pressed(s, SDLK_ESCAPE) && !kit_wants_keyboard(s->kit),
     };
-    input.keys = s->game_input;
-    input.key_count = acount(s->game_input);
+    input.keys = s->input;
+    input.key_count = acount(s->input);
     snprintf(input.dropped_prototype, sizeof input.dropped_prototype, "%s", s->dropped_prototype);
     s->dropped_prototype[0] = '\0';
     for (int b = 0; b < 3; b++) {
@@ -919,12 +918,12 @@ static void apply_prefs(studio *s, bool initial)
  * change; a guest's changes are the host's to save. */
 static void save_scene_view(studio *s)
 {
-    game_save *view = app_scene_authoring_view_store(s->scene);
-    if (s->hosted || game_save_revision(view) == s->scene_view_saved) {
+    save *view = app_scene_authoring_view_store(s->scene);
+    if (s->hosted || save_revision(view) == s->scene_view_saved) {
         return;
     }
-    game_save_commit(view);
-    s->scene_view_saved = game_save_revision(view);
+    save_commit(view);
+    s->scene_view_saved = save_revision(view);
 }
 
 /* With the Studio project open, its scene and previews are the editor's own UI,
@@ -934,7 +933,8 @@ static void share_project_prefs(studio *s)
     if (!s->own_project || s->hosted) {
         return;
     }
-    game_preview_runtime *previews = game_prototype_preview_live(s->scene->prototype_preview)->runtime;
+    preview_runtime *previews = prototype_preview_live(s->scene->prototype_preview)
+                                    ->runtime;
     studio_prefs_share(&s->prefs, s->scene->live->runtime->save, &s->scene_prefs_seen);
     studio_prefs_share(&s->prefs, previews->save, &s->preview_prefs_seen);
 }
@@ -1024,9 +1024,9 @@ studio *studio_new(app_scene_authoring *scene, engine_viewport *viewport, const 
 #endif
     /* A guest opens no project: the window's Studio owns the workspace. */
     studio_projects_load(s);
-    game_save *view = app_scene_authoring_view_store(scene);
+    save *view = app_scene_authoring_view_store(scene);
     studio_prefs_open_scene_view(view);
-    s->scene_view_saved = game_save_revision(view);
+    s->scene_view_saved = save_revision(view);
     s->in.mouse_x = cf_mouse_x();
     s->in.mouse_y = cf_mouse_y();
     SDL_AddEventWatch(queue_event, s);
@@ -1117,7 +1117,7 @@ void studio_free(studio *s)
     afree(s->gallery.bin);
     afree(s->properties.folds);
     afree(s->keys);
-    afree(s->game_input);
+    afree(s->input);
     studio_projects_free(s);
     chibi_project_free(&s->project);
     studio_disk_free(s);

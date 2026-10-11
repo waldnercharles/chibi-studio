@@ -169,7 +169,7 @@ static bool counter_applied(studio *s)
     asset_code *code = counter_source(s);
     REQUIRE(code);
     const authoring_source
-        *applied = game_preview_source_find(s->scene->live, asset_code_path(code), true);
+        *applied = preview_source_find(s->scene->live, asset_code_path(code), true);
     REQUIRE(applied && applied->valid);
     REQUIRE(!strcmp(applied->syntax->text, asset_code_text(code)));
     return true;
@@ -187,7 +187,7 @@ static bool input_map_reloads(studio *s)
     remove(path);
     free(path);
     REQUIRE(result == APP_DISK_RELOADED);
-    const authoring_sources *sources = game_preview_sources_working(s->scene->live);
+    const authoring_sources *sources = preview_sources_working(s->scene->live);
     REQUIRE(sources);
     const script_catalog *catalog = authoring_sources_catalog(sources);
     REQUIRE(script_catalog_find_capability(catalog, "Jump", SCRIPT_CAPABILITY_EVENT) >= 0);
@@ -609,8 +609,8 @@ static const char unit_mismatch[] = "behavior Counter {\n"
                                     "    state count: int = 1\n"
                                     "    on Tick {\n"
                                     "        count = count + 1\n"
-                                    "        self.GameCollider.radius = "
-                                    "self.GameMovement.speed\n"
+                                    "        self.Collider.radius = "
+                                    "self.Movement.speed\n"
                                     "    }\n"
                                     "}\n";
 static bool unit_warned;
@@ -630,7 +630,7 @@ static bool unit_warnings_frame(void *state)
         const char *path = asset_code_path(code);
         REQUIRE(studio_code_replace(s, path, asset_code_text(code), unit_mismatch, NULL));
     } else {
-        const char *statement = strstr(unit_mismatch, "self.GameCollider");
+        const char *statement = strstr(unit_mismatch, "self.Collider");
         const kit_code_marker *markers = asset_code_markers(code);
         for (int i = 0; i < acount(markers); i++) {
             const kit_code_marker *m = &markers[i];
@@ -650,26 +650,26 @@ static bool tilemap_viewport(studio *s)
     ecs_world *world = scene->world;
     ecs_entity map = ecs_world_create_entity(world);
     ecs_entity foreground = ecs_world_create_entity(world);
-    REQUIRE(GAME_GameTransform_add(world, map, 0) == ECS_OK);
-    REQUIRE(GAME_GameOrientation_add(world, map, 0) == ECS_OK);
-    REQUIRE(GAME_GameTilemap_add(world, map, 0) == ECS_OK);
-    REQUIRE(GAME_GameTransform_add(world, foreground, 0) == ECS_OK);
-    REQUIRE(GAME_GameAppearance_add(world, foreground, 0) == ECS_OK);
-    REQUIRE(GAME_GameRenderState_add(world, foreground, 0) == ECS_OK);
+    REQUIRE(Transform_add(world, map, 0) == ECS_OK);
+    REQUIRE(Orientation_add(world, map, 0) == ECS_OK);
+    REQUIRE(Tilemap_add(world, map, 0) == ECS_OK);
+    REQUIRE(Transform_add(world, foreground, 0) == ECS_OK);
+    REQUIRE(Appearance_add(world, foreground, 0) == ECS_OK);
+    REQUIRE(RenderState_add(world, foreground, 0) == ECS_OK);
     REQUIRE(ecs_world_apply_commands(world) == ECS_OK);
-    *GAME_GameTransform_get(world, map) = (GameTransform){ 10, 20 };
-    *GAME_GameOrientation_get(world, map) = (GameOrientation){ 1.5707963267948966f };
-    *GAME_GameTilemap_get(world, map) = (GameTilemap){ .cells = "1 -1",
-                                                       .columns = 2,
-                                                       .rows = 1,
-                                                       .frame_width = 8,
-                                                       .frame_height = 4,
-                                                       .layer = -50 };
-    *GAME_GameTransform_get(world, foreground) = (GameTransform){ 8, 24 };
-    *GAME_GameAppearance_get(world, foreground) = (GameAppearance){ .shape = GAME_SHAPE_BOX,
-                                                                    .width = 2,
-                                                                    .height = 2,
-                                                                    .layer = 10 };
+    *Transform_get(world, map) = (Transform){ 10, 20 };
+    *Orientation_get(world, map) = (Orientation){ 1.5707963267948966f };
+    *Tilemap_get(world, map) = (Tilemap){ .cells = "1 -1",
+                                          .columns = 2,
+                                          .rows = 1,
+                                          .frame_width = 8,
+                                          .frame_height = 4,
+                                          .layer = -50 };
+    *Transform_get(world, foreground) = (Transform){ 8, 24 };
+    *Appearance_get(world, foreground) = (Appearance){ .shape = SHAPE_BOX,
+                                                       .width = 2,
+                                                       .height = 2,
+                                                       .layer = 10 };
     int actor_count = acount(scene->actors);
     apush(scene->actors, ((scene_actor){ .entity = map }));
     apush(scene->actors, ((scene_actor){ .entity = foreground }));
@@ -679,7 +679,7 @@ static bool tilemap_viewport(studio *s)
     bool fit = fit_scene_view(s->viewport, world, &map, 1);
     engine_viewport_get_view(s->viewport, &fitted);
     ecs_entity top = pick_scene_entity(scene, 8, -24, (render_skip){ 0 });
-    GAME_GameRenderState_get(world, foreground)->hidden = true;
+    RenderState_get(world, foreground)->hidden = true;
     ecs_entity layer = pick_scene_entity(scene, 8, -24, (render_skip){ 0 });
     ecs_entity empty_cell = pick_scene_entity(scene, 8, -32, (render_skip){ 0 });
     ecs_entity outside = pick_scene_entity(scene, 10.5f, -24, (render_skip){ 0 });
@@ -722,7 +722,7 @@ static bool graph_visibility_frame(void *state)
         REQUIRE(s->graph.backend);
         hidden = rml_backend_get_stats(s->graph.backend);
         REQUIRE(hidden.context_updates && hidden.render_captures);
-        sources = game_preview_sources_working(s->scene->live);
+        sources = preview_sources_working(s->scene->live);
         projection = s->scene->definition->working_presentation;
         index_generation = s->scene->asset_index_generation;
         index_revision = s->scene->asset_index_revision;
@@ -743,8 +743,8 @@ static bool graph_visibility_frame(void *state)
         REQUIRE(s->scene->debug_hidden);
         REQUIRE(!studio_graph_wants_keyboard(s) && !studio_graph_accepts_text(s));
         if (frames < 10) {
-            REQUIRE(game_preview_sources_working(s->scene->live) == sources);
-            REQUIRE(game_preview_sources_applied(s->scene->live) == sources);
+            REQUIRE(preview_sources_working(s->scene->live) == sources);
+            REQUIRE(preview_sources_applied(s->scene->live) == sources);
             REQUIRE(s->scene->definition->working_presentation == projection);
             REQUIRE(s->scene->asset_index_generation == index_generation);
             REQUIRE(s->scene->asset_index_revision == index_revision);
@@ -1378,7 +1378,7 @@ static bool add_probe(studio *s)
     REQUIRE(
         app_scene_authoring_register_prototype(
             scene,
-            "name \"Probe\"\ncomponents {\n    GameTransform x=0 y=0\n}\n",
+            "name \"Probe\"\ncomponents {\n    Transform x=0 y=0\n}\n",
             NULL
         ) == 0
     );
@@ -1562,10 +1562,10 @@ static const char
 /* A turned ship whose turret sits ten units ahead of it. */
 static const char turned_scene[] =
     "version 1\nname \"Scene\"\n(array)entities {\n"
-    "    - name=\"Ship\" prototype=\"Hull\" { components { GameTransform "
+    "    - name=\"Ship\" prototype=\"Hull\" { components { Transform "
     "x=100.0 y=0.0; "
-    "GameOrientation radians=1.5707964; }; (array)children { - name=\"Turret\" "
-    "prototype=\"Hull\" { components { GameTransform x=10.0 y=0.0; }; }; }; }\n"
+    "Orientation radians=1.5707964; }; (array)children { - name=\"Turret\" "
+    "prototype=\"Hull\" { components { Transform x=10.0 y=0.0; }; }; }; }\n"
     "}\n";
 
 static bool child_of(app_scene_authoring *scene, int child, int parent)
@@ -1578,9 +1578,9 @@ static bool child_of(app_scene_authoring *scene, int child, int parent)
 static bool saves_as(app_scene_authoring *scene, const char *expected)
 {
     char error[256];
-    game_scene_document *document = game_scene_document_load(expected, error, sizeof error);
+    scene_document *document = scene_document_load(expected, error, sizeof error);
     char *canonical = document
-                        ? game_scene_document_save(document, (ecs_component_catalog){ 0 })
+                        ? scene_document_save(document, (ecs_component_catalog){ 0 })
                         : NULL;
     char *text = scene_authoring_scene_text(scene);
     bool same = canonical && text && !strcmp(canonical, text);
@@ -1589,7 +1589,7 @@ static bool saves_as(app_scene_authoring *scene, const char *expected)
     }
     free(canonical);
     free(text);
-    game_scene_document_free(document);
+    scene_document_free(document);
     return same;
 }
 
@@ -1623,7 +1623,7 @@ static bool select_crossed_links(studio *s)
 {
     app_scene_authoring *scene = s->scene;
     REQUIRE(
-        app_scene_authoring_register_prototype(scene, "name \"Linker\"\ncomponents {\n    Link\n    GameTransform x=0 y=0\n}\n", NULL) ==
+        app_scene_authoring_register_prototype(scene, "name \"Linker\"\ncomponents {\n    Link\n    Transform x=0 y=0\n}\n", NULL) ==
         0
     );
     REQUIRE(scene_authoring_load_text(scene, linked_scene, NULL) == 0);
@@ -1684,9 +1684,9 @@ static bool scene_hierarchy_frame(void *state)
     REQUIRE(
         app_scene_authoring_register_prototype(
             scene,
-            "name \"Hull\"\ncomponents {\n    GameTransform x=0 y=0\n    "
-            "GameOrientation "
-            "radians=0\n    GameAppearance shape=\"Box\" width=4.0 "
+            "name \"Hull\"\ncomponents {\n    Transform x=0 y=0\n    "
+            "Orientation "
+            "radians=0\n    Appearance shape=\"Box\" width=4.0 "
             "height=4.0\n}\n",
             NULL
         ) == 0
@@ -1698,10 +1698,10 @@ static bool scene_hierarchy_frame(void *state)
     /* Changing an object's components replaces it, which a parent waits for
        too; a child keeps its parent through the change and its undo. */
     scene->selected = 0;
-    REQUIRE(app_scene_authoring_add_instance_component(scene, "GameVelocity") != 0);
+    REQUIRE(app_scene_authoring_add_instance_component(scene, "Velocity") != 0);
     REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0));
     scene->selected = 1;
-    REQUIRE(app_scene_authoring_add_instance_component(scene, "GameVelocity") == 0);
+    REQUIRE(app_scene_authoring_add_instance_component(scene, "Velocity") == 0);
     REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0));
     REQUIRE(replay_scene_edit(scene, false) == 0);
     REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0) && saves_as(scene, nested_scene));
@@ -1738,9 +1738,9 @@ static bool scene_hierarchy_frame(void *state)
     REQUIRE(!pick_scene_entity(scene, 10, 0, (render_skip){ 0 }).slot);
     /* A copy moved ten units along the world's x moves along the ship's -y. */
     scene->selected = 1;
-    REQUIRE(scene_duplicate_selection(scene, (GameTransform){ 10, 0 }) == 0);
-    const GameTransform *
-        moved = GAME_GameTransform_get_const(scene->world, selected_actor(scene)->entity);
+    REQUIRE(scene_duplicate_selection(scene, (Transform){ 10, 0 }) == 0);
+    const Transform
+        *moved = Transform_get_const(scene->world, selected_actor(scene)->entity);
     REQUIRE(child_of(scene, scene->selected, 0));
     REQUIRE(fabsf(moved->x - 10) < 1e-3f && fabsf(moved->y + 10) < 1e-3f);
     edits++;
@@ -1748,13 +1748,13 @@ static bool scene_hierarchy_frame(void *state)
 }
 
 static const char physics_crate[] = "name \"Crate3D\"\ncomponents {\n"
-                                    "    GAME.GameBody3D type=\"Dynamic\"\n"
-                                    "    GAME.GameCollider3D {\n"
+                                    "    Body3D type=\"Dynamic\"\n"
+                                    "    Collider3D {\n"
                                     "        category 1\n"
                                     "        mask 1\n"
                                     "        size x=32.0 y=32.0 z=32.0\n"
                                     "    }\n"
-                                    "    GAME.GameTransform3D {\n"
+                                    "    Transform3D {\n"
                                     "        scale x=1.0 y=1.0 z=1.0\n"
                                     "    }\n"
                                     "}\n";
@@ -1768,7 +1768,7 @@ static bool moving_3d(app_scene_authoring *scene)
 {
     CF_Quat rotation;
     CF_V3 translation;
-    return game_physics3d_interpolation(
+    return physics3d_interpolation(
         scene->live->runtime->physics3d,
         scene->actors[0].entity,
         1,
@@ -1791,14 +1791,12 @@ static bool scene_physics_frame(void *state)
     app_scene_authoring *scene = s->scene;
     REQUIRE(app_scene_authoring_register_prototype(scene, physics_crate, NULL) == 0);
     REQUIRE(scene_authoring_load_text(scene, physics_scene, NULL) == 0);
-    game_physics3d *physics = scene->live->runtime->physics3d;
-    REQUIRE(game_physics3d_tick(physics, 1.0f / 60) == 0 && moving_3d(scene));
-    game_physics_settings settings = game_physics_configuration(
-        scene->live->runtime->physics
-    );
+    physics3d *physics = scene->live->runtime->physics3d;
+    REQUIRE(physics3d_tick(physics, 1.0f / 60) == 0 && moving_3d(scene));
+    physics_settings settings = physics_configuration(scene->live->runtime->physics);
     settings.sleep = !settings.sleep;
     REQUIRE(app_scene_authoring_set_physics(scene, settings) == 0 && !moving_3d(scene));
-    REQUIRE(game_physics3d_tick(physics, 1.0f / 60) == 0 && moving_3d(scene));
+    REQUIRE(physics3d_tick(physics, 1.0f / 60) == 0 && moving_3d(scene));
     REQUIRE(replay_scene_edit(scene, false) == 0 && !moving_3d(scene));
     edits++;
     return true;
@@ -1819,7 +1817,7 @@ static bool write_spare(const char *name)
 {
     char path[1024], text[128];
     REQUIRE(spare_path(name, path, sizeof path));
-    snprintf(text, sizeof text, "name \"%s\"\ncomponents {\n    (object)GAME.GameTransform\n}\n", name);
+    snprintf(text, sizeof text, "name \"%s\"\ncomponents {\n    (object)Transform\n}\n", name);
     FILE *file = fopen(path, "wb");
     REQUIRE(file);
     bool written = fputs(text, file) >= 0;
@@ -1946,7 +1944,7 @@ static bool select_and_delete(studio *s)
 static const char marked_scene
     [] = "version 1\nname \"Scene\"\n(array)entities {\n"
          "    - name=\"Box\" prototype=\"Box\"\n"
-         "    - name=\"Spot\" prototype=\"Spot\" { components { GameTransform "
+         "    - name=\"Spot\" prototype=\"Spot\" { components { Transform "
          "x=5.0 y=5.0; }; }\n"
          "}\n";
 /* More undrawn objects than any fixed count of markers the Scene kept, laid
@@ -2046,10 +2044,7 @@ static bool marker_and_gizmo(studio *s)
     REQUIRE(!strcmp(scene->gizmo.status, "Size 50 \xc3\x97 40"));
     scene->gizmo.in.cancel = true;
     REQUIRE(scene_gizmo_pointer(scene, scene->render_viewport, &pointer));
-    REQUIRE(
-        !scene->gizmo.active &&
-        GAME_GameAppearance_get_const(scene->world, box)->width == 40
-    );
+    REQUIRE(!scene->gizmo.active && Appearance_get_const(scene->world, box)->width == 40);
     return true;
 }
 
@@ -2085,7 +2080,7 @@ static bool previewed_prototype_plays(studio *s)
 
 /* A prototype that runs Counter, this project's source behavior. */
 static const char ticker_prototype[] = "name \"Ticker\"\ncomponents {\n"
-                                       "    GameTransform x=0 y=0\n}\n"
+                                       "    Transform x=0 y=0\n}\n"
                                        "(array)behaviors \"Counter\"\n";
 
 /* Counter's `count` state as the preview's world published it. */
@@ -2094,8 +2089,8 @@ static uint64_t previewed_count_state(app_scene_authoring *scene)
     char path[1024];
     int length = snprintf(path, sizeof path, "%s/content/behaviors/Counter.chibi", project);
     REQUIRE(length > 0 && (size_t)length < sizeof path);
-    const authoring_source *source = game_preview_source_find(
-        game_prototype_preview_live(scene->prototype_preview),
+    const authoring_source *source = preview_source_find(
+        prototype_preview_live(scene->prototype_preview),
         path,
         true
     );
@@ -2120,13 +2115,13 @@ static bool previewed_source_runs(studio *s)
         fprintf(stderr, "Studio viewport acceptance: %s\n", scene->prototype_message);
     }
     REQUIRE(previewed == 0);
-    execution_instance *counter = game_prototype_preview_instance(scene->prototype_preview, "Counter");
+    execution_instance *counter = prototype_preview_instance(scene->prototype_preview, "Counter");
     uint64_t count = previewed_count_state(scene);
     REQUIRE(counter && count);
     REQUIRE(execution_instance_state(counter, count)->i == 1);
-    REQUIRE(game_prototype_preview_tick(scene->prototype_preview, s->time) >= 0);
+    REQUIRE(prototype_preview_tick(scene->prototype_preview, s->time) >= 0);
     REQUIRE(
-        game_prototype_preview_tick(scene->prototype_preview, s->time + 2 * ENGINE_FIXED_SECONDS) >= 0
+        prototype_preview_tick(scene->prototype_preview, s->time + 2 * ENGINE_FIXED_SECONDS) >= 0
     );
     REQUIRE(execution_instance_state(counter, count)->i > 1);
     app_scene_authoring_stop_prototype_preview(scene);
@@ -2279,7 +2274,7 @@ static bool load_crowd(studio *s)
             text + at,
             size - (size_t)at,
             "    - name=\"Spot%d\" prototype=\"Spot\" { components { "
-            "GameTransform x=%d.0 y=%d.0; }; }\n",
+            "Transform x=%d.0 y=%d.0; }; }\n",
             i,
             x,
             y
@@ -2440,17 +2435,20 @@ static bool scene_viewport_frame(void *state)
             REQUIRE(
                 app_scene_authoring_register_prototype(
                     scene,
-                    "name \"Box\"\ncomponents {\n    GameTransform x=0 y=0\n   "
+                    "name \"Box\"\ncomponents {\n    Transform x=0 y=0\n   "
                     " "
-                    "GameOrientation radians=0\n    GameAppearance "
+                    "Orientation radians=0\n    Appearance "
                     "shape=\"Box\" "
                     "width=40.0 height=40.0\n}\n",
                     NULL
                 ) == 0
             );
             REQUIRE(
-                app_scene_authoring_register_prototype(scene, "name \"Spot\"\ncomponents {\n    GameTransform x=0 y=0\n}\n", NULL) ==
-                0
+                app_scene_authoring_register_prototype(
+                    scene,
+                    "name \"Spot\"\ncomponents {\n    Transform x=0 y=0\n}\n",
+                    NULL
+                ) == 0
             );
             REQUIRE(app_scene_authoring_register_prototype(scene, ticker_prototype, NULL) == 0);
             REQUIRE(scene_authoring_load_text(scene, marked_scene, NULL) == 0);
@@ -2533,7 +2531,7 @@ static const char probe_rml[] = "<div class=\"lonely" LONG_CLASS "\"></div>\n";
 static bool write_glyph_content()
 {
     REQUIRE(
-        write_content("prototypes", "Cr\xc3\xaapes.kdl", "name \"Cr\xc3\xaapes\"\ncomponents {\n    (object)GAME.GameTransform\n}\n")
+        write_content("prototypes", "Cr\xc3\xaapes.kdl", "name \"Cr\xc3\xaapes\"\ncomponents {\n    (object)Transform\n}\n")
     );
     REQUIRE(write_content("ui", "Probe.rml", probe_rml));
     REQUIRE(write_content("ui", "Probe.rcss", ".known" LONG_CLASS " { color: red; }\n"));

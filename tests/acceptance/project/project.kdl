@@ -1,4 +1,4 @@
-version 18
+version 22
 name "New Project"
 content "content"
 start_scene "scenes/Start.kdl"

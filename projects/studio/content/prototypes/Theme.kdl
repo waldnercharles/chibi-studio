@@ -1,4 +1,4 @@
 name "Theme"
 components {
-    GAME.GameUi document="ThemeTokens" hidden=#true
+    Ui document="ThemeTokens" hidden=#true
 }

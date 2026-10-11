@@ -43,7 +43,7 @@ static void key_changed(CF_KeyButton key, bool down)
 #else
     pressed_actions[APP_INPUT_COMMAND] |= key == CF_KEY_RCTRL;
 #endif
-    GameControl source = game_control_for_key(key);
+    Control source = control_for_key(key);
     if (source) {
       pressed_controls |= UINT64_C(1) << source;
     }
@@ -96,12 +96,12 @@ void app_input_frame()
             held_at_start[i] = false;
         }
     }
-    uint64_t controls = game_controls_down();
+    uint64_t controls = controls_down();
     frame_controls = controls | pressed_controls;
     pressed_controls = 0;
     held_controls = first_frame ? controls : held_controls & controls;
     first_frame = false;
-    CF_V2 aim = game_controls_aim();
+    CF_V2 aim = controls_aim();
     if (aim.x != 0 || aim.y != 0) {
       controller_aim = true;
     } else if (cf_mouse_motion_x() != 0 || cf_mouse_motion_y() != 0 ||
@@ -132,17 +132,17 @@ bool app_input_pressed(app_input_action action)
 
 void app_input_movement(float *x, float *y)
 {
-  CF_V2 movement = ready ? game_controls_movement() : (CF_V2){0};
-  *x = movement.x;
-  *y = movement.y;
+    CF_V2 movement = ready ? controls_movement() : (CF_V2){ 0 };
+    *x = movement.x;
+    *y = movement.y;
 }
 
 bool app_input_aim(float *x, float *y)
 {
-  CF_V2 aim = ready ? game_controls_aim() : (CF_V2){0};
-  *x = aim.x;
-  *y = aim.y;
-  return aim.x || aim.y;
+    CF_V2 aim = ready ? controls_aim() : (CF_V2){ 0 };
+    *x = aim.x;
+    *y = aim.y;
+    return aim.x || aim.y;
 }
 
 uint64_t app_input_controls()

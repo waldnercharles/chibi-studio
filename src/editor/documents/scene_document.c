@@ -46,16 +46,15 @@ static bool same_names(const char **names, char **graphs)
    its behaviors differ from the prototype's. */
 static int add_actor_entity(
     app_scene_authoring *scene,
-    game_scene_document *document,
+    scene_document *document,
     const scene_actor *actor,
     int parent
 )
 {
-    game_preview_runtime *runtime = scene->live->runtime;
-    game_source_registry *behaviors = runtime->sources;
-    const game_prototype *snapshot = scene->runtime_snapshot_valid
-                                       ? actor->runtime_snapshot
-                                       : NULL;
+    preview_runtime *runtime = scene->live->runtime;
+    source_registry *behaviors = runtime->sources;
+    const prototype *snapshot = scene->runtime_snapshot_valid ? actor->runtime_snapshot
+                                                              : NULL;
     const char **names = NULL;
     if (snapshot) {
         for (int j = 0; j < acount(snapshot->graphs); j++) {
@@ -63,38 +62,33 @@ static int add_actor_entity(
         }
     }
     if (!snapshot) {
-        for (int j = 0; j < game_source_attachment_count(behaviors); j++) {
-            game_source_attachment_info info = game_source_attachment_at(behaviors, j);
+        for (int j = 0; j < source_attachment_count(behaviors); j++) {
+            source_attachment_info info = source_attachment_at(behaviors, j);
             if (ecs_entity_to_u64(actor->entity) == ecs_entity_to_u64(info.entity)) {
                 apush(names, info.name);
             }
         }
     }
     int index = acount(document->entities);
-    int result = game_scene_document_add_entity(
-        document,
-        parent,
-        actor->name,
-        actor->prototype_name
-    );
+    int result = scene_document_add_entity(document, parent, actor->name, actor->prototype_name);
     if (result == 0 && (actor->own_behaviors || !same_names(names, actor->base->graphs))) {
-        result = game_scene_document_set_entity_behaviors(document, index, names, acount(names));
+        result = scene_document_set_entity_behaviors(document, index, names, acount(names));
     }
     afree(names);
     if (result == 0) {
         av_value *components = snapshot
-                                 ? game_prototype_overrides_value(actor->base, snapshot)
-                                 : game_prototype_capture_overrides_value(
+                                 ? prototype_overrides_value(actor->base, snapshot)
+                                 : prototype_capture_overrides_value(
                                        actor->base,
                                        scene->world,
                                        actor->entity
                                    );
-        result = game_scene_document_set_entity_components(document, index, components);
+        result = scene_document_set_entity_components(document, index, components);
         av_value_free(components);
     }
     if (result == 0) {
         av_value *retained = scene_retention_save(actor->retained);
-        result = game_scene_document_set_entity_retained(document, index, retained);
+        result = scene_document_set_entity_retained(document, index, retained);
         av_value_free(retained);
     }
     return result;
@@ -113,7 +107,7 @@ static int listed_parent(const app_scene_authoring *scene, const int *actors, co
     return -1;
 }
 
-int scene_document_add_actors(app_scene_authoring *scene, game_scene_document *document, const int *actors)
+int scene_document_add_actors(app_scene_authoring *scene, scene_document *document, const int *actors)
 {
     for (int i = 0; i < acount(actors); i++) {
         const scene_actor *actor = &scene->actors[actors[i]];
@@ -125,17 +119,17 @@ int scene_document_add_actors(app_scene_authoring *scene, game_scene_document *d
     return 0;
 }
 
-game_scene_document *scene_authoring_document(app_scene_authoring *scene)
+scene_document *scene_authoring_document(app_scene_authoring *scene)
 {
     char name[256];
     scene_document_name(scene, name, sizeof name);
-    game_scene_document *document = game_scene_document_new(name);
+    scene_document *document = scene_document_new(name);
     if (!document) {
         return NULL;
     }
     document->perspective = scene->perspective;
-    game_scene_document_set_ui(document, scene->ui);
-    document->physics = game_physics_configuration(scene->live->runtime->physics);
+    scene_document_set_ui(document, scene->ui);
+    document->physics = physics_configuration(scene->live->runtime->physics);
     int *actors = NULL;
     for (int i = 0; i < acount(scene->actors); i++) {
         apush(actors, i);
@@ -143,7 +137,7 @@ game_scene_document *scene_authoring_document(app_scene_authoring *scene)
     int result = scene_document_add_actors(scene, document, actors);
     afree(actors);
     if (result != 0) {
-        game_scene_document_free(document);
+        scene_document_free(document);
         return NULL;
     }
     return document;
@@ -152,14 +146,11 @@ game_scene_document *scene_authoring_document(app_scene_authoring *scene)
 av_value *scene_authoring_scene_value(app_scene_authoring *scene)
 {
     finish_transform_edit(scene, false);
-    game_scene_document *document = scene_authoring_document(scene);
+    scene_document *document = scene_authoring_document(scene);
     av_value *value = document
-                        ? game_scene_document_to_value(
-                              document,
-                              project_components()
-                          )
+                        ? scene_document_to_value(document, project_components())
                         : NULL;
-    game_scene_document_free(document);
+    scene_document_free(document);
     return value;
 }
 
@@ -233,23 +224,19 @@ static int load_content_prototype(app_scene_authoring *scene, const char *path)
     return result;
 }
 
-int scene_attach_studio_nodes(app_scene_authoring *scene, game_preview_world *world, char *error, size_t size)
+int scene_attach_studio_nodes(app_scene_authoring *scene, preview_world *world, char *error, size_t size)
 {
-    if (!scene->studio_project || game_preview_sources_working(world)) {
+    if (!scene->studio_project || preview_sources_working(world)) {
         return 0;
     }
-    int bound = game_source_bind_service(
-        world->runtime->sources,
-        "studio",
-        &scene->studio_nodes
-    );
+    int bound = source_bind_service(world->runtime->sources, "studio", &scene->studio_nodes);
     assert(!bound);
     (void)bound;
     native_capabilities *catalog = authoring_application_catalog_new(true, error, size);
     if (!catalog) {
         return -1;
     }
-    int status = game_preview_sources_prepare_with_catalog(
+    int status = preview_sources_prepare_with_catalog(
         world,
         scene->content_root,
         behavior_default_backend(),
@@ -267,9 +254,9 @@ int app_scene_authoring_load_content(app_scene_authoring *scene)
         return -1;
     }
     content_refresh(scene);
-    game_preview_world *worlds[] = {
+    preview_world *worlds[] = {
         scene->live,
-        game_prototype_preview_live(scene->prototype_preview),
+        prototype_preview_live(scene->prototype_preview),
     };
     for (int i = 0; i < 2; i++) {
         if (scene_attach_studio_nodes(
@@ -338,8 +325,8 @@ int apply_components_value(app_scene_authoring *scene, ecs_entity entity, av_val
         return 0;
     }
     char error[256];
-    game_prototype_registry registry = app_component_registry();
-    if (game_prototype_apply_components_value(
+    prototype_registry registry = app_component_registry();
+    if (prototype_apply_components_value(
             scene->world,
             entity,
             components,
@@ -356,10 +343,10 @@ int apply_components_value(app_scene_authoring *scene, ecs_entity entity, av_val
 
 static int validate_scene_behaviors(app_scene_authoring *scene, char **names)
 {
-    game_source_registry *world = scene->live->runtime->sources;
-    const authoring_sources *applied = game_preview_sources_applied(scene->live);
+    source_registry *world = scene->live->runtime->sources;
+    const authoring_sources *applied = preview_sources_applied(scene->live);
     for (int i = 0; i < acount(names); i++) {
-        if (!game_source_registered(world, names[i])) {
+        if (!source_registered(world, names[i])) {
             snprintf(scene->message, sizeof scene->message, "Unknown behavior asset %s.", names[i]);
             return -1;
         }
@@ -381,7 +368,7 @@ static int validate_scene_behaviors(app_scene_authoring *scene, char **names)
     return 0;
 }
 
-int scene_validate_entity(app_scene_authoring *scene, const game_scene_entity *entity)
+int scene_validate_entity(app_scene_authoring *scene, const scene_entity *entity)
 {
     scene_retained_component *retained = NULL;
     bool valid = scene_retention_load(entity->retained, &retained) == 0 &&
@@ -425,10 +412,10 @@ int scene_validate_entity(app_scene_authoring *scene, const game_scene_entity *e
     }
     ecs_entity actor;
     if (result == 0) {
-        result = game_prototype_spawn_components(asset->prototype, world, &actor, error, sizeof error);
+        result = prototype_spawn_components(asset->prototype, world, &actor, error, sizeof error);
     }
     if (result == 0 && entity->components) {
-        result = game_prototype_apply_components_value(
+        result = prototype_apply_components_value(
             world,
             actor,
             entity->components,
@@ -439,7 +426,7 @@ int scene_validate_entity(app_scene_authoring *scene, const game_scene_entity *e
         );
     }
     ecs_world_free(world);
-    game_prototype_owned_strings_free(component_strings);
+    prototype_owned_strings_free(component_strings);
     if (result != 0) {
         snprintf(
             scene->message,
@@ -452,12 +439,7 @@ int scene_validate_entity(app_scene_authoring *scene, const game_scene_entity *e
     return result;
 }
 
-int scene_spawn_entity(
-    app_scene_authoring *scene,
-    const game_scene_entity *entity,
-    const char *name,
-    ecs_entity parent
-)
+int scene_spawn_entity(app_scene_authoring *scene, const scene_entity *entity, const char *name, ecs_entity parent)
 {
     if (add_actor(scene, name, entity->prototype) != 0) {
         return -1;
@@ -478,11 +460,11 @@ int scene_spawn_entity(
     if (!entity->own_behaviors) {
         return 0;
     }
-    game_preview_runtime *runtime = scene->live->runtime;
-    game_source_registry *behaviors = runtime->sources;
-    game_source_detach_entity(behaviors, actor->entity);
+    preview_runtime *runtime = scene->live->runtime;
+    source_registry *behaviors = runtime->sources;
+    source_detach_entity(behaviors, actor->entity);
     for (int j = 0; j < acount(entity->behaviors); j++) {
-        if (game_source_attach(
+        if (source_attach(
                 behaviors,
                 actor->entity,
                 entity->behaviors[j],
@@ -500,14 +482,14 @@ int scene_spawn_entity(
 int scene_authoring_load_value(app_scene_authoring *scene, av_value *value, const char *path)
 {
     char error[256];
-    game_scene_document *document = game_scene_document_load_value(value, error, sizeof error);
+    scene_document *document = scene_document_load_value(value, error, sizeof error);
     if (!document) {
         snprintf(scene->message, sizeof scene->message, "Could not load scene: %s", error);
         return -1;
     }
     for (int i = 0; i < acount(document->entities); i++) {
         if (scene_validate_entity(scene, &document->entities[i]) != 0) {
-            game_scene_document_free(document);
+            scene_document_free(document);
             return -1;
         }
     }
@@ -519,43 +501,37 @@ int scene_authoring_load_value(app_scene_authoring *scene, av_value *value, cons
     scene->runtime_step = false;
     app_scene_authoring_stop_prototype_preview(scene);
     invalidate_runtime_snapshot(scene);
-    game_entities_reset(scene->live->runtime->entities);
-    game_physics_reset(scene->live->runtime->physics);
-    game_physics3d_reset(scene->live->runtime->physics3d);
-    int configured = game_physics_configure(
-        scene->live->runtime->physics,
-        document->physics
-    );
+    entities_reset(scene->live->runtime->entities);
+    physics_reset(scene->live->runtime->physics);
+    physics3d_reset(scene->live->runtime->physics3d);
+    int configured = physics_configure(scene->live->runtime->physics, document->physics);
     assert(configured == 0);
-    configured = game_physics3d_configure(
-        scene->live->runtime->physics3d,
-        document->physics
-    );
+    configured = physics3d_configure(scene->live->runtime->physics3d, document->physics);
     assert(configured == 0);
-    game_particles_clear(scene->live->runtime->particles);
+    particles_clear(scene->live->runtime->particles);
     app_scene_renderer_reset(scene->renderer);
     while (acount(scene->actors)) {
         scene->selected = acount(scene->actors) - 1;
         remove_selected(scene);
     }
     for (int i = 0; i < acount(document->entities); i++) {
-        game_scene_entity *entity = &document->entities[i];
+        scene_entity *entity = &document->entities[i];
         ecs_entity parent = entity->parent >= 0 ? scene->actors[entity->parent].entity
                                                 : (ecs_entity){ 0 };
         if (scene_spawn_entity(scene, entity, entity->name, parent) != 0) {
-            game_scene_document_free(document);
+            scene_document_free(document);
             return -1;
         }
     }
-    if (game_entities_rebuild_global_bindings(scene->live->runtime->entities) != 0) {
-        game_scene_document_free(document);
+    if (entities_rebuild_global_bindings(scene->live->runtime->entities) != 0) {
+        scene_document_free(document);
         snprintf(scene->message, sizeof scene->message, "Global binding names must be unique.");
         return -1;
     }
     scene->perspective = document->perspective;
     free(scene->ui);
     scene->ui = document->ui ? xstrdup(document->ui) : NULL;
-    game_scene_document_free(document);
+    scene_document_free(document);
     char *saved_path = path ? xstrdup(path) : NULL;
     free(scene->scene_path);
     scene->scene_path = saved_path;

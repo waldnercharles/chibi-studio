@@ -192,7 +192,7 @@ static void plan_source(studio *s, asset_code *code)
         );
         source_catalog_edit edit = { .path = asset_code_path(code),
                                      .text = r->source_after };
-        if (r->source_after && game_preview_sources_validate(
+        if (r->source_after && preview_sources_validate(
                                    s->scene->live,
                                    &edit,
                                    1,
@@ -584,14 +584,14 @@ const char *studio_event_renameable(const studio *s, const node *n)
     bool event = !strcmp(name, "Event") || !strcmp(name, "Call Event") ||
                  !strcmp(name, "Send Event");
     return event && n->reference_name && n->reference_name[0] &&
-                   !game_host_event_reserved(n->reference_name)
+                   !host_event_reserved(n->reference_name)
              ? n->reference_name
              : NULL;
 }
 
 void studio_refactor_rename_event(studio *s, const char *event)
 {
-    if (game_host_event_reserved(event)) {
+    if (host_event_reserved(event)) {
         return;
     }
     app_scene_authoring_refresh_asset_index(s->scene);

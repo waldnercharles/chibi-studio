@@ -122,9 +122,9 @@ struct editor
     char *clipboard;
     char extract_name[128];
     char connect_error[ED_LOG_MESSAGE];
-    const game_host_event_desc *event_catalog;
+    const host_event_desc *event_catalog;
     int event_catalog_count;
-    const struct ui_event *ui_event_catalog; /* borrowed; the host's GameUi documents send them */
+    const struct ui_event *ui_event_catalog; /* borrowed; the host's Ui documents send them */
     int ui_event_catalog_count;
     const struct ui_data_binding *ui_data_catalog; /* borrowed; what those documents bind */
     int ui_data_catalog_count;
@@ -142,7 +142,7 @@ struct editor
 
 /* Private collaboration between document, graph and runtime owners. */
 int ed_name_spawned_event(editor *e, node *n);
-int ed_event_add_declared_params(editor *e, node *n, const game_host_event_desc *signature);
+int ed_event_add_declared_params(editor *e, node *n, const host_event_desc *signature);
 void ed_free_asset_stack(behavior_asset ***stack);
 void ed_push_asset(behavior_asset ***stack, behavior_asset *value);
 bool ed_is_graph_call(const node *n);

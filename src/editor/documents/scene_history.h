@@ -11,8 +11,8 @@
 typedef struct scene_history scene_history;
 
 scene_history *scene_history_new();
-bool scene_history_push_physics(scene_history *history, game_physics_settings before, game_physics_settings after);
-const game_physics_settings *scene_history_peek_physics(const scene_history *history, bool redo);
+bool scene_history_push_physics(scene_history *history, physics_settings before, physics_settings after);
+const physics_settings *scene_history_peek_physics(const scene_history *history, bool redo);
 void scene_history_complete_physics(scene_history *history, bool redo);
 void scene_history_free(scene_history *history);
 void scene_history_clear(scene_history *history);
@@ -28,7 +28,7 @@ uint64_t scene_history_group_id(const scene_history *history, bool redo);
  * empty stack or an edit restored from a capture. */
 uint64_t scene_history_step_id(const scene_history *history, bool redo);
 /* Records an already-applied transform edit. A no-op preserves redo. */
-bool scene_history_push(scene_history *history, ecs_entity entity, GameTransform before, GameTransform after);
+bool scene_history_push(scene_history *history, ecs_entity entity, Transform before, Transform after);
 typedef struct
 {
     ecs_component_id component;

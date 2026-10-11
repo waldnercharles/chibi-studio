@@ -37,7 +37,7 @@ struct app_game_presentation
     char lighting_warning[512]; /* the last lighting adjustment reported */
 };
 
-static render_scene3d_camera game_camera(const app_game_presentation *game)
+static render_scene3d_camera current_camera(const app_game_presentation *game)
 {
     render_scene3d_camera camera;
     engine_viewport_get_camera3d(game->viewport, &camera);
@@ -49,7 +49,7 @@ static void render_game(void *user)
     app_game_presentation *game = user;
     app_scene_authoring *scene = game->scene;
     if (scene->perspective) {
-        render_scene3d_camera camera = game_camera(game);
+        render_scene3d_camera camera = current_camera(game);
         game->render_failed = !app_scene_renderer_draw3d(
             scene->renderer,
             scene->world,
@@ -119,11 +119,11 @@ app_game_presentation *app_game_presentation_new(
         char save_path[1024];
         int length = snprintf(save_path, sizeof save_path, "%sprofiles.json", directory ? directory : "");
         if (!directory || length < 0 || length >= (int)sizeof save_path ||
-            !game_save_open(scene->live->runtime->save, save_path)) {
+            !save_open(scene->live->runtime->save, save_path)) {
             fprintf(
                 stderr,
                 "Could not open game save storage: %s\n",
-                game_save_error(scene->live->runtime->save)
+                save_error(scene->live->runtime->save)
             );
             return NULL;
         }
@@ -177,7 +177,7 @@ static bool mouse_target(const app_game_presentation *game, CF_V2 *target)
     }
     CF_V2 ndc = { mouse.x * 2 / size.x - 1, 1 - mouse.y * 2 / size.y };
     if (game->scene->perspective) {
-        render_scene3d_camera camera = game_camera(game);
+        render_scene3d_camera camera = current_camera(game);
         return render_scene3d_ground(&camera, ndc, target);
     }
     engine_viewport_camera frame;
@@ -194,19 +194,19 @@ static int command(app_game_presentation *game, app_runtime_command command)
 
 static int encounter_status(ecs_world *world)
 {
-    ecs_component_id component = GAME_COMPONENT_GameEncounter.id;
+    ecs_component_id component = COMPONENT_Encounter.id;
     if (!ecs_world_component(world, component)) {
-        return GAME_ENCOUNTER_ACTIVE;
+        return ENCOUNTER_ACTIVE;
     }
     ecs_query query;
     int result = ecs_query_begin(world, &query, &component, 1);
     assert(result == ECS_OK);
     (void)result;
     ecs_entity entity;
-    int status = GAME_ENCOUNTER_ACTIVE;
+    int status = ENCOUNTER_ACTIVE;
     while (ecs_query_next(&query, &entity)) {
         if (!ecs_entity_is_retiring(world, entity)) {
-            status = GAME_GameEncounter_get_const(world, entity)->status;
+            status = Encounter_get_const(world, entity)->status;
             break;
         }
     }
@@ -216,16 +216,16 @@ static int encounter_status(ecs_world *world)
 
 static bool finished(int status)
 {
-    return status == GAME_ENCOUNTER_CLEARED || status == GAME_ENCOUNTER_DEFEATED;
+    return status == ENCOUNTER_CLEARED || status == ENCOUNTER_DEFEATED;
 }
 
 /* The pause menu's body class for this status. */
 static const char *menu_state(int status)
 {
-    if (status == GAME_ENCOUNTER_CLEARED) {
+    if (status == ENCOUNTER_CLEARED) {
         return "cleared";
     }
-    return status == GAME_ENCOUNTER_DEFEATED ? "defeated" : "paused";
+    return status == ENCOUNTER_DEFEATED ? "defeated" : "paused";
 }
 
 /* Runs what the pause menu's last activation asks for: 1 quits. */
@@ -333,9 +333,9 @@ int app_game_presentation_frame(app_game_presentation *game, double now)
         engine_viewport_request_resize(game->viewport, (int)size.x, (int)size.y);
     }
     engine_viewport_view authored_view;
-    int authored_camera = game_camera_view(game->scene->world, game->scene->runtime, &authored_view);
+    int authored_camera = camera_view(game->scene->world, game->scene->runtime, &authored_view);
     if (authored_camera < 0) {
-        fprintf(stderr, "GameCamera requires one enabled camera with positive spans and a Transform.\n");
+        fprintf(stderr, "Camera requires one enabled camera with positive spans and a Transform.\n");
         return -1;
     }
     if (authored_camera) {

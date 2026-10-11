@@ -601,27 +601,27 @@ void studio_remember_project(const char *root)
 }
 #endif
 
-bool studio_prefs_open_scene_view(game_save *store)
+bool studio_prefs_open_scene_view(save *store)
 {
 #ifdef __EMSCRIPTEN__
-    return game_save_open(store, "chibi.sceneView");
+    return save_open(store, "chibi.sceneView");
 #else
     const char *directory = cf_fs_get_user_directory("chibi", "editor");
     char path[1024];
     return directory &&
            snprintf(path, sizeof path, "%sscene-view.json", directory) <
                (int)sizeof path &&
-           game_save_open(store, path);
+           save_open(store, path);
 #endif
 }
 
 /* ---------- Shared with authored panels ---------- */
 
-void studio_prefs_share(studio_prefs *p, game_save *save, uint64_t *seen)
+void studio_prefs_share(studio_prefs *p, save *save, uint64_t *seen)
 {
-    if (game_save_revision(save) != *seen) {
+    if (save_revision(save) != *seen) {
         for (int i = 0; i < studio_setting_count; i++) {
-            const char *text = game_save_get(save, studio_settings[i].save);
+            const char *text = save_get(save, studio_settings[i].save);
             if (text) {
                 studio_setting_parse(p, &studio_settings[i], text);
             }
@@ -630,7 +630,7 @@ void studio_prefs_share(studio_prefs *p, game_save *save, uint64_t *seen)
     for (int i = 0; i < studio_setting_count; i++) {
         char text[32];
         studio_setting_text(p, &studio_settings[i], text, sizeof text);
-        game_save_set(save, studio_settings[i].save, text);
+        save_set(save, studio_settings[i].save, text);
     }
-    *seen = game_save_revision(save);
+    *seen = save_revision(save);
 }

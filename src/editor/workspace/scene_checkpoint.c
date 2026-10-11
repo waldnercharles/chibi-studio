@@ -60,7 +60,7 @@ static void checkpoint_sources(
 static bool restore_sources(app_scene_authoring *scene, yyjson_val *root)
 {
     const char *keys[] = { "applied_sources", "working_sources" };
-    if (!game_preview_sources_working(scene->live)) {
+    if (!preview_sources_working(scene->live)) {
         yyjson_val *applied = yyjson_obj_get(root, keys[0]);
         yyjson_val *working = yyjson_obj_get(root, keys[1]);
         return yyjson_is_arr(applied) && !yyjson_arr_size(applied) &&
@@ -86,7 +86,7 @@ static bool restore_sources(app_scene_authoring *scene, yyjson_val *root)
             apush(edits, ((source_catalog_edit){ .path = path, .text = text, .identity = identity }));
         }
         char error[192];
-        authoring_sources *candidate = game_preview_sources_candidate(
+        authoring_sources *candidate = preview_sources_candidate(
             scene->live,
             edits,
             acount(edits),
@@ -100,11 +100,10 @@ static bool restore_sources(app_scene_authoring *scene, yyjson_val *root)
             afree(edits);
             return false;
         }
-        int result = game_preview_sources_replace(scene->live, edits, acount(edits), error, sizeof error);
+        int result = preview_sources_replace(scene->live, edits, acount(edits), error, sizeof error);
         afree(edits);
         if (!pass &&
-            (result ||
-             game_preview_sources_publish(scene->live, NULL, error, sizeof error))) {
+            (result || preview_sources_publish(scene->live, NULL, error, sizeof error))) {
             return false;
         }
         /* Invalid working drafts remain owned; only applied sources must link. */
@@ -494,31 +493,30 @@ char *app_scene_authoring_checkpoint(app_scene_authoring *scene)
         yyjson_mut_obj_add_uint(doc, actor, "actor_id", scene->actors[i].identity);
         yyjson_mut_obj_add_bool(doc, actor, "marked", scene->actors[i].marked);
         const scene_actor *source = &scene->actors[i];
-        game_prototype *captured = scene->runtime_snapshot_valid
-                                     ? NULL
-                                     : game_prototype_capture_entity(
-                                           source->name,
-                                           scene->world,
-                                           source->entity,
-                                           &scene->registry
-                                       );
-        const game_prototype *state = scene->runtime_snapshot_valid
-                                        ? source->runtime_snapshot
-                                        : captured;
-        av_value *state_value = state ? game_prototype_to_value(state) : NULL;
-        av_value *base_value = game_prototype_to_value(source->base);
+        prototype *captured = scene->runtime_snapshot_valid
+                                ? NULL
+                                : prototype_capture_entity(
+                                      source->name,
+                                      scene->world,
+                                      source->entity,
+                                      &scene->registry
+                                  );
+        const prototype *state = scene->runtime_snapshot_valid ? source->runtime_snapshot
+                                                               : captured;
+        av_value *state_value = state ? prototype_to_value(state) : NULL;
+        av_value *base_value = prototype_to_value(source->base);
         yyjson_mut_obj_add_val(doc, actor, "state", av_to_json(doc, state_value));
         yyjson_mut_obj_add_val(doc, actor, "base", av_to_json(doc, base_value));
         av_value_free(state_value);
         av_value_free(base_value);
-        game_prototype_free(captured);
+        prototype_free(captured);
     }
     yyjson_mut_val *prototypes = yyjson_mut_obj_add_arr(doc, root, "prototypes");
     for (int i = 0; i < acount(scene->prototypes); i++) {
         const scene_prototype_asset *asset = &scene->prototypes[i];
         yyjson_mut_val *item = yyjson_mut_arr_add_obj(doc, prototypes);
         checkpoint_text(doc, item, "path", asset->path);
-        owned_text(doc, item, "json", game_prototype_save(asset->prototype));
+        owned_text(doc, item, "json", prototype_save(asset->prototype));
         yyjson_mut_obj_add_bool(doc, item, "dirty", asset->dirty);
         yyjson_mut_obj_add_val(doc, item, "undo", checkpoint_values(doc, asset->undo));
         yyjson_mut_obj_add_val(doc, item, "redo", checkpoint_values(doc, asset->redo));
@@ -531,9 +529,8 @@ char *app_scene_authoring_checkpoint(app_scene_authoring *scene)
         yyjson_mut_obj_add_bool(doc, item, "camera_saved", asset->camera.saved);
     }
     yyjson_mut_val *behaviors = yyjson_mut_obj_add_arr(doc, root, "behaviors");
-    for (int i = 0; i < game_preview_definition_count(scene->live); i++) {
-        const game_preview_definition
-            *definition = game_preview_definition_at(scene->live, i);
+    for (int i = 0; i < preview_definition_count(scene->live); i++) {
+        const preview_definition *definition = preview_definition_at(scene->live, i);
         yyjson_mut_val *item = yyjson_mut_arr_add_obj(doc, behaviors);
         checkpoint_text(doc, item, "name", definition->name);
         checkpoint_text(doc, item, "path", definition->path);
@@ -560,18 +557,18 @@ char *app_scene_authoring_checkpoint(app_scene_authoring *scene)
         doc,
         root,
         "applied_sources",
-        game_preview_sources_applied(scene->live)
+        preview_sources_applied(scene->live)
     );
     checkpoint_sources(
         doc,
         root,
         "working_sources",
-        game_preview_sources_working(scene->live)
+        preview_sources_working(scene->live)
     );
     checkpoint_text(doc, root, "system_path", scene->system_path);
     const authoring_source
         *system_source = scene->system_path
-                           ? game_preview_source_find(scene->live, scene->system_path, false)
+                           ? preview_source_find(scene->live, scene->system_path, false)
                            : NULL;
     if (system_source) {
         checkpoint_text(doc, root, "system", system_source->syntax->text);
@@ -585,11 +582,11 @@ char *app_scene_authoring_checkpoint(app_scene_authoring *scene)
 static bool clear_behavior_models(app_scene_authoring *scene)
 {
     scene->definition = NULL;
-    while (game_preview_definition_count(scene->live)) {
-        game_preview_definition *definition = game_preview_definition_at(scene->live, 0);
+    while (preview_definition_count(scene->live)) {
+        preview_definition *definition = preview_definition_at(scene->live, 0);
         int result = definition->working_presentation
-                       ? game_preview_remove_projection(scene->live, definition->name)
-                       : game_preview_remove_definition(scene->live, definition->name);
+                       ? preview_remove_projection(scene->live, definition->name)
+                       : preview_remove_definition(scene->live, definition->name);
         if (result) {
             return false;
         }
@@ -642,12 +639,12 @@ static authoring_source_presentation *checkpoint_projection(
 static bool restore_behaviors(app_scene_authoring *scene, yyjson_val *behaviors, yyjson_val *prototypes)
 {
     (void)prototypes;
-    game_prototype_preview_free(scene->prototype_preview);
-    scene->prototype_preview = game_prototype_preview_new(&scene->registry);
+    prototype_preview_free(scene->prototype_preview);
+    scene->prototype_preview = prototype_preview_new(&scene->registry);
     if (!scene->prototype_preview) {
         return false;
     }
-    game_preview_world *preview = game_prototype_preview_live(scene->prototype_preview);
+    preview_world *preview = prototype_preview_live(scene->prototype_preview);
     if (scene_attach_studio_nodes(scene, preview, scene->message, sizeof scene->message)) {
         return false;
     }
@@ -670,29 +667,28 @@ static bool restore_behaviors(app_scene_authoring *scene, yyjson_val *behaviors,
                 }
                 authoring_source_presentation *working = checkpoint_projection(
                     scene,
-                    game_preview_sources_working(scene->live),
+                    preview_sources_working(scene->live),
                     item,
                     "working",
                     "working_metadata"
                 );
                 authoring_source_presentation *applied = checkpoint_projection(
                     scene,
-                    game_preview_sources_applied(scene->live),
+                    preview_sources_applied(scene->live),
                     item,
                     "applied",
                     "applied_metadata"
                 );
-                game_preview_definition
-                    *definition = game_preview_find_definition(scene->live, name);
+                preview_definition *definition = preview_find_definition(scene->live, name);
                 bool valid = definition && working && applied &&
-                             !game_preview_projection_set(definition, working, false) &&
-                             !game_preview_projection_set(definition, applied, true);
+                             !preview_projection_set(definition, working, false) &&
+                             !preview_projection_set(definition, applied, true);
                 authoring_source_presentation_free(working);
                 authoring_source_presentation_free(applied);
                 if (!valid) {
                     return false;
                 }
-                game_preview_definition_set_path(definition, path);
+                preview_definition_set_path(definition, path);
                 definition->dirty = yyjson_get_bool(yyjson_obj_get(item, "dirty"));
                 definition->unsaved = yyjson_get_bool(yyjson_obj_get(item, "unsaved"));
                 continue;
@@ -729,20 +725,20 @@ static bool restore_behaviors(app_scene_authoring *scene, yyjson_val *behaviors,
                 snprintf(scene->message, sizeof scene->message, "Checkpoint working %s: %.160s", name, error);
                 fprintf(stderr, "%s\n", scene->message);
             }
-            game_preview_definition *definition = working
-                                                    ? game_preview_definition_new(name, applied)
-                                                    : NULL;
+            preview_definition *definition = working
+                                               ? preview_definition_new(name, applied)
+                                               : NULL;
             if (!definition) {
                 behavior_asset_free(applied);
                 behavior_asset_free(working);
                 return false;
             }
-            if (game_preview_add_definition(scene->live, definition) != 0) {
-                game_preview_definition_free(definition);
+            if (preview_add_definition(scene->live, definition) != 0) {
+                preview_definition_free(definition);
                 behavior_asset_free(working);
                 return false;
             }
-            if (game_prototype_preview_register_behavior(
+            if (prototype_preview_register_behavior(
                     scene->prototype_preview,
                     name,
                     definition->applied
@@ -764,7 +760,7 @@ static bool restore_prototypes(app_scene_authoring *scene, yyjson_val *prototype
     for (int i = 0; i < acount(scene->prototypes); i++) {
         scene_prototype_asset *asset = &scene->prototypes[i];
         free(asset->path);
-        game_prototype_free(asset->prototype);
+        prototype_free(asset->prototype);
         clear_prototype_history(asset);
     }
     aclear(scene->prototypes);
@@ -792,11 +788,9 @@ static bool restore_prototypes(app_scene_authoring *scene, yyjson_val *prototype
             )) {
             return false;
         }
-        if (game_entities_register(scene->live->runtime->entities, asset->prototype) < 0 ||
-            game_prototype_preview_register_prototype(
-                scene->prototype_preview,
-                asset->prototype
-            ) != 0) {
+        if (entities_register(scene->live->runtime->entities, asset->prototype) < 0 ||
+            prototype_preview_register_prototype(scene->prototype_preview, asset->prototype) !=
+                0) {
             return false;
         }
     }
@@ -811,10 +805,9 @@ static bool restore_system(app_scene_authoring *scene, yyjson_val *root)
     if (!json) {
         return true;
     }
-    const authoring_source
-        *source = scene->system_path
-                    ? game_preview_source_find(scene->live, scene->system_path, false)
-                    : NULL;
+    const authoring_source *source = scene->system_path
+                                       ? preview_source_find(scene->live, scene->system_path, false)
+                                       : NULL;
     return source && !strcmp(source->syntax->text, json);
 }
 
@@ -823,12 +816,12 @@ static bool restore_scene(app_scene_authoring *scene, yyjson_val *root, yyjson_v
     av_doc *source = av_doc_new();
     av_value *scene_value = av_from_json(source, yyjson_obj_get(root, "scene"));
     char error[256];
-    game_scene_document *document = game_scene_document_load_value(scene_value, error, sizeof error);
+    scene_document *document = scene_document_load_value(scene_value, error, sizeof error);
     av_doc_free(source);
     if (!document) {
         return false;
     }
-    game_prototype **bases = NULL;
+    prototype **bases = NULL;
     bool restored = false;
     if ((size_t)acount(document->entities) != yyjson_arr_size(actors)) {
         goto done;
@@ -839,31 +832,27 @@ static bool restore_scene(app_scene_authoring *scene, yyjson_val *root, yyjson_v
         av_value *state_value = av_from_json(native, yyjson_obj_get(actor, "state"));
         av_value *base_value = av_from_json(native, yyjson_obj_get(actor, "base"));
         scene_prototype_asset
-            *prototype = find_prototype(scene, document->entities[i].prototype);
-        if (!av_is_obj(state_value) || !av_is_obj(base_value) || !prototype) {
+            *native_prototype = find_prototype(scene, document->entities[i].prototype);
+        if (!av_is_obj(state_value) || !av_is_obj(base_value) || !native_prototype) {
             av_doc_free(native);
             goto done;
         }
-        game_prototype *state = game_prototype_load_value(state_value, &scene->registry, error, sizeof error);
-        game_prototype *base = game_prototype_load_value(base_value, &scene->registry, error, sizeof error);
+        prototype *state = prototype_load_value(state_value, &scene->registry, error, sizeof error);
+        prototype *base = prototype_load_value(base_value, &scene->registry, error, sizeof error);
         av_doc_free(native);
         apush(bases, base);
         av_value *overrides = state
-                                ? game_prototype_overrides_value(prototype->prototype, state)
+                                ? prototype_overrides_value(native_prototype->prototype, state)
                                 : NULL;
-        game_prototype_free(state);
+        prototype_free(state);
         bool valid = base && overrides &&
-                     game_scene_document_set_entity_components(document, i, overrides) ==
-                         0;
+                     scene_document_set_entity_components(document, i, overrides) == 0;
         av_value_free(overrides);
         if (!valid) {
             goto done;
         }
     }
-    av_value *rebased = game_scene_document_to_value(
-        document,
-        project_components()
-    );
+    av_value *rebased = scene_document_to_value(document, project_components());
     restored = rebased && scene_authoring_load_value(
                               scene,
                               rebased,
@@ -872,17 +861,17 @@ static bool restore_scene(app_scene_authoring *scene, yyjson_val *root, yyjson_v
     av_value_free(rebased);
     if (restored) {
         for (int i = 0; i < acount(bases); i++) {
-            game_prototype_free(scene->actors[i].base);
+            prototype_free(scene->actors[i].base);
             scene->actors[i].base = bases[i];
             bases[i] = NULL;
         }
     }
 done:
     for (int i = 0; i < acount(bases); i++) {
-        game_prototype_free(bases[i]);
+        prototype_free(bases[i]);
     }
     afree(bases);
-    game_scene_document_free(document);
+    scene_document_free(document);
     return restored;
 }
 
@@ -1007,7 +996,7 @@ int app_scene_authoring_restore_checkpoint(app_scene_authoring *scene, const cha
     scene->content_root = xstrdup(content);
     const char *definition_name = yyjson_get_str(yyjson_obj_get(root, "definition"));
     scene->definition = definition_name
-                          ? game_preview_find_definition(scene->live, definition_name)
+                          ? preview_find_definition(scene->live, definition_name)
                           : NULL;
     free(scene->graph_document_id);
     scene->graph_document_id = checkpoint_copy_text(root, "graph_document");

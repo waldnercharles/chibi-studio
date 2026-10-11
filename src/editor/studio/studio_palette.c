@@ -182,8 +182,8 @@ static void add_assets(studio *s, studio_palette_entry **picks)
         }
         const char *kind = studio_asset_kind_name(asset->kind);
         if (asset->kind == REFERENCE_ASSET_SHAPE) {
-            game_preview_definition
-                *definition = game_preview_find_definition(s->scene->live, asset->name);
+            preview_definition
+                *definition = preview_find_definition(s->scene->live, asset->name);
             if (definition && definition->working->domain == BEHAVIOR_DOMAIN_MODEL) {
                 kind = "model";
             }
@@ -304,7 +304,7 @@ static void add_components(studio *s, studio_palette_entry **picks, const char *
     for (int i = 0; i < acount(scene->actors); i++) {
         const scene_actor *actor = &scene->actors[i];
         const scene_prototype_asset *asset = find_prototype(scene, actor->prototype_name);
-        const game_prototype *prototype = asset ? asset->prototype : NULL;
+        const prototype *prototype = asset ? asset->prototype : NULL;
         for (int c = 0; prototype && c < acount(prototype->components); c++) {
             const char *component = prototype->components[c].desc->name;
             studio_palette_entry *p = add(picks, PICK_COMPONENT, i, group, component);

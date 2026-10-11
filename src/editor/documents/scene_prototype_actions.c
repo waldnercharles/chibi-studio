@@ -23,7 +23,7 @@
 
 #define FOLDER_MODE 0755
 
-static const game_prototype_component *base_component(const scene_actor *actor, ecs_component_id id)
+static const prototype_component *base_component(const scene_actor *actor, ecs_component_id id)
 {
     for (int i = 0; i < acount(actor->base->components); i++) {
         if (actor->base->components[i].desc->id == id) {
@@ -34,10 +34,9 @@ static const game_prototype_component *base_component(const scene_actor *actor, 
 }
 
 /* Whether the instance's field differs from its prototype's. */
-static bool overrides(const app_scene_authoring *scene, const scene_actor *actor, game_prototype_field o)
+static bool overrides(const app_scene_authoring *scene, const scene_actor *actor, prototype_field o)
 {
-    const game_prototype_component
-        *component = base_component(actor, o.component->id);
+    const prototype_component *component = base_component(actor, o.component->id);
     pin_value value = { 0 }, inherited = { 0 };
     if (!component ||
         ecs_component_read_field(scene->world, actor->entity, o.component->id, o.field, &value) !=
@@ -53,7 +52,7 @@ static bool overrides(const app_scene_authoring *scene, const scene_actor *actor
 static bool inherits(
     const app_scene_authoring *scene,
     const scene_actor *actor,
-    const game_prototype_field *fields,
+    const prototype_field *fields,
     int count
 )
 {
@@ -70,7 +69,7 @@ static bool inherits(
 int scene_override_reach(
     const app_scene_authoring *scene,
     const scene_actor *source,
-    const game_prototype_field *fields,
+    const prototype_field *fields,
     int count
 )
 {
@@ -94,9 +93,9 @@ static int rebase_instances(app_scene_authoring *scene, scene_prototype_asset *a
         if (strcmp(actor->prototype_name, asset->prototype->name)) {
             continue;
         }
-        game_prototype *base = game_prototype_clone(asset->prototype, error, sizeof error);
+        prototype *base = prototype_clone(asset->prototype, error, sizeof error);
         assert(base);
-        game_prototype_free(actor->base);
+        prototype_free(actor->base);
         actor->base = base;
     }
     asset->dirty = 1;
@@ -109,13 +108,13 @@ int scene_restore_prototype(app_scene_authoring *scene, const char *name, av_val
 {
     scene_prototype_asset *asset = find_prototype(scene, name);
     char error[256];
-    game_prototype *prototype = asset
-                                  ? game_prototype_load_value(value, &scene->registry, error, sizeof error)
-                                  : NULL;
+    prototype *prototype = asset
+                             ? prototype_load_value(value, &scene->registry, error, sizeof error)
+                             : NULL;
     if (!prototype) {
         return -1;
     }
-    game_prototype_free(asset->prototype);
+    prototype_free(asset->prototype);
     asset->prototype = prototype;
     return rebase_instances(scene, asset);
 }
@@ -125,15 +124,15 @@ int scene_restore_prototype(app_scene_authoring *scene, const char *name, av_val
 static void follow_prototype(
     app_scene_authoring *scene,
     scene_actor *actor,
-    const game_prototype *prototype,
-    const game_prototype_field *fields,
+    const prototype *prototype,
+    const prototype_field *fields,
     int count
 )
 {
     scene_field_edit *edits = NULL;
     for (int i = 0; i < count; i++) {
-        game_prototype_field o = fields[i];
-        const game_prototype_component *after = NULL;
+        prototype_field o = fields[i];
+        const prototype_component *after = NULL;
         for (int c = 0; c < acount(prototype->components); c++) {
             after = prototype->components[c].desc->id == o.component->id
                       ? &prototype->components[c]
@@ -171,7 +170,7 @@ static void follow_prototype(
 int scene_apply_overrides(
     app_scene_authoring *scene,
     scene_actor *source,
-    const game_prototype_field *fields,
+    const prototype_field *fields,
     int count
 )
 {
@@ -181,10 +180,10 @@ int scene_apply_overrides(
     }
     finish_transform_edit(scene, false);
     finish_property_edit(scene);
-    av_value *before = game_prototype_to_value(asset->prototype);
+    av_value *before = prototype_to_value(asset->prototype);
     prototype_history_before(scene, asset->prototype);
-    game_prototype_apply_instance(asset->prototype, scene->world, source->entity, fields, count);
-    av_value *after = game_prototype_to_value(asset->prototype);
+    prototype_apply_instance(asset->prototype, scene->world, source->entity, fields, count);
+    av_value *after = prototype_to_value(asset->prototype);
     scene_history_begin_group(scene->history);
     scene_history_push_prototype(
         scene->history,
@@ -251,7 +250,7 @@ bool scene_prototype_name_free(app_scene_authoring *scene, const char *name, cha
 static char *instance_prototype(app_scene_authoring *scene, const scene_actor *actor, const char *name)
 {
     char **behaviors = instance_behavior_names(scene, actor->entity);
-    game_prototype *prototype = game_prototype_from_instance(
+    prototype *prototype = prototype_from_instance(
         name,
         actor->base,
         scene->world,
@@ -260,8 +259,8 @@ static char *instance_prototype(app_scene_authoring *scene, const scene_actor *a
         acount(behaviors)
     );
     free_behavior_names(behaviors);
-    char *text = prototype ? game_prototype_save(prototype) : NULL;
-    game_prototype_free(prototype);
+    char *text = prototype ? prototype_save(prototype) : NULL;
+    prototype_free(prototype);
     return text;
 }
 

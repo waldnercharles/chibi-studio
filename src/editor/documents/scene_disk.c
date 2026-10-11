@@ -74,27 +74,26 @@ static app_disk_result add_definition(app_scene_authoring *scene, const char *pa
     }
     behavior_asset *asset = scene_graph_source_path(scene, json, path, error, sizeof error);
     free(json);
-    game_preview_definition *definition = asset
-                                            ? game_preview_definition_new(asset->name, asset)
-                                            : NULL;
+    preview_definition *definition = asset ? preview_definition_new(asset->name, asset)
+                                           : NULL;
     if (!definition) {
         behavior_asset_free(asset);
         snprintf(scene->message, sizeof scene->message, "Could not load %s: %s", content_basename(path), error);
         return APP_DISK_FAILED;
     }
-    game_preview_definition_set_path(definition, path);
-    if (game_preview_add_definition(scene->live, definition) != 0) {
+    preview_definition_set_path(definition, path);
+    if (preview_add_definition(scene->live, definition) != 0) {
         snprintf(
             scene->message,
             sizeof scene->message,
             "Could not add %s.",
             definition->name
         );
-        game_preview_definition_free(definition);
+        preview_definition_free(definition);
         return APP_DISK_FAILED;
     }
     if (scene->prototype_preview) {
-        game_prototype_preview_register_behavior(
+        prototype_preview_register_behavior(
             scene->prototype_preview,
             definition->name,
             definition->working
@@ -107,9 +106,9 @@ static app_disk_result add_definition(app_scene_authoring *scene, const char *pa
 
 static app_disk_result sync_graph(app_scene_authoring *scene, const char *path, bool force)
 {
-    for (int i = 0; i < game_preview_definition_count(scene->live); i++) {
-        game_preview_definition *definition = game_preview_definition_at(scene->live, i);
-        const char *at = game_preview_definition_path(definition);
+    for (int i = 0; i < preview_definition_count(scene->live); i++) {
+        preview_definition *definition = preview_definition_at(scene->live, i);
+        const char *at = preview_definition_path(definition);
         if (!at || strcmp(at, path)) {
             continue;
         }
@@ -451,11 +450,11 @@ bool scene_same_file(const char *a, const char *b)
     return same;
 }
 
-static game_preview_definition *definition_file(app_scene_authoring *scene, const char *path)
+static preview_definition *definition_file(app_scene_authoring *scene, const char *path)
 {
-    for (int i = 0; i < game_preview_definition_count(scene->live); i++) {
-        game_preview_definition *definition = game_preview_definition_at(scene->live, i);
-        if (scene_same_file(game_preview_definition_path(definition), path)) {
+    for (int i = 0; i < preview_definition_count(scene->live); i++) {
+        preview_definition *definition = preview_definition_at(scene->live, i);
+        if (scene_same_file(preview_definition_path(definition), path)) {
             return definition;
         }
     }
@@ -504,9 +503,8 @@ static void move_prototype(app_scene_authoring *scene, scene_prototype_asset *as
 {
     char *json = read_scene_file(to);
     char error[256];
-    game_prototype *loaded = json
-                               ? game_prototype_load(json, &scene->registry, error, sizeof error)
-                               : NULL;
+    prototype *loaded = json ? prototype_load(json, &scene->registry, error, sizeof error)
+                             : NULL;
     free(json);
     if (!loaded) {
         snprintf(scene->message, sizeof scene->message, "Could not load %s.", content_basename(to));
@@ -524,20 +522,20 @@ static void move_prototype(app_scene_authoring *scene, scene_prototype_asset *as
     free(asset->path);
     asset->path = xstrdup(to);
     rename_document(scene, APP_EDITOR_DOCUMENT_PROTOTYPE, from, loaded->name, to);
-    game_prototype_free(loaded);
+    prototype_free(loaded);
     reload_prototype_asset(scene, asset);
     free(from);
 }
 
 /* A renamed definition keeps its place, tab, attachments and history. */
-static void move_definition(app_scene_authoring *scene, game_preview_definition *definition, const char *to)
+static void move_definition(app_scene_authoring *scene, preview_definition *definition, const char *to)
 {
     char *json = read_scene_file(to);
     char error[256] = "";
     if (definition->working_presentation) {
         char *from = xstrdup(definition->name);
-        char *old_path = xstrdup(game_preview_definition_path(definition));
-        const authoring_source *old = game_preview_source_find(scene->live, old_path, false);
+        char *old_path = xstrdup(preview_definition_path(definition));
+        const authoring_source *old = preview_source_find(scene->live, old_path, false);
         char *identity = old ? xstrdup(old->analysis->identity) : NULL;
         source_catalog_edit edits[] = {
             { .path = old_path },
@@ -555,13 +553,13 @@ static void move_definition(app_scene_authoring *scene, game_preview_definition 
         if (!status) {
             authoring_source_presentation_free(presentation);
             presentation = authoring_source_presentation_clone(
-                game_preview_find_definition(scene->live, name)->working_presentation
+                preview_find_definition(scene->live, name)->working_presentation
             );
             editor_rename_behavior_asset(scene->graph_editor, from, name);
             rename_document(scene, APP_EDITOR_DOCUMENT_BEHAVIOR, from, name, to);
             status = editor_reload_source_presentation_document(scene->graph_editor, presentation, name);
             if (active) {
-                scene->definition = game_preview_find_definition(scene->live, name);
+                scene->definition = preview_find_definition(scene->live, name);
                 scene->editor_working = editor_behavior_asset(scene->graph_editor);
                 scene->editor_state_seen = false;
             }
@@ -588,17 +586,17 @@ static void move_definition(app_scene_authoring *scene, game_preview_definition 
     char *from = xstrdup(definition->name);
     char *name = loaded ? xstrdup(loaded->name) : NULL;
     behavior_asset_free(loaded);
-    if (!name || game_preview_rename_definition(scene->live, from, name) != 0) {
+    if (!name || preview_rename_definition(scene->live, from, name) != 0) {
         snprintf(scene->message, sizeof scene->message, "Could not load %s: %s", content_basename(to), error);
         free(from);
         free(name);
         return;
     }
-    game_preview_definition_set_path(definition, to);
+    preview_definition_set_path(definition, to);
     editor_rename_behavior_asset(scene->graph_editor, from, name);
     rename_document(scene, APP_EDITOR_DOCUMENT_BEHAVIOR, from, name, to);
     if (scene->prototype_preview) {
-        game_prototype_preview_register_behavior(
+        prototype_preview_register_behavior(
             scene->prototype_preview,
             name,
             definition->working
@@ -610,10 +608,10 @@ static void move_definition(app_scene_authoring *scene, game_preview_definition 
 }
 
 /* Another definition for the graph editor while one goes. */
-static game_preview_definition *other_definition(app_scene_authoring *scene, const game_preview_definition *leaving)
+static preview_definition *other_definition(app_scene_authoring *scene, const preview_definition *leaving)
 {
-    for (int i = 0; i < game_preview_definition_count(scene->live); i++) {
-        game_preview_definition *definition = game_preview_definition_at(scene->live, i);
+    for (int i = 0; i < preview_definition_count(scene->live); i++) {
+        preview_definition *definition = preview_definition_at(scene->live, i);
         if (definition != leaving) {
             return definition;
         }
@@ -623,11 +621,11 @@ static game_preview_definition *other_definition(app_scene_authoring *scene, con
 
 /* A definition whose file went: its tab closes, the graph editor turns to
    another, and it leaves the live world unless the world still runs it. */
-static void forget_definition(app_scene_authoring *scene, game_preview_definition *leaving)
+static void forget_definition(app_scene_authoring *scene, preview_definition *leaving)
 {
     char *name = xstrdup(leaving->name);
     if (leaving->working_presentation) {
-        char *path = xstrdup(game_preview_definition_path(leaving));
+        char *path = xstrdup(preview_definition_path(leaving));
         source_catalog_edit edit = { .path = path };
         char error[256] = "";
         bool active = scene->definition == leaving;
@@ -642,11 +640,8 @@ static void forget_definition(app_scene_authoring *scene, game_preview_definitio
         if (active) {
             scene->definition = NULL;
             scene->editor_working = NULL;
-            if (game_preview_definition_count(scene->live)) {
-                open_behavior_graph(
-                    scene,
-                    game_preview_definition_at(scene->live, 0)->name
-                );
+            if (preview_definition_count(scene->live)) {
+                open_behavior_graph(scene, preview_definition_at(scene->live, 0)->name);
             }
         }
         scene->editor_definition_seen = scene->definition;
@@ -656,13 +651,13 @@ static void forget_definition(app_scene_authoring *scene, game_preview_definitio
         return;
     }
     scene_tabs_forget(scene, APP_EDITOR_DOCUMENT_BEHAVIOR, name);
-    game_preview_definition *shown = other_definition(scene, leaving);
+    preview_definition *shown = other_definition(scene, leaving);
     if (scene->definition == leaving && shown) {
         open_behavior_graph(scene, shown->name);
     }
     editor_forget_behavior_asset(scene->graph_editor, name);
     if (scene->definition == leaving) {
-        game_preview_definition_set_path(leaving, NULL);
+        preview_definition_set_path(leaving, NULL);
         free(name);
         return;
     }
@@ -670,7 +665,7 @@ static void forget_definition(app_scene_authoring *scene, game_preview_definitio
         scene->editor_definition_seen = scene->definition;
     }
     /* Attached instances keep it, with its path, until they go. */
-    game_preview_remove_definition(scene->live, name);
+    preview_remove_definition(scene->live, name);
     free(name);
 }
 
@@ -702,7 +697,7 @@ static void forget_prototype(app_scene_authoring *scene, scene_prototype_asset *
     for (int i = 0; i < acount(scene->tabs); i++) {
         forget_index(&scene->tabs[i].selected_prototype, removed);
     }
-    game_prototype_free(asset->prototype);
+    prototype_free(asset->prototype);
     free(asset->path);
     clear_prototype_history(asset);
     int count = acount(scene->prototypes);
@@ -735,11 +730,10 @@ static bool adopt_file(app_scene_authoring *scene, const char *path)
         }
     }
     bool graphs = in_graph_folder(scene, path);
-    for (int i = 0; graphs && i < game_preview_definition_count(scene->live); i++) {
-        game_preview_definition *definition = game_preview_definition_at(scene->live, i);
-        if (!game_preview_definition_path(definition) &&
-            named_file(path, definition->name)) {
-            game_preview_definition_set_path(definition, path);
+    for (int i = 0; graphs && i < preview_definition_count(scene->live); i++) {
+        preview_definition *definition = preview_definition_at(scene->live, i);
+        if (!preview_definition_path(definition) && named_file(path, definition->name)) {
+            preview_definition_set_path(definition, path);
             reload_behavior_from_disk(scene, definition->name);
             return true;
         }
@@ -749,7 +743,7 @@ static bool adopt_file(app_scene_authoring *scene, const char *path)
 
 static void forget_file(app_scene_authoring *scene, const char *from)
 {
-    game_preview_definition *definition = definition_file(scene, from);
+    preview_definition *definition = definition_file(scene, from);
     scene_prototype_asset *prototype = prototype_file(scene, from);
     if (definition) {
         forget_definition(scene, definition);
@@ -797,9 +791,8 @@ void scene_disk_follow(app_scene_authoring *scene, const scene_move *moves, int 
         bool moved = move->to && (!move->from || strcmp(move->from, move->to));
         scene_prototype_asset *prototype = moved ? prototype_file(scene, move->from)
                                                  : NULL;
-        game_preview_definition *definition = moved
-                                                ? definition_file(scene, move->from)
-                                                : NULL;
+        preview_definition *definition = moved ? definition_file(scene, move->from)
+                                               : NULL;
         if (prototype) {
             move_prototype(scene, prototype, move->to);
         } else if (definition) {

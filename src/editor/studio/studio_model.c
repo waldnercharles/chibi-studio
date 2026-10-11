@@ -551,8 +551,8 @@ void studio_model_preview_controls(studio *s, const editor *e)
             if (error[0]) {
                 kit_label(k, "parameter-error", "notice", error);
             }
-            game_preview_definition
-                *definition = game_preview_find_definition(scene->live, e->asset->name);
+            preview_definition
+                *definition = preview_find_definition(scene->live, e->asset->name);
             if (definition && definition->diagnostics.error_count) {
                 kit_label(k, "stale", "notice", "Showing last valid model");
                 for (int i = 0; i < acount(definition->diagnostics.items); i++) {
@@ -578,7 +578,7 @@ void studio_model_reference_overlay(studio *s)
         !scene_model_preview_reference(s->scene, &opacity) || opacity <= 0) {
         return;
     }
-    game_preview_definition *definition = game_preview_find_definition(s->scene->live, name);
+    preview_definition *definition = preview_find_definition(s->scene->live, name);
     if (!definition) {
         return;
     }

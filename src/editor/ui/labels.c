@@ -38,11 +38,11 @@ void editor_component_label(const char *name, char *buf, size_t cap)
     if (!cap) {
         return;
     }
-    if (!strcmp(name, "GameGeometry3D")) {
+    if (!strcmp(name, "Geometry3D")) {
         snprintf(buf, cap, "3D Geometry");
         return;
     }
-    if (!strcmp(name, "GameAppearance")) {
+    if (!strcmp(name, "Appearance")) {
         snprintf(buf, cap, "2D Appearance");
         return;
     }

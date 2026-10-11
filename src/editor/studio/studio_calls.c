@@ -62,7 +62,7 @@ static const char *item_meta(const reference_index *index, const call_item *item
     if (item->kind != CALL_EVENT) {
         return asset_name(index, item->asset);
     }
-    return game_host_event_reserved(item->name) ? "Host" : "";
+    return host_event_reserved(item->name) ? "Host" : "";
 }
 
 /* A function or an event as a root to trace, by name; a handler traces as

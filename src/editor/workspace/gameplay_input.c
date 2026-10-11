@@ -10,7 +10,7 @@
 void app_gameplay_sample(app_scene_authoring *scene, bool accepts_input, const CF_V2 *mouse_target)
 {
     engine *runtime = scene->active_runtime_target == APP_RUNTIME_PREVIEW
-                        ? game_prototype_preview_runtime(scene->prototype_preview)
+                        ? prototype_preview_runtime(scene->prototype_preview)
                         : scene->runtime;
     bool firing = false;
     if (engine_sample_controls(runtime, accepts_input ? app_input_controls() : 0, &firing) <

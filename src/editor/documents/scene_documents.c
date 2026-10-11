@@ -26,31 +26,28 @@ int scene_stage_source_edits(
     app_scene_authoring *scene,
     const source_catalog_edit *edits,
     int count,
-    game_preview_source_staging **stages,
+    preview_source_staging **stages,
     const char *restart_path,
     char *error,
     size_t size
 )
 {
-    game_preview_world *worlds[] = {
+    preview_world *worlds[] = {
         scene->live,
-        scene->prototype_preview ? game_prototype_preview_live(scene->prototype_preview)
-                                 : NULL,
+        scene->prototype_preview ? prototype_preview_live(scene->prototype_preview) : NULL,
     };
     for (int i = 0; i < 2; i++) {
         if (!worlds[i]) {
             continue;
         }
-        if ((!game_preview_sources_working(worlds[i]) &&
-             game_preview_sources_prepare(worlds[i], scene->content_root, behavior_default_backend(), error, size)) ||
+        if ((!preview_sources_working(worlds[i]) &&
+             preview_sources_prepare(worlds[i], scene->content_root, behavior_default_backend(), error, size)) ||
             (i == 0 && count &&
-             game_preview_sources_edit(worlds[i], edits, count, error, size))) {
+             preview_sources_edit(worlds[i], edits, count, error, size))) {
             return -1;
         }
         if (i == 1) {
-            const authoring_sources *sources = game_preview_sources_working(
-                scene->live
-            );
+            const authoring_sources *sources = preview_sources_working(scene->live);
             source_catalog_edit *membership = NULL;
             for (int j = 0; j < authoring_sources_count(sources); j++) {
                 const authoring_source *source = authoring_sources_at(sources, j);
@@ -61,14 +58,14 @@ int scene_stage_source_edits(
                                             .identity = source->analysis->identity })
                 );
             }
-            for (int j = 0; j < game_preview_sources_overlay_count(scene->live); j++) {
+            for (int j = 0; j < preview_sources_overlay_count(scene->live); j++) {
                 const source_catalog_edit
-                    *overlay = game_preview_sources_overlay_at(scene->live, j);
+                    *overlay = preview_sources_overlay_at(scene->live, j);
                 if (!source_catalog_source_path(scene->content_root, overlay->path)) {
                     apush(membership, *overlay);
                 }
             }
-            int status = game_preview_sources_replace(worlds[i], membership, acount(membership), error, size);
+            int status = preview_sources_replace(worlds[i], membership, acount(membership), error, size);
             afree(membership);
             if (status) {
                 return -1;
@@ -79,11 +76,11 @@ int scene_stage_source_edits(
         if (!worlds[i]) {
             continue;
         }
-        stages[i] = game_preview_sources_stage(worlds[i], restart_path, error, size);
+        stages[i] = preview_sources_stage(worlds[i], restart_path, error, size);
         if (!stages[i]) {
             for (int j = 0; j < i; j++) {
                 if (stages[j]) {
-                    game_preview_sources_discard(stages[j]);
+                    preview_sources_discard(stages[j]);
                     stages[j] = NULL;
                 }
             }
@@ -93,36 +90,32 @@ int scene_stage_source_edits(
     return 0;
 }
 
-void scene_finish_source_edits(app_scene_authoring *scene, game_preview_source_staging **stages, bool commit)
+void scene_finish_source_edits(app_scene_authoring *scene, preview_source_staging **stages, bool commit)
 {
     char *name = scene->definition ? xstrdup(scene->definition->name) : NULL;
-    const char *path = scene->definition
-                         ? game_preview_definition_path(scene->definition)
-                         : NULL;
-    const authoring_source *source = path
-                                       ? game_preview_source_find(scene->live, path, true)
-                                       : NULL;
+    const char *path = scene->definition ? preview_definition_path(scene->definition)
+                                         : NULL;
+    const authoring_source *source = path ? preview_source_find(scene->live, path, true)
+                                          : NULL;
     char *identity = source ? xstrdup(source->analysis->identity) : NULL;
     for (int i = 0; i < 2; i++) {
         if (stages[i]) {
             if (commit) {
-                game_preview_sources_commit(stages[i]);
+                preview_sources_commit(stages[i]);
             } else {
-                game_preview_sources_discard(stages[i]);
+                preview_sources_discard(stages[i]);
             }
             stages[i] = NULL;
         }
     }
     if (commit && name) {
-        scene->definition = game_preview_find_definition(scene->live, name);
+        scene->definition = preview_find_definition(scene->live, name);
         if (!scene->definition && identity) {
-            const authoring_sources *sources = game_preview_sources_working(
-                scene->live
-            );
+            const authoring_sources *sources = preview_sources_working(scene->live);
             for (int i = 0; i < authoring_sources_count(sources); i++) {
                 const authoring_source *current = authoring_sources_at(sources, i);
                 if (!strcmp(current->analysis->identity, identity)) {
-                    scene->definition = game_preview_find_definition(
+                    scene->definition = preview_find_definition(
                         scene->live,
                         current->analysis->name
                     );
@@ -163,7 +156,7 @@ int scene_publish_source_edits_restart(
     size_t size
 )
 {
-    game_preview_source_staging *stages[2] = { 0 };
+    preview_source_staging *stages[2] = { 0 };
     if (scene_stage_source_edits(scene, edits, count, stages, restart_path, error, size)) {
         return -1;
     }
@@ -196,7 +189,7 @@ static int save_source_view(
         return -1;
     }
     const authoring_source *old = old_path
-                                    ? game_preview_source_find(scene->live, old_path, false)
+                                    ? preview_source_find(scene->live, old_path, false)
                                     : NULL;
     char *identity = old ? xstrdup(old->analysis->identity) : NULL;
     bool moved = old_path && strcmp(path, old_path);
@@ -204,7 +197,7 @@ static int save_source_view(
         { .path = path, .text = text, .identity = identity },
         { .path = old_path },
     };
-    game_preview_source_staging *stages[2] = { 0 };
+    preview_source_staging *stages[2] = { 0 };
     int result = scene_stage_source_edits(scene, edits, moved ? 2 : 1, stages, NULL, error, sizeof error);
     bool staged = !result;
     if (!result) {
@@ -228,11 +221,11 @@ static int save_source_view(
         scene_finish_source_edits(scene, stages, !result);
     }
     if (!result) {
-        const authoring_source *source = game_preview_source_find(scene->live, path, false);
+        const authoring_source *source = preview_source_find(scene->live, path, false);
         const behavior_asset *current = editor_behavior_asset(scene->graph_editor);
         authoring_source_presentation *formatted = authoring_source_presentation_new(
             source->analysis,
-            authoring_sources_catalog(game_preview_sources_working(scene->live)),
+            authoring_sources_catalog(preview_sources_working(scene->live)),
             NULL
         );
         if (formatted) {
@@ -273,12 +266,8 @@ static int sync_open_behavior(app_scene_authoring *scene)
         scene->graph_editor
     );
     int synced = presentation
-                   ? game_preview_projection_set(
-                         scene->definition,
-                         (authoring_source_presentation *)presentation,
-                         false
-                     )
-                   : game_preview_sync_working(scene->definition, scene->editor_working);
+                   ? preview_projection_set(scene->definition, (authoring_source_presentation *)presentation, false)
+                   : preview_sync_working(scene->definition, scene->editor_working);
     if (synced != 0) {
         return -1;
     }
@@ -324,7 +313,7 @@ static graph *start_graph(app_scene_authoring *scene, const behavior_asset *asse
 
 int open_behavior_graph(app_scene_authoring *scene, const char *asset_name)
 {
-    game_preview_definition *target = game_preview_find_definition(scene->live, asset_name);
+    preview_definition *target = preview_find_definition(scene->live, asset_name);
     if (!target || !scene->graph_editor || sync_open_behavior(scene) != 0) {
         return -1;
     }
@@ -401,9 +390,8 @@ int app_scene_authoring_open_behavior(app_scene_authoring *scene, const char *as
 static int content_behavior_index(const app_scene_authoring *scene, const char *path)
 {
     const char *name = content_basename(path);
-    for (int i = 0; i < game_preview_definition_count(scene->live); i++) {
-        const game_preview_definition
-            *definition = game_preview_definition_at(scene->live, i);
+    for (int i = 0; i < preview_definition_count(scene->live); i++) {
+        const preview_definition *definition = preview_definition_at(scene->live, i);
         const char *asset_name = definition->name;
         char filename[256];
         snprintf(
@@ -428,7 +416,7 @@ static const char *behavior_path(const app_scene_authoring *scene, const char *a
             continue;
         }
         int index = content_behavior_index(scene, entry->path);
-        if (strcmp(game_preview_definition_at(scene->live, index)->name, asset_name) == 0) {
+        if (strcmp(preview_definition_at(scene->live, index)->name, asset_name) == 0) {
             return entry->path;
         }
     }
@@ -437,12 +425,12 @@ static const char *behavior_path(const app_scene_authoring *scene, const char *a
 
 static int save_behavior_definition(
     app_scene_authoring *scene,
-    game_preview_definition *definition,
+    preview_definition *definition,
     const char *requested_path
 )
 {
     const char *path = requested_path ? requested_path
-                                      : game_preview_definition_path(definition);
+                                      : preview_definition_path(definition);
     if (!path) {
         path = behavior_path(scene, definition->name);
     }
@@ -465,10 +453,10 @@ static int save_behavior_definition(
             scene,
             definition->working_presentation,
             saved_path,
-            game_preview_definition_path(definition)
+            preview_definition_path(definition)
         );
         if (!result) {
-            game_preview_definition_set_path(definition, saved_path);
+            preview_definition_set_path(definition, saved_path);
             definition->unsaved = false;
             scene_tabs_mark_document_saved(
                 scene,
@@ -485,7 +473,7 @@ static int save_behavior_definition(
     }
     int result = save_content_file(scene, path, json);
     if (result == 0) {
-        game_preview_definition_set_path(definition, path);
+        preview_definition_set_path(definition, path);
         definition->unsaved = false;
         scene_tabs_mark_document_saved(
             scene,
@@ -545,14 +533,14 @@ static char *document_default_path(app_scene_authoring *scene)
 
 int reload_behavior_from_disk(app_scene_authoring *scene, const char *asset_name)
 {
-    game_preview_definition *definition = asset_name
-                                            ? game_preview_find_definition(scene->live, asset_name)
-                                            : scene->definition;
+    preview_definition *definition = asset_name
+                                       ? preview_find_definition(scene->live, asset_name)
+                                       : scene->definition;
     if (!definition) {
         snprintf(scene->message, sizeof scene->message, "No behavior document is active.");
         return -1;
     }
-    const char *path = game_preview_definition_path(definition);
+    const char *path = preview_definition_path(definition);
     if (!path) {
         path = behavior_path(scene, definition->name);
     }
@@ -593,7 +581,7 @@ int reload_behavior_from_disk(app_scene_authoring *scene, const char *asset_name
         authoring_source_presentation_free(presentation);
         free(json);
         if (!opened) {
-            definition = game_preview_find_definition(scene->live, name);
+            definition = preview_find_definition(scene->live, name);
             definition->unsaved = false;
             scene_tabs_mark_document_saved(scene, APP_EDITOR_DOCUMENT_BEHAVIOR, name);
             if (active_document) {
@@ -658,14 +646,14 @@ int reload_behavior_from_disk(app_scene_authoring *scene, const char *asset_name
         snprintf(scene->message, sizeof scene->message, "Could not open reloaded %s.", path);
         return -1;
     }
-    if (!game_preview_definition_path(definition)) {
-        game_preview_definition_set_path(definition, path);
+    if (!preview_definition_path(definition)) {
+        preview_definition_set_path(definition, path);
     }
     behavior_asset *previous = definition->working;
     definition->working = loaded;
     definition->dirty = 1;
     char apply_message[256];
-    int applied = game_preview_update(scene->live, definition, apply_message, sizeof apply_message);
+    int applied = preview_update(scene->live, definition, apply_message, sizeof apply_message);
     definition->unsaved = false;
     scene->preview_retry = true;
     refresh_asset_catalog(scene);
@@ -707,9 +695,8 @@ int reload_prototype_asset(app_scene_authoring *scene, scene_prototype_asset *as
 {
     char *json = read_scene_file(asset->path);
     char error[256];
-    game_prototype *loaded = json
-                               ? game_prototype_load(json, &scene->registry, error, sizeof error)
-                               : NULL;
+    prototype *loaded = json ? prototype_load(json, &scene->registry, error, sizeof error)
+                             : NULL;
     free(json);
     if (!loaded) {
         snprintf(
@@ -722,7 +709,7 @@ int reload_prototype_asset(app_scene_authoring *scene, scene_prototype_asset *as
         return -1;
     }
     if (!loaded->name || strcmp(loaded->name, asset->prototype->name) != 0) {
-        game_prototype_free(loaded);
+        prototype_free(loaded);
         snprintf(
             scene->message,
             sizeof scene->message,
@@ -731,11 +718,11 @@ int reload_prototype_asset(app_scene_authoring *scene, scene_prototype_asset *as
         );
         return -1;
     }
-    game_prototype *previous = asset->prototype;
+    prototype *previous = asset->prototype;
     asset->prototype = loaded;
     if (refresh_prototype_instances(scene, asset) != 0) {
         asset->prototype = previous;
-        game_prototype_free(loaded);
+        prototype_free(loaded);
         snprintf(
             scene->message,
             sizeof scene->message,
@@ -744,7 +731,7 @@ int reload_prototype_asset(app_scene_authoring *scene, scene_prototype_asset *as
         );
         return -1;
     }
-    game_prototype_free(previous);
+    prototype_free(previous);
     asset->dirty = 0;
     clear_prototype_history(asset);
     snprintf(scene->message, sizeof scene->message, "Reloaded %s.", asset->path);
@@ -935,12 +922,12 @@ static int save_as_active_document(app_scene_authoring *scene)
                    ? app_scene_authoring_save_prototype(scene, asset->prototype->name, path)
                    : -1;
     } else if (scene->document.kind == APP_EDITOR_DOCUMENT_BEHAVIOR) {
-        game_preview_definition *definition = scene->definition;
+        preview_definition *definition = scene->definition;
         int synced = definition ? sync_behavior_working(scene) : -1;
         int saved = synced == 0 ? save_behavior_definition(scene, definition, path)
                                 : -1;
         int applied = saved == 0 && !definition->working_presentation
-                        ? game_preview_update(
+                        ? preview_update(
                               scene->live,
                               definition,
                               scene->preview_message,
@@ -975,7 +962,7 @@ int save_behavior_document(app_scene_authoring *scene)
     if (!scene->definition) {
         return -1;
     }
-    if (!game_preview_definition_path(scene->definition) &&
+    if (!preview_definition_path(scene->definition) &&
         !behavior_path(scene, scene->definition->name)) {
         if (scene->document.kind == APP_EDITOR_DOCUMENT_BEHAVIOR) {
             return save_as_active_document(scene);
@@ -987,7 +974,7 @@ int save_behavior_document(app_scene_authoring *scene)
     int saved = synced == 0 ? save_behavior_definition(scene, scene->definition, NULL)
                             : -1;
     int applied = saved == 0 && !scene->definition->working_presentation
-                    ? game_preview_update(
+                    ? preview_update(
                           scene->live,
                           scene->definition,
                           scene->preview_message,

@@ -603,7 +603,7 @@ void studio_graph_targets_add(yyjson_mut_doc *doc)
     yyjson_mut_obj_add_arr(doc, t, "groups");
 }
 
-static bool prototype_attaches(const game_prototype *prototype, const char *behavior)
+static bool prototype_attaches(const prototype *prototype, const char *behavior)
 {
     for (int i = 0; i < acount(prototype->graphs); i++) {
         if (!strcmp(prototype->graphs[i], behavior)) {
@@ -624,7 +624,7 @@ static void prototype_choices(studio *s, target_group *groups)
     }
     const char *newest = scene->debug_newest;
     for (int i = 0; i < acount(scene->prototypes); i++) {
-        const game_prototype *prototype = scene->prototypes[i].prototype;
+        const prototype *prototype = scene->prototypes[i].prototype;
         if (!prototype_attaches(prototype, scene->graph_document_id)) {
             continue;
         }
@@ -652,9 +652,9 @@ static void prototype_choices(studio *s, target_group *groups)
 static void target_choices(studio *s, target_group *groups)
 {
     app_scene_authoring *scene = s->scene;
-    game_source_registry *behaviors = scene->active_runtime_target == APP_RUNTIME_PREVIEW
-                                       ? game_prototype_preview_sources(scene->prototype_preview)
-                                       : scene->live->runtime->sources;
+    source_registry *behaviors = scene->active_runtime_target == APP_RUNTIME_PREVIEW
+                                   ? prototype_preview_sources(scene->prototype_preview)
+                                   : scene->live->runtime->sources;
     bool on = targeted(scene);
     target_choice none = { .value = "none",
                            .label = "No target",
@@ -662,7 +662,7 @@ static void target_choices(studio *s, target_group *groups)
                            .current = !on };
     apush(groups[GROUP_NONE].choices, none);
     prototype_choices(s, groups);
-    execution_program *program = game_source_program(behaviors, scene->graph_document_id);
+    execution_program *program = source_program(behaviors, scene->graph_document_id);
     for (int i = 0; program && i < execution_program_owner_count(program); i++) {
         ecs_entity entity = ecs_entity_from_u64(execution_program_owner_at(program, i));
         target_choice choice = {

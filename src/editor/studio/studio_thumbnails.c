@@ -337,7 +337,7 @@ static uint64_t stamp_of(studio *s, studio_thumbs *t, int asset, bool *unsaved)
         stamp = mix(stamp, render_shader_revision());
     }
     if (*unsaved && a->kind == REFERENCE_ASSET_FIELD) {
-        material_fields *fields = game_materials_fields(s->scene->live->runtime->materials);
+        material_fields *fields = materials_fields(s->scene->live->runtime->materials);
         stamp = mix(stamp, material_field_revision(fields, a->name));
     }
     return stamp;

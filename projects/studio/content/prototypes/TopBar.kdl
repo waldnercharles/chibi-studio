@@ -1,4 +1,4 @@
 name "TopBar"
 components {
-    GAME.GameUi document="TopBar" hidden=#true
+    Ui document="TopBar" hidden=#true
 }

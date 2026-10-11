@@ -1,4 +1,4 @@
 name "BehaviorHeader"
 components {
-    GAME.GameUi document="BehaviorHeader" hidden=#true
+    Ui document="BehaviorHeader" hidden=#true
 }
