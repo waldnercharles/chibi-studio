@@ -181,6 +181,9 @@
     "src/editor/workspace/asset_refactor.h",
     "src/editor/workspace/scene_asset_drop.c"
   ],
+  "authoring/scene_hierarchy.h": [
+    "src/editor/workspace/scene_hierarchy.c"
+  ],
   "authoring/shader_prepare.h": [
     "src/editor/workspace/application.c"
   ],
@@ -698,6 +701,9 @@
   "runtime/scenes/physics_settings.h": [
     "src/editor/documents/scene_history.h",
     "src/editor/workspace/scene_authoring.h"
+  ],
+  "runtime/transform_propagation.h": [
+    "src/editor/workspace/scene_hierarchy.c"
   ],
   "runtime/visual_transform.h": [
     "src/editor/workspace/model_preview.c"

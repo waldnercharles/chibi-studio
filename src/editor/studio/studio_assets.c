@@ -177,6 +177,7 @@ static struct studio_assets_cache *asset_rows(studio *s, const reference_index *
         !strcmp(cache->filter, s->assets_filter)) {
         return cache;
     }
+    s->panel_work.asset_rows++;
     cache->built = true;
     cache->index = index;
     cache->revision = s->scene->asset_index_revision;

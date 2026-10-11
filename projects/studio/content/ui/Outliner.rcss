@@ -5,7 +5,9 @@
    nodes of studio_nodes.c). A row selects on click, with Mod and Shift
    for several; double-click or F2 renames it in place; its eye and lock show
    while it is hovered or while they are on; it takes behaviors and the
-   assets its fields name, and the list takes prototypes. The list is one
+   assets its fields name, and the list takes prototypes. Object drags move
+   before or after a row at its edges, inside it in the middle, or to the
+   scene root. The row menu and Alt+arrows expose keyboard moves. The list is one
    Tab stop, and while the keyboard holds it the active row shows the focus
    ring and Studio's keys act on it. */
 body { overflow: hidden; padding: 0dp; }
@@ -26,3 +28,7 @@ body { overflow: hidden; padding: 0dp; }
    offers the way back, as the Assets panel's empty state does. */
 .outliner-empty { display: flex; flex-direction: column; align-items: center; gap: 8dp; padding: 0dp 16dp; }
 .outliner-empty .btn { pointer-events: auto; }
+
+/* Invalid destinations retain their zone but show a rejection, with the
+   reason also written in the shared drag overlay. */
+[data-drop-rejected] .tree-row { border-color: var(--destructive); background-color: transparent; }

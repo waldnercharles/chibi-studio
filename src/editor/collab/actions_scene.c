@@ -349,6 +349,41 @@ static bool apply_prototype_field(app_scene_authoring *scene, yyjson_val *root, 
     return true;
 }
 
+static bool apply_hierarchy_move(app_scene_authoring *scene, yyjson_val *root, char *error, size_t size)
+{
+    yyjson_val *actors = yyjson_obj_get(root, "actors");
+    yyjson_val *active = yyjson_obj_get(root, "active");
+    yyjson_val *parent = yyjson_obj_get(root, "parent");
+    yyjson_val *before = yyjson_obj_get(root, "before");
+    if (!yyjson_is_arr(actors) || !yyjson_arr_size(actors) ||
+        yyjson_arr_size(actors) > (size_t)acount(scene->actors) ||
+        !yyjson_is_uint(active) || !yyjson_is_uint(parent) ||
+        !yyjson_is_uint(before)) {
+        return fail(error, size, "Hierarchy move has no valid selection or destination");
+    }
+    uint64_t *ids = NULL;
+    size_t i, count;
+    yyjson_val *item;
+    yyjson_arr_foreach(actors, i, count, item)
+    {
+        if (!yyjson_is_uint(item) || !yyjson_get_uint(item)) {
+            afree(ids);
+            return fail(error, size, "Hierarchy move has an invalid object identity");
+        }
+        apush(ids, yyjson_get_uint(item));
+    }
+    int result = scene_move_actors(
+        scene,
+        ids,
+        acount(ids),
+        yyjson_get_uint(active),
+        yyjson_get_uint(parent),
+        yyjson_get_uint(before)
+    );
+    afree(ids);
+    return result == 0 || fail(error, size, app_scene_authoring_message(scene));
+}
+
 static bool apply_tab_action(
     app_scene_authoring *scene,
     const char *operation,
@@ -426,7 +461,9 @@ bool scene_collab_apply_action(app_scene_authoring *scene, const char *json, cha
     if (!activate_action_tab(scene, root, error, error_size)) {
         goto done;
     }
-    if (!strcmp(operation, "instance.add")) {
+    if (!strcmp(operation, "hierarchy.move")) {
+        ok = apply_hierarchy_move(scene, root, error, error_size);
+    } else if (!strcmp(operation, "instance.add")) {
         const char *prototype = text(root, "prototype");
         const char *name = text(root, "name");
         yyjson_val *x = yyjson_obj_get(root, "x"), *y = yyjson_obj_get(root, "y");

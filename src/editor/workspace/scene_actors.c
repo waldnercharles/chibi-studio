@@ -1335,6 +1335,14 @@ static int replay_scene_edit_one(app_scene_authoring *scene, bool redo)
         return -1;
     }
     finish_transform_edit(scene, false);
+    av_value *hierarchy = scene_history_peek_hierarchy(scene->history, redo);
+    if (hierarchy) {
+        if (scene_restore_hierarchy(scene, hierarchy) != 0) {
+            return -1;
+        }
+        scene_history_complete_hierarchy(scene->history, redo);
+        return 0;
+    }
     const game_physics_settings *physics = scene_history_peek_physics(scene->history, redo);
     if (physics) {
         if (game_prototype_preview_entity(scene->prototype_preview).slot) {
@@ -1452,6 +1460,10 @@ static int replay_scene_edit_one(app_scene_authoring *scene, bool redo)
 
 int replay_scene_edit(app_scene_authoring *scene, bool redo)
 {
+    /* Hierarchy snapshots carry their selection through checkpoints too. */
+    if (scene_history_peek_hierarchy(scene->history, redo)) {
+        return replay_scene_edit_one(scene, redo);
+    }
     uint64_t group = scene_history_group_id(scene->history, redo);
     const scene_step_selection
         *recorded = step_selection(scene, scene_history_step_id(scene->history, redo));

@@ -1562,6 +1562,51 @@ static bool resolve_target(app_scene_authoring *scene, scene_debug_attachment *o
     return scene->debug_destroyed;
 }
 
+static void source_breakpoint(
+    execution_inspector *inspector,
+    const execution_module *module,
+    uint64_t occurrence,
+    bool enabled
+)
+{
+    for (int i = 0; i < execution_module_function_count(module); i++) {
+        execution_module_function_info function = execution_module_function_at(module, i);
+        for (int j = 0; function.body &&
+                        j < behavior_function_source_point_count(function.body);
+             j++) {
+            behavior_source_point
+                point = behavior_function_source_point_at(function.body, j);
+            if (!point.completion && point.occurrence == occurrence) {
+                execution_inspector_breakpoint(
+                    inspector,
+                    execution_module_id(module),
+                    function.id,
+                    occurrence,
+                    enabled
+                );
+                break;
+            }
+        }
+    }
+}
+
+static bool source_breakpoint_enabled(const authoring_source_presentation *view, uint64_t occurrence)
+{
+    const behavior_asset *asset = authoring_source_presentation_view(view);
+    for (int i = 0; i < authoring_source_presentation_origin_count(view); i++) {
+        const source_presentation_origin *origin = authoring_source_presentation_origin_at(view, i);
+        if (origin->pin || origin->node_occurrence != occurrence) {
+            continue;
+        }
+        const graph *g = behavior_asset_find_graph(asset, origin->graph);
+        const node *n = g ? graph_node_by_id(g, origin->node) : NULL;
+        if (n && n->breakpoint && node_behavior_for(n) != NODE_BEHAVIOR_PURE) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void sync_source_breakpoints(app_scene_authoring *scene)
 {
     const authoring_source_presentation *view = editor_presentation(scene->graph_editor);
@@ -1579,16 +1624,16 @@ static void sync_source_breakpoints(app_scene_authoring *scene)
     const authoring_sources *sources = game_preview_sources_applied(
         debug_live(scene, scene->active_runtime_target)
     );
-    bool current = false;
+    const execution_module *compiled = NULL;
     for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
         const authoring_source *source = authoring_sources_at(sources, i);
         if (source->module && execution_module_id(source->module) == module &&
             authoring_source_presentation_matches(view, source->analysis, authoring_sources_catalog(sources))) {
-            current = true;
+            compiled = source->module;
             break;
         }
     }
-    if (!current) {
+    if (!compiled) {
         return;
     }
     for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
@@ -1611,18 +1656,17 @@ static void sync_source_breakpoints(app_scene_authoring *scene)
         for (int j = 0; j < authoring_source_presentation_origin_count(view); j++) {
             const source_presentation_origin
                 *origin = authoring_source_presentation_origin_at(view, j);
-            if (origin->pin || !origin->owner) {
+            if (origin->pin || !origin->node_occurrence) {
                 continue;
             }
             const graph *g = behavior_asset_find_graph(asset, origin->graph);
             const node *n = g ? graph_node_by_id(g, origin->node) : NULL;
-            if (n) {
-                execution_inspector_breakpoint(
+            if (n && node_behavior_for(n) != NODE_BEHAVIOR_PURE) {
+                source_breakpoint(
                     inspector,
-                    module,
-                    origin->owner,
+                    compiled,
                     origin->node_occurrence,
-                    n->breakpoint
+                    source_breakpoint_enabled(view, origin->node_occurrence)
                 );
             }
         }

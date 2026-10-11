@@ -305,6 +305,21 @@ int app_scene_authoring_delete_instance(app_scene_authoring *scene);
  * message set when the name is refused. */
 int app_scene_authoring_rename_instance(app_scene_authoring *scene, ecs_entity entity, const char *name);
 
+/* Moves the selected top-level subtrees in one undo step, preserving their
+ * world placement and stable identities. Descendants selected with a parent
+ * move once. A sibling name conflict, cycle, invalid transform conversion, or
+ * running scene rejects the entire operation. ROOT appends to scene roots. */
+typedef enum
+{
+    APP_SCENE_DROP_BEFORE,
+    APP_SCENE_DROP_INSIDE,
+    APP_SCENE_DROP_AFTER,
+    APP_SCENE_DROP_ROOT,
+} app_scene_drop;
+bool app_scene_authoring_can_drop(app_scene_authoring *scene, ecs_entity target, app_scene_drop drop);
+/* 0 applied/no-op, 1 waiting for the collaboration host, -1 with message. */
+int app_scene_authoring_drop_selection(app_scene_authoring *scene, ecs_entity target, app_scene_drop drop);
+
 /* Editor view state (Blender's Outliner eye and selectability, Unity's Scene
  * visibility and pickability): while the scene is edited, its view leaves
  * hidden objects out and picks neither hidden nor locked ones. It belongs to

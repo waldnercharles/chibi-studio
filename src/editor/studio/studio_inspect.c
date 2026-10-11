@@ -1224,6 +1224,7 @@ const studio_inspect_model *studio_inspect_sync(studio *s, const studio_inspect_
         in->selected = in->hovering = false;
     }
     apply(s, in, input);
+    s->panel_work.inspector_reads++;
     studio_inspect_model *m = read_model(
         in,
         target_context(s, in->target),

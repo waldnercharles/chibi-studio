@@ -38,7 +38,7 @@ set(STUDIO_PACKAGES
     execution_contract field_catalog graph_authoring graph_compilation graph_model graph_catalog image_preparation input_map json
     material_runtime model_authoring model_runtime native_types physics_runtime platform
     project_document project_preparation prototype_document reference_index render save_runtime
-    scenario_document scene_document scene_runtime shader_preparation source_catalog source_presentation
+    scenario_document scene_authoring scene_document scene_runtime shader_preparation source_catalog source_presentation
     spatial_runtime studio_capabilities studio_graph support text_source tilemap_runtime types ui
     ui_authoring ui_document value_document)
 set(missing "")
@@ -134,6 +134,7 @@ if(CHIBI_STUDIO_BUILD_ACCEPTANCE)
     endif()
     add_executable(studio-acceptance
         tests/acceptance/main.c tests/acceptance/host.c tests/acceptance/application.c
+        tests/acceptance/debugger.c
         src/host/state_file.c src/host/stacktrace.c src/studio_registry.c)
     target_include_directories(studio-acceptance PRIVATE src include)
     target_link_libraries(studio-acceptance PRIVATE studio)

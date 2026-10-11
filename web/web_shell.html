@@ -15,7 +15,7 @@
       color: #d9e1ed; font: 14px/1.5 system-ui, sans-serif; text-align: center;
       overflow-wrap: anywhere; pointer-events: none;
     }
-    #status[data-error] { border-color: #9d4b55; color: #ffd9dd; }
+    #status[data-error], #status[data-storage-error] { border-color: #9d4b55; color: #ffd9dd; }
     #status button {
       margin-left: 12px; padding: 2px 10px; border: 1px solid #303746; border-radius: 6px;
       background: #1b2330; color: inherit; font: inherit; cursor: pointer; pointer-events: auto;
@@ -31,6 +31,18 @@
       const canvas = document.getElementById('canvas');
       const status = document.getElementById('status');
       let lastError = '';
+      let loadingStatus = 'Loading Chibi...', storageStatus = '';
+      let storageRetry;
+      const updateStatus = () => {
+        if ('error' in status.dataset) return;
+        status.textContent = loadingStatus || storageStatus;
+        status.hidden = !status.textContent;
+        if (loadingStatus || !storageRetry) return;
+        const button = document.createElement('button');
+        button.textContent = 'Retry';
+        button.onclick = storageRetry;
+        status.append(button);
+      };
       const showError = message => {
         status.dataset.error = '';
         status.textContent = String(message);
@@ -79,9 +91,9 @@
         showStopped(event.message || 'Could not load Chibi. Reload this page to retry.');
       }, true);
       window.addEventListener('unhandledrejection', event => showStopped(event.reason));
-      // Studio sets chibiUnsaved while a document has unsaved edits; the browser then asks before leaving.
+      // Saved documents still need protection while their browser storage is pending.
       window.addEventListener('beforeunload', event => {
-        if (!Module['chibiUnsaved']) return;
+        if (!Module['chibiUnsaved'] && !Module['chibiStoragePending']) return;
         event.preventDefault();
         event.returnValue = true;
       });
@@ -89,17 +101,23 @@
         canvas,
         showError,
         showStopped,
+        setStorageStatus: (text, failed = false, retry) => {
+          storageStatus = text;
+          storageRetry = retry;
+          if (failed) status.dataset.storageError = '';
+          else delete status.dataset.storageError;
+          updateStatus();
+        },
         print: (...args) => console.log(...args),
         printErr: (...args) => {
           lastError = args.join(' ');
           console.error(...args);
         },
         setStatus: text => {
-          if ('error' in status.dataset) return;
           const progress = text.match(/\((\d+)\/(\d+)\)/);
           if (progress) text = `Loading Chibi... ${Math.floor(100 * progress[1] / progress[2])}%`;
-          status.textContent = text;
-          status.hidden = !text;
+          loadingStatus = text;
+          updateStatus();
         },
         onAbort: reason => showStopped(lastError || `Could not run Chibi: ${reason}`),
         onExit: code => {

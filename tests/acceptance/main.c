@@ -2,6 +2,7 @@
 #include "assets/input_map.h"
 #include "authoring/preview_source.h"
 #include "authoring/source_presentation.h"
+#include "debugger.h"
 #include "editor/collab/collab.h"
 #include "editor/documents/asset_code.h"
 #include "editor/studio/studio_graph_internal.h"
@@ -47,16 +48,22 @@ static enum {
     EXPORT_GAME,
     GRAPH_VISIBILITY,
     GRAPH_KEYS,
+    GRAPH_POINTER,
+    DEBUGGER_SOURCE_HISTORY,
+    ASSET_POINTER,
     GRAPH_LABELS,
     UNIT_WARNINGS,
     SCENE_HIERARCHY,
+    SCENE_MOVE,
+    OUTLINER_MOVE,
     SCENE_PHYSICS,
     ASSET_SELECTION,
     SCENE_VIEWPORT,
     PLAY_KEYS,
     PROMPTS,
     CODE_FOLLOWUPS,
-    CODE_GLYPHS
+    CODE_GLYPHS,
+    PANEL_IDLE
 } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
@@ -1268,20 +1275,11 @@ static bool prompt_shows(studio *s, const char *title)
     return true;
 }
 
-/* Clicks the element `selector` finds, as a person would: the pointer moves
-   over it, presses and releases. */
-static bool click(studio *s, const char *selector)
+/* Queue a complete pointer click in window points. */
+static bool click_at(float x, float y)
 {
-    rml_element *button = studio_element(s, selector);
-    REQUIRE(button);
-    rml_vec2 at = rml_element_absolute_offset(button, RML_BOX_BORDER);
-    rml_vec2 size = rml_element_box_size(button, RML_BOX_BORDER);
-    REQUIRE(size.x > 0 && size.y > 0);
     SDL_WindowID id = window_id();
     REQUIRE(id);
-    /* Layout is in dp; the window's pointer is in points, ui_scale to a dp. */
-    float scale = s->prefs.ui_scale;
-    float x = (at.x + size.x / 2) * scale, y = (at.y + size.y / 2) * scale;
     SDL_Event move = {
         .motion = { .type = SDL_EVENT_MOUSE_MOTION, .windowID = id, .x = x, .y = y }
     };
@@ -1298,6 +1296,30 @@ static bool click(studio *s, const char *selector)
         REQUIRE(SDL_PushEvent(&e));
     }
     return true;
+}
+
+/* RmlUi boxes are physical pixels; SDL pointer coordinates are window points. */
+static bool click(studio *s, const char *selector)
+{
+    rml_element *element = NULL;
+    rml_context *context = rml_backend_context(s->backend);
+    for (int i = 0; i < rml_context_document_count(context) && !element; i++) {
+        rml_element *matches[32];
+        int count = rml_element_query_selector_all(rml_context_document(context, i), selector, matches, 32);
+        REQUIRE(count <= 32);
+        for (int j = 0; j < count; j++) {
+            if (rml_element_is_visible(matches[j], true)) {
+                element = matches[j];
+                break;
+            }
+        }
+    }
+    REQUIRE(element);
+    rml_vec2 at = rml_element_absolute_offset(element, RML_BOX_BORDER);
+    rml_vec2 size = rml_element_box_size(element, RML_BOX_BORDER);
+    REQUIRE(size.x > 0 && size.y > 0);
+    float to_points = s->prefs.ui_scale / studio_pixel_ratio(s);
+    return click_at((at.x + size.x / 2) * to_points, (at.y + size.y / 2) * to_points);
 }
 
 static int counter_tab(studio *s)
@@ -2437,6 +2459,229 @@ static bool asset_selection_frame(void *state)
     }
 }
 
+#define ASSET_POINTER_FRAMES 20
+#define GRAPH_POINTER_FRAMES 19
+
+/* Find the drawn row by identity, then send input through SDL and RmlUi. */
+static bool point_asset(studio *s, const char *name, SDL_Keymod mod)
+{
+    int id = reference_index_find_name(app_scene_authoring_asset_index(s->scene), REFERENCE_ASSET_PROTOTYPE, name);
+    REQUIRE(id >= 0);
+    char selector[96];
+    snprintf(
+        selector,
+        sizeof selector,
+        "#assets-list [data-asset='%d'] %s",
+        id,
+        s->prefs.assets_list ? ".tree-row" : ".tile"
+    );
+    SDL_Keycode key = mod & SDL_KMOD_SHIFT ? SDLK_LSHIFT
+                    : mod & SDL_KMOD_GUI   ? SDLK_LGUI
+                                           : SDLK_LCTRL;
+    if (mod) {
+        REQUIRE(push_key(key, mod, true));
+    }
+    REQUIRE(click(s, selector));
+    return !mod || push_key(key, SDL_KMOD_NONE, false);
+}
+
+/* Only these prototype identities have visible rows or tiles after filtering. */
+static bool visible_spares(studio *s, unsigned expected)
+{
+    rml_element *list = studio_element(s, "#assets-list");
+    REQUIRE(list);
+    rml_element *items[16];
+    int count = rml_element_query_selector_all(list, "[data-asset]", items, 16);
+    REQUIRE(count <= 16);
+    const reference_index *index = app_scene_authoring_asset_index(s->scene);
+    unsigned shown = 0;
+    for (int i = 0; i < count; i++) {
+        if (!rml_element_is_visible(items[i], true)) {
+            continue;
+        }
+        char value[32];
+        REQUIRE(rml_element_attribute(items[i], "data-asset", value, sizeof value) > 0);
+        int id = atoi(value);
+        if (id < 0) {
+            continue; /* kind heading */
+        }
+        bool found = false;
+        for (int j = 0; j < 3; j++) {
+            if (id ==
+                reference_index_find_name(index, REFERENCE_ASSET_PROTOTYPE, spares[j])) {
+                REQUIRE(!(shown & (1u << j)));
+                shown |= 1u << j;
+                found = true;
+            }
+        }
+        REQUIRE(found);
+    }
+    REQUIRE(shown == expected);
+    return true;
+}
+
+static bool asset_pointer_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= ASSET_POINTER_FRAMES);
+    SDL_Keymod toggle = s->mac ? SDL_KMOD_GUI : SDL_KMOD_CTRL;
+    switch (frames) {
+        case 1:
+            studio_show_editor(s, STUDIO_EDITOR_ASSETS);
+            s->prefs.assets_list = true;
+            s->assets_kind = REFERENCE_ASSET_PROTOTYPE;
+            return true;
+        case 3: return click(s, "#assets-filter");
+        case 4:
+            REQUIRE(
+                rml_context_focus_element(rml_backend_context(s->backend)) ==
+                studio_element(s, "#assets-filter")
+            );
+            return type_text("Spare");
+        case 6:
+            REQUIRE(!strcmp(s->assets_filter, "Spare") && visible_spares(s, 7));
+            return point_asset(s, "SpareA", 0);
+        case 7:
+            REQUIRE(selection_is(s, "SpareA", ""));
+            return point_asset(s, "SpareC", SDL_KMOD_SHIFT);
+        case 8:
+            REQUIRE(selection_is(s, "SpareC", "SpareA SpareB"));
+            return point_asset(s, "SpareB", toggle);
+        case 9:
+            REQUIRE(selection_is(s, "SpareC", "SpareA"));
+            return click(s, ".assets-view [data-tip='Grid']");
+        case 11:
+            REQUIRE(!s->prefs.assets_list && !strcmp(s->assets_filter, "Spare"));
+            REQUIRE(visible_spares(s, 7));
+            return point_asset(s, "SpareB", 0);
+        case 12:
+            REQUIRE(selection_is(s, "SpareB", ""));
+            return point_asset(s, "SpareC", toggle);
+        case 13:
+            REQUIRE(selection_is(s, "SpareC", "SpareB"));
+            return click(s, "#assets-filter");
+        case 14: return type_text("B");
+        case 16:
+            REQUIRE(!strcmp(s->assets_filter, "SpareB") && visible_spares(s, 2));
+            return point_asset(s, "SpareB", 0);
+        case 17:
+            REQUIRE(selection_is(s, "SpareB", ""));
+            return click(s, ".assets-view [data-tip='List']");
+        case 19:
+            REQUIRE(s->prefs.assets_list && visible_spares(s, 2));
+            return point_asset(s, "SpareB", 0);
+        case 20:
+            REQUIRE(selection_is(s, "SpareB", ""));
+            REQUIRE(spare_exists("SpareA") && spare_exists("SpareB") && spare_exists("SpareC"));
+            return unchanged_source();
+        default: return true;
+    }
+}
+
+/* Click the visible node title, away from sockets and editable fields. */
+static bool point_node(studio *s, node *n)
+{
+    const node_layout *layout = sg_layout_of(s, n);
+    REQUIRE(layout && layout->w > 0);
+    kit_rect r = s->graph.surface.rect;
+    float x = r.x + (n->x + layout->w / 2 - s->graph.x) * sg_zoom(s);
+    float y = r.y + (n->y + 10 - s->graph.y) * sg_zoom(s);
+    REQUIRE(x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.h);
+    return click_at(x * s->prefs.ui_scale, y * s->prefs.ui_scale);
+}
+
+static bool graph_pointer_frame(void *state)
+{
+    static uint64_t from, to;
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= GRAPH_POINTER_FRAMES);
+    editor *e = s->scene->graph_editor;
+    switch (frames) {
+        case 1:
+            studio_show_editor(s, STUDIO_EDITOR_BEHAVIOR);
+            s->prefs.reduced_motion = true;
+            return true;
+        case 3: {
+            graph *gr = sg_active_graph(s);
+            REQUIRE(gr);
+            for (int i = 0; i < acount(gr->edges) && !to; i++) {
+                node *a = sg_node_by_id(s, gr->edges[i].from_id);
+                node *b = sg_node_by_id(s, gr->edges[i].to_id);
+                if (sg_node_visible(gr, a) && sg_node_visible(gr, b)) {
+                    from = a->id;
+                    to = b->id;
+                }
+            }
+            REQUIRE(from && to);
+            return point_node(s, sg_node_by_id(s, from));
+        }
+        case 4:
+            REQUIRE(selected_only(e, from) && s->focus_area == s->graph.area);
+            return press_key(SDLK_RIGHT);
+        case 5:
+            REQUIRE(selected_only(e, to));
+            return press_chord(SDLK_F, s->mac ? SDL_KMOD_GUI : SDL_KMOD_CTRL);
+        case 7: REQUIRE(s->graph.find.open); return type_text("count");
+        case 9:
+            REQUIRE(
+                !strcmp(s->graph.find.query, "count") && acount(s->graph.find.hits) > 1
+            );
+            return press_key(SDLK_DOWN);
+        case 10: {
+            REQUIRE(s->graph.find.current == 0);
+            studio_find_hit hit = s->graph.find.hits[0];
+            REQUIRE(sg_active_graph(s)->graph_id == hit.graph_id);
+            REQUIRE(selected_only(e, hit.node_id));
+            return press_key(SDLK_UP);
+        }
+        case 11: {
+            int last = acount(s->graph.find.hits) - 1;
+            REQUIRE(s->graph.find.current == last);
+            studio_find_hit hit = s->graph.find.hits[last];
+            REQUIRE(sg_active_graph(s)->graph_id == hit.graph_id);
+            REQUIRE(selected_only(e, hit.node_id));
+            return click(s, "#graph-find-list .tree-row");
+        }
+        case 13:
+            REQUIRE(s->graph.find.current == 0);
+            REQUIRE(selected_only(e, s->graph.find.hits[0].node_id));
+            REQUIRE(
+                rml_context_focus_element(rml_backend_context(s->backend)) ==
+                studio_element(s, "#graph-find-query")
+            );
+            return press_key(SDLK_ESCAPE);
+        case 15: REQUIRE(!s->graph.find.open); return press_key(SDLK_ESCAPE);
+        case 16:
+            REQUIRE(!acount(e->selected));
+            s->graph.x = s->graph.y = 10000;
+            return press_key(SDLK_HOME);
+        case 19: {
+            graph *gr = sg_active_graph(s);
+            float width = s->graph.surface.rect.w / sg_zoom(s);
+            float height = s->graph.surface.rect.h / sg_zoom(s);
+            int shown = 0;
+            for (int i = 0; i < acount(gr->nodes); i++) {
+                node *n = gr->nodes[i];
+                if (!sg_node_visible(gr, n)) {
+                    continue;
+                }
+                const node_layout *l = sg_layout_of(s, n);
+                REQUIRE(n->x >= s->graph.x && n->y >= s->graph.y);
+                REQUIRE(n->x + l->w <= s->graph.x + width);
+                REQUIRE(n->y + l->h <= s->graph.y + height);
+                shown++;
+            }
+            REQUIRE(shown > 0 && !asset_code_dirty(counter_source(s)));
+            return unchanged_source();
+        }
+        default: return true;
+    }
+}
+
 /* The box and CROWD undrawn spots inside it, the last selected. */
 static bool load_crowd(studio *s)
 {
@@ -2985,6 +3230,10 @@ static bool code_glyphs_frame(void *state)
     }
 }
 
+#include "outliner_move.h"
+#include "panel_idle.h"
+#include "scene_move.h"
+
 bool studio_acceptance_frame(void *state)
 {
     switch (mode) {
@@ -2996,9 +3245,16 @@ bool studio_acceptance_frame(void *state)
             callback_ok = graph_visibility_frame(state);
             break;
         case GRAPH_KEYS: callback_ok = graph_keys_frame(state); break;
+        case GRAPH_POINTER: callback_ok = graph_pointer_frame(state); break;
+        case DEBUGGER_SOURCE_HISTORY:
+            callback_ok = acceptance_debugger_frame(studio_acceptance_studio(state), ++frames);
+            break;
+        case ASSET_POINTER: callback_ok = asset_pointer_frame(state); break;
         case GRAPH_LABELS: callback_ok = graph_labels_frame(state); break;
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
+        case SCENE_MOVE: callback_ok = scene_move_frame(state); break;
+        case OUTLINER_MOVE: callback_ok = outliner_move_frame(state); break;
         case SCENE_PHYSICS: callback_ok = scene_physics_frame(state); break;
         case ASSET_SELECTION: callback_ok = asset_selection_frame(state); break;
         case SCENE_VIEWPORT: callback_ok = scene_viewport_frame(state); break;
@@ -3006,6 +3262,7 @@ bool studio_acceptance_frame(void *state)
         case PROMPTS: callback_ok = prompts_frame(state); break;
         case CODE_FOLLOWUPS: callback_ok = code_followups_frame(state); break;
         case CODE_GLYPHS: callback_ok = code_glyphs_frame(state); break;
+        case PANEL_IDLE: callback_ok = panel_idle_frame(state); break;
     }
     return callback_ok;
 }
@@ -3298,6 +3555,52 @@ TEST_CASE(code_glyphs)
     return true;
 }
 
+TEST_CASE(graph_pointer)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(GRAPH_POINTER_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == GRAPH_POINTER_FRAMES);
+    REQUIRE(unchanged_source());
+    printf("\nStudio graph pointer accepted: frames=%d\n", frames);
+    return true;
+}
+
+TEST_CASE(asset_pointer)
+{
+    REQUIRE(write_spares());
+    REQUIRE(write_spare("Other"));
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(ASSET_POINTER_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == ASSET_POINTER_FRAMES);
+    printf("\nStudio asset pointer accepted: frames=%d\n", frames);
+    return true;
+}
+
+TEST_CASE(debugger_source_history)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = {
+        (char *)executable, "--headless",
+        "--frames",         FRAMES_TEXT(ACCEPTANCE_DEBUGGER_FRAMES),
+        "--fixed-dt",       "0.016666666666666666",
+        "--project-root",   (char *)project,
+        "--open",           "Counter"
+    };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == ACCEPTANCE_DEBUGGER_FRAMES);
+    REQUIRE(unchanged_source());
+    printf("\nStudio debugger source history accepted: frames=%d\n", frames);
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
@@ -3311,28 +3614,38 @@ int main(int argc, char **argv)
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
     bool keys_mode = argc == 4 && !strcmp(argv[1], "--graph-keys");
+    bool graph_pointer_mode = argc == 4 && !strcmp(argv[1], "--graph-pointer");
+    bool asset_pointer_mode = argc == 4 && !strcmp(argv[1], "--asset-pointer");
+    bool debugging = argc == 4 && !strcmp(argv[1], "--debugger-source-history");
     bool labels = argc == 4 && !strcmp(argv[1], "--graph-labels");
     bool units = argc == 4 && !strcmp(argv[1], "--unit-warnings");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
+    bool scene_move_mode = argc == 4 && !strcmp(argv[1], "--scene-move");
+    bool outliner_move_mode = argc == 4 && !strcmp(argv[1], "--outliner-move");
     bool physics = argc == 4 && !strcmp(argv[1], "--scene-physics");
     bool assets = argc == 4 && !strcmp(argv[1], "--asset-selection");
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
     bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
     bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
     bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
+    bool idle = argc == 4 && !strcmp(argv[1], "--panel-idle");
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
-         !keys_mode && !labels && !units && !hierarchy && !physics && !assets &&
-         !viewport && !playing && !prompting && !followups && !glyphs) ||
+         !keys_mode && !labels && !units && !hierarchy && !scene_move_mode &&
+         !outliner_move_mode && !physics && !assets && !viewport && !playing &&
+         !prompting && !followups && !glyphs && !idle && !graph_pointer_mode &&
+         !asset_pointer_mode && !debugging) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
-            "--graph-visibility|--graph-keys|--graph-labels|--unit-warnings|"
-            "--scene-hierarchy|--scene-physics|"
+            "--graph-visibility|--graph-keys|--graph-pointer|--asset-pointer|--"
+            "graph-labels|--unit-warnings|"
+            "--scene-hierarchy|--scene-move|--outliner-move|--scene-physics|"
             "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts|"
-            "--code-followups|--code-glyphs "
+            "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
+            "history "
             "--project-root PATH | --scene-cursors\n"
         );
         return 2;
@@ -3349,22 +3662,28 @@ int main(int argc, char **argv)
         return 2;
     }
     pu_display_time(true);
-    mode = source_edit ? SOURCE_EDIT
-         : code_keys   ? CODE_KEYS
-         : kdl_keys    ? KDL_KEYS
-         : exporting   ? EXPORT_GAME
-         : visibility  ? GRAPH_VISIBILITY
-         : keys_mode   ? GRAPH_KEYS
-         : labels      ? GRAPH_LABELS
-         : units       ? UNIT_WARNINGS
-         : hierarchy   ? SCENE_HIERARCHY
-         : physics     ? SCENE_PHYSICS
-         : assets      ? ASSET_SELECTION
-         : viewport    ? SCENE_VIEWPORT
-         : playing     ? PLAY_KEYS
-         : prompting   ? PROMPTS
-         : followups   ? CODE_FOLLOWUPS
-                       : CODE_GLYPHS;
+    mode = source_edit        ? SOURCE_EDIT
+         : code_keys          ? CODE_KEYS
+         : kdl_keys           ? KDL_KEYS
+         : exporting          ? EXPORT_GAME
+         : visibility         ? GRAPH_VISIBILITY
+         : keys_mode          ? GRAPH_KEYS
+         : debugging          ? DEBUGGER_SOURCE_HISTORY
+         : graph_pointer_mode ? GRAPH_POINTER
+         : asset_pointer_mode ? ASSET_POINTER
+         : labels             ? GRAPH_LABELS
+         : units              ? UNIT_WARNINGS
+         : scene_move_mode    ? SCENE_MOVE
+         : outliner_move_mode ? OUTLINER_MOVE
+         : hierarchy          ? SCENE_HIERARCHY
+         : physics            ? SCENE_PHYSICS
+         : assets             ? ASSET_SELECTION
+         : viewport           ? SCENE_VIEWPORT
+         : playing            ? PLAY_KEYS
+         : prompting          ? PROMPTS
+         : followups          ? CODE_FOLLOWUPS
+         : idle               ? PANEL_IDLE
+                              : CODE_GLYPHS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -3374,9 +3693,16 @@ int main(int argc, char **argv)
             RUN_TEST_CASE(graph_visibility_and_document_pair);
             break;
         case GRAPH_KEYS: RUN_TEST_CASE(graph_keys); break;
+        case GRAPH_POINTER: RUN_TEST_CASE(graph_pointer); break;
+        case DEBUGGER_SOURCE_HISTORY:
+            RUN_TEST_CASE(debugger_source_history);
+            break;
+        case ASSET_POINTER: RUN_TEST_CASE(asset_pointer); break;
         case GRAPH_LABELS: RUN_TEST_CASE(graph_labels); break;
         case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
+        case SCENE_MOVE: RUN_TEST_CASE(scene_move_contracts); break;
+        case OUTLINER_MOVE: RUN_TEST_CASE(outliner_move); break;
         case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics); break;
         case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;
         case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
@@ -3384,6 +3710,7 @@ int main(int argc, char **argv)
         case PROMPTS: RUN_TEST_CASE(unsaved_prompts); break;
         case CODE_FOLLOWUPS: RUN_TEST_CASE(code_followups); break;
         case CODE_GLYPHS: RUN_TEST_CASE(code_glyphs); break;
+        case PANEL_IDLE: RUN_TEST_CASE(panel_idle); break;
     }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;

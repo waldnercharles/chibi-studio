@@ -399,6 +399,7 @@ bool properties_multi(studio *s, const scene_actor *actor)
 
 int *properties_others(studio *s, ecs_component_id component)
 {
+    s->panel_work.properties_mixed_lists++;
     app_scene_authoring *scene = s->scene;
     int *others = NULL;
     for (int i = 0; i < acount(scene->actors); i++) {
@@ -426,21 +427,25 @@ bool properties_mixed(
     if (!properties_multi(s, actor)) {
         return false;
     }
-    int *others = properties_others(s, component);
+    app_scene_authoring *scene = s->scene;
     /* Objects naming different paths differ though none resolves. */
     const char *path = scene_link_path(actor->paths, component, field);
-    bool differs = false;
-    for (int i = 0; i < acount(others) && !differs; i++) {
-        const scene_actor *each = &s->scene->actors[others[i]];
+    for (int i = 0; i < acount(scene->actors); i++) {
+        if (i == scene->selected || !scene_instance_selected(scene, i) ||
+            !ecs_component_has(scene->world, scene->actors[i].entity, component)) {
+            continue;
+        }
+        const scene_actor *each = &scene->actors[i];
         const char *named = scene_link_path(each->paths, component, field);
         pin_value other = { 0 };
-        differs = (ecs_component_read_field(s->scene->world, each->entity, component, field, &other) ==
-                       ECS_OK &&
-                   !pin_value_equal(&other, value)) ||
-                  !same_path(path, named);
+        if ((ecs_component_read_field(scene->world, each->entity, component, field, &other) ==
+                 ECS_OK &&
+             !pin_value_equal(&other, value)) ||
+            !same_path(path, named)) {
+            return true;
+        }
     }
-    afree(others);
-    return differs;
+    return false;
 }
 
 /* ---------- Writes ---------- */

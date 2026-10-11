@@ -80,6 +80,11 @@ static studio_object_row object_row(studio *s, arena *storage, int index)
     free_behavior_names(names);
     studio_drop_types(s, index, drop, sizeof drop);
     unsigned view = app_scene_authoring_actor_view(scene, index);
+    int depth = 1;
+    for (ecs_entity parent = ecs_parent(scene->world, actor->entity); parent.slot;
+         parent = ecs_parent(scene->world, parent)) {
+        depth++;
+    }
     bool selected = scene_instance_selected(scene, index),
          active = scene->selected == index;
     return (studio_object_row){
@@ -88,7 +93,7 @@ static studio_object_row object_row(studio *s, arena *storage, int index)
         .icon = glyph_text(storage, studio_prototype_icon(s, actor->prototype_name)),
         .prototype = copy_text(storage, actor->prototype_name ? actor->prototype_name : ""),
         .drop = copy_text(storage, drop),
-        .depth = 1,
+        .depth = depth,
         .behaviors = behaviors,
         .active = active,
         .marked = selected && !active,
@@ -341,6 +346,9 @@ const char *studio_node_run(studio *s, studio_node_op op, const pin_value *in, a
             }
             break;
         case STUDIO_NODE_DROP_ON_OBJECT: drop_on_object(s, in); break;
+        case STUDIO_NODE_MOVE_OBJECTS:
+            studio_outliner_drop(s, text_of(&in[0]), text_of(&in[1]), text_of(&in[2]));
+            break;
         case STUDIO_NODE_SET_FILTER:
             snprintf(s->outliner_filter, sizeof s->outliner_filter, "%s", text_of(&in[0]));
             break;
