@@ -20,6 +20,7 @@
     <button class="btn icon-only" data-attr-data-state="commands.rotateTool.checked ? 'on' : ''" data-attr-data-tip="commands.rotateTool.menu" data-attr-data-kbd="commands.rotateTool.shortcut" data-event-click="emit('studio.rotateTool')"><span class="icon">{{ commands.rotateTool.icon }}</span></button>
     <button class="btn icon-only" data-attr-data-state="commands.scaleTool.checked ? 'on' : ''" data-attr-data-tip="commands.scaleTool.menu" data-attr-data-kbd="commands.scaleTool.shortcut" data-event-click="emit('studio.scaleTool')"><span class="icon">{{ commands.scaleTool.icon }}</span></button>
   </div>
+  <button class="btn icon-only" data-if="scene.perspective" data-attr-data-state="commands.toggleLocalSpace.checked ? 'on' : ''" data-attr-data-tip="commands.toggleLocalSpace.label" data-attr-data-kbd="commands.toggleLocalSpace.shortcut" data-event-click="emit('studio.toggleLocalSpace')"><span class="icon">{{ commands.toggleLocalSpace.icon }}</span></button>
 </div>
 <div class="canvas-tools" data-when="scene.mode == 2">
   <div class="crumbs">

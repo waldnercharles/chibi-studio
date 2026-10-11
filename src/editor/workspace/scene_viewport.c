@@ -649,7 +649,8 @@ static void edit_scene_pointer(app_scene_authoring *scene, engine_viewport *view
                               ? pick_pointer(scene, viewport, &pointer, unpickable)
                               : (ecs_entity){ 0 };
         /* What a press selects or moves (above): an object with a position. */
-        if (picked.slot && GAME_GameTransform_has(scene->world, picked)) {
+        if (picked.slot && (GAME_GameTransform_has(scene->world, picked) ||
+                            GAME_GameTransform3D_has(scene->world, picked))) {
             scene->hovered = picked;
         }
         return;
@@ -1119,6 +1120,10 @@ void app_scene_authoring_render(void *user)
         );
         if (scene_can_move(scene)) {
             draw_arena_selection(scene, world, &camera, hidden);
+            float pixel = scene->selection_scale > 0 ? scene->selection_scale : 1;
+            cf_draw_push_shape_aa(SCENE_OVERLAY_AA * pixel * cf_app_get_pixel_scale());
+            scene_gizmo3d_draw(scene);
+            cf_draw_pop_shape_aa();
         }
         return;
     }

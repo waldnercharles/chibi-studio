@@ -336,6 +336,16 @@ const studio_setting studio_settings[] = {
       .keywords = "magnet align round increment",
       .type = STUDIO_SETTING_BOOL,
       FIELD(scene_snap) },
+    { .key = "scene.localSpace",
+      .save = "sceneLocalSpace",
+      .category = STUDIO_SETTINGS_SCENE,
+      .label = "Local Space",
+      .description = "A 3D view's Move and Rotate gizmos follow the active "
+                     "object's axes rather than the world's. Scale always "
+                     "does.",
+      .keywords = "world global axes orientation gizmo",
+      .type = STUDIO_SETTING_BOOL,
+      FIELD(scene_local) },
     { .key = "scene.gridIncrement",
       .save = "sceneGridIncrement",
       .category = STUDIO_SETTINGS_SCENE,

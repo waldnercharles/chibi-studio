@@ -33,11 +33,7 @@ static const float RING_SLOP = 10;
 /* The smallest size a resize leaves, in world units. */
 static const float MIN_SIZE = 1;
 
-static const unsigned X_COLOR = 0xE0727AFF;
-static const unsigned Y_COLOR = 0x82C46BFF;
 static const unsigned FREE_COLOR = 0x82B5FFFF;
-static const unsigned DRAGGED_COLOR = 0xFFD75EFF;
-static const unsigned DISABLED_COLOR = 0x9AA3B266;
 static const unsigned HANDLE_FILL = 0xFFFFFFFF;
 
 /* Each resize handle's side of the box, counterclockwise from the bottom left. */
@@ -72,14 +68,15 @@ struct scene_gizmo_target
     int field[FIELD_COUNT]; /* index in the gesture's fields, or -1 */
 };
 
-/* A reflected float the gesture writes: its value before and now. */
+/* A reflected field the gesture writes: its value before and now, which
+   own their storage. */
 struct scene_gizmo_field
 {
     ecs_entity entity;
     ecs_component_id component;
     int field;
     pin_value before;
-    float after;
+    pin_value after;
 };
 
 /* Where the selection's gizmo sits, in canvas units. */
@@ -92,6 +89,11 @@ typedef struct
     bool oriented; /* something to rotate */
     bool sized;    /* something to resize */
 } gizmo_frame;
+
+bool scene_gizmo_spatial(int part)
+{
+    return part >= SCENE_GIZMO_ARROW_X && part < SCENE_GIZMO_HANDLE;
+}
 
 float scene_snap(float value, float increment)
 {
@@ -269,6 +271,9 @@ static bool tool_enabled(scene_tool tool, const gizmo_frame *frame)
 
 bool scene_gizmo_enabled(app_scene_authoring *scene)
 {
+    if (scene->render_viewport && engine_viewport_perspective(scene->render_viewport)) {
+        return scene_gizmo3d_enabled(scene);
+    }
     scene_gizmo_target *targets = selection_targets(scene);
     gizmo_frame frame;
     bool enabled = !frame_of(targets, &frame) ||
@@ -347,6 +352,83 @@ static int part_at(scene_tool tool, const gizmo_frame *frame, CF_V2 at, float pi
 
 /* ---------- Gestures ---------- */
 
+int scene_gizmo_record(
+    app_scene_authoring *scene,
+    ecs_entity entity,
+    const ecs_component_desc *component,
+    const char *name
+)
+{
+    if (!ecs_component_has(scene->world, entity, component->id)) {
+        return -1;
+    }
+    scene_gizmo_field field = { .entity = entity,
+                                .component = component->id,
+                                .field = field_named(component, name) };
+    pin_value value = { 0 };
+    int read = ecs_component_read_field(
+        scene->world,
+        entity,
+        component->id,
+        field.field,
+        &value
+    );
+    bool copied = read == ECS_OK && scene_property_value_copy(&field.before, value) &&
+                  scene_property_value_copy(&field.after, value);
+    assert(copied);
+    apush(scene->gizmo.fields, field);
+    return acount(scene->gizmo.fields) - 1;
+}
+
+pin_value scene_gizmo_started(const app_scene_authoring *scene, int index)
+{
+    return scene->gizmo.fields[index].before;
+}
+
+void scene_gizmo_write(app_scene_authoring *scene, int index, pin_value value)
+{
+    scene_gizmo_field *field = &scene->gizmo.fields[index];
+    assert(value.type == field->after.type);
+    if (value.type == PIN_STRUCT) {
+        memcpy(
+            field->after.ptr,
+            value.ptr,
+            type_catalog_find(field->after.type_name)->size
+        );
+    } else {
+        field->after.f = value.f;
+    }
+    if (scene_collab_can_write_locally()) {
+        ecs_component_write_field(
+            scene->world,
+            field->entity,
+            field->component,
+            field->field,
+            field->after
+        );
+        /* A paused run's objects change only its world, which Stop replaces. */
+        scene->scene_dirty |= !scene->runtime_snapshot_valid;
+    }
+}
+
+static bool field_changed(const scene_gizmo_field *field)
+{
+    if (field->after.type != PIN_STRUCT) {
+        return field->after.f != field->before.f;
+    }
+    size_t size = type_catalog_find(field->after.type_name)->size;
+    return memcmp(field->after.ptr, field->before.ptr, size) != 0;
+}
+
+static void free_fields(scene_gizmo_field *fields)
+{
+    for (int i = 0; i < acount(fields); i++) {
+        scene_property_value_free(&fields[i].before);
+        scene_property_value_free(&fields[i].after);
+    }
+    afree(fields);
+}
+
 static void add_field(
     app_scene_authoring *scene,
     scene_gizmo_target *target,
@@ -355,19 +437,7 @@ static void add_field(
     const char *name
 )
 {
-    if (!ecs_component_has(scene->world, target->entity, component->id)) {
-        return;
-    }
-    pin_value before = read_field(scene->world, target->entity, component, name);
-    target->field[slot] = acount(scene->gizmo.fields);
-    apush(
-        scene->gizmo.fields,
-        ((scene_gizmo_field){ .entity = target->entity,
-                              .component = component->id,
-                              .field = field_named(component, name),
-                              .before = before,
-                              .after = before.f })
-    );
+    target->field[slot] = scene_gizmo_record(scene, target->entity, component, name);
 }
 
 /* The fields dragging `part` writes on `target`. */
@@ -399,21 +469,8 @@ static float started(const scene_gizmo *g, const scene_gizmo_target *target, int
 static void set(app_scene_authoring *scene, const scene_gizmo_target *target, int slot, float value)
 {
     int index = target->field[slot];
-    if (index < 0 || !isfinite(value)) {
-        return;
-    }
-    scene_gizmo_field *field = &scene->gizmo.fields[index];
-    field->after = value;
-    if (scene_collab_can_write_locally()) {
-        ecs_component_write_field(
-            scene->world,
-            field->entity,
-            field->component,
-            field->field,
-            (pin_value){ .type = PIN_F32, .f = value }
-        );
-        /* A paused run's objects change only its world, which Stop replaces. */
-        scene->scene_dirty |= !scene->runtime_snapshot_valid;
+    if (index >= 0 && isfinite(value)) {
+        scene_gizmo_write(scene, index, (pin_value){ .type = PIN_F32, .f = value });
     }
 }
 
@@ -427,7 +484,7 @@ static void place(app_scene_authoring *scene, const scene_gizmo_target *target, 
     set(scene, target, GIZMO_FIELD_Y, c * from_parent.y - s * from_parent.x);
 }
 
-static bool snapping(const scene_gizmo *g)
+bool scene_gizmo_snapping(const scene_gizmo *g)
 {
     return g->in.snap != g->in.ctrl && g->in.increment > 0;
 }
@@ -441,7 +498,7 @@ static float shown(float value)
 
 /* The status bar's line for the change so far: what the gesture does and
    its delta, which the label by the pointer shows alone. */
-static void describe(scene_gizmo *g, const char *verb)
+void scene_gizmo_describe(scene_gizmo *g, const char *verb)
 {
     snprintf(g->status, sizeof g->status, "%s %s", verb, g->delta);
 }
@@ -505,7 +562,7 @@ static void move_selection(app_scene_authoring *scene, CF_V2 at)
     d.x = axis == SCENE_GIZMO_AXIS_Y ? 0 : d.x;
     /* The dragged object lands on the grid, and the rest keep their places
        around it. */
-    if (snapping(g)) {
+    if (scene_gizmo_snapping(g)) {
         CF_V2 from = g->targets[g->primary].position;
         d.x = axis == SCENE_GIZMO_AXIS_Y
                 ? 0
@@ -518,7 +575,7 @@ static void move_selection(app_scene_authoring *scene, CF_V2 at)
         place(scene, &g->targets[i], cf_add(g->targets[i].position, d));
     }
     snprintf(g->delta, sizeof g->delta, "\xce\x94x %g  \xce\x94y %g", shown(d.x), shown(-d.y));
-    describe(g, "Move");
+    scene_gizmo_describe(g, "Move");
 }
 
 static void rotate_selection(app_scene_authoring *scene, CF_V2 at)
@@ -534,7 +591,7 @@ static void rotate_selection(app_scene_authoring *scene, CF_V2 at)
     /* Gameplay radians run from +X toward +Y, clockwise on screen. */
     float delta = -g->turn;
     const scene_gizmo_target *primary = &g->targets[g->primary];
-    if (snapping(g)) {
+    if (scene_gizmo_snapping(g)) {
         float from = primary->oriented ? -primary->angle : 0;
         delta = scene_snap(from + delta, SCENE_ROTATION_STEP) - from;
     }
@@ -544,7 +601,7 @@ static void rotate_selection(app_scene_authoring *scene, CF_V2 at)
         set(scene, t, FIELD_RADIANS, -t->angle + delta - t->parent.radians);
     }
     snprintf(g->delta, sizeof g->delta, "%g\xc2\xb0", roundf(delta * 1800 / CF_PI) / 10);
-    describe(g, "Rotate");
+    scene_gizmo_describe(g, "Rotate");
 }
 
 /* The box's new size along one axis for the handle at `edge` on `side`
@@ -554,11 +611,11 @@ static float resized(const scene_gizmo *g, int axis, int side, float edge, float
     bool center = g->in.alt;
     bool aligned = fabsf(g->angle) < 1e-4f;
     float origin = axis ? g->center.y : g->center.x;
-    if (snapping(g) && aligned && !center) {
+    if (scene_gizmo_snapping(g) && aligned && !center) {
         edge = scene_snap(origin + edge, g->in.increment) - origin;
     }
     float size = center ? 2 * edge * (float)side : (edge - anchor) * (float)side;
-    if (snapping(g) && (!aligned || center)) {
+    if (scene_gizmo_snapping(g) && (!aligned || center)) {
         size = scene_snap(size, g->in.increment);
     }
     return fmaxf(size, MIN_SIZE);
@@ -619,7 +676,7 @@ static void resize_selection(app_scene_authoring *scene, CF_V2 at)
             shown(t->size.x * factor.x),
             shown(t->size.y * factor.y)
         );
-        describe(g, "Size");
+        scene_gizmo_describe(g, "Size");
         return;
     }
     snprintf(
@@ -629,7 +686,7 @@ static void resize_selection(app_scene_authoring *scene, CF_V2 at)
         shown(factor.x * 100),
         shown(factor.y * 100)
     );
-    describe(g, "Scale");
+    scene_gizmo_describe(g, "Scale");
 }
 
 void scene_gizmo_update(app_scene_authoring *scene, CF_V2 at)
@@ -648,13 +705,11 @@ void scene_gizmo_update(app_scene_authoring *scene, CF_V2 at)
 /* Records one changed field as Properties does, collaboration included. */
 static void commit_field(app_scene_authoring *scene, const scene_gizmo_field *field, bool dirty)
 {
-    pin_value after = field->before;
-    after.f = field->after;
     scene->property_actor = field->entity;
     scene->property_edit = (scene_field_edit){ .component = field->component,
                                                .field = field->field };
     bool copied = scene_property_value_copy(&scene->property_edit.before, field->before) &&
-                  scene_property_value_copy(&scene->property_edit.after, after);
+                  scene_property_value_copy(&scene->property_edit.after, field->after);
     assert(copied);
     scene->property_dirty = dirty;
     finish_property_edit(scene);
@@ -670,12 +725,13 @@ void scene_gizmo_finish(app_scene_authoring *scene, bool cancel)
     g->fields = NULL;
     afree(g->targets);
     g->targets = NULL;
+    afree(g->space.targets);
     g->active = SCENE_GIZMO_NONE;
     g->modal = false;
     scene->dragging_actor = false;
     int changed = 0;
     for (int i = 0; i < acount(fields); i++) {
-        changed += fields[i].after != fields[i].before.f;
+        changed += field_changed(&fields[i]);
     }
     if (cancel || !changed) {
         for (int i = 0; scene_collab_can_write_locally() && i < acount(fields); i++) {
@@ -689,7 +745,7 @@ void scene_gizmo_finish(app_scene_authoring *scene, bool cancel)
         }
         scene->scene_dirty = g->dirty;
         quiet(g);
-        afree(fields);
+        free_fields(fields);
         return;
     }
     /* A paused run's objects keep their new values in its world; nothing
@@ -697,14 +753,14 @@ void scene_gizmo_finish(app_scene_authoring *scene, bool cancel)
     if (scene->runtime_snapshot_valid) {
         snprintf(g->report, sizeof g->report, "%s", g->status);
         quiet(g);
-        afree(fields);
+        free_fields(fields);
         return;
     }
     if (changed > 1) {
         scene_history_begin_group(scene->history);
     }
     for (int i = 0; i < acount(fields); i++) {
-        if (fields[i].after != fields[i].before.f) {
+        if (field_changed(&fields[i])) {
             commit_field(scene, &fields[i], g->dirty);
         }
     }
@@ -713,7 +769,7 @@ void scene_gizmo_finish(app_scene_authoring *scene, bool cancel)
     }
     snprintf(g->report, sizeof g->report, "%s", g->status);
     quiet(g);
-    afree(fields);
+    free_fields(fields);
 }
 
 /* ---------- Pointer ---------- */
@@ -807,6 +863,8 @@ bool scene_gizmo_pointer(app_scene_authoring *scene, engine_viewport *viewport, 
     if (g->active) {
         if (g->modal) {
             modal_frame(scene, pointer);
+        } else if (scene_gizmo_spatial(g->active)) {
+            scene_gizmo3d_pointer(scene, pointer);
         } else {
             drag_frame(scene, pointer);
         }
@@ -818,9 +876,11 @@ bool scene_gizmo_pointer(app_scene_authoring *scene, engine_viewport *viewport, 
         g->modal = g->active != SCENE_GIZMO_NONE;
         return true;
     }
-    g->hover = valid && !engine_viewport_perspective(viewport)
-                 ? hovered_part(scene, at, pointer->world_per_pixel)
-                 : SCENE_GIZMO_NONE;
+    if (engine_viewport_perspective(viewport)) {
+        return scene_gizmo3d_pointer(scene, pointer);
+    }
+    g->hover = valid ? hovered_part(scene, at, pointer->world_per_pixel)
+                     : SCENE_GIZMO_NONE;
     if (!pointer->pressed || g->hover == SCENE_GIZMO_NONE) {
         return false;
     }
@@ -839,6 +899,9 @@ const char *scene_gizmo_part_cursor(int part, float angle)
         case SCENE_GIZMO_AXIS_Y: return "ns-resize";
         case SCENE_GIZMO_RING: return "pointer";
         default: break;
+    }
+    if (scene_gizmo_spatial(part)) {
+        return part < SCENE_GIZMO_RING_X ? "move" : "pointer";
     }
     /* The handle's side of the box, on screen, to the nearest 45 degrees. */
     static const char *const RESIZE[] = { "ew-resize", "nesw-resize", "ns-resize", "nwse-resize" };
@@ -859,11 +922,10 @@ const char *scene_gizmo_cursor(const app_scene_authoring *scene)
 
 /* ---------- Drawing ---------- */
 
-/* A part's color: yellow while dragged, lighter while hovered. */
-static CF_Color part_color(const scene_gizmo *g, int part, unsigned color)
+CF_Color scene_gizmo_color(const scene_gizmo *g, int part, unsigned color)
 {
     if (g->active == part) {
-        return packed(DRAGGED_COLOR);
+        return packed(SCENE_GIZMO_DRAGGED_COLOR);
     }
     CF_Color base = packed(color);
     return g->hover == part && !g->active
@@ -874,7 +936,7 @@ static CF_Color part_color(const scene_gizmo *g, int part, unsigned color)
 static void draw_move(const scene_gizmo *g, CF_V2 pivot, float pixel)
 {
     float inner = SQUARE / 2 * pixel, length = ARROW_LENGTH * pixel;
-    cf_draw_push_color(part_color(g, SCENE_GIZMO_AXIS_X, X_COLOR));
+    cf_draw_push_color(scene_gizmo_color(g, SCENE_GIZMO_AXIS_X, SCENE_GIZMO_X_COLOR));
     cf_draw_arrow(
         (CF_V2){ pivot.x + inner, pivot.y },
         (CF_V2){ pivot.x + length, pivot.y },
@@ -883,7 +945,7 @@ static void draw_move(const scene_gizmo *g, CF_V2 pivot, float pixel)
     );
     cf_draw_pop_color();
     /* Gameplay +Y points down the screen. */
-    cf_draw_push_color(part_color(g, SCENE_GIZMO_AXIS_Y, Y_COLOR));
+    cf_draw_push_color(scene_gizmo_color(g, SCENE_GIZMO_AXIS_Y, SCENE_GIZMO_Y_COLOR));
     cf_draw_arrow(
         (CF_V2){ pivot.x, pivot.y - inner },
         (CF_V2){ pivot.x, pivot.y - length },
@@ -892,7 +954,7 @@ static void draw_move(const scene_gizmo *g, CF_V2 pivot, float pixel)
     );
     cf_draw_pop_color();
     CF_Aabb square = cf_make_aabb_center_half_extents(pivot, (CF_V2){ inner, inner });
-    CF_Color free = part_color(g, SCENE_GIZMO_FREE, FREE_COLOR);
+    CF_Color free = scene_gizmo_color(g, SCENE_GIZMO_FREE, FREE_COLOR);
     CF_Color fill = free;
     fill.a *= 0.35f;
     cf_draw_push_color(fill);
@@ -907,19 +969,19 @@ static void draw_ring(const scene_gizmo *g, const gizmo_frame *frame, float pixe
 {
     float radius = RING_RADIUS * pixel;
     if (!frame->oriented) {
-        cf_draw_push_color(packed(DISABLED_COLOR));
+        cf_draw_push_color(packed(SCENE_GIZMO_DISABLED_COLOR));
         cf_draw_circle2(frame->pivot, radius, LINE * pixel);
         cf_draw_pop_color();
         return;
     }
-    cf_draw_push_color(part_color(g, SCENE_GIZMO_RING, FREE_COLOR));
+    cf_draw_push_color(scene_gizmo_color(g, SCENE_GIZMO_RING, FREE_COLOR));
     cf_draw_circle2(frame->pivot, radius, (g->hover == SCENE_GIZMO_RING ? 3 : LINE) * pixel);
     cf_draw_pop_color();
     if (g->active != SCENE_GIZMO_RING) {
         return;
     }
     /* Spokes from where the turn began to where it is. */
-    cf_draw_push_color(packed(DRAGGED_COLOR));
+    cf_draw_push_color(packed(SCENE_GIZMO_DRAGGED_COLOR));
     for (int spoke = 0; spoke < 2; spoke++) {
         float angle = g->last - (spoke ? 0 : g->turn);
         CF_V2 end = cf_add(frame->pivot, rotated((CF_V2){ radius, 0 }, angle));
@@ -934,7 +996,7 @@ static void draw_box(const scene_gizmo *g, const gizmo_frame *frame, float pixel
     for (int c = 0; c < 4; c++) {
         corners[c] = handle_at(frame, 2 * c, pixel);
     }
-    cf_draw_push_color(packed(frame->sized ? SCENE_ACTIVE_COLOR : DISABLED_COLOR));
+    cf_draw_push_color(packed(frame->sized ? SCENE_ACTIVE_COLOR : SCENE_GIZMO_DISABLED_COLOR));
     cf_draw_polyline(corners, 4, pixel, true);
     cf_draw_pop_color();
     for (int h = 0; frame->sized && h < 8; h++) {
@@ -945,7 +1007,7 @@ static void draw_box(const scene_gizmo *g, const gizmo_frame *frame, float pixel
                              (c >= 2 ? 0.5f : -0.5f) * HANDLE * pixel };
             quad[c] = cf_add(at, rotated(corner, frame->angle));
         }
-        cf_draw_push_color(part_color(g, SCENE_GIZMO_HANDLE + h, HANDLE_FILL));
+        cf_draw_push_color(scene_gizmo_color(g, SCENE_GIZMO_HANDLE + h, HANDLE_FILL));
         cf_draw_quad_fill2(quad[0], quad[1], quad[2], quad[3], 0);
         cf_draw_pop_color();
         cf_draw_push_color(packed(SCENE_ACTIVE_COLOR));
@@ -967,7 +1029,7 @@ static void draw_constraint(const app_scene_authoring *scene, float pixel)
     CF_V2 at = g->targets[g->primary].position;
     bool x = g->axis == SCENE_GIZMO_AXIS_X;
     CF_V2 along = x ? (CF_V2){ reach, 0 } : (CF_V2){ 0, reach };
-    cf_draw_push_color(packed(x ? X_COLOR : Y_COLOR));
+    cf_draw_push_color(packed(x ? SCENE_GIZMO_X_COLOR : SCENE_GIZMO_Y_COLOR));
     cf_draw_line(cf_sub(at, along), cf_add(at, along), pixel);
     cf_draw_pop_color();
 }

@@ -1985,9 +1985,8 @@ static hint_list scene_hints(studio *s)
         hints[n++] = (studio_hint){ 0, "Shift", "Faster" };
         return (hint_list){ hints, n };
     }
-    /* The perspective view selects and drags on the ground plane only. */
     bool perspective = engine_viewport_perspective(s->viewport);
-    scene_tool tool = perspective ? SCENE_TOOL_SELECT : s->prefs.tool;
+    scene_tool tool = s->prefs.tool;
     if (tool != SCENE_TOOL_SELECT && !scene_gizmo_enabled(s->scene)) {
         hints[n++] = (studio_hint){ KIT_ICON_WARNING,
                                     NULL,
@@ -2000,7 +1999,9 @@ static hint_list scene_hints(studio *s)
             hints[n++] = (studio_hint){ KIT_ICON_MOUSE, NULL, "Drag arrows" };
             break;
         case SCENE_TOOL_ROTATE:
-            hints[n++] = (studio_hint){ KIT_ICON_MOUSE, NULL, "Drag ring" };
+            hints[n++] = (studio_hint){ KIT_ICON_MOUSE,
+                                        NULL,
+                                        perspective ? "Drag rings" : "Drag ring" };
             break;
         case SCENE_TOOL_SCALE:
             hints[n++] = (studio_hint){ KIT_ICON_MOUSE, NULL, "Drag handles" };
@@ -2009,13 +2010,23 @@ static hint_list scene_hints(studio *s)
             hints[n++] = (studio_hint){ KIT_ICON_MOUSE, NULL, "Select" };
             break;
     }
-    hints[n++] = (studio_hint){ KIT_ICON_MOUSE, "Shift", "Toggle" };
     if (perspective) {
+        /* The camera's keys first: a 3D view is hard to look around without them. */
         hints[n++] = (studio_hint){ KIT_ICON_MOUSE, "Alt", "Orbit" };
         hints[n++] = (studio_hint){ KIT_ICON_MOUSE, NULL, "Right-drag to fly" };
-        hints[n++] = (studio_hint){ 0, NULL, "Frame", STUDIO_COMMAND_FRAME + 1 };
+        studio_hint more[] = {
+            { 0, NULL, s->prefs.scene_local ? "World" : "Local", STUDIO_COMMAND_TOGGLE_LOCAL + 1 },
+            { KIT_ICON_MOUSE, "Shift", "Toggle" },
+            { 0, NULL, "Frame", STUDIO_COMMAND_FRAME + 1 },
+        };
+        /* Select shows no gizmo for Local to turn. */
+        int first = tool == SCENE_TOOL_SELECT ? 1 : 0;
+        for (int i = first; i < 3 && n < STUDIO_HINT_MAX; i++) {
+            hints[n++] = more[i];
+        }
         return (hint_list){ hints, n };
     }
+    hints[n++] = (studio_hint){ KIT_ICON_MOUSE, "Shift", "Toggle" };
     hints[n++] = (studio_hint){ 0, NULL, "Grab", STUDIO_COMMAND_GRAB + 1 };
     if (n < STUDIO_HINT_MAX) {
         hints[n++] = (studio_hint){ 0, "Ctrl", snap };

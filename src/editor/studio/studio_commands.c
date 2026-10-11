@@ -675,6 +675,17 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                      .keywords = "magnet increment align",
                                      .icon = KIT_ICON_MAGNET,
                                      .phase = SHORTCUT_EDITOR },
+    /* Godot's T: Move and Rotate along the active object's axes. */
+    [STUDIO_COMMAND_TOGGLE_LOCAL] = { .id = "toggleLocalSpace",
+                                      .label = "Local Space",
+                                      .menu = "Local",
+                                      .chord = "T",
+                                      .context = "Scene",
+                                      .contexts = EDITOR_BIT(STUDIO_EDITOR_SCENE),
+                                      .keywords = "world global axes "
+                                                  "orientation pivot gizmo",
+                                      .icon = KIT_ICON_AXES,
+                                      .phase = SHORTCUT_EDITOR },
     [STUDIO_COMMAND_TOGGLE_GRID] = { .id = "toggleGrid",
                                      .label = "Show Grid",
                                      .menu = "Grid",
@@ -1227,6 +1238,7 @@ int studio_command_checked(studio *s, studio_command command)
         case STUDIO_COMMAND_SCALE_TOOL:
             return s->prefs.tool == (scene_tool)(command - STUDIO_COMMAND_SELECT_TOOL);
         case STUDIO_COMMAND_TOGGLE_SNAP: return s->prefs.scene_snap;
+        case STUDIO_COMMAND_TOGGLE_LOCAL: return s->prefs.scene_local;
         case STUDIO_COMMAND_TOGGLE_GRID: return s->prefs.scene_grid;
         case STUDIO_COMMAND_SHOW_WORLD: return s->prefs.scene_world;
         case STUDIO_COMMAND_SHOW_LIGHTING: return s->prefs.scene_lighting;
@@ -1700,6 +1712,9 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_GRAB: s->scene->gizmo.grab = true; break;
         case STUDIO_COMMAND_TOGGLE_SNAP:
             s->prefs.scene_snap = !s->prefs.scene_snap;
+            break;
+        case STUDIO_COMMAND_TOGGLE_LOCAL:
+            s->prefs.scene_local = !s->prefs.scene_local;
             break;
         case STUDIO_COMMAND_TOGGLE_GRID:
             s->prefs.scene_grid = !s->prefs.scene_grid;

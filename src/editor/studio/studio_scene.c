@@ -298,13 +298,15 @@ static void add_item(yyjson_mut_doc *doc, yyjson_mut_val *items, const char *lab
     yyjson_mut_obj_add_bool(doc, item, "disabled", false);
 }
 
-/* `scene`: mode (MODE_*); zoom, the View Zoom button's label, zoomShown
-   and zoomKbd, its tip's chord; zooms, its levels; increment, the grid
-   increment's label, and increments, its presets. */
+/* `scene`: mode (MODE_*); perspective, whether the view is 3D; zoom, the
+   View Zoom button's label, zoomShown and zoomKbd, its tip's chord; zooms,
+   its levels; increment, the grid increment's label, and increments, its
+   presets. */
 void studio_scene_add(yyjson_mut_doc *doc)
 {
     yyjson_mut_val *scene = yyjson_mut_obj_add_obj(doc, yyjson_mut_doc_get_root(doc), "scene");
     yyjson_mut_obj_add_real(doc, scene, "mode", MODE_SCENE);
+    yyjson_mut_obj_add_bool(doc, scene, "perspective", false);
     yyjson_mut_obj_add_strcpy(doc, scene, "zoom", "");
     yyjson_mut_obj_add_bool(doc, scene, "zoomShown", false);
     yyjson_mut_obj_add_strcpy(doc, scene, "zoomKbd", "");
@@ -372,6 +374,7 @@ bool studio_scene_sync(studio *s, const studio_panel_sync *at)
 {
     int mode = header_mode(s);
     bool changed = ui_data_put_number(at->variable, "mode", mode);
+    changed |= ui_data_put_bool(at->variable, "perspective", engine_viewport_perspective(s->viewport));
     changed |= show_zoom(s, at, mode);
     return show_increment(s, at) || changed;
 }
@@ -787,6 +790,7 @@ void studio_scene_tools(studio *s)
         .alt = (s->mods & SDL_KMOD_ALT) != 0,
         .axis_x = g->modal && studio_key_pressed(s, SDLK_X),
         .axis_y = g->modal && studio_key_pressed(s, SDLK_Y),
+        .local = s->prefs.scene_local,
         .confirm = g->modal && (studio_key_pressed(s, SDLK_RETURN) ||
                                 studio_key_pressed(s, SDLK_KP_ENTER)),
         .cancel = gesture &&

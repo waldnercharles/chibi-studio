@@ -174,6 +174,7 @@ typedef enum
     STUDIO_COMMAND_SCALE_TOOL,
     STUDIO_COMMAND_GRAB,
     STUDIO_COMMAND_TOGGLE_SNAP,
+    STUDIO_COMMAND_TOGGLE_LOCAL,
     STUDIO_COMMAND_TOGGLE_GRID,
     STUDIO_COMMAND_FINER_GRID,
     STUDIO_COMMAND_COARSER_GRID,
@@ -293,6 +294,7 @@ typedef struct
     scene_tool tool;
     bool scene_grid;
     bool scene_snap;
+    bool scene_local; /* a 3D view's gizmos follow the active object's axes */
     float scene_increment; /* the grid's spacing, in world units */
     /* What the Scene view shows while editing (app_scene_view_options). */
     bool scene_world;

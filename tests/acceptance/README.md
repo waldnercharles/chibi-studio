@@ -140,6 +140,21 @@ view, a press on the block above a level view's horizon selects it and drags
 nothing, and a view's lens survives a checkpoint, while a checkpoint saved
 before views had a lens still reads. It saves no file.
 
+`studio-acceptance --scene-gizmo3d --project-root PATH` takes another
+disposable copy and runs thirty-eight hidden fixed-dt frames on a 3D scene of
+a cube a Transform3D places, turned a quarter about Y, a block a Transform
+raises, turned by an Orientation, and a gem whose parent turns it a quarter
+about Y and mirrors its X. Through queued SDL presses and drags on the gizmo's
+handles it checks that Move's X arrow moves the cube along the world's X, and
+onto the grid with snapping on, and along the cube's own X in Local Space;
+that a quarter turn of Rotate's Y ring, seen from above, turns the block's
+Orientation by a quarter; and that dragging Scale's X handle out as far again
+doubles the cube's own X scale. Also from above, dragging along the X ring,
+which shows edge-on as a line, turns the cube a quarter about X, and a
+quarter turn of the Y ring turns the mirrored gem a quarter about the world's
+Y in place. Each drag is one Undo step, and Escape during a move puts the
+cube back. It saves no file.
+
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
 
