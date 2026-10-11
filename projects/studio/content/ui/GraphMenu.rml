@@ -6,8 +6,15 @@
     <use ui="Submenu" data-when="entry.sub" data-alias-item="entry">
       <div class="graph-menu-entry" data-for="child : entry.items">
         <use ui="MenuSeparator" data-if="child.sep"/>
-        <use ui="MenuItem" data-when="child.swatch == ''" data-alias-item="child" data-attrif-data-current="child.current" data-event-click="emit('graph_menu.run', child.key)"></use>
-        <div class="menu-item" role="menuitem" data-when="child.swatch != ''" data-attrif-data-disabled="child.disabled" data-attrif-data-current="child.current" data-event-click="emit('graph_menu.run', child.key)"><span class="icon lead" data-style-color="child.swatch">{{ child.icon }}</span><span class="text"><span class="label">{{ child.label }}</span></span></div>
+        <use ui="MenuItem" data-when="!child.sub &amp;&amp; child.swatch == ''" data-alias-item="child" data-attrif-data-current="child.current" data-event-click="emit('graph_menu.run', child.key)"></use>
+        <div class="menu-item" role="menuitem" data-when="!child.sub &amp;&amp; child.swatch != ''" data-attrif-data-disabled="child.disabled" data-attrif-data-current="child.current" data-event-click="emit('graph_menu.run', child.key)"><span class="icon lead" data-style-color="child.swatch">{{ child.icon }}</span><span class="text"><span class="label">{{ child.label }}</span></span></div>
+        <use ui="Submenu" data-when="child.sub" data-alias-item="child">
+          <div class="graph-menu-entry" data-for="leaf : child.items">
+            <use ui="MenuSeparator" data-if="leaf.sep"/>
+            <use ui="MenuItem" data-when="leaf.swatch == ''" data-alias-item="leaf" data-attrif-data-current="leaf.current" data-event-click="emit('graph_menu.run', leaf.key)"></use>
+            <div class="menu-item" role="menuitem" data-when="leaf.swatch != ''" data-attrif-data-disabled="leaf.disabled" data-attrif-data-current="leaf.current" data-event-click="emit('graph_menu.run', leaf.key)"><span class="icon lead" data-style-color="leaf.swatch">{{ leaf.icon }}</span><span class="text"><span class="label">{{ leaf.label }}</span></span></div>
+          </div>
+        </use>
       </div>
     </use>
   </div>

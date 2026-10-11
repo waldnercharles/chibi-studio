@@ -103,11 +103,10 @@ void sg_menu_title(sg_menu *m, const char *title)
 
 void sg_submenu_begin(sg_menu *m, const char *key, const char *label, uint32_t icon)
 {
-    assert(m->parent < 0);
     if (m->run) {
         char path[64];
         key_path(m, key, path);
-        sg_menu_entry entry = { .parent = -1 };
+        sg_menu_entry entry = { .parent = m->parent };
         snprintf(entry.key, sizeof entry.key, "%s", path);
         apush(m->entries, entry);
     } else {
@@ -120,7 +119,8 @@ void sg_submenu_begin(sg_menu *m, const char *key, const char *label, uint32_t i
 
 void sg_submenu_end(sg_menu *m)
 {
-    m->parent = -1;
+    assert(m->parent >= 0);
+    m->parent = m->entries[m->parent].parent;
     m->sep = false;
 }
 
@@ -248,7 +248,7 @@ static bool put_entries(yyjson_mut_doc *doc, yyjson_mut_val *array, const sg_men
         }
         yyjson_mut_val *item = yyjson_mut_arr_iter_next(&it);
         changed |= put_entry(doc, item, &m->entries[i]);
-        if (parent < 0) {
+        if (m->entries[i].sub) {
             changed |= put_entries(doc, yyjson_mut_obj_get(item, "items"), m, i);
         }
     }

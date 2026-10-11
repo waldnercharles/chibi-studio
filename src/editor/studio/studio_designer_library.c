@@ -23,20 +23,21 @@ typedef struct
     const char *label;
     uint32_t icon;
     const char *markup;
+    const char *group;
 } library_element;
 
 static const library_element ELEMENTS[] = {
-    { "Container", KIT_ICON_ELEMENT, "<div/>" },
-    { "Text", KIT_ICON_TEXT, "<span>Text</span>" },
-    { "Button", KIT_ICON_BUTTON, "<button>Button</button>" },
-    { "Text Field", KIT_ICON_INPUT, "<input type=\"text\"/>" },
-    { "Checkbox", KIT_ICON_CHECKBOX, "<input type=\"checkbox\"/>" },
-    { "Slider", KIT_ICON_SLIDER, "<input type=\"range\"/>" },
-    { "Image", KIT_ICON_IMAGE, "<img src=\"\"/>" },
-    { "Progress", KIT_ICON_PROGRESS, "<progress value=\"0.5\"/>" },
+    { "Container", KIT_ICON_ELEMENT, "<div/>", "Content" },
+    { "Text", KIT_ICON_TEXT, "<span>Text</span>", "Content" },
+    { "Button", KIT_ICON_BUTTON, "<button>Button</button>", "Controls" },
+    { "Text Field", KIT_ICON_INPUT, "<input type=\"text\"/>", "Controls" },
+    { "Checkbox", KIT_ICON_CHECKBOX, "<input type=\"checkbox\"/>", "Controls" },
+    { "Slider", KIT_ICON_SLIDER, "<input type=\"range\"/>", "Controls" },
+    { "Image", KIT_ICON_IMAGE, "<img src=\"\"/>", "Content" },
+    { "Progress", KIT_ICON_PROGRESS, "<progress value=\"0.5\"/>", "Feedback" },
     /* Native elements for authored UI (workstream N; ui/motion.h). */
-    { "Number Flow", KIT_ICON_NUMBER, "<number-flow value=\"0\"/>" },
-    { "Morph Text", KIT_ICON_TEXT, "<morph-text>Text</morph-text>" },
+    { "Number Flow", KIT_ICON_NUMBER, "<number-flow value=\"0\"/>", "Feedback" },
+    { "Morph Text", KIT_ICON_TEXT, "<morph-text>Text</morph-text>", "Feedback" },
 };
 
 enum
@@ -61,7 +62,8 @@ static const char **widget_names(studio *s, const studio_designer *d)
 
 /* ---------- Data ---------- */
 
-static const char *const ITEM_TEXTS[] = { "label", "icon", "markup", "shortcut", NULL };
+static const char *const ITEM_TEXTS[] = { "label",    "icon",  "markup",
+                                          "shortcut", "group", NULL };
 static const char *const ITEM_FLAGS[] = { "shown", "checked", "disabled", NULL };
 
 static yyjson_mut_val *item_new(yyjson_mut_doc *doc)
@@ -161,6 +163,12 @@ bool studio_library_sync(studio *s, const studio_panel_sync *at)
     yyjson_mut_val *elements = yyjson_mut_obj_get(library, "elements");
     changed |= fit(at->doc, elements, ELEMENT_COUNT);
     for (int i = 0; i < ELEMENT_COUNT; i++) {
+        changed |= ui_data_put_text(
+            at->doc,
+            yyjson_mut_arr_get(elements, (size_t)i),
+            "group",
+            ELEMENTS[i].group
+        );
         changed |= show_item(
             at->doc,
             yyjson_mut_arr_get(elements, (size_t)i),

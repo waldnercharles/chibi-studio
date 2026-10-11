@@ -9,7 +9,7 @@
       <button class="btn crumb" data-event-click="emit('graph_header.caller', caller.id)"><span class="label">{{ caller.label }}</span></button>
       <span class="icon crumb-sep">&#xeab6;</span>
     </div>
-    <button class="btn crumb current" data-if="!graph_header.renaming" popovertarget="graph-picker" aria-haspopup="menu" data-tip="Graphs"><span class="icon">{{ graph_header.graph.icon }}</span><span class="label">{{ graph_header.graph.label }}</span></button>
+    <button class="btn crumb current" data-if="!graph_header.renaming" popovertarget="graph-picker" aria-haspopup="listbox" data-tip="Choose event or function"><span class="icon">{{ graph_header.graph.icon }}</span><span class="label">{{ graph_header.graph.label }}</span></button>
     <div class="field text rename" data-when="graph_header.renaming"><input type="text" class="part value" autofocus="" data-attr-value="graph_header.graph.label" data-keys="Escape:graph_header.cancel" data-event-change="emit('graph_header.renamed', ev.value)" data-event-blur="emit('graph_header.cancel')"/></div>
   </div>
   <div class="segmented" data-if="graph_header.sourceView" data-tip="Behavior view">
@@ -33,27 +33,28 @@
     </use>
   </use>
   <use ui="Menu" id="graph-picker">
-    <use ui="MenuGroup">Graphs</use>
-    <use ui="MenuItem" data-for="g : graph_menus.graphs" data-alias-item="g" data-attrif-data-current="g.current" data-event-click="emit('graph_header.graph', g.id)"></use>
-    <use ui="MenuSeparator"/>
-    <use ui="MenuItem" data-alias-item="graph_menus.newFunction" data-event-click="emit('graph_header.newFunction')"/>
-    <use ui="MenuItem" data-alias-item="graph_menus.newMacro" data-event-click="emit('graph_header.newMacro')"/>
-    <use ui="MenuSeparator" data-if="graph_menus.named"/>
-    <use ui="MenuItem" data-if="graph_menus.named" data-alias-item="graph_menus.rename" data-event-click="emit('graph_header.rename')"/>
-    <use ui="MenuItem" data-if="graph_menus.named" data-alias-item="graph_menus.graphRefs" data-event-click="emit('graph_header.graphRefs')"/>
-    <use ui="MenuItem" data-if="graph_menus.named" data-alias-item="graph_menus.graphCalls" data-event-click="emit('graph_header.graphCalls')"/>
-    <use ui="MenuItem" data-if="graph_menus.named" data-alias-item="graph_menus.remove" data-event-click="emit('graph_header.remove')"/>
+    <use ui="ChoiceList" placeholder="Search graphs" data-event-change="emit('graph_header.graph', ev.value)">
+      <div class="menu-item" role="option" data-for="g : graph_menus.graphs" data-attr-value="g.id" data-attr-data-label="g.label" data-attrif-data-current="g.current"><span class="icon lead">{{ g.icon }}</span><span class="text"><span class="label">{{ g.label }}</span></span></div>
+    </use>
   </use>
   <use ui="Menu" id="graph-actions">
+    <use ui="Submenu" data-alias-item="graph_menus.functions">
+      <use ui="MenuItem" data-alias-item="graph_menus.newFunction" data-event-click="emit('graph_header.newFunction')"/>
+      <use ui="MenuItem" data-alias-item="graph_menus.newMacro" data-event-click="emit('graph_header.newMacro')"/>
+      <use ui="MenuSeparator" data-if="graph_menus.named"/>
+      <use ui="MenuItem" data-if="graph_menus.named" data-alias-item="graph_menus.rename" data-event-click="emit('graph_header.rename')"/>
+      <use ui="MenuItem" data-if="graph_menus.named" data-alias-item="graph_menus.graphRefs" data-event-click="emit('graph_header.graphRefs')"/>
+      <use ui="MenuItem" data-if="graph_menus.named" data-alias-item="graph_menus.graphCalls" data-event-click="emit('graph_header.graphCalls')"/>
+      <use ui="MenuItem" data-if="graph_menus.named" data-alias-item="graph_menus.remove" data-event-click="emit('graph_header.remove')"/>
+    </use>
     <use ui="MenuItem" data-alias-item="graph_view.optimize" data-event-click="emit('graph_header.optimize')"/>
     <use ui="MenuItem" data-alias-item="graph_view.collapse" data-event-click="emit('graph_header.collapse')"/>
     <use ui="MenuSeparator"/>
     <use ui="Submenu" data-if="graph_view.align" data-alias-item="graph_view.alignment">
       <use ui="MenuItem" data-for="edge : graph_view.edges" data-alias-item="edge" data-event-click="emit('graph_header.align', edge.id)"></use>
-      <use ui="MenuSeparator"/>
-      <use ui="MenuItem" data-alias-item="graph_view.horizontal" data-event-click="emit('graph_header.distribute', 0)"/>
-      <use ui="MenuItem" data-alias-item="graph_view.vertical" data-event-click="emit('graph_header.distribute', 1)"/>
     </use>
+    <use ui="MenuItem" data-alias-item="graph_view.horizontal" data-event-click="emit('graph_header.distribute', 0)"/>
+    <use ui="MenuItem" data-alias-item="graph_view.vertical" data-event-click="emit('graph_header.distribute', 1)"/>
     <use ui="MenuItem" data-alias-item="graph_view.straighten" data-event-click="emit('graph_header.straighten')"/>
   </use>
   <div class="popup dropdown" popover id="debug-targets">

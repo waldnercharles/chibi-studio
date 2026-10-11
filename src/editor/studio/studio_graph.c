@@ -293,7 +293,8 @@ static bool selection_items(studio *s, sg_menu *m)
                 ran = true;
             }
         }
-        sg_menu_separator(m);
+        sg_submenu_end(m);
+        sg_submenu_begin(m, "distribute", "Distribute", KIT_ICON_LAYOUT);
         if (!ran && sg_menu_item(
                         m,
                         "horizontal",
@@ -365,6 +366,11 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
     bool readonly = sg_graph_readonly(s);
     char title[256];
     sg_menu_title(m, ed_node_title(e, n, title, sizeof title));
+    bool navigate = ed_is_graph_call(n) || studio_node_definable(s, n) ||
+                    studio_node_referable(s, n) || studio_node_traceable(s, n);
+    if (navigate) {
+        sg_submenu_begin(m, "navigate", "Navigate", KIT_ICON_EXTERNAL);
+    }
     const char *definition = studio_chord(s, "Alt+G");
     if (ed_is_graph_call(n) &&
         sg_menu_item(m, "open", "Open Graph", KIT_ICON_EXTERNAL, definition, false)) {
@@ -386,6 +392,10 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
         studio_calls_node(s, n);
         return;
     }
+    if (navigate) {
+        sg_submenu_end(m);
+    }
+    sg_submenu_begin(m, "edit", "Edit", KIT_ICON_EDIT);
     if (studio_event_renameable(s, n) &&
         sg_menu_item(m, "rename-event", "Rename Event", KIT_ICON_EDIT, "F2", readonly)) {
         studio_refactor_rename_event(s, studio_event_renameable(s, n));
@@ -405,7 +415,8 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
         sg_delete_selection(s);
         return;
     }
-    sg_menu_separator(m);
+    sg_submenu_end(m);
+    sg_submenu_begin(m, "refactor", "Refactor", KIT_ICON_FUNCTION);
     int count = acount(e->selected);
     bool locked = readonly || e->ui_context == EDITOR_UI_CONTEXT_SYSTEM;
     if (sg_menu_item(
@@ -464,11 +475,29 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
         sg_convert_to_expression(s);
         return;
     }
-    sg_menu_separator(m);
-    if (select_items(s, m) || selection_items(s, m)) {
+    if (ed_source_scope_available(e) && graph_node_can_inline(gr, n) &&
+        sg_menu_item(m, "inline", "Inline", KIT_ICON_EXPRESSION, NULL, readonly)) {
+        ed_snapshot_before(e);
+        (void)graph_inline_node(gr, n);
+        ed_select_node(e, graph_inline_owner(gr, n), false);
         return;
     }
-    sg_menu_separator(m);
+    if (folded_inputs(gr, n) &&
+        sg_menu_item(m, "expand", "Expand Inputs", KIT_ICON_MAXIMIZE, NULL, readonly)) {
+        ed_snapshot_before(e);
+        expand_inputs(e, n);
+        return;
+    }
+    sg_submenu_end(m);
+    if (select_items(s, m)) {
+        return;
+    }
+    sg_submenu_begin(m, "layout", "Layout", KIT_ICON_LAYOUT);
+    if (selection_items(s, m)) {
+        return;
+    }
+    sg_submenu_end(m);
+    sg_submenu_begin(m, "debug", "Debug", KIT_ICON_TARGET);
     if (sg_menu_item(
             m,
             "mute",
@@ -502,21 +531,12 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
         }
         return;
     }
+    sg_submenu_end(m);
+    sg_submenu_begin(m, "comments", "Comment", KIT_ICON_COMMENT);
     if (sg_node_comment_items(s, m, n)) {
         return;
     }
-    if (ed_source_scope_available(e) && graph_node_can_inline(gr, n) &&
-        sg_menu_item(m, "inline", "Inline", KIT_ICON_EXPRESSION, NULL, readonly)) {
-        ed_snapshot_before(e);
-        (void)graph_inline_node(gr, n);
-        ed_select_node(e, graph_inline_owner(gr, n), false);
-        return;
-    }
-    if (folded_inputs(gr, n) &&
-        sg_menu_item(m, "expand", "Expand Inputs", KIT_ICON_MAXIMIZE, NULL, readonly)) {
-        ed_snapshot_before(e);
-        expand_inputs(e, n);
-    }
+    sg_submenu_end(m);
 }
 
 /* ---------- Host ---------- */

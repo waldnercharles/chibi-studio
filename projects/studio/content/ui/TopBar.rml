@@ -9,40 +9,45 @@
       <use ui="Menu" id="menu-file">
         <use ui="Submenu" data-alias-item="menubar.items.newMenu">
           <use ui="MenuItem" data-alias-item="menubar.items.project" data-event-click="emit('menubar.newProject')"/>
-          <use ui="MenuSeparator"/>
           <use ui="MenuCommand" data-alias-command="commands.newScene"/>
           <use ui="MenuCommand" data-alias-command="commands.newPrototype"/>
-          <use ui="MenuSeparator"/>
-          <use ui="MenuCommand" data-alias-command="commands.newBehavior"/>
-          <use ui="MenuCommand" data-alias-command="commands.newEvent"/>
-          <use ui="MenuCommand" data-alias-command="commands.newSystem"/>
-          <use ui="MenuCommand" data-alias-command="commands.newLibrary"/>
-          <use ui="MenuSeparator"/>
-          <use ui="MenuCommand" data-alias-command="commands.newMaterial"/>
-          <use ui="MenuCommand" data-alias-command="commands.newShape"/>
-          <use ui="MenuCommand" data-alias-command="commands.newField"/>
-          <use ui="MenuCommand" data-alias-command="commands.newShaderLibrary"/>
-          <use ui="MenuCommand" data-alias-command="commands.newModel"/>
-          <use ui="MenuSeparator"/>
-          <use ui="MenuCommand" data-alias-command="commands.newUiWidget"/>
-          <use ui="MenuCommand" data-alias-command="commands.newUiDocument"/>
-          <use ui="MenuCommand" data-alias-command="commands.newStylesheet"/>
+          <use ui="Submenu" data-alias-item="menubar.items.scripting">
+            <use ui="MenuCommand" data-alias-command="commands.newBehavior"/>
+            <use ui="MenuCommand" data-alias-command="commands.newEvent"/>
+            <use ui="MenuCommand" data-alias-command="commands.newSystem"/>
+            <use ui="MenuCommand" data-alias-command="commands.newLibrary"/>
+          </use>
+          <use ui="Submenu" data-alias-item="menubar.items.graphics">
+            <use ui="MenuCommand" data-alias-command="commands.newMaterial"/>
+            <use ui="MenuCommand" data-alias-command="commands.newShape"/>
+            <use ui="MenuCommand" data-alias-command="commands.newField"/>
+            <use ui="MenuCommand" data-alias-command="commands.newShaderLibrary"/>
+            <use ui="MenuCommand" data-alias-command="commands.newModel"/>
+          </use>
+          <use ui="Submenu" data-alias-item="menubar.items.userInterface">
+            <use ui="MenuCommand" data-alias-command="commands.newUiWidget"/>
+            <use ui="MenuCommand" data-alias-command="commands.newUiDocument"/>
+            <use ui="MenuCommand" data-alias-command="commands.newStylesheet"/>
+          </use>
         </use>
         <use ui="MenuCommand" data-if="commands.openProject.enabled" data-alias-command="commands.openProject"/>
         <use ui="Submenu" data-if="menubar.projects.size > 0" data-alias-item="menubar.items.openRecent">
           <use ui="MenuItem" data-for="project, i : menubar.projects" data-alias-item="project" data-event-click="emit('menubar.openProject', i)"/>
         </use>
         <use ui="MenuSeparator"/>
-        <use ui="MenuCommand" data-alias-command="commands.save"/>
-        <use ui="MenuCommand" data-alias-command="commands.saveAll"/>
-        <use ui="MenuCommand" data-alias-command="commands.revert"/>
-        <use ui="MenuCommand" data-alias-command="commands.closeTab"/>
-        <use ui="MenuItem" data-if="menubar.web" data-alias-item="menubar.items.importProject" data-event-click="emit('menubar.importProject')"/>
-        <use ui="MenuItem" data-if="menubar.web" data-alias-item="menubar.items.exportProject" data-event-click="emit('menubar.exportProject')"/>
-        <use ui="MenuCommand" data-if="!menubar.web" data-alias-command="commands.exportGame"/>
+        <use ui="Submenu" data-alias-item="menubar.items.document">
+          <use ui="MenuCommand" data-alias-command="commands.save"/>
+          <use ui="MenuCommand" data-alias-command="commands.saveAll"/>
+          <use ui="MenuCommand" data-alias-command="commands.revert"/>
+          <use ui="MenuCommand" data-alias-command="commands.closeTab"/>
+        </use>
+        <use ui="Submenu" data-alias-item="menubar.items.transfer">
+          <use ui="MenuItem" data-if="menubar.web" data-alias-item="menubar.items.importProject" data-event-click="emit('menubar.importProject')"/>
+          <use ui="MenuItem" data-if="menubar.web" data-alias-item="menubar.items.exportProject" data-event-click="emit('menubar.exportProject')"/>
+          <use ui="MenuCommand" data-if="!menubar.web" data-alias-command="commands.exportGame"/>
+        </use>
         <use ui="MenuSeparator"/>
         <use ui="MenuCommand" data-alias-command="commands.settings"/>
-        <use ui="MenuSeparator" data-if="commands.quit.enabled"/>
         <use ui="MenuCommand" data-if="commands.quit.enabled" data-alias-command="commands.quit"/>
       </use>
       <button class="btn trigger" popovertarget="menu-edit" aria-haspopup="menu"><span class="label">Edit</span></button>
@@ -50,100 +55,104 @@
         <use ui="MenuCommand" data-alias-command="commands.undo"/>
         <use ui="MenuCommand" data-alias-command="commands.redo"/>
         <use ui="MenuSeparator"/>
-        <use ui="MenuCommand" data-alias-command="commands.cut"/>
-        <use ui="MenuCommand" data-alias-command="commands.copy"/>
-        <use ui="MenuCommand" data-alias-command="commands.paste"/>
-        <use ui="MenuCommand" data-alias-command="commands.duplicate"/>
-        <use ui="MenuCommand" data-alias-command="commands.rename"/>
-        <use ui="MenuCommand" data-alias-command="commands.delete"/>
-        <use ui="MenuSeparator"/>
-        <use ui="MenuCommand" data-alias-command="commands.selectAll"/>
-        <use ui="MenuCommand" data-alias-command="commands.deselect"/>
+        <use ui="Submenu" data-alias-item="menubar.items.clipboard">
+          <use ui="MenuCommand" data-alias-command="commands.cut"/>
+          <use ui="MenuCommand" data-alias-command="commands.copy"/>
+          <use ui="MenuCommand" data-alias-command="commands.paste"/>
+          <use ui="MenuCommand" data-alias-command="commands.duplicate"/>
+          <use ui="MenuCommand" data-alias-command="commands.rename"/>
+          <use ui="MenuCommand" data-alias-command="commands.delete"/>
+        </use>
+        <use ui="Submenu" data-alias-item="menubar.items.selection">
+          <use ui="MenuCommand" data-alias-command="commands.selectAll"/>
+          <use ui="MenuCommand" data-alias-command="commands.deselect"/>
+        </use>
         <use ui="MenuSeparator"/>
         <use ui="MenuCommand" data-alias-command="commands.find"/>
         <use ui="MenuCommand" data-alias-command="commands.search"/>
       </use>
       <button class="btn trigger" popovertarget="menu-view" aria-haspopup="menu"><span class="label">View</span></button>
-      <!-- Panels and layout first, as most editors' View menus lead; the
-           tabs and the Scene view's camera follow. -->
       <use ui="Menu" id="menu-view">
-        <use ui="MenuGroup">Panels</use>
-        <use ui="MenuCommand" data-alias-command="commands.toggleAssets"/>
-        <use ui="MenuCommand" data-alias-command="commands.toggleOutput"/>
-        <use ui="MenuCommand" data-alias-command="commands.togglePerformance"/>
-        <use ui="MenuCommand" data-alias-command="commands.toggleSidePane"/>
-        <use ui="MenuSeparator"/>
-        <use ui="MenuGroup">Layout</use>
-        <use ui="MenuCommand" data-alias-command="commands.workspaceHorizontalSplit"/>
-        <use ui="MenuCommand" data-alias-command="commands.workspaceVerticalSplit"/>
-        <use ui="MenuCommand" data-alias-command="commands.maximize"/>
-        <use ui="MenuCommand" data-alias-command="commands.resetLayout"/>
-        <use ui="MenuSeparator"/>
-        <use ui="MenuGroup">Tabs</use>
-        <use ui="MenuCommand" data-alias-command="commands.previousTab"/>
-        <use ui="MenuCommand" data-alias-command="commands.nextTab"/>
-        <use ui="MenuCommand" data-alias-command="commands.togglePinTab"/>
-        <use ui="MenuSeparator"/>
-        <use ui="MenuGroup">Scene</use>
-        <use ui="MenuCommand" data-alias-command="commands.frame"/>
-        <use ui="MenuCommand" data-alias-command="commands.frameAll"/>
-        <use ui="MenuCommand" data-alias-command="commands.resetCamera"/>
-        <use ui="MenuCommand" data-alias-command="commands.hideSelected"/>
-        <use ui="MenuCommand" data-alias-command="commands.hideUnselected"/>
-        <use ui="MenuCommand" data-alias-command="commands.showAll"/>
-        <use ui="MenuSeparator"/>
-        <use ui="MenuGroup">UI Scale</use>
-        <use ui="MenuCommand" data-alias-command="commands.zoomIn"/>
-        <use ui="MenuCommand" data-alias-command="commands.zoomOut"/>
-        <use ui="MenuCommand" data-alias-command="commands.zoomReset"/>
+        <use ui="Submenu" data-alias-item="menubar.items.panels">
+          <use ui="MenuCommand" data-alias-command="commands.toggleAssets"/>
+          <use ui="MenuCommand" data-alias-command="commands.toggleOutput"/>
+          <use ui="MenuCommand" data-alias-command="commands.togglePerformance"/>
+          <use ui="MenuCommand" data-alias-command="commands.toggleSidePane"/>
+        </use>
+        <use ui="Submenu" data-alias-item="menubar.items.layout">
+          <use ui="MenuCommand" data-alias-command="commands.workspaceHorizontalSplit"/>
+          <use ui="MenuCommand" data-alias-command="commands.workspaceVerticalSplit"/>
+          <use ui="MenuCommand" data-alias-command="commands.maximize"/>
+          <use ui="MenuCommand" data-alias-command="commands.resetLayout"/>
+        </use>
+        <use ui="Submenu" data-alias-item="menubar.items.tabs">
+          <use ui="MenuCommand" data-alias-command="commands.previousTab"/>
+          <use ui="MenuCommand" data-alias-command="commands.nextTab"/>
+          <use ui="MenuCommand" data-alias-command="commands.togglePinTab"/>
+        </use>
+        <use ui="Submenu" data-alias-item="menubar.items.sceneView">
+          <use ui="MenuCommand" data-alias-command="commands.frame"/>
+          <use ui="MenuCommand" data-alias-command="commands.frameAll"/>
+          <use ui="MenuCommand" data-alias-command="commands.resetCamera"/>
+          <use ui="MenuCommand" data-alias-command="commands.hideSelected"/>
+          <use ui="MenuCommand" data-alias-command="commands.hideUnselected"/>
+          <use ui="MenuCommand" data-alias-command="commands.showAll"/>
+        </use>
+        <use ui="Submenu" data-alias-item="menubar.items.uiScale">
+          <use ui="MenuCommand" data-alias-command="commands.zoomIn"/>
+          <use ui="MenuCommand" data-alias-command="commands.zoomOut"/>
+          <use ui="MenuCommand" data-alias-command="commands.zoomReset"/>
+        </use>
       </use>
       <button class="btn trigger" popovertarget="menu-object" aria-haspopup="menu"><span class="label">Object</span></button>
       <use ui="Menu" id="menu-object">
         <use ui="Submenu" data-alias-item="menubar.items.add">
           <use ui="MenuItem" data-for="prototype : menubar.prototypes" data-alias-item="prototype" data-event-click="emit('menubar.add', prototype.label)"/>
         </use>
-        <use ui="MenuCommand" data-alias-command="commands.duplicate"/>
-        <use ui="MenuCommand" data-alias-command="commands.rename"/>
-        <use ui="MenuCommand" data-alias-command="commands.delete"/>
-        <use ui="MenuSeparator"/>
-        <use ui="MenuCommand" data-alias-command="commands.openPrototype"/>
-        <use ui="MenuCommand" data-alias-command="commands.applyOverrides"/>
-        <use ui="MenuCommand" data-alias-command="commands.saveAsPrototype"/>
+        <use ui="Submenu" data-alias-item="menubar.items.objectEdit">
+          <use ui="MenuCommand" data-alias-command="commands.duplicate"/>
+          <use ui="MenuCommand" data-alias-command="commands.rename"/>
+          <use ui="MenuCommand" data-alias-command="commands.delete"/>
+        </use>
+        <use ui="Submenu" data-alias-item="menubar.items.prototype">
+          <use ui="MenuCommand" data-alias-command="commands.openPrototype"/>
+          <use ui="MenuCommand" data-alias-command="commands.applyOverrides"/>
+          <use ui="MenuCommand" data-alias-command="commands.saveAsPrototype"/>
+        </use>
         <use ui="MenuCommand" data-alias-command="commands.addComponent"/>
-        <use ui="MenuSeparator"/>
         <use ui="Submenu" data-alias-item="menubar.items.transform">
           <use ui="MenuCommand" data-alias-command="commands.selectTool"/>
           <use ui="MenuCommand" data-alias-command="commands.moveTool"/>
           <use ui="MenuCommand" data-alias-command="commands.rotateTool"/>
           <use ui="MenuCommand" data-alias-command="commands.scaleTool"/>
-          <use ui="MenuSeparator"/>
           <use ui="MenuCommand" data-alias-command="commands.grab"/>
-          <use ui="MenuCommand" data-alias-command="commands.toggleSnap"/>
-          <use ui="MenuCommand" data-alias-command="commands.finerGrid"/>
-          <use ui="MenuCommand" data-alias-command="commands.coarserGrid"/>
+          <use ui="Submenu" data-alias-item="menubar.items.grid">
+            <use ui="MenuCommand" data-alias-command="commands.toggleSnap"/>
+            <use ui="MenuCommand" data-alias-command="commands.finerGrid"/>
+            <use ui="MenuCommand" data-alias-command="commands.coarserGrid"/>
+          </use>
         </use>
         <use ui="MenuSeparator"/>
         <use ui="MenuCommand" data-alias-command="commands.keepChanges"/>
       </use>
       <button class="btn trigger" popovertarget="menu-play" aria-haspopup="menu"><span class="label">Play</span></button>
-      <!-- F5 plays or resumes; while the game runs, Space's Pause takes
-           its place, so the menu never lists Play twice. -->
       <use ui="Menu" id="menu-play">
         <use ui="MenuCommand" data-if="commands.resume.enabled" data-alias-command="commands.resume"/>
         <use ui="MenuCommand" data-if="!commands.resume.enabled" data-alias-command="commands.play"/>
         <use ui="MenuCommand" data-alias-command="commands.stop"/>
         <use ui="MenuCommand" data-alias-command="commands.step"/>
         <use ui="MenuSeparator"/>
-        <use ui="MenuGroup">Playback Speed</use>
-        <use ui="MenuCommand" data-alias-command="commands.slower"/>
-        <use ui="MenuCommand" data-alias-command="commands.faster"/>
-        <use ui="MenuCommand" data-alias-command="commands.normalSpeed"/>
-        <use ui="MenuSeparator"/>
-        <use ui="MenuGroup">Debugger</use>
-        <use ui="MenuCommand" data-alias-command="commands.stepOver"/>
-        <use ui="MenuCommand" data-alias-command="commands.stepInto"/>
-        <use ui="MenuCommand" data-alias-command="commands.stepOut"/>
-        <use ui="MenuCommand" data-alias-command="commands.showLiveValues"/>
+        <use ui="Submenu" data-alias-item="menubar.items.playbackSpeed">
+          <use ui="MenuCommand" data-alias-command="commands.slower"/>
+          <use ui="MenuCommand" data-alias-command="commands.faster"/>
+          <use ui="MenuCommand" data-alias-command="commands.normalSpeed"/>
+        </use>
+        <use ui="Submenu" data-alias-item="menubar.items.debugger">
+          <use ui="MenuCommand" data-alias-command="commands.stepOver"/>
+          <use ui="MenuCommand" data-alias-command="commands.stepInto"/>
+          <use ui="MenuCommand" data-alias-command="commands.stepOut"/>
+          <use ui="MenuCommand" data-alias-command="commands.showLiveValues"/>
+        </use>
       </use>
       <button class="btn trigger" popovertarget="menu-help" aria-haspopup="menu"><span class="label">Help</span></button>
       <use ui="Menu" id="menu-help">
@@ -188,7 +197,9 @@
           <use ui="MenuCommand" data-alias-command="commands.faster"/>
           <use ui="MenuCommand" data-alias-command="commands.normalSpeed"/>
           <use ui="MenuSeparator"/>
-          <use ui="MenuItem" data-for="preset, i : shell.speed.presets" data-alias-item="preset" data-event-click="emit('shell.speed', i)"/>
+          <use ui="Submenu" data-alias-item="menubar.items.speedPresets">
+            <use ui="MenuItem" data-for="preset, i : shell.speed.presets" data-alias-item="preset" data-event-click="emit('shell.speed', i)"/>
+          </use>
         </use>
       </div>
     </div>

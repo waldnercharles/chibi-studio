@@ -21,6 +21,7 @@
 #include "support/array.h"
 #include "support/file_io.h"
 #include "support/xalloc.h"
+#include "ui/popover.h"
 #include "vendor/pico_unit.h"
 
 #include <SDL3/SDL_events.h>
@@ -66,7 +67,8 @@ static enum {
     PROMPTS,
     CODE_FOLLOWUPS,
     CODE_GLYPHS,
-    PANEL_IDLE
+    PANEL_IDLE,
+    MENU_CHOICES
 } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
@@ -1323,6 +1325,93 @@ static bool click(studio *s, const char *selector)
     REQUIRE(size.x > 0 && size.y > 0);
     float to_points = s->prefs.ui_scale / studio_pixel_ratio(s);
     return click_at((at.x + size.x / 2) * to_points, (at.y + size.y / 2) * to_points);
+}
+
+/* The authored File menu keeps all new assets reachable within seven choices.
+   Pointer opening and native submenu keys must keep working after grouping. */
+#define MENU_FRAMES 8
+static rml_element *file_menu, *new_menu, *graphics_menu, *menu_focus;
+
+static bool menu_choices(rml_element *menu, int expected)
+{
+    REQUIRE(menu && popover_open(menu));
+    rml_element *rows[32];
+    int count = rml_element_query_selector_all(menu, "[role='menuitem']", rows, 32);
+    REQUIRE(count > 0 && count <= 7);
+    REQUIRE(!expected || count == expected);
+    float row_height = rml_element_box_size(rows[0], RML_BOX_BORDER).y;
+    float tolerance = rml_context_dp_ratio(rml_element_context(menu));
+    REQUIRE(row_height > 0);
+    for (int i = 1; i < count; i++) {
+        REQUIRE(fabsf(rml_element_box_size(rows[i], RML_BOX_BORDER).y - row_height) <= tolerance);
+    }
+    float content_height = rml_element_box_size(menu, RML_BOX_CONTENT).y;
+    REQUIRE(content_height > 0 && content_height <= 7 * row_height + tolerance);
+    return true;
+}
+
+static bool menu_choices_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    rml_context *context = rml_backend_context(s->backend);
+    frames++;
+    REQUIRE(frames <= MENU_FRAMES);
+    switch (frames) {
+        case 1: return true;
+        case 2:
+            s->prefs.reduced_motion = true;
+            return click(s, ".menus > button[popovertarget='menu-file']");
+        case 3:
+            file_menu = popover_top(context);
+            REQUIRE(file_menu == studio_element(s, "#menu-file"));
+            REQUIRE(menu_choices(file_menu, 7));
+            rml_element *separators[4];
+            REQUIRE(
+                rml_element_query_selector_all(file_menu, "[role='separator']", separators, 4) == 2
+            );
+            /* Seven rows plus two separators need scrolling: without the
+               engine's authored-popover cap this menu grows past seven rows. */
+            REQUIRE(rml_element_scroll_height(file_menu) > rml_element_client_height(file_menu));
+            menu_focus = rml_context_focus_element(context);
+            REQUIRE(menu_focus);
+            REQUIRE(press_key(SDLK_HOME));
+            return press_key(SDLK_RIGHT);
+        case 4:
+            new_menu = popover_top(context);
+            REQUIRE(new_menu != file_menu);
+            REQUIRE(menu_choices(new_menu, 6));
+            REQUIRE(press_key(SDLK_G));
+            return press_key(SDLK_RIGHT);
+        case 5: {
+            graphics_menu = popover_top(context);
+            REQUIRE(graphics_menu != new_menu && graphics_menu != file_menu);
+            REQUIRE(menu_choices(graphics_menu, 5));
+            static const studio_command commands[] = { STUDIO_COMMAND_NEW_MATERIAL,
+                                                       STUDIO_COMMAND_NEW_SHAPE,
+                                                       STUDIO_COMMAND_NEW_FIELD,
+                                                       STUDIO_COMMAND_NEW_SHADER_LIBRARY,
+                                                       STUDIO_COMMAND_NEW_MODEL };
+            char markup[4096];
+            rml_element_inner_rml(graphics_menu, markup, sizeof markup);
+            for (int i = 0; i < (int)(sizeof commands / sizeof *commands); i++) {
+                REQUIRE(strstr(markup, studio_command_describe(s, commands[i]).menu));
+            }
+            return press_key(SDLK_ESCAPE);
+        }
+        case 6:
+            REQUIRE(popover_top(context) == new_menu);
+            REQUIRE(rml_context_focus_element(context) == menu_focus);
+            return press_key(SDLK_ESCAPE);
+        case 7:
+            REQUIRE(popover_top(context) == file_menu);
+            REQUIRE(rml_context_focus_element(context) == menu_focus);
+            return press_key(SDLK_ESCAPE);
+        default:
+            REQUIRE(!popover_top(context));
+            REQUIRE(rml_context_focus_element(context) == menu_focus);
+            return true;
+    }
 }
 
 static int counter_tab(studio *s)
@@ -3278,6 +3367,7 @@ bool studio_acceptance_frame(void *state)
         case PROMPTS: callback_ok = prompts_frame(state); break;
         case CODE_FOLLOWUPS: callback_ok = code_followups_frame(state); break;
         case CODE_GLYPHS: callback_ok = code_glyphs_frame(state); break;
+        case MENU_CHOICES: callback_ok = menu_choices_frame(state); break;
         case PANEL_IDLE: callback_ok = panel_idle_frame(state); break;
     }
     return callback_ok;
@@ -3617,6 +3707,18 @@ TEST_CASE(debugger_source_history)
     return true;
 }
 
+TEST_CASE(menu_choices_keyboard)
+{
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(MENU_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == MENU_FRAMES);
+    printf("Studio menu choices accepted: frames=%d\n", frames);
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
@@ -3649,11 +3751,12 @@ int main(int argc, char **argv)
     bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
     bool idle = argc == 4 && !strcmp(argv[1], "--panel-idle");
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
+    bool menus = argc == 4 && !strcmp(argv[1], "--menu-choices");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
          !keys_mode && !labels && !units && !hierarchy && !scene_move_mode &&
          !outliner_move_mode && !physics && !assets && !viewport && !camera && !playing &&
          !prompting && !followups && !glyphs && !idle && !graph_pointer_mode &&
-         !asset_pointer_mode && !debugging && !gizmo && !colliders) ||
+         !asset_pointer_mode && !debugging && !gizmo && !colliders && !menus) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
@@ -3666,7 +3769,7 @@ int main(int argc, char **argv)
             "--scene-collider3d|"
             "--play-keys|--unsaved-prompts|"
             "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
-            "history "
+            "history|--menu-choices "
             "--project-root PATH | --scene-cursors\n"
         );
         return 2;
@@ -3707,6 +3810,7 @@ int main(int argc, char **argv)
          : prompting          ? PROMPTS
          : followups          ? CODE_FOLLOWUPS
          : idle               ? PANEL_IDLE
+         : menus              ? MENU_CHOICES
                               : CODE_GLYPHS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
@@ -3738,6 +3842,7 @@ int main(int argc, char **argv)
         case CODE_FOLLOWUPS: RUN_TEST_CASE(code_followups); break;
         case CODE_GLYPHS: RUN_TEST_CASE(code_glyphs); break;
         case PANEL_IDLE: RUN_TEST_CASE(panel_idle); break;
+        case MENU_CHOICES: RUN_TEST_CASE(menu_choices_keyboard); break;
     }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;

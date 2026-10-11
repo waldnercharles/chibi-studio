@@ -305,6 +305,11 @@ static void add_item(yyjson_mut_doc *doc, yyjson_mut_val *items, const char *lab
 void studio_scene_add(yyjson_mut_doc *doc)
 {
     yyjson_mut_val *scene = yyjson_mut_obj_add_obj(doc, yyjson_mut_doc_get_root(doc), "scene");
+    yyjson_mut_val *show = yyjson_mut_obj_add_obj(doc, scene, "show");
+    yyjson_mut_obj_add_strcpy(doc, show, "label", "Show");
+    char icon[5];
+    studio_glyph(icon, KIT_ICON_EYE);
+    yyjson_mut_obj_add_strcpy(doc, show, "icon", icon);
     yyjson_mut_obj_add_real(doc, scene, "mode", MODE_SCENE);
     yyjson_mut_obj_add_bool(doc, scene, "perspective", false);
     yyjson_mut_obj_add_strcpy(doc, scene, "zoom", "");

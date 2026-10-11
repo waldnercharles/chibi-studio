@@ -378,3 +378,12 @@ cp "$CHIBI_STUDIO_SOURCE/projects/studio/project.kdl" \
 
 Studio migrates that build copy when it starts. Restoring it keeps each run on
 the same pinned resource bytes; the source project remains unchanged.
+
+`studio-acceptance --menu-choices --project-root PATH` runs eight hidden
+fixed-dt frames. A pointer click opens the authored File menu, then Home and
+Right open New. Typeahead G and Right open Graphics. Each open level must have
+at most seven choices and a rendered content height of at most seven actual
+row heights. File's seven choices and two separators must scroll; New must
+retain its six groups and Graphics all five asset commands. Three Escape presses dismiss one level at a time while preserving
+the originating focus, as native menus do. It saves nothing. This focused
+case does not cover every menu or dynamic list scrolling.

@@ -1449,18 +1449,17 @@ static bool show_menu(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *menu)
     return show_entries(doc, member(menu, "items"), entries, count) || changed;
 }
 
-static entry_view new_entry(studio *s, int kind, const char *heading, bool separator)
+static entry_view new_entry(studio *s, int kind)
 {
     studio_command command = new_command(kind);
     studio_command_info info = studio_command_describe(s, command);
     return (entry_view){ .id = info.id,
                          .label = info.menu,
                          .shortcut = info.shortcut,
-                         .heading = heading,
+                         .heading = NEW_KINDS[kind].group,
                          .icon = info.icon,
                          .checked = studio_command_checked(s, command) > 0,
-                         .disabled = !studio_command_enabled(s, command),
-                         .separator = separator };
+                         .disabled = !studio_command_enabled(s, command) };
 }
 
 /* New: every kind in its group; with the filter on a kind, that kind's
@@ -1471,20 +1470,14 @@ static bool show_create(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *items)
     int count = 0;
     for (int i = 0; i < STUDIO_NEW_KIND_COUNT; i++) {
         if ((int)NEW_KINDS[i].kind == s->assets_kind) {
-            entries[count++] = new_entry(s, i, NULL, false);
+            entries[count++] = new_entry(s, i);
         }
     }
-    bool primary = count > 0;
-    const char *group = NULL;
     for (int i = 0; i < STUDIO_NEW_KIND_COUNT; i++) {
         if ((int)NEW_KINDS[i].kind == s->assets_kind) {
             continue;
         }
-        bool heads = !group || strcmp(group, NEW_KINDS[i].group);
-        group = NEW_KINDS[i].group;
-        entries[count] = new_entry(s, i, heads ? group : NULL, primary);
-        primary = false;
-        count++;
+        entries[count++] = new_entry(s, i);
     }
     return show_entries(doc, items, entries, count);
 }

@@ -219,7 +219,7 @@ static void show_popup(kit *k, popup *p, node *n)
     p->shown = true;
 }
 
-/* Field choices retain their row limit; action menus only stop at the window. */
+/* Choice lists and action menus show at most seven rows, within the window. */
 static void limit_popup_height(kit *k, popup *p)
 {
     rml_element *list = NULL;
@@ -233,10 +233,13 @@ static void limit_popup_height(kit *k, popup *p)
         cap = math_min(rows, math_max(1.0f, k->in.height - 8 - chrome));
     } else if (
         rml_element_is_class_set(p->node->el, "menu") &&
-        !rml_element_is_class_set(p->node->el, "struct-editor")
+        !rml_element_is_class_set(p->node->el, "struct-editor") &&
+        !rml_element_is_class_set(p->node->el, "refactor") &&
+        !rml_element_is_class_set(p->node->el, "new-asset") &&
+        !rml_element_is_class_set(p->node->el, "prototype-apply")
     ) {
         list = p->node->el;
-        cap = math_max(1.0f, k->in.height - 8);
+        cap = math_min(7 * kit_metric(k, "--menu-row-h"), math_max(1.0f, k->in.height - 8));
     }
     if (list) {
         char value[32];

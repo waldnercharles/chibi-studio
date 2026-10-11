@@ -343,7 +343,7 @@ void studio_graph_menus_add(yyjson_mut_doc *doc)
 {
     static const char *const ITEMS[] = { "refs",   "newFunction", "newMacro",
                                          "rename", "graphRefs",   "graphCalls",
-                                         "remove", NULL };
+                                         "remove", "functions",   NULL };
     yyjson_mut_val *m = yyjson_mut_obj_add_obj(doc, yyjson_mut_doc_get_root(doc), "graph_menus");
     add_items(doc, m, ITEMS);
     yyjson_mut_val *kind = yyjson_mut_obj_add_obj(doc, m, "kind");
@@ -427,6 +427,7 @@ static bool show_graph_items(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *m)
     const char *remove = gr->kind == GRAPH_MACRO ? "Delete Macro" : "Delete Function";
     const header_item items[] = {
         { .name = "refs", .label = "Find References", .icon = KIT_ICON_REFERENCES },
+        { .name = "functions", .label = "Functions and Macros", .icon = KIT_ICON_FUNCTION },
         { .name = "newFunction", .label = "New Function", .icon = KIT_ICON_ADD, .disabled = locked },
         { .name = "newMacro", .label = "New Macro", .icon = KIT_ICON_ADD, .disabled = locked },
         { .name = "rename", .label = "Rename", .icon = KIT_ICON_EDIT, .disabled = locked },
@@ -507,6 +508,9 @@ void studio_graph_view_add(yyjson_mut_doc *doc)
     char glyph[5];
     studio_glyph(glyph, KIT_ICON_LAYOUT);
     yyjson_mut_obj_add_strcpy(doc, alignment, "icon", glyph);
+    yyjson_mut_val *wires = yyjson_mut_obj_add_obj(doc, v, "wires");
+    yyjson_mut_obj_add_strcpy(doc, wires, "label", "Wires");
+    yyjson_mut_obj_add_strcpy(doc, wires, "icon", glyph);
     yyjson_mut_val *edges = yyjson_mut_obj_add_arr(doc, v, "edges");
     for (int i = 0; i < ALIGN_COUNT; i++) {
         yyjson_mut_arr_append(edges, item_new(doc, SHAPE_ITEM));

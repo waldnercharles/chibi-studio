@@ -16,7 +16,7 @@ body { display: flex; flex: 1 1 0dp; min-width: 0dp; }
 .source-list { display: block; }
 .source-row { display: block; }
 #palette-list {
-    height: auto; max-height: 140dp;
+    height: auto; max-height: var(--autocomplete-list-h, 140dp);
     --row: var(--autocomplete-row-h); --row-heading: var(--autocomplete-row-h); --row-about: var(--autocomplete-row-h);
 }
 .source-field [data-ui=List] { height: auto; }

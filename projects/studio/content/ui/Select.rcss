@@ -20,7 +20,7 @@ select selectarrow { width: 0dp; height: 0dp; }
   font-size: var(--studio-font-12, 12dp); color: var(--faint-foreground); pointer-events: none;
 }
 select selectbox {
-  margin-top: 4dp; padding: 4dp; max-height: var(--dropdown-box-h, 192dp); overflow-y: auto;
+  margin-top: 4dp; padding: 4dp; max-height: var(--dropdown-list-h, 182dp); overflow-y: auto;
   background-color: var(--popover); border: 1dp var(--popover-edge); border-radius: var(--r-lg);
 }
 select selectbox option {
