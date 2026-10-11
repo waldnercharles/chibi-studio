@@ -117,7 +117,7 @@ static bool has_breakpoint(studio *s)
    a collection, so neither program instances nor source rows are cached. */
 static bool paused_counter(studio *s, asset_code *code, int count, bool stepped)
 {
-    execution_program *program = game_source_program(s->scene->live->runtime->sources, "Counter");
+    execution_program *program = source_program(s->scene->live->runtime->sources, "Counter");
     REQUIRE(program && execution_program_paused(program));
     execution_inspector *inspector = execution_program_inspection(program);
     REQUIRE(inspector);
@@ -134,7 +134,7 @@ static bool paused_counter(studio *s, asset_code *code, int count, bool stepped)
     const pin_value *value = execution_instance_state(instance, count_state);
     REQUIRE(value && value->type == PIN_I32 && value->i == count);
     const authoring_source
-        *applied = game_preview_source_find(s->scene->live, asset_code_path(code), true);
+        *applied = preview_source_find(s->scene->live, asset_code_path(code), true);
     REQUIRE(applied && applied->valid && applied->module);
     REQUIRE(!strcmp(applied->syntax->text, counter));
     REQUIRE(execution_module_id(applied->module) == paused.module);
@@ -160,7 +160,7 @@ static bool draft(studio *s, asset_code *code, bool valid)
 
 static bool step_counter(studio *s, asset_code *code, int frame)
 {
-    execution_program *program = game_source_program(s->scene->live->runtime->sources, "Counter");
+    execution_program *program = source_program(s->scene->live->runtime->sources, "Counter");
     REQUIRE(program);
     execution_inspector *inspector = execution_program_inspection(program);
     REQUIRE(inspector);
@@ -196,7 +196,7 @@ bool acceptance_debugger_frame(studio *s, int frame)
             app_scene_authoring_register_prototype(
                 s->scene,
                 "name \"Ticker\"\ncomponents {\n"
-                "    GameTransform x=0 y=0\n}\n"
+                "    Transform x=0 y=0\n}\n"
                 "(array)behaviors \"Counter\"\n",
                 NULL
             ) == 0
@@ -234,8 +234,7 @@ bool acceptance_debugger_frame(studio *s, int frame)
             return press(SDLK_F5, SDL_KMOD_NONE);
         /* Play resets the engine clock; its first frame seeds elapsed time. */
         case 10: {
-            execution_program
-                *program = game_source_program(s->scene->live->runtime->sources, "Counter");
+            execution_program *program = source_program(s->scene->live->runtime->sources, "Counter");
             REQUIRE(program && execution_program_paused(program));
             execution_inspector *inspector = execution_program_inspection(program);
             REQUIRE(inspector);
@@ -244,11 +243,8 @@ bool acceptance_debugger_frame(studio *s, int frame)
             REQUIRE(
                 !paused.point.completion && paused.point.start < paused.point.end
             );
-            const authoring_source *source = game_preview_source_find(
-                s->scene->live,
-                asset_code_path(code),
-                true
-            );
+            const authoring_source *
+                source = preview_source_find(s->scene->live, asset_code_path(code), true);
             REQUIRE(source && source->valid);
             for (int i = 0; i < source->analysis->symbol_count; i++) {
                 const script_symbol *symbol = &source->analysis->symbols[i];

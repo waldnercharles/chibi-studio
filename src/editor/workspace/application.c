@@ -72,8 +72,8 @@ typedef struct
     editor *graph_editor;
     engine *runtime;
     ecs_world *world;
-    game_preview_world *live;
-    game_preview_definition *placeholder; /* owned, never registered as execution */
+    preview_world *live;
+    preview_definition *placeholder; /* owned, never registered as execution */
     engine_viewport *viewport;
     app_scene_authoring *authoring;
     declared_components *declared; /* the open project's, or NULL */
@@ -106,9 +106,9 @@ static void close_workspace_state(app_loop *loop, bool clear_renderer)
     app_game_presentation_free(loop->game);
     app_scene_authoring_free(loop->authoring);
     engine_free(loop->runtime);
-    game_preview_world_free(loop->live);
+    preview_world_free(loop->live);
     editor_free(loop->graph_editor);
-    game_preview_definition_free(loop->placeholder);
+    preview_definition_free(loop->placeholder);
     if (clear_renderer) {
         authoring_shader_catalog_clear();
     }
@@ -228,9 +228,9 @@ static int app_frame(app_loop *loop)
     loop->monotonic_time += dt;
     int status = 0;
     if (loop->game) {
-        CHIBI_TRACE_ZONE_BEGIN(game_zone, "Game presentation");
+        CHIBI_TRACE_ZONE_BEGIN(zone, "Game presentation");
         status = app_game_presentation_frame(loop->game, loop->monotonic_time);
-        CHIBI_TRACE_ZONE_END(game_zone);
+        CHIBI_TRACE_ZONE_END(zone);
     } else {
         CHIBI_TRACE_ZONE_BEGIN(editor_zone, "Editor");
         editor_tick(loop->graph_editor, loop->monotonic_time);
@@ -363,7 +363,7 @@ static bool open_workspace(
         source->analysis, &placeholder_catalog, NULL
     );
     assert(presentation);
-    game_preview_definition *definition = game_preview_projection_new("AppBehavior", presentation);
+    preview_definition *definition = preview_projection_new("AppBehavior", presentation);
     editor *graph_editor = editor_new(authoring_source_presentation_take_view(
         authoring_source_presentation_clone(presentation)
     ));
@@ -374,7 +374,7 @@ static bool open_workspace(
     authoring_source_free(source);
     ecs_world *world = ecs_world_new();
     engine_viewport *viewport = engine_viewport_new(640, 360);
-    game_preview_world *live = game_preview_world_new(world);
+    preview_world *live = preview_world_new(world);
     engine *runtime = authoring_engine_new(world, live->runtime);
     app_scene_authoring *authoring = NULL;
     /* The preview runtime owns registration of its GAME component schemas. */
@@ -382,9 +382,9 @@ static bool open_workspace(
         snprintf(error, error_size, "Could not initialize workspace runtime");
         app_scene_authoring_free(authoring);
         engine_free(runtime);
-        game_preview_world_free(live);
+        preview_world_free(live);
         editor_free(graph_editor);
-        game_preview_definition_free(definition);
+        preview_definition_free(definition);
         ecs_world_free(world);
         engine_viewport_free(viewport);
         free(resolved_scene);
@@ -422,9 +422,9 @@ static bool open_workspace(
         );
         app_scene_authoring_free(authoring);
         engine_free(runtime);
-        game_preview_world_free(live);
+        preview_world_free(live);
         editor_free(graph_editor);
-        game_preview_definition_free(definition);
+        preview_definition_free(definition);
         ecs_world_free(world);
         engine_viewport_free(viewport);
         free(resolved_scene);
@@ -435,7 +435,7 @@ static bool open_workspace(
     free(resolved_scene);
     char *root = xstrdup(project.root);
     chibi_project_free(&project);
-    editor_set_event_catalog(graph_editor, GAME_HOST_EVENTS, GAME_HOST_EVENT_COUNT);
+    editor_set_event_catalog(graph_editor, HOST_EVENTS, HOST_EVENT_COUNT);
     editor_set_ui_context(graph_editor, EDITOR_UI_CONTEXT_BEHAVIOR);
     engine_set_focus(runtime, ENGINE_FOCUS_VIEWPORT);
     engine_viewport_set_render_callback(viewport, app_scene_authoring_render, authoring);

@@ -21,7 +21,7 @@
 struct scene_model_preview
 {
     char *name;
-    game_prototype *fixtures[4];
+    prototype *fixtures[4];
     ecs_entity entity;
     float pitch, yaw, radius;
     model_preview_view view;
@@ -49,15 +49,15 @@ struct scene_model_preview
     char error[256];
 };
 
-static void component(game_prototype *prototype, const ecs_component_desc *desc, const void *value)
+static void component(prototype *prototype, const ecs_component_desc *desc, const void *value)
 {
-    int result = game_prototype_add_native_component(prototype, desc);
+    int result = prototype_add_native_component(prototype, desc);
     assert(result == 0);
     (void)result;
     memcpy(prototype->components[acount(prototype->components) - 1].data, value, desc->element_size);
 }
 #define COMPONENT(prototype, type, ...)                                        \
-    component(prototype, &GAME_COMPONENT_##type, &(type){ __VA_ARGS__ })
+    component(prototype, &COMPONENT_##type, &(type){ __VA_ARGS__ })
 
 const char *scene_model_preview_name(const app_scene_authoring *scene)
 {
@@ -257,7 +257,7 @@ void scene_model_preview_free(app_scene_authoring *scene)
         return;
     }
     for (int i = 0; i < 4; i++) {
-        game_prototype_free(preview->fixtures[i]);
+        prototype_free(preview->fixtures[i]);
     }
     for (int i = 0; i < SHADER_PARAMETER_MAX; i++) {
         free(preview->rejected[i].asset);
@@ -284,7 +284,7 @@ int scene_model_preview_start(app_scene_authoring *scene, const char *name)
         snprintf(scene->prototype_message, sizeof scene->prototype_message, "Stop the scene before previewing a model.");
         return -1;
     }
-    game_preview_definition *definition = game_preview_find_definition(scene->live, name);
+    preview_definition *definition = preview_find_definition(scene->live, name);
     if (!definition || definition->working->domain != BEHAVIOR_DOMAIN_MODEL) {
         return -1;
     }
@@ -294,7 +294,7 @@ int scene_model_preview_start(app_scene_authoring *scene, const char *name)
         return 0;
     }
     if (!render_shader_is_model(render_shader_find(name))) {
-        if (game_preview_update(
+        if (preview_update(
                 scene->live,
                 definition,
                 scene->preview_message,
@@ -330,20 +330,20 @@ int scene_model_preview_start(app_scene_authoring *scene, const char *name)
                                              "ModelPreviewCamera",
                                              "ModelPreviewKey",
                                              "ModelPreviewFill" };
-        preview->fixtures[i] = game_prototype_new(names[i]);
+        preview->fixtures[i] = prototype_new(names[i]);
         preview->fixtures[i]->registry_storage = scene->registry;
     }
-    game_prototype *object = preview->fixtures[0];
-    COMPONENT(object, GameTransform, 0);
-    COMPONENT(object, GameAppearance, .width = 1, .height = 1, .color = 0xb7c4d6ff);
-    COMPONENT(object, GameGeometry3D, .primitive = GAME_PRIMITIVE_BOX, .width = 1, .height = 1, .depth = 1);
-    COMPONENT(object, GameMeshSurface2D, .enabled = true);
-    COMPONENT(object, GameSdfSurface3D, .enabled = true);
-    COMPONENT(object, GameVisualTransform, .scale = 1);
-    COMPONENT(object, GameShader, .shape = preview->name);
-    game_prototype *camera = preview->fixtures[1];
-    COMPONENT(camera, GameCamera, .width = 200, .height = 200);
-    GameHRC2D lighting = game_hrc2d_defaults();
+    prototype *object = preview->fixtures[0];
+    COMPONENT(object, Transform, 0);
+    COMPONENT(object, Appearance, .width = 1, .height = 1, .color = 0xb7c4d6ff);
+    COMPONENT(object, Geometry3D, .primitive = PRIMITIVE_BOX, .width = 1, .height = 1, .depth = 1);
+    COMPONENT(object, MeshSurface2D, .enabled = true);
+    COMPONENT(object, SdfSurface3D, .enabled = true);
+    COMPONENT(object, VisualTransform, .scale = 1);
+    COMPONENT(object, Shader, .shape = preview->name);
+    prototype *camera = preview->fixtures[1];
+    COMPONENT(camera, Camera, .width = 200, .height = 200);
+    HRC2D lighting = hrc2d_defaults();
     lighting.intensity = 3;
     lighting.exposure = .6f;
     lighting.ambient = .15f;
@@ -351,20 +351,20 @@ int scene_model_preview_start(app_scene_authoring *scene, const char *name)
     lighting.bloom = .03f;
     lighting.bounce_intensity = .2f;
     lighting.surface_relief = 0;
-    component(camera, &GAME_COMPONENT_GameHRC2D, &lighting);
+    component(camera, &COMPONENT_HRC2D, &lighting);
     for (int i = 2; i < 4; i++) {
-        COMPONENT(preview->fixtures[i], GameTransform, .x = i == 2 ? -90 : 70, .y = i == 2 ? -60 : 40);
+        COMPONENT(preview->fixtures[i], Transform, .x = i == 2 ? -90 : 70, .y = i == 2 ? -60 : 40);
         COMPONENT(
             preview->fixtures[i],
-            GameAppearance,
-            .shape = GAME_SHAPE_CIRCLE,
+            Appearance,
+            .shape = SHAPE_CIRCLE,
             .width = 1,
             .height = 1,
             .color = i == 2 ? 0xffe6caff : 0xb7d7ffff
         );
         COMPONENT(
             preview->fixtures[i],
-            GameMaterial,
+            Material,
             .scene = 0xffffffff,
             .albedo = 0xffffffff,
             .emission_color = i == 2 ? 0xffe6caff : 0xb7d7ffff,
@@ -372,14 +372,14 @@ int scene_model_preview_start(app_scene_authoring *scene, const char *name)
             .emission_multiplier = 1
         );
     }
-    game_prototype_preview_scene_entity entities[4];
+    prototype_preview_scene_entity entities[4];
     for (int i = 0; i < 4; i++) {
-        entities[i] = (game_prototype_preview_scene_entity){
+        entities[i] = (prototype_preview_scene_entity){
             .prototype = preview->fixtures[i],
             .parent = -1,
         };
     }
-    if (game_prototype_preview_launch_scene(
+    if (prototype_preview_launch_scene(
             scene->prototype_preview,
             entities,
             4,
@@ -389,12 +389,12 @@ int scene_model_preview_start(app_scene_authoring *scene, const char *name)
         scene_model_preview_free(scene);
         return -1;
     }
-    preview->entity = game_prototype_preview_entity(scene->prototype_preview);
+    preview->entity = prototype_preview_entity(scene->prototype_preview);
     scene->active_runtime_target = APP_RUNTIME_PREVIEW;
     scene->preview_playing = false;
     scene->runtime_preview_prototype = -1;
     scene->preview_follow = false;
-    engine_set_playing(game_prototype_preview_runtime(scene->prototype_preview), false);
+    engine_set_playing(prototype_preview_runtime(scene->prototype_preview), false);
     scene->camera_target = -1;
     scene_model_preview_update(scene);
     return 0;
@@ -412,7 +412,7 @@ static bool snapshot(
     shader_error error = { 0 };
     if (!render_shader_model_snapshot(
             render_shader_find(preview->name),
-            game_prototype_preview_world(scene->prototype_preview),
+            prototype_preview_world(scene->prototype_preview),
             preview->entity,
             NULL,
             values,
@@ -504,7 +504,7 @@ void scene_model_preview_update(app_scene_authoring *scene)
         preview->frame = false;
         return;
     }
-    ecs_world *world = game_prototype_preview_world(scene->prototype_preview);
+    ecs_world *world = prototype_preview_world(scene->prototype_preview);
     float radius = .5f *
                    hypotf(hypotf(max[0] - min[0], max[1] - min[1]), max[2] - min[2]);
     if (!(radius > 0) || !isfinite(radius)) {
@@ -514,18 +514,18 @@ void scene_model_preview_update(app_scene_authoring *scene)
     if (radius != preview->radius) {
         preview->radius = radius;
         for (int i = 2; i < 4; i++) {
-            ecs_entity light_entity = game_prototype_preview_entity_at(scene->prototype_preview, i);
-            GameTransform *position = GAME_GameTransform_get(world, light_entity);
+            ecs_entity light_entity = prototype_preview_entity_at(scene->prototype_preview, i);
+            Transform *position = Transform_get(world, light_entity);
             position->x = radius * (i == 2 ? -.9f : .7f);
             position->y = radius * (i == 2 ? -.6f : .4f);
-            GameAppearance *light = GAME_GameAppearance_get(world, light_entity);
+            Appearance *light = Appearance_get(world, light_entity);
             light->width = light->height = radius * .12f;
         }
-        ecs_entity camera_entity = game_prototype_preview_entity_at(scene->prototype_preview, 1);
-        GameCamera *camera = GAME_GameCamera_get(world, camera_entity);
+        ecs_entity camera_entity = prototype_preview_entity_at(scene->prototype_preview, 1);
+        Camera *camera = Camera_get(world, camera_entity);
         camera->width = camera->height = radius * 2.5f;
         camera->focal_distance = preview->view == MODEL_VIEW_ORBIT ? radius * 6 : 0;
-        GAME_GameHRC2D_get(world, camera_entity)->surface_radius = radius * .24f;
+        HRC2D_get(world, camera_entity)->surface_radius = radius * .24f;
         if (scene->render_viewport) {
             engine_viewport_view view;
             engine_viewport_get_view(scene->render_viewport, &view);
@@ -542,12 +542,12 @@ void scene_model_preview_update(app_scene_authoring *scene)
             engine_viewport_set_view(scene->render_viewport, &view);
         }
     }
-    GameVisualTransform *visual = GAME_GameVisualTransform_get(world, preview->entity);
+    VisualTransform *visual = VisualTransform_get(world, preview->entity);
     visual->pitch = preview->pitch;
     visual->yaw = preview->yaw;
     CF_M4x4 rotation = cf_m4_from_trs(
         (CF_V3){ 0 },
-        game_visual_rotation(0, (CF_V3){ preview->pitch, preview->yaw, 0 }),
+        visual_rotation(0, (CF_V3){ preview->pitch, preview->yaw, 0 }),
         (CF_V3){ 1, 1, 1 }
     );
     CF_V4 center = cf_mul_m4_v4(
@@ -557,10 +557,10 @@ void scene_model_preview_update(app_scene_authoring *scene)
                  min[2] * .5f + max[2] * .5f,
                  1 }
     );
-    GameTransform *position = GAME_GameTransform_get(world, preview->entity);
+    Transform *position = Transform_get(world, preview->entity);
     position->x = -center.x;
     position->y = -center.z;
-    GAME_GameGeometry3D_get(world, preview->entity)->elevation = -center.y;
+    Geometry3D_get(world, preview->entity)->elevation = -center.y;
     if (preview->frame && scene->render_viewport) {
         CF_V2 lo, hi;
         if (render_geometry_2d_mesh_bounds(
@@ -657,7 +657,7 @@ bool scene_model_preview_set_parameter(app_scene_authoring *scene, int slot, con
                                        .type_name = parameter.type_name,
                                        .ptr = (void *)values };
     const char *error = render_shader_shape_parameter_set(
-        game_prototype_preview_world(scene->prototype_preview),
+        prototype_preview_world(scene->prototype_preview),
         preview->entity,
         parameter.name,
         value

@@ -75,10 +75,9 @@ static studio_fold *fold_of(const studio *s, const char *key)
 
 static bool open_first(const studio *s, const char *key)
 {
-    static const char *const FIRST[] = {
-        "GameTransform", "GameAppearance", "GameOrientation", "behaviors", "ui",
-        "physics"
-    };
+    static const char *const FIRST[] = { "Transform",   "Appearance",
+                                         "Orientation", "behaviors",
+                                         "ui",          "physics" };
     for (size_t i = 0; i < sizeof FIRST / sizeof *FIRST; i++) {
         if (!strcmp(FIRST[i], key)) {
             return true;
@@ -153,7 +152,7 @@ static bool shared_component(studio *s, ecs_component_id component)
 
 static studio_tab prototype_default_tab(const studio *s, const scene_prototype_asset *asset)
 {
-    const game_prototype *prototype = asset->prototype;
+    const prototype *prototype = asset->prototype;
     for (int i = 0; i < acount(prototype->components); i++) {
         if (properties_tab_of(s, prototype->components[i].desc) == STUDIO_TAB_OBJECT) {
             return STUDIO_TAB_OBJECT;
@@ -294,13 +293,13 @@ const ecs_component_desc *properties_component(const app_scene_authoring *scene,
     return NULL;
 }
 
-const game_prototype_component *properties_base(
+const prototype_component *properties_base(
     const scene_actor *actor,
     const ecs_component_desc *desc,
-    game_prototype_component *added
+    prototype_component *added
 )
 {
-    *added = (game_prototype_component){ .desc = desc };
+    *added = (prototype_component){ .desc = desc };
     for (int j = 0; actor->base && j < acount(actor->base->components); j++) {
         if (actor->base->components[j].desc->id == desc->id) {
             return &actor->base->components[j];
@@ -312,7 +311,7 @@ const game_prototype_component *properties_base(
 bool properties_overridden(
     const app_scene_authoring *scene,
     const scene_actor *actor,
-    const game_prototype_component *component,
+    const prototype_component *component,
     int field
 )
 {
@@ -363,7 +362,7 @@ reference_asset_kind properties_named(
 
 bool properties_label(
     studio *s,
-    const game_prototype_component *component,
+    const prototype_component *component,
     const type_field *field,
     char *label,
     size_t size
@@ -597,13 +596,12 @@ void studio_set_field(studio *s, scene_actor *actor, ecs_component_id component,
 static void move(studio *s, scene_actor *actor, int axis, double v, bool active, bool canceled)
 {
     app_scene_authoring *scene = s->scene;
-    const GameTransform
-        *position = GAME_GameTransform_get_const(scene->world, actor->entity);
+    const Transform *position = Transform_get_const(scene->world, actor->entity);
     if (properties_multi(s, actor)) {
         write_field(
             s,
             actor,
-            (field_change){ .component = GAME_COMPONENT_GameTransform.id,
+            (field_change){ .component = COMPONENT_Transform.id,
                             .field = axis,
                             .before = { .type = PIN_F32,
                                         .f = axis ? position->y : position->x },
@@ -613,7 +611,7 @@ static void move(studio *s, scene_actor *actor, int axis, double v, bool active,
         );
         return;
     }
-    GameTransform after = *position;
+    Transform after = *position;
     if (axis) {
         after.y = (float)v;
     } else {
@@ -777,7 +775,7 @@ static void edit_object(studio *s, const edit *e)
         (subject.locked && !studio_live(s))) {
         return;
     }
-    if (desc->id == GAME_COMPONENT_GameTransform.id) {
+    if (desc->id == COMPONENT_Transform.id) {
         move(s, actor, !strcmp(e->axis, "y"), strtod(e->text, NULL), e->active, e->canceled);
         return;
     }
@@ -817,7 +815,7 @@ static void edit_prototype(studio *s, const edit *e)
 {
     scene_prototype_asset *asset = find_prototype(s->scene, e->row.prototype);
     const ecs_component_desc *desc = properties_component(s->scene, e->row.component);
-    const game_prototype_component *component = NULL;
+    const prototype_component *component = NULL;
     for (int i = 0; asset && desc && i < acount(asset->prototype->components); i++) {
         component = asset->prototype->components[i].desc == desc
                       ? &asset->prototype->components[i]
@@ -861,7 +859,7 @@ static void edit_scene(studio *s, const edit *e)
         }
         return;
     }
-    game_physics_settings next = game_physics_configuration(scene->live->runtime->physics);
+    physics_settings next = physics_configuration(scene->live->runtime->physics);
     double v = strtod(e->text, NULL);
     bool on = v != 0, *flag = NULL;
     switch ((properties_scene_setting)e->row.field) {
@@ -911,7 +909,7 @@ static void check(studio *s, const properties_row *row, bool on)
         scene_prototype_asset *asset = find_prototype(s->scene, row->prototype);
         const ecs_component_desc *desc = properties_component(s->scene, row->component);
         for (int i = 0; asset && desc && i < acount(asset->prototype->components); i++) {
-            const game_prototype_component *c = &asset->prototype->components[i];
+            const prototype_component *c = &asset->prototype->components[i];
             if (c->desc == desc && c->data && row->field < desc->type->field_count) {
                 pin_read_field(c->data, &desc->type->fields[row->field], &value);
             }
@@ -938,7 +936,7 @@ static void drop(studio *s, const properties_row *row, const char *asset)
 
 /* The prototype's Position, which a Reset puts back whole, as the row
    shows both axes. */
-static GameTransform inherited_position(const game_prototype_component *component, GameTransform at)
+static Transform inherited_position(const prototype_component *component, Transform at)
 {
     pin_value x = { .type = PIN_F32, .f = at.x }, y = { .type = PIN_F32, .f = at.y };
     pin_read_field(component->data, &component->desc->type->fields[0], &x);
@@ -956,8 +954,8 @@ static void reset_field(studio *s, scene_actor *actor)
     if (!desc || desc->derived_from) {
         return;
     }
-    game_prototype_component added;
-    const game_prototype_component *component = properties_base(actor, desc, &added);
+    prototype_component added;
+    const prototype_component *component = properties_base(actor, desc, &added);
     pin_value before = { 0 }, inherited = { 0 };
     if (!component->data || ecs_component_read_field(
                                 scene->world,
@@ -970,10 +968,10 @@ static void reset_field(studio *s, scene_actor *actor)
     }
     inherited = before;
     pin_read_field(component->data, &desc->type->fields[s->context.field], &inherited);
-    if (desc->id == GAME_COMPONENT_GameTransform.id) {
-        GameTransform after = inherited_position(
+    if (desc->id == COMPONENT_Transform.id) {
+        Transform after = inherited_position(
             component,
-            *GAME_GameTransform_get_const(scene->world, actor->entity)
+            *Transform_get_const(scene->world, actor->entity)
         );
         begin_transform_edit(scene, actor->entity);
         write_transform_edit(scene, actor->entity, after);
@@ -1030,7 +1028,7 @@ static void apply(studio *s)
     const ecs_component_desc *desc = properties_component(s->scene, s->context.component);
     if (actor && desc && s->context.entity == ecs_entity_to_u64(actor->entity) &&
         !subject.locked) {
-        studio_apply_field(s, actor, (game_prototype_field){ desc, s->context.field });
+        studio_apply_field(s, actor, (prototype_field){ desc, s->context.field });
     }
 }
 
@@ -1482,7 +1480,7 @@ static void component_menu(studio *s, const char *key, const ui_activation *a)
     if (!desc || desc->derived_from) {
         return;
     }
-    game_prototype_component added;
+    prototype_component added;
     bool own = subject.actor && !subject.multi &&
                properties_base(subject.actor, desc, &added) == &added;
     bool menu = subject.asset || (subject.actor && subject.actor->identity &&

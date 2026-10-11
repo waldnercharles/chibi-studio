@@ -200,9 +200,9 @@ static void save_asset(studio *s, asset_code *code)
         asset_code_time(code, s->time + 0.2);
         asset_code_validate(code, s->scene->graph_editor);
     }
-    game_preview_definition *definition = s->scene->definition;
-    if (definition && game_preview_definition_path(definition) &&
-        !strcmp(asset_code_path(code), game_preview_definition_path(definition))) {
+    preview_definition *definition = s->scene->definition;
+    if (definition && preview_definition_path(definition) &&
+        !strcmp(asset_code_path(code), preview_definition_path(definition))) {
         asset_code_time(code, s->time + 0.2);
         sync_asset_graph(s, code);
     }
@@ -224,14 +224,8 @@ static void save_asset(studio *s, asset_code *code)
             result = open_system_asset(s->scene, tab->path);
         } else {
             const authoring_source *source = asset_code_source(code);
-            if (!source || game_preview_source_apply(
-                               s->scene->live,
-                               tab->path,
-                               asset_code_text(code),
-                               false,
-                               error,
-                               sizeof error
-                           )) {
+            if (!source ||
+                preview_source_apply(s->scene->live, tab->path, asset_code_text(code), false, error, sizeof error)) {
                 studio_error(s, "Could not open repaired graph", error);
                 return;
             }
@@ -258,8 +252,8 @@ static void save_asset(studio *s, asset_code *code)
             s->scene->document.id
         );
     }
-    if (definition && game_preview_definition_path(definition) &&
-        !strcmp(asset_code_path(code), game_preview_definition_path(definition))) {
+    if (definition && preview_definition_path(definition) &&
+        !strcmp(asset_code_path(code), preview_definition_path(definition))) {
         definition->unsaved = false;
         s->scene->source_preview_hold[0] = 0;
         editor *e = s->scene->graph_editor;
@@ -360,7 +354,7 @@ app_disk_result studio_code_reload_path(studio *s, const char *path)
     return result;
 }
 
-static void save(studio *s, scene_document_tab *tab)
+static void save_document(studio *s, scene_document_tab *tab)
 {
     if (save_ui_document(s->scene, tab) != 0) {
         studio_error(s, "Could not save", app_scene_authoring_message(s->scene));
@@ -386,7 +380,7 @@ void studio_code_save(studio *s)
     scene_document_tab *tab = active_ui(s);
     assert(tab);
     if (ui_buffer_on_disk(tab->ui)) {
-        save(s, tab);
+        save_document(s, tab);
         return;
     }
     kit_toast_dismiss(s->kit, s->code.overwrite_toast);
@@ -456,7 +450,7 @@ static void toast_actions(studio *s)
         s->code.overwrite_toast = 0;
         scene_document_tab *tab = ui_tab(s, s->code.overwrite);
         if (tab) {
-            save(s, tab);
+            save_document(s, tab);
         }
     }
 }
@@ -620,8 +614,8 @@ void studio_code_frame(studio *s)
     scene_document_tab *tab = active_asset(s);
     bool behavior = tab && tab->kind == APP_EDITOR_DOCUMENT_BEHAVIOR &&
                     s->scene->definition &&
-                    game_preview_definition_path(s->scene->definition) &&
-                    !strcmp(tab->path, game_preview_definition_path(s->scene->definition));
+                    preview_definition_path(s->scene->definition) &&
+                    !strcmp(tab->path, preview_definition_path(s->scene->definition));
     bool system = tab && tab->kind == APP_EDITOR_DOCUMENT_SYSTEM &&
                   s->scene->system_path && !strcmp(tab->path, s->scene->system_path);
     if (behavior || system || (tab && tab->source_only)) {
@@ -704,7 +698,7 @@ static asset_code *graph_code(const studio *s)
     const char *path = s->scene->document.kind == APP_EDITOR_DOCUMENT_SYSTEM
                          ? s->scene->system_path
                      : s->scene->definition
-                         ? game_preview_definition_path(s->scene->definition)
+                         ? preview_definition_path(s->scene->definition)
                          : NULL;
     for (int i = 0; path && i < acount(s->code.assets); i++) {
         asset_code *code = s->code.assets[i];
@@ -739,7 +733,7 @@ bool studio_code_edit_source(void *user, const authoring_edit_request *request, 
         return false;
     }
     source_catalog_edit edit = { .path = asset_code_path(code), .text = result.text };
-    bool accepted = !game_preview_sources_validate(s->scene->live, &edit, 1, error, size);
+    bool accepted = !preview_sources_validate(s->scene->live, &edit, 1, error, size);
     if (accepted) {
         accepted = asset_code_edit_source(
             code,
@@ -904,7 +898,7 @@ void studio_behavior_show(studio *s, int view)
         const char *path = s->scene->graph_document_kind == APP_EDITOR_DOCUMENT_SYSTEM
                              ? s->scene->system_path
                          : s->scene->definition
-                             ? game_preview_definition_path(s->scene->definition)
+                             ? preview_definition_path(s->scene->definition)
                              : NULL;
         for (int i = 0; path && i < acount(s->scene->tabs); i++) {
             const scene_document_tab *candidate = &s->scene->tabs[i];
@@ -1452,8 +1446,8 @@ bool studio_code_header_sync(studio *s, const studio_panel_sync *at)
                           "the runtime";
             } else if (
                 s->scene->definition && s->scene->definition->dirty &&
-                game_preview_definition_path(s->scene->definition) &&
-                !strcmp(asset->path, game_preview_definition_path(s->scene->definition))
+                preview_definition_path(s->scene->definition) &&
+                !strcmp(asset->path, preview_definition_path(s->scene->definition))
             ) {
                 runtime_label = "Preview waiting";
                 runtime = s->scene->preview_message[0] ? s->scene->preview_message : "The current runtime stays active until the edited behavior can safely reload";

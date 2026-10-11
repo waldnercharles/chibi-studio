@@ -30,7 +30,7 @@ static void scenario_path(const app_scene_authoring *scene, const char *name, ch
 }
 
 /* The open scene's asset name: its file name without the extension. */
-static void scene_name(const app_scene_authoring *scene, char *out, size_t size)
+static void read_scene_name(const app_scene_authoring *scene, char *out, size_t size)
 {
     const char *path = scene->scene_path ? scene->scene_path : "Scene";
     const char *slash = strrchr(path, '/');
@@ -46,7 +46,7 @@ static int restart(app_scene_authoring *scene)
     return app_scene_authoring_runtime_command(scene, APP_RUNTIME_SCENE, APP_RUNTIME_RESTART);
 }
 
-static game_save *saved_progress(app_scene_authoring *scene)
+static save *saved_progress(app_scene_authoring *scene)
 {
     return scene->live->runtime->save;
 }
@@ -55,7 +55,7 @@ int app_scenario_record(app_scene_authoring *scene)
 {
     app_scenario_stop(scene);
     scene->scenario_seed = (unsigned)time(NULL);
-    char *saved = game_save_export(saved_progress(scene));
+    char *saved = save_export(saved_progress(scene));
     av_doc *doc = av_json_read(saved);
     free(saved);
     scene->scenario_saved_state = av_value_copy(av_doc_root(doc));
@@ -71,14 +71,14 @@ static int start_replay(app_scene_authoring *scene)
     const scenario_document *document = scene->scenario;
     char *saved = document->saved_state ? av_json_write(document->saved_state)
                                         : xstrdup("{}");
-    bool imported = game_save_import(saved_progress(scene), saved);
+    bool imported = save_import(saved_progress(scene), saved);
     free(saved);
     if (!imported) {
         snprintf(
             scene->message,
             sizeof scene->message,
             "Cannot replay: %s",
-            game_save_error(saved_progress(scene))
+            save_error(saved_progress(scene))
         );
         return -1;
     }
@@ -95,7 +95,7 @@ static int start_replay(app_scene_authoring *scene)
 static void recording_name(const app_scene_authoring *scene, char *out, size_t size)
 {
     char base[128];
-    scene_name(scene, base, sizeof base);
+    read_scene_name(scene, base, sizeof base);
     for (int i = 1;; i++) {
         char path[1024];
         snprintf(out, size, i == 1 ? "%s Recording" : "%s Recording %d", base, i);
@@ -118,7 +118,7 @@ int app_scenario_save(app_scene_authoring *scene, char *name, size_t size)
         return -1;
     }
     char scene_asset[128];
-    scene_name(scene, scene_asset, sizeof scene_asset);
+    read_scene_name(scene, scene_asset, sizeof scene_asset);
     bool progress = av_obj_size(scene->scenario_saved_state) != 0;
     scenario_document document = { .scene = scene_asset,
                                    .frames = frames,

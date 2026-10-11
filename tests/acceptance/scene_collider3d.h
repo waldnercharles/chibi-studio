@@ -4,31 +4,31 @@
 /* A 3D scene for the collider handles: a crate whose box a Transform3D
    stretches twice along X, a ball and a pill, side by side. */
 static const char crate_prototype[] = "name \"Crate\"\ncomponents {\n"
-                                      "    GameTransform3D {\n"
+                                      "    Transform3D {\n"
                                       "        position x=0 y=50 z=0\n"
                                       "        rotation x=0 y=0 z=0 w=1\n"
                                       "        scale x=2 y=1 z=1\n"
                                       "    }\n"
-                                      "    GameCollider3D {\n"
+                                      "    Collider3D {\n"
                                       "        size x=50 y=50 z=50\n"
                                       "    }\n"
                                       "}\n";
 static const char
     ball_prototype[] = "name \"Ball\"\ncomponents {\n"
-                       "    GameTransform3D {\n"
+                       "    Transform3D {\n"
                        "        position x=200 y=50 z=0\n"
                        "        rotation x=0 y=0 z=0 w=1\n"
                        "        scale x=1 y=1 z=1\n"
                        "    }\n"
-                       "    GameCollider3D shape=\"Sphere\" radius=25\n"
+                       "    Collider3D shape=\"Sphere\" radius=25\n"
                        "}\n";
 static const char pill_prototype[] = "name \"Pill\"\ncomponents {\n"
-                                     "    GameTransform3D {\n"
+                                     "    Transform3D {\n"
                                      "        position x=-200 y=50 z=0\n"
                                      "        rotation x=0 y=0 z=0 w=1\n"
                                      "        scale x=1 y=1 z=1\n"
                                      "    }\n"
-                                     "    GameCollider3D shape=\"Capsule\" "
+                                     "    Collider3D shape=\"Capsule\" "
                                      "radius=20 height=100\n"
                                      "}\n";
 static const char
@@ -43,23 +43,20 @@ static const CF_V3 CRATE_AT = { 0, 50, 0 };
 static const CF_V3 BALL_AT = { 200, 50, 0 };
 static const CF_V3 PILL_AT = { -200, 50, 0 };
 
-static const GameCollider3D *collider_now(studio *s, int actor)
+static const Collider3D *collider_now(studio *s, int actor)
 {
-    return GAME_GameCollider3D_get_const(
-        s->scene->world,
-        s->scene->actors[actor].entity
-    );
+    return Collider3D_get_const(s->scene->world, s->scene->actors[actor].entity);
 }
 
 /* Each typed collider edit redoes exactly in one step; leave it undone. */
 static bool collider_undoes(studio *s)
 {
     REQUIRE(!s->scene->gizmo.active);
-    GameCollider3D colliders[3];
-    GameTransform3D transforms[3];
+    Collider3D colliders[3];
+    Transform3D transforms[3];
     for (int i = 0; i < 3; i++) {
         colliders[i] = *collider_now(s, i);
-        transforms[i] = *GAME_GameTransform3D_get_const(
+        transforms[i] = *Transform3D_get_const(
             s->scene->world,
             s->scene->actors[i].entity
         );
@@ -69,7 +66,7 @@ static bool collider_undoes(studio *s)
     studio_command_run(s, STUDIO_COMMAND_REDO);
     for (int i = 0; i < 3; i++) {
         REQUIRE(!memcmp(&colliders[i], collider_now(s, i), sizeof colliders[i]));
-        const GameTransform3D *transform = GAME_GameTransform3D_get_const(
+        const Transform3D *transform = Transform3D_get_const(
             s->scene->world,
             s->scene->actors[i].entity
         );
@@ -151,11 +148,9 @@ static bool scene_collider3d_frame(void *state)
                 CF_Ray3 parallel = { .p = { -100, 50, 0 }, .d = { 1, 0, 0 } };
                 REQUIRE(!scene_collider3d_begin(scene, SCENE_GIZMO_FACE, &view, parallel));
                 REQUIRE(!scene->gizmo.active && !acount(scene->gizmo.fields));
-                GameCollider3D *collider = GAME_GameCollider3D_get(
-                    scene->world,
-                    scene->actors[0].entity
-                );
-                GameCollider3D saved = *collider;
+                Collider3D
+                    *collider = Collider3D_get(scene->world, scene->actors[0].entity);
+                Collider3D saved = *collider;
                 collider->size.x = NAN;
                 CF_Ray3 ordinary = { .p = { 0, 50, 100 }, .d = { 0, 0, -1 } };
                 REQUIRE(!scene_collider3d_begin(scene, SCENE_GIZMO_FACE, &view, ordinary));

@@ -136,11 +136,11 @@ studio_node_ref studio_problem_at(const studio *s, const compile_diagnostic *d)
 
 /* ---------- Runtime errors ---------- */
 
-static game_source_registry *running_world(const studio *s)
+static source_registry *running_world(const studio *s)
 {
     app_scene_authoring *scene = s->scene;
     return scene->active_runtime_target == APP_RUNTIME_PREVIEW
-             ? game_prototype_preview_sources(scene->prototype_preview)
+             ? prototype_preview_sources(scene->prototype_preview)
              : scene->live->runtime->sources;
 }
 
@@ -163,13 +163,13 @@ static void add_error(studio *s, const studio_runtime_error *error)
     apush(s->runtime_errors, *error);
 }
 
-static void collect_source_errors(studio *s, game_source_registry *sources_registry)
+static void collect_source_errors(studio *s, source_registry *sources_registry)
 {
-    const authoring_sources *sources = game_preview_sources_applied(s->scene->live);
+    const authoring_sources *sources = preview_sources_applied(s->scene->live);
     for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
         const authoring_source *source = authoring_sources_at(sources, i);
         execution_program
-            *program = game_source_program(sources_registry, source->analysis->name);
+            *program = source_program(sources_registry, source->analysis->name);
         const execution_program_failure *failure = program
                                                      ? execution_program_error(program)
                                                      : NULL;
@@ -204,12 +204,12 @@ static void collect_source_errors(studio *s, game_source_registry *sources_regis
             snprintf(error.path, sizeof error.path, "%s", origin_source->path);
         }
         snprintf(error.node, sizeof error.node, "line %d", failure->line);
-        game_preview_definition *definition = origin_source
-                                                ? game_preview_find_definition(
-                                                      s->scene->live,
-                                                      origin_source->analysis->name
-                                                  )
-                                                : NULL;
+        preview_definition *definition = origin_source
+                                           ? preview_find_definition(
+                                                 s->scene->live,
+                                                 origin_source->analysis->name
+                                             )
+                                           : NULL;
         const authoring_source_presentation *presentation = definition
                                                               ? definition->applied_presentation
                                                               : NULL;
@@ -240,14 +240,14 @@ static void collect_source_errors(studio *s, game_source_registry *sources_regis
 
 /* Copy log text into editor-owned rows before a publication retires its source
  * generation. Program failures retain their own authored source coordinates. */
-static void collect_errors(studio *s, game_preview_runtime *runtime)
+static void collect_errors(studio *s, preview_runtime *runtime)
 {
     editor *log = s->scene->graph_editor;
-    for (int i = 0; log && i < game_preview_runtime_log_count(runtime); i++) {
-        const game_preview_log *entry = game_preview_runtime_log_at(runtime, i);
+    for (int i = 0; log && i < preview_runtime_log_count(runtime); i++) {
+        const preview_log *entry = preview_runtime_log_at(runtime, i);
         editor_log_print(log, entry->program, entry->text);
     }
-    game_preview_runtime_clear_logs(runtime);
+    preview_runtime_clear_logs(runtime);
     collect_source_errors(s, runtime->sources);
 }
 
@@ -285,12 +285,11 @@ static void compile_on_change(studio *s)
 /* Owns the returned handle; enumeration does not borrow an activation. */
 static execution_inspector *paused_run(const studio *s, scene_debug_attachment *info)
 {
-    game_source_registry *registry = running_world(s);
-    const authoring_sources *sources = game_preview_sources_applied(s->scene->live);
+    source_registry *registry = running_world(s);
+    const authoring_sources *sources = preview_sources_applied(s->scene->live);
     for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
         const authoring_source *source = authoring_sources_at(sources, i);
-        execution_program
-            *program = game_source_program(registry, source->analysis->name);
+        execution_program *program = source_program(registry, source->analysis->name);
         if (!program) {
             continue;
         }
@@ -317,7 +316,7 @@ static const authoring_source *point_source(const studio *s, uint64_t module, bo
 {
     const authoring_sources *sources = retired
                                          ? s->scene->debug.sources
-                                         : game_preview_sources_applied(s->scene->live);
+                                         : preview_sources_applied(s->scene->live);
     for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
         const authoring_source *source = authoring_sources_at(sources, i);
         if (source->module && execution_module_id(source->module) == module) {
@@ -332,8 +331,7 @@ static bool point_source_current(const studio *s, const authoring_source *source
     if (!source) {
         return false;
     }
-    const authoring_source
-        *current = game_preview_source_find(s->scene->live, source->path, false);
+    const authoring_source *current = preview_source_find(s->scene->live, source->path, false);
     return current && !strcmp(current->syntax->text, source->syntax->text);
 }
 
@@ -344,13 +342,12 @@ static studio_node_ref point_node(const studio *s, const authoring_source *sourc
         return at;
     }
     snprintf(at.asset, sizeof at.asset, "%s", source->analysis->name);
-    game_preview_definition *definition = game_preview_find_definition(s->scene->live, at.asset);
+    preview_definition *definition = preview_find_definition(s->scene->live, at.asset);
     const authoring_source_presentation *view = definition ? definition->applied_presentation
                                                            : NULL;
-    const authoring_sources *generation = retired ? s->scene->debug.sources
-                                                  : game_preview_sources_applied(
-                                                        s->scene->live
-                                                    );
+    const authoring_sources *generation = retired
+                                            ? s->scene->debug.sources
+                                            : preview_sources_applied(s->scene->live);
     if (view &&
         !authoring_source_presentation_matches(view, source->analysis, authoring_sources_catalog(generation))) {
         return at;
@@ -447,7 +444,7 @@ void studio_debug_frame(studio *s)
     }
     s->session = session;
     collect_errors(s, scene->live->runtime);
-    collect_errors(s, game_prototype_preview_live(scene->prototype_preview)->runtime);
+    collect_errors(s, prototype_preview_live(scene->prototype_preview)->runtime);
     compile_on_change(s);
     follow_pause(s);
 }

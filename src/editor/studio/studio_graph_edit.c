@@ -930,7 +930,7 @@ static void add_document_events(ui_event **events, const reference_index *index,
         ui_document_events(text, &found);
     }
     for (int i = 0; i < acount(found); i++) {
-        if (!game_host_event_reserved(found[i].name) &&
+        if (!host_event_reserved(found[i].name) &&
             reference_index_event_asset(index, found[i].name) < 0) {
             ui_events_add(events, &found[i], asset->name);
         }

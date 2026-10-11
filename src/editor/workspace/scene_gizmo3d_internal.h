@@ -20,8 +20,8 @@ struct scene_gizmo_target3d
     CF_M4x4 from_world;             /* the world into its parent's space */
     CF_Quat parent_turn;            /* its parent's rotation */
     bool mirrored;                  /* its parent mirrors its X */
-    GameGlobalTransform2D parent;   /* without a Transform3D, where its parent
-                                       places it; zero for a root */
+    GlobalTransform2D parent;       /* without a Transform3D, where its parent
+                                           places it; zero for a root */
     int field[GIZMO3D_FIELD_COUNT]; /* index in the gesture's fields, or -1 */
 };
 

@@ -7,17 +7,17 @@
 typedef struct
 {
     ecs_world *world;
-    game_preview_world *live;
+    preview_world *live;
     engine *runtime;
     editor *graph;
-    game_preview_definition *placeholder;
+    preview_definition *placeholder;
     app_scene_authoring *scene;
 } move_fixture;
 
 static move_fixture move_fixture_new()
 {
     move_fixture fixture = { .world = ecs_world_new() };
-    fixture.live = game_preview_world_new(fixture.world);
+    fixture.live = preview_world_new(fixture.world);
     /* Match the app's source-backed placeholder. It is never registered as
        executable behavior; these fixtures only edit scene data. */
     const script_catalog catalog = { 0 };
@@ -34,7 +34,7 @@ static move_fixture move_fixture_new()
     authoring_source_presentation
         *presentation = authoring_source_presentation_new(source->analysis, &catalog, NULL);
     assert(presentation);
-    fixture.placeholder = game_preview_projection_new("MoveFixture", presentation);
+    fixture.placeholder = preview_projection_new("MoveFixture", presentation);
     fixture.graph = editor_new(authoring_source_presentation_take_view(
         authoring_source_presentation_clone(presentation)
     ));
@@ -62,9 +62,9 @@ static void move_fixture_free(move_fixture *fixture)
 {
     app_scene_authoring_free(fixture->scene);
     engine_free(fixture->runtime);
-    game_preview_world_free(fixture->live);
+    preview_world_free(fixture->live);
     editor_free(fixture->graph);
-    game_preview_definition_free(fixture->placeholder);
+    preview_definition_free(fixture->placeholder);
     ecs_world_free(fixture->world);
 }
 
@@ -85,7 +85,7 @@ static bool same_saved_scene(app_scene_authoring *scene, const char *expected)
     return true;
 }
 
-static bool same_world_pose(GameGlobalTransform2D a, GameGlobalTransform2D b)
+static bool same_world_pose(GlobalTransform2D a, GlobalTransform2D b)
 {
     REQUIRE(fabsf(a.position.x - b.position.x) < .0001f);
     REQUIRE(fabsf(a.position.y - b.position.y) < .0001f);
@@ -121,9 +121,9 @@ static bool scene_move_contract()
     REQUIRE(
         app_scene_authoring_register_prototype(
             scene,
-            "name \"Mover\"\ncomponents { GameTransform x=0 y=0; "
-            "GameOrientation radians=0; GameJoint; "
-            "GameAppearance shape=\"Box\" width=4.0 height=4.0; }\n",
+            "name \"Mover\"\ncomponents { Transform x=0 y=0; "
+            "Orientation radians=0; Joint; "
+            "Appearance shape=\"Box\" width=4.0 height=4.0; }\n",
             NULL
         ) == 0
     );
@@ -131,18 +131,18 @@ static bool scene_move_contract()
         scene_authoring_load_text(
             scene,
             "version 1\nname \"Scene\"\n(array)entities {\n"
-            " - name=\"Left\" prototype=\"Mover\" { components { GameTransform "
+            " - name=\"Left\" prototype=\"Mover\" { components { Transform "
             "x=100.0 y=0.0; "
-            "GameOrientation radians=1.5707964; GameJoint other=\"Left.A\"; }; "
+            "Orientation radians=1.5707964; Joint other=\"Left.A\"; }; "
             "(array)children {\n"
-            "  - name=\"A\" prototype=\"Mover\" { components { GameTransform "
+            "  - name=\"A\" prototype=\"Mover\" { components { Transform "
             "x=10.0 y=0.0; }; }\n"
-            "  - name=\"B\" prototype=\"Mover\" { components { GameTransform "
+            "  - name=\"B\" prototype=\"Mover\" { components { Transform "
             "x=20.0 y=0.0; }; }\n"
             "  - name=\"Clash\" prototype=\"Mover\"\n } }\n"
             " - name=\"Right\" prototype=\"Mover\" { components { "
-            "GameTransform x=200.0 y=0.0; "
-            "GameOrientation radians=-1.5707964; GameJoint other=\"Right.A\"; "
+            "Transform x=200.0 y=0.0; "
+            "Orientation radians=-1.5707964; Joint other=\"Right.A\"; "
             "}; (array)children { - "
             "name=\"Clash\" prototype=\"Mover\"; }; }\n"
             " - name=\"C\" prototype=\"Mover\"\n}\n",
@@ -157,11 +157,11 @@ static bool scene_move_contract()
     uint64_t selected[] = { scene->actors[1].identity, scene->actors[2].identity };
     REQUIRE(app_scene_authoring_select_entity(scene, a) == 0);
     scene->actors[2].marked = true;
-    GameGlobalTransform2D a_world = game_transform_world_2d(scene->world, a);
-    GameGlobalTransform2D b_world = game_transform_world_2d(scene->world, b);
+    GlobalTransform2D a_world = transform_world_2d(scene->world, a);
+    GlobalTransform2D b_world = transform_world_2d(scene->world, b);
     REQUIRE(move_same_entity(pick_scene_entity(scene, 100, -10, (render_skip){ 0 }), a));
-    REQUIRE(GAME_GameJoint_get_const(scene->world, left)->other == ecs_entity_to_u64(a));
-    REQUIRE(GAME_GameJoint_get_const(scene->world, right)->other == 0);
+    REQUIRE(Joint_get_const(scene->world, left)->other == ecs_entity_to_u64(a));
+    REQUIRE(Joint_get_const(scene->world, right)->other == 0);
     char *initial = scene_authoring_scene_text(scene);
     char *initial_checkpoint = app_scene_authoring_checkpoint(scene);
     REQUIRE(initial && initial_checkpoint);
@@ -180,10 +180,10 @@ static bool scene_move_contract()
     REQUIRE(move_same_entity(ecs_parent(scene->world, a), right));
     REQUIRE(move_same_entity(ecs_parent(scene->world, b), right));
     /* Authored strings stay intact while their live handles follow the new paths. */
-    REQUIRE(GAME_GameJoint_get_const(scene->world, left)->other == 0);
-    REQUIRE(GAME_GameJoint_get_const(scene->world, right)->other == ecs_entity_to_u64(a));
-    REQUIRE(same_world_pose(a_world, game_transform_world_2d(scene->world, a)));
-    REQUIRE(same_world_pose(b_world, game_transform_world_2d(scene->world, b)));
+    REQUIRE(Joint_get_const(scene->world, left)->other == 0);
+    REQUIRE(Joint_get_const(scene->world, right)->other == ecs_entity_to_u64(a));
+    REQUIRE(same_world_pose(a_world, transform_world_2d(scene->world, a)));
+    REQUIRE(same_world_pose(b_world, transform_world_2d(scene->world, b)));
     REQUIRE(move_same_entity(pick_scene_entity(scene, 100, -10, (render_skip){ 0 }), a));
     REQUIRE(
         scene->actors[4].identity == selected[0] &&
@@ -219,16 +219,16 @@ static bool scene_move_contract()
     );
     REQUIRE(replay_scene_edit(scene, false) == 0);
     REQUIRE(same_saved_scene(scene, initial));
-    REQUIRE(GAME_GameJoint_get_const(scene->world, left)->other == ecs_entity_to_u64(a));
-    REQUIRE(GAME_GameJoint_get_const(scene->world, right)->other == 0);
+    REQUIRE(Joint_get_const(scene->world, left)->other == ecs_entity_to_u64(a));
+    REQUIRE(Joint_get_const(scene->world, right)->other == 0);
     REQUIRE(
         scene_selection_count(scene) == 2 &&
         selected_actor(scene)->identity == selected[0]
     );
     REQUIRE(move_same_entity(scene_actor_by_identity(scene, selected[0])->entity, a));
     REQUIRE(replay_scene_edit(scene, true) == 0 && same_saved_scene(scene, moved));
-    REQUIRE(GAME_GameJoint_get_const(scene->world, left)->other == 0);
-    REQUIRE(GAME_GameJoint_get_const(scene->world, right)->other == ecs_entity_to_u64(a));
+    REQUIRE(Joint_get_const(scene->world, left)->other == 0);
+    REQUIRE(Joint_get_const(scene->world, right)->other == ecs_entity_to_u64(a));
 
     /* Checkpointed history restores selection without frame-local caches. */
     char *checkpoint = app_scene_authoring_checkpoint(scene);
@@ -317,7 +317,7 @@ static bool scene_move_contract()
     return true;
 }
 
-static bool same_world_spatial(GameGlobalTransform3D a, GameGlobalTransform3D b)
+static bool same_world_spatial(GlobalTransform3D a, GlobalTransform3D b)
 {
     CF_V3 before[] = { a.position, a.x_axis, a.y_axis, a.z_axis };
     CF_V3 after[] = { b.position, b.x_axis, b.y_axis, b.z_axis };
@@ -336,7 +336,7 @@ static bool scene_move_spatial_contract()
     REQUIRE(
         app_scene_authoring_register_prototype(
             scene,
-            "name \"Spatial\"\ncomponents { GameTransform3D { "
+            "name \"Spatial\"\ncomponents { Transform3D { "
             "rotation x=0.0 y=0.0 z=0.0 w=1.0; scale x=1.0 y=1.0 z=1.0; }; }\n",
             NULL
         ) == 0
@@ -346,12 +346,12 @@ static bool scene_move_spatial_contract()
             scene,
             "version 1\nname \"Scene\"\n(array)entities {\n"
             " - name=\"Parent\" prototype=\"Spatial\" { components { "
-            "GameTransform3D { "
+            "Transform3D { "
             "position x=10.0 y=20.0 z=30.0; rotation x=0.0 y=0.0 z=0.70710677 "
             "w=0.70710677; "
             "scale x=2.0 y=2.0 z=2.0; }; }; }\n"
             " - name=\"Object\" prototype=\"Spatial\" { components { "
-            "GameTransform3D { "
+            "Transform3D { "
             "position x=4.0 y=5.0 z=6.0; rotation x=0.18257418 y=0.36514837 "
             "z=0.5477226 w=0.73029673; "
             "scale x=1.0 y=2.0 z=3.0; }; }; }\n}\n",
@@ -362,13 +362,13 @@ static bool scene_move_spatial_contract()
     ecs_entity parent = scene->actors[0].entity, object = scene->actors[1].entity;
     uint64_t object_id = scene->actors[1].identity;
     REQUIRE(app_scene_authoring_select_entity(scene, object) == 0);
-    GameGlobalTransform3D world = game_transform_world_3d(scene->world, object);
+    GlobalTransform3D world = transform_world_3d(scene->world, object);
     char *initial = scene_authoring_scene_text(scene);
     REQUIRE(initial);
     REQUIRE(app_scene_authoring_drop_selection(scene, parent, APP_SCENE_DROP_INSIDE) == 0);
     REQUIRE(move_same_entity(ecs_parent(scene->world, object), parent));
-    REQUIRE(same_world_spatial(world, game_transform_world_3d(scene->world, object)));
-    const GameTransform3D *local = GAME_GameTransform3D_get_const(scene->world, object);
+    REQUIRE(same_world_spatial(world, transform_world_3d(scene->world, object)));
+    const Transform3D *local = Transform3D_get_const(scene->world, object);
     REQUIRE(
         fabsf(local->scale.x - .5f) < .0001f &&
         fabsf(local->scale.y - 1) < .0001f && fabsf(local->scale.z - 1.5f) < .0001f
@@ -377,7 +377,7 @@ static bool scene_move_spatial_contract()
     REQUIRE(moved && strcmp(initial, moved));
     REQUIRE(replay_scene_edit(scene, false) == 0 && same_saved_scene(scene, initial));
     REQUIRE(replay_scene_edit(scene, true) == 0 && same_saved_scene(scene, moved));
-    REQUIRE(same_world_spatial(world, game_transform_world_3d(scene->world, object)));
+    REQUIRE(same_world_spatial(world, transform_world_3d(scene->world, object)));
     char *checkpoint = app_scene_authoring_checkpoint(scene);
     move_fixture restored = move_fixture_new();
     REQUIRE(
@@ -397,7 +397,7 @@ static bool scene_move_spatial_contract()
     REQUIRE(restored_object && selected_actor(restored.scene)->identity == object_id);
     REQUIRE(same_world_spatial(
         world,
-        game_transform_world_3d(restored.world, restored_object->entity)
+        transform_world_3d(restored.world, restored_object->entity)
     ));
     free(initial);
     free(moved);

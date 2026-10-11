@@ -14,7 +14,7 @@
     </use>
   </div>
   <div class="menu-group">EnumField</div>
-  <div class="sample"><use ui="EnumField" data-alias-table="choices.fields.GameBody.type" data-alias-value="save.galleryBody" data-event-change="save.galleryBody = ev.value * 1"/></div>
+  <div class="sample"><use ui="EnumField" data-alias-table="choices.fields.Body.type" data-alias-value="save.galleryBody" data-event-change="save.galleryBody = ev.value * 1"/></div>
   <div class="menu-group">AssetField</div>
   <div class="sample"><use ui="AssetField" data-alias-table="choices.assets.prototype" data-alias-value="save.galleryAsset" data-event-click="emit('palette.pick', 'prototype', save.galleryAsset, 'None')" data-event-change="save.galleryAsset = ev.value"/></div>
   <div class="menu-group">MenuOption</div>

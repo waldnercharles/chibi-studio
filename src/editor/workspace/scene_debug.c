@@ -6,31 +6,26 @@
 #include <stdlib.h>
 #include <string.h>
 
-scene_debug_attachment scene_debug_attachment_index(game_source_registry *registry, int index)
+scene_debug_attachment scene_debug_attachment_index(source_registry *registry, int index)
 {
-    game_source_attachment_info info = game_source_attachment_at(registry, index);
+    source_attachment_info info = source_attachment_at(registry, index);
     return (scene_debug_attachment){ info.entity, info.sequence, info.name,
                                      info.module, info.program,  info.instance };
 }
 
-int scene_debug_attachment_count_for_entity(game_source_registry *registry, ecs_entity entity)
+int scene_debug_attachment_count_for_entity(source_registry *registry, ecs_entity entity)
 {
     int count = 0;
-    for (int i = 0; i < game_source_attachment_count(registry); i++) {
-        game_source_attachment_info info = game_source_attachment_at(registry, i);
+    for (int i = 0; i < source_attachment_count(registry); i++) {
+        source_attachment_info info = source_attachment_at(registry, i);
         count += ecs_entity_to_u64(info.entity) == ecs_entity_to_u64(entity);
     }
     return count;
 }
 
-int scene_debug_attachment_at(
-    game_source_registry *registry,
-    ecs_entity entity,
-    int index,
-    scene_debug_attachment *out
-)
+int scene_debug_attachment_at(source_registry *registry, ecs_entity entity, int index, scene_debug_attachment *out)
 {
-    for (int i = 0; i < game_source_attachment_count(registry); i++) {
+    for (int i = 0; i < source_attachment_count(registry); i++) {
         scene_debug_attachment info = scene_debug_attachment_index(registry, i);
         if (ecs_entity_to_u64(info.entity) == ecs_entity_to_u64(entity) &&
             index-- == 0) {
@@ -42,13 +37,13 @@ int scene_debug_attachment_at(
 }
 
 bool scene_debug_owner_attachment(
-    game_source_registry *registry,
+    source_registry *registry,
     const char *name,
     ecs_entity entity,
     scene_debug_attachment *out
 )
 {
-    execution_program *program = game_source_program(registry, name);
+    execution_program *program = source_program(registry, name);
     execution_instance *instance = program
                                      ? execution_program_instance(program, ecs_entity_to_u64(entity))
                                      : NULL;
@@ -105,7 +100,7 @@ void scene_debug_select(
 bool scene_debug_resolve(
     scene_debug *debug,
     ecs_world *world,
-    game_source_registry *registry,
+    source_registry *registry,
     uint64_t session,
     scene_debug_attachment *out
 )
@@ -121,7 +116,7 @@ bool scene_debug_resolve(
         out->module = debug->module;
         return true;
     }
-    for (int i = 0; i < game_source_attachment_count(registry); i++) {
+    for (int i = 0; i < source_attachment_count(registry); i++) {
         scene_debug_attachment info = scene_debug_attachment_index(registry, i);
         if (info.sequence == debug->sequence &&
             !strcmp(info.asset_name, debug->asset_name)) {

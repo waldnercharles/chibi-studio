@@ -1,4 +1,4 @@
 name "CodeFind"
 components {
-    GAME.GameUi document="CodeFind" hidden=#true
+    Ui document="CodeFind" hidden=#true
 }

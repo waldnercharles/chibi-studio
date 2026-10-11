@@ -119,15 +119,15 @@ static bool source_attachments(
         }
         char *text = NULL;
         if (owner->kind == REFERENCE_ASSET_PROTOTYPE) {
-            game_prototype *prototype = game_prototype_load(file->text, &scene->registry, error, size);
-            valid = prototype && !game_prototype_remove_graph(prototype, from) &&
-                    !game_prototype_add_graph(prototype, to);
-            text = valid ? game_prototype_save(prototype) : NULL;
-            game_prototype_free(prototype);
+            prototype *prototype = prototype_load(file->text, &scene->registry, error, size);
+            valid = prototype && !prototype_remove_graph(prototype, from) &&
+                    !prototype_add_graph(prototype, to);
+            text = valid ? prototype_save(prototype) : NULL;
+            prototype_free(prototype);
         } else {
-            game_scene_document *document = game_scene_document_load(file->text, error, size);
+            scene_document *document = scene_document_load(file->text, error, size);
             int entity = document && use->object
-                           ? game_scene_document_entity_index(document, use->object)
+                           ? scene_document_entity_index(document, use->object)
                            : -1;
             valid = entity >= 0;
             const char **names = NULL;
@@ -140,15 +140,11 @@ static bool source_attachments(
                     apush(names, match ? to : name);
                 }
                 valid = found &&
-                        !game_scene_document_set_entity_behaviors(document, entity, names, acount(names));
+                        !scene_document_set_entity_behaviors(document, entity, names, acount(names));
             }
             afree(names);
-            text = valid ? game_scene_document_save(
-                               document,
-                               project_components()
-                           )
-                         : NULL;
-            game_scene_document_free(document);
+            text = valid ? scene_document_save(document, project_components()) : NULL;
+            scene_document_free(document);
         }
         if (text) {
             av_doc *document = asset_text_read(text, error, size);
@@ -213,9 +209,8 @@ static authoring_sources *restart_sources(
                                    .text = file ? file->text : source->syntax->text }
         );
     }
-    for (int i = 0; i < game_preview_sources_overlay_count(scene->live); i++) {
-        const source_catalog_edit
-            *overlay = game_preview_sources_overlay_at(scene->live, i);
+    for (int i = 0; i < preview_sources_overlay_count(scene->live); i++) {
+        const source_catalog_edit *overlay = preview_sources_overlay_at(scene->live, i);
         if (!source_catalog_source_path(scene->content_root, overlay->path)) {
             restart_edit(
                 &edits,
@@ -237,7 +232,7 @@ static authoring_sources *restart_sources(
         }
     }
     authoring_sources *
-        result = game_preview_sources_candidate(scene->live, edits, acount(edits), true, error, size);
+        result = preview_sources_candidate(scene->live, edits, acount(edits), true, error, size);
     afree(edits);
     return result;
 }
@@ -372,7 +367,7 @@ int app_scene_authoring_plan_source_rename(
     }
     refactor_sync(scene);
     app_scene_authoring_refresh_asset_index(scene);
-    const authoring_sources *sources = game_preview_sources_working(scene->live);
+    const authoring_sources *sources = preview_sources_working(scene->live);
     if (!sources) {
         snprintf(error, size, "Prepare project sources before rename");
         return -1;
@@ -488,7 +483,7 @@ int app_scene_authoring_plan_source_rename(
     }
     valid = valid &&
             (!acount(edits) ||
-             !game_preview_sources_validate(scene->live, edits, acount(edits), error, size));
+             !preview_sources_validate(scene->live, edits, acount(edits), error, size));
     afree(edits);
     valid = valid &&
             source_metadata(scene, plan, navigation, source, sources, error, size);

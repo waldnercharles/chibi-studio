@@ -193,7 +193,7 @@ static bool outliner_move_frame(void *state)
             REQUIRE(
                 app_scene_authoring_register_prototype(
                     scene,
-                    "name \"MoveBox\"\ncomponents { GameTransform x=0 y=0; }\n",
+                    "name \"MoveBox\"\ncomponents { Transform x=0 y=0; }\n",
                     NULL
                 ) == 0
             );
@@ -202,11 +202,11 @@ static bool outliner_move_frame(void *state)
                     scene,
                     "version 1\nname \"Scene\"\n(array)entities {\n"
                     "- name=\"A\" prototype=\"MoveBox\" { components { "
-                    "GameTransform x=100 y=0; }; }\n"
+                    "Transform x=100 y=0; }; }\n"
                     "- name=\"B\" prototype=\"MoveBox\" { components { "
-                    "GameTransform x=20 y=0; }; }\n"
+                    "Transform x=20 y=0; }; }\n"
                     "- name=\"C\" prototype=\"MoveBox\" { components { "
-                    "GameTransform x=30 y=0; }; }\n"
+                    "Transform x=30 y=0; }; }\n"
                     "}\n",
                     NULL
                 ) == 0
@@ -226,18 +226,10 @@ static bool outliner_move_frame(void *state)
             REQUIRE(child_of(scene, 1, 0) && child_of(scene, 2, 0));
             REQUIRE(scene_instance_selected(scene, 1) && scene_instance_selected(scene, 2));
             REQUIRE(
-                fabsf(
-                    GAME_GameTransform_get_const(scene->world, scene->actors[1].entity)
-                        ->x +
-                    80
-                ) < 1e-4f
+                fabsf(Transform_get_const(scene->world, scene->actors[1].entity)->x + 80) < 1e-4f
             );
             REQUIRE(
-                fabsf(
-                    GAME_GameTransform_get_const(scene->world, scene->actors[2].entity)
-                        ->x +
-                    70
-                ) < 1e-4f
+                fabsf(Transform_get_const(scene->world, scene->actors[2].entity)->x + 70) < 1e-4f
             );
             select_instance(scene, 0);
             return outliner_press(s, "A");
@@ -287,11 +279,7 @@ static bool outliner_move_frame(void *state)
             REQUIRE(outliner_order(s, "CAB"));
             REQUIRE(child_of(scene, 2, 1));
             REQUIRE(
-                fabsf(
-                    GAME_GameTransform_get_const(scene->world, scene->actors[2].entity)
-                        ->x +
-                    80
-                ) < 1e-4f
+                fabsf(Transform_get_const(scene->world, scene->actors[2].entity)->x + 80) < 1e-4f
             );
             REQUIRE(outliner_asset_zone(s));
             edits++;

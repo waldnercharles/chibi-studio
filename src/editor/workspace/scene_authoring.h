@@ -8,7 +8,7 @@
 typedef struct app_scene_authoring app_scene_authoring;
 /* Authored world settings; editable while Scene and prototype preview are stopped.
  * Records one undo step. Invalid settings leave the world unchanged. */
-int app_scene_authoring_set_physics(app_scene_authoring *scene, game_physics_settings settings);
+int app_scene_authoring_set_physics(app_scene_authoring *scene, physics_settings settings);
 /* The root ui document the scene's UI shows on: its own, else the project's
  * default, else NULL. */
 const char *app_scene_authoring_page(const app_scene_authoring *scene);
@@ -95,8 +95,8 @@ typedef struct
 
 app_scene_authoring *app_scene_authoring_new(
     ecs_world *world,
-    game_preview_world *live,
-    game_preview_definition *definition,
+    preview_world *live,
+    preview_definition *definition,
     const behavior_asset *editor_working,
     editor *graph_editor,
     app_scene_prototype_resolve_fn resolve_prototype,
@@ -105,8 +105,8 @@ app_scene_authoring *app_scene_authoring_new(
 );
 app_scene_authoring *app_scene_authoring_new_with_content_root(
     ecs_world *world,
-    game_preview_world *live,
-    game_preview_definition *definition,
+    preview_world *live,
+    preview_definition *definition,
     const behavior_asset *editor_working,
     editor *graph_editor,
     app_scene_prototype_resolve_fn resolve_prototype,
@@ -240,7 +240,7 @@ typedef struct
     bool generated_world;
     bool lighting; /* HRC lighting; off shows material colors unlit */
     bool fog;      /* the fog of war as the game starts */
-    bool cameras;  /* each GameCamera's frame, labeled */
+    bool cameras;  /* each Camera's frame, labeled */
     bool colliders; /* every Collider3D's outline, not only the selection's */
 } app_scene_view_options;
 void app_scene_authoring_set_view_options(app_scene_authoring *scene, app_scene_view_options options);
@@ -251,7 +251,7 @@ bool app_scene_authoring_world_pending(const app_scene_authoring *scene);
 const char *app_scene_authoring_world_error(const app_scene_authoring *scene);
 
 /* View Through Camera (Blender's Numpad 0): frames the Scene view exactly on
- * a GameCamera's span, the selected object's or else the first enabled one's,
+ * a Camera's span, the selected object's or else the first enabled one's,
  * and follows it until the view moves or a session starts. Leaving restores
  * the view from before. -1 without a camera or before the first draw. */
 int app_scene_authoring_view_through_camera(app_scene_authoring *scene, bool on);
@@ -334,9 +334,9 @@ enum
 unsigned app_scene_authoring_actor_view(app_scene_authoring *scene, int actor);
 void app_scene_authoring_set_actor_view(app_scene_authoring *scene, int actor, unsigned flags);
 /* Every scene's view state by scene path, in memory until the host binds the
- * store to storage (game_save_open) and commits it. */
-typedef struct game_save game_save;
-game_save *app_scene_authoring_view_store(app_scene_authoring *scene);
+ * store to storage (save_open) and commits it. */
+typedef struct save save;
+save *app_scene_authoring_view_store(app_scene_authoring *scene);
 /* Adds a component with its defaults to the selected object, overriding its
  * prototype, or removes one it added, as one Undo step. 1 while a
  * collaboration host decides; -1 when the object has the component (or

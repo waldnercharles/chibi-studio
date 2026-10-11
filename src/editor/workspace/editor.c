@@ -33,7 +33,7 @@ static int ed_event_param_count(const node *n)
 
 /* Appends only the declared parameters this event is still missing, so no
  * existing pin is retyped or removed and no edge is invalidated under EVT-5. */
-int ed_event_add_declared_params(editor *e, node *n, const game_host_event_desc *signature)
+int ed_event_add_declared_params(editor *e, node *n, const host_event_desc *signature)
 {
     int added = 0;
     for (int i = ed_event_param_count(n); i < signature->payload_count; i++) {
@@ -49,7 +49,7 @@ int ed_name_spawned_event(editor *e, node *n)
         return 0;
     }
     for (int i = 0; i < e->event_catalog_count; i++) {
-        const game_host_event_desc *signature = &e->event_catalog[i];
+        const host_event_desc *signature = &e->event_catalog[i];
         if (ed_event_name_used(e, signature->name)) {
             continue;
         }
@@ -222,7 +222,7 @@ int editor_host_captures_keyboard(void)
     return retained_keyboard;
 }
 
-void editor_set_event_catalog(editor *e, const game_host_event_desc *events, int count)
+void editor_set_event_catalog(editor *e, const host_event_desc *events, int count)
 {
     if (!e) {
         return;

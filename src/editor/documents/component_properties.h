@@ -12,11 +12,6 @@ bool property_field_visible(
     const type_field *field,
     const void *data
 );
-void property_label(
-    const game_prototype_component *component,
-    const type_field *field,
-    char *label,
-    size_t size
-);
+void property_label(const prototype_component *component, const type_field *field, char *label, size_t size);
 
 #endif

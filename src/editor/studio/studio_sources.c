@@ -47,13 +47,13 @@ static void add_world(yyjson_mut_doc *doc)
 }
 
 /* The save of the world the Scene shows, and its title. */
-static game_save *scene_save(studio *s, char *title, size_t size)
+static save *scene_save(studio *s, char *title, size_t size)
 {
     app_scene_authoring *scene = s->scene;
     scene_prototype_asset *previewed = previewed_prototype(scene);
     if (scene->active_runtime_target == APP_RUNTIME_PREVIEW && previewed) {
         snprintf(title, size, "Preview \xc2\xb7 %s", previewed->prototype->name);
-        return game_prototype_preview_live(scene->prototype_preview)->runtime->save;
+        return prototype_preview_live(scene->prototype_preview)->runtime->save;
     }
     char name[128];
     snprintf(title, size, "Scene \xc2\xb7 %s", studio_scene_title(scene, name, sizeof name));
@@ -61,49 +61,45 @@ static game_save *scene_save(studio *s, char *title, size_t size)
 }
 
 /* Saves the values rows hold that differ from `save`. */
-static void save_rows(yyjson_mut_val *rows, game_save *save)
+static void save_rows(yyjson_mut_val *rows, save *save)
 {
     for (size_t i = 0; i < yyjson_mut_arr_size(rows); i++) {
         yyjson_mut_val *row = yyjson_mut_arr_get(rows, i);
         yyjson_mut_val *value = yyjson_mut_obj_get(row, "value");
         if (yyjson_mut_is_str(value)) {
-            game_save_set(save, yyjson_mut_get_str(yyjson_mut_obj_get(row, "key")), yyjson_mut_get_str(value));
+            save_set(save, yyjson_mut_get_str(yyjson_mut_obj_get(row, "key")), yyjson_mut_get_str(value));
         }
     }
 }
 
 /* Whether the rows name `save`'s keys, in order. */
-static bool rows_match(yyjson_mut_val *rows, const game_save *save)
+static bool rows_match(yyjson_mut_val *rows, const save *save)
 {
-    if ((int)yyjson_mut_arr_size(rows) != game_save_count(save)) {
+    if ((int)yyjson_mut_arr_size(rows) != save_count(save)) {
         return false;
     }
-    for (int i = 0; i < game_save_count(save); i++) {
+    for (int i = 0; i < save_count(save); i++) {
         yyjson_mut_val *key = yyjson_mut_obj_get(yyjson_mut_arr_get(rows, (size_t)i), "key");
-        if (strcmp(yyjson_mut_get_str(key), game_save_key(save, i)) != 0) {
+        if (strcmp(yyjson_mut_get_str(key), save_key(save, i)) != 0) {
             return false;
         }
     }
     return true;
 }
 
-static void show_rows(yyjson_mut_doc *doc, yyjson_mut_val *rows, const game_save *save)
+static void show_rows(yyjson_mut_doc *doc, yyjson_mut_val *rows, const save *save)
 {
     if (!rows_match(rows, save)) {
         yyjson_mut_arr_clear(rows);
-        for (int i = 0; i < game_save_count(save); i++) {
+        for (int i = 0; i < save_count(save); i++) {
             yyjson_mut_val *row = yyjson_mut_arr_add_obj(doc, rows);
-            yyjson_mut_obj_add_strcpy(doc, row, "key", game_save_key(save, i));
+            yyjson_mut_obj_add_strcpy(doc, row, "key", save_key(save, i));
             yyjson_mut_obj_add_null(doc, row, "value");
         }
     }
-    for (int i = 0; i < game_save_count(save); i++) {
+    for (int i = 0; i < save_count(save); i++) {
         yyjson_mut_val *row = yyjson_mut_arr_get(rows, (size_t)i);
-        ui_data_set_text(
-            doc,
-            yyjson_mut_obj_get(row, "value"),
-            game_save_get(save, game_save_key(save, i))
-        );
+        ui_data_set_text(doc, yyjson_mut_obj_get(row, "value"), save_get(save, save_key(save, i)));
     }
 }
 
@@ -113,16 +109,16 @@ static bool sync_world(studio *s, const studio_panel_sync *at)
     yyjson_mut_val *rows = yyjson_mut_obj_get(at->variable, "saved");
     yyjson_mut_val *shown_title = yyjson_mut_obj_get(at->variable, "title");
     char title[192];
-    game_save *save = scene_save(s, title, sizeof title);
+    save *save = scene_save(s, title, sizeof title);
     if (at->wrote && save == src->save) {
         save_rows(rows, save);
     }
     bool retitled = strcmp(yyjson_mut_get_str(shown_title), title) != 0;
-    if (save == src->save && game_save_revision(save) == src->save_seen && !retitled) {
+    if (save == src->save && save_revision(save) == src->save_seen && !retitled) {
         return false;
     }
     src->save = save;
-    src->save_seen = game_save_revision(save);
+    src->save_seen = save_revision(save);
     ui_data_set_text(at->doc, shown_title, title);
     show_rows(at->doc, rows, save);
     return true;

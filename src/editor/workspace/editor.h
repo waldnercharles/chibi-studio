@@ -216,8 +216,8 @@ void editor_set_retained_keyboard(bool captured);
  * out of its runtime vocabulary; the editor uses this catalog when it creates
  * event nodes and their pins. */
 /* `events` is borrowed and must outlive the editor. */
-void editor_set_event_catalog(editor *e, const game_host_event_desc *events, int count);
-/* The events the GameUi documents showing the asset's entities send it
+void editor_set_event_catalog(editor *e, const host_event_desc *events, int count);
+/* The events the Ui documents showing the asset's entities send it
  * (assets/ui_events.h), offered as Event nodes; borrowed until the next call. */
 void editor_set_ui_event_catalog(editor *e, const struct ui_event *events, int count);
 /* The values those documents bind under self (assets/ui_events.h), offered

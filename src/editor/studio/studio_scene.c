@@ -728,7 +728,7 @@ bool studio_scene_view_sync(studio *s, const studio_panel_sync *at)
     );
     const char *model_error = "", *model_source_error = "";
     if (model_shown) {
-        game_preview_definition *definition = game_preview_find_definition(s->scene->live, model);
+        preview_definition *definition = preview_find_definition(s->scene->live, model);
         if (definition && definition->diagnostics.error_count) {
             model_error = "Showing last valid model";
             for (int i = 0; i < acount(definition->diagnostics.items); i++) {

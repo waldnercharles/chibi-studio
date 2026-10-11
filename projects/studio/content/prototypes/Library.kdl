@@ -1,4 +1,4 @@
 name "Library"
 components {
-    GAME.GameUi document="Library" hidden=#true
+    Ui document="Library" hidden=#true
 }

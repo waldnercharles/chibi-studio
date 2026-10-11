@@ -162,12 +162,12 @@ static void prototype_choices(studio *s, arena *storage, pin_value *out)
 {
     int count = 0;
     for (int i = 0; i < acount(s->scene->prototypes); i++) {
-        const game_prototype *prototype = s->scene->prototypes[i].prototype;
+        const prototype *prototype = s->scene->prototypes[i].prototype;
         count += prototype && prototype->name;
     }
     pin_array *items = pin_array_snapshot_allocate(storage, PIN_STRUCT, STUDIO_CHOICE_TYPE, count);
     for (int i = 0, at = 0; i < acount(s->scene->prototypes); i++) {
-        const game_prototype *prototype = s->scene->prototypes[i].prototype;
+        const prototype *prototype = s->scene->prototypes[i].prototype;
         if (!prototype || !prototype->name) {
             continue;
         }
@@ -222,7 +222,7 @@ uint64_t studio_nodes_stamp(const studio *s)
         (uint64_t)acount(scene->prototypes),
         (uint64_t)scene->selected,
         scene->selection_revision,
-        game_save_revision(scene->view_store),
+        save_revision(scene->view_store),
         studio_editable(s),
         studio_live(s),
         s->mac,

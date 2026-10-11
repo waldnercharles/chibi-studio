@@ -93,7 +93,7 @@ int scene_retention_load(av_value *root, scene_retained_component **components)
             .automatic = av_get_bool(automatic),
         };
         av_doc *empty = av_doc_new();
-        av_value *check = game_prototype_rebase_component_value(
+        av_value *check = prototype_rebase_component_value(
             component.values,
             component.defaults,
             av_obj(empty)
@@ -112,7 +112,7 @@ int scene_retention_load(av_value *root, scene_retained_component **components)
     return 0;
 }
 
-bool scene_retention_validate(const scene_retained_component *components, const game_prototype_registry *registry)
+bool scene_retention_validate(const scene_retained_component *components, const prototype_registry *registry)
 {
     for (int i = 0; i < acount(components); i++) {
         av_value *snapshots[] = { components[i].values, components[i].defaults };
@@ -122,7 +122,7 @@ bool scene_retention_validate(const scene_retained_component *components, const 
             av_obj_add_str(doc, root, "name", "Retained");
             av_obj_add_val(doc, root, "components", av_clone(doc, snapshots[j]));
             char error[256];
-            game_prototype *parsed = game_prototype_load_value(root, registry, error, sizeof error);
+            prototype *parsed = prototype_load_value(root, registry, error, sizeof error);
             av_doc_free(doc);
             bool valid = parsed && ((j == 1 && !acount(parsed->components)) ||
                                     (acount(parsed->components) == 1 &&
@@ -130,7 +130,7 @@ bool scene_retention_validate(const scene_retained_component *components, const 
                                          parsed->components[0].desc->name,
                                          components[i].name
                                      )));
-            game_prototype_free(parsed);
+            prototype_free(parsed);
             if (!valid) {
                 return false;
             }

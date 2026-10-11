@@ -1,4 +1,4 @@
 name "Workspace"
 components {
-    GAME.GameUi document="Workspace" hidden=#true
+    Ui document="Workspace" hidden=#true
 }

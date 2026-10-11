@@ -1,5 +1,5 @@
 /* Editor view state of the open scene (scene_authoring.h): the objects its
- * edit view hides or will not pick. A game_save holds every scene's, keyed by
+ * edit view hides or will not pick. A save holds every scene's, keyed by
  * the scene's path, as {"<object>": flags}; Studio binds the store to a user
  * file, as Unity keeps Scene visibility in its Library, so the scene file and
  * its Undo never see it. Objects are keyed by name: a scene keeps names unique
@@ -73,7 +73,7 @@ static void clear_entries(app_scene_authoring *scene)
 static void sync_view(app_scene_authoring *scene)
 {
     const char *path = scene->scene_path ? scene->scene_path : "";
-    uint64_t revision = game_save_revision(scene->view_store);
+    uint64_t revision = save_revision(scene->view_store);
     if (scene->view_path && !strcmp(scene->view_path, path) &&
         scene->view_revision == revision) {
         return;
@@ -82,7 +82,7 @@ static void sync_view(app_scene_authoring *scene)
     scene->view_path = xstrdup(path);
     scene->view_revision = revision;
     clear_entries(scene);
-    const char *text = path[0] ? game_save_get(scene->view_store, path) : NULL;
+    const char *text = path[0] ? save_get(scene->view_store, path) : NULL;
     yyjson_doc *doc = text ? yyjson_read(text, strlen(text), 0) : NULL;
     if (!doc) {
         return;
@@ -106,8 +106,8 @@ static void write_view(app_scene_authoring *scene)
         return;
     }
     if (!acount(scene->view)) {
-        game_save_remove(scene->view_store, scene->view_path);
-        scene->view_revision = game_save_revision(scene->view_store);
+        save_remove(scene->view_store, scene->view_path);
+        scene->view_revision = save_revision(scene->view_store);
         return;
     }
     yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
@@ -119,10 +119,10 @@ static void write_view(app_scene_authoring *scene)
     char *json = yyjson_mut_write(doc, 0, NULL);
     assert(json);
     /* A path the store refuses keeps its state for this session only. */
-    game_save_set(scene->view_store, scene->view_path, json);
+    save_set(scene->view_store, scene->view_path, json);
     free(json);
     yyjson_mut_doc_free(doc);
-    scene->view_revision = game_save_revision(scene->view_store);
+    scene->view_revision = save_revision(scene->view_store);
 }
 
 unsigned app_scene_authoring_actor_view(app_scene_authoring *scene, int actor)
@@ -144,7 +144,7 @@ void app_scene_authoring_set_actor_view(app_scene_authoring *scene, int actor, u
     write_view(scene);
 }
 
-game_save *app_scene_authoring_view_store(app_scene_authoring *scene)
+save *app_scene_authoring_view_store(app_scene_authoring *scene)
 {
     return scene->view_store;
 }
@@ -194,7 +194,7 @@ render_skip scene_view_skip(app_scene_authoring *scene, unsigned flags, uint64_t
 
 void scene_view_init(app_scene_authoring *scene)
 {
-    scene->view_store = game_save_new();
+    scene->view_store = save_new();
 }
 
 void scene_view_free(app_scene_authoring *scene)
@@ -204,5 +204,5 @@ void scene_view_free(app_scene_authoring *scene)
     afree(scene->view_hidden);
     afree(scene->view_unpickable);
     free(scene->view_path);
-    game_save_free(scene->view_store);
+    save_free(scene->view_store);
 }

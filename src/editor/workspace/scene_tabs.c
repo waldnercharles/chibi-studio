@@ -269,7 +269,7 @@ static void capture_asset_baseline(app_scene_authoring *scene, scene_document_ta
     if (tab->kind == APP_EDITOR_DOCUMENT_PROTOTYPE && !tab->asset_saved) {
         scene_prototype_asset *asset = find_prototype(scene, tab->key + strlen("prototype:"));
         if (asset && asset->prototype) {
-            av_value *json = game_prototype_to_value(asset->prototype);
+            av_value *json = prototype_to_value(asset->prototype);
             if (json) {
                 av_value_free(tab->asset_saved);
                 tab->asset_saved = json;
@@ -278,7 +278,7 @@ static void capture_asset_baseline(app_scene_authoring *scene, scene_document_ta
         return;
     }
     if (tab->kind == APP_EDITOR_DOCUMENT_BEHAVIOR && !tab->asset_saved) {
-        game_preview_definition *definition = game_preview_find_definition(
+        preview_definition *definition = preview_find_definition(
             scene->live,
             tab->key + strlen("behavior:")
         );
@@ -324,8 +324,8 @@ void scene_tabs_mark_document_saved(
         scene_prototype_asset *asset = find_prototype(scene, id);
         path = asset ? asset->path : NULL;
     } else if (kind == APP_EDITOR_DOCUMENT_BEHAVIOR) {
-        game_preview_definition *definition = game_preview_find_definition(scene->live, id);
-        path = definition ? game_preview_definition_path(definition) : NULL;
+        preview_definition *definition = preview_find_definition(scene->live, id);
+        path = definition ? preview_definition_path(definition) : NULL;
     }
     char *key = tab_key(kind, id, kind == APP_EDITOR_DOCUMENT_SYSTEM ? scene->system_path : NULL);
     int index = document_tab_for_path(scene, kind, path);
@@ -412,9 +412,8 @@ static const char *document_path(app_scene_authoring *scene, app_editor_document
             return asset ? asset->path : NULL;
         }
         case APP_EDITOR_DOCUMENT_BEHAVIOR: {
-            game_preview_definition
-                *definition = game_preview_find_definition(scene->live, id);
-            return definition ? game_preview_definition_path(definition) : NULL;
+            preview_definition *definition = preview_find_definition(scene->live, id);
+            return definition ? preview_definition_path(definition) : NULL;
         }
         case APP_EDITOR_DOCUMENT_UI: return id;
     }
@@ -594,7 +593,7 @@ static int restore_scene_tab_contents(app_scene_authoring *scene, scene_document
 static int restore_system_tab(app_scene_authoring *scene, const scene_document_tab *tab)
 {
     const char *text = av_get_str(av_obj_get(tab->source_state, "text"));
-    const authoring_source *source = game_preview_source_find(scene->live, tab->path, false);
+    const authoring_source *source = preview_source_find(scene->live, tab->path, false);
     if (!text && source) {
         text = source->syntax->text;
     }
@@ -856,16 +855,16 @@ bool scene_tabs_dirty(app_scene_authoring *scene, const scene_document_tab *tab)
     }
     if (tab->kind == APP_EDITOR_DOCUMENT_BEHAVIOR) {
         const char *name = tab->key + strlen("behavior:");
-        game_preview_definition *definition = game_preview_find_definition(scene->live, name);
+        preview_definition *definition = preview_find_definition(scene->live, name);
         return definition && definition->unsaved;
     }
     if (tab->kind == APP_EDITOR_DOCUMENT_SYSTEM) {
-        const authoring_source *source = game_preview_source_find(scene->live, tab->path, false);
-        game_preview_definition *definition = source ? game_preview_find_definition(
-                                                           scene->live,
-                                                           source->analysis->name
-                                                       )
-                                                     : NULL;
+        const authoring_source *source = preview_source_find(scene->live, tab->path, false);
+        preview_definition *definition = source ? preview_find_definition(
+                                                      scene->live,
+                                                      source->analysis->name
+                                                  )
+                                                : NULL;
         return tab->source_dirty || (definition && definition->unsaved);
     }
     if (tab->kind == APP_EDITOR_DOCUMENT_UI) {
@@ -885,23 +884,18 @@ static int discard_prototype(app_scene_authoring *scene, scene_document_tab *tab
         return -1;
     }
     char error[256];
-    game_prototype *prototype = game_prototype_load_value(
-        tab->asset_saved,
-        &scene->registry,
-        error,
-        sizeof error
-    );
-    if (!prototype) {
+    prototype *native_prototype = prototype_load_value(tab->asset_saved, &scene->registry, error, sizeof error);
+    if (!native_prototype) {
         return -1;
     }
-    game_prototype *previous = asset->prototype;
-    asset->prototype = prototype;
+    prototype *previous = asset->prototype;
+    asset->prototype = native_prototype;
     if (refresh_prototype_instances(scene, asset) != 0) {
         asset->prototype = previous;
-        game_prototype_free(prototype);
+        prototype_free(native_prototype);
         return -1;
     }
-    game_prototype_free(previous);
+    prototype_free(previous);
     clear_prototype_history(asset);
     asset->dirty = 0;
     return 0;
@@ -910,7 +904,7 @@ static int discard_prototype(app_scene_authoring *scene, scene_document_tab *tab
 static int discard_behavior(app_scene_authoring *scene, scene_document_tab *tab)
 {
     const char *name = tab->key + strlen("behavior:");
-    game_preview_definition *definition = game_preview_find_definition(scene->live, name);
+    preview_definition *definition = preview_find_definition(scene->live, name);
     if (!tab->asset_saved) {
         /* A behavior shown from its source keeps no graph snapshot; with
            nothing unsaved there is nothing to discard. */
@@ -928,7 +922,7 @@ static int discard_behavior(app_scene_authoring *scene, scene_document_tab *tab)
     definition->working = working;
     definition->dirty = 1;
     definition->unsaved = false;
-    int result = game_preview_apply(
+    int result = preview_apply(
         scene->live,
         definition,
         scene->message,

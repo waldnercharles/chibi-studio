@@ -11,42 +11,42 @@
    mirror, which turns it a quarter about Y and flips its X. */
 static const char
     cube_prototype[] = "name \"Cube\"\ncomponents {\n"
-                       "    GameTransform3D {\n"
+                       "    Transform3D {\n"
                        "        position x=0 y=50 z=0\n"
                        "        rotation x=0 y=0.70710678 z=0 w=0.70710678\n"
                        "        scale x=1 y=1 z=1\n"
                        "    }\n"
-                       "    GameGeometry3D primitive=0 width=100.0 "
+                       "    Geometry3D primitive=0 width=100.0 "
                        "depth=100.0 height=100.0\n"
                        "}\n";
 static const char
     turner_prototype[] = "name \"Turner\"\ncomponents {\n"
-                         "    GameTransform x=200 y=0\n"
-                         "    GameOrientation radians=0\n"
-                         "    GameGeometry3D primitive=0 width=100.0 "
+                         "    Transform x=200 y=0\n"
+                         "    Orientation radians=0\n"
+                         "    Geometry3D primitive=0 width=100.0 "
                          "depth=100.0 height=100.0 elevation=50.0\n"
                          "}\n";
 static const char
     mirror_prototype[] = "name \"Mirror\"\ncomponents {\n"
-                         "    GameTransform3D {\n"
+                         "    Transform3D {\n"
                          "        position x=0 y=50 z=300\n"
                          "        rotation x=0 y=0.70710678 z=0 w=0.70710678\n"
                          "        scale x=-1 y=1 z=1\n"
                          "    }\n"
                          "}\n";
 static const char gem_prototype[] = "name \"Gem\"\ncomponents {\n"
-                                    "    GameTransform3D {\n"
+                                    "    Transform3D {\n"
                                     "        rotation x=0 y=0 z=0 w=1\n"
                                     "        scale x=1 y=1 z=1\n"
                                     "    }\n"
-                                    "    GameGeometry3D primitive=0 width=50.0 "
+                                    "    Geometry3D primitive=0 width=50.0 "
                                     "depth=50.0 height=50.0\n"
                                     "}\n";
 static const char
-    warped_prototype[] = "name \"Warped\"\ncomponents { GameTransform3D { "
+    warped_prototype[] = "name \"Warped\"\ncomponents { Transform3D { "
                          "scale x=2 y=1 z=1; }; }\n";
 static const char
-    collapsed_prototype[] = "name \"Collapsed\"\ncomponents { GameTransform3D "
+    collapsed_prototype[] = "name \"Collapsed\"\ncomponents { Transform3D "
                             "{ scale x=0 y=1 z=1; }; }\n";
 static const char gizmo_scene
     [] = "version 1\nname \"Scene\"\npresentation \"3d\"\n"
@@ -78,39 +78,29 @@ static float gizmo_length(studio *s, CF_V3 point)
     return 80 * 2 * depth * tanf(camera.fov * 0.5f) / (float)height;
 }
 
-static GameTransform3D cube_now(studio *s)
+static Transform3D cube_now(studio *s)
 {
-    return *GAME_GameTransform3D_get_const(s->scene->world, s->scene->actors[0].entity);
+    return *Transform3D_get_const(s->scene->world, s->scene->actors[0].entity);
 }
 
 /* Redo restores every typed field as one gesture; leave it undone for the caller. */
 static bool undoes(studio *s)
 {
     REQUIRE(!s->scene->gizmo.active);
-    GameTransform3D cube = cube_now(s);
-    GameTransform3D gem = *GAME_GameTransform3D_get_const(
-        s->scene->world,
-        s->scene->actors[3].entity
-    );
-    float radians = GAME_GameOrientation_get_const(
-                        s->scene->world,
-                        s->scene->actors[1].entity
-    )
+    Transform3D cube = cube_now(s);
+    Transform3D
+        gem = *Transform3D_get_const(s->scene->world, s->scene->actors[3].entity);
+    float radians = Orientation_get_const(s->scene->world, s->scene->actors[1].entity)
                         ->radians;
     studio_command_run(s, STUDIO_COMMAND_UNDO);
     REQUIRE(scene_history_can_redo(s->scene->history));
     studio_command_run(s, STUDIO_COMMAND_REDO);
-    GameTransform3D redone_cube = cube_now(s);
-    const GameTransform3D *redone_gem = GAME_GameTransform3D_get_const(
-        s->scene->world,
-        s->scene->actors[3].entity
-    );
+    Transform3D redone_cube = cube_now(s);
+    const Transform3D
+        *redone_gem = Transform3D_get_const(s->scene->world, s->scene->actors[3].entity);
     REQUIRE(!memcmp(&cube, &redone_cube, sizeof cube));
     REQUIRE(!memcmp(&gem, redone_gem, sizeof gem));
-    REQUIRE(
-        GAME_GameOrientation_get_const(s->scene->world, s->scene->actors[1].entity)
-            ->radians == radians
-    );
+    REQUIRE(Orientation_get_const(s->scene->world, s->scene->actors[1].entity)->radians == radians);
     studio_command_run(s, STUDIO_COMMAND_UNDO);
     return true;
 }
@@ -125,7 +115,7 @@ static bool grab_y_ring(studio *s, CF_V3 pivot, CF_V2 *from, CF_V2 *to)
 }
 
 /* Whether `turn` takes the axes `before` to `after`. */
-static bool turns_axes(CF_Quat turn, const GameGlobalTransform3D *before, const GameGlobalTransform3D *after)
+static bool turns_axes(CF_Quat turn, const GlobalTransform3D *before, const GlobalTransform3D *after)
 {
     return near_v3(after->x_axis, cf_mul_q_v3(turn, before->x_axis), 0.01f) &&
            near_v3(after->y_axis, cf_mul_q_v3(turn, before->y_axis), 0.01f) &&
@@ -142,7 +132,7 @@ static bool turns_axes(CF_Quat turn, const GameGlobalTransform3D *before, const 
 static bool scene_gizmo3d_frame(void *state)
 {
     static CF_V2 from, to;
-    static GameGlobalTransform3D before;
+    static GlobalTransform3D before;
     static bool dirty, can_undo, can_redo;
     static int scene_area;
     studio *s = studio_acceptance_studio(state);
@@ -230,17 +220,12 @@ static bool scene_gizmo3d_frame(void *state)
         case 26:
         case 30: return button_at(s, SDL_BUTTON_LEFT, false, to);
         case 19: {
-            const GameOrientation *turned = GAME_GameOrientation_get_const(
-                scene->world,
-                scene->actors[1].entity
-            );
+            const Orientation
+                *turned = Orientation_get_const(scene->world, scene->actors[1].entity);
             /* A quarter turn about +Y, which gameplay radians run against. */
             REQUIRE(near(turned->radians, -CF_PI / 2, 0.02f));
             REQUIRE(undoes(s));
-            REQUIRE(
-                GAME_GameOrientation_get_const(scene->world, scene->actors[1].entity)
-                    ->radians == 0
-            );
+            REQUIRE(Orientation_get_const(scene->world, scene->actors[1].entity)->radians == 0);
             s->prefs.tool = SCENE_TOOL_SCALE;
             select_instance(scene, 0);
             look_at(s, CUBE_AT, SIDE_YAW, -0.4f);
@@ -271,14 +256,14 @@ static bool scene_gizmo3d_frame(void *state)
                the center never changes. */
             CF_V3 up = { 0, 0.70710678f, 0.70710678f };
             CF_V3 grab = cf_add_v3(CUBE_AT, cf_mul_v3_f(up, gizmo_length(s, CUBE_AT)));
-            before = game_transform_world_3d(scene->world, scene->actors[0].entity);
+            before = transform_world_3d(scene->world, scene->actors[0].entity);
             from = shown_at(s, grab);
             to = shown_along(s, grab, (CF_V3){ 0, 0, 1 }, CF_PI / 2 * gizmo_length(s, grab));
             return button_at(s, SDL_BUTTON_LEFT, true, from);
         }
         case 27: {
-            GameGlobalTransform3D
-                after = game_transform_world_3d(scene->world, scene->actors[0].entity);
+            GlobalTransform3D
+                after = transform_world_3d(scene->world, scene->actors[0].entity);
             REQUIRE(turns_axes(cf_quat_from_axis_angle(x, CF_PI / 2), &before, &after));
             REQUIRE(undoes(s));
             REQUIRE(near_v3(cube_now(s).position, CUBE_AT, 0));
@@ -288,13 +273,13 @@ static bool scene_gizmo3d_frame(void *state)
             return true;
         }
         case 28:
-            before = game_transform_world_3d(scene->world, scene->actors[3].entity);
+            before = transform_world_3d(scene->world, scene->actors[3].entity);
             return grab_y_ring(s, GEM_AT, &from, &to);
         case 31: {
             /* The mirror's child turns a quarter about the world's +Y, as
                dragged, and stays where it stood. */
-            GameGlobalTransform3D
-                after = game_transform_world_3d(scene->world, scene->actors[3].entity);
+            GlobalTransform3D
+                after = transform_world_3d(scene->world, scene->actors[3].entity);
             REQUIRE(
                 turns_axes(cf_quat_from_axis_angle((CF_V3){ 0, 1, 0 }, CF_PI / 2), &before, &after)
             );

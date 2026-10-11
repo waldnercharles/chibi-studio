@@ -41,16 +41,14 @@ static const CF_V3 UNIT_AXES[3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
 /* What places `entity`: its nearest ancestor with the same transform. */
 static ecs_entity placer(const ecs_world *world, ecs_entity entity)
 {
-    return GAME_GameTransform3D_has(world, entity)
-             ? game_transform_parent_3d(world, entity)
-             : game_transform_parent(world, entity);
+    return Transform3D_has(world, entity) ? transform_parent_3d(world, entity)
+                                          : transform_parent(world, entity);
 }
 
 static bool placeable(const ecs_world *world, ecs_entity entity)
 {
-    return GAME_GameTransform3D_has(world, entity) ||
-           (GAME_GameTransform_has(world, entity) &&
-            GAME_GameGeometry3D_has(world, entity));
+    return Transform3D_has(world, entity) ||
+           (Transform_has(world, entity) && Geometry3D_has(world, entity));
 }
 
 static bool selected_entity(const app_scene_authoring *scene, ecs_entity entity)
@@ -78,7 +76,7 @@ static bool carried(const app_scene_authoring *scene, ecs_entity entity)
 
 /* Rotation through a parent is representable without shear only when its
    three axes are perpendicular and equally long. Reflections are allowed. */
-static bool conformal(const GameGlobalTransform3D *transform)
+static bool conformal(const GlobalTransform3D *transform)
 {
     CF_V3 x = transform->x_axis, y = transform->y_axis, z = transform->z_axis;
     float xx = cf_dot_v3(x, x), yy = cf_dot_v3(y, y), zz = cf_dot_v3(z, z);
@@ -90,7 +88,7 @@ static bool conformal(const GameGlobalTransform3D *transform)
 
 /* A collapsed or nearly parallel parent has no stable inverse: a world
    move cannot be written as a local position. */
-static bool invertible(const GameGlobalTransform3D *transform)
+static bool invertible(const GlobalTransform3D *transform)
 {
     CF_V3 x = transform->x_axis, y = transform->y_axis, z = transform->z_axis;
     float product = cf_len_v3(x) * cf_len_v3(y) * cf_len_v3(z);
@@ -102,7 +100,7 @@ static bool invertible(const GameGlobalTransform3D *transform)
 static scene_gizmo_target3d target_of(const ecs_world *world, ecs_entity entity)
 {
     scene_gizmo_target3d target = { .entity = entity,
-                                    .spatial = GAME_GameTransform3D_has(world, entity),
+                                    .spatial = Transform3D_has(world, entity),
                                     .from_world = cf_m4_identity(),
                                     .parent_turn = cf_quat_identity(),
                                     .valid = true };
@@ -111,18 +109,13 @@ static scene_gizmo_target3d target_of(const ecs_world *world, ecs_entity entity)
     }
     ecs_entity parent = placer(world, entity);
     if (target.spatial) {
-        GameGlobalTransform3D global = game_transform_world_3d(world, entity);
+        GlobalTransform3D global = transform_world_3d(world, entity);
         CF_V3 scale;
-        cf_m4_decompose(
-            game_transform_matrix_3d(&global),
-            &target.position,
-            &target.rotation,
-            &scale
-        );
+        cf_m4_decompose(transform_matrix_3d(&global), &target.position, &target.rotation, &scale);
         target.turns = true;
         if (parent.slot) {
-            GameGlobalTransform3D placed = game_transform_world_3d(world, parent);
-            CF_M4x4 matrix = game_transform_matrix_3d(&placed);
+            GlobalTransform3D placed = transform_world_3d(world, parent);
+            CF_M4x4 matrix = transform_matrix_3d(&placed);
             target.valid = invertible(&placed);
             target.turns = target.valid && conformal(&placed);
             if (!target.valid) {
@@ -136,14 +129,14 @@ static scene_gizmo_target3d target_of(const ecs_world *world, ecs_entity entity)
         }
         return target;
     }
-    GameGlobalTransform2D pose = game_transform_world_2d(world, entity);
-    float elevation = GAME_GameGeometry3D_get_const(world, entity)->elevation;
+    GlobalTransform2D pose = transform_world_2d(world, entity);
+    float elevation = Geometry3D_get_const(world, entity)->elevation;
     target.position = (CF_V3){ pose.position.x, elevation, pose.position.y };
     /* Gameplay radians turn from +X toward +Z, clockwise seen from above. */
     target.rotation = cf_quat_from_axis_angle(UNIT_AXES[1], -pose.radians);
-    target.turns = GAME_GameOrientation_has(world, entity);
-    target.parent = parent.slot ? game_transform_world_2d(world, parent)
-                                : (GameGlobalTransform2D){ 0 };
+    target.turns = Orientation_has(world, entity);
+    target.parent = parent.slot ? transform_world_2d(world, parent)
+                                : (GlobalTransform2D){ 0 };
     return target;
 }
 
@@ -192,11 +185,10 @@ static bool turnable(const scene_gizmo_target3d *targets, CF_V3 axis)
 
 static bool recordable(const ecs_world *world, const scene_gizmo_target3d *t)
 {
-    return t->valid &&
-           (!t->spatial || type_value_is_finite(
-                               GAME_COMPONENT_GameTransform3D.type,
-                               GAME_GameTransform3D_get_const(world, t->entity)
-                           ));
+    return t->valid && (!t->spatial || type_value_is_finite(
+                                           COMPONENT_Transform3D.type,
+                                           Transform3D_get_const(world, t->entity)
+                                       ));
 }
 
 bool gizmo3d_shape(
@@ -251,31 +243,31 @@ void gizmo3d_record(app_scene_authoring *scene, scene_gizmo_target3d *t, scene_t
 {
     ecs_entity e = t->entity;
     if (t->spatial) {
-        t->field[FIELD_POSITION] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameTransform3D, "position");
+        t->field[FIELD_POSITION] = scene_gizmo_record(scene, e, &COMPONENT_Transform3D, "position");
         if (tool == SCENE_TOOL_ROTATE) {
-            t->field[FIELD_ROTATION] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameTransform3D, "rotation");
+            t->field[FIELD_ROTATION] = scene_gizmo_record(scene, e, &COMPONENT_Transform3D, "rotation");
         }
         if (tool == SCENE_TOOL_SCALE) {
-            t->field[FIELD_SCALE] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameTransform3D, "scale");
+            t->field[FIELD_SCALE] = scene_gizmo_record(scene, e, &COMPONENT_Transform3D, "scale");
         }
         return;
     }
-    t->field[FIELD_TRANSFORM_X] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameTransform, "x");
-    t->field[FIELD_TRANSFORM_Y] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameTransform, "y");
-    t->field[FIELD_ELEVATION] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameGeometry3D, "elevation");
+    t->field[FIELD_TRANSFORM_X] = scene_gizmo_record(scene, e, &COMPONENT_Transform, "x");
+    t->field[FIELD_TRANSFORM_Y] = scene_gizmo_record(scene, e, &COMPONENT_Transform, "y");
+    t->field[FIELD_ELEVATION] = scene_gizmo_record(scene, e, &COMPONENT_Geometry3D, "elevation");
     if (tool == SCENE_TOOL_ROTATE) {
-        t->field[FIELD_RADIANS] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameOrientation, "radians");
+        t->field[FIELD_RADIANS] = scene_gizmo_record(scene, e, &COMPONENT_Orientation, "radians");
     }
     if (tool != SCENE_TOOL_SCALE) {
         return;
     }
-    t->field[FIELD_WIDTH] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameGeometry3D, "width");
-    t->field[FIELD_HEIGHT] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameGeometry3D, "height");
-    t->field[FIELD_DEPTH] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameGeometry3D, "depth");
+    t->field[FIELD_WIDTH] = scene_gizmo_record(scene, e, &COMPONENT_Geometry3D, "width");
+    t->field[FIELD_HEIGHT] = scene_gizmo_record(scene, e, &COMPONENT_Geometry3D, "height");
+    t->field[FIELD_DEPTH] = scene_gizmo_record(scene, e, &COMPONENT_Geometry3D, "depth");
     /* Collision follows the visual it was made for, as the 2D gizmo's. */
-    t->field[FIELD_COLLIDER_WIDTH] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameCollider, "width");
-    t->field[FIELD_COLLIDER_HEIGHT] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameCollider, "height");
-    t->field[FIELD_COLLIDER_RADIUS] = scene_gizmo_record(scene, e, &GAME_COMPONENT_GameCollider, "radius");
+    t->field[FIELD_COLLIDER_WIDTH] = scene_gizmo_record(scene, e, &COMPONENT_Collider, "width");
+    t->field[FIELD_COLLIDER_HEIGHT] = scene_gizmo_record(scene, e, &COMPONENT_Collider, "height");
+    t->field[FIELD_COLLIDER_RADIUS] = scene_gizmo_record(scene, e, &COMPONENT_Collider, "radius");
 }
 
 static float started(const app_scene_authoring *scene, const scene_gizmo_target3d *t, int slot)
