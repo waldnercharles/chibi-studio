@@ -70,6 +70,9 @@ bool scene_actor_has_children(app_scene_authoring *scene, const scene_actor *act
 
 uint64_t scene_actor_parent(app_scene_authoring *scene, const scene_actor *actor)
 {
+    if (scene->runtime_snapshot_valid) {
+        return actor->runtime_parent;
+    }
     ecs_entity parent = ecs_parent(scene->world, actor->entity);
     for (int i = 0; parent.slot && i < acount(scene->actors); i++) {
         if (ecs_entity_to_u64(scene->actors[i].entity) == ecs_entity_to_u64(parent)) {

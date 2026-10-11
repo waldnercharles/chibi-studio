@@ -23,6 +23,7 @@ void invalidate_runtime_snapshot(app_scene_authoring *scene)
     for (int i = 0; i < acount(scene->actors); i++) {
         game_prototype_free(scene->actors[i].runtime_snapshot);
         scene->actors[i].runtime_snapshot = NULL;
+        scene->actors[i].runtime_parent = 0;
     }
     scene->runtime_snapshot_valid = false;
 }
@@ -73,6 +74,7 @@ static int capture_runtime_snapshot(app_scene_authoring *scene)
     }
     for (int i = 0; i < acount(snapshots); i++) {
         scene->actors[i].runtime_snapshot = snapshots[i];
+        scene->actors[i].runtime_parent = scene_actor_parent(scene, &scene->actors[i]);
     }
     afree(snapshots);
     scene->runtime_snapshot_valid = true;
@@ -83,10 +85,10 @@ fail:
     return -1;
 }
 
-/* Respawns the actor under the actor whose identity is `parent`, which
-   respawned before it, or as a root when it is zero. */
-static int restart_runtime_actor(app_scene_authoring *scene, scene_actor *actor, uint64_t parent)
+/* Respawns the actor under its authored parent, which respawned before it. */
+static int restart_runtime_actor(app_scene_authoring *scene, scene_actor *actor)
 {
+    uint64_t parent = scene_actor_parent(scene, actor);
     assert(actor->runtime_snapshot);
     const game_prototype_spawn_hooks hooks = { attach_prototype_behavior, scene };
     char error[256];
@@ -142,19 +144,15 @@ static int restart_runtime(app_scene_authoring *scene)
     game_entities_reset(scene->live->runtime->entities);
     game_particles_clear(scene->live->runtime->particles);
     /* Parents come before their children. */
-    uint64_t *parents = NULL;
     ecs_entity *replaced = NULL;
     for (int i = 0; i < acount(scene->actors); i++) {
-        apush(parents, scene_actor_parent(scene, &scene->actors[i]));
         apush(replaced, scene->actors[i].entity);
     }
     int respawned = 0;
     while (respawned < acount(scene->actors) &&
-           restart_runtime_actor(scene, &scene->actors[respawned], parents[respawned]) ==
-               0) {
+           restart_runtime_actor(scene, &scene->actors[respawned]) == 0) {
         respawned++;
     }
-    afree(parents);
     asetlen(replaced, respawned);
     destroy_replaced(scene, replaced);
     if (respawned < acount(scene->actors)) {

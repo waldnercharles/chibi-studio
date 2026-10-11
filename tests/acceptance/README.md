@@ -80,8 +80,9 @@ that clicking it selects nothing, and that once both name one object a
 click selects it. A Link the scene names by the path Ship.Turret holds the
 turret once loaded, and the path saves again after the object's deletion is
 undone, after an edit to the Linker prototype, through a checkpoint, while
-the scene runs without A's Link, and after the scene plays and stops, which
-leaves the turret under its ship; a duplicate names the turret too. Renamed
+the scene runs without A's Link and with the turret taken off its ship, and
+after the scene stops, which puts the turret back under its ship; a duplicate
+names the turret too. Renamed
 away or deleted, the turret leaves the Link naming nothing until that is undone,
 and the fourth frame checks that Properties shows the path as a problem.
 Two objects naming different paths that resolve to nothing read as mixed. It

@@ -170,12 +170,11 @@ static int add_actor_entity(
 }
 
 /* The position in `actors` of the actor's parent, or -1. */
-static int listed_parent(const app_scene_authoring *scene, const int *actors, const scene_actor *actor)
+static int listed_parent(app_scene_authoring *scene, const int *actors, const scene_actor *actor)
 {
-    ecs_entity parent = ecs_parent(scene->world, actor->entity);
-    for (int i = 0; parent.slot && i < acount(actors); i++) {
-        if (ecs_entity_to_u64(scene->actors[actors[i]].entity) ==
-            ecs_entity_to_u64(parent)) {
+    uint64_t parent = scene_actor_parent(scene, actor);
+    for (int i = 0; parent && i < acount(actors); i++) {
+        if (scene->actors[actors[i]].identity == parent) {
             return i;
         }
     }

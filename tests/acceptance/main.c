@@ -1682,11 +1682,22 @@ static bool names_by_path(app_scene_authoring *scene)
     );
     REQUIRE(links(scene, 2, 1));
     REQUIRE(app_scene_authoring_runtime_command(scene, APP_RUNTIME_SCENE, APP_RUNTIME_PLAY) == 0);
-    /* A run that removes A's Link still saves the authored path. */
+    /* A run that removes A's Link and takes the turret off the ship still
+       saves the authored path and hierarchy, and Stop restores them. */
     REQUIRE(
         ecs_world_record_remove(scene->world, scene->actors[2].entity, link_id(scene), 0) == ECS_OK
     );
-    REQUIRE(ecs_world_apply_commands(scene->world) == ECS_OK && saves_as(scene, path_scene));
+    REQUIRE(
+        ecs_world_record_remove_pair(
+            scene->world,
+            scene->actors[1].entity,
+            ECS_CHILD_OF,
+            scene->actors[0].entity,
+            0
+        ) == ECS_OK
+    );
+    REQUIRE(ecs_world_apply_commands(scene->world) == ECS_OK && !child_of(scene, 1, 0));
+    REQUIRE(saves_as(scene, path_scene));
     REQUIRE(app_scene_authoring_runtime_command(scene, APP_RUNTIME_SCENE, APP_RUNTIME_STOP) == 0);
     REQUIRE(child_of(scene, 1, 0) && links(scene, 2, 1) && saves_as(scene, path_scene));
     scene->selected = 2;
