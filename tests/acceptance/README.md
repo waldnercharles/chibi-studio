@@ -214,3 +214,11 @@ rejected without rewriting their source. Uncomposed leaf prototypes remain
 editable through Properties. Changes to child definitions or
 entity-reference paths require reopening the project. Ordinary source edits
 that keep that structure apply live.
+
+`studio-acceptance --project-audio --project-root PATH` writes a valid WAV and
+an authored `play_sound` behavior into a disposable project. It checks scene
+Play, Pause, Stop/Play, and prototype preview requests against the loaded sound
+library, then reloads content without duplicating sounds. The hidden host has
+no audio device, so this verifies requests and asset ownership, not audible
+output. Studio's window host presents the active scene or preview audio queue;
+project sound-file changes take effect when the project reopens.

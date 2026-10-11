@@ -3,6 +3,8 @@
 #include "authoring/application_catalog.h"
 #include "authoring/behavior_loader.h"
 #include "authoring/preview_source.h"
+#include "authoring/sound_prepare.h"
+#include "authoring/visual_prepare.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
 #include "runtime/declared_components.h"
@@ -248,12 +250,43 @@ int scene_attach_studio_nodes(app_scene_authoring *scene, preview_world *world, 
     return status;
 }
 
+static bool load_project_sounds(app_scene_authoring *scene)
+{
+    if (scene->project_sounds_loaded) {
+        return true;
+    }
+    player_asset *sounds = NULL;
+    if (!authoring_sounds_prepare(
+            scene->content_root,
+            &sounds,
+            scene->message,
+            sizeof scene->message
+        )) {
+        authoring_visual_prepared_free(sounds);
+        return false;
+    }
+    audio *queues[] = { engine_audio(scene->runtime),
+                        engine_audio(prototype_preview_runtime(scene->prototype_preview)) };
+    for (int i = 0; i < 2; i++) {
+        audio_reserve_sounds(queues[i], acount(sounds));
+        for (int j = 0; j < acount(sounds); j++) {
+            audio_add_sound(queues[i], sounds[j].name, sounds[j].data, sounds[j].length);
+        }
+    }
+    authoring_visual_prepared_free(sounds);
+    scene->project_sounds_loaded = true;
+    return true;
+}
+
 int app_scene_authoring_load_content(app_scene_authoring *scene)
 {
     if (!scene) {
         return -1;
     }
     content_refresh(scene);
+    if (!load_project_sounds(scene)) {
+        return -1;
+    }
     preview_world *worlds[] = {
         scene->live,
         prototype_preview_live(scene->prototype_preview),

@@ -1012,6 +1012,7 @@ static studio *create(
 studio *studio_new(app_scene_authoring *scene, engine_viewport *viewport, const char *project_root)
 {
     studio *s = create(scene, viewport, project_root, NULL);
+    s->audio = render_audio_new();
     editor_set_source_edit_handler(scene->graph_editor, studio_code_edit_source, s);
     /* Studio's own project runs Studio's behaviors, whose nodes act here. */
     scene->studio_nodes = (studio_node_service){ s, studio_node_run };
@@ -1095,6 +1096,7 @@ void studio_free(studio *s)
 #endif
     studio_free(s->guest);
     if (!s->hosted) {
+        render_audio_free(s->audio);
         editor_set_source_edit_handler(s->scene->graph_editor, NULL, NULL);
         s->scene->studio_nodes = (studio_node_service){ 0 };
         release_window(s);
@@ -1388,6 +1390,14 @@ void studio_frame(studio *s, double delta_seconds)
 {
     guest_requests(s);
     run(s, delta_seconds, (float)cf_app_get_width(), (float)cf_app_get_height());
+    engine *runtime = s->scene->active_runtime_target == APP_RUNTIME_PREVIEW
+                        ? prototype_preview_runtime(s->scene->prototype_preview)
+                        : s->scene->runtime;
+    render_audio_update(
+        s->audio,
+        runtime_session(s->scene) ? engine_audio(runtime) : NULL,
+        engine_is_playing(runtime)
+    );
     editor_set_retained_keyboard(s->typing || (s->guest && s->guest->typing));
     sync_text_input(s);
     sync_cursor(s);

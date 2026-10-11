@@ -219,6 +219,7 @@ struct app_scene_authoring
     scene_content_entry *content;
     scene_prototype_source *prototype_sources; /* Owned include documents. */
     bool prototype_sources_loaded;
+    bool project_sounds_loaded; /* Runtime audio libraries own copies until project close. */
     reference_index *asset_index;
     unsigned asset_index_generation;
     unsigned asset_index_built_generation;

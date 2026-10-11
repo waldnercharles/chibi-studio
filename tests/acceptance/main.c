@@ -52,6 +52,7 @@ static enum {
     SCENE_HIERARCHY,
     SCENE_PHYSICS,
     PROTOTYPE_INCLUDES,
+    PROJECT_AUDIO,
     ASSET_SELECTION,
     SCENE_VIEWPORT,
     PLAY_KEYS,
@@ -2813,6 +2814,7 @@ static bool code_glyphs_frame(void *state)
     }
 }
 
+#include "project_audio.h"
 #include "prototype_includes.h"
 
 bool studio_acceptance_frame(void *state)
@@ -2830,6 +2832,7 @@ bool studio_acceptance_frame(void *state)
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
         case SCENE_PHYSICS: callback_ok = scene_physics_frame(state); break;
+        case PROJECT_AUDIO: callback_ok = project_audio_frame(state); break;
         case PROTOTYPE_INCLUDES:
             callback_ok = prototype_includes_frame(state);
             break;
@@ -3149,6 +3152,7 @@ int main(int argc, char **argv)
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
     bool physics = argc == 4 && !strcmp(argv[1], "--scene-physics");
     bool includes = argc == 4 && !strcmp(argv[1], "--prototype-includes");
+    bool audio_project = argc == 4 && !strcmp(argv[1], "--project-audio");
     bool assets = argc == 4 && !strcmp(argv[1], "--asset-selection");
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
     bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
@@ -3156,15 +3160,17 @@ int main(int argc, char **argv)
     bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
-         !keys_mode && !labels && !units && !hierarchy && !physics && !includes &&
-         !assets && !viewport && !playing && !prompting && !followups && !glyphs) ||
+         !keys_mode && !labels && !units && !hierarchy && !physics &&
+         !includes && !audio_project && !assets && !viewport && !playing &&
+         !prompting && !followups && !glyphs) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
             "--graph-visibility|--graph-keys|--graph-labels|--unit-warnings|"
-            "--scene-hierarchy|--scene-physics|--prototype-includes|"
+            "--scene-hierarchy|--scene-physics|--prototype-includes|--project-"
+            "audio|"
             "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts|"
             "--code-followups|--code-glyphs "
             "--project-root PATH | --scene-cursors\n"
@@ -3183,23 +3189,24 @@ int main(int argc, char **argv)
         return 2;
     }
     pu_display_time(true);
-    mode = source_edit ? SOURCE_EDIT
-         : code_keys   ? CODE_KEYS
-         : kdl_keys    ? KDL_KEYS
-         : exporting   ? EXPORT_GAME
-         : visibility  ? GRAPH_VISIBILITY
-         : keys_mode   ? GRAPH_KEYS
-         : labels      ? GRAPH_LABELS
-         : units       ? UNIT_WARNINGS
-         : hierarchy   ? SCENE_HIERARCHY
-         : physics     ? SCENE_PHYSICS
-         : includes    ? PROTOTYPE_INCLUDES
-         : assets      ? ASSET_SELECTION
-         : viewport    ? SCENE_VIEWPORT
-         : playing     ? PLAY_KEYS
-         : prompting   ? PROMPTS
-         : followups   ? CODE_FOLLOWUPS
-                       : CODE_GLYPHS;
+    mode = source_edit   ? SOURCE_EDIT
+         : code_keys     ? CODE_KEYS
+         : kdl_keys      ? KDL_KEYS
+         : exporting     ? EXPORT_GAME
+         : visibility    ? GRAPH_VISIBILITY
+         : keys_mode     ? GRAPH_KEYS
+         : labels        ? GRAPH_LABELS
+         : units         ? UNIT_WARNINGS
+         : hierarchy     ? SCENE_HIERARCHY
+         : physics       ? SCENE_PHYSICS
+         : audio_project ? PROJECT_AUDIO
+         : includes      ? PROTOTYPE_INCLUDES
+         : assets        ? ASSET_SELECTION
+         : viewport      ? SCENE_VIEWPORT
+         : playing       ? PLAY_KEYS
+         : prompting     ? PROMPTS
+         : followups     ? CODE_FOLLOWUPS
+                         : CODE_GLYPHS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -3214,6 +3221,7 @@ int main(int argc, char **argv)
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
         case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics_resets); break;
         case PROTOTYPE_INCLUDES: RUN_TEST_CASE(prototype_includes); break;
+        case PROJECT_AUDIO: RUN_TEST_CASE(project_audio); break;
         case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;
         case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
         case PLAY_KEYS: RUN_TEST_CASE(play_keys); break;

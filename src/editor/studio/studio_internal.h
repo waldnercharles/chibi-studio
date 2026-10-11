@@ -1,10 +1,10 @@
 #ifndef CHIBI_EDITOR_STUDIO_INTERNAL_H
 #define CHIBI_EDITOR_STUDIO_INTERNAL_H
 
-#include "authoring/component_presentation.h"
 #include "assets/new_asset.h"
 #include "assets/project.h"
 #include "assets/ui_source.h"
+#include "authoring/component_presentation.h"
 #include "editor/documents/asset_code.h"
 #include "editor/documents/ui_code.h"
 #include "editor/studio/studio.h"
@@ -15,6 +15,7 @@
 #include "editor/workspace/scene_internal.h"
 #include "editor/workspace/viewport.h"
 #include "graph/authoring/arrange.h"
+#include "render/audio.h"
 #include "render/ui.h"
 #include "runtime/save.h"
 #include "support/file_watch.h"
@@ -1044,6 +1045,7 @@ typedef struct studio_palette_state
 struct studio
 {
     app_scene_authoring *scene;
+    render_audio *audio; /* Owned by the window host; guests share its session. */
     engine_viewport *viewport;
     const char *project_root; /* the open project, owned by the application */
     /* Its manifest as opened, with the name and start scene it defaults to;
