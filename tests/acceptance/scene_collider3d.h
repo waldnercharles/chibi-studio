@@ -37,7 +37,7 @@ static const char
                        "    - name=\"Ball\" prototype=\"Ball\"\n"
                        "    - name=\"Pill\" prototype=\"Pill\"\n"
                        "}\n";
-#define COLLIDER_FRAMES 18
+#define COLLIDER_FRAMES 21
 static const CF_V3 CRATE_AT = { 0, 50, 0 };
 static const CF_V3 BALL_AT = { 200, 50, 0 };
 static const CF_V3 PILL_AT = { -200, 50, 0 };
@@ -63,7 +63,7 @@ static bool grab_handle(studio *s, CF_V3 handle, CF_V3 axis, float distance, CF_
    extent: the crate's -X side out a quarter of its stretched width widens
    its box, the ball's top raises its radius, and the pill's top dragged
    past its middle leaves a capsule no shorter than its caps. Each drag is
-   one Undo step. */
+   one Undo step, and a hidden object's collider takes none. */
 static bool scene_collider3d_frame(void *state)
 {
     static CF_V2 from, to;
@@ -122,6 +122,18 @@ static bool scene_collider3d_frame(void *state)
             REQUIRE(collider_now(s, 2)->radius == 20);
             REQUIRE(undoes(s));
             REQUIRE(collider_now(s, 2)->height == 100);
+            s->prefs.scene_snap = false;
+            select_instance(scene, 0);
+            app_scene_authoring_set_actor_view(scene, 0, APP_SCENE_VIEW_HIDDEN);
+            look_at(s, CRATE_AT, 0.5f, -0.4f);
+            return true;
+        /* A hidden crate shows no handles, so its side doesn't drag. */
+        case 16:
+            return grab_handle(s, (CF_V3){ -50, 50, 0 }, x, -25, &from, &to);
+        case 17: return move_to(s, to);
+        case 18: return button_at(s, SDL_BUTTON_LEFT, false, to);
+        case 19:
+            REQUIRE(near_v3(collider_now(s, 0)->size, (CF_V3){ 50, 50, 50 }, 0));
             return true;
         case COLLIDER_FRAMES: edits++; return true;
         default: return true;

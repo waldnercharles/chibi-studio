@@ -1123,7 +1123,7 @@ void app_scene_authoring_render(void *user)
             draw_arena_selection(scene, world, &camera, hidden);
             float pixel = scene->selection_scale > 0 ? scene->selection_scale : 1;
             cf_draw_push_shape_aa(SCENE_OVERLAY_AA * pixel * cf_app_get_pixel_scale());
-            scene_collider3d_draw(scene);
+            scene_collider3d_draw(scene, hidden);
             scene_gizmo3d_draw(scene);
             cf_draw_pop_shape_aa();
         }

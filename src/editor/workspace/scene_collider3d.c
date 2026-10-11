@@ -143,18 +143,27 @@ static bool handle_shown(const scene_view3d *view, const collider3d *c, int h)
            scene_view3d_world_per_pixel(view, handle_point(c, h)) > 0;
 }
 
-/* The active object's collider, while the Select tool edits it. */
-static bool active_collider(app_scene_authoring *scene, collider3d *out)
+/* The collider the handles drag: the active authored object's, when the
+   view shows it. A paused run's spawned object shows its outline but, as
+   with the transform gizmo, takes no edits. */
+static bool active_collider(app_scene_authoring *scene, render_skip hidden, collider3d *out)
 {
     ecs_entity active = selected_scene_entity(scene);
     return scene->gizmo.in.tool == SCENE_TOOL_SELECT && scene_can_move(scene) &&
-           active.slot && collider_of(scene->world, active, out);
+           !scene->runtime_selected.slot && active.slot &&
+           !render_skip_has(hidden, active) &&
+           collider_of(scene->world, active, out);
+}
+
+static render_skip hidden_now(app_scene_authoring *scene)
+{
+    return scene_view_skip(scene, APP_SCENE_VIEW_HIDDEN, &scene->view_hidden);
 }
 
 int scene_collider3d_part(app_scene_authoring *scene, const scene_view3d *view, CF_V2 at)
 {
     collider3d c;
-    if (!active_collider(scene, &c)) {
+    if (!active_collider(scene, hidden_now(scene), &c)) {
         return SCENE_GIZMO_NONE;
     }
     int part = SCENE_GIZMO_NONE;
@@ -187,7 +196,7 @@ bool scene_collider3d_begin(app_scene_authoring *scene, int part, const scene_vi
 {
     finish_transform_edit(scene, false);
     collider3d c;
-    if (!active_collider(scene, &c)) {
+    if (!active_collider(scene, hidden_now(scene), &c)) {
         return false;
     }
     int h = part - SCENE_GIZMO_FACE;
@@ -369,15 +378,17 @@ static void draw_handles(const scene_gizmo *g, const scene_view3d *view, const c
     }
 }
 
-void scene_collider3d_draw(app_scene_authoring *scene)
+void scene_collider3d_draw(app_scene_authoring *scene, render_skip hidden)
 {
     scene_view3d view = scene_view3d_of(scene);
     float width = LINE * view.pixel;
     cf_draw_push_color(packed(COLLIDER_COLOR));
-    for (int i = 0; i < acount(scene->actors); i++) {
+    for (int i = -1; i < acount(scene->actors); i++) {
+        ecs_entity entity = i < 0 ? scene->runtime_selected : scene->actors[i].entity;
+        bool selected = i < 0 ? entity.slot != 0 : scene_instance_selected(scene, i);
         collider3d c;
-        if (!scene_instance_selected(scene, i) ||
-            !collider_of(scene->world, scene->actors[i].entity, &c)) {
+        if (!selected || render_skip_has(hidden, entity) ||
+            !collider_of(scene->world, entity, &c)) {
             continue;
         }
         switch (c.collider->shape) {
@@ -388,7 +399,7 @@ void scene_collider3d_draw(app_scene_authoring *scene)
     }
     cf_draw_pop_color();
     collider3d active;
-    if (!scene->gizmo.modal && active_collider(scene, &active)) {
+    if (!scene->gizmo.modal && active_collider(scene, hidden, &active)) {
         draw_handles(&scene->gizmo, &view, &active);
     }
 }

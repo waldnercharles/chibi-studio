@@ -2481,7 +2481,7 @@
       "current_source_sha256": "f2a2f0d495ea6a286f1dfd898f3904d55eedfdb9093f9ef79d9f16115503a482",
       "sha256": "c487c7af89a66c3beb36270f2751356d3c5429ccccef8268ef518557da7a5210",
       "source_path": "src/editor/workspace/scene_viewport.c",
-      "consumer_sha256": "1134fd496bf0942bcccebcd88a2f07cd694f841e7182496cd1981691e7bb387f"
+      "consumer_sha256": "06de5c24b1247d00f81c5017addd6cff9ff959ab8649a754c22b056d476b73a5"
     },
     "src/editor/workspace/scene_world_preview.c": {
       "current_source_sha256": "0dc6c273fa210be49c28651ae1788498f1a081196d48c7803891f0ac847da9db",

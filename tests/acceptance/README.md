@@ -162,8 +162,8 @@ and a capsule. With the Select tool it drags the active object's collider
 handles through queued SDL presses: the crate's -X side out by a quarter of
 its stretched width widens the box's size by half, the ball's top raises its
 radius, and the capsule's top dragged past its middle, with snapping on,
-leaves it no shorter than its two caps. Each drag is one Undo step. It saves
-no file.
+leaves it no shorter than its two caps. Each drag is one Undo step. A crate
+the Scene view hides takes no drag. It saves no file.
 
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
