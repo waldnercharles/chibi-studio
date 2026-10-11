@@ -198,3 +198,44 @@ Execution requires explicit root coordination and independent admission under th
 60-second GPU policy. Merely building this target does not run it. A whole UI
 suite is not implied. The vendored pico_unit header preserves its upstream license
 and original engine vendoring record; it is not installed with the Studio product.
+
+`studio-acceptance --graph-pointer --project-root PATH` runs nineteen hidden
+frames on Counter. It clicks a rendered node title through SDL, follows its
+wire with Right, opens Find with Mod+F, types `count`, and checks Down/Up result
+selection and wraparound across graphs. Clicking a result selects its
+node; Escape closes Find and then clears the graph selection. Home must bring
+every visible node into the viewport from an offscreen camera. Source bytes and
+dirty state stay unchanged.
+
+`studio-acceptance --asset-pointer --project-root PATH` runs twenty hidden
+frames with four disposable prototypes. SDL input types the Assets filter,
+clicks list rows with Shift and Mod, switches to Grid using its button, and
+clicks tiles with Mod. It checks exact visible identities and primary/marked
+selection for `Spare` and `SpareB`, including switching back to List with the
+filter retained. It neither opens nor deletes the assets.
+
+`studio-acceptance --debugger-source-history --project-root PATH` runs
+forty-seven hidden frames with one in-memory Counter actor. SDL F9 sets a source
+breakpoint and F5 runs to it. Typing invalid source hides the execution highlight
+while the applied runtime keeps its paused generation, run, cursor and state.
+Mod+Z, Mod+Shift+Z and Mod+Z restore, invalidate and restore the exact text and
+highlight. At most ten F10 presses must advance that same runtime through its
+source points from count 1 to 2, then Shift+F5
+stops it. No source is saved. Valid live edits that replace the runtime generation
+are outside this selector.
+
+The engine's `--studio-graph-pointer`, `--studio-asset-pointer` and
+`--studio-debugger-source-history` agent GPU routes run these selectors
+individually with provenance checks and the shared 60-second deadline. Each uses
+a fresh copy of this directory's fixture. These checks do not admit the held
+acceptance suite or establish web input coverage.
+
+Before each independent engine GPU invocation, restore the bundled manifest:
+
+```sh
+cp "$CHIBI_STUDIO_SOURCE/projects/studio/project.kdl" \
+  "$CHIBI_STUDIO_BUILD/share/chibi/studio/project.kdl"
+```
+
+Studio migrates that build copy when it starts. Restoring it keeps each run on
+the same pinned resource bytes; the source project remains unchanged.
