@@ -157,7 +157,7 @@ void studio_drop_types(studio *s, int index, char *out, size_t size)
     if (!studio_editable(s)) {
         return;
     }
-    snprintf(out, size, "%s", studio_asset_kind_name(REFERENCE_ASSET_BEHAVIOR));
+    snprintf(out, size, "object %s", studio_asset_kind_name(REFERENCE_ASSET_BEHAVIOR));
     ecs_entity entity = s->scene->actors[index].entity;
     for (int i = 0; i < ASSIGNED_COUNT; i++) {
         ecs_component_id component;

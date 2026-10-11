@@ -198,3 +198,28 @@ Execution requires explicit root coordination and independent admission under th
 60-second GPU policy. Merely building this target does not run it. A whole UI
 suite is not implied. The vendored pico_unit header preserves its upstream license
 and original engine vendoring record; it is not installed with the Studio product.
+
+`studio-acceptance --outliner-move --project-root PATH` takes a disposable copy
+and runs exactly twenty-one hidden fixed-dt frames with the Outliner maximized. A
+three-object 2D scene exercises the real authored rows and SDL pointer events:
+dragging a selected group inside a parent, rejecting an ancestor cycle with a
+visible rejection mark, and moving before, after and to the scene root. Queued
+Alt+Left, Alt+Up and Alt+Right test outdenting, sibling order and reparenting. It
+checks stable actor identities, group selection and world-preserving local
+coordinates. In its final frame, native context pointer events check that a
+behavior drag at the same row edge remains a whole-row assignment target, then
+cancel it without assigning an asset. It saves nothing. The separate scene-move case covers persistence,
+history and collaboration.
+
+`studio-acceptance --scene-move --project-root PATH` runs two hidden frames on
+an isolated project. It checks moving multiple objects under a rotated parent,
+world placement and 2D picking, entity identity, authored and ECS sibling order, one-step undo
+and redo with the original selection, and root reordering with a selected parent
+and child. Separate disposable worlds check collaboration replay and full
+workspace checkpoints, including undo and redo after remapping entity handles
+and restoring a deleted moved child. A two-object 3D scene checks all local
+transform fields, world placement, undo, redo and checkpoint restoration without
+rendering a mesh. Cycles, sibling name conflicts, stale
+selection and active runtime sessions preserve the scene and history. It checks
+the session guard directly; Play/Stop hierarchy restoration depends on Studio
+PR #54 and is not covered by this selector.

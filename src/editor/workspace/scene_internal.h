@@ -427,6 +427,17 @@ const ecs_component_desc *component_descriptor(const app_scene_authoring *scene,
 /* The live world and the prototype preview spawn the prototype as it is now. */
 int register_prototype_hosts(app_scene_authoring *scene, const game_prototype *prototype);
 
+/* Hierarchy edits use actor identities in history/checkpoints, never ECS slots. */
+int scene_restore_hierarchy(app_scene_authoring *scene, av_value *value);
+int scene_move_actors(
+    app_scene_authoring *scene,
+    const uint64_t *identities,
+    int count,
+    uint64_t active,
+    uint64_t parent,
+    uint64_t before
+);
+
 /* ---------- Prototype actions (scene_prototype_actions.c) ---------- */
 
 /* How many other instances of its prototype take one of the fields from

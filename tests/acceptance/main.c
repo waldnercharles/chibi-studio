@@ -50,6 +50,8 @@ static enum {
     GRAPH_LABELS,
     UNIT_WARNINGS,
     SCENE_HIERARCHY,
+    SCENE_MOVE,
+    OUTLINER_MOVE,
     SCENE_PHYSICS,
     ASSET_SELECTION,
     SCENE_VIEWPORT,
@@ -2814,6 +2816,9 @@ static bool code_glyphs_frame(void *state)
     }
 }
 
+#include "outliner_move.h"
+#include "scene_move.h"
+
 bool studio_acceptance_frame(void *state)
 {
     switch (mode) {
@@ -2828,6 +2833,8 @@ bool studio_acceptance_frame(void *state)
         case GRAPH_LABELS: callback_ok = graph_labels_frame(state); break;
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
+        case SCENE_MOVE: callback_ok = scene_move_frame(state); break;
+        case OUTLINER_MOVE: callback_ok = outliner_move_frame(state); break;
         case SCENE_PHYSICS: callback_ok = scene_physics_frame(state); break;
         case ASSET_SELECTION: callback_ok = asset_selection_frame(state); break;
         case SCENE_VIEWPORT: callback_ok = scene_viewport_frame(state); break;
@@ -3143,6 +3150,8 @@ int main(int argc, char **argv)
     bool labels = argc == 4 && !strcmp(argv[1], "--graph-labels");
     bool units = argc == 4 && !strcmp(argv[1], "--unit-warnings");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
+    bool scene_move_mode = argc == 4 && !strcmp(argv[1], "--scene-move");
+    bool outliner_move_mode = argc == 4 && !strcmp(argv[1], "--outliner-move");
     bool physics = argc == 4 && !strcmp(argv[1], "--scene-physics");
     bool assets = argc == 4 && !strcmp(argv[1], "--asset-selection");
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
@@ -3151,15 +3160,16 @@ int main(int argc, char **argv)
     bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
-         !keys_mode && !labels && !units && !hierarchy && !physics && !assets &&
-         !viewport && !playing && !prompting && !followups && !glyphs) ||
+         !keys_mode && !labels && !units && !hierarchy && !scene_move_mode &&
+         !outliner_move_mode && !physics && !assets && !viewport && !playing &&
+         !prompting && !followups && !glyphs) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
             "--graph-visibility|--graph-keys|--graph-labels|--unit-warnings|"
-            "--scene-hierarchy|--scene-physics|"
+            "--scene-hierarchy|--scene-move|--outliner-move|--scene-physics|"
             "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts|"
             "--code-followups|--code-glyphs "
             "--project-root PATH | --scene-cursors\n"
@@ -3178,22 +3188,24 @@ int main(int argc, char **argv)
         return 2;
     }
     pu_display_time(true);
-    mode = source_edit ? SOURCE_EDIT
-         : code_keys   ? CODE_KEYS
-         : kdl_keys    ? KDL_KEYS
-         : exporting   ? EXPORT_GAME
-         : visibility  ? GRAPH_VISIBILITY
-         : keys_mode   ? GRAPH_KEYS
-         : labels      ? GRAPH_LABELS
-         : units       ? UNIT_WARNINGS
-         : hierarchy   ? SCENE_HIERARCHY
-         : physics     ? SCENE_PHYSICS
-         : assets      ? ASSET_SELECTION
-         : viewport    ? SCENE_VIEWPORT
-         : playing     ? PLAY_KEYS
-         : prompting   ? PROMPTS
-         : followups   ? CODE_FOLLOWUPS
-                       : CODE_GLYPHS;
+    mode = source_edit        ? SOURCE_EDIT
+         : code_keys          ? CODE_KEYS
+         : kdl_keys           ? KDL_KEYS
+         : exporting          ? EXPORT_GAME
+         : visibility         ? GRAPH_VISIBILITY
+         : keys_mode          ? GRAPH_KEYS
+         : labels             ? GRAPH_LABELS
+         : units              ? UNIT_WARNINGS
+         : scene_move_mode    ? SCENE_MOVE
+         : outliner_move_mode ? OUTLINER_MOVE
+         : hierarchy          ? SCENE_HIERARCHY
+         : physics            ? SCENE_PHYSICS
+         : assets             ? ASSET_SELECTION
+         : viewport           ? SCENE_VIEWPORT
+         : playing            ? PLAY_KEYS
+         : prompting          ? PROMPTS
+         : followups          ? CODE_FOLLOWUPS
+                              : CODE_GLYPHS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -3206,6 +3218,8 @@ int main(int argc, char **argv)
         case GRAPH_LABELS: RUN_TEST_CASE(graph_labels); break;
         case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
+        case SCENE_MOVE: RUN_TEST_CASE(scene_move_contracts); break;
+        case OUTLINER_MOVE: RUN_TEST_CASE(outliner_move); break;
         case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics); break;
         case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;
         case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;

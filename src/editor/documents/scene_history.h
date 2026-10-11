@@ -132,6 +132,12 @@ bool scene_history_push_rename(
 const char *scene_history_peek_rename(const scene_history *history, bool redo, ecs_entity *entity);
 void scene_history_complete_rename(scene_history *history, bool redo);
 
+/* A complete ordered hierarchy and selection, addressed by stable actor IDs.
+ * The app validates and applies it. History owns independent native values. */
+bool scene_history_push_hierarchy(scene_history *history, av_value *before, av_value *after);
+av_value *scene_history_peek_hierarchy(const scene_history *history, bool redo);
+void scene_history_complete_hierarchy(scene_history *history, bool redo);
+
 bool scene_history_can_undo(const scene_history *history);
 bool scene_history_can_redo(const scene_history *history);
 /* Returns 1 after applying, 0 when empty, or -1 if the entity/component/field

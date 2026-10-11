@@ -38,7 +38,7 @@ set(STUDIO_PACKAGES
     execution_contract field_catalog graph_authoring graph_compilation graph_model graph_catalog image_preparation input_map json
     material_runtime model_authoring model_runtime native_types physics_runtime platform
     project_document project_preparation prototype_document reference_index render save_runtime
-    scenario_document scene_document scene_runtime shader_preparation source_catalog source_presentation
+    scenario_document scene_authoring scene_document scene_runtime shader_preparation source_catalog source_presentation
     spatial_runtime studio_capabilities studio_graph support text_source tilemap_runtime types ui
     ui_authoring ui_document value_document)
 set(missing "")
