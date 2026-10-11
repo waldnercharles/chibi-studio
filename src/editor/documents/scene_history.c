@@ -29,6 +29,7 @@ typedef struct
     bool physics;
     game_physics_settings physics_before, physics_after;
     char *name_before, *name_after; /* a rename, when name_after is set */
+    scene_path_ref *renamed_paths;  /* the entity paths the rename rewrote */
 } scene_edit;
 
 struct scene_history
@@ -94,6 +95,7 @@ static void clear_edits(scene_edit **edits)
         }
         free((*edits)[i].name_before);
         free((*edits)[i].name_after);
+        afree((*edits)[i].renamed_paths);
     }
     aclear(*edits);
 }
@@ -524,11 +526,21 @@ void scene_history_complete_prototype(scene_history *history, bool redo)
     apush(*destination, edit);
 }
 
-bool scene_history_push_rename(scene_history *history, ecs_entity entity, const char *before, const char *after)
+bool scene_history_push_rename(
+    scene_history *history,
+    ecs_entity entity,
+    const char *before,
+    const char *after,
+    const scene_path_ref *paths
+)
 {
     assert(history && entity.slot && before && before[0] && after && after[0]);
     if (!strcmp(before, after)) {
         return false;
+    }
+    scene_path_ref *copied = NULL;
+    for (int i = 0; i < acount(paths); i++) {
+        apush(copied, paths[i]);
     }
     apush(
         history->undo,
@@ -536,7 +548,8 @@ bool scene_history_push_rename(scene_history *history, ecs_entity entity, const 
                        .group = history->group,
                        .step = next_step(history),
                        .name_before = xstrdup(before),
-                       .name_after = xstrdup(after) })
+                       .name_after = xstrdup(after),
+                       .renamed_paths = copied })
     );
     clear_edits(&history->redo);
     return true;
@@ -551,6 +564,14 @@ const char *scene_history_peek_rename(const scene_history *history, bool redo, e
     }
     *entity = alast(source).entity;
     return redo ? alast(source).name_after : alast(source).name_before;
+}
+
+const scene_path_ref *scene_history_peek_rename_paths(const scene_history *history, bool redo)
+{
+    assert(history);
+    const scene_edit *source = redo ? history->redo : history->undo;
+    assert(acount(source) && alast(source).name_after);
+    return alast(source).renamed_paths;
 }
 
 void scene_history_complete_rename(scene_history *history, bool redo)
@@ -740,6 +761,56 @@ static const ecs_component_desc *history_component(const char *name)
         }
     }
     return NULL;
+}
+
+static const ecs_component_desc *history_component_id(ecs_component_id id)
+{
+    ecs_component_catalog project = project_components();
+    for (int i = 0; i < project.component_count; i++) {
+        if (project.components[i]->id == id) {
+            return project.components[i];
+        }
+    }
+    return NULL;
+}
+
+/* The index of the component's field named `name`, or -1. */
+static int history_field(const ecs_component_desc *component, const char *name)
+{
+    for (int i = 0; name && i < component->type->field_count; i++) {
+        if (!strcmp(component->type->fields[i].name, name)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Reads a rename's paths; an older history without them rewrote none. */
+static bool history_read_paths(av_value *array, scene_path_ref **paths)
+{
+    if (!array) {
+        return true;
+    }
+    if (!av_is_arr(array)) {
+        return false;
+    }
+    size_t i, count;
+    av_value *item;
+    av_arr_foreach(array, i, count, item)
+    {
+        av_value *actor = av_obj_get(item, "actor");
+        const ecs_component_desc *component = history_component(
+            av_get_str(av_obj_get(item, "component"))
+        );
+        int field = component && component->type
+                      ? history_field(component, av_get_str(av_obj_get(item, "field")))
+                      : -1;
+        if (!av_is_uint(actor) || field < 0) {
+            return false;
+        }
+        apush(*paths, ((scene_path_ref){ av_get_uint(actor), component->id, field }));
+    }
+    return true;
 }
 
 static av_value *history_value(av_doc *doc, pin_value value)
@@ -936,13 +1007,7 @@ static av_value *history_edits(av_doc *doc, const scene_edit *edits)
         av_value *fields = av_obj_add_arr(doc, object, "fields");
         for (int j = 0; j < acount(edit->fields); j++) {
             const scene_field_edit *field = &edit->fields[j];
-            const ecs_component_desc *component = NULL;
-            ecs_component_catalog project = project_components();
-            for (int k = 0; k < project.component_count; k++) {
-                if (project.components[k]->id == field->component) {
-                    component = project.components[k];
-                }
-            }
+            const ecs_component_desc *component = history_component_id(field->component);
             assert(
                 component && component->type && field->field < component->type->field_count
             );
@@ -998,6 +1063,21 @@ static av_value *history_edits(av_doc *doc, const scene_edit *edits)
             av_value *item = av_obj_add_obj(doc, object, "rename");
             history_text(doc, item, "before", edit->name_before);
             history_text(doc, item, "after", edit->name_after);
+            av_value *paths = av_obj_add_arr(doc, item, "paths");
+            for (int j = 0; j < acount(edit->renamed_paths); j++) {
+                const scene_path_ref *path = &edit->renamed_paths[j];
+                const ecs_component_desc *component = history_component_id(path->component);
+                assert(component && path->field < component->type->field_count);
+                av_value *entry = av_arr_add_obj(doc, paths);
+                av_obj_add_uint(doc, entry, "actor", path->actor);
+                history_text(doc, entry, "component", component->name);
+                history_text(
+                    doc,
+                    entry,
+                    "field",
+                    component->type->fields[path->field].name
+                );
+            }
         }
     }
     return array;
@@ -1071,16 +1151,10 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
             const ecs_component_desc *component = history_component(
                 av_get_str(av_obj_get(item, "component"))
             );
-            const char *name = av_get_str(av_obj_get(item, "field"));
-            if (!component || !component->type || !name) {
-                return false;
-            }
-            int index = 0;
-            while (index < component->type->field_count &&
-                   strcmp(component->type->fields[index].name, name)) {
-                index++;
-            }
-            if (index == component->type->field_count) {
+            int index = component && component->type
+                          ? history_field(component, av_get_str(av_obj_get(item, "field")))
+                          : -1;
+            if (index < 0) {
                 return false;
             }
             scene_field_edit field = { .component = component->id, .field = index };
@@ -1163,7 +1237,8 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
         if (item) {
             out->name_before = history_copy_text(item, "before");
             out->name_after = history_copy_text(item, "after");
-            if (!out->name_before || !out->name_after) {
+            if (!out->name_before || !out->name_after ||
+                !history_read_paths(av_obj_get(item, "paths"), &out->renamed_paths)) {
                 return false;
             }
         }
