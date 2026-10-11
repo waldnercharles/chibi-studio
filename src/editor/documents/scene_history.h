@@ -67,6 +67,7 @@ typedef struct
     bool created;
     bool own_behaviors; /* the scene lists its behaviors */
     av_value *retained;
+    av_value *paths; /* the entity paths its fields name, as components values */
 } scene_actor_edit;
 
 /* The app owns actor replay. History owns cloned values and copied strings. Peek returns

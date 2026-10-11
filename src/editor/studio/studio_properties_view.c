@@ -723,11 +723,26 @@ static void mixed_entity_row(rows *r, row_desc d)
     put_text(r->v, table, "none", "None");
 }
 
-/* An object a field names, which the game sets as it runs: scenes save no
-   object references (a saved prototype clears its handles), so the field
-   shows the object, as Unity's object field does, and a click selects it
-   rather than offering a pick that could not be kept. */
-static void entity_row(rows *r, row_desc d, uint64_t handle)
+/* What an entity field's tooltip says about where its object comes from. */
+static const char *entity_problem(const char *name, const char *path, bool unresolved, char *text, size_t size)
+{
+    if (unresolved) {
+        snprintf(text, size, "No object has the path %s", path);
+    } else if (!name) {
+        snprintf(text, size, "The object this field named was removed");
+    } else if (path) {
+        snprintf(text, size, "Named by the path %s", path);
+    } else {
+        snprintf(text, size, "Set while the game runs");
+    }
+    return text;
+}
+
+/* An object a field names, which the game sets as it runs or the file names
+   by `path`, unresolved when no object has it. Studio can't pick one to save
+   yet, so the field shows the object, as Unity's object field does, and a
+   click selects it rather than offering a pick that could not be kept. */
+static void entity_row(rows *r, row_desc d, uint64_t handle, const char *path, bool unresolved)
 {
     view *v = r->v;
     studio *s = v->s;
@@ -736,22 +751,18 @@ static void entity_row(rows *r, row_desc d, uint64_t handle)
         return;
     }
     ecs_entity entity = ecs_entity_from_u64(handle);
-    const char *name = handle ? entity_name(s->scene, entity) : "";
-    char hint[160];
+    const char *name = handle ? entity_name(s->scene, entity)
+                     : path   ? path
+                              : "";
+    char hint[160], problem[192];
     snprintf(hint, sizeof hint, "Select %s", name ? name : "");
     d.control = "entity";
-    d.invalid = !name;
+    d.invalid = !name || unresolved;
     yyjson_mut_val *row = next_row(r, &d);
     put_text(v, row, "text", name ? name : "Missing object");
-    put_text(v, row, "hint", name && name[0] ? hint : "");
-    put_text(
-        v,
-        row,
-        "problem",
-        name ? "Set while the game runs; scenes don't save object references"
-             : "The object this field named was removed"
-    );
-    uint32_t icon = !name ? KIT_ICON_WARNING
+    put_text(v, row, "hint", name && name[0] && handle ? hint : "");
+    put_text(v, row, "problem", entity_problem(name, path, unresolved, problem, sizeof problem));
+    uint32_t icon = d.invalid ? KIT_ICON_WARNING
                   : !handle
                       ? KIT_ICON_TARGET
                       : studio_prototype_icon(s, scene_entity_prototype(s->scene, entity));
@@ -770,6 +781,8 @@ typedef struct field_source
     int index;
     pin_value value;
     row_desc row;
+    const char *path; /* the entity path a handle field names, if any */
+    bool placed; /* a placed object's field, whose path the scene resolves */
 } field_source;
 
 static double integer_of(const pin_value *value)
@@ -918,7 +931,9 @@ static void value_row(rows *r, const field_source *f)
             /* A mixed text stays empty, its placeholder a dash. */
             text_row(r, &d, d.mixed || !value->str ? "" : value->str);
             return;
-        case PIN_HANDLE: entity_row(r, d, value->u64); return;
+        case PIN_HANDLE:
+            entity_row(r, d, value->u64, f->path, f->path && f->placed && !value->u64);
+            return;
         default:
             d.control = "label";
             text_row(r, &d, pin_value_to_string(value));
@@ -988,7 +1003,9 @@ static void object_field(
                  .about = field->description,
                  .overridden = properties_overridden(scene, actor, component, index),
                  .mixed = properties_mixed(s, actor, desc->id, index, &value),
-                 .readonly = locked }
+                 .readonly = locked },
+        .path = scene_link_path(actor->paths, desc->id, index),
+        .placed = true
     };
     field_row(r, &f);
 }
@@ -1188,7 +1205,8 @@ static void prototype_field(
         .desc = component->desc,
         .component = component,
         .index = index,
-        .row = { .id = id, .label = label, .about = field->description, .readonly = locked }
+        .row = { .id = id, .label = label, .about = field->description, .readonly = locked },
+        .path = scene_link_path(asset->prototype->links, component->desc->id, index)
     };
     pin_read_field(component->data, field, &f.value);
     field_row(r, &f);

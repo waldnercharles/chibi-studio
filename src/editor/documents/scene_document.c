@@ -42,6 +42,73 @@ static bool same_names(const char **names, char **graphs)
     return true;
 }
 
+void scene_override_path(av_doc *doc, av_value *overrides, const game_prototype_link *link)
+{
+    const char *key = link->component->key ? link->component->key
+                                           : link->component->name;
+    av_value *fields = av_obj_get(overrides, key);
+    if (!fields) {
+        fields = av_obj_add_obj(doc, overrides, key);
+    }
+    av_obj_set(doc, fields, link->component->type->fields[link->field].name, av_str(doc, link->path));
+}
+
+const char *scene_link_path(const game_prototype_link *links, ecs_component_id component, int field)
+{
+    for (int i = 0; i < acount(links); i++) {
+        if (links[i].component->id == component && links[i].field == field) {
+            return links[i].path;
+        }
+    }
+    return NULL;
+}
+
+/* Whether the actor's authored state has the component: while the scene
+   runs, its snapshot's. */
+static bool authored_component(
+    app_scene_authoring *scene,
+    const scene_actor *actor,
+    const ecs_component_desc *desc
+)
+{
+    if (!scene->runtime_snapshot_valid) {
+        return ecs_component_has(scene->world, actor->entity, desc->id);
+    }
+    for (int i = 0; i < acount(actor->runtime_snapshot->components); i++) {
+        if (actor->runtime_snapshot->components[i].desc == desc) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* Adds the entity paths the actor's fields name, for the components it
+   still has: its live handles never save. */
+static void add_paths(av_doc *doc, av_value *overrides, app_scene_authoring *scene, const scene_actor *actor)
+{
+    for (int i = 0; i < acount(actor->paths); i++) {
+        if (authored_component(scene, actor, actor->paths[i].component)) {
+            scene_override_path(doc, overrides, &actor->paths[i]);
+        }
+    }
+}
+
+static av_value *with_paths(app_scene_authoring *scene, const scene_actor *actor, av_value *overrides)
+{
+    av_doc *doc = av_doc_new();
+    av_value *root = overrides ? av_clone(doc, overrides) : av_obj(doc);
+    av_doc_set_root(doc, root);
+    add_paths(doc, root, scene, actor);
+    av_value *result = av_value_copy(root);
+    av_doc_free(doc);
+    return result;
+}
+
+av_value *scene_actor_paths(app_scene_authoring *scene, const scene_actor *actor)
+{
+    return acount(actor->paths) ? with_paths(scene, actor, NULL) : NULL;
+}
+
 /* An actor keeps its prototype's behaviors until the scene lists its own or
    its behaviors differ from the prototype's. */
 static int add_actor_entity(
@@ -89,7 +156,9 @@ static int add_actor_entity(
                                        scene->world,
                                        actor->entity
                                    );
-        result = game_scene_document_set_entity_components(document, index, components);
+        av_value *named = with_paths(scene, actor, components);
+        result = game_scene_document_set_entity_components(document, index, named);
+        av_value_free(named);
         av_value_free(components);
     }
     if (result == 0) {
@@ -101,12 +170,11 @@ static int add_actor_entity(
 }
 
 /* The position in `actors` of the actor's parent, or -1. */
-static int listed_parent(const app_scene_authoring *scene, const int *actors, const scene_actor *actor)
+static int listed_parent(app_scene_authoring *scene, const int *actors, const scene_actor *actor)
 {
-    ecs_entity parent = ecs_parent(scene->world, actor->entity);
-    for (int i = 0; parent.slot && i < acount(actors); i++) {
-        if (ecs_entity_to_u64(scene->actors[actors[i]].entity) ==
-            ecs_entity_to_u64(parent)) {
+    uint64_t parent = scene_actor_parent(scene, actor);
+    for (int i = 0; parent && i < acount(actors); i++) {
+        if (scene->actors[actors[i]].identity == parent) {
             return i;
         }
     }
@@ -474,6 +542,9 @@ int scene_spawn_entity(
         restore_retained_components(scene, actor, actor->base) != 0) {
         return -1;
     }
+    actor->paths = entity->components
+                     ? game_prototype_components_links(&scene->registry, entity->components)
+                     : NULL;
     actor->own_behaviors = entity->own_behaviors;
     if (!entity->own_behaviors) {
         return 0;
@@ -495,6 +566,58 @@ int scene_spawn_entity(
         }
     }
     return 0;
+}
+
+/* The actor at the '.'-separated path of names from the scene's roots. */
+static const scene_actor *actor_at_path(app_scene_authoring *scene, const char *path)
+{
+    ecs_entity parent = { 0 };
+    for (;;) {
+        size_t length = strcspn(path, ".");
+        const scene_actor *found = NULL;
+        for (int i = 0; i < acount(scene->actors) && !found; i++) {
+            const scene_actor *actor = &scene->actors[i];
+            if (ecs_entity_to_u64(ecs_parent(scene->world, actor->entity)) ==
+                    ecs_entity_to_u64(parent) &&
+                strlen(actor->name) == length && !strncmp(actor->name, path, length)) {
+                found = actor;
+            }
+        }
+        if (!found || !path[length]) {
+            return found;
+        }
+        parent = found->entity;
+        path += length + 1;
+    }
+}
+
+static void link_path(app_scene_authoring *scene, const scene_actor *actor, const game_prototype_link *link)
+{
+    const ecs_component_desc *desc = link->component;
+    pin_value held = { 0 };
+    if (ecs_component_read_field(scene->world, actor->entity, desc->id, link->field, &held) !=
+        ECS_OK) {
+        return;
+    }
+    const scene_actor *target = actor_at_path(scene, link->path);
+    uint64_t handle = target ? ecs_entity_to_u64(target->entity) : 0;
+    if (held.u64 == handle) {
+        return;
+    }
+    pin_value value = { .type = PIN_HANDLE,
+                        .type_name = desc->type->fields[link->field].type_name,
+                        .u64 = handle };
+    int written = ecs_component_write_field(scene->world, actor->entity, desc->id, link->field, value);
+    assert(written == ECS_OK);
+}
+
+void scene_link_paths(app_scene_authoring *scene)
+{
+    for (int i = 0; i < acount(scene->actors); i++) {
+        for (int j = 0; j < acount(scene->actors[i].paths); j++) {
+            link_path(scene, &scene->actors[i], &scene->actors[i].paths[j]);
+        }
+    }
 }
 
 int scene_authoring_load_value(app_scene_authoring *scene, av_value *value, const char *path)
@@ -547,6 +670,7 @@ int scene_authoring_load_value(app_scene_authoring *scene, av_value *value, cons
             return -1;
         }
     }
+    scene_link_paths(scene);
     if (game_entities_rebuild_global_bindings(scene->live->runtime->entities) != 0) {
         game_scene_document_free(document);
         snprintf(scene->message, sizeof scene->message, "Global binding names must be unique.");

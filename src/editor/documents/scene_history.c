@@ -76,6 +76,7 @@ static void clear_edits(scene_edit **edits)
             av_value_free(actor->base);
             av_value_free(actor->state);
             av_value_free(actor->retained);
+            av_value_free(actor->paths);
             free(actor);
         }
         scene_prototype_edit *prototype = (*edits)[i].prototype;
@@ -334,6 +335,7 @@ bool scene_history_push_actor(scene_history *history, ecs_entity entity, const s
     copy->base = av_value_copy(actor->base);
     copy->state = av_value_copy(actor->state);
     copy->retained = actor->retained ? av_value_copy(actor->retained) : NULL;
+    copy->paths = actor->paths ? av_value_copy(actor->paths) : NULL;
     apush(
         history->undo,
         ((scene_edit){ .entity = entity,
@@ -971,6 +973,9 @@ static av_value *history_edits(av_doc *doc, const scene_edit *edits)
             if (actor->retained) {
                 av_obj_add_val(doc, item, "retained", av_clone(doc, actor->retained));
             }
+            if (actor->paths) {
+                av_obj_add_val(doc, item, "paths", av_clone(doc, actor->paths));
+            }
         }
         if (edit->behaviors) {
             av_value *item = av_obj_add_obj(doc, object, "behaviors");
@@ -1109,13 +1114,15 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
             av_value *base = av_obj_get(item, "base");
             av_value *state = av_obj_get(item, "state");
             av_value *retained = av_obj_get(item, "retained");
+            av_value *paths = av_obj_get(item, "paths");
             if (!av_is_obj(base) || !av_is_obj(state) ||
-                (retained && !av_is_obj(retained))) {
+                (retained && !av_is_obj(retained)) || (paths && !av_is_obj(paths))) {
                 return false;
             }
             actor->base = av_value_copy(base);
             actor->state = av_value_copy(state);
             actor->retained = retained ? av_value_copy(retained) : NULL;
+            actor->paths = paths ? av_value_copy(paths) : NULL;
             if (actor->index < 0 || !actor->name || !actor->prototype_name ||
                 !actor->base || !actor->state) {
                 return false;

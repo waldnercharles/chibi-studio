@@ -268,6 +268,8 @@ int refresh_prototype_instances(app_scene_authoring *scene, scene_prototype_asse
             return -1;
         }
     }
+    /* Refreshing rewrote the instances' handles from the prototype. */
+    scene_link_paths(scene);
     return register_prototype_hosts(scene, asset->prototype);
 }
 

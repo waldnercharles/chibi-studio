@@ -28,8 +28,10 @@ typedef struct
     char *prototype_name;
     game_prototype *base;
     game_prototype *runtime_snapshot;
+    uint64_t runtime_parent; /* the parent's identity when runtime_snapshot was taken */
     game_prototype *restored_state;
     scene_retained_component *retained;
+    game_prototype_link *paths; /* the entities the scene names in its fields */
     bool own_behaviors; /* the scene lists its behaviors instead of the prototype's */
     bool marked;
 } scene_actor;
@@ -541,6 +543,16 @@ int add_actor(app_scene_authoring *scene, const char *name, const char *prototyp
    in order, written as entities. An object whose parent is not among them is
    written as a root. */
 int scene_validate_entity(app_scene_authoring *scene, const game_scene_entity *entity);
+/* The entity path the links give a component's field, or NULL. */
+const char *scene_link_path(const game_prototype_link *links, ecs_component_id component, int field);
+/* Writes the link's entity path into the overrides of its component. */
+void scene_override_path(av_doc *doc, av_value *overrides, const game_prototype_link *link);
+/* The entity paths the actor's fields name, as components values, or NULL
+   when it names none. */
+av_value *scene_actor_paths(app_scene_authoring *scene, const scene_actor *actor);
+/* Writes each actor's paths into its fields: the handle of the actor each
+   names, or zero when no actor has that path. */
+void scene_link_paths(app_scene_authoring *scene);
 int scene_spawn_entity(
     app_scene_authoring *scene,
     const game_scene_entity *entity,
@@ -556,7 +568,8 @@ int scene_document_add_actors(
 bool scene_actor_has_children(app_scene_authoring *scene, const scene_actor *actor);
 /* Objects keep the scene's order, a parent before its children, so the
    document and the actor array line up. The identity of the actor's parent,
-   or 0 for a root; and the index just past the actor's descendants. */
+   or 0 for a root, as authored while the scene runs; and the index just
+   past the actor's descendants. */
 uint64_t scene_actor_parent(app_scene_authoring *scene, const scene_actor *actor);
 int scene_actor_subtree_end(const app_scene_authoring *scene, int index);
 /* A world offset as the change it makes to the entity's local Transform,

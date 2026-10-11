@@ -70,6 +70,9 @@ bool scene_actor_has_children(app_scene_authoring *scene, const scene_actor *act
 
 uint64_t scene_actor_parent(app_scene_authoring *scene, const scene_actor *actor)
 {
+    if (scene->runtime_snapshot_valid) {
+        return actor->runtime_parent;
+    }
     ecs_entity parent = ecs_parent(scene->world, actor->entity);
     for (int i = 0; parent.slot && i < acount(scene->actors); i++) {
         if (ecs_entity_to_u64(scene->actors[i].entity) == ecs_entity_to_u64(parent)) {
@@ -177,6 +180,7 @@ static void free_actor(scene_actor *actor)
     game_prototype_free(actor->runtime_snapshot);
     game_prototype_free(actor->restored_state);
     scene_retention_free(actor->retained);
+    game_prototype_links_free(actor->paths);
 }
 
 static int remove_actor_at(app_scene_authoring *scene, int index)
@@ -374,6 +378,8 @@ int add_instance_at(app_scene_authoring *scene, const char *prototype_name, cons
     if (position && GAME_GameTransform_has(scene->world, actor->entity)) {
         write_position(scene, actor->entity, *position);
     }
+    /* It may be the object a dangling path names. */
+    scene_link_paths(scene);
     av_value *state = capture_actor_state(scene, actor);
     av_value *base = game_prototype_to_value(actor->base);
     scene_actor_edit edit = { .index = acount(scene->actors) - 1,
@@ -554,9 +560,12 @@ int app_scene_authoring_delete_instance(app_scene_authoring *scene)
                               .base = base,
                               .state = state,
                               .own_behaviors = actor->own_behaviors,
-                              .retained = retained };
+                              .retained = retained,
+                              .paths = scene_actor_paths(scene, actor) };
     int result = remove_actor_at(scene, scene->selected);
     if (!result) {
+        /* Paths that named it name nothing now. */
+        scene_link_paths(scene);
         /* An object added later under this name starts shown. */
         scene_view_rename(scene, name, NULL);
         bool recorded = !collab_record_history() ||
@@ -566,6 +575,7 @@ int app_scene_authoring_delete_instance(app_scene_authoring *scene)
     }
     free(name);
     av_value_free(retained);
+    av_value_free(edit.paths);
     free(prototype);
     av_value_free(state);
     av_value_free(base);
@@ -616,6 +626,9 @@ static int restore_actor(app_scene_authoring *scene, const scene_actor_edit *edi
                           .base = base,
                           .restored_state = state,
                           .own_behaviors = edit->own_behaviors };
+    if (edit->paths) {
+        actor.paths = game_prototype_components_links(&scene->registry, edit->paths);
+    }
     if (scene_retention_load(edit->retained, &actor.retained) != 0 ||
         (parent_entity.slot &&
          (ecs_world_record_add_pair(scene->world, *entity, ECS_CHILD_OF, parent_entity, 0) ||
@@ -633,6 +646,7 @@ static int restore_actor(app_scene_authoring *scene, const scene_actor_edit *edi
         (size_t)(count - edit->index) * sizeof *scene->actors
     );
     scene->actors[edit->index] = actor;
+    scene_link_paths(scene);
     select_instance(scene, edit->index);
     return 0;
 }
@@ -683,6 +697,7 @@ int app_scene_authoring_duplicate_instance(app_scene_authoring *scene)
                               .base = base,
                               .state = state,
                               .retained = retained,
+                              .paths = scene_actor_paths(scene, actor),
                               .created = true };
     ecs_entity entity;
     int result = state && base ? restore_actor(scene, &edit, &entity) : -1;
@@ -698,6 +713,7 @@ int app_scene_authoring_duplicate_instance(app_scene_authoring *scene)
     av_value_free(state);
     av_value_free(base);
     av_value_free(retained);
+    av_value_free(edit.paths);
     scene_action_finish(scene, action, result == 0);
     free(action);
     return result;
@@ -730,6 +746,7 @@ static int replace_actor(
         .state = capture_actor_state(scene, actor),
         .own_behaviors = actor->own_behaviors,
         .retained = scene_retention_save(actor->retained),
+        .paths = scene_actor_paths(scene, actor),
     };
     scene_actor_edit added = removed;
     added.prototype_name = xstrdup(prototype);
@@ -762,6 +779,7 @@ static int replace_actor(
     av_value_free(removed.base);
     av_value_free(removed.state);
     av_value_free(removed.retained);
+    av_value_free(removed.paths);
     av_value_free(added.base);
     av_value_free(added.state);
     return result;
@@ -1061,6 +1079,7 @@ static int spawn_pasted(app_scene_authoring *scene, const game_scene_document *d
             return -1;
         }
     }
+    scene_link_paths(scene);
     return 0;
 }
 
@@ -1096,6 +1115,7 @@ static void record_created(app_scene_authoring *scene, int index)
     av_value *state = capture_actor_state(scene, actor);
     av_value *base = game_prototype_to_value(actor->base);
     av_value *retained = scene_retention_save(actor->retained);
+    av_value *paths = scene_actor_paths(scene, actor);
     scene_actor_edit edit = { .index = index,
                               .identity = actor->identity,
                               .parent = scene_actor_parent(scene, actor),
@@ -1104,6 +1124,7 @@ static void record_created(app_scene_authoring *scene, int index)
                               .base = base,
                               .state = state,
                               .retained = retained,
+                              .paths = paths,
                               .created = true };
     bool recorded = state && base &&
                     scene_history_push_actor(scene->history, actor->entity, &edit);
@@ -1111,6 +1132,7 @@ static void record_created(app_scene_authoring *scene, int index)
     av_value_free(state);
     av_value_free(base);
     av_value_free(retained);
+    av_value_free(paths);
 }
 
 int scene_paste(app_scene_authoring *scene, const char *text, scene_paste_place place)
@@ -1188,6 +1210,7 @@ static void set_actor_name(app_scene_authoring *scene, scene_actor *actor, const
     scene_view_rename(scene, actor->name, name);
     free(actor->name);
     actor->name = xstrdup(name);
+    scene_link_paths(scene);
     scene->scene_dirty = true;
     asset_index_invalidate(scene);
 }
@@ -1358,6 +1381,7 @@ static int replay_scene_edit_one(app_scene_authoring *scene, bool redo)
                 if (ecs_entity_to_u64(scene->actors[i].entity) ==
                     ecs_entity_to_u64(entity)) {
                     result = remove_actor_at(scene, i);
+                    scene_link_paths(scene);
                     break;
                 }
             }

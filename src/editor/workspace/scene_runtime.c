@@ -23,6 +23,7 @@ void invalidate_runtime_snapshot(app_scene_authoring *scene)
     for (int i = 0; i < acount(scene->actors); i++) {
         game_prototype_free(scene->actors[i].runtime_snapshot);
         scene->actors[i].runtime_snapshot = NULL;
+        scene->actors[i].runtime_parent = 0;
     }
     scene->runtime_snapshot_valid = false;
 }
@@ -73,6 +74,7 @@ static int capture_runtime_snapshot(app_scene_authoring *scene)
     }
     for (int i = 0; i < acount(snapshots); i++) {
         scene->actors[i].runtime_snapshot = snapshots[i];
+        scene->actors[i].runtime_parent = scene_actor_parent(scene, &scene->actors[i]);
     }
     afree(snapshots);
     scene->runtime_snapshot_valid = true;
@@ -83,8 +85,10 @@ fail:
     return -1;
 }
 
+/* Respawns the actor under its authored parent, which respawned before it. */
 static int restart_runtime_actor(app_scene_authoring *scene, scene_actor *actor)
 {
+    uint64_t parent = scene_actor_parent(scene, actor);
     assert(actor->runtime_snapshot);
     const game_prototype_spawn_hooks hooks = { attach_prototype_behavior, scene };
     char error[256];
@@ -94,12 +98,34 @@ static int restart_runtime_actor(app_scene_authoring *scene, scene_actor *actor)
             ECS_OK) {
         return -1;
     }
-    if (ecs_entity_is_alive(scene->world, actor->entity)) {
-        game_source_detach_entity(scene->live->runtime->sources, actor->entity);
-        ecs_world_destroy_entity(scene->world, actor->entity);
-    }
     actor->entity = entity;
+    const scene_actor *holder = parent ? scene_actor_by_identity(scene, parent) : NULL;
+    assert(!parent || holder);
+    if (holder) {
+        int placed = ecs_world_record_add_pair(
+                         scene->world,
+                         entity,
+                         ECS_CHILD_OF,
+                         holder->entity,
+                         0
+                     ) ||
+                     ecs_world_apply_commands(scene->world);
+        assert(placed == 0);
+    }
     return 0;
+}
+
+/* Destroys the replaced entities, children first, which destroying their
+   parent would destroy unseen. */
+static void destroy_replaced(app_scene_authoring *scene, ecs_entity *replaced)
+{
+    for (int i = acount(replaced) - 1; i >= 0; i--) {
+        if (ecs_entity_is_alive(scene->world, replaced[i])) {
+            game_source_detach_entity(scene->live->runtime->sources, replaced[i]);
+            ecs_world_destroy_entity(scene->world, replaced[i]);
+        }
+    }
+    afree(replaced);
 }
 
 static int restart_runtime(app_scene_authoring *scene)
@@ -117,12 +143,24 @@ static int restart_runtime(app_scene_authoring *scene)
     scene->runtime_selected = (ecs_entity){ 0 };
     game_entities_reset(scene->live->runtime->entities);
     game_particles_clear(scene->live->runtime->particles);
+    /* Parents come before their children. */
+    ecs_entity *replaced = NULL;
     for (int i = 0; i < acount(scene->actors); i++) {
-        if (restart_runtime_actor(scene, &scene->actors[i]) != 0) {
-            snprintf(scene->message, sizeof scene->message, "Could not restart Scene Runtime.");
-            return -1;
-        }
+        apush(replaced, scene->actors[i].entity);
     }
+    int respawned = 0;
+    while (respawned < acount(scene->actors) &&
+           restart_runtime_actor(scene, &scene->actors[respawned]) == 0) {
+        respawned++;
+    }
+    asetlen(replaced, respawned);
+    destroy_replaced(scene, replaced);
+    if (respawned < acount(scene->actors)) {
+        snprintf(scene->message, sizeof scene->message, "Could not restart Scene Runtime.");
+        return -1;
+    }
+    /* The respawned objects name each other again. */
+    scene_link_paths(scene);
     if (game_entities_rebuild_global_bindings(scene->live->runtime->entities) != 0) {
         snprintf(scene->message, sizeof scene->message, "Global binding names must be unique.");
         return -1;

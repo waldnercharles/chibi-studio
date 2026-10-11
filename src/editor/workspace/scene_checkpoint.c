@@ -818,6 +818,42 @@ static bool restore_system(app_scene_authoring *scene, yyjson_val *root)
     return source && !strcmp(source->syntax->text, json);
 }
 
+static bool has_component(const game_prototype *state, const ecs_component_desc *desc)
+{
+    for (int i = 0; i < acount(state->components); i++) {
+        if (state->components[i].desc == desc) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* The captured overrides with the entity paths the document's components
+   named, for the components the state still has: captures skip handles. */
+static av_value *with_document_paths(
+    app_scene_authoring *scene,
+    av_value *components,
+    const game_prototype *state,
+    av_value *captured
+)
+{
+    game_prototype_link *paths = components
+                                   ? game_prototype_components_links(&scene->registry, components)
+                                   : NULL;
+    av_doc *doc = av_doc_new();
+    av_value *root = av_clone(doc, captured);
+    av_doc_set_root(doc, root);
+    for (int i = 0; i < acount(paths); i++) {
+        if (has_component(state, paths[i].component)) {
+            scene_override_path(doc, root, &paths[i]);
+        }
+    }
+    game_prototype_links_free(paths);
+    av_value *result = av_value_copy(root);
+    av_doc_free(doc);
+    return result;
+}
+
 static bool restore_scene(app_scene_authoring *scene, yyjson_val *root, yyjson_val *actors)
 {
     av_doc *source = av_doc_new();
@@ -848,9 +884,17 @@ static bool restore_scene(app_scene_authoring *scene, yyjson_val *root, yyjson_v
         game_prototype *base = game_prototype_load_value(base_value, &scene->registry, error, sizeof error);
         av_doc_free(native);
         apush(bases, base);
-        av_value *overrides = state
-                                ? game_prototype_overrides_value(prototype->prototype, state)
-                                : NULL;
+        av_value *captured = state
+                               ? game_prototype_overrides_value(prototype->prototype, state)
+                               : NULL;
+        av_value *overrides = captured ? with_document_paths(
+                                             scene,
+                                             document->entities[i].components,
+                                             state,
+                                             captured
+                                         )
+                                       : NULL;
+        av_value_free(captured);
         game_prototype_free(state);
         bool valid = base && overrides &&
                      game_scene_document_set_entity_components(document, i, overrides) ==

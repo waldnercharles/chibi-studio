@@ -77,7 +77,16 @@ local offset. Its project declares a Link component naming an object;
 with two objects selected whose Links name different objects, the third
 frame checks that Properties shows Link's Target as a read-only dash and
 that clicking it selects nothing, and that once both name one object a
-click selects it. It saves no file.
+click selects it. A Link the scene names by the path Ship.Turret holds the
+turret once loaded, and the path saves again after the object's deletion is
+undone, after an edit to the Linker prototype, through a checkpoint, while
+the scene runs without A's Link and with the turret taken off its ship, and
+after the scene stops, which puts the turret back under its ship; a duplicate
+names the turret too. Renamed
+away or deleted, the turret leaves the Link naming nothing until that is undone,
+and the fourth frame checks that Properties shows the path as a problem.
+Two objects naming different paths that resolve to nothing read as mixed. It
+saves no file.
 
 `studio-acceptance --scene-physics --project-root PATH` takes another
 disposable copy. Its first hidden frame loads a scene with a dynamic 3D crate
