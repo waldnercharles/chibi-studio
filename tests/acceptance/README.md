@@ -1,3 +1,6 @@
+For recorded serial browser interactions and persistence checks, see
+[browser acceptance](BROWSER.md).
+
 The optional native `studio-acceptance` target compiles the actual application and
 host in test wrappers. The production binary has no fixture CLI or test hooks.
 Build with `-DCHIBI_STUDIO_BUILD_ACCEPTANCE=ON` against an installed SDK.

@@ -2610,7 +2610,8 @@
       ],
       "current_source_sha256": "0512ef2d0b2af567649a90affb53baec896bccd614ce5e878dd6fff53faa7553",
       "sha256": "0512ef2d0b2af567649a90affb53baec896bccd614ce5e878dd6fff53faa7553",
-      "source_path": "tools/web_shell.html"
+      "source_path": "tools/web_shell.html",
+      "consumer_sha256": "63aae1eb31af348597977bcf8450aa5534f148ca1a30940a32297baf2da2ce52"
     },
     "web/web_storage.js": {
       "consumer_replacements": [
@@ -2626,7 +2627,7 @@
       "current_source_sha256": "dccd31a1f6caea79afb78cc7f9542160b9a45e7de95e876f3c097b9722e3b015",
       "sha256": "dccd31a1f6caea79afb78cc7f9542160b9a45e7de95e876f3c097b9722e3b015",
       "source_path": "tools/web_storage.js",
-      "consumer_sha256": "2ef83dadb4587acf0de435e507e82ec87084e1dfc1e8b55dcb0a187040af8218"
+      "consumer_sha256": "a7610d7b17a2d2902826ef077bbaf40796867f5c4ffd4ffaf85ea88e23222669"
     }
   },
   "format": 1,

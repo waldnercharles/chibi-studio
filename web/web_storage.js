@@ -67,11 +67,41 @@ if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
     let publishedProject;
     const fs = () => Module['FS'];
     const report = error => {
-        if (error) Module['showError'](`Browser storage failed: ${error.message || error}`);
+        if (!error) return;
+        const message = `Browser storage failed: ${error.message || error}`;
+        Module['setStorageStatus'](message, true, () => sync().catch(report));
     };
-    const sync = () => new Promise((done, fail) => fs().syncfs(false, error => (error ? fail(error) : done())));
-    let timer;
+    let timer, syncing, revision = 0;
+    const pending = () => {
+        revision++;
+        Module['chibiStoragePending'] = true;
+        Module['setStorageStatus']('Saving project...');
+    };
+    const sync = () => {
+        pending();
+        if (syncing) return syncing;
+        syncing = (async () => {
+            for (;;) {
+                clearTimeout(timer);
+                const started = revision;
+                await new Promise((done, fail) => fs().syncfs(false, error => (error ? fail(error) : done())));
+                // A save during the flush belongs to the next snapshot. Keep the
+                // unload warning until that snapshot has reached IndexedDB too.
+                if (started !== revision) continue;
+                Module['chibiStoragePending'] = false;
+                Module['setStorageStatus']('');
+                return;
+            }
+        })().catch(error => {
+            // The caller may handle its own dialog error, but every failed
+            // flush must leave a reachable retry for the pending browser data.
+            report(error);
+            throw error;
+        }).finally(() => { syncing = undefined; });
+        return syncing;
+    };
     const persist = () => {
+        pending();
         clearTimeout(timer);
         timer = setTimeout(() => sync().catch(report), 250);
     };
@@ -349,7 +379,12 @@ if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
                 const id = importFiles(await unzip(await file.arrayBuffer()), file.name);
                 fs().writeFile(last, id);
                 keep();
-                await sync();
+                try {
+                    await sync();
+                } catch {
+                    // The storage error already offers Retry without losing the import.
+                    return;
+                }
                 location.search = `?project=${id}`;
             } catch (error) {
                 Module['showError'](`Could not import project: ${error.message}`);
