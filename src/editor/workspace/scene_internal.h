@@ -27,7 +27,7 @@ typedef struct
     char *name;
     char *prototype_name;
     prototype *base;
-    prototype *runtime_snapshot;
+    prototype *runtime_snapshot; /* Borrowed from runtime_tree_snapshot while active. */
     prototype *restored_state;
     scene_retained_component *retained;
     bool own_behaviors; /* the scene lists its behaviors instead of the prototype's */
@@ -147,6 +147,12 @@ typedef struct
 
 typedef struct
 {
+    char *name;
+    char *text;
+} scene_prototype_source;
+
+typedef struct
+{
     app_editor_document_kind kind;
     char *key;
     char *label;
@@ -211,6 +217,8 @@ struct app_scene_authoring
     char **component_strings; /* Keeps scene-authored component string fields alive. */
     scene_prototype_asset *prototypes;
     scene_content_entry *content;
+    scene_prototype_source *prototype_sources; /* Owned include documents. */
+    bool prototype_sources_loaded;
     reference_index *asset_index;
     unsigned asset_index_generation;
     unsigned asset_index_built_generation;
@@ -256,6 +264,7 @@ struct app_scene_authoring
     char **spawn_breaks;
     uint64_t *spawn_seen;
     bool runtime_snapshot_valid;
+    struct scene_runtime_snapshot *runtime_tree_snapshot;
     scene_kept *kept; /* Keep Changes, oldest first; Stop applies them */
     scene_field_preview *field_previews; /* until the next draw (scene_asset_drop.c) */
     bool runtime_playing;
@@ -392,6 +401,8 @@ void begin_transform_edit(app_scene_authoring *scene, ecs_entity entity);
 const char *content_basename(const char *path);
 bool content_path_in_folder(const app_scene_authoring *scene, const char *path, const char *folder);
 void content_refresh(app_scene_authoring *scene);
+void scene_prototype_sources_clear(app_scene_authoring *scene);
+const char *scene_prototype_include(const char *name, void *user);
 void asset_index_invalidate(app_scene_authoring *scene);
 bool editable_scalar(const pin_value *value);
 bool scene_property_value_copy(pin_value *out, pin_value value);
@@ -580,6 +591,8 @@ int prototype_index(app_scene_authoring *scene, const char *name);
 int prototype_redo(app_scene_authoring *scene);
 int prototype_undo(app_scene_authoring *scene);
 char *read_scene_file(const char *path);
+bool prototype_references(const prototype *document, const char *name);
+int prototype_instances_can_refresh(app_scene_authoring *scene, const prototype *document);
 int refresh_prototype_instances(app_scene_authoring *scene, scene_prototype_asset *asset);
 /* Replace an asset with its file, as File > Reload does. */
 int reload_behavior_from_disk(app_scene_authoring *scene, const char *asset_name);

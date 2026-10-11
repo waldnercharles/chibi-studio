@@ -4,6 +4,7 @@
 #include "editor/workspace/scene_internal.h"
 #include "runtime/component_catalog.h"
 #include "support/asset_json.h"
+#include "support/asset_text.h"
 #include "types/value_document.h"
 
 #include <assert.h>
@@ -13,6 +14,104 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+
+/* Prototype loaders copy all authored strings. The scene owns these source
+ * documents only for resolving includes and nested child prototypes. */
+void scene_prototype_sources_clear(app_scene_authoring *scene)
+{
+    for (int i = 0; i < acount(scene->prototype_sources); i++) {
+        free(scene->prototype_sources[i].name);
+        free(scene->prototype_sources[i].text);
+    }
+    afree(scene->prototype_sources);
+    scene->prototype_sources_loaded = false;
+}
+
+const char *scene_prototype_include(const char *name, void *user)
+{
+    app_scene_authoring *scene = user;
+    if (scene->resolve_prototype) {
+        const char *text = scene->resolve_prototype(name, scene->resolve_user);
+        if (text) {
+            return text;
+        }
+    }
+    if (!scene->prototype_sources_loaded) {
+        scene->prototype_sources_loaded = true;
+        for (int i = 0; i < acount(scene->content); i++) {
+            const scene_content_entry *entry = &scene->content[i];
+            if (entry->directory ||
+                !content_path_in_folder(scene, entry->path, "prototypes")) {
+                continue;
+            }
+            char *text = read_scene_file(entry->path);
+            char error[256];
+            av_doc *doc = text ? av_doc_read(text, error, sizeof error) : NULL;
+            const char *declared = doc ? av_get_str(av_obj_get(av_doc_root(doc), "name"))
+                                       : NULL;
+            if (declared) {
+                apush(scene->prototype_sources, ((scene_prototype_source){ xstrdup(declared), text }));
+            } else {
+                free(text);
+            }
+            av_doc_free(doc);
+        }
+    }
+    const char *text = NULL;
+    for (int i = 0; i < acount(scene->prototype_sources); i++) {
+        if (!strcmp(scene->prototype_sources[i].name, name)) {
+            if (text) {
+                return NULL;
+            }
+            text = scene->prototype_sources[i].text;
+        }
+    }
+    return text;
+}
+
+/* Undo stores resolved values. Check the authored file too so an undo cannot
+ * turn an inherited prototype into a writable flattened document. */
+static bool prototype_includes(const scene_prototype_asset *asset)
+{
+    if (acount(asset->prototype->includes)) {
+        return true;
+    }
+    char *text = asset->path ? read_scene_file(asset->path) : NULL;
+    char error[256];
+    av_doc *doc = text ? av_doc_read(text, error, sizeof error) : NULL;
+    bool includes = doc && av_obj_get(av_doc_root(doc), "includes");
+    av_doc_free(doc);
+    free(text);
+    return includes;
+}
+
+static bool prototype_composed(app_scene_authoring *scene, const scene_prototype_asset *asset)
+{
+    if (prototype_includes(asset) || acount(asset->prototype->child_prototypes)) {
+        return true;
+    }
+    for (int i = 0; i < acount(scene->prototypes); i++) {
+        const scene_prototype_asset *other = &scene->prototypes[i];
+        if (other == asset) {
+            continue;
+        }
+        char *text = other->path ? read_scene_file(other->path) : NULL;
+        char error[256];
+        prototype *authored = text
+                                ? prototype_load_authored(text, &scene->registry, error, sizeof error)
+                                : NULL;
+        bool referenced = prototype_references(
+            authored ? authored : other->prototype,
+            asset->prototype->name
+        );
+        prototype_free(authored);
+        free(text);
+        if (referenced) {
+            return true;
+        }
+    }
+    return false;
+}
 
 int register_prototype_hosts(app_scene_authoring *scene, const prototype *native_prototype)
 {
@@ -119,6 +218,75 @@ bool prototype_has_component_id(const prototype *native_prototype, ecs_component
     return false;
 }
 
+static bool prototype_children_match(const prototype *before, const prototype *after)
+{
+    if (acount(before->child_prototypes) != acount(after->child_prototypes)) {
+        return false;
+    }
+    av_value *before_value = prototype_to_value(before);
+    av_value *after_value = prototype_to_value(after);
+    av_value *before_children = av_obj_get(before_value, "children");
+    av_value *after_children = av_obj_get(after_value, "children");
+    bool same = (!before_children && !after_children) ||
+                (before_children && after_children &&
+                 av_equals(before_children, after_children));
+    av_value_free(before_value);
+    av_value_free(after_value);
+    for (int i = 0; same && i < acount(before->child_prototypes); i++) {
+        const prototype *a = before->child_prototypes[i];
+        const prototype *b = after->child_prototypes[i];
+        av_value *av = prototype_to_value(a);
+        av_value *bv = prototype_to_value(b);
+        same = av_equals(av, bv) && prototype_children_match(a, b);
+        av_value_free(av);
+        av_value_free(bv);
+    }
+    return same;
+}
+
+static bool prototype_links_match(const prototype *before, const prototype *after)
+{
+    if (acount(before->links) != acount(after->links)) {
+        return false;
+    }
+    for (int i = 0; i < acount(before->links); i++) {
+        const prototype_link *link = &before->links[i];
+        bool found = false;
+        for (int j = 0; j < acount(after->links); j++) {
+            const prototype_link *other = &after->links[j];
+            found |= link->component->id == other->component->id &&
+                     link->field == other->field && link->outer == other->outer &&
+                     !strcmp(link->path, other->path);
+        }
+        if (!found) {
+            return false;
+        }
+    }
+    return true;
+}
+
+int prototype_instances_can_refresh(app_scene_authoring *scene, const prototype *document)
+{
+    for (int i = 0; i < acount(scene->actors); i++) {
+        const scene_actor *actor = &scene->actors[i];
+        if (strcmp(actor->prototype_name, document->name)) {
+            continue;
+        }
+        if (!prototype_links_match(actor->base, document) ||
+            !prototype_children_match(actor->base, document)) {
+            snprintf(
+                scene->prototype_message,
+                sizeof scene->prototype_message,
+                "Reopen the project to apply changed prototype children or "
+                "entity references in %s.",
+                document->name
+            );
+            return -1;
+        }
+    }
+    return 0;
+}
+
 static int refresh_prototype_actor(
     app_scene_authoring *scene,
     const prototype *native_prototype,
@@ -190,8 +358,16 @@ static int refresh_prototype_actor(
     for (int i = 0; i < acount(native_prototype->components); i++) {
         const prototype_component *component = &native_prototype->components[i];
         for (int field = 0; field < component->desc->type->field_count; field++) {
+            const type_field *type = &component->desc->type->fields[field];
+            /* Authored entity paths are resolved only at spawn. An unchanged
+             * path keeps the live handle, including a runtime queue cursor. */
+            if (type->type == PIN_HANDLE && type->type_name &&
+                !strcmp(type->type_name, "ecs.entity") &&
+                prototype_has_component_id(actor->base, component->desc->id)) {
+                continue;
+            }
             pin_value value;
-            pin_read_field(component->data, &component->desc->type->fields[field], &value);
+            pin_read_field(component->data, type, &value);
             if (ecs_component_write_field(
                     scene->world,
                     actor->entity,
@@ -248,6 +424,9 @@ static int refresh_prototype_actor(
 
 int refresh_prototype_instances(app_scene_authoring *scene, scene_prototype_asset *asset)
 {
+    if (prototype_instances_can_refresh(scene, asset->prototype)) {
+        return -1;
+    }
     if (scene->runtime_snapshot_valid &&
         app_scene_authoring_runtime_command(scene, APP_RUNTIME_SCENE, APP_RUNTIME_STOP) !=
             0) {
@@ -570,6 +749,16 @@ int app_scene_authoring_register_prototype(app_scene_authoring *scene, const cha
     }
     char error[256];
     prototype *native_prototype = prototype_load(json, &scene->registry, error, sizeof error);
+    if (!native_prototype) {
+        snprintf(
+            scene->message,
+            sizeof scene->message,
+            "Could not load prototype %s: %s",
+            path ? path : "document",
+            error
+        );
+        return -1;
+    }
     return append_prototype_asset(scene, native_prototype, path);
 }
 
@@ -581,6 +770,15 @@ int app_scene_authoring_save_prototype(
 {
     scene_prototype_asset *asset = find_prototype(scene, prototype_name);
     if (!asset || !asset->prototype || !path) {
+        return -1;
+    }
+    if (prototype_composed(scene, asset)) {
+        snprintf(
+            scene->prototype_message,
+            sizeof scene->prototype_message,
+            "Edit %s in the Text Editor to preserve its prototype composition.",
+            prototype_name
+        );
         return -1;
     }
     if (scene_tabs_path_in_use(scene, APP_EDITOR_DOCUMENT_PROTOTYPE, path)) {

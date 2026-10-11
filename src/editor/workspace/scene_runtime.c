@@ -1,11 +1,12 @@
 #include "authoring/material_prepare.h"
-#include "execution/status.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/workspace/model_preview.h"
 #include "editor/workspace/scene_internal.h"
+#include "execution/status.h"
 #include "render/shader_catalog.h"
 #include "runtime/component_catalog.h"
 #include "types/array.h"
+#include "types/catalog.h"
 #include "types/type.h"
 
 #include <assert.h>
@@ -16,15 +17,179 @@
 #include <string.h>
 #include <sys/stat.h>
 
+typedef struct
+{
+    prototype *state;
+    ecs_entity original, current, restored;
+    char *name;
+    int actor, parent;
+    bool disabled;
+} runtime_entity_snapshot;
+
+struct scene_runtime_snapshot
+{
+    runtime_entity_snapshot *entities;
+};
+
+static void free_runtime_tree(struct scene_runtime_snapshot *snapshot)
+{
+    if (!snapshot) {
+        return;
+    }
+    for (int i = 0; i < acount(snapshot->entities); i++) {
+        prototype_free(snapshot->entities[i].state);
+        free(snapshot->entities[i].name);
+    }
+    afree(snapshot->entities);
+    free(snapshot);
+}
+
 void invalidate_runtime_snapshot(app_scene_authoring *scene)
 {
     scene_kept_clear(scene);
     scene->runtime_selected = (ecs_entity){ 0 };
     for (int i = 0; i < acount(scene->actors); i++) {
-        prototype_free(scene->actors[i].runtime_snapshot);
+        if (!scene->runtime_tree_snapshot) {
+            prototype_free(scene->actors[i].runtime_snapshot);
+        }
         scene->actors[i].runtime_snapshot = NULL;
     }
+    free_runtime_tree(scene->runtime_tree_snapshot);
+    scene->runtime_tree_snapshot = NULL;
     scene->runtime_snapshot_valid = false;
+}
+
+static int snapshot_entity_index(const struct scene_runtime_snapshot *snapshot, ecs_entity entity)
+{
+    for (int i = 0; i < acount(snapshot->entities); i++) {
+        if (ecs_entity_to_u64(snapshot->entities[i].original) ==
+            ecs_entity_to_u64(entity)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int snapshot_actor(const app_scene_authoring *scene, ecs_entity entity)
+{
+    for (int i = 0; i < acount(scene->actors); i++) {
+        if (ecs_entity_to_u64(scene->actors[i].entity) == ecs_entity_to_u64(entity)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static const prototype *snapshot_base(const app_scene_authoring *scene, ecs_entity entity, int actor)
+{
+    if (actor >= 0) {
+        return scene->actors[actor].base;
+    }
+    for (int i = 0; i < acount(scene->prototypes); i++) {
+        const prototype *base = scene->prototypes[i].prototype;
+        if (ecs_component_has(scene->world, entity, prototype_tag_desc(base)->id)) {
+            return base;
+        }
+    }
+    return NULL;
+}
+
+/* Serialized prototypes omit runtime handles. Keep their captured values
+ * alongside the clone's owned strings for the later entity remap. */
+static void copy_snapshot_handles(const type_desc *type, void *to, const void *from)
+{
+    for (int i = 0; i < type->field_count; i++) {
+        const type_field *field = &type->fields[i];
+        pin_value value;
+        pin_read_field(from, field, &value);
+        if (field->type == PIN_HANDLE) {
+            pin_write_field(to, field, value);
+        }
+        if (field->type == PIN_STRUCT) {
+            const type_desc *nested = type_catalog_find(field->type_name);
+            assert(nested);
+            pin_value destination;
+            pin_read_field(to, field, &destination);
+            copy_snapshot_handles(nested, destination.ptr, value.ptr);
+        }
+    }
+}
+
+/* Capture live component values before Play, including prototype children that
+ * are not separate authored scene actors. The snapshot owns every copied row. */
+static bool capture_runtime_entity(
+    app_scene_authoring *scene,
+    struct scene_runtime_snapshot *snapshot,
+    ecs_entity entity
+)
+{
+    if (snapshot_entity_index(snapshot, entity) >= 0) {
+        return true;
+    }
+    int actor = snapshot_actor(scene, entity);
+    const prototype *base = snapshot_base(scene, entity, actor);
+    if (!base) {
+        return false;
+    }
+    prototype *captured = prototype_capture_entity(
+        base->name,
+        scene->world,
+        entity,
+        &scene->registry
+    );
+    if (!captured) {
+        return false;
+    }
+    free(captured->identity);
+    captured->identity = xstrdup(base->identity);
+    char error[256];
+    prototype *state = prototype_clone(captured, error, sizeof error);
+    for (int i = 0; state && i < acount(state->components); i++) {
+        prototype_component *to = &state->components[i];
+        for (int j = 0; j < acount(captured->components); j++) {
+            const prototype_component *from = &captured->components[j];
+            if (to->desc->id == from->desc->id) {
+                copy_snapshot_handles(to->desc->type, to->data, from->data);
+                break;
+            }
+        }
+    }
+    prototype_free(captured);
+    if (!state) {
+        return false;
+    }
+    const char *name = ecs_entity_name(scene->world, entity);
+    apush(
+        snapshot->entities,
+        ((runtime_entity_snapshot){
+            .state = state,
+            .original = entity,
+            .current = entity,
+            .name = name ? xstrdup(name) : NULL,
+            .actor = actor,
+            .parent = -1,
+            .disabled = ecs_component_has(scene->world, entity, ECS_DISABLED),
+        })
+    );
+    int count = scene_debug_attachment_count_for_entity(scene->live->runtime->sources, entity);
+    for (int i = 0; i < count; i++) {
+        scene_debug_attachment info;
+        if (scene_debug_attachment_at(scene->live->runtime->sources, entity, i, &info) ||
+            prototype_add_graph(state, info.asset_name)) {
+            return false;
+        }
+    }
+    int children = ecs_pair_source_count(scene->world, ECS_CHILD_OF, entity);
+    for (int i = 0; i < children; i++) {
+        if (!capture_runtime_entity(
+                scene,
+                snapshot,
+                ecs_pair_source(scene->world, ECS_CHILD_OF, entity, i)
+            )) {
+            return false;
+        }
+    }
+    return true;
 }
 
 static int capture_runtime_snapshot(app_scene_authoring *scene)
@@ -32,70 +197,174 @@ static int capture_runtime_snapshot(app_scene_authoring *scene)
     if (scene->runtime_snapshot_valid) {
         return 0;
     }
-    prototype **snapshots = NULL;
+    struct scene_runtime_snapshot *snapshot = xcalloc(1, sizeof *snapshot);
     for (int i = 0; i < acount(scene->actors); i++) {
-        scene_actor *actor = &scene->actors[i];
-        prototype *captured = prototype_capture_entity(
-            actor->prototype_name,
-            scene->world,
-            actor->entity,
-            &scene->registry
+        if (!capture_runtime_entity(scene, snapshot, scene->actors[i].entity)) {
+            free_runtime_tree(snapshot);
+            snprintf(scene->message, sizeof scene->message, "Could not capture authored Scene state.");
+            return -1;
+        }
+    }
+    for (int i = 0; i < acount(snapshot->entities); i++) {
+        runtime_entity_snapshot *entity = &snapshot->entities[i];
+        entity->parent = snapshot_entity_index(
+            snapshot,
+            ecs_parent(scene->world, entity->original)
         );
-        if (!captured) {
+        if (entity->actor >= 0) {
+            scene->actors[entity->actor].runtime_snapshot = entity->state;
+        }
+    }
+    scene->runtime_tree_snapshot = snapshot;
+    scene->runtime_snapshot_valid = true;
+    return 0;
+}
+
+/* References in captured rows still name the original entities. Restore all
+ * rows first so links between roots, children and siblings can be remapped. */
+static void remap_snapshot_fields(
+    const struct scene_runtime_snapshot *snapshot,
+    const type_desc *type,
+    void *data
+)
+{
+    for (int i = 0; i < type->field_count; i++) {
+        const type_field *field = &type->fields[i];
+        pin_value value;
+        pin_read_field(data, field, &value);
+        if (field->type == PIN_STRUCT) {
+            const type_desc *nested = type_catalog_find(field->type_name);
+            assert(nested);
+            remap_snapshot_fields(snapshot, nested, value.ptr);
+        }
+        if (field->type != PIN_HANDLE || !field->type_name ||
+            strcmp(field->type_name, "ecs.entity")) {
+            continue;
+        }
+        int target = snapshot_entity_index(snapshot, ecs_entity_from_u64(value.u64));
+        if (target >= 0) {
+            value.u64 = ecs_entity_to_u64(snapshot->entities[target].restored);
+            pin_write_field(data, field, value);
+        }
+    }
+}
+
+static bool restore_snapshot_fields(app_scene_authoring *scene, const struct scene_runtime_snapshot *snapshot)
+{
+    for (int i = 0; i < acount(snapshot->entities); i++) {
+        const runtime_entity_snapshot *entity = &snapshot->entities[i];
+        for (int c = 0; c < acount(entity->state->components); c++) {
+            const prototype_component *component = &entity->state->components[c];
+            void *data = xmalloc(component->desc->element_size);
+            memcpy(data, component->data, component->desc->element_size);
+            remap_snapshot_fields(snapshot, component->desc->type, data);
+            for (int f = 0; f < component->desc->type->field_count; f++) {
+                pin_value value;
+                pin_read_field(data, &component->desc->type->fields[f], &value);
+                int result = ecs_component_write_field(
+                    scene->world,
+                    entity->restored,
+                    component->desc->id,
+                    f,
+                    value
+                );
+                if (result) {
+                    free(data);
+                    return false;
+                }
+            }
+            free(data);
+        }
+    }
+    return true;
+}
+
+static int restore_runtime_snapshot(app_scene_authoring *scene)
+{
+    struct scene_runtime_snapshot *snapshot = scene->runtime_tree_snapshot;
+    assert(snapshot);
+    char error[256];
+    for (int i = 0; i < acount(snapshot->entities); i++) {
+        runtime_entity_snapshot *entity = &snapshot->entities[i];
+        if (!authoring_prototype_parameters(
+                scene->live->runtime->entities,
+                entity->state,
+                error,
+                sizeof error
+            ) ||
+            prototype_spawn_components(entity->state, scene->world, &entity->restored, error, sizeof error)) {
             goto fail;
         }
-        /* Re-clone with the authored identity so prototype tags stay stable. */
-        free(captured->identity);
-        captured->identity = xstrdup(actor->base->identity);
-        char error[256];
-        prototype *snapshot = prototype_clone(captured, error, sizeof error);
-        prototype_free(captured);
-        if (!snapshot) {
+    }
+    for (int i = 0; i < acount(snapshot->entities); i++) {
+        runtime_entity_snapshot *entity = &snapshot->entities[i];
+        if ((entity->parent >= 0 && ecs_world_record_add_pair(
+                                        scene->world,
+                                        entity->restored,
+                                        ECS_CHILD_OF,
+                                        snapshot->entities[entity->parent].restored,
+                                        0
+                                    )) ||
+            (entity->disabled &&
+             ecs_world_record_add(scene->world, entity->restored, ECS_DISABLED, NULL, 0))) {
             goto fail;
         }
-        apush(snapshots, snapshot);
-        int count = scene_debug_attachment_count_for_entity(
-            scene->live->runtime->sources,
-            actor->entity
-        );
-        for (int j = 0; j < count; j++) {
-            scene_debug_attachment info;
-            if (scene_debug_attachment_at(scene->live->runtime->sources, actor->entity, j, &info) !=
-                    0 ||
-                prototype_add_graph(snapshot, info.asset_name) != 0) {
+    }
+    if (ecs_world_apply_commands(scene->world) ||
+        !restore_snapshot_fields(scene, snapshot)) {
+        goto fail;
+    }
+    for (int i = 0; i < acount(snapshot->entities); i++) {
+        runtime_entity_snapshot *entity = &snapshot->entities[i];
+        for (int j = 0; j < acount(entity->state->graphs); j++) {
+            if (attach_prototype_behavior(
+                    scene->world,
+                    entity->restored,
+                    entity->state->graphs[j],
+                    scene
+                )) {
                 goto fail;
             }
         }
     }
-    for (int i = 0; i < acount(snapshots); i++) {
-        scene->actors[i].runtime_snapshot = snapshots[i];
+    /* Release old names only after every replacement has been prepared. */
+    for (int i = acount(snapshot->entities) - 1; i >= 0; i--) {
+        ecs_entity current = snapshot->entities[i].current;
+        if (ecs_entity_is_alive(scene->world, current)) {
+            source_detach_entity(scene->live->runtime->sources, current);
+            int result = ecs_world_destroy_entity(scene->world, current);
+            assert(!result);
+        }
     }
-    afree(snapshots);
-    scene->runtime_snapshot_valid = true;
-    return 0;
+    for (int i = 0; i < acount(snapshot->entities); i++) {
+        runtime_entity_snapshot *entity = &snapshot->entities[i];
+        if (entity->name) {
+            int result = ecs_world_record_name(
+                scene->world,
+                entity->restored,
+                entity->name,
+                0
+            );
+            assert(!result);
+        }
+        entity->current = entity->restored;
+        entity->restored = (ecs_entity){ 0 };
+        if (entity->actor >= 0) {
+            scene->actors[entity->actor].entity = entity->current;
+        }
+    }
+    return ecs_world_apply_commands(scene->world);
 fail:
-    free_behavior_snapshots(snapshots);
-    snprintf(scene->message, sizeof scene->message, "Could not capture authored Scene state.");
+    ecs_world_clear_commands(scene->world);
+    for (int i = acount(snapshot->entities) - 1; i >= 0; i--) {
+        ecs_entity restored = snapshot->entities[i].restored;
+        if (ecs_entity_is_alive(scene->world, restored)) {
+            source_detach_entity(scene->live->runtime->sources, restored);
+            ecs_world_destroy_entity(scene->world, restored);
+        }
+        snapshot->entities[i].restored = (ecs_entity){ 0 };
+    }
     return -1;
-}
-
-static int restart_runtime_actor(app_scene_authoring *scene, scene_actor *actor)
-{
-    assert(actor->runtime_snapshot);
-    const prototype_spawn_hooks hooks = { attach_prototype_behavior, scene };
-    char error[256];
-    ecs_entity entity = { 0 };
-    if (!authoring_prototype_parameters(scene->live->runtime->entities, actor->runtime_snapshot, error, sizeof error) ||
-        prototype_spawn(actor->runtime_snapshot, scene->world, &hooks, &entity, error, sizeof error) !=
-            ECS_OK) {
-        return -1;
-    }
-    if (ecs_entity_is_alive(scene->world, actor->entity)) {
-        source_detach_entity(scene->live->runtime->sources, actor->entity);
-        ecs_world_destroy_entity(scene->world, actor->entity);
-    }
-    actor->entity = entity;
-    return 0;
 }
 
 static int restart_runtime(app_scene_authoring *scene)
@@ -113,11 +382,9 @@ static int restart_runtime(app_scene_authoring *scene)
     scene->runtime_selected = (ecs_entity){ 0 };
     entities_reset(scene->live->runtime->entities);
     particles_clear(scene->live->runtime->particles);
-    for (int i = 0; i < acount(scene->actors); i++) {
-        if (restart_runtime_actor(scene, &scene->actors[i]) != 0) {
-            snprintf(scene->message, sizeof scene->message, "Could not restart Scene Runtime.");
-            return -1;
-        }
+    if (restore_runtime_snapshot(scene) != 0) {
+        snprintf(scene->message, sizeof scene->message, "Could not restart Scene Runtime.");
+        return -1;
     }
     if (entities_rebuild_global_bindings(scene->live->runtime->entities) != 0) {
         snprintf(scene->message, sizeof scene->message, "Global binding names must be unique.");

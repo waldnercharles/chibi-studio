@@ -51,6 +51,7 @@ static enum {
     UNIT_WARNINGS,
     SCENE_HIERARCHY,
     SCENE_PHYSICS,
+    PROTOTYPE_INCLUDES,
     ASSET_SELECTION,
     SCENE_VIEWPORT,
     PLAY_KEYS,
@@ -2812,6 +2813,8 @@ static bool code_glyphs_frame(void *state)
     }
 }
 
+#include "prototype_includes.h"
+
 bool studio_acceptance_frame(void *state)
 {
     switch (mode) {
@@ -2827,6 +2830,9 @@ bool studio_acceptance_frame(void *state)
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
         case SCENE_PHYSICS: callback_ok = scene_physics_frame(state); break;
+        case PROTOTYPE_INCLUDES:
+            callback_ok = prototype_includes_frame(state);
+            break;
         case ASSET_SELECTION: callback_ok = asset_selection_frame(state); break;
         case SCENE_VIEWPORT: callback_ok = scene_viewport_frame(state); break;
         case PLAY_KEYS: callback_ok = play_keys_frame(state); break;
@@ -2997,7 +3003,7 @@ TEST_CASE(scene_hierarchy)
     return true;
 }
 
-TEST_CASE(scene_physics)
+TEST_CASE(scene_physics_resets)
 {
     char *args[] = { (char *)executable, "--headless",
                      "--frames",         "2",
@@ -3142,6 +3148,7 @@ int main(int argc, char **argv)
     bool units = argc == 4 && !strcmp(argv[1], "--unit-warnings");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
     bool physics = argc == 4 && !strcmp(argv[1], "--scene-physics");
+    bool includes = argc == 4 && !strcmp(argv[1], "--prototype-includes");
     bool assets = argc == 4 && !strcmp(argv[1], "--asset-selection");
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
     bool playing = argc == 4 && !strcmp(argv[1], "--play-keys");
@@ -3149,15 +3156,15 @@ int main(int argc, char **argv)
     bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
-         !keys_mode && !labels && !units && !hierarchy && !physics && !assets &&
-         !viewport && !playing && !prompting && !followups && !glyphs) ||
+         !keys_mode && !labels && !units && !hierarchy && !physics && !includes &&
+         !assets && !viewport && !playing && !prompting && !followups && !glyphs) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
             "--graph-visibility|--graph-keys|--graph-labels|--unit-warnings|"
-            "--scene-hierarchy|--scene-physics|"
+            "--scene-hierarchy|--scene-physics|--prototype-includes|"
             "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts|"
             "--code-followups|--code-glyphs "
             "--project-root PATH | --scene-cursors\n"
@@ -3186,6 +3193,7 @@ int main(int argc, char **argv)
          : units       ? UNIT_WARNINGS
          : hierarchy   ? SCENE_HIERARCHY
          : physics     ? SCENE_PHYSICS
+         : includes    ? PROTOTYPE_INCLUDES
          : assets      ? ASSET_SELECTION
          : viewport    ? SCENE_VIEWPORT
          : playing     ? PLAY_KEYS
@@ -3204,7 +3212,8 @@ int main(int argc, char **argv)
         case GRAPH_LABELS: RUN_TEST_CASE(graph_labels); break;
         case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
-        case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics); break;
+        case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics_resets); break;
+        case PROTOTYPE_INCLUDES: RUN_TEST_CASE(prototype_includes); break;
         case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;
         case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
         case PLAY_KEYS: RUN_TEST_CASE(play_keys); break;

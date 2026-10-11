@@ -364,6 +364,7 @@ int save_content_file(app_scene_authoring *scene, const char *path, const char *
 {
     int result = write_asset_file(path, text);
     if (!result) {
+        scene_prototype_sources_clear(scene);
         scene_disk_note(scene, path);
     }
     return result;
@@ -616,6 +617,7 @@ static int content_entry_compare(const void *left, const void *right)
 
 void content_refresh(app_scene_authoring *scene)
 {
+    scene_prototype_sources_clear(scene);
     asset_index_invalidate(scene);
     free((void *)scene->image_choices.items);
     scene->image_choices = (editor_choices){ 0 };
@@ -1845,6 +1847,8 @@ app_scene_authoring *app_scene_authoring_new_with_content_root(
     scene->resolve_prototype = resolve_prototype;
     scene->resolve_user = resolve_user;
     scene->registry = app_component_registry();
+    scene->registry.include = scene_prototype_include;
+    scene->registry.include_user = scene;
     scene->runtime = runtime;
     scene->prototype_preview = prototype_preview_new(&scene->registry);
     if (!scene->prototype_preview) {
@@ -2213,7 +2217,7 @@ void app_scene_authoring_free(app_scene_authoring *scene)
     if (!scene) {
         return;
     }
-    scene_kept_clear(scene);
+    invalidate_runtime_snapshot(scene);
     scene_field_previews_clear(scene);
     scene_selection_free(scene);
     scenario_document_free(scene->scenario);
@@ -2254,6 +2258,7 @@ void app_scene_authoring_free(app_scene_authoring *scene)
         prototype_free(scene->prototypes[i].prototype);
     }
     afree(scene->prototypes);
+    scene_prototype_sources_clear(scene);
     prototype_preview_free(scene->prototype_preview);
     scene_model_preview_free(scene);
     free(scene->preview_prototype_id);

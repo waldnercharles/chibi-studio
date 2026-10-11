@@ -119,7 +119,7 @@ static bool source_attachments(
         }
         char *text = NULL;
         if (owner->kind == REFERENCE_ASSET_PROTOTYPE) {
-            prototype *prototype = prototype_load(file->text, &scene->registry, error, size);
+            prototype *prototype = prototype_load_authored(file->text, &scene->registry, error, size);
             valid = prototype && !prototype_remove_graph(prototype, from) &&
                     !prototype_add_graph(prototype, to);
             text = valid ? prototype_save(prototype) : NULL;

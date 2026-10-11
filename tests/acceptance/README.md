@@ -198,3 +198,19 @@ Execution requires explicit root coordination and independent admission under th
 60-second GPU policy. Merely building this target does not run it. A whole UI
 suite is not implied. The vendored pico_unit header preserves its upstream license
 and original engine vendoring record; it is not installed with the Studio product.
+
+`studio-acceptance --prototype-includes --project-root PATH` takes a disposable
+copy and runs two hidden frames. It loads World through ReactionQueue and two
+ReactionSlot children linked in a ring. Play, Stop, and Restart preserve the
+children, their entity references, and disabled state. Structured saves before
+and after Undo leave includes intact. Raw World and Queue source edits preserve
+live state and refresh dependent prototypes. Cycle errors, dirty dependent
+documents, changed entity-reference paths, and changed child definitions reject
+the reload before changing the live graph.
+
+Prototypes using includes or their composed dependencies must be edited in the
+Text Editor; Properties saves cannot preserve inherited authorship and are
+rejected without rewriting their source. Uncomposed leaf prototypes remain
+editable through Properties. Changes to child definitions or
+entity-reference paths require reopening the project. Ordinary source edits
+that keep that structure apply live.

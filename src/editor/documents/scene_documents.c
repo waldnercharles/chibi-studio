@@ -691,52 +691,162 @@ static int reload_behavior_document(app_scene_authoring *scene)
     return reload_behavior_from_disk(scene, NULL);
 }
 
+bool prototype_references(const prototype *document, const char *name)
+{
+    for (int i = 0; i < acount(document->includes); i++) {
+        if (!strcmp(document->includes[i], name)) {
+            return true;
+        }
+    }
+    for (int i = 0; document->children && i < acount(document->children->entities);
+         i++) {
+        if (!strcmp(document->children->entities[i].prototype, name)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 int reload_prototype_asset(app_scene_authoring *scene, scene_prototype_asset *asset)
 {
-    char *json = read_scene_file(asset->path);
-    char error[256];
-    prototype *loaded = json ? prototype_load(json, &scene->registry, error, sizeof error)
-                             : NULL;
-    free(json);
-    if (!loaded) {
-        snprintf(
-            scene->message,
-            sizeof scene->message,
-            "Could not reload %s: %s",
-            asset->path,
-            json ? error : "unreadable"
-        );
-        return -1;
+    typedef struct
+    {
+        prototype *authored;
+        prototype *loaded;
+        prototype *previous;
+        bool affected;
+    } reload;
+    reload *pending = NULL;
+    asetlen(pending, acount(scene->prototypes));
+    memset(pending, 0, sizeof *pending * acount(pending));
+    char error[256] = "";
+    int result = -1;
+    scene_prototype_sources_clear(scene);
+    for (int i = 0; i < acount(pending); i++) {
+        scene_prototype_asset *current = &scene->prototypes[i];
+        char *text = current->path ? read_scene_file(current->path) : NULL;
+        pending[i].authored = text
+                                ? prototype_load_authored(text, &scene->registry, error, sizeof error)
+                                : NULL;
+        free(text);
+        pending[i].affected = current == asset;
     }
-    if (!loaded->name || strcmp(loaded->name, asset->prototype->name) != 0) {
-        prototype_free(loaded);
-        snprintf(
-            scene->message,
-            sizeof scene->message,
-            "Reloaded prototype name does not match %s.",
-            asset->prototype->name
-        );
-        return -1;
+    /* Read authored dependencies: history snapshots contain resolved values,
+     * so they cannot reliably say which documents an asset includes. */
+    bool changed;
+    do {
+        changed = false;
+        for (int i = 0; i < acount(pending); i++) {
+            if (pending[i].affected) {
+                continue;
+            }
+            const prototype *document = pending[i].authored
+                                          ? pending[i].authored
+                                          : scene->prototypes[i].prototype;
+            for (int j = 0; j < acount(pending); j++) {
+                if (pending[j].affected && prototype_references(
+                                               document,
+                                               scene->prototypes[j].prototype->name
+                                           )) {
+                    pending[i].affected = true;
+                    changed = true;
+                    break;
+                }
+            }
+        }
+    } while (changed);
+    /* Validate the entire affected closure before changing any live values.
+     * A missing include or a cycle leaves every current instance intact. */
+    for (int i = 0; i < acount(pending); i++) {
+        if (!pending[i].affected) {
+            continue;
+        }
+        scene_prototype_asset *current = &scene->prototypes[i];
+        if (current != asset && current->dirty) {
+            snprintf(
+                scene->message,
+                sizeof scene->message,
+                "Save or reload %s before updating its prototype dependency.",
+                current->prototype->name
+            );
+            goto done;
+        }
+        char *text = current->path ? read_scene_file(current->path) : NULL;
+        snprintf(error, sizeof error, "unreadable");
+        pending[i].loaded = text ? prototype_load(text, &scene->registry, error, sizeof error)
+                                 : NULL;
+        free(text);
+        if (!pending[i].loaded) {
+            snprintf(
+                scene->message,
+                sizeof scene->message,
+                "Could not reload %s: %s",
+                current->prototype->name,
+                error
+            );
+            goto done;
+        }
+        if (strcmp(pending[i].loaded->name, current->prototype->name)) {
+            snprintf(
+                scene->message,
+                sizeof scene->message,
+                "Reloaded prototype name does not match %s.",
+                current->prototype->name
+            );
+            goto done;
+        }
+        if (prototype_instances_can_refresh(scene, pending[i].loaded)) {
+            snprintf(scene->message, sizeof scene->message, "%s", scene->prototype_message);
+            goto done;
+        }
     }
-    prototype *previous = asset->prototype;
-    asset->prototype = loaded;
-    if (refresh_prototype_instances(scene, asset) != 0) {
-        asset->prototype = previous;
-        prototype_free(loaded);
-        snprintf(
-            scene->message,
-            sizeof scene->message,
-            "Could not apply reloaded %s.",
-            asset->path
-        );
-        return -1;
+    for (int i = 0; i < acount(pending); i++) {
+        if (pending[i].loaded) {
+            pending[i].previous = scene->prototypes[i].prototype;
+            scene->prototypes[i].prototype = pending[i].loaded;
+        }
     }
-    prototype_free(previous);
-    asset->dirty = 0;
-    clear_prototype_history(asset);
-    snprintf(scene->message, sizeof scene->message, "Reloaded %s.", asset->path);
+    for (int i = 0; i < acount(pending); i++) {
+        if (pending[i].loaded &&
+            refresh_prototype_instances(scene, &scene->prototypes[i])) {
+            for (int j = 0; j < acount(pending); j++) {
+                if (pending[j].previous) {
+                    scene->prototypes[j].prototype = pending[j].previous;
+                    register_prototype_hosts(scene, pending[j].previous);
+                }
+            }
+            snprintf(
+                scene->message,
+                sizeof scene->message,
+                "Could not apply reloaded %s.",
+                scene->prototypes[i].prototype->name
+            );
+            goto done;
+        }
+    }
+    for (int i = 0; i < acount(pending); i++) {
+        if (pending[i].loaded) {
+            prototype_free(pending[i].previous);
+            pending[i].loaded = NULL;
+            scene->prototypes[i].dirty = 0;
+            clear_prototype_history(&scene->prototypes[i]);
+        }
+    }
+    snprintf(
+        scene->message,
+        sizeof scene->message,
+        "Reloaded %s and its dependent prototypes.",
+        asset->path
+    );
     scene_notice(scene);
-    return 0;
+    result = 0;
+done:
+    for (int i = 0; i < acount(pending); i++) {
+        prototype_free(pending[i].authored);
+        prototype_free(pending[i].loaded);
+    }
+    afree(pending);
+    return result;
 }
 
 static int reload_prototype_document(app_scene_authoring *scene)
