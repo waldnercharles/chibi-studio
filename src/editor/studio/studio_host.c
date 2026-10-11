@@ -543,6 +543,7 @@ static bool forward_input(studio *s)
             s->shortcut_recording = 0;
             recording = false;
             s->mods = SDL_KMOD_NONE;
+            studio_scene_camera_focus_lost(s);
             /* A Space let go in another window neither plays nor pans. */
             s->space_down = s->scene_nav.space_play = s->scene_nav.space_drag = false;
             continue;
@@ -567,6 +568,10 @@ static bool forward_input(studio *s)
             continue;
         }
         if (s->guest && to_guest(s, e)) {
+            continue;
+        }
+        /* The fly keys of a look around a 3D view reach no shortcut. */
+        if (key && studio_scene_fly_key(s, &e->key)) {
             continue;
         }
         /* The Inspector's pick keys reach no document. */
@@ -797,11 +802,13 @@ static void draw_viewport(studio *s)
        texture this Studio showed last is gone by the time it shows the
        scene again, so it names none until it draws. */
     if (s->guest) {
+        studio_scene_camera_cancel(s);
         rml_backend_set_texture(s->backend, "viewport", 0);
         return;
     }
     int area = area_showing(s, STUDIO_EDITOR_SCENE);
     if (area < 0 || s->surface.rect.w <= 0 || s->surface.rect.h <= 0) {
+        studio_scene_camera_cancel(s);
         engine_viewport_set_host_input(s->viewport, NULL);
         return;
     }

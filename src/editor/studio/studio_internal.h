@@ -1230,6 +1230,10 @@ struct studio
         bool space_panned; /* a drag panned while Space was down */
         bool space_drag;   /* the left button pans until released */
         double zoomed_at;  /* when a wheel or a pinch last zoomed the camera */
+        int camera_drag;   /* the 3D camera's gesture (studio_scene_camera.c) */
+        float drag_x, drag_y; /* the pointer as the gesture last moved it */
+        unsigned fly_keys;    /* the fly keys held while looking, as bits */
+        double flown_at;      /* when the camera last flew */
     } scene_nav;
     studio_graph graph;
     studio_members members;
@@ -1698,6 +1702,15 @@ void studio_scene_view(studio *s, engine_viewport_host_input *input);
 bool studio_scene_space(studio *s, studio_key key);
 /* Plays once the held-back Space lifts, unless it panned; every frame. */
 void studio_scene_space_release(studio *s);
+/* While the right button looks around a 3D view, W, A, S, D, Q and E fly
+   it rather than reach a shortcut: true when it took `key`, whose release
+   it takes too. */
+bool studio_scene_fly_key(studio *s, const SDL_KeyboardEvent *key);
+/* Whether the right button looks around a 3D view, and the fly keys fly. */
+bool studio_scene_flying(const studio *s);
+void studio_scene_camera_frame(studio *s, engine_viewport_host_input *input);
+void studio_scene_camera_cancel(studio *s);
+void studio_scene_camera_focus_lost(studio *s);
 /* The Outliner (studio_outliner.c): its header's filter and Add, and its
  * body, the authored Outliner panel in each area showing it, whose
  * behaviors call the editor nodes (studio_nodes.c). */

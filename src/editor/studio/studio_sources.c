@@ -1978,9 +1978,16 @@ static hint_list scene_hints(studio *s)
         }
         return (hint_list){ hints, n };
     }
+    if (studio_scene_flying(s)) {
+        hints[n++] = (studio_hint){ KIT_ICON_MOUSE, NULL, "Look" };
+        hints[n++] = (studio_hint){ 0, "W/A/S/D", "Fly" };
+        hints[n++] = (studio_hint){ 0, "Q/E", "Down/Up" };
+        hints[n++] = (studio_hint){ 0, "Shift", "Faster" };
+        return (hint_list){ hints, n };
+    }
     /* The perspective view selects and drags on the ground plane only. */
-    scene_tool tool = engine_viewport_perspective(s->viewport) ? SCENE_TOOL_SELECT
-                                                               : s->prefs.tool;
+    bool perspective = engine_viewport_perspective(s->viewport);
+    scene_tool tool = perspective ? SCENE_TOOL_SELECT : s->prefs.tool;
     if (tool != SCENE_TOOL_SELECT && !scene_gizmo_enabled(s->scene)) {
         hints[n++] = (studio_hint){ KIT_ICON_WARNING,
                                     NULL,
@@ -2003,6 +2010,12 @@ static hint_list scene_hints(studio *s)
             break;
     }
     hints[n++] = (studio_hint){ KIT_ICON_MOUSE, "Shift", "Toggle" };
+    if (perspective) {
+        hints[n++] = (studio_hint){ KIT_ICON_MOUSE, "Alt", "Orbit" };
+        hints[n++] = (studio_hint){ KIT_ICON_MOUSE, NULL, "Right-drag to fly" };
+        hints[n++] = (studio_hint){ 0, NULL, "Frame", STUDIO_COMMAND_FRAME + 1 };
+        return (hint_list){ hints, n };
+    }
     hints[n++] = (studio_hint){ 0, NULL, "Grab", STUDIO_COMMAND_GRAB + 1 };
     if (n < STUDIO_HINT_MAX) {
         hints[n++] = (studio_hint){ 0, "Ctrl", snap };
