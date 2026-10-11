@@ -147,6 +147,7 @@ void studio_graph_find_action(studio *s, const char *action, const ui_activation
         int index = atoi(a->args[0]);
         if (index >= 0 && index < count) {
             jump(s, index);
+            g->find.focus = true;
         }
     } else if (!strcmp(action, "enter") && count) {
         jump(s, g->find.current < 0 ? 0 : g->find.current);

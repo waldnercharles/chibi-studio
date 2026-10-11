@@ -518,6 +518,51 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
                                       .keywords = "hide panel",
                                       .icon = KIT_ICON_CLOSE,
                                       .phase = SHORTCUT_EDITOR },
+    [STUDIO_COMMAND_OBJECT_UP] = { .id = "objectUp",
+                                   .label = "Move Objects Up",
+                                   .chord = "Alt+Up",
+                                   .context = "Outliner",
+                                   .contexts = EDITOR_BIT(STUDIO_EDITOR_OUTLINER),
+                                   .keywords = "reparent reorder hierarchy "
+                                               "world transform",
+                                   .icon = KIT_ICON_MOVE,
+                                   .phase = SHORTCUT_EDITOR },
+    [STUDIO_COMMAND_OBJECT_DOWN] = { .id = "objectDown",
+                                     .label = "Move Objects Down",
+                                     .chord = "Alt+Down",
+                                     .context = "Outliner",
+                                     .contexts = EDITOR_BIT(STUDIO_EDITOR_OUTLINER),
+                                     .keywords = "reparent reorder hierarchy "
+                                                 "world transform",
+                                     .icon = KIT_ICON_MOVE,
+                                     .phase = SHORTCUT_EDITOR },
+    [STUDIO_COMMAND_OBJECT_INDENT] = { .id = "objectIndent",
+                                       .label = "Parent to Previous Sibling",
+                                       .chord = "Alt+Right",
+                                       .context = "Outliner",
+                                       .contexts = EDITOR_BIT(STUDIO_EDITOR_OUTLINER),
+                                       .keywords = "reparent reorder hierarchy "
+                                                   "world transform",
+                                       .icon = KIT_ICON_MOVE,
+                                       .phase = SHORTCUT_EDITOR },
+    [STUDIO_COMMAND_OBJECT_OUTDENT] = { .id = "objectOutdent",
+                                        .label = "Move Out of Parent",
+                                        .chord = "Alt+Left",
+                                        .context = "Outliner",
+                                        .contexts = EDITOR_BIT(STUDIO_EDITOR_OUTLINER),
+                                        .keywords = "reparent reorder "
+                                                    "hierarchy world transform",
+                                        .icon = KIT_ICON_MOVE,
+                                        .phase = SHORTCUT_EDITOR },
+    [STUDIO_COMMAND_OBJECT_ROOT] = { .id = "objectRoot",
+                                     .label = "Move to Scene Root",
+                                     .chord = "",
+                                     .context = "Outliner",
+                                     .contexts = EDITOR_BIT(STUDIO_EDITOR_OUTLINER),
+                                     .keywords = "reparent reorder hierarchy "
+                                                 "world transform",
+                                     .icon = KIT_ICON_MOVE,
+                                     .phase = SHORTCUT_EDITOR },
     [STUDIO_COMMAND_SELECT_PREVIOUS] = { .id = "selectPrevious",
                                          .label = "Select Previous",
                                          .chord = "Up",
@@ -1298,6 +1343,12 @@ static bool enabled_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_CUT:
             return editable && selection && !s->scene->gizmo.active &&
                    !studio_designer_active(s);
+        case STUDIO_COMMAND_OBJECT_UP:
+        case STUDIO_COMMAND_OBJECT_DOWN:
+        case STUDIO_COMMAND_OBJECT_INDENT:
+        case STUDIO_COMMAND_OBJECT_OUTDENT:
+        case STUDIO_COMMAND_OBJECT_ROOT:
+            return studio_outliner_move_enabled(s, command);
         case STUDIO_COMMAND_COPY:
             return selection && !studio_designer_active(s);
         case STUDIO_COMMAND_PASTE:
@@ -1531,6 +1582,13 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_NORMAL_SPEED: studio_speed_step(s, 0); break;
         case STUDIO_COMMAND_RECORD_GAMEPLAY: studio_record_gameplay(s); break;
         case STUDIO_COMMAND_EXPORT_GAME: studio_export_game(s); break;
+        case STUDIO_COMMAND_OBJECT_UP:
+        case STUDIO_COMMAND_OBJECT_DOWN:
+        case STUDIO_COMMAND_OBJECT_INDENT:
+        case STUDIO_COMMAND_OBJECT_OUTDENT:
+        case STUDIO_COMMAND_OBJECT_ROOT:
+            studio_outliner_move(s, command);
+            break;
         case STUDIO_COMMAND_SELECT_PREVIOUS:
             studio_step_selection(s, -1, false);
             break;

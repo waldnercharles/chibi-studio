@@ -1134,7 +1134,7 @@ bool asset_code_location(const asset_code *c, uint64_t graph, uint64_t node, int
     *end = o->range.end;
     return true;
 }
-static bool node_at(const asset_code *c, int offset, bool executable, uint64_t *graph, uint64_t *node)
+static bool node_at(const asset_code *c, int offset, bool executable, uint64_t *graph_id, uint64_t *node_id)
 {
     if (!c->presentation ||
         strcmp(authoring_source_presentation_text(c->presentation), c->text)) {
@@ -1149,9 +1149,15 @@ static bool node_at(const asset_code *c, int offset, bool executable, uint64_t *
         if (!o->node || o->pin || offset < o->range.start || offset >= o->range.end) {
             continue;
         }
-        if (executable && o->kind != SOURCE_PRESENTATION_STATEMENT &&
-            o->kind != SOURCE_PRESENTATION_FUNCTION && !o->effects) {
-            continue;
+        if (executable) {
+            graph *g = behavior_asset_find_graph(
+                authoring_source_presentation_view(c->presentation),
+                o->graph
+            );
+            node *n = g ? graph_node_by_id(g, o->node) : NULL;
+            if (!n || node_behavior_for(n) == NODE_BEHAVIOR_PURE) {
+                continue;
+            }
         }
         if (!best ||
             o->range.end - o->range.start < best->range.end - best->range.start) {
@@ -1161,8 +1167,8 @@ static bool node_at(const asset_code *c, int offset, bool executable, uint64_t *
     if (!best) {
         return false;
     }
-    *graph = best->graph;
-    *node = best->node;
+    *graph_id = best->graph;
+    *node_id = best->node;
     return true;
 }
 bool asset_code_node_at(const asset_code *c, int offset, uint64_t *graph, uint64_t *node)

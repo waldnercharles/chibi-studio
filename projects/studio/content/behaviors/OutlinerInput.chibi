@@ -1,40 +1,46 @@
 behavior "OutlinerInput" {
-    owner "ecs.entity";
-    action show_ui_popover = engine["Show UI Popover"](Entity: 0, Element: "#outliner-menu", At: rowmenu.Pointer);
-    on RowClicked as rowclicked(Key: string = "", Shift: bool = false, Mod: bool = false) {
-        select_object(Object: rowclicked.Key, Toggle: rowclicked.Mod, Extend: rowclicked.Shift);
+    action show_ui_popover = engine["Show UI Popover"](0, "#outliner-menu", rowmenu.Pointer)
+    on RowClicked {
+        select_object(event.Key, event.Mod, event.Shift)
     }
-    on RowMenu as rowmenu(Key: string = "", Pointer: struct<"CF_V2"> = null) {
-        if (object_selected(Object: rowmenu.Key)) {
-            show_ui_popover();
+    on RowMenu as rowmenu {
+        if object_selected(rowmenu.Key) {
+            show_ui_popover()
         } else {
-            await select_object(Object: rowmenu.Key, Toggle: false, Extend: false);
-            show_ui_popover();
+            await select_object(rowmenu.Key, false, false)
+            show_ui_popover()
         }
     }
-    on EyeClicked as eyeclicked(Key: string = "", Hidden: bool = false, Alt: bool = false) {
-        if (eyeclicked.Alt) {
-            isolate_object(Object: eyeclicked.Key);
+    on EyeClicked {
+        if event.Alt {
+            isolate_object(event.Key)
         } else {
-            set_object_hidden(Object: eyeclicked.Key, Hidden: not(Value: eyeclicked.Hidden));
+            set_object_hidden(event.Key, !event.Hidden)
         }
     }
-    on LockClicked as lockclicked(Key: string = "", Locked: bool = false) {
-        set_object_locked(Object: lockclicked.Key, Locked: not(Value: lockclicked.Locked));
+    on LockClicked {
+        set_object_locked(event.Key, !event.Locked)
     }
-    on RowDropped as rowdropped(Key: string = "", Type: string = "", Payload: string = "") {
-        drop_on_object(Object: rowdropped.Key, Type: rowdropped.Type, Payload: rowdropped.Payload);
-    }
-    on ListDropped as listdropped(Type: string = "", Payload: string = "") {
-        if (text_equal(A: listdropped.Type, B: "prototype")) {
-            add_object(Prototype: listdropped.Payload);
+    on RowDropped {
+        if text_equal(event.Type, "object") {
+            move_objects(event.Payload, event.Key, event.Zone)
         } else {
+            drop_on_object(event.Key, event.Type, event.Payload)
         }
     }
-    on ClearFilter as clearfilter() {
-        set_object_filter(Filter: "");
+    on ListDropped {
+        if text_equal(event.Type, "prototype") {
+            add_object(event.Payload)
+        } else {
+            if text_equal(event.Type, "object") {
+                move_objects(event.Payload, "", "root")
+            }
+        }
     }
-    on SpawnBreak as spawnbreak() {
-        toggle_spawn_break(Prototype: selection().Prototype);
+    on ClearFilter {
+        set_object_filter("")
+    }
+    on SpawnBreak {
+        toggle_spawn_break(selection().Prototype)
     }
 }

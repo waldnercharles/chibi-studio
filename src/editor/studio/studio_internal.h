@@ -220,6 +220,11 @@ typedef enum
     /* Opening and closing, which ask first about unsaved edits (studio_projects.c) */
     STUDIO_COMMAND_OPEN_PROJECT,
     STUDIO_COMMAND_QUIT,
+    STUDIO_COMMAND_OBJECT_UP,
+    STUDIO_COMMAND_OBJECT_DOWN,
+    STUDIO_COMMAND_OBJECT_INDENT,
+    STUDIO_COMMAND_OBJECT_OUTDENT,
+    STUDIO_COMMAND_OBJECT_ROOT,
     STUDIO_COMMAND_COUNT,
 } studio_command;
 
@@ -1078,6 +1083,12 @@ struct studio
         float width, height, ratio;
         bool wake;
     } ui_schedule;
+    /* Model construction work, independent of frame timing. */
+    struct
+    {
+        uint64_t properties_fields, property_overrides, property_choices;
+        uint64_t properties_mixed_lists, asset_rows, inspector_reads, target_choices;
+    } panel_work;
     studio_area areas[STUDIO_AREA_COUNT];
     int hover_area;
     int focus_area;
@@ -1692,6 +1703,9 @@ void studio_scene_space_release(studio *s);
  * behaviors call the editor nodes (studio_nodes.c). */
 void studio_outliner_header(studio *s, int area);
 void studio_outliner_body(studio *s, int area);
+void studio_outliner_drop(studio *s, const char *source, const char *target, const char *zone);
+bool studio_outliner_move_enabled(studio *s, studio_command command);
+void studio_outliner_move(studio *s, studio_command command);
 /* The objects the object filter shows, as actor indices in scene order;
    the caller frees the array. */
 int *studio_outliner_rows(studio *s);

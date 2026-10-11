@@ -1,3 +1,6 @@
+For recorded serial browser interactions and persistence checks, see
+[browser acceptance](BROWSER.md).
+
 The optional native `studio-acceptance` target compiles the actual application and
 host in test wrappers. The production binary has no fixture CLI or test hooks.
 Build with `-DCHIBI_STUDIO_BUILD_ACCEPTANCE=ON` against an installed SDK.
@@ -205,7 +208,124 @@ it. A click on Discard then quits without writing the scene. The clicks are
 pointer motion, press and release queued through SDL over the toast's buttons. The initial Counter bytes are
 restored afterwards.
 
+`studio-acceptance --panel-idle --project-root PATH` takes a disposable copy
+and runs ten hidden fixed-dt frames with two actors. Properties, Assets,
+Inspector and BehaviorHeader each synchronize eight times at five points in
+editing, playback and stop. The test compares their JSON before and after those
+unchanged inputs and reports construction counts and diagnostic timings. It
+requires zero closed-menu target/override construction and zero temporary
+multiselection lists. Open target choices still refresh every time.
+
+The same run changes selection, edits a numeric property through its production
+change action, checks mixed axes for single and multiple selections, opens and
+reopens the override menu, filters Assets, and reads
+changed Inspector attributes/styles. It clicks the debug-target trigger through
+SDL, closes with Escape, opens with Return, and checks rendered entity options
+and search focus. Runtime detach/attach while closed must appear immediately on
+reopen. The small Assets fixture exercises scroll handling but does not establish
+movement through a large virtualized list. These checks establish panel behavior
+and work counts, not whole-application or CUT-50 aggregate speedup.
+
+The engine supervisor admits this fixed workload separately from the older
+Studio suites. From the engine checkout, after copying `tests/acceptance/project`
+as a copy-on-write clone to a disposable directory:
+
+```sh
+CHIBI_STUDIO_BUILD=/absolute/studio-build \
+CHIBI_STUDIO_IDLE_PROJECT=/absolute/disposable-project \
+python3 tools/test_policy.py tool studio-panel-idle
+```
+
+The binary comes from this Studio checkout against the installed SDK. The
+supervisor enforces one 60-second deadline including in-process fixture
+initialization. The external project copy and build happen beforehand. It does
+not admit other projects, selectors, or a Studio suite.
+
+The initial macOS comparison used the same two-actor workload against Studio
+`d10222d` and the candidate, with an installed engine SDK from `f3ff608`.
+The baseline retained every behavioral assertion and omitted only the new
+work-count and initially-empty-menu expectations. Per eight running syncs:
+
+| Construction | Baseline | Candidate |
+| --- | ---: | ---: |
+| Temporary multi-selection lists | 24 | 0 |
+| Closed field-menu override lists | 8 | 0 |
+| Closed debug-target choice lists | 8 | 0 |
+| Open debug-target choice lists | 8 | 8 |
+| Property fields / cached asset rows / Inspector reads | 16 / 0 / 8 | 16 / 0 / 8 |
+
+Assets already reuse their indexed rows. Inspector still reads live DOM and
+styles because there is no complete input revision for those values. Timing
+output is diagnostic; these small runs support the construction counts, not an
+elapsed-time performance claim.
+
 Execution requires explicit root coordination and independent admission under the
 60-second GPU policy. Merely building this target does not run it. A whole UI
 suite is not implied. The vendored pico_unit header preserves its upstream license
 and original engine vendoring record; it is not installed with the Studio product.
+
+`studio-acceptance --outliner-move --project-root PATH` takes a disposable copy
+and runs exactly twenty-one hidden fixed-dt frames with the Outliner maximized. A
+three-object 2D scene exercises the real authored rows and SDL pointer events:
+dragging a selected group inside a parent, rejecting an ancestor cycle with a
+visible rejection mark, and moving before, after and to the scene root. Queued
+Alt+Left, Alt+Up and Alt+Right test outdenting, sibling order and reparenting. It
+checks stable actor identities, group selection and world-preserving local
+coordinates. In its final frame, native context pointer events check that a
+behavior drag at the same row edge remains a whole-row assignment target, then
+cancel it without assigning an asset. It saves nothing. The separate scene-move case covers persistence,
+history and collaboration.
+
+`studio-acceptance --scene-move --project-root PATH` runs two hidden frames on
+an isolated project. It checks moving multiple objects under a rotated parent,
+world placement and 2D picking, entity identity, authored and ECS sibling order, one-step undo
+and redo with the original selection, and root reordering with a selected parent
+and child. Separate disposable worlds check collaboration replay and full
+workspace checkpoints, including undo and redo after remapping entity handles
+and restoring a deleted moved child. A two-object 3D scene checks all local
+transform fields, world placement, undo, redo and checkpoint restoration without
+rendering a mesh. Cycles, sibling name conflicts, stale
+selection and active runtime sessions preserve the scene and history. It checks
+the session guard directly; Play/Stop hierarchy restoration depends on Studio
+PR #54 and is not covered by this selector.
+
+`studio-acceptance --graph-pointer --project-root PATH` runs nineteen hidden
+frames on Counter. It clicks a rendered node title through SDL, follows its
+wire with Right, opens Find with Mod+F, types `count`, and checks Down/Up result
+selection and wraparound across graphs. Clicking a result selects its
+node; Escape closes Find and then clears the graph selection. Home must bring
+every visible node into the viewport from an offscreen camera. Source bytes and
+dirty state stay unchanged.
+
+`studio-acceptance --asset-pointer --project-root PATH` runs twenty hidden
+frames with four disposable prototypes. SDL input types the Assets filter,
+clicks list rows with Shift and Mod, switches to Grid using its button, and
+clicks tiles with Mod. It checks exact visible identities and primary/marked
+selection for `Spare` and `SpareB`, including switching back to List with the
+filter retained. It neither opens nor deletes the assets.
+
+`studio-acceptance --debugger-source-history --project-root PATH` runs
+forty-seven hidden frames with one in-memory Counter actor. SDL F9 sets a source
+breakpoint and F5 runs to it. Typing invalid source hides the execution highlight
+while the applied runtime keeps its paused generation, run, cursor and state.
+Mod+Z, Mod+Shift+Z and Mod+Z restore, invalidate and restore the exact text and
+highlight. At most ten F10 presses must advance that same runtime through its
+source points from count 1 to 2, then Shift+F5
+stops it. No source is saved. Valid live edits that replace the runtime generation
+are outside this selector.
+
+The engine's `--studio-graph-pointer`, `--studio-asset-pointer` and
+`--studio-debugger-source-history` agent GPU routes run these selectors
+individually with provenance checks and the shared 60-second deadline. Each uses
+a fresh copy of this directory's fixture. These checks do not admit the held
+acceptance suite or establish web input coverage.
+
+Before each independent engine GPU invocation, restore the bundled manifest:
+
+```sh
+cp "$CHIBI_STUDIO_SOURCE/projects/studio/project.kdl" \
+  "$CHIBI_STUDIO_BUILD/share/chibi/studio/project.kdl"
+```
+
+Studio migrates that build copy when it starts. Restoring it keeps each run on
+the same pinned resource bytes; the source project remains unchanged.

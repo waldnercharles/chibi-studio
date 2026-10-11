@@ -10,10 +10,13 @@
  * Blender's Outliner and Unity's Hierarchy are the references. */
 #include "editor/studio/studio_internal.h"
 #include "support/array.h"
+#include "ui/drag.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+static void preview_move(studio *s, rml_element *host);
 
 /* ---------- Header and body ---------- */
 
@@ -41,7 +44,10 @@ void studio_outliner_body(studio *s, int area)
         studio_designer_hierarchy(s, area);
         return;
     }
-    studio_ui_area(s, area, "Outliner");
+    rml_element *host = studio_ui_area(s, area, "Outliner");
+    if (host) {
+        preview_move(s, host);
+    }
 }
 
 /* ---------- Objects ---------- */
@@ -239,4 +245,199 @@ void studio_select_range(studio *s, const int *rows, int count, int row)
     }
     scene_select_range(scene, rows, from, row);
     s->range.active = scene->actors[rows[row]].identity;
+}
+
+/* ---------- Moving objects ---------- */
+
+static app_scene_drop drop_place(const char *target, const char *zone)
+{
+    if (!target[0]) {
+        return APP_SCENE_DROP_ROOT;
+    }
+    if (!strcmp(zone, "before")) {
+        return APP_SCENE_DROP_BEFORE;
+    }
+    if (!strcmp(zone, "after")) {
+        return APP_SCENE_DROP_AFTER;
+    }
+    return APP_SCENE_DROP_INSIDE;
+}
+
+/* A drag on a selected row carries the whole selection. An unselected
+   row becomes the selection only once its press becomes a drag. */
+static bool select_drag_source(studio *s, const char *source)
+{
+    int index = studio_object_index(s, source);
+    if (index < 0 || !studio_editable(s)) {
+        return false;
+    }
+    if (!scene_instance_selected(s->scene, index)) {
+        finish_transform_edit(s->scene, false);
+        select_instance(s->scene, index);
+        s->range.active = 0;
+    }
+    return true;
+}
+
+static void move_selection(studio *s, ecs_entity target, app_scene_drop place)
+{
+    uint64_t before = scene_history_step_id(s->scene->history, false);
+    int result = app_scene_authoring_drop_selection(s->scene, target, place);
+    if (result < 0) {
+        kit_toast(
+            s->kit,
+            0,
+            &(kit_toast_desc){
+                .type = KIT_TOAST_WARNING,
+                .title = "Can't move objects",
+                .description = s->scene->message,
+            }
+        );
+        snprintf(s->seen_message, sizeof s->seen_message, "%s", s->scene->message);
+        studio_warn(s, s->seen_message);
+        return;
+    }
+    bool changed = scene_history_step_id(s->scene->history, false) != before;
+    studio_report(
+        s,
+        result > 0 ? "Object move submitted"
+        : changed  ? "Moved objects; world transforms preserved"
+                   : "Objects are already in that position"
+    );
+    studio_reveal_selection(s);
+}
+
+void studio_outliner_drop(studio *s, const char *source, const char *target, const char *zone)
+{
+    if ((!target[0] && strcmp(zone, "root")) ||
+        (target[0] && strcmp(zone, "before") && strcmp(zone, "inside") &&
+         strcmp(zone, "after"))) {
+        studio_report(s, "Choose a position before, inside or after an object, or the scene root");
+        return;
+    }
+    if (!select_drag_source(s, source)) {
+        return;
+    }
+    int index = studio_object_index(s, target);
+    if (target[0] && index < 0) {
+        studio_warn(s, "The drop target is no longer in the scene");
+        return;
+    }
+    ecs_entity entity = index >= 0 ? s->scene->actors[index].entity
+                                   : (ecs_entity){ 0 };
+    move_selection(s, entity, drop_place(target, zone));
+}
+
+/* Shared drag handles the threshold, zones, marks and Escape. The panel
+   supplies validation and a destination label, as asset assignment does. */
+static void preview_move(studio *s, rml_element *host)
+{
+    rml_element *rejected = rml_element_query_selector(host, "[data-drop-rejected]");
+    if (rejected) {
+        rml_element_remove_attribute(rejected, "data-drop-rejected");
+    }
+    ui_drag_item item;
+    rml_context *context = rml_backend_context(s->backend);
+    if (!ui_drag_active(context, &item) || strcmp(item.type, "object") ||
+        !select_drag_source(s, item.payload)) {
+        return;
+    }
+    rml_element *over = rml_element_query_selector(host, "[data-drop-over]");
+    if (!over || !ui_drag_over(over, &item)) {
+        return;
+    }
+    char key[24] = "";
+    rml_element_attribute(over, "data-object", key, sizeof key);
+    int index = studio_object_index(s, key);
+    ecs_entity target = index >= 0 ? s->scene->actors[index].entity
+                                   : (ecs_entity){ 0 };
+    app_scene_drop place = drop_place(key, item.zone);
+    if (!app_scene_authoring_can_drop(s->scene, target, place)) {
+        rml_element_set_attribute(over, "data-drop-rejected", "");
+        ui_drag_hint(context, "Cannot move the selection here");
+        return;
+    }
+    char hint[384];
+    const char *relation = place == APP_SCENE_DROP_BEFORE ? "before"
+                         : place == APP_SCENE_DROP_AFTER  ? "after"
+                                                          : "inside";
+    if (index < 0) {
+        snprintf(hint, sizeof hint, "Move to scene root; preserve world transforms");
+    } else {
+        snprintf(
+            hint,
+            sizeof hint,
+            "Move %s %s; preserve world transforms",
+            relation,
+            s->scene->actors[index].name
+        );
+    }
+    ui_drag_hint(context, hint);
+}
+
+/* Arrow commands move top-level selected siblings together. Mixed-parent
+   groups can still be dragged to an explicit destination or to the root. */
+static bool keyboard_target(studio *s, studio_command command, ecs_entity *target, app_scene_drop *place)
+{
+    app_scene_authoring *scene = s->scene;
+    if (!studio_editable(s) || studio_designer_active(s) || !selected_actor(scene)) {
+        return false;
+    }
+    *target = (ecs_entity){ 0 };
+    if (command == STUDIO_COMMAND_OBJECT_ROOT) {
+        *place = APP_SCENE_DROP_ROOT;
+        return true;
+    }
+    int first = -1, last = -1;
+    ecs_entity parent = { 0 };
+    for (int i = 0; i < acount(scene->actors); i++) {
+        if (!scene_instance_selected(scene, i)) {
+            continue;
+        }
+        ecs_entity p = ecs_parent(scene->world, scene->actors[i].entity);
+        if (first >= 0 && ecs_entity_to_u64(parent) != ecs_entity_to_u64(p)) {
+            return false;
+        }
+        parent = p;
+        first = first < 0 ? i : first;
+        last = i;
+        i = scene_actor_subtree_end(scene, i) - 1;
+    }
+    if (command == STUDIO_COMMAND_OBJECT_OUTDENT) {
+        *target = parent;
+        *place = APP_SCENE_DROP_AFTER;
+        return parent.slot != 0;
+    }
+    bool down = command == STUDIO_COMMAND_OBJECT_DOWN;
+    int step = down ? 1 : -1;
+    for (int i = (down ? last : first) + step; i >= 0 && i < acount(scene->actors);
+         i += step) {
+        if (ecs_entity_to_u64(ecs_parent(scene->world, scene->actors[i].entity)) !=
+                ecs_entity_to_u64(parent) ||
+            scene_instance_selected(scene, i)) {
+            continue;
+        }
+        *target = scene->actors[i].entity;
+        *place = down ? APP_SCENE_DROP_AFTER
+               : command == STUDIO_COMMAND_OBJECT_INDENT ? APP_SCENE_DROP_INSIDE
+                                                         : APP_SCENE_DROP_BEFORE;
+        return true;
+    }
+    return false;
+}
+
+bool studio_outliner_move_enabled(studio *s, studio_command command)
+{
+    ecs_entity target;
+    app_scene_drop place;
+    return keyboard_target(s, command, &target, &place);
+}
+
+void studio_outliner_move(studio *s, studio_command command)
+{
+    ecs_entity target;
+    app_scene_drop place;
+    if (keyboard_target(s, command, &target, &place)) {
+        move_selection(s, target, place);
+    }
 }

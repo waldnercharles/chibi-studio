@@ -619,7 +619,7 @@ static void preview_drop(studio *s, ui_mount *mount, rml_element *host)
     char key[24] = "";
     rml_element_attribute(over, "data-object", key, sizeof key);
     int actor = studio_object_index(s, key);
-    if (actor >= 0) {
+    if (actor >= 0 && strcmp(item.type, "object")) {
         studio_drop_preview(s, actor, item.type, item.payload);
     }
 }

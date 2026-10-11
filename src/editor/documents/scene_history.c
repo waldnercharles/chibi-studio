@@ -26,6 +26,7 @@ typedef struct
     scene_actor_edit *actor;
     scene_behavior_edit *behaviors;
     scene_prototype_edit *prototype;
+    av_value *hierarchy_before, *hierarchy_after;
     bool physics;
     game_physics_settings physics_before, physics_after;
     char *name_before, *name_after; /* a rename, when name_after is set */
@@ -93,6 +94,8 @@ static void clear_edits(scene_edit **edits)
             free_names(behaviors->after, behaviors->after_count);
             free(behaviors);
         }
+        av_value_free((*edits)[i].hierarchy_before);
+        av_value_free((*edits)[i].hierarchy_after);
         free((*edits)[i].name_before);
         free((*edits)[i].name_after);
         afree((*edits)[i].renamed_paths);
@@ -585,6 +588,42 @@ void scene_history_complete_rename(scene_history *history, bool redo)
     apush(*destination, edit);
 }
 
+bool scene_history_push_hierarchy(scene_history *history, av_value *before, av_value *after)
+{
+    assert(history && before && after);
+    if (av_equals(before, after)) {
+        return false;
+    }
+    apush(
+        history->undo,
+        ((scene_edit){ .group = history->group,
+                       .step = next_step(history),
+                       .hierarchy_before = av_value_copy(before),
+                       .hierarchy_after = av_value_copy(after) })
+    );
+    clear_edits(&history->redo);
+    return true;
+}
+
+av_value *scene_history_peek_hierarchy(const scene_history *history, bool redo)
+{
+    const scene_edit *edits = redo ? history->redo : history->undo;
+    if (!acount(edits)) {
+        return NULL;
+    }
+    return redo ? alast(edits).hierarchy_after : alast(edits).hierarchy_before;
+}
+
+void scene_history_complete_hierarchy(scene_history *history, bool redo)
+{
+    scene_edit **source = redo ? &history->redo : &history->undo;
+    scene_edit **destination = redo ? &history->undo : &history->redo;
+    assert(acount(*source) && alast(*source).hierarchy_after);
+    scene_edit edit = alast(*source);
+    asetlen(*source, acount(*source) - 1);
+    apush(*destination, edit);
+}
+
 bool scene_history_can_undo(const scene_history *history)
 {
     assert(history);
@@ -643,8 +682,8 @@ static int apply_edit(scene_history *history, ecs_world *world, ecs_entity *out_
         return 0;
     }
     scene_edit edit = alast(*source);
-    if (edit.actor || edit.behaviors || edit.prototype || edit.physics ||
-        edit.name_after || !ecs_entity_is_alive(world, edit.entity)) {
+    if (edit.actor || edit.behaviors || edit.prototype || edit.physics || edit.name_after ||
+        edit.hierarchy_after || !ecs_entity_is_alive(world, edit.entity)) {
         return -1;
     }
     if (edit.fields) {
@@ -995,6 +1034,10 @@ static av_value *history_edits(av_doc *doc, const scene_edit *edits)
         av_arr_append(array, object);
         av_obj_add_uint(doc, object, "entity", ecs_entity_to_u64(edit->entity));
         av_obj_add_uint(doc, object, "group", edit->group);
+        if (edit->hierarchy_after) {
+            av_obj_add_val(doc, object, "hierarchy_before", av_clone(doc, edit->hierarchy_before));
+            av_obj_add_val(doc, object, "hierarchy_after", av_clone(doc, edit->hierarchy_after));
+        }
         if (edit->physics) {
             av_obj_add_val(doc, object, "physics_before", game_physics_settings_write(doc, edit->physics_before));
             av_obj_add_val(doc, object, "physics_after", game_physics_settings_write(doc, edit->physics_after));
@@ -1028,6 +1071,7 @@ static av_value *history_edits(av_doc *doc, const scene_edit *edits)
             if (actor->identity) {
                 av_obj_add_uint(doc, item, "identity", actor->identity);
             }
+            av_obj_add_uint(doc, item, "parent", actor->parent);
             av_obj_add_int(doc, item, "index", actor->index);
             av_obj_add_bool(doc, item, "created", actor->created);
             av_obj_add_bool(doc, item, "own_behaviors", actor->own_behaviors);
@@ -1124,6 +1168,16 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
         }
         out->entity = ecs_entity_from_u64((*after)[mapping]);
         out->group = av_get_uint(av_obj_get(object, "group"));
+        av_value *hierarchy = av_obj_get(object, "hierarchy_before");
+        if (hierarchy) {
+            av_value *next = av_obj_get(object, "hierarchy_after");
+            if (!av_is_obj(hierarchy) || !av_is_obj(next)) {
+                return false;
+            }
+            out->entity = (ecs_entity){ 0 };
+            out->hierarchy_before = av_value_copy(hierarchy);
+            out->hierarchy_after = av_value_copy(next);
+        }
         av_value *physics = av_obj_get(object, "physics_before");
         if (physics) {
             av_value *next = av_obj_get(object, "physics_after");
@@ -1180,6 +1234,7 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
                 return false;
             }
             actor->identity = av_get_uint(identity);
+            actor->parent = av_get_uint(av_obj_get(item, "parent"));
             actor->index = av_get_int(av_obj_get(item, "index"));
             actor->created = av_get_bool(av_obj_get(item, "created"));
             actor->own_behaviors = av_get_bool(av_obj_get(item, "own_behaviors"));

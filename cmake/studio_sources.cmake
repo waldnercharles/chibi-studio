@@ -127,6 +127,7 @@ set(STUDIO_SOURCES
     src/editor/workspace/model_preview.c
     src/editor/workspace/scenario_playback.c
     src/editor/workspace/scene_actors.c
+    src/editor/workspace/scene_hierarchy.c
     src/editor/workspace/scene_asset_drop.c
     src/editor/workspace/scene_authoring.c
     src/editor/workspace/scene_checkpoint.c
