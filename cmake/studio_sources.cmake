@@ -121,6 +121,7 @@ set(STUDIO_SOURCES
     src/editor/workspace/asset_refactor.c
     src/editor/workspace/asset_refactor_source.c
     src/editor/workspace/editor.c
+    src/editor/workspace/editor_camera.c
     src/editor/workspace/game_presentation.c
     src/editor/workspace/gameplay_input.c
     src/editor/workspace/input.c

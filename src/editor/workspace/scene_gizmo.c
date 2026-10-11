@@ -721,7 +721,7 @@ void scene_gizmo_finish(app_scene_authoring *scene, bool cancel)
 static void drag_frame(app_scene_authoring *scene, const engine_viewport_pointer *pointer)
 {
     scene_gizmo *g = &scene->gizmo;
-    if (pointer->dragging) {
+    if (pointer->dragging && pointer->grounded) {
         g->moved = true;
         scene_gizmo_update(scene, (CF_V2){ pointer->world_x, pointer->world_y });
     }
@@ -785,7 +785,7 @@ static void modal_frame(app_scene_authoring *scene, const engine_viewport_pointe
     if (g->in.axis_y) {
         g->axis = g->axis == SCENE_GIZMO_AXIS_Y ? SCENE_GIZMO_FREE : SCENE_GIZMO_AXIS_Y;
     }
-    if (pointer->world_per_pixel > 0) {
+    if (pointer->world_per_pixel > 0 && pointer->grounded) {
         g->moved = true;
         scene_gizmo_update(scene, (CF_V2){ pointer->world_x, pointer->world_y });
     }
@@ -812,7 +812,7 @@ bool scene_gizmo_pointer(app_scene_authoring *scene, engine_viewport *viewport, 
         }
         return true;
     }
-    bool valid = pointer->world_per_pixel > 0;
+    bool valid = pointer->world_per_pixel > 0 && pointer->grounded;
     if (grab && valid) {
         scene_gizmo_begin(scene, SCENE_GIZMO_FREE, at);
         g->modal = g->active != SCENE_GIZMO_NONE;

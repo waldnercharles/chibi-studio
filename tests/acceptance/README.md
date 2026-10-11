@@ -121,6 +121,18 @@ tool takes over the hint fades out with its text. With the box and spot loaded
 again, a marquee dragged through queued SDL events from below the box over the
 spot marker's edge, short of its center, selects the spot. It saves no file.
 
+`studio-acceptance --scene-camera --project-root PATH` takes another
+disposable copy and runs twenty-six hidden fixed-dt frames on a 3D scene of
+one block. Through queued SDL events it checks that Alt with a left drag
+orbits the camera about its pivot, by the drag's distance, selecting nothing
+and keeping the zoom readout; that a middle drag pans so the pivot follows the
+pointer; that a wheel notch dollies toward the pointer, keeping the point
+under it; and that holding the right button with W flies forward without
+switching to the Move tool. Frame All then centers the block along the turned
+view, a press on the block above a level view's horizon selects it and drags
+nothing, and a view's lens survives a checkpoint, while a checkpoint saved
+before views had a lens still reads. It saves no file.
+
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
 

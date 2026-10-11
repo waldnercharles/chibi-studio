@@ -569,6 +569,10 @@ static bool forward_input(studio *s)
         if (s->guest && to_guest(s, e)) {
             continue;
         }
+        /* The fly keys of a look around a 3D view reach no shortcut. */
+        if (key && studio_scene_fly_key(s, &e->key)) {
+            continue;
+        }
         /* The Inspector's pick keys reach no document. */
         if (e->type == SDL_EVENT_KEY_DOWN && studio_inspect_key(s, &e->key)) {
             continue;

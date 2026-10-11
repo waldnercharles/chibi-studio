@@ -1,6 +1,7 @@
 #include "authoring/ui_events_adapter.h"
 #include "authoring/ui_loader.h"
 #include "editor/collab/actions_scene.h"
+#include "editor/workspace/editor_camera.h"
 #include "editor/workspace/model_preview.h"
 #include "editor/workspace/scene_internal.h"
 #include "editor/workspace/viewport.h"
@@ -10,6 +11,7 @@
 #include "render/grid_2d.h"
 #include "render/mesh_surface.h"
 #include "render/scene3d.h"
+#include "render/scene3d_visual.h"
 #include "render/shader_catalog.h"
 #include "render/ui.h"
 #include "runtime/camera.h"
@@ -204,28 +206,42 @@ static bool fits(const ecs_entity *only, int count, ecs_entity entity)
     return !only;
 }
 
+/* Fits the drawn objects in `only`, or all, in a 3D view: along the
+   camera's direction once it has turned from the overhead framing, which
+   frames them overhead. */
 static bool fit_arena_view(engine_viewport *viewport, ecs_world *world, const ecs_entity *only, int count)
 {
-    ecs_component_id required[] = { GAME_COMPONENT_GameTransform.id,
-                                    GAME_COMPONENT_GameGeometry3D.id };
-    ecs_query query;
-    if (ecs_query_begin(world, &query, required, 2) != ECS_OK) {
-        return false;
-    }
+    ecs_entity *entities = NULL;
+    render_scene3d_entities(world, (render_skip){ 0 }, &entities);
     CF_V3 *points = NULL;
-    ecs_entity entity;
-    while (ecs_query_next(&query, &entity)) {
+    for (int e = 0; e < acount(entities); e++) {
         CF_V3 corners[8];
-        if (!fits(only, count, entity) ||
-            !render_scene3d_entity_bounds(world, entity, corners)) {
+        if (!fits(only, count, entities[e]) ||
+            !render_scene3d_entity_bounds(world, entities[e], corners)) {
             continue;
         }
         for (int i = 0; i < 8; i++) {
             apush(points, corners[i]);
         }
     }
-    ecs_query_end(&query);
-    if (acount(points)) {
+    afree(entities);
+    bool found = acount(points) > 0;
+    engine_viewport_view current;
+    engine_viewport_get_view(viewport, &current);
+    if (found && cf_dot_v3(current.lens.forward, current.lens.forward) > 0) {
+        CF_V3 low = points[0], high = points[0];
+        for (int i = 1; i < acount(points); i++) {
+            low = cf_min_v3(low, points[i]);
+            high = cf_max_v3(high, points[i]);
+        }
+        editor_camera camera = editor_camera_get(viewport);
+        editor_camera_frame(
+            &camera,
+            cf_mul_v3_f(cf_add_v3(low, high), 0.5f),
+            0.5f * cf_len_v3(cf_sub_v3(high, low))
+        );
+        editor_camera_set(viewport, &camera);
+    } else if (found) {
         engine_viewport_camera camera;
         engine_viewport_get_camera(viewport, &camera);
         CF_Aabb fit = render_scene3d_fit(
@@ -239,7 +255,6 @@ static bool fit_arena_view(engine_viewport *viewport, ecs_world *world, const ec
                                       fit.max.y - fit.min.y };
         engine_viewport_set_view(viewport, &view);
     }
-    bool found = acount(points) > 0;
     afree(points);
     return found;
 }
@@ -550,8 +565,8 @@ static void edit_scene_pointer(app_scene_authoring *scene, engine_viewport *view
     if (pointer.world_per_pixel > 0) {
         scene->selection_scale = pointer.world_per_pixel;
     }
-    if (pointer.dropped_prototype[0] && scene_can_move(scene) &&
-        !scene->runtime_snapshot_valid) {
+    if (pointer.dropped_prototype[0] && pointer.grounded &&
+        scene_can_move(scene) && !scene->runtime_snapshot_valid) {
         GameTransform position = { pointer.world_x, -pointer.world_y };
         if (add_instance_at(scene, pointer.dropped_prototype, &position) == 0) {
             scene->reveal_actor = (ecs_entity){ 0 };
@@ -590,16 +605,19 @@ static void edit_scene_pointer(app_scene_authoring *scene, engine_viewport *view
                 continue;
             }
             /* Shift (or Mod) adds an object to the selection or takes it out,
-               as Unity's and Blender's Shift+click do. */
+               as Unity's and Blender's Shift+click do. Above a 3D view's
+               horizon there is no ground to drag it on. */
             if (scene->gizmo.in.extend) {
                 scene_toggle_instance(scene, i);
-            } else {
+            } else if (pointer.grounded) {
                 scene_gizmo_drag_object(scene, i, &pointer);
+            } else {
+                select_instance(scene, i);
             }
             return;
         }
         /* A paused run's spawned objects move in its world. */
-        if (!GAME_GameTransform_has(scene->world, picked)) {
+        if (!GAME_GameTransform_has(scene->world, picked) || !pointer.grounded) {
             return;
         }
         begin_transform_edit(scene, picked);
@@ -609,7 +627,7 @@ static void edit_scene_pointer(app_scene_authoring *scene, engine_viewport *view
     /* A paused run's spawned object follows the pointer in its world; the
        gizmo moves placed ones. */
     if (scene->dragging_actor && !scene->gizmo.active) {
-        if (pointer.dragging) {
+        if (pointer.dragging && pointer.grounded) {
             GameTransform moved = scene_local_offset(
                 scene->world,
                 scene->edit_actor,
