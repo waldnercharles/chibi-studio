@@ -69,6 +69,10 @@ _Static_assert(
     STUDIO_COMMAND_NEW_STYLESHEET - STUDIO_COMMAND_NEW_SCENE + 1 == STUDIO_NEW_KIND_COUNT,
     "a New command per kind"
 );
+_Static_assert(
+    STUDIO_COMMAND_NEW_UI_WIDGET - STUDIO_COMMAND_NEW_SCENE == STUDIO_NEW_NATIVE_KIND_COUNT,
+    "UI commands follow supported native kinds"
+);
 
 /* A Scene tool: its command checks while the tool is active. */
 #define SCENE_TOOL(name, tool, key, words, glyph)                              \

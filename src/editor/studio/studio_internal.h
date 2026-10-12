@@ -910,9 +910,10 @@ typedef struct
     double presence_sent;
 } studio_collaboration;
 
-/* Assets ▸ New (studio_assets.c): the kinds of asset Studio makes, each
-   new_asset_kind and then each ui_new_kind, and the name of the new one. */
-#define STUDIO_NEW_KIND_COUNT (NEW_ASSET_KIND_COUNT + UI_NEW_KIND_COUNT)
+/* Assets ▸ New supports native kinds through Model, then the UI kinds.
+   Raw GLSL sources load through the SDK but have no Studio authoring view. */
+#define STUDIO_NEW_NATIVE_KIND_COUNT (NEW_ASSET_MODEL + 1)
+#define STUDIO_NEW_KIND_COUNT (STUDIO_NEW_NATIVE_KIND_COUNT + UI_NEW_KIND_COUNT)
 typedef struct
 {
     int kind; /* below STUDIO_NEW_KIND_COUNT */

@@ -658,7 +658,7 @@ bool studio_assets_key(studio *s, SDL_Keycode key, SDL_Keymod mod)
 
 /* ---------- New assets ---------- */
 
-/* Each kind New makes, in the order of new_asset_kind and then ui_new_kind,
+/* Supported native kinds, in new_asset_kind order, then ui_new_kind,
    grouped as Blender's Add and Unity's Create menus group theirs. Its New …
    command gives its label and icon. */
 static const struct
@@ -686,7 +686,7 @@ static const mode_t FOLDER_MODE = 0777;
 
 static bool is_ui(int kind)
 {
-    return kind >= NEW_ASSET_KIND_COUNT;
+    return kind >= STUDIO_NEW_NATIVE_KIND_COUNT;
 }
 
 static studio_command new_command(int kind)
@@ -738,7 +738,13 @@ static char *new_path(studio *s, int kind, const char *name, char *error, size_t
                                           : new_asset_folder((new_asset_kind)kind);
     char *folder = content_path_join(s->scene->content_root, folder_name);
     char *path = is_ui(kind)
-                   ? ui_buffer_new_path(folder, (ui_new_kind)(kind - NEW_ASSET_KIND_COUNT), name, error, size)
+                   ? ui_buffer_new_path(
+                         folder,
+                         (ui_new_kind)(kind - STUDIO_NEW_NATIVE_KIND_COUNT),
+                         name,
+                         error,
+                         size
+                     )
                    : asset_path(folder, name, new_asset_extension((new_asset_kind)kind), error, size);
     free(folder);
     return path;
@@ -840,7 +846,7 @@ static bool create(studio *s)
     mkdir(folder, FOLDER_MODE);
     free(folder);
     bool written = is_ui(n->kind)
-                     ? write_ui((ui_new_kind)(n->kind - NEW_ASSET_KIND_COUNT), path)
+                     ? write_ui((ui_new_kind)(n->kind - STUDIO_NEW_NATIVE_KIND_COUNT), path)
                      : write_code((new_asset_kind)n->kind, n->name, path);
     if (written) {
         open_new(s, n->kind, path);
