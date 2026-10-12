@@ -7,7 +7,6 @@
  * are that world's saved keys. */
 #include "assets/project.h"
 #include "assets/scene_document.h"
-#include "authoring/behavior_loader.h"
 #include "authoring/application_catalog.h"
 #include "authoring/preview.h"
 #include "authoring/preview_source.h"
@@ -242,6 +241,16 @@ static int prepare_sources(preview_world *world, const char *root, char *error, 
     return status;
 }
 
+static bool publish_sources(preview_world *world, const char *root, char *error, size_t size)
+{
+    if (prepare_sources(world, root, error, size)) {
+        return false;
+    }
+    /* UI behaviors and their event payloads belong to this world. Loading a
+     * second project's render assets would replace the open game's catalog. */
+    return preview_sources_publish(world, NULL, error, size) == 0;
+}
+
 /* The canonical source collection prepares and publishes the entire edit batch.
  * A failed candidate keeps the last applied panel behavior generation. */
 static void reload_sources(studio *s, const source_catalog_edit *edits, int count)
@@ -303,11 +312,7 @@ static bool open_world(studio *s, studio_ui *studio_ui_state, char *error, size_
     );
     assert(!bound);
     (void)bound;
-    if (prepare_sources(live, studio_ui_state->content_root, error, size)) {
-        return false;
-    }
-    if (app_behavior_fixtures_load(live, NULL, studio_ui_state->content_root) < 0) {
-        snprintf(error, size, "Could not publish Studio UI sources");
+    if (!publish_sources(live, studio_ui_state->content_root, error, size)) {
         return false;
     }
     return launch(studio_ui_state, error, size);

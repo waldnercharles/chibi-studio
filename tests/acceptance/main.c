@@ -3134,8 +3134,19 @@ TEST_CASE(code_glyphs)
     return true;
 }
 
+#include "project_shaders.h"
+
 int main(int argc, char **argv)
 {
+    if (argc == 3 && !strcmp(argv[1], "--ui-source-catalog")) {
+        project = argv[2];
+        studio_registry_init();
+        pu_setup(NULL, shader_ui_cleanup);
+        RUN_TEST_CASE(editor_ui_publication_preserves_project_particle_shaders);
+        pu_print_stats();
+        studio_registry_free();
+        return pu_test_failed() ? 1 : 0;
+    }
     if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
         RUN_TEST_CASE(scene_gizmo_cursors);
         pu_print_stats();

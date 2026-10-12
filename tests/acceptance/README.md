@@ -2,6 +2,15 @@ The optional native `studio-acceptance` target compiles the actual application a
 host in test wrappers. The production binary has no fixture CLI or test hooks.
 Build with `-DCHIBI_STUDIO_BUILD_ACCEPTANCE=ON` against an installed SDK.
 
+`studio-acceptance --ui-source-catalog PATH` takes this checkout's
+`projects/studio/content` directory. This CPU case publishes one tiny in-memory
+GLSL particle shader, then publishes the actual editor UI sources twice. The
+project shader's identity, type and generation must survive, and the authored
+RowClicked event must retain its three payload fields. It uses the production
+UI publication helper through a test wrapper. It opens no window, runs no
+frames, and writes no files. The fixed source content is 263 files / 449,915
+bytes; execution uses the engine's production 60-second supervisor.
+
 `studio-acceptance --source-edit --project-root PATH` accepts a disposable copy of
 this directory's `project`. Preferences and thumbnail cache are pinned inside that
 disposable project; initial Counter bytes are checked before and after. It checks that the project remembered last leads the recent projects, once, and that

@@ -133,7 +133,7 @@ if(CHIBI_STUDIO_BUILD_ACCEPTANCE)
         message(FATAL_ERROR "Studio acceptance currently requires a native hidden renderer")
     endif()
     add_executable(studio-acceptance
-        tests/acceptance/main.c tests/acceptance/host.c tests/acceptance/application.c
+        tests/acceptance/main.c tests/acceptance/host.c tests/acceptance/application.c tests/acceptance/ui.c
         src/host/state_file.c src/host/stacktrace.c src/studio_registry.c)
     target_include_directories(studio-acceptance PRIVATE src include)
     target_link_libraries(studio-acceptance PRIVATE studio)

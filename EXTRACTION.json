@@ -2269,7 +2269,7 @@
       "current_source_sha256": "4cc012974e9fb688f8ecaf94c80661d34e38a780341636777eda9caa59a010d9",
       "sha256": "262e7451d439607c4a6409da7aa56f473c19dec23546088992f0487ffe91a637",
       "source_path": "src/editor/studio/studio_ui.c",
-      "consumer_sha256": "68e6249b0654d5907c12b62367fc7120b2399ff2382e707a1936be36ae97866e"
+      "consumer_sha256": "a846d48a4254d6db163fb450ff42d4567a6b8232a22c7a2e10382d0be22684ed"
     },
     "src/editor/text/zep_bridge.cpp": {
       "current_source_sha256": "1fa3d063bd2ac8d2cbdfaa1146cf52d31d87dc2cff5c7412af9db7953092dc03",
