@@ -2411,7 +2411,7 @@
       "current_source_sha256": "e6a6d4fc277b4483a12f4c4453277beca970fd6b1cf923e13437fe6fab3615fe",
       "sha256": "e6a6d4fc277b4483a12f4c4453277beca970fd6b1cf923e13437fe6fab3615fe",
       "source_path": "src/editor/workspace/gameplay_input.c",
-      "consumer_sha256": "5825c40e10aec01a60ae15f8f7f45b99bc698ec934a398f16521280465ab356d"
+      "consumer_sha256": "18856ba92ce78087075916e35d8f867c897e54cd1a5299cb8bcfb3fbe2e5f519"
     },
     "src/editor/workspace/gameplay_input.h": {
       "current_source_sha256": "113dc35b930bbea87a51106e8dd26e53b6eb90134ce0e0f0f306d347cbb25112",

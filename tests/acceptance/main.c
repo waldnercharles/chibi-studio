@@ -3134,10 +3134,19 @@ TEST_CASE(code_glyphs)
     return true;
 }
 
+#include "pointer_input.h"
 #include "project_shaders.h"
 
 int main(int argc, char **argv)
 {
+    if (argc == 2 && !strcmp(argv[1], "--play-pointer")) {
+        studio_registry_init();
+        pu_setup(NULL, pointer_cleanup);
+        RUN_TEST_CASE(editor_play_forwards_and_clears_pointer_rays);
+        pu_print_stats();
+        studio_registry_free();
+        return pu_test_failed() ? 1 : 0;
+    }
     if (argc == 3 && !strcmp(argv[1], "--ui-source-catalog")) {
         project = argv[2];
         studio_registry_init();

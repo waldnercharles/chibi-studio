@@ -40,11 +40,24 @@ void app_gameplay_input(app_scene_authoring *scene, engine *runtime, engine_view
                    !app_input_pressed(APP_INPUT_ESCAPE);
     /* A focused game text field takes the letters gameplay would. */
     bool accepts_input = focused && !editor_host_captures_keyboard() &&
-                         !engine_viewport_ui_typing(viewport);
+                         !engine_viewport_ui_typing(viewport) &&
+                         !engine_viewport_ui_capture(viewport);
     if (!accepts_input) {
         app_gameplay_sample(scene, false, NULL);
     }
     engine_set_focus(runtime, focused ? ENGINE_FOCUS_VIEWPORT : ENGINE_FOCUS_CANVAS);
+    engine *input_runtime = scene->active_runtime_target == APP_RUNTIME_PREVIEW
+                              ? prototype_preview_runtime(scene->prototype_preview)
+                              : runtime;
+    engine_set_focus(input_runtime, engine_get_focus(runtime));
+    CF_Ray3 ray;
+    input_pointer_ray pointer = { 0 };
+    if (accepts_input && engine_viewport_mouse_ray(viewport, &ray)) {
+        pointer = (input_pointer_ray){ .origin = ray.p, .direction = ray.d, .active = true };
+    }
+    if (engine_sample_pointer_ray(input_runtime, pointer) < 0) {
+        snprintf(scene->message, sizeof scene->message, "Could not sample the viewport pointer ray.");
+    }
     if (!accepts_input) {
         return;
     }

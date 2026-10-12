@@ -11,6 +11,13 @@ UI publication helper through a test wrapper. It opens no window, runs no
 frames, and writes no files. The fixed source content is 263 files / 449,915
 bytes; execution uses the engine's production 60-second supervisor.
 
+`studio-acceptance --play-pointer` checks the editor Play input boundary with
+host viewport queries supplied by a test adapter. It runs the real gameplay
+input function and records the resulting controls and ray through the SDK
+engine. A left click keeps its projected ray, and leaving the image, losing
+focus, editor/game text input, game UI capture and pause clear it before Play
+resumes. This CPU case opens no window, draws no frames and writes no files.
+
 `studio-acceptance --source-edit --project-root PATH` accepts a disposable copy of
 this directory's `project`. Preferences and thumbnail cache are pinned inside that
 disposable project; initial Counter bytes are checked before and after. It checks that the project remembered last leads the recent projects, once, and that
