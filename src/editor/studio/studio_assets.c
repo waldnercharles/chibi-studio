@@ -779,6 +779,9 @@ void studio_new_asset_start(studio *s, int kind)
     n->kind = kind;
     n->closing = false;
     n->error[0] = '\0';
+    n->material_preset = MATERIAL_AUTHORING_MATTE;
+    n->material = material_authoring_defaults(MATERIAL_AUTHORING_MATTE);
+    n->material_emission_gain = 1;
     app_scene_authoring_refresh_asset_index(s->scene);
     default_name(s, kind, n->name, sizeof n->name);
     ask_next(s);
@@ -832,6 +835,25 @@ static bool create(studio *s)
 {
     studio_new_asset *n = &s->new_asset;
     app_scene_authoring_refresh_asset_index(s->scene);
+    if (n->kind == NEW_ASSET_MATERIAL) {
+        standard_material material = n->material;
+        for (int i = 0; i < 3; i++) {
+            material.emission[i] *= n->material_emission_gain;
+        }
+        char *material_path = material_authoring_create(
+            s->scene->content_root,
+            n->name,
+            &material,
+            n->error,
+            sizeof n->error
+        );
+        if (!material_path) {
+            return false;
+        }
+        open_new(s, n->kind, material_path);
+        free(material_path);
+        return true;
+    }
     char *path = new_path(s, n->kind, n->name, n->error, sizeof n->error);
     if (!path) {
         return false;
@@ -1810,6 +1832,73 @@ static void close_name(studio *s, rml_element *popover)
     popover_hide(popover);
 }
 
+static void material_number(kit *k, const char *key, const char *label, float *value, double maximum)
+{
+    kit_prop_begin(k, key, label);
+    double number = *value;
+    if (kit_number(
+            k,
+            "value",
+            &number,
+            &(kit_number_desc){ .min = 0, .max = maximum, .step = .05, .precision = 2, .slider = true }
+        )) {
+        *value = (float)number;
+    }
+    kit_prop_end(k);
+}
+
+static void material_color(kit *k, const char *key, const char *label, float value[3])
+{
+    uint32_t rgba = 255;
+    for (int i = 0; i < 3; i++) {
+        rgba |= (uint32_t)lroundf(fminf(fmaxf(value[i], 0), 1) * 255) << (24 - i * 8);
+    }
+    kit_prop_begin(k, key, label);
+    if (kit_color(k, "value", &rgba, 0)) {
+        for (int i = 0; i < 3; i++) {
+            value[i] = ((rgba >> (24 - i * 8)) & 255) / 255.0f;
+        }
+    }
+    kit_prop_end(k);
+}
+
+static void material_form(studio *s)
+{
+    studio_new_asset *n = &s->new_asset;
+    kit *k = s->kit;
+    const char *presets[] = { "Matte", "Metal", "Emissive", "Unlit" };
+    kit_prop_begin(k, "preset", "Starting material");
+    if (kit_choice(k, "value", &n->material_preset, presets, MATERIAL_AUTHORING_PRESET_COUNT, 0)) {
+        n->material = material_authoring_defaults((material_authoring_preset)n->material_preset);
+        n->material_emission_gain = 1;
+    }
+    kit_prop_end(k);
+    material_color(k, "base", "Base color", n->material.base_color);
+    material_number(k, "roughness", "Roughness", &n->material.roughness, 1);
+    material_number(k, "metallic", "Metallic", &n->material.metallic, 1);
+    material_color(k, "emission", "Emission color", n->material.emission);
+    material_number(k, "emission-gain", "Emission strength", &n->material_emission_gain, 16);
+    const char *alpha_modes[] = { "Blend", "Opaque", "Mask" };
+    int alpha = n->material.alpha_mode;
+    kit_prop_begin(k, "alpha-mode", "Alpha mode");
+    if (kit_choice(k, "value", &alpha, alpha_modes, 3, 0)) {
+        n->material.alpha_mode = (shader_alpha_mode)alpha;
+    }
+    kit_prop_end(k);
+    if (alpha != SHADER_ALPHA_OPAQUE) {
+        material_number(k, "opacity", "Opacity", &n->material.base_color[3], 1);
+    }
+    if (alpha == SHADER_ALPHA_MASK) {
+        material_number(k, "cutoff", "Alpha cutoff", &n->material.alpha_cutoff, 1);
+    }
+    kit_prop_begin(k, "unlit", "Unlit");
+    kit_checkbox(k, "value", &n->material.unlit, "", 0);
+    kit_prop_end(k);
+    kit_push(k, "help", "div", "material-help");
+    kit_label(k, "material-help", "dim", "Linear RGB colors. Creates an editable shader graph with named parameters.");
+    kit_pop(k);
+}
+
 void studio_new_asset_frame(studio *s)
 {
     studio_new_asset *n = &s->new_asset;
@@ -1823,10 +1912,22 @@ void studio_new_asset_frame(studio *s)
        every area. */
     kit_document_begin(k, "new-asset", "bar-place", true);
     rml_element *host = studio_ui_panel(s, "new-asset", "NewAsset");
+    if (host && kit_slot_begin(k, "material-form", host, "#new-material-form")) {
+        if (n->kind == NEW_ASSET_MATERIAL) {
+            material_form(s);
+        }
+        kit_slot_end(k);
+    }
     kit_document_end(k);
     rml_element *popover = host ? rml_element_query_selector(host, "#" NAME_ID) : NULL;
     if (!popover) {
         return;
+    }
+    bool material = n->kind == NEW_ASSET_MATERIAL;
+    if (material && !rml_element_has_attribute(popover, "data-material")) {
+        rml_element_set_attribute(popover, "data-material", "");
+    } else if (!material && rml_element_has_attribute(popover, "data-material")) {
+        rml_element_remove_attribute(popover, "data-material");
     }
     if (n->closing) {
         close_name(s, popover);

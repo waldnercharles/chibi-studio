@@ -5,6 +5,33 @@ The optional native `studio-acceptance` target compiles the actual application a
 host in test wrappers. The production binary has no fixture CLI or test hooks.
 Build with `-DCHIBI_STUDIO_BUILD_ACCEPTANCE=ON` against an installed SDK.
 
+`studio-acceptance --material-authoring --project-root PATH` takes a fresh
+disposable copy of `project` and runs exactly twenty hidden fixed-dt host frames.
+The production New Material command opens the form; queued SDL pointer, text
+and keyboard events choose Metal, name it AcceptanceMetal, type roughness 0.42
+and activate Create. The saved KDL must be canonical, reload as a material and
+retain metallic 1 and roughness 0.42. The production Properties pane must show
+the shared Shader contract, and a real pointer click on Evaluate center must
+produce those same CPU output values. The probe uses authored defaults, UV
+(0.5, 0.5), local/world origin, time and activity zero, and normal/view +Y. A
+second form submission using the existing name must stay open with an error,
+leave the original material intact and close on Escape. Counter stays unchanged.
+Opening commands and pane choice are test setup; form controls and the probe
+use the real SDL/RmlUi input path. The route does not cover color pickers,
+texture-dependent probes, every preset, touch or rendered-pixel comparison.
+Run it under the admitted production supervisor's 60-second deadline. It adds
+no executable, scenario or GPU workload beyond those twenty UI
+frames. Preferences and thumbnails use the disposable project as other routes do.
+For human review, set `CHIBI_ACCEPTANCE_EVIDENCE_DIR` to an existing output
+directory. The same run saves `material-form.png` after the roughness edit and
+`material-properties.png` after the CPU probe. This optional mode performs two
+GPU readbacks of frames already rendered; each has the SDK's ten-second readback
+limit and both remain inside the route's shared sixty-second deadline. It adds
+no host frames or rerendering. The default run performs no screenshots.
+Evidence mode enables Studio's existing reduced-motion preference before opening
+the form, so screenshots show settled controls without dropdown exit animations.
+This mode verifies settled layout; the default route retains normal motion.
+
 `studio-acceptance --source-edit --project-root PATH` accepts a disposable copy of
 this directory's `project`. Preferences and thumbnail cache are pinned inside that
 disposable project; initial Counter bytes are checked before and after. It checks that the project remembered last leads the recent projects, once, and that

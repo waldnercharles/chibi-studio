@@ -5,3 +5,7 @@
    is invalid or taken says why and asks again. Its look is the theme's
    .new-asset. */
 body { display: block; }
+.popup.new-asset[data-material] { width: 400dp; }
+#new-material-form { max-height: 420dp; overflow-y: auto; }
+#new-material-form > .prop { padding: 2dp 8dp; }
+#new-material-form .material-help { display: block; padding: 6dp 8dp; }

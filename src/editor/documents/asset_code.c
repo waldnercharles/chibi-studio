@@ -717,7 +717,7 @@ static void understand_with_metadata(asset_code *c, const char *text, const char
             c->presentation = p;
         }
     } else {
-        c->source = asset_source_parse(c->text);
+        c->source = asset_source_parse_path(c->text, c->path);
         check_asset(c);
         av_value *root = c->source->document ? av_doc_root(c->source->document) : NULL;
         if (root && av_obj_get(root, "graphs")) {

@@ -1100,6 +1100,7 @@ void studio_free(studio *s)
     if (!s) {
         return;
     }
+    shader_authoring_report_free(&s->shader_report);
 #ifdef __EMSCRIPTEN__
     if (web_studio == s) {
         web_studio = NULL;

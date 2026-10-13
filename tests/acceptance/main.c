@@ -15,10 +15,12 @@
 #include "editor/workspace/scene_internal.h"
 #include "graph/authoring/graph_edit.h"
 #include "graph/authoring/local_edit.h"
+#include "graph/document/serialize.h"
 #include "graph/model/local.h"
 #include "graph/model/registry.h"
 #include "graph/nodes/core_nodes.h"
 #include "graph/nodes/vector_nodes.h"
+#include "render/screenshot.h"
 #include "runtime/scenes/physics3d.h"
 #include "support/array.h"
 #include "support/file_io.h"
@@ -68,6 +70,7 @@ static enum {
     PROMPTS,
     CODE_FOLLOWUPS,
     CODE_GLYPHS,
+    MATERIAL_AUTHORING,
     PANEL_IDLE
 } mode;
 static char exported[1024]; /* the export Studio reported */
@@ -3151,6 +3154,151 @@ static bool asset_selection_frame(void *state)
 
 #define ASSET_POINTER_FRAMES 20
 #define GRAPH_POINTER_FRAMES 19
+#define MATERIAL_AUTHORING_FRAMES 20
+
+/* Optional review evidence reads two already-rendered frames. The supervisor
+ * includes both bounded GPU readbacks in this route's one shared deadline. */
+static bool material_capture(const char *name)
+{
+    const char *directory = getenv("CHIBI_ACCEPTANCE_EVIDENCE_DIR");
+    if (!directory || !directory[0]) {
+        return true;
+    }
+    char path[2048];
+    int length = snprintf(path, sizeof path, "%s/%s.png", directory, name);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    REQUIRE(app_save_screenshot(path) == 0);
+    return true;
+}
+
+/* Find an actual visible control by its displayed label, then queue platform
+ * input at its rendered box. No activation is dispatched directly. */
+static bool click_labeled(studio *s, const char *selector, const char *label)
+{
+    rml_context *context = rml_backend_context(s->backend);
+    for (int i = 0; i < rml_context_document_count(context); i++) {
+        rml_element *matches[32];
+        int count = rml_element_query_selector_all(rml_context_document(context, i), selector, matches, 32);
+        REQUIRE(count <= 32);
+        for (int j = 0; j < count; j++) {
+            char text[512];
+            rml_element_inner_rml(matches[j], text, sizeof text);
+            if (!rml_element_is_visible(matches[j], true) || !strstr(text, label)) {
+                continue;
+            }
+            rml_vec2 at = rml_element_absolute_offset(matches[j], RML_BOX_BORDER);
+            rml_vec2 size = rml_element_box_size(matches[j], RML_BOX_BORDER);
+            REQUIRE(size.x > 0 && size.y > 0);
+            float scale = s->prefs.ui_scale / studio_pixel_ratio(s);
+            return click_at((at.x + size.x / 2) * scale, (at.y + size.y / 2) * scale);
+        }
+    }
+    fprintf(stderr, "Studio material acceptance: control %s labeled %s is absent\n", selector, label);
+    REQUIRE(false);
+    return false;
+}
+
+static bool material_source_says_metal()
+{
+    char path[1024];
+    snprintf(path, sizeof path, "%s/content/materials/AcceptanceMetal.kdl", project);
+    char *source = file_read_text(path);
+    REQUIRE(source);
+    behavior_asset *asset = behavior_asset_load(source);
+    REQUIRE(asset && asset->domain == BEHAVIOR_DOMAIN_MATERIAL);
+    REQUIRE(!strcmp(asset->name, "AcceptanceMetal"));
+    char *canonical = behavior_asset_save(asset);
+    REQUIRE(canonical && !strcmp(source, canonical));
+    shader_authoring_report report;
+    shader_authoring_report_init(&report);
+    shader_error error;
+    REQUIRE(shader_authoring_inspect(asset, &report, &error));
+    REQUIRE(report.defaults[STANDARD_METALLIC][0] == 1);
+    REQUIRE(fabsf(report.defaults[STANDARD_ROUGHNESS][0] - .42f) < .00001f);
+    shader_authoring_report_free(&report);
+    behavior_asset_free(asset);
+    free(source);
+    free(canonical);
+    return true;
+}
+
+/* One finite host run exercises the authored popup and kit controls through
+ * queued SDL clicks, text and keys. Opening commands and pane choice are setup. */
+static bool material_authoring_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= MATERIAL_AUTHORING_FRAMES);
+    switch (frames) {
+        case 1:
+            if (getenv("CHIBI_ACCEPTANCE_EVIDENCE_DIR")) {
+                s->prefs.reduced_motion = true;
+            }
+            studio_show_editor(s, STUDIO_EDITOR_ASSETS);
+            studio_command_run(s, STUDIO_COMMAND_NEW_MATERIAL);
+            return true;
+        case 3:
+            REQUIRE(s->new_asset.open);
+            REQUIRE(type_text("AcceptanceMetal"));
+            return click(s, "#new-material-form [aria-label='Starting material']");
+        case 4: return click_labeled(s, ".dropdown .menu-item", "Metal");
+        case 5:
+            REQUIRE(s->new_asset.material_preset == MATERIAL_AUTHORING_METAL);
+            REQUIRE(!strcmp(s->new_asset.name, "AcceptanceMetal"));
+            return click(s, "#new-material-form number-field[aria-label='Roughness']");
+        case 6:
+            REQUIRE(studio_element(s, "#new-material-form input[aria-label='Roughness']"));
+            REQUIRE(type_text("0.42"));
+            return press_key(SDLK_RETURN);
+        case 7:
+            REQUIRE(fabsf(s->new_asset.material.roughness - .42f) < .00001f);
+            REQUIRE(material_capture("material-form"));
+            return click_labeled(s, "#new-asset-name .menu-item", "Create");
+        case 9:
+            REQUIRE(material_source_says_metal());
+            REQUIRE(!s->new_asset.open);
+            REQUIRE(!strcmp(editor_behavior_asset(s->scene->graph_editor)->name, "AcceptanceMetal"));
+            studio_show_editor(s, STUDIO_EDITOR_BEHAVIOR);
+            studio_show_editor(s, STUDIO_EDITOR_PROPERTIES);
+            s->tab = STUDIO_TAB_NODE;
+            return true;
+        case 11:
+            REQUIRE(s->shader_report_valid);
+            REQUIRE(element_says(s, "#graph-native .panel-head .title", "Shader contract"));
+            return click_labeled(s, "#graph-native button", "Evaluate center");
+        case 12:
+            REQUIRE(s->shader_probe_attempted && s->shader_probe_valid);
+            REQUIRE(fabsf(s->shader_probe[SHADER_SURFACE_ROUGHNESS][0] - .42f) < .00001f);
+            REQUIRE(s->shader_probe[SHADER_SURFACE_METALLIC][0] == 1);
+            {
+                char markup[16384];
+                rml_element *panel = studio_element(s, "#graph-native");
+                REQUIRE(panel);
+                rml_element_inner_rml(panel, markup, sizeof markup);
+                REQUIRE(strstr(markup, "CPU probe"));
+            }
+            return true;
+        case 13:
+            REQUIRE(material_capture("material-properties"));
+            studio_command_run(s, STUDIO_COMMAND_NEW_MATERIAL);
+            return true;
+        case 15:
+            REQUIRE(s->new_asset.open);
+            REQUIRE(type_text("AcceptanceMetal"));
+            return press_key(SDLK_RETURN);
+        case 17:
+            REQUIRE(s->new_asset.open);
+            REQUIRE(strstr(s->new_asset.error, "already exists"));
+            REQUIRE(material_source_says_metal());
+            return press_key(SDLK_ESCAPE);
+        case 20:
+            REQUIRE(!s->new_asset.open);
+            REQUIRE(material_source_says_metal());
+            return unchanged_source();
+        default: return true;
+    }
+}
 
 /* Find the drawn row by identity, then send input through SDL and RmlUi. */
 static bool point_asset(studio *s, const char *name, SDL_Keymod mod)
@@ -3946,6 +4094,9 @@ bool studio_acceptance_frame(void *state)
             callback_ok = acceptance_debugger_frame(studio_acceptance_studio(state), ++frames);
             break;
         case ASSET_POINTER: callback_ok = asset_pointer_frame(state); break;
+        case MATERIAL_AUTHORING:
+            callback_ok = material_authoring_frame(state);
+            break;
         case GRAPH_LABELS: callback_ok = graph_labels_frame(state); break;
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
@@ -4313,6 +4464,20 @@ TEST_CASE(asset_pointer)
     return true;
 }
 
+TEST_CASE(material_authoring)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(MATERIAL_AUTHORING_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == MATERIAL_AUTHORING_FRAMES);
+    REQUIRE(unchanged_source());
+    printf("\nStudio material authoring accepted: frames=%d roughness=0.42 metallic=1 CPU center probe\n", frames);
+    return true;
+}
+
 TEST_CASE(debugger_source_history)
 {
     REQUIRE(unchanged_source());
@@ -4362,11 +4527,14 @@ int main(int argc, char **argv)
     bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
     bool idle = argc == 4 && !strcmp(argv[1], "--panel-idle");
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
+    bool material_authoring_mode = argc == 4 &&
+                                   !strcmp(argv[1], "--material-authoring");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
          !keys_mode && !labels && !units && !hierarchy && !scene_move_mode &&
-         !outliner_move_mode && !physics && !assets && !viewport && !camera && !playing &&
-         !prompting && !followups && !glyphs && !idle && !graph_pointer_mode &&
-         !asset_pointer_mode && !debugging && !gizmo && !colliders) ||
+         !outliner_move_mode && !physics && !assets && !viewport && !camera &&
+         !playing && !prompting && !followups && !glyphs && !idle &&
+         !graph_pointer_mode && !asset_pointer_mode && !debugging && !gizmo &&
+         !colliders && !material_authoring_mode) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
@@ -4379,7 +4547,7 @@ int main(int argc, char **argv)
             "--scene-collider3d|"
             "--play-keys|--unsaved-prompts|"
             "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
-            "history "
+            "history|--material-authoring "
             "--project-root PATH | --scene-cursors\n"
         );
         return 2;
@@ -4396,31 +4564,32 @@ int main(int argc, char **argv)
         return 2;
     }
     pu_display_time(true);
-    mode = source_edit        ? SOURCE_EDIT
-         : code_keys          ? CODE_KEYS
-         : kdl_keys           ? KDL_KEYS
-         : exporting          ? EXPORT_GAME
-         : visibility         ? GRAPH_VISIBILITY
-         : keys_mode          ? GRAPH_KEYS
-         : debugging          ? DEBUGGER_SOURCE_HISTORY
-         : graph_pointer_mode ? GRAPH_POINTER
-         : asset_pointer_mode ? ASSET_POINTER
-         : labels             ? GRAPH_LABELS
-         : units              ? UNIT_WARNINGS
-         : scene_move_mode    ? SCENE_MOVE
-         : outliner_move_mode ? OUTLINER_MOVE
-         : hierarchy          ? SCENE_HIERARCHY
-         : physics            ? SCENE_PHYSICS
-         : assets             ? ASSET_SELECTION
-         : viewport           ? SCENE_VIEWPORT
-         : camera             ? SCENE_CAMERA
-         : gizmo              ? SCENE_GIZMO3D
-         : colliders          ? SCENE_COLLIDER3D
-         : playing            ? PLAY_KEYS
-         : prompting          ? PROMPTS
-         : followups          ? CODE_FOLLOWUPS
-         : idle               ? PANEL_IDLE
-                              : CODE_GLYPHS;
+    mode = source_edit             ? SOURCE_EDIT
+         : code_keys               ? CODE_KEYS
+         : kdl_keys                ? KDL_KEYS
+         : exporting               ? EXPORT_GAME
+         : visibility              ? GRAPH_VISIBILITY
+         : keys_mode               ? GRAPH_KEYS
+         : debugging               ? DEBUGGER_SOURCE_HISTORY
+         : graph_pointer_mode      ? GRAPH_POINTER
+         : asset_pointer_mode      ? ASSET_POINTER
+         : material_authoring_mode ? MATERIAL_AUTHORING
+         : labels                  ? GRAPH_LABELS
+         : units                   ? UNIT_WARNINGS
+         : scene_move_mode         ? SCENE_MOVE
+         : outliner_move_mode      ? OUTLINER_MOVE
+         : hierarchy               ? SCENE_HIERARCHY
+         : physics                 ? SCENE_PHYSICS
+         : assets                  ? ASSET_SELECTION
+         : viewport                ? SCENE_VIEWPORT
+         : camera                  ? SCENE_CAMERA
+         : gizmo                   ? SCENE_GIZMO3D
+         : colliders               ? SCENE_COLLIDER3D
+         : playing                 ? PLAY_KEYS
+         : prompting               ? PROMPTS
+         : followups               ? CODE_FOLLOWUPS
+         : idle                    ? PANEL_IDLE
+                                   : CODE_GLYPHS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -4435,6 +4604,7 @@ int main(int argc, char **argv)
             RUN_TEST_CASE(debugger_source_history);
             break;
         case ASSET_POINTER: RUN_TEST_CASE(asset_pointer); break;
+        case MATERIAL_AUTHORING: RUN_TEST_CASE(material_authoring); break;
         case GRAPH_LABELS: RUN_TEST_CASE(graph_labels); break;
         case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;

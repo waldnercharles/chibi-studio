@@ -1,10 +1,12 @@
 #ifndef CHIBI_EDITOR_STUDIO_INTERNAL_H
 #define CHIBI_EDITOR_STUDIO_INTERNAL_H
 
-#include "authoring/component_presentation.h"
 #include "assets/new_asset.h"
 #include "assets/project.h"
 #include "assets/ui_source.h"
+#include "authoring/component_presentation.h"
+#include "authoring/material_create.h"
+#include "authoring/shader_report.h"
 #include "editor/documents/asset_code.h"
 #include "editor/documents/ui_code.h"
 #include "editor/studio/studio.h"
@@ -946,6 +948,9 @@ typedef struct
     char name[64];
     char typed[64]; /* the name as its field last showed it */
     char error[160];
+    int material_preset;
+    standard_material material;
+    float material_emission_gain;
 } studio_new_asset;
 
 /* ---------- Lists and drag (workstream F4): the widget gallery ---------- */
@@ -1287,6 +1292,14 @@ struct studio
     /* UI documents (workstream D). */
     studio_code code;
     studio_new_asset new_asset;
+    shader_authoring_report shader_report;
+    uint64_t shader_report_identity;
+    unsigned shader_report_revision;
+    shader_error shader_report_error;
+    bool shader_report_valid;
+    bool shader_probe_attempted, shader_probe_valid;
+    float shader_probe[SHADER_OUTPUT_MAX][4];
+    shader_error shader_probe_error;
     struct studio_inspect *inspect; /* the UI Inspector, NULL until used */
     /* UI wiring (workstream K): the asset picker, the shown game UI's error
        and the Canvas preview. */
