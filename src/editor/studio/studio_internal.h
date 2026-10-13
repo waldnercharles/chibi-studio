@@ -1292,6 +1292,7 @@ struct studio
     /* UI documents (workstream D). */
     studio_code code;
     studio_new_asset new_asset;
+    struct studio_shader *shader;
     shader_authoring_report shader_report;
     uint64_t shader_report_identity;
     unsigned shader_report_revision;
@@ -1807,6 +1808,10 @@ uint64_t studio_graph_node(const studio *s);
 /* The comment frame selected on the canvas while no node is, or 0. */
 uint64_t studio_graph_comment(const studio *s);
 void studio_model_preview_controls(studio *s, const editor *e);
+void studio_shader_controls(studio *s, editor *e);
+void studio_shader_hide(studio *s);
+void studio_shader_frame(studio *s);
+void studio_shader_free(studio *s);
 void studio_graph_model_controls(studio *s);
 void studio_model_reference_overlay(studio *s);
 void studio_rewire_toast(studio *s);

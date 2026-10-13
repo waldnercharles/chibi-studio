@@ -1,10 +1,10 @@
-#include "graph/nodes/core_nodes.h"
 #include "editor/collab/actions_internal.h"
 #include "editor/collab/collab.h"
 #include "editor/workspace/editor_internal.h"
 #include "graph/document/problems.h"
 #include "graph/document/serialize.h"
 #include "graph/model/registry.h"
+#include "graph/nodes/core_nodes.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -113,6 +113,9 @@ int editor_open_behavior_asset(editor *e, const behavior_asset *source, uint64_t
     if (result != 0) {
         return -1;
     }
+    /* Explicit replacement resets history; an old document's gesture cannot
+     * become an undo entry in the newly adopted asset. Visits keep it first. */
+    ed_cancel_snapshot(e);
     aclear(e->graph_callers);
     av_value_free(e->saved_snapshot);
     e->saved_snapshot = ed_value_snapshot(e->asset);
@@ -185,6 +188,17 @@ const graph *editor_graph_call_target(const editor *e, const node *call)
              : NULL;
 }
 
+/* Navigation keeps completed edits in their owning document. A gesture that
+ * never changed the asset still drops its snapshot without clearing redo. */
+static void finish_navigation_edit(editor *e)
+{
+    if (e->pending_snapshot && behavior_asset_equal(e->asset, e->pending_snapshot)) {
+        ed_cancel_snapshot(e);
+        return;
+    }
+    ed_commit_snapshot(e);
+}
+
 int editor_open_graph_call(editor *e, uint64_t node_id)
 {
     if (!e || !e->active_graph) {
@@ -215,7 +229,7 @@ int editor_open_graph_call(editor *e, uint64_t node_id)
         adel(e->graph_callers, 0);
     }
     apush(e->graph_callers, ((ed_graph_caller){ e->active_graph->graph_id, node_id }));
-    ed_cancel_snapshot(e);
+    finish_navigation_edit(e);
     return ed_switch_graph(e, target);
 }
 
@@ -230,7 +244,7 @@ int editor_graph_back(editor *e)
         if (!target) {
             continue;
         }
-        ed_cancel_snapshot(e);
+        finish_navigation_edit(e);
         ed_switch_graph(e, target);
         e->arrange_pending = false;
         node *call = graph_node_by_id(target, caller.node_id);

@@ -802,11 +802,10 @@ const char *studio_graph_cursor(const studio *s)
 
 bool studio_graph_can_replay(studio *s, bool redo)
 {
-    if (s->scene->graph_document_kind == APP_EDITOR_DOCUMENT_BEHAVIOR ||
-        s->scene->graph_document_kind == APP_EDITOR_DOCUMENT_SYSTEM) {
+    const editor *e = sg_graph_editor(s);
+    if (e && e->presentation) {
         return studio_code_history(s, redo, false);
     }
-    const editor *e = sg_graph_editor(s);
     return studio_graph_active(s) &&
            (redo ? editor_can_redo(e) : editor_can_undo(e));
 }
@@ -815,8 +814,7 @@ void studio_graph_history(studio *s, bool redo)
 {
     editor *e = sg_graph_editor(s);
     sg_cancel_gesture(s);
-    if (s->scene->graph_document_kind == APP_EDITOR_DOCUMENT_BEHAVIOR ||
-        s->scene->graph_document_kind == APP_EDITOR_DOCUMENT_SYSTEM) {
+    if (e->presentation) {
         studio_code_history(s, redo, true);
         return;
     }

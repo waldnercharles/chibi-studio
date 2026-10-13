@@ -226,8 +226,6 @@ static void reference_controls(studio *s, editor *e, bool shown)
 static void material_resource_controls(studio *s, int model)
 {
     kit *k = s->kit;
-    shader_inspection maximum = { 0 };
-    int count = 0;
     for (int i = 0; i < MODEL_MATERIAL_SLOT_MAX; i++) {
         model_material_slot slot;
         shader_inspection report;
@@ -235,18 +233,6 @@ static void material_resource_controls(studio *s, int model)
             !render_shader_material_inspection(render_shader_find(slot.material), &report)) {
             continue;
         }
-        count++;
-#define MAXIMUM(field)                                                         \
-    if (report.field > maximum.field) {                                        \
-        maximum.field = report.field;                                          \
-    }
-        MAXIMUM(nodes)
-        MAXIMUM(uniforms)
-        MAXIMUM(images)
-        MAXIMUM(ramp_vec4s)
-        MAXIMUM(texture_samples)
-        MAXIMUM(detail_expressions)
-#undef MAXIMUM
         char key[24];
         snprintf(key, sizeof key, "material-%d", i);
         if (kit_panel_begin(k, key, slot.name, slot.material, false)) {
@@ -276,25 +262,6 @@ static void material_resource_controls(studio *s, int model)
             }
         }
         kit_panel_end(k);
-    }
-    if (count) {
-        char value[192];
-        snprintf(
-            value,
-            sizeof value,
-            "IR %d · uniforms %d · images %d · ramps %d · samples ≤ %d · "
-            "helper evaluations %d",
-            maximum.nodes,
-            maximum.uniforms,
-            maximum.images,
-            maximum.ramp_vec4s,
-            maximum.texture_samples,
-            maximum.detail_expressions
-        );
-        kit_prop_begin(k, "material-maximum", "Maximum per material");
-        kit_label(k, "value", NULL, value);
-        kit_prop_end(k);
-        kit_label(k, "material-help", "dim", "Static sample bound per shading evaluation, including detail helpers. Not measured GPU work.");
     }
 }
 
@@ -347,28 +314,76 @@ static void inspect_controls(studio *s)
     if (changed) {
         scene_model_preview_set_inspection(s->scene, value);
     }
-    for (int i = 0;; i++) {
-        model_anchor anchor;
-        float position[3], angles[3];
-        if (!scene_model_preview_anchor(s->scene, i, &anchor, position, angles)) {
-            break;
+    if (kit_panel_begin(k, "anchor-transforms", "Anchor transforms", NULL, false)) {
+        kit_label(k, "anchor-help", "dim", "Model-space positions and rotations in radians.");
+        int count = 0;
+        for (int i = 0;; i++) {
+            model_anchor anchor;
+            float position[3], angles[3];
+            if (!scene_model_preview_anchor(s->scene, i, &anchor, position, angles)) {
+                break;
+            }
+            count++;
+            char key[24], value[128];
+            snprintf(key, sizeof key, "landmark-%d", i);
+            snprintf(
+                value,
+                sizeof value,
+                "(%.4g, %.4g, %.4g) · angles (%.3g, %.3g, %.3g) rad",
+                position[0],
+                position[1],
+                position[2],
+                angles[0],
+                angles[1],
+                angles[2]
+            );
+            kit_prop_begin(k, key, anchor.name);
+            kit_label(k, "value", NULL, value);
+            kit_prop_end(k);
         }
-        char key[24], value[128];
-        snprintf(key, sizeof key, "landmark-%d", i);
-        snprintf(
-            value,
-            sizeof value,
-            "(%.4g, %.4g, %.4g) · angles (%.3g, %.3g, %.3g) rad",
-            position[0],
-            position[1],
-            position[2],
-            angles[0],
-            angles[1],
-            angles[2]
-        );
-        kit_prop_begin(k, key, anchor.name);
-        kit_label(k, "value", NULL, value);
-        kit_prop_end(k);
+        if (!count) {
+            kit_label(k, "no-anchors", "dim", "No anchors in this model.");
+        }
+    }
+    kit_panel_end(k);
+}
+
+/* Keep consequential resource pressure visible even with diagnostics folded.
+ * The 90% threshold is a capacity warning, not a GPU performance estimate. */
+static void capacity_notice(kit *k, const char *key, const char *name, int used, int limit)
+{
+    if (limit <= 0 || used < (limit * 9 + 9) / 10) {
+        return;
+    }
+    char text[256];
+    const char *state = used > limit  ? "exceeds capacity"
+                      : used == limit ? "is at capacity"
+                                      : "is near capacity";
+    snprintf(text, sizeof text, "%s %s (%d / %d). See Diagnostics.", name, state, used, limit);
+    kit_label(k, key, "notice", text);
+}
+
+static void material_capacity_notices(studio *s, int model)
+{
+    for (int i = 0; i < MODEL_MATERIAL_SLOT_MAX; i++) {
+        model_material_slot slot;
+        shader_inspection report;
+        if (!render_shader_model_material_slot(model, i, &slot) ||
+            !render_shader_material_inspection(render_shader_find(slot.material), &report)) {
+            continue;
+        }
+        const char *names[] = { "IR nodes", "uniforms", "images", "ramp entries" };
+        int values[] = { report.nodes, report.uniforms, report.images, report.ramp_vec4s };
+        int limits[] = { SHADER_NODE_MAX,
+                         SHADER_PARAMETER_MAX,
+                         RENDER_SHADER_IMAGE_MAX,
+                         RENDER_SHADER_RAMP_VEC4_MAX };
+        for (int row = 0; row < 4; row++) {
+            char key[48], name[192];
+            snprintf(key, sizeof key, "material-capacity-%d-%d", i, row);
+            snprintf(name, sizeof name, "%s %s", slot.name, names[row]);
+            capacity_notice(s->kit, key, name, values[row], limits[row]);
+        }
     }
 }
 
@@ -381,19 +396,35 @@ static void inspection_controls(studio *s, const char *name)
         return;
     }
     kit *k = s->kit;
-    if (kit_panel_begin(k, "resources", "Model Resources", NULL, true)) {
-        const char *names[] = { "Distance IR",     "Hit IR",
-                                "Uniform slots",   "Material slots",
-                                "Geometry images", "Geometry ramp entries" };
-        int values[] = { report->distance_nodes,
-                         report->hit_nodes,
-                         report->public_slots + report->private_slots,
-                         report->material_slots,
-                         report->images,
-                         report->ramp_vec4s };
-        int limits[] = { report->distance_limit,  report->hit_limit,
-                         report->parameter_limit, report->material_limit,
-                         report->image_limit,     report->ramp_limit };
+    const char *names[] = { "Distance IR",     "Hit IR",
+                            "Uniform slots",   "Material slots",
+                            "Geometry images", "Geometry ramp entries" };
+    int values[] = { report->distance_nodes,
+                     report->hit_nodes,
+                     report->public_slots + report->private_slots,
+                     report->material_slots,
+                     report->images,
+                     report->ramp_vec4s };
+    int limits[] = { report->distance_limit,  report->hit_limit,
+                     report->parameter_limit, report->material_limit,
+                     report->image_limit,     report->ramp_limit };
+    for (int i = 0; i < 6; i++) {
+        char key[32];
+        snprintf(key, sizeof key, "model-capacity-%d", i);
+        capacity_notice(k, key, names[i], values[i], limits[i]);
+    }
+    material_capacity_notices(s, render_shader_find(name));
+    char summary[64];
+    snprintf(
+        summary,
+        sizeof summary,
+        "%d %s · %d %s",
+        acount(report->parts),
+        acount(report->parts) == 1 ? "part" : "parts",
+        report->material_slots,
+        report->material_slots == 1 ? "material" : "materials"
+    );
+    if (kit_panel_begin(k, "diagnostics", "Diagnostics", summary, false)) {
         for (int i = 0; i < 6; i++) {
             char key[24], value[64];
             snprintf(key, sizeof key, "budget-%d", i);
@@ -403,6 +434,7 @@ static void inspection_controls(studio *s, const char *name)
             kit_prop_end(k);
         }
         material_resource_controls(s, render_shader_find(name));
+        kit_label(k, "material-help", "dim", "Texture calls are static bounds per shading evaluation, including helpers. GPU work is not measured.");
         kit_label(k, "part-help", "dim", "Part counts include shared work and overlap.");
         int first, last;
         kit_push(k, "cost-list", NULL, NULL);

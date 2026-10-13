@@ -88,6 +88,7 @@ set(STUDIO_SOURCES
     src/editor/studio/studio_member_properties.c
     src/editor/studio/studio_members.c
     src/editor/studio/studio_model.c
+    src/editor/studio/studio_shader.c
     src/editor/studio/studio_node_calls.c
     src/editor/studio/studio_outliner.c
     src/editor/studio/studio_output.c

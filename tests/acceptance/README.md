@@ -6,31 +6,76 @@ host in test wrappers. The production binary has no fixture CLI or test hooks.
 Build with `-DCHIBI_STUDIO_BUILD_ACCEPTANCE=ON` against an installed SDK.
 
 `studio-acceptance --material-authoring --project-root PATH` takes a fresh
-disposable copy of `project` and runs exactly twenty hidden fixed-dt host frames.
+disposable copy of `project` and runs exactly 60 hidden fixed-dt host frames.
 The production New Material command opens the form; queued SDL pointer, text
 and keyboard events choose Metal, name it AcceptanceMetal, type roughness 0.42
-and activate Create. The saved KDL must be canonical, reload as a material and
-retain metallic 1 and roughness 0.42. The production Properties pane must show
-the shared Shader contract, and a real pointer click on Evaluate center must
-produce those same CPU output values. The probe uses authored defaults, UV
-(0.5, 0.5), local/world origin, time and activity zero, and normal/view +Y. A
-second form submission using the existing name must stay open with an error,
-leave the original material intact and close on Escape. Counter stays unchanged.
-Opening commands and pane choice are test setup; form controls and the probe
-use the real SDL/RmlUi input path. The route does not cover color pickers,
-texture-dependent probes, every preset, touch or rendered-pixel comparison.
-Run it under the admitted production supervisor's 60-second deadline. It adds
-no executable, scenario or GPU workload beyond those twenty UI
-frames. Preferences and thumbnails use the disposable project as other routes do.
+and activate Create. The saved KDL must be canonical and retain metallic 1 and
+roughness 0.42. Default Properties must show a rendered preview and typed
+color and numeric controls, with Diagnostics closed and no CPU probe
+performed.
+
+A real numeric-field edit changes roughness to 0.65 in one history step. A
+second, live pointer scrub changes it temporarily; Escape must restore the
+exact serialized graph without adding undo/redo entries or changing the saved
+file. Platform undo and redo chords restore 0.42 then 0.65. A real pointer
+swipe dismisses the save toast so it cannot intercept the Diagnostics click.
+Save persists the result. Bounded native scrollbar-thumb drags reveal each
+target before pointer clicks open Diagnostics, evaluate the CPU sample and
+export current rendered evidence. The sample and frozen linked KDL must retain
+roughness 0.65 and metallic 1. The replay request uses those frozen defaults
+without named overrides. The bundle must contain a
+320x200 PNG, backend provenance, truthful CPU/GPU coverage and a completed
+manifest. The bundle is written to the disposable project's
+`.chibi/evidence/shader-000001`. A second form submission using the existing
+name must stay open with an error, leave the original material intact and
+close on Escape. Counter stays unchanged. Two tiny in-memory material
+documents also verify that pending gestures survive document switches as one
+undo step, immediate undo/redo flushes the gesture, and cancellation preserves
+an existing redo entry. Local-function forward/back navigation also commits
+changed gestures and discards identical snapshots without clearing redo. They
+create no runtime publication or additional renderer. In existing frames
+34–38, one auxiliary material calls one tiny shader library for its Height
+output. Two KDL graph definitions (each serializes to at most 16 KiB) register
+through the production preview world, and the normal app document API opens
+the auxiliary material. The library edit uses preview_update to relink
+dependent shaders. Its current Studio report must sample Height 0.25, then
+0.75 after publishing only the library edit, while the material editor
+revision stays unchanged. The route restores AcceptanceMetal and removes both
+definitions before checking its frozen evidence. These publications reuse the
+same context and retained 320x200 preview, add no frames or readbacks, and
+remain within the existing maximum of 60 preview draws. After export, a second
+live SDL scrub is undone before pointer release; a subsequent typed edit must
+create one fresh undo step and clear redo, and Undo must restore the saved and
+exported roughness 0.65.
+
+Opening commands, pane choice and Save are test setup/control; form controls,
+parameter edits, cancellation, history chords, Diagnostics, probe and export
+use the real SDL/RmlUi input path. Each diagnostic/export click must fall
+inside the Properties scroll clip. Each of the four reveals uses at most 64
+hit tests inside the actual scrollbar, then one SDL down/move/up drag batch;
+it refuses absent or occluded native parts. The route does not cover
+color-picker interaction, texture-dependent probes, every preset, touch or
+rendered-pixel comparison. Run it under the admitted production supervisor's
+60-second deadline. It adds no executable or child invocation. Preview
+rendering and one asynchronous preview PNG readback occur inside the same
+60-frame host run. Preferences, thumbnails and evidence stay inside the
+disposable project.
+
 For human review, set `CHIBI_ACCEPTANCE_EVIDENCE_DIR` to an existing output
-directory. The same run saves `material-form.png` after the roughness edit and
-`material-properties.png` after the CPU probe. This optional mode performs two
-GPU readbacks of frames already rendered; each has the SDK's ten-second readback
-limit and both remain inside the route's shared sixty-second deadline. It adds
-no host frames or rerendering. The default run performs no screenshots.
-Evidence mode enables Studio's existing reduced-motion preference before opening
-the form, so screenshots show settled controls without dropdown exit animations.
-This mode verifies settled layout; the default route retains normal motion.
+directory. The same run saves `material-form.png`, `material-properties.png`
+with Diagnostics closed, and `material-diagnostics.png` after evaluating the
+sample. Before fixture cleanup, the same run exclusively copies the six
+completed bundle files into `bundle/` under that review directory:
+`manifest.json`, `report.json`, `requests.ndjson`, `project.kdl`,
+`preview.png` and `content/materials/Snapshot.kdl`. Each file is limited to 1
+MiB and copied through a 16 KiB buffer; failed copies remove only
+files/directories created by that copy. These three optional GPU readbacks
+capture frames already rendered; each has the SDK's ten-second readback limit
+and all remain inside the shared sixty-second deadline. They add no host
+frames or rerendering. The default run performs only the preview evidence
+readback. Evidence mode enables Studio's existing reduced-motion preference
+before opening the form, so screenshots show settled controls. The default
+route retains normal motion.
 
 `studio-acceptance --source-edit --project-root PATH` accepts a disposable copy of
 this directory's `project`. Preferences and thumbnail cache are pinned inside that

@@ -54,6 +54,7 @@ void ed_commit_snapshot(editor *e)
 
 void ed_snapshot_before(editor *e)
 {
+    ed_commit_snapshot(e);
     e->edit_pending = 1;
     if (!collab_record_history()) {
         return;
@@ -160,6 +161,7 @@ int ed_adopt_behavior_asset(editor *e, const behavior_asset *source)
 
 void ed_undo(editor *e)
 {
+    ed_commit_snapshot(e);
     if (acount(e->undo) == 0) {
         return;
     }
@@ -174,6 +176,7 @@ void ed_undo(editor *e)
 
 void ed_redo(editor *e)
 {
+    ed_commit_snapshot(e);
     if (acount(e->redo) == 0) {
         return;
     }
@@ -188,7 +191,7 @@ void ed_redo(editor *e)
 
 bool editor_can_undo(const editor *e)
 {
-    return e && acount(e->undo) > 0;
+    return e && (e->pending_snapshot || acount(e->undo) > 0);
 }
 
 bool editor_can_redo(const editor *e)

@@ -37,6 +37,26 @@ if (typeof window !== 'undefined') {
         return new Blob([...parts, ...directory, end], {type: 'application/zip'});
     };
     Module['chibiZipFiles'] = zip;
+    Module['chibiDownloadEvidenceBundle'] = directory => {
+        try {
+            const fs = Module['FS'];
+            const manifestBytes = fs.readFile(`${directory}/manifest.json`);
+            const manifest = JSON.parse(new TextDecoder().decode(manifestBytes));
+            const files = [['manifest.json', manifestBytes]];
+            for (const file of manifest.files) {
+                files.push([file.path, fs.readFile(`${directory}/${file.path}`)]);
+            }
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(zip(files));
+            link.download = 'shader-evidence.zip';
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(link.href), 40000);
+            return true;
+        } catch (error) {
+            Module['showError']?.(`Could not download shader evidence: ${error.message || error}`);
+            return false;
+        }
+    };
     Module['chibiDownloadModelBundle'] = (directory, name) => {
         try {
             const files = ['model.mesh', 'model.obj', 'model.mtl', 'provenance.json']

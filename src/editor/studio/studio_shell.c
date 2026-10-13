@@ -127,7 +127,9 @@ static bool graph_focused(const studio *s)
 static bool behavior_history_focused(const studio *s)
 {
     if (graph_focused(s)) {
-        return true;
+        /* Native KDL materials and shapes use the graph document's history.
+         * Executable presentations share their source editor's history. */
+        return editor_presentation(s->scene->graph_editor) != NULL;
     }
     int area = studio_command_area(s);
     return area >= 0 && s->prefs.layouts[s->prefs.workspace].editors[area] ==

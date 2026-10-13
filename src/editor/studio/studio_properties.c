@@ -1682,135 +1682,6 @@ static bool focus_input(rml_element *host, const char *selector)
     return true;
 }
 
-static void shader_report_row(kit *k, const char *key, const char *label, const char *value)
-{
-    kit_prop_begin(k, key, label);
-    kit_label(k, "value", NULL, value);
-    kit_prop_end(k);
-}
-
-static void shader_report_controls(studio *s, const editor *e)
-{
-    const behavior_asset *asset = e->compiled ? e->compiled
-                                              : editor_behavior_asset(e);
-    if (s->shader_report_identity != asset->identity ||
-        s->shader_report_revision != e->edit_revision) {
-        s->shader_report_identity = asset->identity;
-        s->shader_report_revision = e->edit_revision;
-        s->shader_report_valid = shader_authoring_inspect(asset, &s->shader_report, &s->shader_report_error);
-        s->shader_probe_attempted = false;
-    }
-    kit *k = s->kit;
-    if (kit_panel_begin(
-            k,
-            "shader-report",
-            "Shader contract",
-            s->shader_report_valid ? "CPU compiled" : "Invalid",
-            true
-        )) {
-        if (!s->shader_report_valid) {
-            kit_label(k, "error", "dim", s->shader_report_error.message);
-        } else {
-            const shader_authoring_report *report = &s->shader_report;
-            const char *labels[] = { "IR nodes",      "Parameters",
-                                     "Images",        "Ramp vec4s",
-                                     "Texture calls", "Helper evaluations" };
-            int values[] = {
-                report->costs.nodes,           report->costs.uniforms,
-                report->costs.images,          report->costs.ramp_vec4s,
-                report->costs.texture_samples, report->costs.detail_expressions
-            };
-            for (int i = 0; i < 6; i++) {
-                char key[24], value[32];
-                snprintf(key, sizeof key, "cost-%d", i);
-                snprintf(value, sizeof value, "%d", values[i]);
-                shader_report_row(k, key, labels[i], value);
-            }
-            kit_label(k, "cost-help", "dim", "Static work per shading evaluation. Texture calls are conservative bounds; GPU time and raymarch costs are not measured.");
-            for (int i = 0; i < SHADER_PARAMETER_MAX; i++) {
-                if (!report->widths[i]) {
-                    continue;
-                }
-                char key[24], value[128];
-                snprintf(key, sizeof key, "parameter-%d", i);
-                int used = report->widths[i] == 1
-                             ? snprintf(value, sizeof value, "float: ")
-                             : snprintf(value, sizeof value, "vec%d: ", report->widths[i]);
-                for (int j = 0; j < report->widths[i]; j++) {
-                    used += snprintf(
-                        value + used,
-                        sizeof value - (size_t)used,
-                        "%s%.6g",
-                        j ? ", " : "",
-                        report->defaults[i][j]
-                    );
-                }
-                shader_report_row(k, key, report->names[i], value);
-            }
-            for (int i = 0; i < acount(report->program.images); i++) {
-                char key[24], label[64];
-                const shader_image_source *image = &report->program.images[i];
-                snprintf(key, sizeof key, "image-%d", i);
-                snprintf(
-                    label,
-                    sizeof label,
-                    "%s · %s · %s",
-                    image->color_space == SHADER_IMAGE_SRGB ? "sRGB" : "Linear",
-                    image->filter == SHADER_IMAGE_NEAREST ? "Nearest" : "Bilinear",
-                    image->wrap == SHADER_IMAGE_REPEAT ? "Repeat" : "Clamp"
-                );
-                shader_report_row(k, key, label, image->key);
-            }
-            kit_label(k, "validation-help", "dim", "CPU compilation checks graph structure. Image availability, GPU compilation and rendered appearance require a preview.");
-            if (kit_button(k, "probe", &(kit_button_desc){ .label = "Evaluate center", .variant = KIT_SUBTLE })) {
-                shader_sample_context context = shader_authoring_center_context(asset);
-                context.resolve_image = render_image_resolve;
-                s->shader_probe_attempted = true;
-                s->shader_probe_valid = shader_authoring_sample(
-                    report,
-                    &context,
-                    NULL,
-                    s->shader_probe,
-                    &s->shader_probe_error
-                );
-            }
-            if (s->shader_probe_attempted) {
-                kit_label(k, "probe-context", "dim", "CPU probe: UV (0.5, 0.5), local/world origin, time 0, normal/view +Y, zero beat/influence; authored defaults.");
-                if (!s->shader_probe_valid) {
-                    kit_label(k, "probe-error", "dim", s->shader_probe_error.message);
-                } else {
-                    const char *names[] = { "Base color", "Emission",
-                                            "Roughness",  "Metallic",
-                                            "Normal",     "Opacity",
-                                            "Unlit",      "Height",
-                                            "Occlusion" };
-                    for (int i = 0; i < report->program.output_count; i++) {
-                        char key[24], value[128];
-                        snprintf(key, sizeof key, "probe-%d", i);
-                        snprintf(
-                            value,
-                            sizeof value,
-                            "%.6g, %.6g, %.6g, %.6g",
-                            s->shader_probe[i][0],
-                            s->shader_probe[i][1],
-                            s->shader_probe[i][2],
-                            s->shader_probe[i][3]
-                        );
-                        shader_report_row(
-                            k,
-                            key,
-                            asset->domain == BEHAVIOR_DOMAIN_SHAPE ? "Distance"
-                                                                   : names[i],
-                            value
-                        );
-                    }
-                }
-            }
-        }
-    }
-    kit_panel_end(k);
-}
-
 void studio_properties_header(studio *s, int area)
 {
     /* Visual designer (workstream H): a UI document's Details. */
@@ -1861,7 +1732,7 @@ void studio_properties_body(studio *s, int area)
             studio_model_preview_controls(s, s->scene->graph_editor);
             studio_graph_model_controls(s);
         } else {
-            shader_report_controls(s, s->scene->graph_editor);
+            studio_shader_controls(s, s->scene->graph_editor);
         }
         kit_slot_end(s->kit);
     }

@@ -1101,6 +1101,7 @@ void studio_free(studio *s)
         return;
     }
     shader_authoring_report_free(&s->shader_report);
+    studio_shader_free(s);
 #ifdef __EMSCRIPTEN__
     if (web_studio == s) {
         web_studio = NULL;
@@ -1337,6 +1338,7 @@ static void run(studio *s, double delta_seconds, float width, float height)
         CHIBI_TRACE_ZONE_END(sync_zone);
         CHIBI_TRACE_ZONE_BEGIN(emit_zone, "Studio host emit");
         kit_begin(s->kit, &s->in);
+        studio_shader_hide(s);
         if (s->canvas) {
             s->canvas->frame = NULL;
         }
@@ -1380,6 +1382,7 @@ static void run(studio *s, double delta_seconds, float width, float height)
         );
     }
     studio_graph_frame(s, delta_seconds);
+    studio_shader_frame(s);
     CHIBI_TRACE_ZONE_BEGIN(frame_zone, "Studio host retained frame");
     rml_backend_frame_retained(s->backend, delta_seconds, update_ui || prefs_dirty);
     CHIBI_TRACE_ZONE_END(frame_zone);

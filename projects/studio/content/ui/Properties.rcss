@@ -47,3 +47,25 @@ body, body.area-panel { width: 100%; height: 100%; margin: 0dp; padding: 0dp; ov
 .graph-sub-heading { display: block; margin-top: var(--gap); }
 .graph-inline-part { display: block; }
 .param-settings [data-ui=EnumField] { flex: 1 1 78dp; min-width: 0dp; }
+
+/* Material authoring keeps the picture and editable defaults together. The
+   existing panel/field tokens supply density, focus and disclosure behavior. */
+.shader-editor { display: block; margin-bottom: 12dp; }
+.shader-heading { display: flex; align-items: center; justify-content: space-between; gap: 8dp; padding: 2dp 2dp 8dp; }
+.shader-title { flex: 1 1 0dp; min-width: 0dp; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.shader-preview { display: block; position: relative; width: 100%; height: auto; border-radius: var(--r-lg); background-color: var(--rail); overflow: hidden; cursor: move; }
+.shader-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 4dp; margin: 4dp 0dp 8dp; }
+.shader-status { flex: 1 1 0dp; min-width: 0dp; color: var(--muted-foreground); font-size: var(--studio-font-11, 11dp); }
+.shader-status[data-error] { color: var(--destructive); }
+.shader-components { display: flex; flex: 1 1 0dp; min-width: 0dp; flex-wrap: wrap; gap: 4dp; }
+.shader-components number-field { flex: 1 1 64dp; min-width: 64dp; }
+.shader-vector .prop { display: block; }
+.shader-vector .prop > .label { width: 100%; max-width: none; height: var(--studio-line-20, 20dp); justify-content: flex-start; }
+.shader-vector .prop > .control { width: 100%; }
+.shader-editor color-field { flex: 0 0 26dp; }
+.shader-note { display: block; white-space: normal; margin: 4dp 0dp; color: var(--muted-foreground); line-height: var(--studio-line-18, 18dp); }
+.shader-editor .notice { color: var(--destructive); }
+.shader-stat { display: flex; justify-content: space-between; gap: 12dp; margin: 5dp 0dp; }
+.shader-stat-name { flex: 1 1 0dp; min-width: 0dp; color: var(--muted-foreground); }
+.shader-stat-value { flex: 0 1 auto; white-space: normal; text-align: right; }
+.shader-subheading { display: block; font-weight: 600; margin-top: 12dp; }

@@ -13,6 +13,7 @@
 #include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/asset_refactor.h"
 #include "editor/workspace/scene_internal.h"
+#include "graph/authoring/asset_edit.h"
 #include "graph/authoring/graph_edit.h"
 #include "graph/authoring/local_edit.h"
 #include "graph/document/serialize.h"
@@ -37,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 studio *studio_acceptance_studio(void *);
 int studio_acceptance_host_main(int, char **);
@@ -3154,10 +3156,10 @@ static bool asset_selection_frame(void *state)
 
 #define ASSET_POINTER_FRAMES 20
 #define GRAPH_POINTER_FRAMES 19
-#define MATERIAL_AUTHORING_FRAMES 20
+#define MATERIAL_AUTHORING_FRAMES 60
 
-/* Optional review evidence reads two already-rendered frames. The supervisor
- * includes both bounded GPU readbacks in this route's one shared deadline. */
+/* Optional review evidence reads three already-rendered frames. The supervisor
+ * includes all three bounded GPU readbacks in this route's one shared deadline. */
 static bool material_capture(const char *name)
 {
     const char *directory = getenv("CHIBI_ACCEPTANCE_EVIDENCE_DIR");
@@ -3171,34 +3173,213 @@ static bool material_capture(const char *name)
     return true;
 }
 
-/* Find an actual visible control by its displayed label, then queue platform
- * input at its rendered box. No activation is dispatched directly. */
-static bool click_labeled(studio *s, const char *selector, const char *label)
+/* Resolve controls by their displayed labels, never by guessed positions. */
+static rml_element *material_control(studio *s, const char *selector, const char *label)
 {
     rml_context *context = rml_backend_context(s->backend);
     for (int i = 0; i < rml_context_document_count(context); i++) {
         rml_element *matches[32];
         int count = rml_element_query_selector_all(rml_context_document(context, i), selector, matches, 32);
-        REQUIRE(count <= 32);
+        if (count > 32) {
+            return NULL;
+        }
         for (int j = 0; j < count; j++) {
-            char text[512];
+            char text[512], accessible[128] = "";
             rml_element_inner_rml(matches[j], text, sizeof text);
-            if (!rml_element_is_visible(matches[j], true) || !strstr(text, label)) {
-                continue;
+            rml_element_attribute(matches[j], "aria-label", accessible, sizeof accessible);
+            if (rml_element_is_visible(matches[j], true) &&
+                (strstr(text, label) || !strcmp(accessible, label))) {
+                return matches[j];
             }
-            rml_vec2 at = rml_element_absolute_offset(matches[j], RML_BOX_BORDER);
-            rml_vec2 size = rml_element_box_size(matches[j], RML_BOX_BORDER);
-            REQUIRE(size.x > 0 && size.y > 0);
-            float scale = s->prefs.ui_scale / studio_pixel_ratio(s);
-            return click_at((at.x + size.x / 2) * scale, (at.y + size.y / 2) * scale);
         }
     }
-    fprintf(stderr, "Studio material acceptance: control %s labeled %s is absent\n", selector, label);
-    REQUIRE(false);
-    return false;
+    return NULL;
 }
 
-static bool material_source_says_metal()
+static rml_element *material_scroll_parent(rml_element *element)
+{
+    for (rml_element *parent = rml_element_parent(element); parent;
+         parent = rml_element_parent(parent)) {
+        if (rml_element_is_class_set(parent, "prop-scroll")) {
+            return parent;
+        }
+    }
+    return NULL;
+}
+
+/* Native scrollbars are non-DOM children. The count excludes them, but
+ * indexed child access includes them; a scroll body has at most two scrollbars
+ * and one corner. Search only that bounded native tail. */
+static rml_element *material_scrollbar(rml_element *scroll)
+{
+    int count = rml_element_child_count(scroll);
+    if (count > 32) {
+        return NULL;
+    }
+    for (int i = count; i < count + 3; i++) {
+        rml_element *child = rml_element_child(scroll, i);
+        if (child && !strcmp(rml_element_tag_name(child), "scrollbarvertical")) {
+            return child;
+        }
+    }
+    return NULL;
+}
+
+/* A real native-thumb drag reveals the target synchronously. Wheel scrolling
+ * is animated against the UI clock and cannot promise settling in two frames. */
+static bool material_scroll(studio *s, const char *selector, const char *label)
+{
+    rml_element *target = material_control(s, selector, label);
+    REQUIRE(target);
+    rml_element *scroll = material_scroll_parent(target);
+    REQUIRE(scroll);
+    rml_vec2 at = rml_element_absolute_offset(target, RML_BOX_BORDER);
+    rml_vec2 size = rml_element_box_size(target, RML_BOX_BORDER);
+    rml_vec2 clip = rml_element_absolute_offset(scroll, RML_BOX_CONTENT);
+    float height = rml_element_client_height(scroll);
+    REQUIRE(height > 0);
+    float top = rml_element_scroll_top(scroll);
+    float maximum = fmaxf(rml_element_scroll_height(scroll) - height, 0);
+    float desired = fminf(fmaxf(top + at.y + size.y * .5f - (clip.y + height * .5f), 0), maximum);
+    if (fabsf(desired - top) < .5f) {
+        REQUIRE(at.y + size.y * .5f >= clip.y && at.y + size.y * .5f < clip.y + height);
+        return true;
+    }
+    rml_element *scrollbar = material_scrollbar(scroll);
+    REQUIRE(scrollbar);
+    rml_vec2 bar_at = rml_element_absolute_offset(scrollbar, RML_BOX_CONTENT);
+    rml_vec2 bar_size = rml_element_box_size(scrollbar, RML_BOX_CONTENT);
+    REQUIRE(bar_size.x > 0 && bar_size.y > 0);
+    rml_context *context = rml_backend_context(s->backend);
+    rml_element *thumb = NULL, *track = NULL;
+    float start_x = 0, start_y = 0;
+    int hits = 0;
+    /* At most64 actual hit tests, all inside the rendered scrollbar. This also
+     * refuses a hidden or wholly occluded thumb instead of clicking through it. */
+    for (int row = 0; row < 32 && !thumb; row++) {
+        for (int column = 0; column < 2 && !thumb; column++) {
+            float x = bar_at.x + bar_size.x * (column ? .75f : .25f);
+            float y = bar_at.y + bar_size.y * ((float)row + .5f) / 32;
+            rml_element *hit = rml_context_element_at_point(context, (rml_vec2){ x, y }, NULL);
+            hits++;
+            if (hit && !strcmp(rml_element_tag_name(hit), "sliderbar") &&
+                rml_element_parent(hit) == scrollbar) {
+                thumb = hit;
+                start_x = x;
+                start_y = y;
+            }
+        }
+    }
+    REQUIRE(thumb);
+    /* WidgetScroll owns exactly track, thumb and the two arrow elements. */
+    for (int i = 0; i < 4; i++) {
+        rml_element *child = rml_element_child(scrollbar, i);
+        if (child && !strcmp(rml_element_tag_name(child), "slidertrack")) {
+            track = child;
+        }
+    }
+    REQUIRE(track);
+    rml_vec2 track_at = rml_element_absolute_offset(track, RML_BOX_CONTENT);
+    rml_vec2 track_size = rml_element_box_size(track, RML_BOX_CONTENT);
+    rml_vec2 thumb_at = rml_element_absolute_offset(thumb, RML_BOX_CONTENT);
+    rml_vec2 thumb_size = rml_element_box_size(thumb, RML_BOX_CONTENT);
+    float travel = track_size.y - thumb_size.y;
+    REQUIRE(travel > 0 && maximum > 0);
+    float end_y = track_at.y + desired / maximum * travel + (start_y - thumb_at.y);
+    fprintf(
+        stderr,
+        "material scrollbar frame=%d target=%s top=%.1f desired=%.1f "
+        "maximum=%.1f hits=%d start=(%.1f,%.1f) end_y=%.1f\n",
+        frames,
+        label,
+        top,
+        desired,
+        maximum,
+        hits,
+        start_x,
+        start_y,
+        end_y
+    );
+    float scale = s->prefs.ui_scale / studio_pixel_ratio(s);
+    REQUIRE(push_mouse(SDL_EVENT_MOUSE_MOTION, start_x * scale, start_y * scale, 0, 0));
+    REQUIRE(push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, start_x * scale, start_y * scale, 0, 0));
+    REQUIRE(push_mouse(SDL_EVENT_MOUSE_MOTION, start_x * scale, end_y * scale, 0, 0));
+    return push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, start_x * scale, end_y * scale, 0, 0);
+}
+
+/* Queue a platform click only after checking the target's rendered center is
+ * inside the scroll viewport. No activation is dispatched directly. */
+static bool click_labeled(studio *s, const char *selector, const char *label)
+{
+    rml_element *target = material_control(s, selector, label);
+    if (!target) {
+        fprintf(stderr, "Studio material acceptance: control %s labeled %s is absent\n", selector, label);
+    }
+    REQUIRE(target);
+    rml_vec2 at = rml_element_absolute_offset(target, RML_BOX_BORDER);
+    rml_vec2 size = rml_element_box_size(target, RML_BOX_BORDER);
+    REQUIRE(size.x > 0 && size.y > 0);
+    rml_element *scroll = material_scroll_parent(target);
+    if (scroll) {
+        rml_vec2 clip = rml_element_absolute_offset(scroll, RML_BOX_CONTENT);
+        float x = at.x + size.x * .5f, y = at.y + size.y * .5f;
+        REQUIRE(x >= clip.x && x < clip.x + rml_element_client_width(scroll));
+        REQUIRE(y >= clip.y && y < clip.y + rml_element_client_height(scroll));
+    }
+    /* Check actual hit testing as well as clipping. Broad panel headers can
+     * be partly covered by a toast; choose a visible point within their box. */
+    float candidates[] = { at.x + size.x * .5f,
+                           at.x + fminf(8, size.x * .25f),
+                           at.x + size.x - fminf(8, size.x * .25f) };
+    float y = at.y + size.y * .5f, x = candidates[0];
+    bool reachable = false;
+    rml_context *context = rml_backend_context(s->backend);
+    const char *hit_tag = "none";
+    for (int i = 0; i < 3 && !reachable; i++) {
+        if (scroll) {
+            rml_vec2 clip = rml_element_absolute_offset(scroll, RML_BOX_CONTENT);
+            if (candidates[i] < clip.x ||
+                candidates[i] >= clip.x + rml_element_client_width(scroll)) {
+                continue;
+            }
+        }
+        rml_element *hit = rml_context_element_at_point(context, (rml_vec2){ candidates[i], y }, NULL);
+        if (hit) {
+            hit_tag = rml_element_tag_name(hit);
+        }
+        for (rml_element *ancestor = hit; ancestor;
+             ancestor = rml_element_parent(ancestor)) {
+            if (ancestor == target) {
+                reachable = true;
+                x = candidates[i];
+                break;
+            }
+        }
+    }
+    if (scroll || !reachable) {
+        rml_vec2 clip = scroll ? rml_element_absolute_offset(scroll, RML_BOX_CONTENT)
+                               : (rml_vec2){ 0 };
+        fprintf(
+            stderr,
+            "material click frame=%d target=%s x=%.1f y=%.1f clip_y=%.1f "
+            "clip_h=%.1f top=%.1f reachable=%d hit=%s\n",
+            frames,
+            label,
+            x,
+            y,
+            clip.y,
+            scroll ? rml_element_client_height(scroll) : 0,
+            scroll ? rml_element_scroll_top(scroll) : 0,
+            reachable,
+            hit_tag
+        );
+    }
+    REQUIRE(reachable);
+    float scale = s->prefs.ui_scale / studio_pixel_ratio(s);
+    return click_at(x * scale, y * scale);
+}
+
+static bool material_source_says_metal(float roughness)
 {
     char path[1024];
     snprintf(path, sizeof path, "%s/content/materials/AcceptanceMetal.kdl", project);
@@ -3214,7 +3395,7 @@ static bool material_source_says_metal()
     shader_error error;
     REQUIRE(shader_authoring_inspect(asset, &report, &error));
     REQUIRE(report.defaults[STANDARD_METALLIC][0] == 1);
-    REQUIRE(fabsf(report.defaults[STANDARD_ROUGHNESS][0] - .42f) < .00001f);
+    REQUIRE(fabsf(report.defaults[STANDARD_ROUGHNESS][0] - roughness) < .00001f);
     shader_authoring_report_free(&report);
     behavior_asset_free(asset);
     free(source);
@@ -3222,12 +3403,367 @@ static bool material_source_says_metal()
     return true;
 }
 
-/* One finite host run exercises the authored popup and kit controls through
- * queued SDL clicks, text and keys. Opening commands and pane choice are setup. */
+static bool material_defaults(studio *s, float roughness)
+{
+    REQUIRE(s->shader_report_valid);
+    if (fabsf(s->shader_report.defaults[STANDARD_ROUGHNESS][0] - roughness) >= .00001f) {
+        const editor *e = s->scene->graph_editor;
+        fprintf(
+            stderr,
+            "Material defaults: expected=%g actual=%g undo=%d redo=%d "
+            "pending=%d presentation=%d document=%d graph_document=%d focus=%d "
+            "key=%d hover=%d graph_area=%d tab=%d keyboard=%d input=%d\n",
+            roughness,
+            s->shader_report.defaults[STANDARD_ROUGHNESS][0],
+            acount(e->undo),
+            acount(e->redo),
+            e->pending_snapshot != NULL,
+            e->presentation != NULL,
+            s->scene->document.kind,
+            s->scene->graph_document_kind,
+            s->focus_area,
+            s->key_area,
+            s->hover_area,
+            s->graph.area,
+            s->tab,
+            kit_wants_keyboard(s->kit),
+            kit_input_focused(s->kit)
+        );
+    }
+    REQUIRE(fabsf(s->shader_report.defaults[STANDARD_ROUGHNESS][0] - roughness) < .00001f);
+    REQUIRE(s->shader_report.defaults[STANDARD_METALLIC][0] == 1);
+    return true;
+}
+
+static bool material_evidence()
+{
+    char path[2048];
+    snprintf(path, sizeof path, "%s/.chibi/evidence/shader-000001/report.json", project);
+    char *text = file_read_text(path);
+    REQUIRE(text);
+    yyjson_doc *doc = yyjson_read(text, strlen(text), 0);
+    free(text);
+    REQUIRE(doc);
+    yyjson_val *root = yyjson_doc_get_root(doc);
+    yyjson_val *coverage = yyjson_obj_get(root, "coverage");
+    REQUIRE(yyjson_get_bool(yyjson_obj_get(coverage, "graph_validated")));
+    REQUIRE(yyjson_get_bool(yyjson_obj_get(coverage, "cpu_shader_sampling")));
+    REQUIRE(yyjson_get_bool(yyjson_obj_get(coverage, "gpu_rendered")));
+    REQUIRE(!yyjson_get_bool(yyjson_obj_get(coverage, "full_verification")));
+    yyjson_val *preview = yyjson_obj_get(root, "preview");
+    REQUIRE(yyjson_get_int(yyjson_obj_get(preview, "width")) == 320);
+    REQUIRE(yyjson_get_int(yyjson_obj_get(preview, "height")) == 200);
+    const char *backend = yyjson_get_str(yyjson_obj_get(preview, "backend"));
+    REQUIRE(backend && backend[0]);
+    yyjson_val *request = yyjson_obj_get(preview, "request");
+    REQUIRE(!yyjson_obj_get(request, "parameters")); /* Replay uses frozen slot defaults. */
+    yyjson_val *sample = yyjson_obj_get(root, "cpu_sample");
+    REQUIRE(yyjson_get_bool(yyjson_obj_get(sample, "attempted")));
+    REQUIRE(yyjson_get_bool(yyjson_obj_get(sample, "valid")));
+    yyjson_val *outputs = yyjson_obj_get(sample, "outputs");
+    REQUIRE(yyjson_arr_size(outputs) == SHADER_OUTPUT_MAX);
+    yyjson_val *rough = yyjson_arr_get(outputs, SHADER_SURFACE_ROUGHNESS);
+    REQUIRE(
+        fabs(yyjson_get_num(yyjson_arr_get(yyjson_obj_get(rough, "value"), 0)) - .65) < .00001
+    );
+    yyjson_doc_free(doc);
+    snprintf(path, sizeof path, "%s/.chibi/evidence/shader-000001/content/materials/Snapshot.kdl", project);
+    text = file_read_text(path);
+    REQUIRE(text);
+    behavior_asset *snapshot = behavior_asset_load(text);
+    free(text);
+    REQUIRE(snapshot);
+    shader_authoring_report report;
+    shader_authoring_report_init(&report);
+    shader_error error = { 0 };
+    REQUIRE(shader_authoring_inspect(snapshot, &report, &error));
+    REQUIRE(fabsf(report.defaults[STANDARD_ROUGHNESS][0] - .65f) < .00001f);
+    REQUIRE(report.defaults[STANDARD_METALLIC][0] == 1);
+    shader_authoring_report_free(&report);
+    behavior_asset_free(snapshot);
+    snprintf(path, sizeof path, "%s/.chibi/evidence/shader-000001/preview.png", project);
+    FILE *png = fopen(path, "rb");
+    REQUIRE(png);
+    unsigned char header[24];
+    REQUIRE(fread(header, 1, sizeof header, png) == sizeof header);
+    REQUIRE(fclose(png) == 0);
+    const unsigned char signature[] = { 137, 'P', 'N', 'G', 13, 10, 26, 10 };
+    REQUIRE(!memcmp(header, signature, sizeof signature));
+    REQUIRE(header[16] == 0 && header[17] == 0 && header[18] == 1 && header[19] == 64);
+    REQUIRE(header[20] == 0 && header[21] == 0 && header[22] == 0 && header[23] == 200);
+    snprintf(path, sizeof path, "%s/.chibi/evidence/shader-000001/manifest.json", project);
+    text = file_read_text(path);
+    REQUIRE(text);
+    doc = yyjson_read(text, strlen(text), 0);
+    free(text);
+    REQUIRE(doc);
+    REQUIRE(yyjson_is_obj(yyjson_doc_get_root(doc)));
+    REQUIRE(yyjson_get_bool(yyjson_obj_get(yyjson_doc_get_root(doc), "evidence_complete")));
+    yyjson_doc_free(doc);
+    return true;
+}
+
+/* Independent editor documents own pending gestures; no resident publication
+ * or additional renderer is involved in this small history regression. */
+static bool material_history_value(editor *e, float expected)
+{
+    shader_authoring_report report;
+    shader_authoring_report_init(&report);
+    shader_error error = { 0 };
+    bool valid = shader_authoring_inspect(e->asset, &report, &error) &&
+                 fabsf(report.defaults[STANDARD_ROUGHNESS][0] - expected) < .00001f;
+    shader_authoring_report_free(&report);
+    return valid;
+}
+
+static bool material_pending_value(editor *e, float value)
+{
+    e->pending_snapshot = ed_snapshot(e);
+    shader_error error = { 0 };
+    return e->pending_snapshot &&
+           shader_authoring_set_default(e->asset, STANDARD_ROUGHNESS, &value, 1, &error);
+}
+
+static bool material_document_history(studio *s)
+{
+    standard_material defaults = material_authoring_defaults(MATERIAL_AUTHORING_MATTE);
+    behavior_asset *first = standard_material_build("HistoryFirst", &defaults);
+    behavior_asset *second = standard_material_build("HistorySecond", &defaults);
+    graph *function = behavior_asset_add_function(first, "Detail", true);
+    node *call = function ? behavior_asset_add_function_call_node(first, function)
+                          : NULL;
+    REQUIRE(function && call);
+    uint64_t function_id = function->graph_id, call_id = call->id;
+    editor *e = editor_new(behavior_asset_clone(first));
+    bool valid = editor_visit_behavior_asset(e, first, 0, "HistoryFirst") == 0 &&
+                 material_pending_value(e, .41f) && editor_can_undo(e) &&
+                 acount(e->undo) == 0 &&
+                 editor_visit_behavior_asset(e, second, 0, "HistorySecond") == 0 &&
+                 acount(e->undo) == 0 && !e->pending_snapshot &&
+                 editor_visit_behavior_asset(e, first, 0, "HistoryFirst") == 0 &&
+                 material_history_value(e, .41f) && acount(e->undo) == 1;
+    if (valid) {
+        ed_undo(e);
+        valid = material_history_value(e, defaults.roughness) &&
+                acount(e->undo) == 0 && acount(e->redo) == 1;
+    }
+    if (valid) {
+        ed_redo(e);
+        valid = material_history_value(e, .41f) && material_pending_value(e, .62f);
+    }
+    if (valid) {
+        /* Undo must first finish the current gesture, then undo that gesture. */
+        ed_undo(e);
+        valid = material_history_value(e, .41f) && acount(e->undo) == 1 &&
+                acount(e->redo) == 1 && !e->pending_snapshot;
+    }
+    if (valid) {
+        /* Cancel restores the value and drops only the uncommitted snapshot. */
+        char *before = behavior_asset_save(e->asset);
+        valid = material_pending_value(e, .9f);
+        shader_error error = { 0 };
+        float restored = .41f;
+        valid = valid &&
+                shader_authoring_set_default(e->asset, STANDARD_ROUGHNESS, &restored, 1, &error);
+        ed_cancel_snapshot(e);
+        char *after = behavior_asset_save(e->asset);
+        valid = valid && before && after && !strcmp(before, after) &&
+                acount(e->undo) == 1 && acount(e->redo) == 1;
+        free(before);
+        free(after);
+    }
+    if (valid) {
+        ed_redo(e);
+        valid = material_history_value(e, .62f) && material_pending_value(e, .7f);
+    }
+    if (valid) {
+        /* A new pending edit invalidates the old redo branch. */
+        ed_redo(e);
+        valid = material_history_value(e, .7f) && acount(e->undo) == 3 &&
+                acount(e->redo) == 0 && !e->pending_snapshot;
+        ed_undo(e);
+        valid = valid && material_history_value(e, .62f) &&
+                acount(e->undo) == 2 && acount(e->redo) == 1;
+    }
+    if (valid) {
+        /* Identical pending snapshots must preserve redo when entering a call. */
+        e->pending_snapshot = ed_snapshot(e);
+        valid = editor_open_graph_call(e, call_id) == 0 &&
+                e->active_graph->graph_id == function_id && !e->pending_snapshot &&
+                acount(e->undo) == 2 && acount(e->redo) == 1;
+    }
+    if (valid) {
+        /* A material edit while viewing the function still belongs to the asset.
+         * Back commits it before navigating; Undo must restore its original. */
+        valid = material_pending_value(e, .81f) && editor_graph_back(e) == 0 &&
+                e->active_graph == e->asset->graph && !e->pending_snapshot &&
+                acount(e->undo) == 3 && acount(e->redo) == 0;
+        ed_undo(e);
+        valid = valid && material_history_value(e, .62f) &&
+                acount(e->undo) == 2 && acount(e->redo) == 1;
+    }
+    if (valid) {
+        /* Forward navigation must also commit changed defaults rather than
+         * discard their before-image, and Back must retain redo after Undo. */
+        valid = material_pending_value(e, .83f) &&
+                editor_open_graph_call(e, call_id) == 0 && !e->pending_snapshot &&
+                acount(e->undo) == 3 && acount(e->redo) == 0;
+        ed_undo(e);
+        valid = valid && material_history_value(e, .62f) &&
+                e->active_graph->graph_id == function_id &&
+                acount(e->undo) == 2 && acount(e->redo) == 1;
+        e->pending_snapshot = ed_snapshot(e);
+        valid = valid && editor_graph_back(e) == 0 && !e->pending_snapshot &&
+                e->active_graph == e->asset->graph && acount(e->undo) == 2 &&
+                acount(e->redo) == 1;
+        ed_redo(e);
+        valid = valid && material_history_value(e, .83f) &&
+                acount(e->undo) == 3 && acount(e->redo) == 0;
+    }
+    if (valid) {
+        /* A native material still has document kind BEHAVIOR; Properties must
+         * route its command availability and replay to native graph history. */
+        editor *active = s->scene->graph_editor;
+        int key_area = s->key_area;
+        int properties = -1;
+        for (int i = 0; i < STUDIO_AREA_COUNT; i++) {
+            if (studio_active_layout(s)->editors[i] == STUDIO_EDITOR_PROPERTIES) {
+                properties = i;
+                break;
+            }
+        }
+        valid = properties >= 0 && s->tab == STUDIO_TAB_NODE &&
+                s->scene->graph_document_kind == APP_EDITOR_DOCUMENT_BEHAVIOR &&
+                s->scene->document.kind == APP_EDITOR_DOCUMENT_BEHAVIOR;
+        s->scene->graph_editor = e;
+        s->key_area = properties;
+        if (valid) {
+            valid = studio_can_replay(s, false) && studio_graph_can_replay(s, false);
+        }
+        if (valid) {
+            studio_history(s, false);
+            valid = material_history_value(e, .62f) && acount(e->undo) == 2 &&
+                    acount(e->redo) == 1;
+        }
+        if (valid) {
+            valid = studio_can_replay(s, true) && studio_graph_can_replay(s, true);
+            studio_graph_history(s, true);
+            valid = valid && material_history_value(e, .83f) &&
+                    acount(e->undo) == 3 && acount(e->redo) == 0;
+        }
+        s->scene->graph_editor = active;
+        s->key_area = key_area;
+    }
+    if (valid) {
+        /* Direct replacement, unlike a document visit, intentionally starts
+         * fresh history and must retire the previous document's gesture. */
+        valid = material_pending_value(e, .91f) &&
+                editor_open_behavior_asset(e, second, second->graph->graph_id) == 0 &&
+                !e->pending_snapshot && acount(e->undo) == 0 &&
+                acount(e->redo) == 0 &&
+                material_history_value(e, defaults.roughness);
+    }
+    editor_free(e);
+    behavior_asset_free(first);
+    behavior_asset_free(second);
+    REQUIRE(valid);
+    return true;
+}
+
+/* Preserve only the six completed export files for human review. Exclusive
+ * creation protects any previous review evidence; failed copies remove only
+ * the files/directories this invocation created. */
+static bool material_preserve_evidence()
+{
+    const char *review = getenv("CHIBI_ACCEPTANCE_EVIDENCE_DIR");
+    if (!review || !review[0]) {
+        return true;
+    }
+    const char *files[] = { "manifest.json",   "report.json",
+                            "requests.ndjson", "project.kdl",
+                            "preview.png",     "content/materials/Snapshot.kdl" };
+    char destination[2048], source[2048], folder[2048];
+    char *created[6] = { 0 };
+    int count = 0, directories = 0;
+    int length = snprintf(folder, sizeof folder, "%s/bundle", review);
+    bool valid = length > 0 && (size_t)length < sizeof folder && !mkdir(folder, 0700);
+    if (valid) {
+        directories = 1;
+        length = snprintf(folder, sizeof folder, "%s/bundle/content", review);
+        valid = length > 0 && (size_t)length < sizeof folder && !mkdir(folder, 0700);
+    }
+    if (valid) {
+        directories = 2;
+        length = snprintf(folder, sizeof folder, "%s/bundle/content/materials", review);
+        valid = length > 0 && (size_t)length < sizeof folder && !mkdir(folder, 0700);
+    }
+    if (valid) {
+        directories = 3;
+    }
+    for (int i = 0; valid && i < 6; i++) {
+        length = snprintf(source, sizeof source, "%s/.chibi/evidence/shader-000001/%s", project, files[i]);
+        valid = length > 0 && (size_t)length < sizeof source;
+        length = snprintf(destination, sizeof destination, "%s/bundle/%s", review, files[i]);
+        valid = valid && length > 0 && (size_t)length < sizeof destination;
+        if (!valid) {
+            break;
+        }
+        FILE *input = fopen(source, "rb"), *output = NULL;
+        struct stat info;
+        valid = input && !fstat(fileno(input), &info) && S_ISREG(info.st_mode) &&
+                info.st_size > 0 && info.st_size <= 1024 * 1024;
+        if (valid) {
+            output = fopen(destination, "wbx");
+            valid = output != NULL;
+            if (valid) {
+                created[count++] = xstrdup(destination);
+                unsigned char buffer[16384];
+                size_t remaining = (size_t)info.st_size;
+                while (valid && remaining) {
+                    size_t chunk = remaining < sizeof buffer ? remaining : sizeof buffer;
+                    valid = fread(buffer, 1, chunk, input) == chunk &&
+                            fwrite(buffer, 1, chunk, output) == chunk;
+                    remaining -= chunk;
+                }
+                valid = valid && fgetc(input) == EOF && !ferror(input);
+            }
+        }
+        if (input && fclose(input)) {
+            valid = false;
+        }
+        if (output && fclose(output)) {
+            valid = false;
+        }
+    }
+    for (int i = 0; i < count; i++) {
+        if (!valid) {
+            unlink(created[i]);
+        }
+        free(created[i]);
+    }
+    if (!valid) {
+        const char *suffix[] = { "bundle", "bundle/content", "bundle/content/materials" };
+        for (int i = directories - 1; i >= 0; i--) {
+            snprintf(folder, sizeof folder, "%s/%s", review, suffix[i]);
+            rmdir(folder);
+        }
+    }
+    REQUIRE(valid);
+    return true;
+}
+
+#include "material_dependencies.h"
+
+/* One finite host run exercises controls through queued SDL events. Commands
+ * opening the document and selecting panes are setup, not interaction coverage. */
 static bool material_authoring_frame(void *state)
 {
+    static char *before_cancel;
+    static int undo_count, redo_count;
+    static float scrub_x, scrub_y, toast_x, toast_y, toast_reach;
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
+    editor *e = s->scene->graph_editor;
     frames++;
     REQUIRE(frames <= MATERIAL_AUTHORING_FRAMES);
     switch (frames) {
@@ -3256,7 +3792,7 @@ static bool material_authoring_frame(void *state)
             REQUIRE(material_capture("material-form"));
             return click_labeled(s, "#new-asset-name .menu-item", "Create");
         case 9:
-            REQUIRE(material_source_says_metal());
+            REQUIRE(material_source_says_metal(.42f));
             REQUIRE(!s->new_asset.open);
             REQUIRE(!strcmp(editor_behavior_asset(s->scene->graph_editor)->name, "AcceptanceMetal"));
             studio_show_editor(s, STUDIO_EDITOR_BEHAVIOR);
@@ -3264,37 +3800,178 @@ static bool material_authoring_frame(void *state)
             s->tab = STUDIO_TAB_NODE;
             return true;
         case 11:
-            REQUIRE(s->shader_report_valid);
-            REQUIRE(element_says(s, "#graph-native .panel-head .title", "Shader contract"));
-            return click_labeled(s, "#graph-native button", "Evaluate center");
-        case 12:
-            REQUIRE(s->shader_probe_attempted && s->shader_probe_valid);
-            REQUIRE(fabsf(s->shader_probe[SHADER_SURFACE_ROUGHNESS][0] - .42f) < .00001f);
-            REQUIRE(s->shader_probe[SHADER_SURFACE_METALLIC][0] == 1);
+            REQUIRE(material_defaults(s, .42f));
+            REQUIRE(element_says(s, "#graph-native .shader-status", "Rendered preview"));
+            REQUIRE(!studio_element(s, "#graph-native .shader-stat"));
+            REQUIRE(!s->shader_probe_attempted);
+            REQUIRE(studio_element(s, "#graph-native color-field"));
             {
-                char markup[16384];
-                rml_element *panel = studio_element(s, "#graph-native");
-                REQUIRE(panel);
-                rml_element_inner_rml(panel, markup, sizeof markup);
-                REQUIRE(strstr(markup, "CPU probe"));
+                rml_element *preview = studio_element(s, "#graph-native .shader-preview");
+                REQUIRE(preview);
+                rml_vec2 size = rml_element_box_size(preview, RML_BOX_CONTENT);
+                REQUIRE(isfinite(size.x) && isfinite(size.y) && size.x > 0 && size.y > 0);
+                REQUIRE(fabsf(size.x / size.y - 1.6f) < .02f);
             }
-            return true;
-        case 13:
             REQUIRE(material_capture("material-properties"));
+            undo_count = acount(e->undo);
+            redo_count = acount(e->redo);
+            return click(s, "#graph-native number-field[aria-label='Roughness']");
+        case 12: REQUIRE(type_text("0.65")); return press_key(SDLK_RETURN);
+        case 15:
+            REQUIRE(material_defaults(s, .65f));
+            REQUIRE(acount(e->undo) == undo_count + 1 && acount(e->redo) == 0);
+            REQUIRE(material_source_says_metal(.42f));
+            before_cancel = behavior_asset_save(e->asset);
+            REQUIRE(before_cancel);
+            undo_count = acount(e->undo);
+            redo_count = acount(e->redo);
+            {
+                rml_element *field = studio_element(s, "#graph-native number-field[aria-label='Roughness']");
+                REQUIRE(field);
+                rml_vec2 at = rml_element_absolute_offset(field, RML_BOX_BORDER);
+                rml_vec2 size = rml_element_box_size(field, RML_BOX_BORDER);
+                float scale = s->prefs.ui_scale / studio_pixel_ratio(s);
+                scrub_x = (at.x + size.x * .4f) * scale;
+                scrub_y = (at.y + size.y * .5f) * scale;
+            }
+            REQUIRE(push_mouse(SDL_EVENT_MOUSE_MOTION, scrub_x, scrub_y, 0, 0));
+            return push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, scrub_x, scrub_y, 0, 0);
+        case 16:
+            return push_mouse(SDL_EVENT_MOUSE_MOTION, scrub_x + 48, scrub_y, 0, 0);
+        case 18:
+            REQUIRE(fabsf(s->shader_report.defaults[STANDARD_ROUGHNESS][0] - .65f) > .01f);
+            return press_key(SDLK_ESCAPE);
+        case 19:
+            return push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, scrub_x + 48, scrub_y, 0, 0);
+        case 20: {
+            REQUIRE(material_defaults(s, .65f));
+            char *after = behavior_asset_save(e->asset);
+            REQUIRE(after && !strcmp(before_cancel, after));
+            free(before_cancel);
+            before_cancel = NULL;
+            free(after);
+            REQUIRE(acount(e->undo) == undo_count && acount(e->redo) == redo_count);
+            REQUIRE(material_source_says_metal(.42f));
+            return press_chord(SDLK_Z, s->mac ? SDL_KMOD_GUI : SDL_KMOD_CTRL);
+        }
+        case 22:
+            REQUIRE(material_defaults(s, .42f));
+            REQUIRE(acount(e->undo) == undo_count - 1 && acount(e->redo) == redo_count + 1);
+            return press_chord(SDLK_Z, (s->mac ? SDL_KMOD_GUI : SDL_KMOD_CTRL) | SDL_KMOD_SHIFT);
+        case 24:
+            REQUIRE(material_defaults(s, .65f));
+            REQUIRE(acount(e->undo) == undo_count && acount(e->redo) == redo_count);
+            studio_command_run(s, STUDIO_COMMAND_SAVE);
+            return material_scroll(s, "#graph-native .panel-head", "Diagnostics");
+        case 25: {
+            /* A routine save notice must not silently intercept Properties
+             * input. Dismiss it with the production pointer-swipe gesture. */
+            rml_element *title = material_control(s, ".toast[data-front] .title", "Saved");
+            REQUIRE(title);
+            rml_element *toast = rml_element_parent(title);
+            while (toast && !rml_element_is_class_set(toast, "toast")) {
+                toast = rml_element_parent(toast);
+            }
+            REQUIRE(toast);
+            rml_vec2 at = rml_element_absolute_offset(title, RML_BOX_BORDER);
+            rml_vec2 size = rml_element_box_size(title, RML_BOX_BORDER);
+            REQUIRE(size.x > 0 && size.y > 0);
+            float scale = s->prefs.ui_scale / studio_pixel_ratio(s);
+            toast_x = (at.x + size.x * .5f) * scale;
+            toast_y = (at.y + size.y * .5f) * scale;
+            toast_reach = 80 * s->prefs.ui_scale;
+            REQUIRE(push_mouse(SDL_EVENT_MOUSE_MOTION, toast_x, toast_y, 0, 0));
+            return push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, toast_x, toast_y, 0, 0);
+        }
+        case 26:
+            return push_mouse(SDL_EVENT_MOUSE_MOTION, toast_x + toast_reach, toast_y, 0, 0);
+        case 27:
+            return push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, toast_x + toast_reach, toast_y, 0, 0);
+        case 28:
+            return click_labeled(s, "#graph-native .panel-head", "Diagnostics");
+        case 29:
+            REQUIRE(material_source_says_metal(.65f));
+            REQUIRE(studio_element(s, "#graph-native .shader-stat"));
+            return material_scroll(s, "#graph-native button", "Evaluate sample");
+        case 30:
+            return click_labeled(s, "#graph-native button", "Evaluate sample");
+        case 31:
+            REQUIRE(s->shader_probe_attempted && s->shader_probe_valid);
+            REQUIRE(fabsf(s->shader_probe[SHADER_SURFACE_ROUGHNESS][0] - .65f) < .00001f);
+            REQUIRE(s->shader_probe[SHADER_SURFACE_METALLIC][0] == 1);
+            REQUIRE(element_says(s, "#graph-native .shader-status", "Rendered preview"));
+            REQUIRE(material_capture("material-diagnostics"));
+            return material_scroll(s, "#graph-native button", "Export evidence");
+        case 32:
+            return click_labeled(s, "#graph-native button", "Export evidence");
+        case 34:
+            REQUIRE(material_document_history(s));
+            return material_dependency_setup(s);
+        case 35: return material_dependency_publish(s);
+        case 37: return material_dependency_sample(s, .75f);
+        case 38: return material_dependency_restore(s);
+        case 39:
+            REQUIRE(material_evidence());
+            REQUIRE(material_preserve_evidence());
+            return material_scroll(s, "#graph-native number-field", "Roughness");
+        case 41:
+            REQUIRE(material_defaults(s, .65f));
+            undo_count = acount(e->undo);
+            redo_count = acount(e->redo);
+            {
+                rml_element *field = studio_element(s, "#graph-native number-field[aria-label='Roughness']");
+                REQUIRE(field);
+                rml_element *scroll = material_scroll_parent(field);
+                REQUIRE(scroll);
+                rml_vec2 at = rml_element_absolute_offset(field, RML_BOX_BORDER);
+                rml_vec2 size = rml_element_box_size(field, RML_BOX_BORDER);
+                rml_vec2 clip = rml_element_absolute_offset(scroll, RML_BOX_CONTENT);
+                float y = at.y + size.y * .5f;
+                REQUIRE(y >= clip.y && y < clip.y + rml_element_client_height(scroll));
+                float scale = s->prefs.ui_scale / studio_pixel_ratio(s);
+                scrub_x = (at.x + size.x * .4f) * scale;
+                scrub_y = y * scale;
+            }
+            REQUIRE(push_mouse(SDL_EVENT_MOUSE_MOTION, scrub_x, scrub_y, 0, 0));
+            return push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, scrub_x, scrub_y, 0, 0);
+        case 42:
+            return push_mouse(SDL_EVENT_MOUSE_MOTION, scrub_x + 32, scrub_y, 0, 0);
+        case 44:
+            REQUIRE(e->pending_snapshot);
+            REQUIRE(fabsf(s->shader_report.defaults[STANDARD_ROUGHNESS][0] - .65f) > .01f);
+            return press_chord(SDLK_Z, s->mac ? SDL_KMOD_GUI : SDL_KMOD_CTRL);
+        case 45:
+            return push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, scrub_x + 32, scrub_y, 0, 0);
+        case 47:
+            REQUIRE(material_defaults(s, .65f));
+            REQUIRE(!e->pending_snapshot);
+            REQUIRE(acount(e->undo) == undo_count && acount(e->redo) == redo_count + 1);
+            REQUIRE(material_source_says_metal(.65f));
+            return click(s, "#graph-native number-field[aria-label='Roughness']");
+        case 48: REQUIRE(type_text("0.79")); return press_key(SDLK_RETURN);
+        case 50:
+            REQUIRE(material_defaults(s, .79f));
+            REQUIRE(!e->pending_snapshot);
+            REQUIRE(acount(e->undo) == undo_count + 1 && acount(e->redo) == 0);
+            return press_chord(SDLK_Z, s->mac ? SDL_KMOD_GUI : SDL_KMOD_CTRL);
+        case 52:
+            REQUIRE(material_defaults(s, .65f));
+            REQUIRE(acount(e->undo) == undo_count && acount(e->redo) == 1);
+            studio_command_run(s, STUDIO_COMMAND_SAVE);
             studio_command_run(s, STUDIO_COMMAND_NEW_MATERIAL);
             return true;
-        case 15:
+        case 54:
             REQUIRE(s->new_asset.open);
             REQUIRE(type_text("AcceptanceMetal"));
             return press_key(SDLK_RETURN);
-        case 17:
+        case 57:
             REQUIRE(s->new_asset.open);
             REQUIRE(strstr(s->new_asset.error, "already exists"));
-            REQUIRE(material_source_says_metal());
+            REQUIRE(material_source_says_metal(.65f));
             return press_key(SDLK_ESCAPE);
-        case 20:
+        case MATERIAL_AUTHORING_FRAMES:
             REQUIRE(!s->new_asset.open);
-            REQUIRE(material_source_says_metal());
+            REQUIRE(material_source_says_metal(.65f));
             return unchanged_source();
         default: return true;
     }
@@ -4474,7 +5151,7 @@ TEST_CASE(material_authoring)
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
     REQUIRE(callback_ok && frames == MATERIAL_AUTHORING_FRAMES);
     REQUIRE(unchanged_source());
-    printf("\nStudio material authoring accepted: frames=%d roughness=0.42 metallic=1 CPU center probe\n", frames);
+    printf("\nStudio material authoring accepted: frames=%d roughness=0.65 metallic=1 rendered preview edit/cancel/undo/redo evidence\n", frames);
     return true;
 }
 
