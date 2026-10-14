@@ -5,10 +5,15 @@ and shared UI backend code belong in the engine repository
 
 ## Rules
 
-- Code style, testing, review-before-commit and autonomy rules are the engine's:
+- Author the editor in RML, RCSS and `.chibi`. The target is a Studio project
+  with no C/C++ editor implementation. Existing native code is migration debt;
+  missing reusable capabilities belong in the engine SDK and must be callable
+  from `.chibi`. For editor features or migrations, read
+  [the authored editor target](../chibi/docs/studio-ui-authoring.md#authored-editor-target).
+- Testing, review-before-commit and autonomy rules are the engine's:
   follow `AGENTS.md` in the engine repository (`../chibi/AGENTS.md` when the two
-  are checked out side by side). Write C, never C++; `src/editor/text/zep_bridge.cpp`
-  is the one pass-through shim.
+  are checked out side by side). Repairs to existing native code follow its C
+  style; `src/editor/text/zep_bridge.cpp` is the existing pass-through shim.
 - Studio's own projects (`projects/starter`, `projects/studio`,
   `tests/acceptance/project`) are Chibi projects. They may lag the engine's
   project version: Studio upgrades an older project when it opens it, and CI
@@ -64,8 +69,9 @@ git clang-format --style=file:../chibi/.clang-format
 For UI/UX design, interaction reviews, or editor usability work, follow the
 [UX laws skill](.claude/skills/ux-laws/SKILL.md).
 
-Studio's UI is RmlUi, driven from C through `src/editor/ui/kit.h`. Its design
-is in the engine repository's `docs/prototypes/studio/DESIGN.md`. Before
+Studio's UI uses RmlUi. Its existing C kit (`src/editor/ui/kit.h`) is a reference
+for the behavior of controls during migration. Its design is in the engine
+repository's `docs/prototypes/studio/DESIGN.md`. Before
 building any UI mechanism in a panel, read the engine's
 `docs/editor-ui-references.md`. It maps each reference library to the kit
 primitive that solves the same problem:
@@ -78,9 +84,10 @@ primitive that solves the same problem:
 The behavior graph editor follows the engine's `docs/editor-graph-references.md`
 (xyflow, imgui-node-editor, Blender, Unreal, ComfyUI and others).
 
-Use the kit primitive. If it is missing, add it to the kit following that
-library's contract instead of building a one-off in the panel. Before changing
-a component, inspect and reuse comparable controls already in Studio. Before
+Reuse the authored components in `projects/studio/content/ui` and their `.chibi`
+behaviors. Add missing shared component compositions there; add native
+capabilities to the engine when authored code needs them. Before changing
+a component, inspect comparable controls already in Studio. Before
 calling it finished, compare its text baselines, icon alignment, spacing,
 grouping and interaction states with those controls in a rendered view.
 
@@ -96,7 +103,7 @@ browses compatible fields. Do not add a separate source-kind picker for actions
 the same field can handle. Group input controls by device type and reuse the
 Studio icon set.
 
-Common mismatches to catch:
+When repairing existing native kit code, also catch:
 
 - Toasts built by hand, or a modal used for a notice: use `kit_toast` (Sonner).
 - Hand-written open, close, focus or outside-press logic: use kit popups, menus and the command palette (Base UI).
