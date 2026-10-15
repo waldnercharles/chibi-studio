@@ -18,9 +18,6 @@ void scene_retention_free(scene_retained_component *components);
 av_value *scene_retention_save(const scene_retained_component *components);
 /* Atomic replacement. NULL value means no retained components. */
 int scene_retention_load(av_value *value, scene_retained_component **components);
-bool scene_retention_validate(
-    const scene_retained_component *components,
-    const game_prototype_registry *registry
-);
+bool scene_retention_validate(const scene_retained_component *components, const prototype_registry *registry);
 
 #endif

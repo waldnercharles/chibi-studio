@@ -7,12 +7,13 @@
     <use ui="MenuCommand" data-alias-command="commands.resetCamera"/>
     <use ui="MenuCommand" data-alias-command="commands.viewThroughCamera"/>
     <use ui="MenuSeparator"/>
-    <use ui="MenuGroup">Show</use>
-    <use ui="MenuCommand" data-alias-command="commands.toggleGrid"/>
-    <use ui="MenuCommand" data-alias-command="commands.showGeneratedWorld"/>
-    <use ui="MenuCommand" data-alias-command="commands.showLighting"/>
-    <use ui="MenuCommand" data-alias-command="commands.showFog"/>
-    <use ui="MenuCommand" data-alias-command="commands.showCameraFrames"/>
+    <use ui="Submenu" data-alias-item="scene.show">
+      <use ui="MenuCommand" data-alias-command="commands.toggleGrid"/>
+      <use ui="MenuCommand" data-alias-command="commands.showGeneratedWorld"/>
+      <use ui="MenuCommand" data-alias-command="commands.showLighting"/>
+      <use ui="MenuCommand" data-alias-command="commands.showFog"/>
+      <use ui="MenuCommand" data-alias-command="commands.showCameraFrames"/>
+    </use>
   </use>
   <div class="tool-group">
     <button class="btn icon-only" data-attr-data-state="commands.selectTool.checked ? 'on' : ''" data-attr-data-tip="commands.selectTool.menu" data-attr-data-kbd="commands.selectTool.shortcut" data-event-click="emit('studio.selectTool')"><span class="icon">{{ commands.selectTool.icon }}</span></button>

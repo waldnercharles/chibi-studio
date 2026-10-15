@@ -24,9 +24,9 @@ static const struct
 } FRAME_COLORS[] = {
     { "Default", 0 },          { "Red", 0xe5534bffu },
     { "Orange", 0xe0823dffu }, { "Yellow", 0xd4b13cffu },
-    { "Green", 0x4fae5cffu },  { "Teal", 0x3aa6a0ffu },
-    { "Blue", 0x4a8fe0ffu },   { "Purple", 0x9a6fe0ffu },
-    { "Pink", 0xd4679fffu },
+    { "Pink", 0xd4679fffu },   { "Green", 0x4fae5cffu },
+    { "Teal", 0x3aa6a0ffu },   { "Blue", 0x4a8fe0ffu },
+    { "Purple", 0x9a6fe0ffu },
 };
 
 /* Edge and corner grips, keyed h<edges> for the hit test. */
@@ -148,6 +148,13 @@ void sg_comment_menu(studio *s, sg_menu *m, graph_comment_box *box)
     }
     sg_submenu_begin(m, "color", "Color", KIT_ICON_MATERIAL);
     for (int i = 0; i < (int)(sizeof FRAME_COLORS / sizeof *FRAME_COLORS); i++) {
+        if (i == 1) {
+            sg_submenu_begin(m, "warm", "Warm", KIT_ICON_MATERIAL);
+        }
+        if (i == 5) {
+            sg_submenu_end(m);
+            sg_submenu_begin(m, "cool", "Cool", KIT_ICON_MATERIAL);
+        }
         char key[16];
         snprintf(key, sizeof key, "c%d", i);
         uint32_t color = FRAME_COLORS[i].color;
@@ -160,6 +167,7 @@ void sg_comment_menu(studio *s, sg_menu *m, graph_comment_box *box)
             return;
         }
     }
+    sg_submenu_end(m);
     sg_submenu_end(m);
     sg_menu_separator(m);
     if (sg_menu_item(m, "delete", "Delete Comment", KIT_ICON_TRASH, NULL, readonly)) {

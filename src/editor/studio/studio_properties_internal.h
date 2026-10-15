@@ -72,16 +72,16 @@ bool properties_row_parse(const char *id, properties_row *out);
 const ecs_component_desc *properties_component(const app_scene_authoring *scene, ecs_component_id id);
 /* The prototype component `desc` of the actor's prototype, or `added`, which
  * has no data, when its prototype lacks one. */
-const game_prototype_component *properties_base(
+const prototype_component *properties_base(
     const scene_actor *actor,
     const ecs_component_desc *desc,
-    game_prototype_component *added
+    prototype_component *added
 );
 /* Whether the object's field differs from its prototype's. */
 bool properties_overridden(
     const app_scene_authoring *scene,
     const scene_actor *actor,
-    const game_prototype_component *component,
+    const prototype_component *component,
     int field
 );
 /* Several objects are selected and `actor` is the active one. */
@@ -110,7 +110,7 @@ reference_asset_kind properties_named(
 /* The field's label; false when the search leaves it out. */
 bool properties_label(
     studio *s,
-    const game_prototype_component *component,
+    const prototype_component *component,
     const type_field *field,
     char *label,
     size_t size

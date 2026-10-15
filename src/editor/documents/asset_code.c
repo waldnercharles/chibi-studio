@@ -41,7 +41,7 @@ struct asset_code
     int document;
     authoring_source_presentation *presentation, *valid_presentation,
         *execution_presentation;
-    game_preview_world *world; /* Bound scene; semantic generations are retained independently. */
+    preview_world *world; /* Bound scene; semantic generations are retained independently. */
     behavior_asset *candidate, *shared; /* Native KDL graph documents only. */
     const behavior_asset *shared_asset;
     unsigned shared_revision;
@@ -61,7 +61,7 @@ struct asset_code
     int step;
     bool completing;
     char error[256], preparation_error[256];
-    const game_prototype_registry *registry;
+    const prototype_registry *registry;
     uintptr_t state_identity;
     unsigned long long overlay_revision;
 };
@@ -355,13 +355,13 @@ static void check_asset(asset_code *c)
     char error[256] = "";
     bool ok = true;
     if (strstr(c->path, "/scenes/")) {
-        game_scene_document *scene = game_scene_document_load_value(root, error, sizeof error);
+        scene_document *scene = scene_document_load_value(root, error, sizeof error);
         ok = scene != NULL;
-        game_scene_document_free(scene);
+        scene_document_free(scene);
     } else if (strstr(c->path, "/prototypes/") && c->registry) {
-        game_prototype *prototype = game_prototype_load_value(root, c->registry, error, sizeof error);
+        prototype *prototype = prototype_load_value(root, c->registry, error, sizeof error);
         ok = prototype != NULL;
-        game_prototype_free(prototype);
+        prototype_free(prototype);
     } else if (
         av_obj_get(root, "graphs") || strstr(c->path, "/behaviors/") ||
         strstr(c->path, "/libraries/") || strstr(c->path, "/events/") ||
@@ -692,8 +692,8 @@ static void understand_with_metadata(asset_code *c, const char *text, const char
         c->syntax = script_parse(c->text);
         if (c->world) {
             char error[256] = "";
-            int status = game_preview_source_edit(c->world, c->path, c->text, error, sizeof error);
-            const authoring_sources *working = game_preview_sources_working(c->world);
+            int status = preview_source_edit(c->world, c->path, c->text, error, sizeof error);
+            const authoring_sources *working = preview_sources_working(c->world);
             if (working) {
                 adopt_working(c, working);
             }
@@ -792,7 +792,7 @@ asset_code *asset_code_open(const char *path, char *error, size_t size)
     apush(c->history, snapshot_create(c, text));
     return c;
 }
-asset_code *asset_code_restore(const av_value *state, const game_prototype_registry *registry)
+asset_code *asset_code_restore(const av_value *state, const prototype_registry *registry)
 {
     const char *path = av_get_str(av_obj_get(state, "path")),
                *text = av_get_str(av_obj_get(state, "text"));
@@ -902,7 +902,7 @@ void asset_code_free(asset_code *c)
     free(c->hover);
     free(c);
 }
-void asset_code_set_registry(asset_code *c, const game_prototype_registry *registry)
+void asset_code_set_registry(asset_code *c, const prototype_registry *registry)
 {
     if (c->registry == registry) {
         return;
@@ -912,17 +912,17 @@ void asset_code_set_registry(asset_code *c, const game_prototype_registry *regis
         understand(c, c->text);
     }
 }
-void asset_code_set_source_world(asset_code *c, game_preview_world *world, const char *content_root)
+void asset_code_set_source_world(asset_code *c, preview_world *world, const char *content_root)
 {
     bool clean = !asset_code_dirty(c);
     bool same = c->world == world &&
                 !strcmp(c->content_root ? c->content_root : "", content_root ? content_root : "");
     if (same && (!world || !c->native_view ||
-                 game_preview_sources_working(world) == c->working)) {
+                 preview_sources_working(world) == c->working)) {
         return;
     }
     if (same) {
-        const authoring_sources *fresh = game_preview_sources_working(world);
+        const authoring_sources *fresh = preview_sources_working(world);
         const authoring_source *source = find_source(fresh, c->path);
         if (!source || strcmp(source->syntax->text, c->text)) {
             return;
@@ -954,15 +954,15 @@ void asset_code_set_source_world(asset_code *c, game_preview_world *world, const
         return;
     }
     char error[256];
-    if (!game_preview_sources_working(world) && content_root) {
-        game_preview_sources_prepare(world, content_root, behavior_default_backend(), error, sizeof error);
+    if (!preview_sources_working(world) && content_root) {
+        preview_sources_prepare(world, content_root, behavior_default_backend(), error, sizeof error);
     }
     if (c->valid && !c->last_valid && strcmp(c->valid, c->text)) {
-        const authoring_sources *applied = game_preview_sources_applied(world);
+        const authoring_sources *applied = preview_sources_applied(world);
         const authoring_source *source = find_source(applied, c->path);
         if (!source || strcmp(source->syntax->text, c->valid)) {
-            game_preview_source_edit(world, c->path, c->valid, error, sizeof error);
-            applied = game_preview_sources_working(world);
+            preview_source_edit(world, c->path, c->valid, error, sizeof error);
+            applied = preview_sources_working(world);
             source = find_source(applied, c->path);
         }
         if (source && source->valid && !strcmp(source->syntax->text, c->valid)) {
@@ -1036,6 +1036,12 @@ const authoring_source *asset_code_graph_source(const asset_code *c, const edito
 }
 bool asset_code_sync_graph(asset_code *c, editor *e, bool live)
 {
+    /* Preparing source replaces the world's working presentations, including
+       library assets borrowed by the palette. Refresh even for invalid drafts
+       or unchanged graph state before the editor can read those assets. */
+    if (c->world) {
+        editor_refresh_asset_catalog(e, c->world);
+    }
     if (!c->native_view && !c->shared && !c->source_pending && !asset_code_dirty(c)) {
         c->shared = behavior_asset_clone(editor_behavior_asset(e));
         c->shared_asset = editor_behavior_asset(e);

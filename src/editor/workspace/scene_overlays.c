@@ -1,12 +1,13 @@
 /* What the Scene view draws over an edited scene beside its selection:
- * GameCamera frames (Blender's camera frames, Unreal's camera frustums), the
- * selected GameFog grid's extent, and View Through Camera (Blender's
+ * Camera frames (Blender's camera frames, Unreal's camera frustums), the
+ * selected Fog grid's extent, and View Through Camera (Blender's
  * Numpad 0), which frames the view on a camera's span and dims the rest.
  * It also finds the objects nothing draws, which the host marks with an icon
  * (Godot's and Unity's gizmo icons). */
 #include "editor/workspace/scene_internal.h"
 #include "editor/workspace/viewport.h"
 #include "platform/cute.h"
+#include "runtime/camera.h"
 #include "runtime/component_catalog.h"
 #include "runtime/transform_propagation.h"
 
@@ -33,22 +34,9 @@ static CF_Color packed(unsigned color)
 }
 
 /* The camera's span around its object, as its game frames it. */
-static bool camera_view(const ecs_world *world, ecs_entity entity, engine_viewport_view *out)
+static bool object_camera_view(ecs_world *world, ecs_entity entity, engine_viewport_view *out)
 {
-    const GameCamera *camera = GAME_GameCamera_get_const(world, entity);
-    if (!camera || !GAME_GameTransform_get_const(world, entity)) {
-        return false;
-    }
-    CF_V2 position = game_transform_world_2d(world, entity).position;
-    *out = (engine_viewport_view){ position.x + camera->offset.x,
-                                   -position.y - camera->offset.y,
-                                   camera->width,
-                                   camera->height,
-                                   camera->focal_distance };
-    return isfinite(out->center_x) && isfinite(out->center_y) &&
-           isfinite(out->width) && isfinite(out->height) && out->width > 0 &&
-           out->height > 0 && isfinite(out->focal_distance) &&
-           (out->focal_distance == 0 || out->focal_distance > 1);
+    return camera_entity_view(world, NULL, entity, out);
 }
 
 static CF_Aabb view_box(const engine_viewport_view *view)
@@ -63,8 +51,7 @@ static CF_Aabb view_box(const engine_viewport_view *view)
 static int active_camera(const app_scene_authoring *scene)
 {
     for (int i = 0; i < acount(scene->actors); i++) {
-        const GameCamera
-            *camera = GAME_GameCamera_get_const(scene->world, scene->actors[i].entity);
+        const Camera *camera = Camera_get_const(scene->world, scene->actors[i].entity);
         if (camera && !camera->disabled) {
             return i;
         }
@@ -76,7 +63,7 @@ static int active_camera(const app_scene_authoring *scene)
 static ecs_entity viewed_camera(app_scene_authoring *scene)
 {
     scene_actor *selected = selected_actor(scene);
-    if (selected && GAME_GameCamera_has(scene->world, selected->entity)) {
+    if (selected && Camera_has(scene->world, selected->entity)) {
         return selected->entity;
     }
     int active = active_camera(scene);
@@ -86,7 +73,7 @@ static ecs_entity viewed_camera(app_scene_authoring *scene)
 bool app_scene_authoring_camera_framing(app_scene_authoring *scene, engine_viewport_view *view)
 {
     ecs_entity entity = viewed_camera(scene);
-    return entity.slot && camera_view(scene->world, entity, view);
+    return entity.slot && object_camera_view(scene->world, entity, view);
 }
 
 bool app_scene_authoring_viewing_through_camera(const app_scene_authoring *scene)
@@ -119,11 +106,22 @@ int app_scene_authoring_view_through_camera(app_scene_authoring *scene, bool on)
     return 0;
 }
 
+static bool same_vector(CF_V3 a, CF_V3 b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
 static bool same_view(const engine_viewport_view *a, const engine_viewport_view *b)
 {
     return a->center_x == b->center_x && a->center_y == b->center_y &&
            a->width == b->width && a->height == b->height &&
-           a->focal_distance == b->focal_distance;
+           a->focal_distance == b->focal_distance && a->yaw == b->yaw &&
+           a->pitch == b->pitch && a->target_elevation == b->target_elevation &&
+           a->roll == b->roll && same_vector(a->lens.eye, b->lens.eye) &&
+           same_vector(a->lens.forward, b->lens.forward) &&
+           same_vector(a->lens.up, b->lens.up) && a->lens.fov == b->lens.fov &&
+           a->lens.near_clip == b->lens.near_clip &&
+           a->lens.far_clip == b->lens.far_clip;
 }
 
 void scene_camera_view_follow(app_scene_authoring *scene, engine_viewport *viewport, bool editing)
@@ -137,7 +135,7 @@ void scene_camera_view_follow(app_scene_authoring *scene, engine_viewport *viewp
     /* Moving the view, playing or losing the camera leaves the view as it is. */
     if (!editing || !same_view(&current, &through->shown) ||
         !ecs_entity_is_alive(scene->world, through->entity) ||
-        !camera_view(scene->world, through->entity, &view)) {
+        !object_camera_view(scene->world, through->entity, &view)) {
         through->active = false;
         return;
     }
@@ -207,7 +205,7 @@ static void draw_cameras(app_scene_authoring *scene, const engine_viewport_camer
     for (int i = 0; i < acount(scene->actors); i++) {
         ecs_entity entity = scene->actors[i].entity;
         engine_viewport_view frame;
-        if (!camera_view(scene->world, entity, &frame)) {
+        if (!object_camera_view(scene->world, entity, &frame)) {
             continue;
         }
         CF_Aabb box = view_box(&frame);
@@ -216,7 +214,7 @@ static void draw_cameras(app_scene_authoring *scene, const engine_viewport_camer
             draw_frame(box, CAMERA_COLOR, SELECTED_STROKE * pixel, false, pixel);
             continue;
         }
-        bool disabled = GAME_GameCamera_get_const(scene->world, entity)->disabled;
+        bool disabled = Camera_get_const(scene->world, entity)->disabled;
         unsigned color = disabled    ? CAMERA_DISABLED_COLOR
                        : i == active ? CAMERA_COLOR
                                      : CAMERA_INACTIVE_COLOR;
@@ -228,9 +226,7 @@ static void draw_cameras(app_scene_authoring *scene, const engine_viewport_camer
 static void draw_fog_extent(app_scene_authoring *scene, float pixel)
 {
     scene_actor *selected = selected_actor(scene);
-    const GameFog *fog = selected
-                           ? GAME_GameFog_get_const(scene->world, selected->entity)
-                           : NULL;
+    const Fog *fog = selected ? Fog_get_const(scene->world, selected->entity) : NULL;
     if (!fog || fog->columns <= 0 || fog->rows <= 0 || !(fog->cell_size > 0)) {
         return;
     }
@@ -251,7 +247,7 @@ void scene_overlays_draw(app_scene_authoring *scene)
     float pixel = scene->selection_scale > 0 ? scene->selection_scale : 1;
     engine_viewport_view viewed;
     if (scene->camera_view.active &&
-        camera_view(scene->world, scene->camera_view.entity, &viewed)) {
+        object_camera_view(scene->world, scene->camera_view.entity, &viewed)) {
         dim_outside(view_box(&viewed), &view, VIEWED_DIM);
     }
     if (scene->view_options.cameras) {
@@ -273,7 +269,7 @@ int app_scene_authoring_camera_labels(app_scene_authoring *scene, app_scene_came
     int active = active_camera(scene), count = 0;
     for (int i = 0; i < acount(scene->actors) && count < max; i++) {
         engine_viewport_view frame;
-        if (!camera_view(scene->world, scene->actors[i].entity, &frame)) {
+        if (!object_camera_view(scene->world, scene->actors[i].entity, &frame)) {
             continue;
         }
         CF_Aabb box = view_box(&frame);
@@ -291,8 +287,7 @@ int app_scene_authoring_camera_labels(app_scene_authoring *scene, app_scene_came
             .x = fmaxf(x, 0),
             .y = fmaxf(y, 0),
             .active = i == active,
-            .disabled = GAME_GameCamera_get_const(scene->world, scene->actors[i].entity)
-                            ->disabled,
+            .disabled = Camera_get_const(scene->world, scene->actors[i].entity)->disabled,
             .selected = selected == &scene->actors[i],
         };
     }
@@ -316,12 +311,12 @@ int app_scene_authoring_markers(app_scene_authoring *scene, app_scene_marker *ma
     for (int i = 0; i < acount(scene->actors) && count < max; i++) {
         ecs_entity entity = scene->actors[i].entity;
         unsigned flags = app_scene_authoring_actor_view(scene, i);
-        if (!GAME_GameTransform_has(scene->world, entity) ||
+        if (!Transform_has(scene->world, entity) ||
             scene_object_drawn(scene->world, entity) ||
             (flags & APP_SCENE_VIEW_HIDDEN)) {
             continue;
         }
-        CF_V2 at = game_transform_world_2d(scene->world, entity).position;
+        CF_V2 at = transform_world_2d(scene->world, entity).position;
         float x = (at.x - left) / view.span_width;
         float y = (top + at.y) / view.span_height;
         if (!(x >= 0 && x < 1 && y >= 0 && y < 1)) {

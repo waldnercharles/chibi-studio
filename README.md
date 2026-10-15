@@ -75,7 +75,7 @@ python3 tools/serve_web.py --directory /absolute/path/to/studio-web
 
 The local server supplies COOP/COEP isolation headers and opens `chibi-studio.html`
 at its root URL. The browser bundle preloads SDK shaders,
-Studio's UI/project and an empty starter project. Browser projects and thumbnail
+Studio's UI/project and a 3D starter with a cube, camera and light. Browser projects and thumbnail
 caches persist through IndexedDB; import/export and collaboration bootstrap are
 owned here. `CHIBI_STUDIO_WEB_PROJECTS` accepts explicit extra sample directories,
 each containing `project.kdl` and `content`. Games remain separate repositories.

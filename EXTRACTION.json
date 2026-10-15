@@ -75,10 +75,10 @@
       "source_path": "cmake/patches/zep-wrapped-line-numbers.patch"
     },
     "cmake/zep_dependencies.cmake": {
+      "consumer_sha256": "886951581b6d735199b209ca49638467c0849ead6e58ec4d109e3f1a6250d3c8",
       "current_source_sha256": "2112944826b9cc4d3b46d2f3a9d8b4d63f1bc7817e3079c17cbf0b55b00359c3",
       "sha256": "2112944826b9cc4d3b46d2f3a9d8b4d63f1bc7817e3079c17cbf0b55b00359c3",
-      "source_path": "cmake/zep_dependencies.cmake",
-      "consumer_sha256": "886951581b6d735199b209ca49638467c0849ead6e58ec4d109e3f1a6250d3c8"
+      "source_path": "cmake/zep_dependencies.cmake"
     },
     "include/chibi/application.h": {
       "current_source_sha256": "e1a89898f27f81623f1d6b5935ae64db6f7b68842961e774c74bc0cc3e1fa5e7",
@@ -91,6 +91,7 @@
       "source_path": "projects/studio/content/behaviors/Dismiss.chibi"
     },
     "projects/studio/content/behaviors/Dismiss.chibi.meta": {
+      "consumer_sha256": "7f44e2441bd2cdde68af155dfcde3b09dba928cf5ae3d728bbe5a948d2e22e6c",
       "current_source_sha256": "fff42acc8bcbed8bed77acdddb9104d6c121fa46ed42d4a4269fd28c4adb6664",
       "sha256": "fff42acc8bcbed8bed77acdddb9104d6c121fa46ed42d4a4269fd28c4adb6664",
       "source_path": "projects/studio/content/behaviors/Dismiss.chibi.meta"
@@ -126,10 +127,10 @@
       "source_path": "projects/studio/content/behaviors/OutlinerHeaderInput.chibi.meta"
     },
     "projects/studio/content/behaviors/OutlinerInput.chibi": {
+      "consumer_sha256": "0bfee608f0ed2ddd11c11ea1608b55e0c164c0f3c1ba48f59dc997c10b387c46",
       "current_source_sha256": "f26b116058fb2d4f88893e206fd9212d0726d2f11a444116c594706c984111bc",
       "sha256": "f26b116058fb2d4f88893e206fd9212d0726d2f11a444116c594706c984111bc",
-      "source_path": "projects/studio/content/behaviors/OutlinerInput.chibi",
-      "consumer_sha256": "0bfee608f0ed2ddd11c11ea1608b55e0c164c0f3c1ba48f59dc997c10b387c46"
+      "source_path": "projects/studio/content/behaviors/OutlinerInput.chibi"
     },
     "projects/studio/content/behaviors/OutlinerInput.chibi.meta": {
       "current_source_sha256": "c97c04aeab2e56cebe8713115c90b36eaf52a71c695a8dea689d5b04d86f88e4",
@@ -157,10 +158,10 @@
       "source_path": "projects/studio/content/behaviors/OutlinerRename.chibi.meta"
     },
     "projects/studio/content/behaviors/OutlinerRows.chibi": {
+      "consumer_sha256": "662153302b4add30584c36e47151b72dc2c3d147844842ab49d1adc1f774b4b2",
       "current_source_sha256": "301c0d6ecd3846c145ae3472cf825fff08843921e592571541a9b93d2e776131",
       "sha256": "301c0d6ecd3846c145ae3472cf825fff08843921e592571541a9b93d2e776131",
-      "source_path": "projects/studio/content/behaviors/OutlinerRows.chibi",
-      "consumer_sha256": "662153302b4add30584c36e47151b72dc2c3d147844842ab49d1adc1f774b4b2"
+      "source_path": "projects/studio/content/behaviors/OutlinerRows.chibi"
     },
     "projects/studio/content/behaviors/OutlinerRows.chibi.meta": {
       "current_source_sha256": "1d13edeaa1a47e8689df12e3de3bbe9a927ca597bb298ebc3867e66892f22b79",
@@ -268,220 +269,262 @@
       "source_path": "projects/studio/content/events/ShowRows.kdl"
     },
     "projects/studio/content/prototypes/AreaHeader.kdl": {
+      "consumer_sha256": "04d2be78720e2d4f09caa20ba1b91a363d072faf4a4312f868c1487c03966003",
       "current_source_sha256": "23f2aae9c9540b6e9562db221e21e314c44c082617f20986a89a743ee0e1a822",
       "sha256": "23f2aae9c9540b6e9562db221e21e314c44c082617f20986a89a743ee0e1a822",
       "source_path": "projects/studio/content/prototypes/AreaHeader.kdl"
     },
     "projects/studio/content/prototypes/Assets.kdl": {
+      "consumer_sha256": "545d8076ef72d1ef705c8c24cb8374a44058df6b1c2274230ee3c009cc955df0",
       "current_source_sha256": "7a003f61536541836dca9c8b80bfa37b9ce68657a85303e8562cbdc545ec6643",
       "sha256": "7a003f61536541836dca9c8b80bfa37b9ce68657a85303e8562cbdc545ec6643",
       "source_path": "projects/studio/content/prototypes/Assets.kdl"
     },
     "projects/studio/content/prototypes/AssetsHeader.kdl": {
+      "consumer_sha256": "6907d0ef1abeb6310c7752743babd207fb2df5b8b0b9a797d1ca4c30846a21a7",
       "current_source_sha256": "ee343662f61919878c96ef3321c2b1a9575ff7269e070cd7c910d60858cd7ce4",
       "sha256": "ee343662f61919878c96ef3321c2b1a9575ff7269e070cd7c910d60858cd7ce4",
       "source_path": "projects/studio/content/prototypes/AssetsHeader.kdl"
     },
     "projects/studio/content/prototypes/BehaviorHeader.kdl": {
+      "consumer_sha256": "9147ae15e6aabf7a7da3c6a7da8f93558db9ab9877efc7ab261026aa6cb6110c",
       "current_source_sha256": "54c1b4286ccdc8dfe0bc1cc2999c39767c081d28248de1863897e4065cfa680a",
       "sha256": "54c1b4286ccdc8dfe0bc1cc2999c39767c081d28248de1863897e4065cfa680a",
       "source_path": "projects/studio/content/prototypes/BehaviorHeader.kdl"
     },
     "projects/studio/content/prototypes/Canvas.kdl": {
+      "consumer_sha256": "18c3b47870a1ad457028e9e033940126c4d6a66068e2e2dbf7b31b5ca4646ea3",
       "current_source_sha256": "8a39e5d937e3742b11af68c3c36a01f6ab61b2c930daf3c423cf44e141118457",
       "sha256": "8a39e5d937e3742b11af68c3c36a01f6ab61b2c930daf3c423cf44e141118457",
       "source_path": "projects/studio/content/prototypes/Canvas.kdl"
     },
     "projects/studio/content/prototypes/CodeFind.kdl": {
+      "consumer_sha256": "80f16607335e2071c30e39561bcd46c02832acf12bb652445d8059c38e287336",
       "current_source_sha256": "c21378c37bc6da04561d866bb189a2fd9a117fecedf46ddedf0f2a3223916a9e",
       "sha256": "c21378c37bc6da04561d866bb189a2fd9a117fecedf46ddedf0f2a3223916a9e",
       "source_path": "projects/studio/content/prototypes/CodeFind.kdl"
     },
     "projects/studio/content/prototypes/CodeHeader.kdl": {
+      "consumer_sha256": "10f54876199b880e3f46cfa388d418d6beaa234c5904ac388461bb5a4c8157ac",
       "current_source_sha256": "afe19cda8768b16d7f34685ab0d68321f8a26e7054922714f6a6735734b891ad",
       "sha256": "afe19cda8768b16d7f34685ab0d68321f8a26e7054922714f6a6735734b891ad",
       "source_path": "projects/studio/content/prototypes/CodeHeader.kdl"
     },
     "projects/studio/content/prototypes/Collaboration.kdl": {
+      "consumer_sha256": "2bdb1363fb2199bbc22f7e9e2dac180bdef3a615699dd84b57d539831bfb4855",
       "current_source_sha256": "3fad5bc50d284b138128f9cbcb7406340956cb59bd83f5afbe416392b02e7695",
       "sha256": "3fad5bc50d284b138128f9cbcb7406340956cb59bd83f5afbe416392b02e7695",
       "source_path": "projects/studio/content/prototypes/Collaboration.kdl"
     },
     "projects/studio/content/prototypes/Data.kdl": {
+      "consumer_sha256": "5dc07207e6d16abd3c20879f77bdd205521f1268dc265eecd04b8ab990bdd6e8",
       "current_source_sha256": "975229916a652c72a2b0d3894fd1b9f65cd513c4455c0eadc4e458552be5efc2",
       "sha256": "975229916a652c72a2b0d3894fd1b9f65cd513c4455c0eadc4e458552be5efc2",
       "source_path": "projects/studio/content/prototypes/Data.kdl"
     },
     "projects/studio/content/prototypes/Details.kdl": {
+      "consumer_sha256": "6ad69175e6fd2e3060038a5dee7f4d4892d214dd94de9aa0beb5f7341f5be440",
       "current_source_sha256": "fcfb3ebe25c38b8c87596e2bf5175c63a698d092efbb418f301f9c4d94086d98",
       "sha256": "fcfb3ebe25c38b8c87596e2bf5175c63a698d092efbb418f301f9c4d94086d98",
       "source_path": "projects/studio/content/prototypes/Details.kdl"
     },
     "projects/studio/content/prototypes/DetailsHeader.kdl": {
+      "consumer_sha256": "32b5b2435ec58ac1b3cbc31f26dd4940c1aa2ffa0a7ca616ee516df39fd2ab43",
       "current_source_sha256": "d07ba24fc65de7383ffa44a7bee5ddb5cb4769379f2f5d2cbc28a6b24d09081f",
       "sha256": "d07ba24fc65de7383ffa44a7bee5ddb5cb4769379f2f5d2cbc28a6b24d09081f",
       "source_path": "projects/studio/content/prototypes/DetailsHeader.kdl"
     },
     "projects/studio/content/prototypes/GraphFind.kdl": {
+      "consumer_sha256": "19adfa3e29a66ba319593ab9e62e0b9e06d11f2c79a9999e8173c4fadab64414",
       "current_source_sha256": "82f419ef05e133206c018f04d67d71ca42c783ecf2c0a40c3ea733777816a08d",
       "sha256": "82f419ef05e133206c018f04d67d71ca42c783ecf2c0a40c3ea733777816a08d",
       "source_path": "projects/studio/content/prototypes/GraphFind.kdl"
     },
     "projects/studio/content/prototypes/GraphMenu.kdl": {
+      "consumer_sha256": "165da3850232880289c1ffe6ee1b191340ec004f4fe16b428bbd6dc75c907eca",
       "current_source_sha256": "5fe8911c952a8ce47c21d97b083a3322512fc15f59afe26b477f9dc351d3cd54",
       "sha256": "5fe8911c952a8ce47c21d97b083a3322512fc15f59afe26b477f9dc351d3cd54",
       "source_path": "projects/studio/content/prototypes/GraphMenu.kdl"
     },
     "projects/studio/content/prototypes/Hierarchy.kdl": {
+      "consumer_sha256": "5f462b0c2dc02e5818f7d5a6f29fb4a0e232638ed323089765bbef062be92dff",
       "current_source_sha256": "9f422050d10231fd4436714004ec6e66a70de88876befb9818b75061616dc5cf",
       "sha256": "9f422050d10231fd4436714004ec6e66a70de88876befb9818b75061616dc5cf",
       "source_path": "projects/studio/content/prototypes/Hierarchy.kdl"
     },
     "projects/studio/content/prototypes/HierarchyHeader.kdl": {
+      "consumer_sha256": "4edd32f7ae5a465e51e309fe20bc31842b0ee3b41785b5f1734b5c0eb2e98d47",
       "current_source_sha256": "d4d64e5fde867c67a2c6f09a962b5803c1b50f0bc320a5b50a010e8f65f0cde0",
       "sha256": "d4d64e5fde867c67a2c6f09a962b5803c1b50f0bc320a5b50a010e8f65f0cde0",
       "source_path": "projects/studio/content/prototypes/HierarchyHeader.kdl"
     },
     "projects/studio/content/prototypes/Inspector.kdl": {
+      "consumer_sha256": "e9b25069bbbb3462f6966f4d06de05efbb1db4e83120865a64d73695dc92701f",
       "current_source_sha256": "4208680885c6dad1f0d18ad3a656b69894126e85e914565849a244f58e737eb7",
       "sha256": "4208680885c6dad1f0d18ad3a656b69894126e85e914565849a244f58e737eb7",
       "source_path": "projects/studio/content/prototypes/Inspector.kdl"
     },
     "projects/studio/content/prototypes/Library.kdl": {
+      "consumer_sha256": "6883d9e92f87cbef6e06796afc7762963e23734c9792462ba78fe56ab8754ea0",
       "current_source_sha256": "ea9808355e31db20b249fe190ef4d9151585557ddc10b8937ff6713de585e447",
       "sha256": "ea9808355e31db20b249fe190ef4d9151585557ddc10b8937ff6713de585e447",
       "source_path": "projects/studio/content/prototypes/Library.kdl"
     },
     "projects/studio/content/prototypes/LibraryHeader.kdl": {
+      "consumer_sha256": "c54fd7f5bf07c69983006b59f57f3d6702088dbce4392203f01b23f7ebbabb81",
       "current_source_sha256": "f0ff9e7be8d32ada53311c5fb3b5cd566c80561c63b940fe053e522a1c8375c0",
       "sha256": "f0ff9e7be8d32ada53311c5fb3b5cd566c80561c63b940fe053e522a1c8375c0",
       "source_path": "projects/studio/content/prototypes/LibraryHeader.kdl"
     },
     "projects/studio/content/prototypes/Members.kdl": {
+      "consumer_sha256": "d2556b0bc029996d9e14b6f91699cb3aa3544aaab205570b02a7957b792ed4ec",
       "current_source_sha256": "de07a79bd6307f3068eace6428ed79c2f5804da2616a21351db4233efa70e369",
       "sha256": "de07a79bd6307f3068eace6428ed79c2f5804da2616a21351db4233efa70e369",
       "source_path": "projects/studio/content/prototypes/Members.kdl"
     },
     "projects/studio/content/prototypes/MembersHeader.kdl": {
+      "consumer_sha256": "d8201bc9fc8620c669fce882c76e7bce11eaa375a579f8e45f860ff802864e09",
       "current_source_sha256": "f273632ac07c72ebe23a8a20c82cfac1a1b62a33451489448fabf09fb8491a32",
       "sha256": "f273632ac07c72ebe23a8a20c82cfac1a1b62a33451489448fabf09fb8491a32",
       "source_path": "projects/studio/content/prototypes/MembersHeader.kdl"
     },
     "projects/studio/content/prototypes/NewAsset.kdl": {
+      "consumer_sha256": "df1e2c0fa7b15946b68f3851a9767f48ac30dbbdc2f958695c678b0fa53e34dc",
       "current_source_sha256": "2513c5d2f1a1d175578d6b3020af37ed9c857a41512fa1dd21c0be780b63b252",
       "sha256": "2513c5d2f1a1d175578d6b3020af37ed9c857a41512fa1dd21c0be780b63b252",
       "source_path": "projects/studio/content/prototypes/NewAsset.kdl"
     },
     "projects/studio/content/prototypes/NewProject.kdl": {
+      "consumer_sha256": "c3de9555b116dc551ae67f2a7e63be9109354fbdcc1713bf542d5e53546cdb96",
       "current_source_sha256": "822c32faccb8fb5223b9a4802f899a277b8cf183ec3965b68c8af79ea2768a08",
       "sha256": "822c32faccb8fb5223b9a4802f899a277b8cf183ec3965b68c8af79ea2768a08",
       "source_path": "projects/studio/content/prototypes/NewProject.kdl"
     },
     "projects/studio/content/prototypes/Outliner.kdl": {
+      "consumer_sha256": "db9bf8c13e2bfa65ef6d1bb5ed55f280d614abdd346cd5f2870c523af64938c1",
       "current_source_sha256": "837314a41cfdbd8852d2fe0e7497cdfd3d5082040626aad273da7c4a8cfd971c",
       "sha256": "837314a41cfdbd8852d2fe0e7497cdfd3d5082040626aad273da7c4a8cfd971c",
       "source_path": "projects/studio/content/prototypes/Outliner.kdl"
     },
     "projects/studio/content/prototypes/OutlinerHeader.kdl": {
+      "consumer_sha256": "c7349e958b159a059b5ff2387a31ae42230ea6813513f771cdb20ef90ab7ba8e",
       "current_source_sha256": "c0eb523fb749e05d27df7534137ab3058b52aa13018b32296a1ad40586784b36",
       "sha256": "c0eb523fb749e05d27df7534137ab3058b52aa13018b32296a1ad40586784b36",
       "source_path": "projects/studio/content/prototypes/OutlinerHeader.kdl"
     },
     "projects/studio/content/prototypes/Output.kdl": {
+      "consumer_sha256": "aac74f9972300ed33f7f0deca70aeb6cb2793f94110d4daf79570a0bcc738ccb",
       "current_source_sha256": "0c6a45df9edfecc36bd6a0a37b6cbe431fd67aa5075e54887f42276a31bd21c8",
       "sha256": "0c6a45df9edfecc36bd6a0a37b6cbe431fd67aa5075e54887f42276a31bd21c8",
       "source_path": "projects/studio/content/prototypes/Output.kdl"
     },
     "projects/studio/content/prototypes/OutputHeader.kdl": {
+      "consumer_sha256": "11b0c4502156db312cc7e6d3be816cbf01900f1ad900ce127ef38c1d64c77bcd",
       "current_source_sha256": "74fed00352161379c57dc69eb122718a546369272ce27edab0c143da1886c7a6",
       "sha256": "74fed00352161379c57dc69eb122718a546369272ce27edab0c143da1886c7a6",
       "source_path": "projects/studio/content/prototypes/OutputHeader.kdl"
     },
     "projects/studio/content/prototypes/Palette.kdl": {
+      "consumer_sha256": "2a109751b90af9255037c95b28a6ff056474bf94bd8c1c991a15ffb0f2dd5b70",
       "current_source_sha256": "dedcd935f63c3bb60afeed9fc5e805349e8203b635b9681d720c511566f0244e",
       "sha256": "dedcd935f63c3bb60afeed9fc5e805349e8203b635b9681d720c511566f0244e",
       "source_path": "projects/studio/content/prototypes/Palette.kdl"
     },
     "projects/studio/content/prototypes/Performance.kdl": {
+      "consumer_sha256": "3329c856a7793a056a4713831c9ef21333116dc93cc87fa7465e912f6723409c",
       "current_source_sha256": "386e25d52f6044291fb61c9c5104f02e5c3aa3ae1f7970293c094b14c5cd7956",
       "sha256": "386e25d52f6044291fb61c9c5104f02e5c3aa3ae1f7970293c094b14c5cd7956",
       "source_path": "projects/studio/content/prototypes/Performance.kdl"
     },
     "projects/studio/content/prototypes/PerformanceHeader.kdl": {
+      "consumer_sha256": "3a6d0984e85311169de2f1b034a1919f579c5b5469218bfcdc9d230bc46c74c4",
       "current_source_sha256": "6827db12830f7dd67eb4a3ab100f04b9d95a263384e32a3c80ec2222d30841f6",
       "sha256": "6827db12830f7dd67eb4a3ab100f04b9d95a263384e32a3c80ec2222d30841f6",
       "source_path": "projects/studio/content/prototypes/PerformanceHeader.kdl"
     },
     "projects/studio/content/prototypes/Picker.kdl": {
+      "consumer_sha256": "d72fb47677a62d27fd9464964d0c7dd37dab72b1ef464c4b6912c2093a0ff2c5",
       "current_source_sha256": "752b6e87e934053d7f48ff21ccd9ef9d0900961cf4f02578d38f11c441b02026",
       "sha256": "752b6e87e934053d7f48ff21ccd9ef9d0900961cf4f02578d38f11c441b02026",
       "source_path": "projects/studio/content/prototypes/Picker.kdl"
     },
     "projects/studio/content/prototypes/Properties.kdl": {
+      "consumer_sha256": "8e2c5fd4ea217e54f95b23d8cc72936fc0e01f2f1ec92376ca3d825e82eec22d",
       "current_source_sha256": "6cd16da11dd8965feab46f91bbdf89e54fed37f9002db035b8064b16cd3fbbfe",
       "sha256": "6cd16da11dd8965feab46f91bbdf89e54fed37f9002db035b8064b16cd3fbbfe",
       "source_path": "projects/studio/content/prototypes/Properties.kdl"
     },
     "projects/studio/content/prototypes/PropertiesHeader.kdl": {
+      "consumer_sha256": "9552d78b5ed8b021b5da20fe1e819b4ef5c9e063d1512baee3ad54fb17b6835a",
       "current_source_sha256": "e87121c7683c5f0e5588521f83c585c345a2b214af5b37faaf8fa066b0bb2ff7",
       "sha256": "e87121c7683c5f0e5588521f83c585c345a2b214af5b37faaf8fa066b0bb2ff7",
       "source_path": "projects/studio/content/prototypes/PropertiesHeader.kdl"
     },
     "projects/studio/content/prototypes/Refactor.kdl": {
+      "consumer_sha256": "ce49f9f898959bafa34ef790e221a9a37c3f2887958daf220882ab80ee8cb506",
       "current_source_sha256": "53a9e671088752f5c31a8a0e9210ef6e4faaa8c651aa2e284eb4aa9820289200",
       "sha256": "53a9e671088752f5c31a8a0e9210ef6e4faaa8c651aa2e284eb4aa9820289200",
       "source_path": "projects/studio/content/prototypes/Refactor.kdl"
     },
     "projects/studio/content/prototypes/Scene.kdl": {
+      "consumer_sha256": "425ab3f6b4f0fbd4b41aff5aca9ee2fc7e989ffdd77db13d8953ce5dd54e9a88",
       "current_source_sha256": "e53a920010d34d56a45a47e99c12264330e9cb2ddd3f6fabfa0498189b83e0a5",
       "sha256": "e53a920010d34d56a45a47e99c12264330e9cb2ddd3f6fabfa0498189b83e0a5",
       "source_path": "projects/studio/content/prototypes/Scene.kdl"
     },
     "projects/studio/content/prototypes/SceneHeader.kdl": {
+      "consumer_sha256": "d3ae80b167a97e27ab9ea58022de4f51319842d76a9f41dc7632bd03dc36cf54",
       "current_source_sha256": "6056d24d56080d5611566622c3fdf9aa2c194cece770bd5c9270acabb33493ab",
       "sha256": "6056d24d56080d5611566622c3fdf9aa2c194cece770bd5c9270acabb33493ab",
       "source_path": "projects/studio/content/prototypes/SceneHeader.kdl"
     },
     "projects/studio/content/prototypes/Settings.kdl": {
+      "consumer_sha256": "21d9a6ccd2d68abfede358b0688042e9c5b490ec5a73151efbcb04d4dcefa763",
       "current_source_sha256": "1422fcae55c3df13953be528f64647d5eedba8e6fb68db4463e550d9d259048f",
       "sha256": "1422fcae55c3df13953be528f64647d5eedba8e6fb68db4463e550d9d259048f",
       "source_path": "projects/studio/content/prototypes/Settings.kdl"
     },
     "projects/studio/content/prototypes/Shortcuts.kdl": {
+      "consumer_sha256": "b11a4cbc904f53820b91397b026933dcad80870ea7bac0b9b6c5bbe1bb1c62a6",
       "current_source_sha256": "9973d7217ffc235544707e91c949da1c7069dafee58c97150ea7a76d9b7db92d",
       "sha256": "9973d7217ffc235544707e91c949da1c7069dafee58c97150ea7a76d9b7db92d",
       "source_path": "projects/studio/content/prototypes/Shortcuts.kdl"
     },
     "projects/studio/content/prototypes/StatusBar.kdl": {
+      "consumer_sha256": "48494f5ac4262afdd9d66cb522c913a784b63af0fcb2e7ec1f66acf29b185fdb",
       "current_source_sha256": "42522e57aa0c69eb1a6ecb05dd8e69fd0ac2dc37692be388ed6e150c7863e6d1",
       "sha256": "42522e57aa0c69eb1a6ecb05dd8e69fd0ac2dc37692be388ed6e150c7863e6d1",
       "source_path": "projects/studio/content/prototypes/StatusBar.kdl"
     },
     "projects/studio/content/prototypes/Theme.kdl": {
+      "consumer_sha256": "848f4a349251706e69b6b194266858c6aa32a9d57a7fb95528f45d246b4c16b8",
       "current_source_sha256": "7cff37f3577e936baf0995325d599175003df3d2b2ba18fb89f43fd417e7e7d9",
       "sha256": "7cff37f3577e936baf0995325d599175003df3d2b2ba18fb89f43fd417e7e7d9",
       "source_path": "projects/studio/content/prototypes/Theme.kdl"
     },
     "projects/studio/content/prototypes/TopBar.kdl": {
+      "consumer_sha256": "f1f92ed80bb49f52851bd1be88b88c8cd2fffe095a1be054ac9f1cf189db371c",
       "current_source_sha256": "5e7977008b10aa412b6aa8ff5c4be9aadd72bc107cc19310edf754908a1f8db6",
       "sha256": "5e7977008b10aa412b6aa8ff5c4be9aadd72bc107cc19310edf754908a1f8db6",
       "source_path": "projects/studio/content/prototypes/TopBar.kdl"
     },
     "projects/studio/content/prototypes/Widgets.kdl": {
+      "consumer_sha256": "ed5e86d890fc66352f50d2c55b256c8728afb0eba90476a8a9c9e3eb8631d021",
       "current_source_sha256": "ad15fd231e212860341d594409673fd8f68b128eb38dff351cc1f4595b40d64b",
       "sha256": "ad15fd231e212860341d594409673fd8f68b128eb38dff351cc1f4595b40d64b",
       "source_path": "projects/studio/content/prototypes/Widgets.kdl"
     },
     "projects/studio/content/prototypes/Workspace.kdl": {
+      "consumer_sha256": "82ee72f86852ec8ee5eed5437a3e3db4e8882bce82ce0510a8713dd52cb5654d",
       "current_source_sha256": "c313e233706ce6bc9ca83eb64f357c202589954c12643923ff1eb0cb27be6875",
       "sha256": "c313e233706ce6bc9ca83eb64f357c202589954c12643923ff1eb0cb27be6875",
       "source_path": "projects/studio/content/prototypes/Workspace.kdl"
     },
     "projects/studio/content/scenes/Studio.kdl": {
+      "consumer_sha256": "0ec1a9500cd1fc9d3352b6a03b1db8fddbe8ed6ff3b6423f376345436275649f",
       "current_source_sha256": "ba9fdd13c2318236e9c7d878982f1efe6feb52bffbae2cca5574ddef3ab5cd80",
       "sha256": "ba9fdd13c2318236e9c7d878982f1efe6feb52bffbae2cca5574ddef3ab5cd80",
-      "source_path": "projects/studio/content/scenes/Studio.kdl",
-      "consumer_sha256": "0ec1a9500cd1fc9d3352b6a03b1db8fddbe8ed6ff3b6423f376345436275649f"
+      "source_path": "projects/studio/content/scenes/Studio.kdl"
     },
     "projects/studio/content/ui/AreaHeader.rcss": {
       "current_source_sha256": "691d1eba0dc2430256d2486adbaa40c7c3b02f2e6b3d4c97e82884d63bdc80b1",
@@ -504,40 +547,40 @@
       "source_path": "projects/studio/content/ui/AssetField.rml"
     },
     "projects/studio/content/ui/Assets.rcss": {
+      "consumer_sha256": "b0c5c5a110b5b26aa352ce72c4a2b1b1b2768c75d0be80937760120bf87cf282",
       "current_source_sha256": "358e7289062150e23337eb030c9ea350b2351fada6ac89d85f750d5368a5b554",
       "sha256": "358e7289062150e23337eb030c9ea350b2351fada6ac89d85f750d5368a5b554",
-      "source_path": "projects/studio/content/ui/Assets.rcss",
-      "consumer_sha256": "b0c5c5a110b5b26aa352ce72c4a2b1b1b2768c75d0be80937760120bf87cf282"
+      "source_path": "projects/studio/content/ui/Assets.rcss"
     },
     "projects/studio/content/ui/Assets.rml": {
+      "consumer_sha256": "7dc5145f755b1c73677916ce8c352e6aa1252c8d7c9bbab73e43ae9156ef842e",
       "current_source_sha256": "74be88f6432cbdc4828b9fd57cec081ecb2bbcf1b9999d7d600d46ff6e752506",
       "sha256": "74be88f6432cbdc4828b9fd57cec081ecb2bbcf1b9999d7d600d46ff6e752506",
-      "source_path": "projects/studio/content/ui/Assets.rml",
-      "consumer_sha256": "7dc5145f755b1c73677916ce8c352e6aa1252c8d7c9bbab73e43ae9156ef842e"
+      "source_path": "projects/studio/content/ui/Assets.rml"
     },
     "projects/studio/content/ui/AssetsHeader.rcss": {
+      "consumer_sha256": "7452141e6c636ce56a54d6689106859bd7828c5b1dfd721549330a6b9b0d6189",
       "current_source_sha256": "917009a814b34e1adfc9fc921d0150e70e4cb36636d01838caecb12dadd70f3f",
       "sha256": "917009a814b34e1adfc9fc921d0150e70e4cb36636d01838caecb12dadd70f3f",
-      "source_path": "projects/studio/content/ui/AssetsHeader.rcss",
-      "consumer_sha256": "7452141e6c636ce56a54d6689106859bd7828c5b1dfd721549330a6b9b0d6189"
+      "source_path": "projects/studio/content/ui/AssetsHeader.rcss"
     },
     "projects/studio/content/ui/AssetsHeader.rml": {
+      "consumer_sha256": "6b56d4861da21307e8f75a29cdfe5b3523516d4ab713c3eedd0a216255a6fa2d",
       "current_source_sha256": "b291e296ed768e2e432eb22f6813118d0131bcf49685f36b15d45d1f01aa5122",
       "sha256": "b291e296ed768e2e432eb22f6813118d0131bcf49685f36b15d45d1f01aa5122",
-      "source_path": "projects/studio/content/ui/AssetsHeader.rml",
-      "consumer_sha256": "af0340ec8538a2bfcd67cecd1869e8e0ca62107e9d91635ad1ffc115f7f1f120"
+      "source_path": "projects/studio/content/ui/AssetsHeader.rml"
     },
     "projects/studio/content/ui/BehaviorHeader.rcss": {
+      "consumer_sha256": "f79492acacd81e5dd77fd39e935448436a714dfc9e9e5caf3cd310f57389862c",
       "current_source_sha256": "6bf5dc45cec49745eb7b33389b6453189a9765148bbed02d910e40f13e5b8fa3",
       "sha256": "6bf5dc45cec49745eb7b33389b6453189a9765148bbed02d910e40f13e5b8fa3",
-      "source_path": "projects/studio/content/ui/BehaviorHeader.rcss",
-      "consumer_sha256": "f79492acacd81e5dd77fd39e935448436a714dfc9e9e5caf3cd310f57389862c"
+      "source_path": "projects/studio/content/ui/BehaviorHeader.rcss"
     },
     "projects/studio/content/ui/BehaviorHeader.rml": {
+      "consumer_sha256": "36173301507a3f83684499bc0fa9058151408b2f3d4907ca2bbce39ca3be88a2",
       "current_source_sha256": "fa2a64e1bf2269eb8c9e1369ea850efed2cdf1d481d0925555c01138dfff372c",
       "sha256": "fa2a64e1bf2269eb8c9e1369ea850efed2cdf1d481d0925555c01138dfff372c",
-      "source_path": "projects/studio/content/ui/BehaviorHeader.rml",
-      "consumer_sha256": "2cacc7e3b734f55de6c6a43571ed35035951d090639879165c83c9f69775b391"
+      "source_path": "projects/studio/content/ui/BehaviorHeader.rml"
     },
     "projects/studio/content/ui/BoxModel.rcss": {
       "current_source_sha256": "5eeb88b53f110f062a4840d7a42e1c06811cbe6471d5d37634ade2a16bcbd232",
@@ -590,16 +633,16 @@
       "source_path": "projects/studio/content/ui/CodeFind.rml"
     },
     "projects/studio/content/ui/CodeHeader.rcss": {
+      "consumer_sha256": "1f1a96397fd5fc2fd88b0cfa7a88ad32c9dbdbb0d5a610a1fcddd9df769eb44d",
       "current_source_sha256": "4034de5f2b0199ea58144b0b8579e622f9592a7c9b9f87ff143da3975871f69e",
       "sha256": "4034de5f2b0199ea58144b0b8579e622f9592a7c9b9f87ff143da3975871f69e",
-      "source_path": "projects/studio/content/ui/CodeHeader.rcss",
-      "consumer_sha256": "1f1a96397fd5fc2fd88b0cfa7a88ad32c9dbdbb0d5a610a1fcddd9df769eb44d"
+      "source_path": "projects/studio/content/ui/CodeHeader.rcss"
     },
     "projects/studio/content/ui/CodeHeader.rml": {
+      "consumer_sha256": "0bcbc97482d446dd2989ccb65f5d57fd4cf0f0bd5987ac5d07bfc18b22281402",
       "current_source_sha256": "6caf1edb94d5e56710abcba5758762c041037e53c7fc7d0ef6122af2913e30e8",
       "sha256": "6caf1edb94d5e56710abcba5758762c041037e53c7fc7d0ef6122af2913e30e8",
-      "source_path": "projects/studio/content/ui/CodeHeader.rml",
-      "consumer_sha256": "0bcbc97482d446dd2989ccb65f5d57fd4cf0f0bd5987ac5d07bfc18b22281402"
+      "source_path": "projects/studio/content/ui/CodeHeader.rml"
     },
     "projects/studio/content/ui/Collaboration.rcss": {
       "current_source_sha256": "2b52175ff20e8d334976c4718bb5a40c8cf564861d9dd3e55cc493bd15dadbdb",
@@ -642,10 +685,10 @@
       "source_path": "projects/studio/content/ui/DetailsHeader.rml"
     },
     "projects/studio/content/ui/Dialog.rcss": {
+      "consumer_sha256": "a88919baf691993c843e329fe720cca9e80170ec025c321d98827e8ecef89d57",
       "current_source_sha256": "76d1a0981490149d581485eb040bbe6b79e8d7899c68aa15f3b9993031b6e68d",
       "sha256": "76d1a0981490149d581485eb040bbe6b79e8d7899c68aa15f3b9993031b6e68d",
-      "source_path": "projects/studio/content/ui/Dialog.rcss",
-      "consumer_sha256": "a88919baf691993c843e329fe720cca9e80170ec025c321d98827e8ecef89d57"
+      "source_path": "projects/studio/content/ui/Dialog.rcss"
     },
     "projects/studio/content/ui/Dialog.rml": {
       "current_source_sha256": "c9717d68151db56429a7c3d6c733b4f6966363bf2ff0b7ac2d22df6e50f1f524",
@@ -653,6 +696,7 @@
       "source_path": "projects/studio/content/ui/Dialog.rml"
     },
     "projects/studio/content/ui/EnumField.rcss": {
+      "consumer_sha256": "6bad9be0b16403ce839b9d298e006a3e5c94b220793dcd07ad57429b04b3eeb4",
       "current_source_sha256": "4d0bfab2c985c3a703287996d5c020fabe0a9fb9725fab1b57d546e2b0c1ae5f",
       "sha256": "4d0bfab2c985c3a703287996d5c020fabe0a9fb9725fab1b57d546e2b0c1ae5f",
       "source_path": "projects/studio/content/ui/EnumField.rcss"
@@ -663,6 +707,7 @@
       "source_path": "projects/studio/content/ui/EnumField.rml"
     },
     "projects/studio/content/ui/GraphField.rcss": {
+      "consumer_sha256": "2e3364d48307b900ca5bfe245b3d2fbcd6be66638da0467ed282bcc68ae4b8e0",
       "current_source_sha256": "9dc4ef1f81e17a7ed65c10927a7bc66c6f2fea98c958e7abc79901efd4e31163",
       "sha256": "9dc4ef1f81e17a7ed65c10927a7bc66c6f2fea98c958e7abc79901efd4e31163",
       "source_path": "projects/studio/content/ui/GraphField.rcss"
@@ -688,6 +733,7 @@
       "source_path": "projects/studio/content/ui/GraphMenu.rcss"
     },
     "projects/studio/content/ui/GraphMenu.rml": {
+      "consumer_sha256": "d4cc925fd982d7b01d57f98e7bb1d3dc846b839d16be56fc26e6f5a8bbfd774c",
       "current_source_sha256": "d88a51ff1743e868fe9372f595eec66ee9c66acaffedd41ca1d156891753c403",
       "sha256": "d88a51ff1743e868fe9372f595eec66ee9c66acaffedd41ca1d156891753c403",
       "source_path": "projects/studio/content/ui/GraphMenu.rml"
@@ -698,21 +744,22 @@
       "source_path": "projects/studio/content/ui/GraphView.rcss"
     },
     "projects/studio/content/ui/GraphView.rml": {
+      "consumer_sha256": "2017e9f0e757a6a1b5fa5c2e02b8c632546c6bb6bbea01e5cd7bf52c59b6f8fd",
       "current_source_sha256": "eca7a68caa09b140d9596cc767f69d682ecae189b63e3a2e0185de4b280967e2",
       "sha256": "eca7a68caa09b140d9596cc767f69d682ecae189b63e3a2e0185de4b280967e2",
       "source_path": "projects/studio/content/ui/GraphView.rml"
     },
     "projects/studio/content/ui/Hierarchy.rcss": {
+      "consumer_sha256": "00cd8d375b0c45ef02ebd19bbbe484ba01af03763d204d744f668d6d3a8c233a",
       "current_source_sha256": "d77bb10a5266b00707f6aa5d3c4d1fa75b8867547c5f76ab7dd6975188b0b6ab",
       "sha256": "d77bb10a5266b00707f6aa5d3c4d1fa75b8867547c5f76ab7dd6975188b0b6ab",
-      "source_path": "projects/studio/content/ui/Hierarchy.rcss",
-      "consumer_sha256": "00cd8d375b0c45ef02ebd19bbbe484ba01af03763d204d744f668d6d3a8c233a"
+      "source_path": "projects/studio/content/ui/Hierarchy.rcss"
     },
     "projects/studio/content/ui/Hierarchy.rml": {
+      "consumer_sha256": "82997fd5b37d3200868c76e4b0ac2eefd7af19ea280fc9a46eac7b5aeff7e1bb",
       "current_source_sha256": "9a1fc73c6349ba8f12630f9919f2a06da50dbedf6ac3a63a492a9279eca0cdb1",
       "sha256": "9a1fc73c6349ba8f12630f9919f2a06da50dbedf6ac3a63a492a9279eca0cdb1",
-      "source_path": "projects/studio/content/ui/Hierarchy.rml",
-      "consumer_sha256": "cc14f92516ec57dd1f95c1aeb6772946c731087da40d059ec834ec023a34d613"
+      "source_path": "projects/studio/content/ui/Hierarchy.rml"
     },
     "projects/studio/content/ui/HierarchyHeader.rcss": {
       "current_source_sha256": "d8cd60f0b939a841b7d022e680d33b9ef3f49ddab1111125136642b4a5806f22",
@@ -720,6 +767,7 @@
       "source_path": "projects/studio/content/ui/HierarchyHeader.rcss"
     },
     "projects/studio/content/ui/HierarchyHeader.rml": {
+      "consumer_sha256": "638bcb137809a696e382cc6296590e371677118566085b3d758c9e316c1d6c49",
       "current_source_sha256": "f09e2869d13b42d6588a4d548b82dd10d979c1557781dbc3f3dd87c1dc39d0a3",
       "sha256": "f09e2869d13b42d6588a4d548b82dd10d979c1557781dbc3f3dd87c1dc39d0a3",
       "source_path": "projects/studio/content/ui/HierarchyHeader.rml"
@@ -875,16 +923,16 @@
       "source_path": "projects/studio/content/ui/NewAsset.rml"
     },
     "projects/studio/content/ui/NewProject.rcss": {
+      "consumer_sha256": "96e9d6cd2ff903e4ac020b0c4648785c136e858f016bad2b8867a4ce43743206",
       "current_source_sha256": "5ee6d6a730e1396538d638a7eb43792f5cf29d9528dba797c62d5a828100c51e",
       "sha256": "5ee6d6a730e1396538d638a7eb43792f5cf29d9528dba797c62d5a828100c51e",
-      "source_path": "projects/studio/content/ui/NewProject.rcss",
-      "consumer_sha256": "96e9d6cd2ff903e4ac020b0c4648785c136e858f016bad2b8867a4ce43743206"
+      "source_path": "projects/studio/content/ui/NewProject.rcss"
     },
     "projects/studio/content/ui/NewProject.rml": {
+      "consumer_sha256": "e53d4356b6ca256f140cdf70268cfdf5a1acebd3a597eceb0c18b7ad369798f1",
       "current_source_sha256": "150a4c56fb88e9532c2d1e9c94349f90b6ae4c35c2f419757f050f6352a52975",
       "sha256": "150a4c56fb88e9532c2d1e9c94349f90b6ae4c35c2f419757f050f6352a52975",
-      "source_path": "projects/studio/content/ui/NewProject.rml",
-      "consumer_sha256": "e4fa048b123753fdd2fe341caaf8bb8613b05250956798d141fe6fe7f8273a7f"
+      "source_path": "projects/studio/content/ui/NewProject.rml"
     },
     "projects/studio/content/ui/NumberField.rcss": {
       "current_source_sha256": "41601ebc99a04b684e965bc103cdcd28c3bc9a237d9b59c7bf2d6897c5e7e0c8",
@@ -897,16 +945,16 @@
       "source_path": "projects/studio/content/ui/NumberField.rml"
     },
     "projects/studio/content/ui/Outliner.rcss": {
+      "consumer_sha256": "7233e8eae4322f3ee0fb366dd65579b264b11f50b77c1e002d192bdaee78ee96",
       "current_source_sha256": "8d7a8f02ab264d01e6c094da1f16750e554dbc4266a9f049b116c7ae744fea02",
       "sha256": "8d7a8f02ab264d01e6c094da1f16750e554dbc4266a9f049b116c7ae744fea02",
-      "source_path": "projects/studio/content/ui/Outliner.rcss",
-      "consumer_sha256": "7233e8eae4322f3ee0fb366dd65579b264b11f50b77c1e002d192bdaee78ee96"
+      "source_path": "projects/studio/content/ui/Outliner.rcss"
     },
     "projects/studio/content/ui/Outliner.rml": {
+      "consumer_sha256": "1387a2259d773729e1b9a0cd57648302490ba08de8cfa43b5ecd312bf78127df",
       "current_source_sha256": "3a67f75c83132a5b4f1eff724203754cfeacbebb61dc39f715f6e5aa779dcd01",
       "sha256": "3a67f75c83132a5b4f1eff724203754cfeacbebb61dc39f715f6e5aa779dcd01",
-      "source_path": "projects/studio/content/ui/Outliner.rml",
-      "consumer_sha256": "1387a2259d773729e1b9a0cd57648302490ba08de8cfa43b5ecd312bf78127df"
+      "source_path": "projects/studio/content/ui/Outliner.rml"
     },
     "projects/studio/content/ui/OutlinerHeader.rcss": {
       "current_source_sha256": "5295a28b9c5613fe7c6aafbebac5a5c2aa2a7adb7db4685b2ad4b69f6d9fdd2c",
@@ -944,10 +992,10 @@
       "source_path": "projects/studio/content/ui/Palette.rcss"
     },
     "projects/studio/content/ui/Palette.rml": {
+      "consumer_sha256": "0c6d56d564c30566f77f88b5de381574149958a340c424eba6c96b803a76576b",
       "current_source_sha256": "4fccc2cae4214b297103a708ee6b4b8df7adf20f143b297dc1d127071dee23c3",
       "sha256": "4fccc2cae4214b297103a708ee6b4b8df7adf20f143b297dc1d127071dee23c3",
-      "source_path": "projects/studio/content/ui/Palette.rml",
-      "consumer_sha256": "0c6d56d564c30566f77f88b5de381574149958a340c424eba6c96b803a76576b"
+      "source_path": "projects/studio/content/ui/Palette.rml"
     },
     "projects/studio/content/ui/Panel.rcss": {
       "current_source_sha256": "e434066b6c33f10c770d439e3b2d952f3d584b873eabf70c3250c67f14a910ce",
@@ -990,16 +1038,16 @@
       "source_path": "projects/studio/content/ui/Picker.rml"
     },
     "projects/studio/content/ui/Properties.rcss": {
+      "consumer_sha256": "f5a2e991ec9b9850d5297dbf2c4f1f06470f199fe3f0c0afcbb745b0666fc208",
       "current_source_sha256": "9b75abd2ed82d508a2c07a401f5662aa7b76bcfc815d9008b8b13e5e8cdd6d20",
       "sha256": "9b75abd2ed82d508a2c07a401f5662aa7b76bcfc815d9008b8b13e5e8cdd6d20",
-      "source_path": "projects/studio/content/ui/Properties.rcss",
-      "consumer_sha256": "f5a2e991ec9b9850d5297dbf2c4f1f06470f199fe3f0c0afcbb745b0666fc208"
+      "source_path": "projects/studio/content/ui/Properties.rcss"
     },
     "projects/studio/content/ui/Properties.rml": {
+      "consumer_sha256": "96f146902958813c02cf6668c2d209fccfaddd6d2bbd41cea217f72596ab7edd",
       "current_source_sha256": "545dc7a0778a9870485f1e2273300dcda4bf07e297bf13b78b65be8c44d026f4",
       "sha256": "545dc7a0778a9870485f1e2273300dcda4bf07e297bf13b78b65be8c44d026f4",
-      "source_path": "projects/studio/content/ui/Properties.rml",
-      "consumer_sha256": "96f146902958813c02cf6668c2d209fccfaddd6d2bbd41cea217f72596ab7edd"
+      "source_path": "projects/studio/content/ui/Properties.rml"
     },
     "projects/studio/content/ui/PropertiesHeader.rcss": {
       "current_source_sha256": "d7680f39026872550f5152068520cd3bcc069e9341542f6eee92ca24c4bec427",
@@ -1017,10 +1065,10 @@
       "source_path": "projects/studio/content/ui/PropertyRow.rcss"
     },
     "projects/studio/content/ui/PropertyRow.rml": {
+      "consumer_sha256": "eea499368d868fe5e7f7b86f8510228043ec759a75f3f40bc262b868998c0f0b",
       "current_source_sha256": "3cdc3a88b1183c4f86d9ec480aa12f2fdd110aa8dc86ee07c8078a6b7f6e90bc",
       "sha256": "3cdc3a88b1183c4f86d9ec480aa12f2fdd110aa8dc86ee07c8078a6b7f6e90bc",
-      "source_path": "projects/studio/content/ui/PropertyRow.rml",
-      "consumer_sha256": "eea499368d868fe5e7f7b86f8510228043ec759a75f3f40bc262b868998c0f0b"
+      "source_path": "projects/studio/content/ui/PropertyRow.rml"
     },
     "projects/studio/content/ui/Refactor.rcss": {
       "current_source_sha256": "8ccf825df9c8d01af4d2b4b04955dd48ba9e361640e9f41c434ea8d74d1c5c16",
@@ -1043,16 +1091,16 @@
       "source_path": "projects/studio/content/ui/SavedData.rml"
     },
     "projects/studio/content/ui/Scene.rcss": {
+      "consumer_sha256": "443364687be1c5cf3cc6ef4dbaa7924db5a0fd884f00d1446cd4bb5599181877",
       "current_source_sha256": "18502419237e77150c2003f275240a20fc54ee98bef17b0a0b788432f27f637b",
       "sha256": "18502419237e77150c2003f275240a20fc54ee98bef17b0a0b788432f27f637b",
-      "source_path": "projects/studio/content/ui/Scene.rcss",
-      "consumer_sha256": "443364687be1c5cf3cc6ef4dbaa7924db5a0fd884f00d1446cd4bb5599181877"
+      "source_path": "projects/studio/content/ui/Scene.rcss"
     },
     "projects/studio/content/ui/Scene.rml": {
+      "consumer_sha256": "b594272512d1e1be2abb9151a26e29458609364c264cd8476a9946bfb6e45d59",
       "current_source_sha256": "c274b2103a713429c05cdc26cbe18ba71e0c4117ef6da1ce01136c2455aadb6a",
       "sha256": "c274b2103a713429c05cdc26cbe18ba71e0c4117ef6da1ce01136c2455aadb6a",
-      "source_path": "projects/studio/content/ui/Scene.rml",
-      "consumer_sha256": "b594272512d1e1be2abb9151a26e29458609364c264cd8476a9946bfb6e45d59"
+      "source_path": "projects/studio/content/ui/Scene.rml"
     },
     "projects/studio/content/ui/SceneHeader.rcss": {
       "current_source_sha256": "5eaa1e7b3bb45e630f8bb34f51a6ad0acacc7190ade1554b34fc152d0af1b222",
@@ -1060,10 +1108,10 @@
       "source_path": "projects/studio/content/ui/SceneHeader.rcss"
     },
     "projects/studio/content/ui/SceneHeader.rml": {
+      "consumer_sha256": "0cec32e55d935eb0992d723da7713f9d532664aaa12d16c9b0897f3bfb28c778",
       "current_source_sha256": "3d61c5eb2a9a2f38fe15306c4860b9c564077569b0cb6f1ae5632b3b95918504",
       "sha256": "3d61c5eb2a9a2f38fe15306c4860b9c564077569b0cb6f1ae5632b3b95918504",
-      "source_path": "projects/studio/content/ui/SceneHeader.rml",
-      "consumer_sha256": "e592d2a90dc0266cba213783a58a3b7601c5f470f2b71e8c4ceec83a100662d5"
+      "source_path": "projects/studio/content/ui/SceneHeader.rml"
     },
     "projects/studio/content/ui/Segmented.rcss": {
       "current_source_sha256": "c4db94e54e4ca438c38cabfc1cdf54f8f94f2a1fbbc2fe41d1c68f5992651048",
@@ -1076,6 +1124,7 @@
       "source_path": "projects/studio/content/ui/Segmented.rml"
     },
     "projects/studio/content/ui/Select.rcss": {
+      "consumer_sha256": "89c41c145637cd39bc3e2190e6c6feb10a5fe0397d62294a37787eeebe74f0e6",
       "current_source_sha256": "c54b7756e86ed23efb05b16df704fc5936ea31bca0b6967d9c453dc633794bec",
       "sha256": "c54b7756e86ed23efb05b16df704fc5936ea31bca0b6967d9c453dc633794bec",
       "source_path": "projects/studio/content/ui/Select.rcss"
@@ -1096,10 +1145,10 @@
       "source_path": "projects/studio/content/ui/SettingRow.rml"
     },
     "projects/studio/content/ui/Settings.rcss": {
+      "consumer_sha256": "6cbe0651faa56b77ab3d349f20018fa4d2809111647db17cba76f6248777be0a",
       "current_source_sha256": "52d324ea4b6faf15fd94615ffb7d30ff679a4deea4d160d14542f284cb53878e",
       "sha256": "52d324ea4b6faf15fd94615ffb7d30ff679a4deea4d160d14542f284cb53878e",
-      "source_path": "projects/studio/content/ui/Settings.rcss",
-      "consumer_sha256": "6cbe0651faa56b77ab3d349f20018fa4d2809111647db17cba76f6248777be0a"
+      "source_path": "projects/studio/content/ui/Settings.rcss"
     },
     "projects/studio/content/ui/Settings.rml": {
       "current_source_sha256": "825a97d07ece38ebae8a23cc95071a896e070e3bcca73b610d33743b729970d5",
@@ -1152,6 +1201,7 @@
       "source_path": "projects/studio/content/ui/StatusBar.rcss"
     },
     "projects/studio/content/ui/StatusBar.rml": {
+      "consumer_sha256": "a8cd7d022207ac5b50ba620f58a5b55844cbde780dc058158ae96b86cc0dddcd",
       "current_source_sha256": "8361466b13997a1579957929b914d2e621b85d36a634075681fc5b73cd3b4804",
       "sha256": "8361466b13997a1579957929b914d2e621b85d36a634075681fc5b73cd3b4804",
       "source_path": "projects/studio/content/ui/StatusBar.rml"
@@ -1227,16 +1277,16 @@
       "source_path": "projects/studio/content/ui/Tile.rml"
     },
     "projects/studio/content/ui/TopBar.rcss": {
+      "consumer_sha256": "4de77b813240688d78e02afb236632b2c0e4f7bb346cac961bf46fe66f0a5f85",
       "current_source_sha256": "fd9683b3f7bbfdda05c9fbbfa681253c9ccb481df60b3e573242bc80d403ed00",
       "sha256": "fd9683b3f7bbfdda05c9fbbfa681253c9ccb481df60b3e573242bc80d403ed00",
-      "source_path": "projects/studio/content/ui/TopBar.rcss",
-      "consumer_sha256": "4de77b813240688d78e02afb236632b2c0e4f7bb346cac961bf46fe66f0a5f85"
+      "source_path": "projects/studio/content/ui/TopBar.rcss"
     },
     "projects/studio/content/ui/TopBar.rml": {
+      "consumer_sha256": "aa3490d89504903a6e77ff37ea6df16cc1e5f15b5bdf6a105ac8b26b07386f9a",
       "current_source_sha256": "5193fa5ae1a98f54a9430bf56aa435cb81abba8bd347a095a418cc18247bcbfc",
       "sha256": "5193fa5ae1a98f54a9430bf56aa435cb81abba8bd347a095a418cc18247bcbfc",
-      "source_path": "projects/studio/content/ui/TopBar.rml",
-      "consumer_sha256": "889fd6b3c5e863955de3063204bfab4c4fe01189a23c9e5e2b5431dd90798d32"
+      "source_path": "projects/studio/content/ui/TopBar.rml"
     },
     "projects/studio/content/ui/TreeRow.rcss": {
       "current_source_sha256": "bc136a64d5d7951510921b278268a1451a67dc85bea5ac97d015c5a0bce771f9",
@@ -1274,15 +1324,16 @@
       "source_path": "projects/studio/content/ui/Widgets.rcss"
     },
     "projects/studio/content/ui/Widgets.rml": {
+      "consumer_sha256": "bc4d40f3438d905090bb4a11c4816a820b3b348ae198b25d46d0beb10782030b",
       "current_source_sha256": "dbaf9a34d1bd24001ea28dc17249986f8c11af2f9ae267304f9e25a66b74ea4f",
       "sha256": "dbaf9a34d1bd24001ea28dc17249986f8c11af2f9ae267304f9e25a66b74ea4f",
       "source_path": "projects/studio/content/ui/Widgets.rml"
     },
     "projects/studio/content/ui/Workspace.rcss": {
+      "consumer_sha256": "33928bb9f749b9a43db89806199b19aee6e7d3cb18c36df9519dd36e6d6e5955",
       "current_source_sha256": "2d72bf830578fd56893badbc1065d6fbdafa48a2f6025e1286379c5e5910b1e3",
       "sha256": "2d72bf830578fd56893badbc1065d6fbdafa48a2f6025e1286379c5e5910b1e3",
-      "source_path": "projects/studio/content/ui/Workspace.rcss",
-      "consumer_sha256": "33928bb9f749b9a43db89806199b19aee6e7d3cb18c36df9519dd36e6d6e5955"
+      "source_path": "projects/studio/content/ui/Workspace.rcss"
     },
     "projects/studio/content/ui/Workspace.rml": {
       "current_source_sha256": "f13136a0bf2b1987cc63cf3ea30c2d28bdc1151e182a2d60f48213edb023687a",
@@ -1320,10 +1371,10 @@
       "source_path": "projects/studio/content/ui/theme/base.rcss"
     },
     "projects/studio/content/ui/theme/button.rcss": {
+      "consumer_sha256": "99fe606c65c01ffd160deb4ca1c3011ac3462e081fc1001471e061c4d8eafed6",
       "current_source_sha256": "c1f548a3e82efe70dea324e44fd3d867f4141aad51949fd3b9c91e92fc7d151b",
       "sha256": "c1f548a3e82efe70dea324e44fd3d867f4141aad51949fd3b9c91e92fc7d151b",
-      "source_path": "projects/studio/content/ui/theme/button.rcss",
-      "consumer_sha256": "99fe606c65c01ffd160deb4ca1c3011ac3462e081fc1001471e061c4d8eafed6"
+      "source_path": "projects/studio/content/ui/theme/button.rcss"
     },
     "projects/studio/content/ui/theme/chart.rcss": {
       "current_source_sha256": "b51150be4ebf6555476cc31700986cc8e32f65b104a87568e39ecfb0641f4966",
@@ -1331,10 +1382,10 @@
       "source_path": "projects/studio/content/ui/theme/chart.rcss"
     },
     "projects/studio/content/ui/theme/code.rcss": {
+      "consumer_sha256": "f44c4ea0df70062fd1c40fc4a3963a179abf8c5176bca742fd9ac0adfc2fb479",
       "current_source_sha256": "9385e62557745bc07053ccc64621dea0facc6a100c375fdfb708a2b251b42ffb",
       "sha256": "9385e62557745bc07053ccc64621dea0facc6a100c375fdfb708a2b251b42ffb",
-      "source_path": "projects/studio/content/ui/theme/code.rcss",
-      "consumer_sha256": "f44c4ea0df70062fd1c40fc4a3963a179abf8c5176bca742fd9ac0adfc2fb479"
+      "source_path": "projects/studio/content/ui/theme/code.rcss"
     },
     "projects/studio/content/ui/theme/command.rcss": {
       "current_source_sha256": "5863314ec5a51fef8d61087f8baf36703a48b321744ac2bac0bec62bd5df20b8",
@@ -1352,10 +1403,10 @@
       "source_path": "projects/studio/content/ui/theme/field.rcss"
     },
     "projects/studio/content/ui/theme/graph.rcss": {
+      "consumer_sha256": "61983026825378110ace97c3df5d2bc1919e1d91681a0a62ceacb1aa7f9d520c",
       "current_source_sha256": "fdd6ee02865e4f54bdc94831f86e3f24ed18c6e9f7af720b330d1fec5f4a35c4",
       "sha256": "fdd6ee02865e4f54bdc94831f86e3f24ed18c6e9f7af720b330d1fec5f4a35c4",
-      "source_path": "projects/studio/content/ui/theme/graph.rcss",
-      "consumer_sha256": "e7c3a8aac6d20e4a1c4b356b69c46b959615766db3f46516b6d53ff72cc9965f"
+      "source_path": "projects/studio/content/ui/theme/graph.rcss"
     },
     "projects/studio/content/ui/theme/inspect.rcss": {
       "current_source_sha256": "f16a836cfb721178806660fe722825cf3d7a50c70c33209f98e47029429474f8",
@@ -1373,12 +1424,13 @@
       "source_path": "projects/studio/content/ui/theme/motion.rcss"
     },
     "projects/studio/content/ui/theme/panel.rcss": {
+      "consumer_sha256": "12dfb79006519de371e5466ccaf2766c1525f8d4af39725f527994cc1dcf0cb3",
       "current_source_sha256": "5a9a95b7403e608de8d987710a7b512291994c8825a4e4c5241b5f0ad902ccac",
       "sha256": "5a9a95b7403e608de8d987710a7b512291994c8825a4e4c5241b5f0ad902ccac",
-      "source_path": "projects/studio/content/ui/theme/panel.rcss",
-      "consumer_sha256": "12dfb79006519de371e5466ccaf2766c1525f8d4af39725f527994cc1dcf0cb3"
+      "source_path": "projects/studio/content/ui/theme/panel.rcss"
     },
     "projects/studio/content/ui/theme/popup.rcss": {
+      "consumer_sha256": "040908eb5db3d13d25ec312f3f436e5202e05053dc8cfcabaeff99dde4a7f6ba",
       "current_source_sha256": "fa131528d49e122d4bad088468241b490b961e0bfe1801de54e638ab468ac7ae",
       "sha256": "fa131528d49e122d4bad088468241b490b961e0bfe1801de54e638ab468ac7ae",
       "source_path": "projects/studio/content/ui/theme/popup.rcss"
@@ -1414,12 +1466,13 @@
       "source_path": "projects/studio/content/ui/theme/viewport.rcss"
     },
     "projects/studio/content/ui/theme/workspace.rcss": {
+      "consumer_sha256": "2ea7c30e18a6c3478aed0d67c31e33c135495170ec4ff1866092fa6032a7b377",
       "current_source_sha256": "160bbbef32e74cebfedec42329e7be162ab61dcb65a6c3fd926c7c30f108ab32",
       "sha256": "160bbbef32e74cebfedec42329e7be162ab61dcb65a6c3fd926c7c30f108ab32",
-      "source_path": "projects/studio/content/ui/theme/workspace.rcss",
-      "consumer_sha256": "2ea7c30e18a6c3478aed0d67c31e33c135495170ec4ff1866092fa6032a7b377"
+      "source_path": "projects/studio/content/ui/theme/workspace.rcss"
     },
     "projects/studio/project.kdl": {
+      "consumer_sha256": "a60ef08ed54164fee0b13264033ed71b49f8c2fa838300b5342b44340f3de0b8",
       "current_source_sha256": "4036c43aa6c17dfbc3d383de7fd4489abd5fe666b8bd1682437d4cc724a397cc",
       "sha256": "4036c43aa6c17dfbc3d383de7fd4489abd5fe666b8bd1682437d4cc724a397cc",
       "source_path": "projects/studio/project.kdl"
@@ -1475,6 +1528,7 @@
       "source_path": "src/editor/collab/actions_internal.h"
     },
     "src/editor/collab/actions_scene.c": {
+      "consumer_sha256": "dfd70977147c3f4952685d2f85a7a8045a209555035d3472596016588dc5b032",
       "current_source_sha256": "19ddcb8ed8f796c0dcc5a972e5c4ddc02aedc001de5c4d1d76769cafe1d9d34a",
       "sha256": "19ddcb8ed8f796c0dcc5a972e5c4ddc02aedc001de5c4d1d76769cafe1d9d34a",
       "source_path": "src/editor/collab/actions_scene.c"
@@ -1515,16 +1569,16 @@
       "source_path": "src/editor/collab/workspace.h"
     },
     "src/editor/documents/asset_code.c": {
+      "consumer_sha256": "ecaebd8e99719b88e01b072071d8e49c5b6678e16b5525c77a875a9ec32709a1",
       "current_source_sha256": "91f77c6e1b3d60ddab4c59fa395ba78c9122e54cb6707f866eb2fb9730d2615c",
       "sha256": "5bcaf149c81eb750ce0da5b74954c40758aedfa32e6cb590849d723050c3ce64",
-      "source_path": "src/editor/documents/asset_code.c",
-      "consumer_sha256": "9f50ea830fcf2eecb206fd1153350cc229541d4313d0760a2667034049a0106c"
+      "source_path": "src/editor/documents/asset_code.c"
     },
     "src/editor/documents/asset_code.h": {
+      "consumer_sha256": "5f81c21bcd6bf59885518104da95980f33dbf15509e763a777c44e1004cc053a",
       "current_source_sha256": "15d34e8aae5a3df6a5ef4a2632b6c6784714b03b3c0cb6c74be401afbb35d2e1",
       "sha256": "1199a5f51fd1b59918263a77197311471897d051d8833304e5c6dfa11a9633e1",
-      "source_path": "src/editor/documents/asset_code.h",
-      "consumer_sha256": "10f9528b65c0a769366a9e59116e9447be296dcdbb5861ed8857bc0669230c90"
+      "source_path": "src/editor/documents/asset_code.h"
     },
     "src/editor/documents/commands.c": {
       "current_source_sha256": "055ac0716c23f7d2078177827b141486c080318eea4bd8288e4c16c707d8a9b4",
@@ -1532,27 +1586,31 @@
       "source_path": "src/editor/documents/commands.c"
     },
     "src/editor/documents/component_properties.c": {
+      "consumer_sha256": "c9c5165925e7ac857fb2f57e4db85bc4f4c6bb1b6a9763a965b3d1b5bd567129",
       "current_source_sha256": "e048a93ab8a519d913ed57c8bd83d5591fb4ca5c38afba03964426dcb320fd0f",
       "sha256": "e048a93ab8a519d913ed57c8bd83d5591fb4ca5c38afba03964426dcb320fd0f",
       "source_path": "src/editor/documents/component_properties.c"
     },
     "src/editor/documents/component_properties.h": {
+      "consumer_sha256": "a0f21f180077b1fd9e5e8261a52853528617f195935bb622098ea2a076abba0b",
       "current_source_sha256": "ebb95c99a6980cf382ff5e9f2991ca11f580b94150bca5bfa9bb2a3b61cfb9dd",
       "sha256": "ebb95c99a6980cf382ff5e9f2991ca11f580b94150bca5bfa9bb2a3b61cfb9dd",
       "source_path": "src/editor/documents/component_properties.h"
     },
     "src/editor/documents/document.c": {
+      "consumer_sha256": "005897317a8d0574c062c7eef4c783b81de46b963b6fa2b28d1213699d868989",
       "current_source_sha256": "378a2e8860f591c4bcddc5245d601ef3de100d289f3d217d9421cc2e0e62de08",
       "sha256": "378a2e8860f591c4bcddc5245d601ef3de100d289f3d217d9421cc2e0e62de08",
-      "source_path": "src/editor/documents/document.c",
-      "consumer_sha256": "005897317a8d0574c062c7eef4c783b81de46b963b6fa2b28d1213699d868989"
+      "source_path": "src/editor/documents/document.c"
     },
     "src/editor/documents/mutations.c": {
+      "consumer_sha256": "e9ea10720c021d8fdf5f3bda87d0df5e4e8c3564c53f52acbef28fa923bd89d7",
       "current_source_sha256": "a88505793a69d57c8338200cea0eaec1b6610f75184e7507b4d14ced3d0f7d9c",
       "sha256": "17ef6e03ea2b53152a7071b56df095606a7a597758d0099fe705acd3c5c86b3d",
       "source_path": "src/editor/documents/mutations.c"
     },
     "src/editor/documents/navigation.c": {
+      "consumer_sha256": "e209ae241ea20bc66667364ec43eb35736e6e719d9cc9c74fed52e058b7ab911",
       "current_source_sha256": "de82d3e29cdfe1ae0884ea92bb581492a9424f2f80a7abc9bb24e3be73191443",
       "sha256": "454285c230d442fc4693ecab800ff06a5be118a57f432d1a5d267d564b1870ed",
       "source_path": "src/editor/documents/navigation.c"
@@ -1563,48 +1621,55 @@
       "source_path": "src/editor/documents/preview.c"
     },
     "src/editor/documents/scene_disk.c": {
+      "consumer_sha256": "aab31ac43b4255e68792b05f16162405e1256285c6bbf356efb12bf1b56d12f3",
       "current_source_sha256": "cebdb7244e864964e2326578bf167aaf294aa2f2d5cd610f5edfa39c2615a483",
       "sha256": "c615608c34b9b6fc0396a626ffaff93a5c76a8f95abc1856abb585cc3f6ae0aa",
       "source_path": "src/editor/documents/scene_disk.c"
     },
     "src/editor/documents/scene_document.c": {
+      "consumer_sha256": "612476a6e8d17a3dc26c01a19328bba196d6e858288d99a04c5603a95c1490f4",
       "current_source_sha256": "98dcf951fd9aa56b582ff9de36ddfe2bf0ae0ea22b64f16179bbc1d9bb2762de",
       "sha256": "f85160094ed7aec755eaa8f5db4dc40000de7e786cb3ad8e501822b7e76acffb",
-      "source_path": "src/editor/documents/scene_document.c",
-      "consumer_sha256": "8d9bf144b45288b4f12d7bba81cffe8816c3eb31ba02e6f33335ffc0fe369896"
+      "source_path": "src/editor/documents/scene_document.c"
     },
     "src/editor/documents/scene_documents.c": {
+      "consumer_sha256": "e8b63179f92011b306abcb97ec56e207e763baf3dcd7796f27f7200060b26181",
       "current_source_sha256": "0edc732289f4ae30ac2cd901bcb663a6daee4f38a83d517446b35a16cdbfff61",
       "sha256": "1cfed0ba047e1b43bfea8663c628518b6e42430ed3c1f0a584a22d1e72f9b7cb",
-      "source_path": "src/editor/documents/scene_documents.c",
-      "consumer_sha256": "3503f9473cab1e342f71059d11abcba051afdbb9543dd7d099c679574960e2b6"
+      "source_path": "src/editor/documents/scene_documents.c"
     },
     "src/editor/documents/scene_history.c": {
+      "consumer_sha256": "fc8ad6fb1885698c9ca3493c45b5839158141d9dcf3967e7ec17c80628cac7e0",
       "current_source_sha256": "c4d1eb0517f158231bd435974e3f127a011630df89d1057fb59d1bb6a81ef523",
       "sha256": "c4d1eb0517f158231bd435974e3f127a011630df89d1057fb59d1bb6a81ef523",
       "source_path": "src/editor/documents/scene_history.c"
     },
     "src/editor/documents/scene_history.h": {
+      "consumer_sha256": "55fd156a7756df7552ac267f21c86a2ca7f4b1c8c47f13a166af44e2173d4c11",
       "current_source_sha256": "2ad5c6be1789579df003c7df4b4ae15e0a364a25855550bcb64ad0760cb161c6",
       "sha256": "2ad5c6be1789579df003c7df4b4ae15e0a364a25855550bcb64ad0760cb161c6",
       "source_path": "src/editor/documents/scene_history.h"
     },
     "src/editor/documents/scene_prototype_actions.c": {
+      "consumer_sha256": "c18d05fbe8e474e85aa09db2528f5f860503eb4e7fe5376935adc62edcea921e",
       "current_source_sha256": "3271207bf0f329054742ebd367b80ab51f801e8cd1e71219395fc4892d139004",
       "sha256": "3271207bf0f329054742ebd367b80ab51f801e8cd1e71219395fc4892d139004",
       "source_path": "src/editor/documents/scene_prototype_actions.c"
     },
     "src/editor/documents/scene_prototypes.c": {
+      "consumer_sha256": "929e4b3ea2ba8a297a11ea3872e3a50f4772c0c24b8ecb8e6bccdde7e6ab5f3a",
       "current_source_sha256": "a724d0af657b5ab587528c2d1f475b7d303938d5a5e2c8e897122829748fa68d",
       "sha256": "3ac2e12fa9e512325a07c336a9ea0c908bbd8447098aa6ec4b52d6b80366041b",
       "source_path": "src/editor/documents/scene_prototypes.c"
     },
     "src/editor/documents/scene_retention.c": {
+      "consumer_sha256": "1421199c774902542020237e36f053f6f9bee9d17791ae9cccd36672717a70ff",
       "current_source_sha256": "0b6d547334a3b7ccf89d76e832172e1a8ae997755d1d1e37ffe4d33887cf6941",
       "sha256": "0b6d547334a3b7ccf89d76e832172e1a8ae997755d1d1e37ffe4d33887cf6941",
       "source_path": "src/editor/documents/scene_retention.c"
     },
     "src/editor/documents/scene_retention.h": {
+      "consumer_sha256": "6cc2022edf1fbef5ed0e6fbf63dda931c0199a837ca1ef9c30fb211052417ddd",
       "current_source_sha256": "a7303cd085b757bdc1f4283d22f48387e2fa4c216169e5219934a8aad43d9dff",
       "sha256": "a7303cd085b757bdc1f4283d22f48387e2fa4c216169e5219934a8aad43d9dff",
       "source_path": "src/editor/documents/scene_retention.h"
@@ -1680,11 +1745,13 @@
       "source_path": "src/editor/graph/presentation.c"
     },
     "src/editor/graph/search.c": {
+      "consumer_sha256": "266f547c7e8a909ac56acfd80c0c39d3fbdf49764e7508ce886490dab92cbef1",
       "current_source_sha256": "c9ae8c17f7633bc4e451ecdd821aa7f073614cbce3e042fc01f25d618bcbd824",
       "sha256": "c2f175b49e5972ee497f74445e9733199c5dd1ca134fc665a51937f02740e389",
       "source_path": "src/editor/graph/search.c"
     },
     "src/editor/graph/search.h": {
+      "consumer_sha256": "26c84b2cda1babe7283595792c84210a8d26dfb571705760e7b1b65f3d447405",
       "current_source_sha256": "385688bf6b02da9d060e21d011671b57bebaf2668737d43307dc9aaf0b9784f3",
       "sha256": "385688bf6b02da9d060e21d011671b57bebaf2668737d43307dc9aaf0b9784f3",
       "source_path": "src/editor/graph/search.h"
@@ -1695,28 +1762,28 @@
       "source_path": "src/editor/graph/selection.c"
     },
     "src/editor/rmlui/kit.c": {
+      "consumer_sha256": "2999a8e80b977bd797ede4fca64ea2a727977a73829346817d6fd1aae35e8e44",
       "current_source_sha256": "509c1f46af9d3f72cfbc20e35f8ddb15269eee03050c6612894795816e48edb8",
       "sha256": "509c1f46af9d3f72cfbc20e35f8ddb15269eee03050c6612894795816e48edb8",
-      "source_path": "src/editor/rmlui/kit.c",
-      "consumer_sha256": "2999a8e80b977bd797ede4fca64ea2a727977a73829346817d6fd1aae35e8e44"
+      "source_path": "src/editor/rmlui/kit.c"
     },
     "src/editor/rmlui/kit_code.c": {
+      "consumer_sha256": "016c119d178244be34a533813629c03879062a88dcca418d8586f03a4a681c0e",
       "current_source_sha256": "221e28db084147124738f1a531f1300861183944dd87ee8fc7584e446b348c7c",
       "sha256": "221e28db084147124738f1a531f1300861183944dd87ee8fc7584e446b348c7c",
-      "source_path": "src/editor/rmlui/kit_code.c",
-      "consumer_sha256": "016c119d178244be34a533813629c03879062a88dcca418d8586f03a4a681c0e"
+      "source_path": "src/editor/rmlui/kit_code.c"
     },
     "src/editor/rmlui/kit_command.c": {
+      "consumer_sha256": "86871c55338cbfe79458f00664b09fdcc19bba2375a3a8fc4112b0c5db755434",
       "current_source_sha256": "4f0d2ec71b0f088df1e9ba442cdd679f7084d79f0de121adf83684b3ff58b3d1",
       "sha256": "4f0d2ec71b0f088df1e9ba442cdd679f7084d79f0de121adf83684b3ff58b3d1",
-      "source_path": "src/editor/rmlui/kit_command.c",
-      "consumer_sha256": "86871c55338cbfe79458f00664b09fdcc19bba2375a3a8fc4112b0c5db755434"
+      "source_path": "src/editor/rmlui/kit_command.c"
     },
     "src/editor/rmlui/kit_controls.c": {
+      "consumer_sha256": "88f0d79384e83fd65d7cc111d5074a0cf1cf3673dd6147326cc7f446e4fcef07",
       "current_source_sha256": "4cb32d7c39a75d021f7e91830a6b1625282c9472f209b542ddbe154d262fcc3b",
       "sha256": "4cb32d7c39a75d021f7e91830a6b1625282c9472f209b542ddbe154d262fcc3b",
-      "source_path": "src/editor/rmlui/kit_controls.c",
-      "consumer_sha256": "88f0d79384e83fd65d7cc111d5074a0cf1cf3673dd6147326cc7f446e4fcef07"
+      "source_path": "src/editor/rmlui/kit_controls.c"
     },
     "src/editor/rmlui/kit_drag.c": {
       "current_source_sha256": "fffcb3380e86a7baa74a376ac109ee50ae92c4a3c62dfd69e80969ad4202ab05",
@@ -1729,10 +1796,10 @@
       "source_path": "src/editor/rmlui/kit_inspect.c"
     },
     "src/editor/rmlui/kit_internal.h": {
+      "consumer_sha256": "a0d16a371650697e390add875306ae93ee06d1c4defcc65d5f45557516ebb736",
       "current_source_sha256": "18a2b7596f96f79e0434b872b80563bd8741dc5066c54ca7ad65ae65bea57499",
       "sha256": "18a2b7596f96f79e0434b872b80563bd8741dc5066c54ca7ad65ae65bea57499",
-      "source_path": "src/editor/rmlui/kit_internal.h",
-      "consumer_sha256": "a0d16a371650697e390add875306ae93ee06d1c4defcc65d5f45557516ebb736"
+      "source_path": "src/editor/rmlui/kit_internal.h"
     },
     "src/editor/rmlui/kit_list.c": {
       "current_source_sha256": "0e0b525e2d1e25984e7daa3a55c490932133951172dcbaa28f8103f9b590d418",
@@ -1750,10 +1817,10 @@
       "source_path": "src/editor/rmlui/kit_number.c"
     },
     "src/editor/rmlui/kit_popup.c": {
+      "consumer_sha256": "e17981539f631753f357af48ec3b86151da884a1933bef43331e4a683972961d",
       "current_source_sha256": "d9dd4dfd2fe7b867540f680473618a9cebcc6cc0ba869292b13dc90535bf4b3b",
       "sha256": "d9dd4dfd2fe7b867540f680473618a9cebcc6cc0ba869292b13dc90535bf4b3b",
-      "source_path": "src/editor/rmlui/kit_popup.c",
-      "consumer_sha256": "08847d1bd4f43c3ccf89acbc7c6221d3d8fca17508c0ba15616505db90996d44"
+      "source_path": "src/editor/rmlui/kit_popup.c"
     },
     "src/editor/rmlui/kit_slot.c": {
       "current_source_sha256": "fc28731a18bd1bff5ef727f3b89d173eaa6df6bc49fd9a3d381159a98b0b4b56",
@@ -1766,10 +1833,10 @@
       "source_path": "src/editor/rmlui/kit_text.c"
     },
     "src/editor/rmlui/kit_toast.c": {
+      "consumer_sha256": "095a830f2ad88978cb87df65806a8eb5a3dd82ab774c8e6af7b87146982a97f6",
       "current_source_sha256": "54df474aa9c74bcff253072ada969957b50400c1ce0f86cadb9eac0024fbf91b",
       "sha256": "54df474aa9c74bcff253072ada969957b50400c1ce0f86cadb9eac0024fbf91b",
-      "source_path": "src/editor/rmlui/kit_toast.c",
-      "consumer_sha256": "095a830f2ad88978cb87df65806a8eb5a3dd82ab774c8e6af7b87146982a97f6"
+      "source_path": "src/editor/rmlui/kit_toast.c"
     },
     "src/editor/rmlui/kit_wires.c": {
       "current_source_sha256": "43f948c3d2ecea36864f7459667d3035cd68299459cf8f4aaaf47577c50eadfc",
@@ -1792,45 +1859,49 @@
       "source_path": "src/editor/studio/studio.h"
     },
     "src/editor/studio/studio_assets.c": {
+      "consumer_sha256": "beb74fe70906424f5a46a12f5c0235f74f174c364681b4bf4b7caa928647f031",
       "current_source_sha256": "e2310a729d11e1610c6855db20d8d5c10f6aec28e2260b4bfaa8f7cee3f6ac66",
       "sha256": "e2310a729d11e1610c6855db20d8d5c10f6aec28e2260b4bfaa8f7cee3f6ac66",
-      "source_path": "src/editor/studio/studio_assets.c",
-      "consumer_sha256": "de4532d20199b6a5e304adfad889ac856611a965a52f0a8dcc3a37b4159699ba"
+      "source_path": "src/editor/studio/studio_assets.c"
     },
     "src/editor/studio/studio_calls.c": {
+      "consumer_sha256": "0831bc34fc7d8792962a942c19cad2dea5d0efb8d90da12d80bfe6d368b8eb5b",
       "current_source_sha256": "b9f7da2eef9f6f3c92413a4979316546a211a67ff1a8bf3ab45153924f10f2dc",
       "sha256": "b9f7da2eef9f6f3c92413a4979316546a211a67ff1a8bf3ab45153924f10f2dc",
       "source_path": "src/editor/studio/studio_calls.c"
     },
     "src/editor/studio/studio_canvas.c": {
+      "consumer_sha256": "71c700430b24f953ae3c84eb407bcf1c74bafaa925903f9f23ee3a1bf002b4c1",
       "current_source_sha256": "b4b02130d50aef8001c5d2ca7d9c88ce6cbf70584f350b13ca9f401f06ce357c",
       "sha256": "b4faf310f4b74a2761cf506d760c45025d820cadca2eb9090b087a2b3f314d78",
       "source_path": "src/editor/studio/studio_canvas.c"
     },
     "src/editor/studio/studio_code.c": {
+      "consumer_sha256": "c5c601255708d2373c1b9a28989535df4658bf972c4158d919479ac5afbe2ae6",
       "current_source_sha256": "2bc7f3689067a8ad2916dfa0dfc0ec0147a874721d165ec20f1be8f202867690",
       "sha256": "9129512614d262430a863e4cf6ccac6f161691d62449660f709ced5dfa89421c",
-      "source_path": "src/editor/studio/studio_code.c",
-      "consumer_sha256": "44dea803ffd571af7a2ca76262782dbce15d961a524ad69eff227e979f4217ef"
+      "source_path": "src/editor/studio/studio_code.c"
     },
     "src/editor/studio/studio_collab.c": {
+      "consumer_sha256": "60af050d5af319126cb1cd5ea52ec1bf5c23014c654109d30b9b40259aafea5e",
       "current_source_sha256": "a9eb6419e86730bd61449fef5116d2575a54ae5d21887d5d31c740c84313ddd6",
       "sha256": "a9eb6419e86730bd61449fef5116d2575a54ae5d21887d5d31c740c84313ddd6",
-      "source_path": "src/editor/studio/studio_collab.c",
-      "consumer_sha256": "60af050d5af319126cb1cd5ea52ec1bf5c23014c654109d30b9b40259aafea5e"
+      "source_path": "src/editor/studio/studio_collab.c"
     },
     "src/editor/studio/studio_commands.c": {
+      "consumer_sha256": "fe827b8f935ad3c1fd33a8e77fbdfdb6abaf046ca0a347b0b65675b81683575a",
       "current_source_sha256": "a57d09649e465de860c1fcde24684f72dd0588e6a71b22ef50df00db79ced3d7",
       "sha256": "a57d09649e465de860c1fcde24684f72dd0588e6a71b22ef50df00db79ced3d7",
-      "source_path": "src/editor/studio/studio_commands.c",
-      "consumer_sha256": "f376c3356d6e2cc700080616557dd663dab3d56a680e79052d72bd24323e156f"
+      "source_path": "src/editor/studio/studio_commands.c"
     },
     "src/editor/studio/studio_debug.c": {
+      "consumer_sha256": "401abb83ac64cafa36b8ff3dfce2d3af219ab049c2cba2dc23a2e4747398f184",
       "current_source_sha256": "4d8ef83a4ace1d2059f5dbffded88d7a73356d2b30b194e6ed69c371e0c185e3",
       "sha256": "4c07ef642ad0abf81b31795fe2120db257b5725456014ecf61a39bc323f6f561",
       "source_path": "src/editor/studio/studio_debug.c"
     },
     "src/editor/studio/studio_definition.c": {
+      "consumer_sha256": "6e82c72917049cbc23225bc15ced916e64d320d6545cfb903ad006e938e52920",
       "current_source_sha256": "ac5d51481a7852f684484641b1659c9ac2ad43abb04bd27798a08e806c3336fb",
       "sha256": "ac5d51481a7852f684484641b1659c9ac2ad43abb04bd27798a08e806c3336fb",
       "source_path": "src/editor/studio/studio_definition.c"
@@ -1856,10 +1927,10 @@
       "source_path": "src/editor/studio/studio_designer_edit.h"
     },
     "src/editor/studio/studio_designer_hierarchy.c": {
+      "consumer_sha256": "4e4d00a83aea3954615fff85ff52e4a5f801fb045638f0ca6fbed08dc8d7fffe",
       "current_source_sha256": "eb680c25f09eebb37ecff8d267fac0c8e9409a81c579dedf757568014edbf49c",
       "sha256": "eb680c25f09eebb37ecff8d267fac0c8e9409a81c579dedf757568014edbf49c",
-      "source_path": "src/editor/studio/studio_designer_hierarchy.c",
-      "consumer_sha256": "4e4d00a83aea3954615fff85ff52e4a5f801fb045638f0ca6fbed08dc8d7fffe"
+      "source_path": "src/editor/studio/studio_designer_hierarchy.c"
     },
     "src/editor/studio/studio_designer_internal.h": {
       "current_source_sha256": "9cc1d7a8c503e91a9740196c5014a8936e0a8b0c09cdaa206eb0a62826838b81",
@@ -1867,6 +1938,7 @@
       "source_path": "src/editor/studio/studio_designer_internal.h"
     },
     "src/editor/studio/studio_designer_library.c": {
+      "consumer_sha256": "7e29a9d06a1cce7075aaaa3ecc54afb444650b2813ddfe9e712f6eed6629b460",
       "current_source_sha256": "21b2f62a31c804a08a1f7cf67059edfd9e4f4380e2cf959fb5ac5b9f031afccf",
       "sha256": "21b2f62a31c804a08a1f7cf67059edfd9e4f4380e2cf959fb5ac5b9f031afccf",
       "source_path": "src/editor/studio/studio_designer_library.c"
@@ -1877,10 +1949,10 @@
       "source_path": "src/editor/studio/studio_designer_values.c"
     },
     "src/editor/studio/studio_disk.c": {
+      "consumer_sha256": "2d8f2300faa04bcf9cd7d8a788adb7f2bb578c656be778eaed9b5f5299476c0a",
       "current_source_sha256": "43619281e25792d0945add2307f0ac653270628907441f35446c112c07a0196b",
       "sha256": "43619281e25792d0945add2307f0ac653270628907441f35446c112c07a0196b",
-      "source_path": "src/editor/studio/studio_disk.c",
-      "consumer_sha256": "2d8f2300faa04bcf9cd7d8a788adb7f2bb578c656be778eaed9b5f5299476c0a"
+      "source_path": "src/editor/studio/studio_disk.c"
     },
     "src/editor/studio/studio_drop.c": {
       "current_source_sha256": "d5ee00299dbb4187d9a6b0004e5416bd5606356016534d46ce341378146a9e4f",
@@ -1888,10 +1960,10 @@
       "source_path": "src/editor/studio/studio_drop.c"
     },
     "src/editor/studio/studio_find.c": {
+      "consumer_sha256": "27121abc1f37ed31f643ccb03fc2cb2e954795b8af39d8abd0bda2854ea09361",
       "current_source_sha256": "39c56f02fec1a40a99be91b647d96474868f18dff8ad9f69a787bb0de7d33975",
       "sha256": "bdb49e7dc3e2e605c0cd9e90d4ccd3a94398d4fa4fd30b57cb8f56e250743a33",
-      "source_path": "src/editor/studio/studio_find.c",
-      "consumer_sha256": "27121abc1f37ed31f643ccb03fc2cb2e954795b8af39d8abd0bda2854ea09361"
+      "source_path": "src/editor/studio/studio_find.c"
     },
     "src/editor/studio/studio_gallery.c": {
       "current_source_sha256": "2e310540b560b7ba432813b814854ca77385eda7184104d65c7eafeb66db7754",
@@ -1899,62 +1971,64 @@
       "source_path": "src/editor/studio/studio_gallery.c"
     },
     "src/editor/studio/studio_graph.c": {
+      "consumer_sha256": "02497a5b594b15aa87914493e669eeaf4722885f471cfc9f0fab60e485fdf805",
       "current_source_sha256": "6061bc599a17a3b61c3d6b99729d57e410befff06b346c3d188081cc7e54d725",
       "sha256": "5913a02f13074c1fb1f5fff80ec3f2fc341f3811ccbaf53762f98840bc87990e",
-      "source_path": "src/editor/studio/studio_graph.c",
-      "consumer_sha256": "1396ffece8029d4f46bbe5247ccd9bc92df31d1eb9557611aaf05167779c8803"
+      "source_path": "src/editor/studio/studio_graph.c"
     },
     "src/editor/studio/studio_graph_comment.c": {
+      "consumer_sha256": "85a3d017b03994b4712217007c26098d4281359edc363266b143193c928e96f2",
       "current_source_sha256": "b5c125313cda03fa83f768970ca4fb6450cd99679004986b0f5573efa962ad1f",
       "sha256": "b5c125313cda03fa83f768970ca4fb6450cd99679004986b0f5573efa962ad1f",
       "source_path": "src/editor/studio/studio_graph_comment.c"
     },
     "src/editor/studio/studio_graph_details.c": {
+      "consumer_sha256": "6ad24275c8e14f11069f95fa4518e944aecfb25fe6b5f547b6e2451d09da5a91",
       "current_source_sha256": "46c78eb9fc79b45252a64d2ac1ccbaa5d58ba665d4f4a7e53016bc6e204f92e1",
       "sha256": "46c78eb9fc79b45252a64d2ac1ccbaa5d58ba665d4f4a7e53016bc6e204f92e1",
-      "source_path": "src/editor/studio/studio_graph_details.c",
-      "consumer_sha256": "6ad24275c8e14f11069f95fa4518e944aecfb25fe6b5f547b6e2451d09da5a91"
+      "source_path": "src/editor/studio/studio_graph_details.c"
     },
     "src/editor/studio/studio_graph_draw.c": {
+      "consumer_sha256": "1ea70c236cf757eae28bfc8af27626feef3c8a810020c9d87d30b6d5ecf57dbb",
       "current_source_sha256": "c627457f73b9bb0e27ed7086b6b3f4b7a09bdcfcb1fab0640ae8d42b02880e18",
       "sha256": "c6fba37f751b4d1cd8c898e63e7aea935d644cf67cc4ad00315c1da4cc7f2dbe",
-      "source_path": "src/editor/studio/studio_graph_draw.c",
-      "consumer_sha256": "6b129f9b8bea01f07064d8b57fa0c2216432b7624022a3d017a4bfcf3325602e"
+      "source_path": "src/editor/studio/studio_graph_draw.c"
     },
     "src/editor/studio/studio_graph_edit.c": {
+      "consumer_sha256": "888cb7c9b8136e32de6a256420c5532872595156f73e11076460647c26534557",
       "current_source_sha256": "e16956dd076e838f2808b55155d79aa977d0195d3d6411691440735a8ac4b52c",
       "sha256": "c550d7d01e0c72a7e97c1e37fe851d70ffa676560a84dd4ec7353cdb79c4a55e",
-      "source_path": "src/editor/studio/studio_graph_edit.c",
-      "consumer_sha256": "11666d75cc21a9acf189b08dab0918751b9884d11ef90b9a7d1e3aeaa9fd9d8a"
+      "source_path": "src/editor/studio/studio_graph_edit.c"
     },
     "src/editor/studio/studio_graph_find.c": {
+      "consumer_sha256": "6a8b504d7bcb1a335dac67d8fcd12961c713313a35d71fdc4a011523a7827102",
       "current_source_sha256": "1c655692afd3268fa88d67fe2cfda7613b4773d03ac3426ac8ec017e9dcf19b3",
       "sha256": "0a9770f7f378e2ba0d089f06d1a0e1ac277025ddf018749db7f7fcc10b9ea8e6",
       "source_path": "src/editor/studio/studio_graph_find.c"
     },
     "src/editor/studio/studio_graph_header.c": {
+      "consumer_sha256": "2246ff7b09f325a07aa6d7d4d9a43a13441a95f446fafe6120befab311fc2e12",
       "current_source_sha256": "57816eaff461d63b99745af74457d5fba384a14b383a64afaf7125ee08ddea48",
       "sha256": "55c986fb4c85216e7b209ca4190d62739d7b5409e07fe222ea95f13a9c169bca",
-      "source_path": "src/editor/studio/studio_graph_header.c",
-      "consumer_sha256": "d0c0aa9d74960f9dbd5892d4d911a6a7bbf8e8dd231e1a7f9c6701227f0898fc"
+      "source_path": "src/editor/studio/studio_graph_header.c"
     },
     "src/editor/studio/studio_graph_input.c": {
+      "consumer_sha256": "b3213d04847e9f044aa4e3e37bdcf46fac8e34dd66eca1a864220475f67c4d21",
       "current_source_sha256": "4ab3aff5082e6bfeb7bfc08c1363d5f8c5d30e189feb565c213e8f50e11d5cc8",
       "sha256": "951968eb62515a5ee2304ebd38fe32eb81b120dd964e199a5795b7a5a784e4f7",
-      "source_path": "src/editor/studio/studio_graph_input.c",
-      "consumer_sha256": "be6ce91e2d432fe0e607aa0b733070ccc5483f978e47b117d8f1e30b7f5458c0"
+      "source_path": "src/editor/studio/studio_graph_input.c"
     },
     "src/editor/studio/studio_graph_internal.h": {
+      "consumer_sha256": "e2c9865d20383f3d05d4a47a72679a93b34ee8bea0f0f2379b00a6a4bb5ce65c",
       "current_source_sha256": "4829efbcf63d8f0dc0fdb59e42c726d591b1ab070873b946a77ba2753586abc5",
       "sha256": "4829efbcf63d8f0dc0fdb59e42c726d591b1ab070873b946a77ba2753586abc5",
-      "source_path": "src/editor/studio/studio_graph_internal.h",
-      "consumer_sha256": "b20de3eabd3574d2c2a57d544e6ec6aa300138f2278431a4798d665b213bfab9"
+      "source_path": "src/editor/studio/studio_graph_internal.h"
     },
     "src/editor/studio/studio_graph_layout.c": {
+      "consumer_sha256": "eb55c481d6ac575bc63ff1dcba3ca8f6c04c5fc9ce17f775b53fff1913eb2a0a",
       "current_source_sha256": "cdad54d6795f752687015c9d5a85d75417bd0b69be7ad57026e1e28ec3abe519",
       "sha256": "5d5e1ea7ad267bc3b8fcecdf2ba1bd7f038e09393f2fa3e8af028997b2275c9e",
-      "source_path": "src/editor/studio/studio_graph_layout.c",
-      "consumer_sha256": "6783a90eff32e082748e0c44e015ad362d7d6d33085ee98898fe9283e59546b6"
+      "source_path": "src/editor/studio/studio_graph_layout.c"
     },
     "src/editor/studio/studio_graph_literals.c": {
       "current_source_sha256": "1d8ce15646219e1fa5a84810ff2d1fb91e76f9846216a246aac391275156ffc1",
@@ -1967,37 +2041,40 @@
       "source_path": "src/editor/studio/studio_graph_live.c"
     },
     "src/editor/studio/studio_graph_menu.c": {
+      "consumer_sha256": "0991215781c315f49f5343bfc65b1e4b628031188b6dec2e914dc3d162f43fac",
       "current_source_sha256": "f84572f6d3f4cdfa15a3e1b681508592aad4d12ade199ba0d5a0058c7606596c",
       "sha256": "f84572f6d3f4cdfa15a3e1b681508592aad4d12ade199ba0d5a0058c7606596c",
       "source_path": "src/editor/studio/studio_graph_menu.c"
     },
     "src/editor/studio/studio_graph_nav.c": {
+      "consumer_sha256": "a549f4064fe29a10c6f8a7cd93378f3315bfa3a2e83065ebf09ca17a90d6e5d3",
       "current_source_sha256": "eac3a938f51f90599a0ce49a8a0937c3d7417d6534497e988e6fe201e28c4a4e",
       "sha256": "eac3a938f51f90599a0ce49a8a0937c3d7417d6534497e988e6fe201e28c4a4e",
       "source_path": "src/editor/studio/studio_graph_nav.c"
     },
     "src/editor/studio/studio_graph_pins.c": {
+      "consumer_sha256": "f046840cda452885659e3be320152f385951e2d723bb650edb637a8d7c4a88e5",
       "current_source_sha256": "cabd29872b1b215d9eccf67958b98bd8d3d800407a781ee6135269532f16eb5c",
       "sha256": "15ab47219ce427b7320748944bc9bc51bac6ea9cd650a694e518777cfcea4e12",
       "source_path": "src/editor/studio/studio_graph_pins.c"
     },
     "src/editor/studio/studio_graph_properties.c": {
+      "consumer_sha256": "6e18d40e2776ec16bad2305ecca90648f2298d3b734a872ebb92a26cd43351e5",
       "current_source_sha256": "a276621639c97c357f70b5ecb8f2497e6604915fef946db10796fd7a4a7e1b1f",
       "sha256": "653a4bfe5021362ac29f28e7eb28d8e6f7dff9412ac890b1465d6c028ece8176",
-      "source_path": "src/editor/studio/studio_graph_properties.c",
-      "consumer_sha256": "6e18d40e2776ec16bad2305ecca90648f2298d3b734a872ebb92a26cd43351e5"
+      "source_path": "src/editor/studio/studio_graph_properties.c"
     },
     "src/editor/studio/studio_graph_values.c": {
+      "consumer_sha256": "f4727b468412a7d618e7c8427618f3cc69ecabc273a91c28a372fbf8101616eb",
       "current_source_sha256": "741fd7736678afc5b6dc17902d468a95f6e748961b91a42f8b68e5e473647f02",
       "sha256": "1346be855e518fb3d7db152181a1d95613da0eb42d2879849ced9b5b0f634c3b",
-      "source_path": "src/editor/studio/studio_graph_values.c",
-      "consumer_sha256": "f4727b468412a7d618e7c8427618f3cc69ecabc273a91c28a372fbf8101616eb"
+      "source_path": "src/editor/studio/studio_graph_values.c"
     },
     "src/editor/studio/studio_graph_view.c": {
+      "consumer_sha256": "d272fbc4afa24084fcb9d36110a55d7a68b0af43d118e89abd2b22e2d4bee20b",
       "current_source_sha256": "8b550c6e068a35094eb7bf3a2c6e504584d3d5f8d093faba44abd1a43c310087",
       "sha256": "8b550c6e068a35094eb7bf3a2c6e504584d3d5f8d093faba44abd1a43c310087",
-      "source_path": "src/editor/studio/studio_graph_view.c",
-      "consumer_sha256": "99314b61ef7834b586a85a00af2e10809f4409334461183c5a7686b1e3398549"
+      "source_path": "src/editor/studio/studio_graph_view.c"
     },
     "src/editor/studio/studio_host.c": {
       "consumer_replacements": [
@@ -2006,10 +2083,10 @@
           "        fprintf(stderr, \"Studio UI: %s\\n\", s->page.error);\n        studio_error(s, \"Studio UI\", s->page.error);"
         ]
       ],
+      "consumer_sha256": "9149000f915436d412fbc0747f6c58f755b06222da00b661f4b362c8f374ca37",
       "current_source_sha256": "4db01dfa4c90272a5d0a0deb7e3cb46b23f2e2e24986c38029e1b2d137264374",
       "sha256": "37bf9d494b1f81971417da1e762d8748f64ecf596e30a6334f39305df658a5d6",
-      "source_path": "src/editor/studio/studio_host.c",
-      "consumer_sha256": "5df8c1226b709540f01d25d3ff0e98d639a38c9e7b88aa2784678c0bb412de39"
+      "source_path": "src/editor/studio/studio_host.c"
     },
     "src/editor/studio/studio_inspect.c": {
       "current_source_sha256": "b1755ebef5f619db6e4cd06afd8005228fa79b8a03188c949c6b8bd9531c5e07",
@@ -2017,45 +2094,49 @@
       "source_path": "src/editor/studio/studio_inspect.c"
     },
     "src/editor/studio/studio_internal.h": {
+      "consumer_sha256": "e8ceae819f801607ae4a63682f4037bf01fd3a56db6e887318c4cfe5bc218d99",
       "current_source_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
       "sha256": "a01a22cf19a858e983159029166fe7d9086a883aa6e864bfa9a359b78048a1e6",
-      "source_path": "src/editor/studio/studio_internal.h",
-      "consumer_sha256": "c2e4a17807cd35d382ad986cad35373727b4a1cf418f8b08c8f1f5d46686a624"
+      "source_path": "src/editor/studio/studio_internal.h"
     },
     "src/editor/studio/studio_keymap.c": {
+      "consumer_sha256": "b13e84b8e1799b050a550c121c220e072713742438f49956a2b77d46f28baf92",
       "current_source_sha256": "8b5d145d9512c78e41ef18d71680421e8da299c9aa6c6b5585d00d6b5b23d88a",
       "sha256": "8b5d145d9512c78e41ef18d71680421e8da299c9aa6c6b5585d00d6b5b23d88a",
-      "source_path": "src/editor/studio/studio_keymap.c",
-      "consumer_sha256": "b13e84b8e1799b050a550c121c220e072713742438f49956a2b77d46f28baf92"
+      "source_path": "src/editor/studio/studio_keymap.c"
     },
     "src/editor/studio/studio_keys.c": {
+      "consumer_sha256": "408ddf89f41c2e21c2b9a0e09e9257e381dc6986d4582e64faadf0c807d96e14",
       "current_source_sha256": "1b97f3c7b27310405a208cdd85156028c8c01fd02e9cab2727740a841f7d9a37",
       "sha256": "1b97f3c7b27310405a208cdd85156028c8c01fd02e9cab2727740a841f7d9a37",
-      "source_path": "src/editor/studio/studio_keys.c",
-      "consumer_sha256": "408ddf89f41c2e21c2b9a0e09e9257e381dc6986d4582e64faadf0c807d96e14"
+      "source_path": "src/editor/studio/studio_keys.c"
     },
     "src/editor/studio/studio_member_properties.c": {
+      "consumer_sha256": "808e4d2d0080885bd0787152eac0e45a65bdc70a3caa105dcd32b932f443e4b3",
       "current_source_sha256": "0d345e02baae1cb501fb3788b52b38902547694e9cba9c52c4f8c9ae542e5ffa",
       "sha256": "e366052eea9670b6d87c3b2a6f50bc93de4d7b2ec632bc8d73ae0b4f2a3fddc8",
       "source_path": "src/editor/studio/studio_member_properties.c"
     },
     "src/editor/studio/studio_members.c": {
+      "consumer_sha256": "7a3d41ec297a2a7d35b86207b395ccac2753e0fed73cb704886dbc2c7bd3ba33",
       "current_source_sha256": "933131e66da01f6e413de6e43cede46e041c2733b52e169671c85aa6f928b3ad",
       "sha256": "c99b0c1c3a80aa9c8866b6419a65c3974227ecb73cbe42f905cb2319beedc07a",
       "source_path": "src/editor/studio/studio_members.c"
     },
     "src/editor/studio/studio_members_internal.h": {
+      "consumer_sha256": "06f869c986d3d40184a25b6af5b2f9b61771d09e0d4fb054bf59a07f5d60e2c1",
       "current_source_sha256": "0b6ee9bb18a2395dea4d336cb964957708c71ec4922e44b866d6eb992678b17b",
       "sha256": "0b6ee9bb18a2395dea4d336cb964957708c71ec4922e44b866d6eb992678b17b",
       "source_path": "src/editor/studio/studio_members_internal.h"
     },
     "src/editor/studio/studio_model.c": {
+      "consumer_sha256": "9d0478d6632901eda84da73bd8a617ba449459e5de956b6cf065d39690a942c6",
       "current_source_sha256": "39a9058723dc404161174ada9b9d1ebd6d2044b381efe6e0296fb5544fd0a003",
       "sha256": "707f0ab24f8bc93152036656b611a259d1140a716de31e92774dc4318c1768aa",
-      "source_path": "src/editor/studio/studio_model.c",
-      "consumer_sha256": "ba12d45434fbd47a0e146f959658d2dfa8b7858b2c187cebd398e82416ef0885"
+      "source_path": "src/editor/studio/studio_model.c"
     },
     "src/editor/studio/studio_node_calls.c": {
+      "consumer_sha256": "ee9a9d75ac96e89091adc6ff0a67461da23579ef932457a8f9827896fa0f5b05",
       "current_source_sha256": "c512a78fda114be112fab7d6fa5e9e417720f964e61a2941f77cb3ad6e33500d",
       "sha256": "c512a78fda114be112fab7d6fa5e9e417720f964e61a2941f77cb3ad6e33500d",
       "source_path": "src/editor/studio/studio_node_calls.c"
@@ -2066,27 +2147,28 @@
       "source_path": "src/editor/studio/studio_nodes.h"
     },
     "src/editor/studio/studio_outliner.c": {
+      "consumer_sha256": "a015a8d94934ce643a68367a31ff022514aaba69af482a9a9cdb91c049be87c6",
       "current_source_sha256": "4ae38a83ec910bdb15608ce907c8bcfab0770f0a97302f2765b726fcb45d81b5",
       "sha256": "4ae38a83ec910bdb15608ce907c8bcfab0770f0a97302f2765b726fcb45d81b5",
-      "source_path": "src/editor/studio/studio_outliner.c",
-      "consumer_sha256": "a015a8d94934ce643a68367a31ff022514aaba69af482a9a9cdb91c049be87c6"
+      "source_path": "src/editor/studio/studio_outliner.c"
     },
     "src/editor/studio/studio_output.c": {
+      "consumer_sha256": "c491cb8663fc2fd22b2b0b87881eda8b5d301e1d0cfacf849f5392be30096417",
       "current_source_sha256": "d721ca7f7709779e7162098aea06f313aead1e9949c8f3e054017b1eeabca469",
       "sha256": "7a30fc6f5e68a78f43575a4977ba80c9602449b29cf3a645cd12e4106dab40a1",
       "source_path": "src/editor/studio/studio_output.c"
     },
     "src/editor/studio/studio_palette.c": {
+      "consumer_sha256": "bf945aa1cb76f0768d3bffd57115c483efbe9e0fff1eadd7df7a1fc96c437c81",
       "current_source_sha256": "950fea49f12d09b3bc70d606a9177c277aced6770dda7818242e42e8557cc45a",
       "sha256": "042a38fe0656055db9a23617f129a9fd4650beb17ff7fb0e21bc7bc255fbd6ea",
-      "source_path": "src/editor/studio/studio_palette.c",
-      "consumer_sha256": "ded719c17037a25b248d7542cb670da8b623f79b09af28527197064148b1ad2a"
+      "source_path": "src/editor/studio/studio_palette.c"
     },
     "src/editor/studio/studio_palette_view.c": {
+      "consumer_sha256": "a338e23e1e39d34edd9b3255fbc1c08e911edfce41a743651f7cf8a0c0c3d320",
       "current_source_sha256": "942db470a6a11e8ff55b0279097d54e189d74a0a8156503331643e1b3a2297e6",
       "sha256": "942db470a6a11e8ff55b0279097d54e189d74a0a8156503331643e1b3a2297e6",
-      "source_path": "src/editor/studio/studio_palette_view.c",
-      "consumer_sha256": "6dc7ad91a3e8fb856e9737f9f19f41acdee67ad3e04b5e8af86115a438d2dd07"
+      "source_path": "src/editor/studio/studio_palette_view.c"
     },
     "src/editor/studio/studio_panels.c": {
       "current_source_sha256": "bdd80adcd85c06fa6025c329d68a399bea63652f03269095c2f99b66610e48f1",
@@ -2104,69 +2186,70 @@
       "source_path": "src/editor/studio/studio_pick.c"
     },
     "src/editor/studio/studio_prefs.c": {
+      "consumer_sha256": "acd5ae3e53ec014355facb3724be004f9d9c6be64a276c3ded6d27f59dd1f2cb",
       "current_source_sha256": "948e97d759558ba0934bcb6c87def9dda533ba012665183a8486297bd79463e7",
       "sha256": "948e97d759558ba0934bcb6c87def9dda533ba012665183a8486297bd79463e7",
-      "source_path": "src/editor/studio/studio_prefs.c",
-      "consumer_sha256": "65b145f111c0eba5c8eeefa44b685c2388cada46a21ade2190a6f08cfd092a4a"
+      "source_path": "src/editor/studio/studio_prefs.c"
     },
     "src/editor/studio/studio_projects.c": {
+      "consumer_sha256": "c8bd13ade530ec11a5e5e3711bff93b6676372c57e11b046818c3295d87c1911",
       "current_source_sha256": "4fd1c657dd07a0a71de2b89c10186577f6b1bfd9e8c4221b22ab2a9a563b7992",
       "sha256": "4fd1c657dd07a0a71de2b89c10186577f6b1bfd9e8c4221b22ab2a9a563b7992",
-      "source_path": "src/editor/studio/studio_projects.c",
-      "consumer_sha256": "c8bd13ade530ec11a5e5e3711bff93b6676372c57e11b046818c3295d87c1911"
+      "source_path": "src/editor/studio/studio_projects.c"
     },
     "src/editor/studio/studio_properties.c": {
+      "consumer_sha256": "6951ebf14355775f2a13d1d636a9af7818fbfbc5e04f12fd8bbee83b25b09f8d",
       "current_source_sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
       "sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
-      "source_path": "src/editor/studio/studio_properties.c",
-      "consumer_sha256": "be36006e9dbc923078cdc77cdc3e1972905e2379be026549acb09b856e61a9e9"
+      "source_path": "src/editor/studio/studio_properties.c"
     },
     "src/editor/studio/studio_properties_internal.h": {
+      "consumer_sha256": "85d35572b7e728a297749e2e807c4ceb6f56532185decb60baf34862c3dcd36f",
       "current_source_sha256": "14c5ed4a4d38c1ca484be50e70be0cb1d3ec85d62a70185612d365659bcbd236",
       "sha256": "14c5ed4a4d38c1ca484be50e70be0cb1d3ec85d62a70185612d365659bcbd236",
-      "source_path": "src/editor/studio/studio_properties_internal.h",
-      "consumer_sha256": "88c1eab59a17b9e4b8cb3732e2f66933ceb663495497504b8662be1595cd4ab1"
+      "source_path": "src/editor/studio/studio_properties_internal.h"
     },
     "src/editor/studio/studio_properties_view.c": {
+      "consumer_sha256": "2fcc7733cd9c49cf2aed4ca038d46a3ce0a07a68e910a4ff3f27e72fc2452ff9",
       "current_source_sha256": "a0579bb794e0d93710c7c4e3c18b328c8fb94b5c2bb40b07304923167aef3130",
       "sha256": "a0579bb794e0d93710c7c4e3c18b328c8fb94b5c2bb40b07304923167aef3130",
-      "source_path": "src/editor/studio/studio_properties_view.c",
-      "consumer_sha256": "795928dbefd59a9f16426a3d8b303a9c02cee63d456a5e3eae42423c5f450096"
+      "source_path": "src/editor/studio/studio_properties_view.c"
     },
     "src/editor/studio/studio_prototype_actions.c": {
+      "consumer_sha256": "43185dc389f58a789767d58d0e9c1a2702a33079f817f3eb5bb62557cf44dc20",
       "current_source_sha256": "2d69a48bc7c1cb006a19e11a9b0df180defa389464e0eeeac40fc04adb0b345d",
       "sha256": "2d69a48bc7c1cb006a19e11a9b0df180defa389464e0eeeac40fc04adb0b345d",
-      "source_path": "src/editor/studio/studio_prototype_actions.c",
-      "consumer_sha256": "ca4adc85ba3bdf12f407989a478a615ca714c2cdc724eccddf8fbeec3bd00c80"
+      "source_path": "src/editor/studio/studio_prototype_actions.c"
     },
     "src/editor/studio/studio_refactor.c": {
+      "consumer_sha256": "e232ce1d7c1bfaa9ec0688e16cc822d0016cec1043a1fa51797933382360cc16",
       "current_source_sha256": "86ca21a29ce092333dc2f80f310cddf4ab081178fb015eafde0aae69ef20123b",
       "sha256": "dcee74b599fe89f84b22d7e25e1ad6f5672f97cd6ce96f4a02575a6618b245fe",
-      "source_path": "src/editor/studio/studio_refactor.c",
-      "consumer_sha256": "feddffb6855c7884159dbb742990f4350f043761975310f9013bd2246c3ce818"
+      "source_path": "src/editor/studio/studio_refactor.c"
     },
     "src/editor/studio/studio_scene.c": {
+      "consumer_sha256": "cbb3c91cb8f9545f2524aecba9cfdfd6d6e2d4cbc13638a249a4ab1b9bfdd1a3",
       "current_source_sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
       "sha256": "21941e1697129383a6e0c850ae51e206f8789b2dc3dff831f611173b037bcac4",
-      "source_path": "src/editor/studio/studio_scene.c",
-      "consumer_sha256": "c59ed21f962135eb26251b0bed0060530745763e43a6aca3467a99db2494ce80"
+      "source_path": "src/editor/studio/studio_scene.c"
     },
     "src/editor/studio/studio_settings.c": {
+      "consumer_sha256": "6dcd17e563a6c7e0a3f9be7a66d476c37375c2ad8e508d3ef878974abafe15eb",
       "current_source_sha256": "1c75298f324a970da1732a66036f3622d6c6be59319a2719b62ce0ceb7b5ff03",
       "sha256": "1c75298f324a970da1732a66036f3622d6c6be59319a2719b62ce0ceb7b5ff03",
       "source_path": "src/editor/studio/studio_settings.c"
     },
     "src/editor/studio/studio_shell.c": {
+      "consumer_sha256": "deecdd4f505cbcdfddaba245fda90b71293d9a1683b4386e0c053871687210f6",
       "current_source_sha256": "e38ecbf7677c5f74f7fcafc5199412171781a5fd8eac038a7923a1327142499c",
       "sha256": "e38ecbf7677c5f74f7fcafc5199412171781a5fd8eac038a7923a1327142499c",
-      "source_path": "src/editor/studio/studio_shell.c",
-      "consumer_sha256": "74e0b1b4d2f021474a3c022ccf86b09724828e809474ff47716bd82b86679284"
+      "source_path": "src/editor/studio/studio_shell.c"
     },
     "src/editor/studio/studio_sources.c": {
+      "consumer_sha256": "4f0a83b058c96df871b94dcd535d92b9fc789f023ad112a3ad838927fc4a552f",
       "current_source_sha256": "3163175f127f6aec6a68be24efe77791ed9ed640daf72819e281de90b0cad483",
       "sha256": "ad4f609f80a5ab1986f04d7783f422602cd37d5407ae488a1b0deae07a86fb8c",
-      "source_path": "src/editor/studio/studio_sources.c",
-      "consumer_sha256": "00cef02136218bcba7088f1ddc6827844b13956c683dfe647ac0136e22ad6082"
+      "source_path": "src/editor/studio/studio_sources.c"
     },
     "src/editor/studio/studio_thumbnail_cache.c": {
       "current_source_sha256": "24c082cc35358cba824fc0539a403b9afd1154bb79d3b1ab0cb9796b0b350ceb",
@@ -2179,15 +2262,16 @@
       "source_path": "src/editor/studio/studio_thumbnail_graph.c"
     },
     "src/editor/studio/studio_thumbnail_kinds.c": {
+      "consumer_sha256": "e3fb416cfdb62c9fba1b2d157692871f80b275037431db9603ea7ea69e577058",
       "current_source_sha256": "57e900a68a4bcd7d664deb04d1b05cd171babf9a531f910a0344048dd0a4c4a7",
       "sha256": "d492c713ea44c06137f187bc0ea31926e56cf2461014bbf2825e6a8f38dc24c7",
       "source_path": "src/editor/studio/studio_thumbnail_kinds.c"
     },
     "src/editor/studio/studio_thumbnails.c": {
+      "consumer_sha256": "fee0c3e73fe1aeae431a0bd4855f8b779f598d5e132b69e143f8821f455811cc",
       "current_source_sha256": "bdf3cac1d4d96dfad830008d00d694a7d8d7dc664cd2e53abd0e6f821f043c4c",
       "sha256": "bdf3cac1d4d96dfad830008d00d694a7d8d7dc664cd2e53abd0e6f821f043c4c",
-      "source_path": "src/editor/studio/studio_thumbnails.c",
-      "consumer_sha256": "fb595239f95851e9dad5047f9700781b08ce10a4b4262761fcdb7037361a7609"
+      "source_path": "src/editor/studio/studio_thumbnails.c"
     },
     "src/editor/studio/studio_thumbnails.h": {
       "current_source_sha256": "31a8861ef91e9bd4e02ad15e615700b2fb872660851db589d6329f3319cf45aa",
@@ -2201,24 +2285,25 @@
           "\"editor/workspace/tree_watch.h\""
         ]
       ],
+      "consumer_sha256": "9c3609927bf7b2b5a001016484c1f9eae5488c31301d5877951a48909bd8dca7",
       "current_source_sha256": "4cc012974e9fb688f8ecaf94c80661d34e38a780341636777eda9caa59a010d9",
       "sha256": "262e7451d439607c4a6409da7aa56f473c19dec23546088992f0487ffe91a637",
-      "source_path": "src/editor/studio/studio_ui.c",
-      "consumer_sha256": "1c3cb11412018cf5fae7a5f10a435e95edd59a35cd64429297dde503358e8dac"
+      "source_path": "src/editor/studio/studio_ui.c"
     },
     "src/editor/text/zep_bridge.cpp": {
+      "consumer_sha256": "849c8a08a3c4dce47283005bdc6fbb47bdf0e9e0be5fc3fc945a093f388456ce",
       "current_source_sha256": "1fa3d063bd2ac8d2cbdfaa1146cf52d31d87dc2cff5c7412af9db7953092dc03",
       "sha256": "1fa3d063bd2ac8d2cbdfaa1146cf52d31d87dc2cff5c7412af9db7953092dc03",
-      "source_path": "src/editor/text/zep_bridge.cpp",
-      "consumer_sha256": "849c8a08a3c4dce47283005bdc6fbb47bdf0e9e0be5fc3fc945a093f388456ce"
+      "source_path": "src/editor/text/zep_bridge.cpp"
     },
     "src/editor/text/zep_bridge.h": {
+      "consumer_sha256": "49788ccc1157c2113d6a80b289a5f1715675c826f42a1847abdf194d0153e1ef",
       "current_source_sha256": "c00d916fadd81518f710272ec3b65394bfb757f00256ed1a42a8c8664ffd1e2b",
       "sha256": "c00d916fadd81518f710272ec3b65394bfb757f00256ed1a42a8c8664ffd1e2b",
-      "source_path": "src/editor/text/zep_bridge.h",
-      "consumer_sha256": "49788ccc1157c2113d6a80b289a5f1715675c826f42a1847abdf194d0153e1ef"
+      "source_path": "src/editor/text/zep_bridge.h"
     },
     "src/editor/ui/choices.c": {
+      "consumer_sha256": "440309a8ad3353e22549b8ebf04cb233b49c4f879e0a8dca584efad53ec535d7",
       "current_source_sha256": "445249cccfbeca102738e53ca9bc1c0081b39b431ae2b39421901bb44dc24638",
       "sha256": "445249cccfbeca102738e53ca9bc1c0081b39b431ae2b39421901bb44dc24638",
       "source_path": "src/editor/ui/choices.c"
@@ -2239,16 +2324,16 @@
       "source_path": "src/editor/ui/highlight.h"
     },
     "src/editor/ui/kit.h": {
+      "consumer_sha256": "2ca4e9a4609b1917aba7d77e67373fd1d87728e10e0aebef36b6d8037aa3ae92",
       "current_source_sha256": "0971a1fa08b4407bd6f7b275384c1ccc97235a0b00c4c883235554bbd340962c",
       "sha256": "0971a1fa08b4407bd6f7b275384c1ccc97235a0b00c4c883235554bbd340962c",
-      "source_path": "src/editor/ui/kit.h",
-      "consumer_sha256": "2ca4e9a4609b1917aba7d77e67373fd1d87728e10e0aebef36b6d8037aa3ae92"
+      "source_path": "src/editor/ui/kit.h"
     },
     "src/editor/ui/kit_icons.h": {
+      "consumer_sha256": "7ea952dc07cc8034117b4817b65c24c5a0b46ddf5db7005d2ae4ce3c8ccd1828",
       "current_source_sha256": "d48b0fd19d34495e5d0f0f9dff1848213fbc440ab3b0aad4afc32645cdcd73a3",
       "sha256": "d48b0fd19d34495e5d0f0f9dff1848213fbc440ab3b0aad4afc32645cdcd73a3",
-      "source_path": "src/editor/ui/kit_icons.h",
-      "consumer_sha256": "7ea952dc07cc8034117b4817b65c24c5a0b46ddf5db7005d2ae4ce3c8ccd1828"
+      "source_path": "src/editor/ui/kit_icons.h"
     },
     "src/editor/ui/kit_wire_shape.c": {
       "current_source_sha256": "eba917d35e8408df9fb699b081bfcac330753e6391a87c54df9d37a9613dfd7d",
@@ -2256,6 +2341,7 @@
       "source_path": "src/editor/ui/kit_wire_shape.c"
     },
     "src/editor/ui/labels.c": {
+      "consumer_sha256": "eb87084bc3deaf4a98e2266f2ed6e6dfbcd4f7117f2ac5a8d64e61862b5fa5c2",
       "current_source_sha256": "b9ab58c1a88e1b2176e9ffb95206d61323bb996b77673d69ca6fd5ac2c184a2e",
       "sha256": "b9ab58c1a88e1b2176e9ffb95206d61323bb996b77673d69ca6fd5ac2c184a2e",
       "source_path": "src/editor/ui/labels.c"
@@ -2266,12 +2352,13 @@
       "source_path": "src/editor/ui/labels.h"
     },
     "src/editor/workspace/application.c": {
+      "consumer_sha256": "fb2743cc6ea0c1a9cc8052414c62a4166741558ccd3d34e31cb741317e9de141",
       "current_source_sha256": "e316a252094df626c49efa43ded1c5dd6b6fcf363dce59a5d6bb9dd3ebcc85cf",
       "sha256": "5e104920f3b8e7ad9f5182af5e8b5dbed048e2dd98b0b62e3f9ac664bd7be991",
-      "source_path": "src/editor/workspace/application.c",
-      "consumer_sha256": "5c897bc93e7a12ac091a47a12885e342a5170ba1ab67741db8ec411f1ef28cfd"
+      "source_path": "src/editor/workspace/application.c"
     },
     "src/editor/workspace/asset_index.c": {
+      "consumer_sha256": "3e3d563e37968abe4d06be49f35e5227759c8fe67910ca318bcccbc55b3827b8",
       "current_source_sha256": "0bc887484cae9e739df73fa16f377342f9a47bfdc273242061d532dd98e55e48",
       "sha256": "ad3bd933731086750ad84c8729a6e1ab27106e30846210e2029d354cb7644309",
       "source_path": "src/editor/workspace/asset_index.c"
@@ -2282,16 +2369,16 @@
       "source_path": "src/editor/workspace/asset_index.h"
     },
     "src/editor/workspace/asset_refactor.c": {
+      "consumer_sha256": "6e18ce4ce5307b9214e1a580c57b9ecea02ff8df89b0927027e5b08b0983cb24",
       "current_source_sha256": "187ec7fad3b95e1a66769a35f86755607eaa577ca8ec2bbd410c92400f4750c1",
       "sha256": "187ec7fad3b95e1a66769a35f86755607eaa577ca8ec2bbd410c92400f4750c1",
-      "source_path": "src/editor/workspace/asset_refactor.c",
-      "consumer_sha256": "bb7aab5802be997a6430b6c01cd5c5fd8c6697b0304a3d0115925de38fd8f08d"
+      "source_path": "src/editor/workspace/asset_refactor.c"
     },
     "src/editor/workspace/asset_refactor.h": {
+      "consumer_sha256": "08a0f88b7664c9902613f2d02323e6c4e0076606190f3718402779c6ab9a3e13",
       "current_source_sha256": "48e07f2aff3b1339ff20295c60b0073f323230ce39d7fc91ccf6bea5ac30cc56",
       "sha256": "48e07f2aff3b1339ff20295c60b0073f323230ce39d7fc91ccf6bea5ac30cc56",
-      "source_path": "src/editor/workspace/asset_refactor.h",
-      "consumer_sha256": "08a0f88b7664c9902613f2d02323e6c4e0076606190f3718402779c6ab9a3e13"
+      "source_path": "src/editor/workspace/asset_refactor.h"
     },
     "src/editor/workspace/asset_refactor_internal.h": {
       "current_source_sha256": "b4acdefccd67036dc4215c602cf5821aca7c2faa2dba430a821363ad1a9b5966",
@@ -2299,6 +2386,7 @@
       "source_path": "src/editor/workspace/asset_refactor_internal.h"
     },
     "src/editor/workspace/asset_refactor_source.c": {
+      "consumer_sha256": "a55bbf4ec2968dbec5825d488434688183681c2606605d3f4a33535279f8fa3e",
       "current_source_sha256": "297574428bd85a14e28443e999b347f3083670e10d356d7b4bf51d78a1c65128",
       "sha256": "297574428bd85a14e28443e999b347f3083670e10d356d7b4bf51d78a1c65128",
       "source_path": "src/editor/workspace/asset_refactor_source.c"
@@ -2309,32 +2397,37 @@
       "source_path": "src/editor/workspace/checkpoint.h"
     },
     "src/editor/workspace/editor.c": {
+      "consumer_sha256": "3c23084d24990e2a0c76fc746070ecd4c76c0127cca3d69e7e8030a530a7f6ac",
       "current_source_sha256": "4f442bf3f8865e26752c1523ac84dded2122861fc5c8406a293f397d869bb69c",
       "sha256": "8e8cb1336a7fc7873b1c8839685d291ed8e2a47ddcd7fb1db9d7142fa2f427c2",
       "source_path": "src/editor/workspace/editor.c"
     },
     "src/editor/workspace/editor.h": {
+      "consumer_sha256": "c85547b370c8cc1bc7a7b94c8243aef4a691b0372ed90a56af16de2af280bc5f",
       "current_source_sha256": "5da75ec6f2155b67fc00173a550923a2858bc31647a4577871970bddc7773b2e",
       "sha256": "44d8131a3a6f61f408474f3ce3a085ea53cd5de2b26e25eeadc411dc28899901",
-      "source_path": "src/editor/workspace/editor.h",
-      "consumer_sha256": "f7125d063e9aacf1b7ae1730715fd37cde7f4394e6919c48ed4cf35f9af7e8de"
+      "source_path": "src/editor/workspace/editor.h"
     },
     "src/editor/workspace/editor_internal.h": {
+      "consumer_sha256": "177a5dd27a59e264dc8156e1947efdade025ce121f0da5cac6f8d0af700b75c5",
       "current_source_sha256": "5093b1bbfd5ec2239c6a1440c008dd66a048eed5dc69b6a5a228a50b933b9bf4",
       "sha256": "1920c93bac1a213fb221a17a7dd3032195c7ccf5365487bef9346aa0b99f0423",
       "source_path": "src/editor/workspace/editor_internal.h"
     },
     "src/editor/workspace/game_presentation.c": {
+      "consumer_sha256": "84e372f49b6fedaeb333c6241a79eaa30c450b1547261782c3ec8f01d249112b",
       "current_source_sha256": "3b56b5276ecfe1e134cbcb0651f0b5aa19a3f78e5fbff453ac2915c6e73e613b",
       "sha256": "3eb29545b2b34e6d802b801a55c36ad86d9488da09451ba5f8034cfa18940f19",
       "source_path": "src/editor/workspace/game_presentation.c"
     },
     "src/editor/workspace/game_presentation.h": {
+      "consumer_sha256": "d42a92973e86c7bc24cd084b808492753e3d9b1b627c35156ad16613b0cab356",
       "current_source_sha256": "6f6f37bed6a149bbcb7aa4e47001a8a09270c5c71c698e645fbdbda46e53ca92",
       "sha256": "6f6f37bed6a149bbcb7aa4e47001a8a09270c5c71c698e645fbdbda46e53ca92",
       "source_path": "src/editor/workspace/game_presentation.h"
     },
     "src/editor/workspace/gameplay_input.c": {
+      "consumer_sha256": "5825c40e10aec01a60ae15f8f7f45b99bc698ec934a398f16521280465ab356d",
       "current_source_sha256": "e6a6d4fc277b4483a12f4c4453277beca970fd6b1cf923e13437fe6fab3615fe",
       "sha256": "e6a6d4fc277b4483a12f4c4453277beca970fd6b1cf923e13437fe6fab3615fe",
       "source_path": "src/editor/workspace/gameplay_input.c"
@@ -2345,6 +2438,7 @@
       "source_path": "src/editor/workspace/gameplay_input.h"
     },
     "src/editor/workspace/input.c": {
+      "consumer_sha256": "53122d885eb1e0e1fd529cf696de34fb1baf0c8f13100a1364df4002d36c2947",
       "current_source_sha256": "2b310b7ad55f540077772995d538c3b8d6e18a96d4c529dd13b7ebe9d267ef2f",
       "sha256": "2b310b7ad55f540077772995d538c3b8d6e18a96d4c529dd13b7ebe9d267ef2f",
       "source_path": "src/editor/workspace/input.c"
@@ -2355,6 +2449,7 @@
       "source_path": "src/editor/workspace/input.h"
     },
     "src/editor/workspace/model_preview.c": {
+      "consumer_sha256": "66d3f7843f9d685006d8f26a406086563097cadc6e6b3f49b0f150f0f3b2cad3",
       "current_source_sha256": "8c5d9fa080b26b2986a74f8af98c153e98a138f44935475e9854ac06017a4b70",
       "sha256": "8c5d9fa080b26b2986a74f8af98c153e98a138f44935475e9854ac06017a4b70",
       "source_path": "src/editor/workspace/model_preview.c"
@@ -2370,6 +2465,7 @@
       "source_path": "src/editor/workspace/movement_input.h"
     },
     "src/editor/workspace/scenario_playback.c": {
+      "consumer_sha256": "8cb736c9b826accf99325bb3436f4890708c5babadd14a1688d5c8a87f9efc17",
       "current_source_sha256": "7bc17f1cc9f87b629cac14b6464c35f298b60461e016e8f67802016ea4c23e6e",
       "sha256": "99ded6c91cd2139905ec521a7dcef873a2325a36c479248b7cc52986301086da",
       "source_path": "src/editor/workspace/scenario_playback.c"
@@ -2380,10 +2476,10 @@
       "source_path": "src/editor/workspace/scenario_playback.h"
     },
     "src/editor/workspace/scene_actors.c": {
+      "consumer_sha256": "d82b3dc311f7b12f5c32583ee7bfd8aed025818fe64558e24721eb6a77701636",
       "current_source_sha256": "9ca880f393fd1fba61077bb6a52647105586c0ac18c6d007282a0672604e22db",
       "sha256": "3723b1a07058a05b99e5bfc683ecfbc4c6b1292e2b781c5cf3e37d57d1587a75",
-      "source_path": "src/editor/workspace/scene_actors.c",
-      "consumer_sha256": "f544c07364cc46f0d7b466b083714e39a9a6773682311ab9d2e27208da358b23"
+      "source_path": "src/editor/workspace/scene_actors.c"
     },
     "src/editor/workspace/scene_asset_drop.c": {
       "current_source_sha256": "068cafc2d0558fcccba9dc115eae52ef648c9f72aa134636f949b8ef9319df13",
@@ -2391,44 +2487,46 @@
       "source_path": "src/editor/workspace/scene_asset_drop.c"
     },
     "src/editor/workspace/scene_authoring.c": {
+      "consumer_sha256": "af882d4279bda2c18fc52d2d63d03eb43c333a24c52c0e820b5d8663a3b9ad4f",
       "current_source_sha256": "b60c6ff2f94a8a5733efdb4ec8fe811f89d0d02e8d1635b0ec68dc73588f9612",
       "sha256": "0e6389b4bfcaf9c1f64637bf80918284091122a81e90e2efa2c77e99f36c1421",
-      "source_path": "src/editor/workspace/scene_authoring.c",
-      "consumer_sha256": "fce28870715d0bcbed7f592a7f7a6ab18078c82f16119b62033e08bed167959a"
+      "source_path": "src/editor/workspace/scene_authoring.c"
     },
     "src/editor/workspace/scene_authoring.h": {
+      "consumer_sha256": "03383d88fe7806694504c0461d3b66722fa85a5c617d35947a6a648267cf6757",
       "current_source_sha256": "8b5270dfd0df43786a42529669ece1f70460727a5fb805aefabab953e5139a1f",
       "sha256": "9afa2c3ec87823c00dba8784a603989decd5078097704a2fba076d5d8c16028c",
-      "source_path": "src/editor/workspace/scene_authoring.h",
-      "consumer_sha256": "efd057b167cfc630c2737325fc5628e124062446e20ca9de7e4405808ef9d992"
+      "source_path": "src/editor/workspace/scene_authoring.h"
     },
     "src/editor/workspace/scene_checkpoint.c": {
+      "consumer_sha256": "94f59d6b57899ce85ac03913c420f47abf55421987f3dbc3866c5d0d4b235c97",
       "current_source_sha256": "522d8bca7bdbc2d4229fdeacb30168ef853fc55e2689ded5ecb7c123d26e9ab1",
       "sha256": "0b434962bc22b22f9ade6028b2bf923afb4d150e85f282e61d2b7c313209031a",
-      "source_path": "src/editor/workspace/scene_checkpoint.c",
-      "consumer_sha256": "ad8121699b98fb361dd86a3c6da05777907f4afd0aada16ac863cd1a20ae0db4"
+      "source_path": "src/editor/workspace/scene_checkpoint.c"
     },
     "src/editor/workspace/scene_debug.c": {
+      "consumer_sha256": "085b091a95668d42bd60584c3f4b4766ad9351977d6c419714332bb6d49d1fd4",
       "current_source_sha256": "ad8a36e235403617016d12cb9f754af06ff1ecedaaa2d751325e0781b81835e9",
       "sha256": "126c7422833de1b9b9bb0f3aec33d1ab852cd82f8d91fa69da29c5df7abf29b8",
       "source_path": "src/editor/workspace/scene_debug.c"
     },
     "src/editor/workspace/scene_debug.h": {
+      "consumer_sha256": "3d1479affac6b59ffa8b4ae63101e62ad97ade210792cbe895cb68de2db90f26",
       "current_source_sha256": "65cf40881f47329c93e5b16c78cb96f05d4db8f7fca501e935e3ae65f4eaaed2",
       "sha256": "5b1090ec5ea9e522a922d226bd2798581210e73d4f465dd60b03745559b9847f",
       "source_path": "src/editor/workspace/scene_debug.h"
     },
     "src/editor/workspace/scene_gizmo.c": {
+      "consumer_sha256": "089aa7583ec30a7483649f9f970d4e36033057394627ab2be0661bc24adb2a3d",
       "current_source_sha256": "d5169b852ed4f14906f72e71a02c3ae67da8655b51fc678f2666a243819e4483",
       "sha256": "d5169b852ed4f14906f72e71a02c3ae67da8655b51fc678f2666a243819e4483",
-      "source_path": "src/editor/workspace/scene_gizmo.c",
-      "consumer_sha256": "66d0b20f7e45b8368c482dd8c72dfec3307a84255bc8029904bb78ac410f7b0c"
+      "source_path": "src/editor/workspace/scene_gizmo.c"
     },
     "src/editor/workspace/scene_gizmo.h": {
+      "consumer_sha256": "88bb3967307e6a337cebe4f5a0b087a9b080903568da9a6edebc1086a4085b5f",
       "current_source_sha256": "0e46bb27044d1fa98f416d6148c6b87d41b2ad6ab6c9a36763d216a5e7c57c3d",
       "sha256": "0e46bb27044d1fa98f416d6148c6b87d41b2ad6ab6c9a36763d216a5e7c57c3d",
-      "source_path": "src/editor/workspace/scene_gizmo.h",
-      "consumer_sha256": "88bb3967307e6a337cebe4f5a0b087a9b080903568da9a6edebc1086a4085b5f"
+      "source_path": "src/editor/workspace/scene_gizmo.h"
     },
     "src/editor/workspace/scene_internal.h": {
       "consumer_replacements": [
@@ -2437,41 +2535,43 @@
           "\"editor/workspace/tree_watch.h\""
         ]
       ],
+      "consumer_sha256": "fb6237d0e63d17209a5b0e91f45851e1f7b030eaa4af0d56e2ed0e4b79891713",
       "current_source_sha256": "93345eaf41711cf406a6263f27024a9fa1c875e7d92d97926750cb1d33ffb0eb",
       "sha256": "7aedf7279fffcd4c7def1ae879505521def3a81e56d828081c46f436f43ec3ed",
-      "source_path": "src/editor/workspace/scene_internal.h",
-      "consumer_sha256": "470a6f83747eb28429a52605b31a7030cd636e831723187944885d9c0fa564a7"
+      "source_path": "src/editor/workspace/scene_internal.h"
     },
     "src/editor/workspace/scene_overlays.c": {
+      "consumer_sha256": "fcb671cbb4ea3a9331556de7e2cf8b680a3f568ab6af8f28dc329688c2dec144",
       "current_source_sha256": "0199c3ed41f96506ccb2c3b1f88cf8e543fecb947bcd1ec9964dc01d5005bed0",
       "sha256": "0199c3ed41f96506ccb2c3b1f88cf8e543fecb947bcd1ec9964dc01d5005bed0",
-      "source_path": "src/editor/workspace/scene_overlays.c",
-      "consumer_sha256": "cd8dbf420542b7bf076884b24bdf62660577bbdda5836c113366df5b33f7f6e8"
+      "source_path": "src/editor/workspace/scene_overlays.c"
     },
     "src/editor/workspace/scene_runtime.c": {
+      "consumer_sha256": "ae45a64fc67ea142ceeb484eebe2d4c6cf8feecca732176fbe0cb38be42fbe03",
       "current_source_sha256": "c13c72958fa5e50bbf97919ac212f5a41a824d69aedc5d89fa9d9ce37ab7e77d",
       "sha256": "6046e226fe5e17ded4a1c01e38cf220faaafa6bd91c9e6d669f5bbecb53f4c91",
-      "source_path": "src/editor/workspace/scene_runtime.c",
-      "consumer_sha256": "8c4db8c16dcacaf3e098e221d49bbbca1f63ec3e4f79c05845d667796617b238"
+      "source_path": "src/editor/workspace/scene_runtime.c"
     },
     "src/editor/workspace/scene_tabs.c": {
+      "consumer_sha256": "f047d967813a8d64bb31e536edf4223edf17217640e722822effc5df2f548363",
       "current_source_sha256": "01c0e112b7d69f71c359833c32b7e25f6520744648ff5ed76f3ec427df7038d3",
       "sha256": "13a899f2e2bd2b5956e468e40b0ac59edb7b50f16bd244d8d6106f9e14915eda",
-      "source_path": "src/editor/workspace/scene_tabs.c",
-      "consumer_sha256": "fede0f9db7ccde8fa4f8fb43d3c3edae403486cff1dad1b225d16617b0c12346"
+      "source_path": "src/editor/workspace/scene_tabs.c"
     },
     "src/editor/workspace/scene_view.c": {
+      "consumer_sha256": "45e72482a89592027ebe6c41b7d4da8b52d924469d9586a2a7c85939f80782d5",
       "current_source_sha256": "a5a054c8ae07627095e85e78a74c90d861df1b626f9ab616db86693061a20c8d",
       "sha256": "a5a054c8ae07627095e85e78a74c90d861df1b626f9ab616db86693061a20c8d",
       "source_path": "src/editor/workspace/scene_view.c"
     },
     "src/editor/workspace/scene_viewport.c": {
+      "consumer_sha256": "d3ba9b331ff05ed288351d9e25aadc134de486031d7cc38d0a0f8bbf435ac2af",
       "current_source_sha256": "f2a2f0d495ea6a286f1dfd898f3904d55eedfdb9093f9ef79d9f16115503a482",
       "sha256": "c487c7af89a66c3beb36270f2751356d3c5429ccccef8268ef518557da7a5210",
-      "source_path": "src/editor/workspace/scene_viewport.c",
-      "consumer_sha256": "afe9c18fc4d271fd19b74e87a5f93dfb51902119d8118afd13c1030812c9ebf9"
+      "source_path": "src/editor/workspace/scene_viewport.c"
     },
     "src/editor/workspace/scene_world_preview.c": {
+      "consumer_sha256": "490016e898032ef15d7516861b2629d0f598fde7fff1b82e31c862c46ea321f3",
       "current_source_sha256": "0dc6c273fa210be49c28651ae1788498f1a081196d48c7803891f0ac847da9db",
       "sha256": "0dc6c273fa210be49c28651ae1788498f1a081196d48c7803891f0ac847da9db",
       "source_path": "src/editor/workspace/scene_world_preview.c"
@@ -2623,10 +2723,10 @@
           "'projects/starter'"
         ]
       ],
+      "consumer_sha256": "b42859d29aac92ac59f510bc7e7b312c6a4182794f272e469ad1d90b0aaa3604",
       "current_source_sha256": "dccd31a1f6caea79afb78cc7f9542160b9a45e7de95e876f3c097b9722e3b015",
       "sha256": "dccd31a1f6caea79afb78cc7f9542160b9a45e7de95e876f3c097b9722e3b015",
-      "source_path": "tools/web_storage.js",
-      "consumer_sha256": "2ef83dadb4587acf0de435e507e82ec87084e1dfc1e8b55dcb0a187040af8218"
+      "source_path": "tools/web_storage.js"
     }
   },
   "format": 1,

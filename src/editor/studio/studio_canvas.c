@@ -108,7 +108,7 @@ static void preview(studio *s, const char *asset)
     if (!s->canvas) {
         s->canvas = xcalloc(1, sizeof *s->canvas);
         s->canvas->world = ecs_world_new();
-        s->canvas->save = game_save_new();
+        s->canvas->save = save_new();
         s->canvas->list = (ui_list_state)UI_LIST_STATE_INIT;
     }
     studio_canvas *c = s->canvas;
@@ -254,7 +254,7 @@ void studio_canvas_free(studio *s)
     engine_viewport_free(c->viewport);
     studio_sources_free(&c->sources);
     ecs_world_free(c->world);
-    game_save_free(c->save);
+    save_free(c->save);
     afree(c->actions);
     free(c);
     s->canvas = NULL;
@@ -262,7 +262,7 @@ void studio_canvas_free(studio *s)
 
 /* ---------- The Canvas's UI (`canvas`) ---------- */
 
-/* Where a ui asset is used: GameUi fields and <use ui> from the index, and
+/* Where a ui asset is used: Ui fields and <use ui> from the index, and
    the scene's and the project's root document. A root document's row opens
    the Scene tab of Properties, where it is chosen. */
 typedef struct

@@ -343,4 +343,7 @@ void studio_reveal_node(studio *s, uint64_t graph_id, uint64_t node_id)
     e->front_node = n;
     s->graph.reveal = n->id;
     s->graph.reveal_frame = true;
+    studio_node_ref at = { .graph_id = graph_id, .node_id = node_id };
+    snprintf(at.asset, sizeof at.asset, "%s", s->scene->graph_document_id);
+    studio_code_reveal_node(s, &at);
 }

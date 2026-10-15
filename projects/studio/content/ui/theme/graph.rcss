@@ -33,6 +33,9 @@ body.graph-canvas {
 }
 /* Light canvases keep full-color titles in lighter tints (Blender's light theme). */
 body.graph-canvas:not(.dark) {
+    /* Stronger orange edges remain distinct on every light canvas palette. */
+    --selected-object: #bc540c;
+    --active-object: #903e00;
     --n-event: #e8cbd4;
     --n-flow: #d7dce5;
     --n-pure: #d0e4d6;
@@ -57,10 +60,20 @@ body.graph-canvas:not(.dark) {
     background-color: var(--node); border: 1dp var(--node-edge); border-radius: var(--r-lg);
     color: var(--foreground); font-size: var(--studio-font-12, 12dp);
 }
-.gnode[data-error] { border-color: var(--destructive); }
-.gnode[data-warning] { border-color: var(--warning); }
 .gnode[data-selected] { border-color: var(--selected-object); z-index: 2; }
 .gnode[data-active] { border-color: var(--active-object); }
+.gnode[data-hover]:not([data-selected]):not([data-error]):not([data-warning]) { border-color: var(--muted-foreground); }
+/* Selection is outside the measured node. Press, keyboard selection and drag
+   stay immediate, and the ring never moves the node or its socket anchors. */
+.gselection {
+    position: absolute; left: -3dp; top: -3dp; right: -3dp; bottom: -3dp;
+    border: 2dp var(--selected-object); border-radius: 9dp; pointer-events: none;
+}
+.gnode[data-active] .gselection { border-color: var(--active-object); }
+.gnode[data-form=operator] .gselection { border-radius: 13dp; }
+.gnode[data-form=getter] .gselection { border-radius: 16dp; }
+.gnode[data-error] { border-color: var(--destructive); }
+.gnode[data-warning]:not([data-error]) { border-color: var(--warning); }
 .gnode[data-dim] { opacity: 0.45; }
 .gnode[data-breakpoint] .gnode-head { border-left: 4dp #e5534b; }
 /* A disabled (muted) node reads apart from an unused, dimmed one: its title
@@ -105,12 +118,11 @@ body.graph-canvas:not(.dark) .gnode-head, body.graph-canvas:not(.dark) .gnode-he
 .ghalf.in { padding-left: 10dp; }
 .ghalf.out { padding-right: 10dp; margin-left: auto; justify-content: flex-end; }
 /* Labels and fields stay inside the node; the full label remains in its tooltip. */
-.gpin-label { display: block; flex: 0 1 auto; min-width: 0dp; max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--muted-foreground); white-space: nowrap; line-height: var(--studio-line-22, 22dp); }
+.gpin-label { display: block; flex: 0 1 auto; min-width: 0dp; max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--foreground); white-space: nowrap; line-height: var(--studio-line-22, 22dp); }
 .gpin-label[data-fits] { overflow: visible; text-overflow: clip; }
 .out > .gpin-label { text-align: right; }
 /* A half row sizes to its label, which a percentage cap would collapse. */
 .ghalf > .gpin-label { flex-shrink: 0; max-width: none; }
-[data-hover] > .gpin-label { color: var(--foreground); }
 .grow .field { flex: 1 1 auto; min-width: 0dp; height: var(--studio-height-18, 18dp); }
 /* A refused entry stays red while focused (field.rcss rings a focused one). */
 .grow .field.autocomplete[data-invalid] { border-color: var(--destructive); }
@@ -165,7 +177,7 @@ body.graph-canvas:not(.dark) .gnode-head, body.graph-canvas:not(.dark) .gnode-he
 .gnode[data-form=operator] .grow.in { padding-right: 0dp; }
 .gsymbol {
     position: absolute; top: 0dp; bottom: 0dp; text-align: center; white-space: nowrap;
-    font-size: var(--studio-font-18, 18dp); font-weight: 700; color: var(--muted-foreground);
+    font-size: var(--studio-font-18, 18dp); font-weight: 700; color: var(--foreground);
 }
 .gout { position: absolute; right: 0dp; width: 12dp; height: var(--studio-height-22, 22dp); }
 .gnode[data-form=getter] { border-radius: 13dp; }

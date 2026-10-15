@@ -9,8 +9,11 @@
  * MembersHeader.rml); this is its `members` source, which windows the rows
  * into its List and takes what the rows, the name field and the menu send
  * (docs/studio-rml-migration.md, P5). */
+#include "editor/graph/search.h"
 #include "editor/studio/studio_members_internal.h"
+#include "graph/nodes/core_nodes.h"
 #include "support/array.h"
+#include "support/xalloc.h"
 #include "ui/list.h"
 #include "ui/popover.h"
 
@@ -40,6 +43,7 @@ typedef enum
     ROW_CATEGORY,
     ROW_GRAPH,
     ROW_VARIABLE,
+    ROW_SOURCE_VARIABLE,
     ROW_LOCAL,
     ROW_EVENT,
 } row_kind;
@@ -65,6 +69,36 @@ struct studio_member_uses
 };
 
 /* ---------- Selection ---------- */
+
+node *sm_source_variable_node(const studio *s, const source_presentation_origin *origin)
+{
+    graph *g = behavior_asset_find_graph(sg_graph_editor(s)->asset, origin->graph);
+    return graph_node_by_id(g, origin->node);
+}
+
+const source_presentation_origin *sm_source_variable(const studio *s, uint64_t id)
+{
+    const authoring_source_presentation *p = editor_presentation(sg_graph_editor(s));
+    for (int i = 0; p && i < authoring_source_presentation_origin_count(p); i++) {
+        const source_presentation_origin *o = authoring_source_presentation_origin_at(p, i);
+        if (o->kind != SOURCE_PRESENTATION_SYMBOL || o->pin || o->function >= 0 ||
+            (o->operation != SCRIPT_STATE && o->operation != SCRIPT_SHARED_STATE)) {
+            continue;
+        }
+        node *n = sm_source_variable_node(s, o);
+        if (n->reference_id == id) {
+            return o;
+        }
+    }
+    return NULL;
+}
+
+static const source_presentation_origin *selected_source_variable(const studio *s)
+{
+    return s->members.kind == STUDIO_MEMBER_VARIABLE
+             ? sm_source_variable(s, s->members.id)
+             : NULL;
+}
 
 behavior_variable *sm_variable(const studio *s)
 {
@@ -95,9 +129,43 @@ const graph_local *sm_local(const studio *s)
 static void follow(studio *s)
 {
     studio_members *m = &s->members;
+    const authoring_source_presentation *p = editor_presentation(sg_graph_editor(s));
+    if (p && m->source_renamed[0] &&
+        authoring_source_edit_generation(p) != m->source_rename_generation) {
+        for (int i = 0; i < authoring_source_presentation_origin_count(p); i++) {
+            const source_presentation_origin *o = authoring_source_presentation_origin_at(p, i);
+            if (o->kind != SOURCE_PRESENTATION_SYMBOL || o->pin || o->function >= 0 ||
+                (o->operation != SCRIPT_STATE && o->operation != SCRIPT_SHARED_STATE)) {
+                continue;
+            }
+            node *n = sm_source_variable_node(s, o);
+            if (!strcmp(n->desc->name, m->source_renamed)) {
+                if (m->pick.id == m->id && !m->pick.pin_id) {
+                    m->pick.id = n->reference_id;
+                }
+                m->kind = STUDIO_MEMBER_VARIABLE;
+                m->id = n->reference_id;
+                m->shown_node = n->id;
+                if (m->source_reveal) {
+                    studio_reveal_node(s, o->graph, n->id);
+                    m->reveal = true;
+                } else if (sg_active_graph(s)->graph_id == o->graph) {
+                    sg_select_only(sg_graph_editor(s), n);
+                }
+                break;
+            }
+        }
+        m->source_renamed[0] = 0;
+        m->source_reveal = false;
+    }
     uint64_t node = studio_graph_node(s);
+    const source_presentation_origin *source = selected_source_variable(s);
+    if (source && node == source->node) {
+        m->shown_node = node;
+    }
     bool exists = studio_graph_active(s) &&
-                  (sm_variable(s) || sm_graph(s) || sm_local(s));
+                  (sm_variable(s) || selected_source_variable(s) ||
+                   sm_graph(s) || sm_local(s));
     if (!exists || (node && node != m->shown_node)) {
         m->kind = STUDIO_MEMBER_NONE;
     }
@@ -112,6 +180,8 @@ uint64_t studio_member_shown(studio *s)
 
 static void select_member(studio *s, studio_member_kind kind, uint64_t id)
 {
+    s->members.source_renamed[0] = 0;
+    s->members.source_reveal = false;
     s->members.kind = kind;
     s->members.id = id;
     ed_clear_selection(sg_graph_editor(s));
@@ -182,6 +252,48 @@ static void unique_variable_name(const behavior_asset *asset, const char *base, 
     }
 }
 
+static char *source_variable_type(const studio *s, const source_presentation_origin *o)
+{
+    const char *text = authoring_source_presentation_text(
+        editor_presentation(sg_graph_editor(s))
+    );
+    script_syntax *syntax = script_parse(text);
+    TSNode declaration = ts_node_named_descendant_for_byte_range(
+        ts_tree_root_node(syntax->tree),
+        (uint32_t)o->range.start,
+        (uint32_t)o->range.end
+    );
+    while (!ts_node_is_null(declaration) &&
+           strcmp(ts_node_type(declaration), "state_declaration")) {
+        declaration = ts_node_parent(declaration);
+    }
+    assert(!ts_node_is_null(declaration));
+    TSNode type = ts_node_child_by_field_name(declaration, "type", 4);
+    char *out = NULL;
+    if (!ts_node_is_null(type)) {
+        script_range range = script_node_range(type);
+        size_t length = (size_t)(range.end - range.start);
+        out = xmalloc(length + 1);
+        memcpy(out, text + range.start, length);
+        out[length] = 0;
+    } else {
+        const node *n = sm_source_variable_node(s, o);
+        const char *name = n->output_pins[0].type_name;
+        char inferred[160];
+        snprintf(
+            inferred,
+            sizeof inferred,
+            "%s%s%s",
+            name && name[0] ? name : script_scalar_name(o->type.storage),
+            o->type.container == PIN_CONTAINER_ARRAY ? "[]" : "",
+            o->type.flags & SCRIPT_TYPE_OPTIONAL ? "?" : ""
+        );
+        out = xstrdup(inferred);
+    }
+    script_syntax_free(syntax);
+    return out;
+}
+
 /* A new function or macro opens and takes its name at once (Unreal). */
 static void add_graph(studio *s, graph_kind kind, const char *base)
 {
@@ -205,6 +317,57 @@ static void add_graph(studio *s, graph_kind kind, const char *base)
 static void add_variable(studio *s)
 {
     editor *e = sg_graph_editor(s);
+    if (editor_presentation(e)) {
+        char name[128], fragment[256];
+        snprintf(name, sizeof name, "NewVariable");
+        bool taken = true;
+        for (int suffix = 1; taken; suffix++) {
+            taken = false;
+            const authoring_source_presentation *p = editor_presentation(e);
+            for (int i = 0; i < authoring_source_presentation_origin_count(p); i++) {
+                const source_presentation_origin
+                    *o = authoring_source_presentation_origin_at(p, i);
+                if (o->kind == SOURCE_PRESENTATION_SYMBOL && !o->pin &&
+                    o->function < 0) {
+                    node *n = sm_source_variable_node(s, o);
+                    taken |= !strcmp(n->desc->name, name);
+                }
+            }
+            if (taken) {
+                snprintf(name, sizeof name, "NewVariable%d", suffix + 1);
+            }
+        }
+        const source_presentation_origin *like = selected_source_variable(s);
+        char *type = like ? source_variable_type(s, like) : xstrdup("bool");
+        const char *initial = !like || like->type.storage == PIN_BOOL
+                                ? " = false"
+                                : "";
+        if (like && like->type.storage >= PIN_I8 && like->type.storage <= PIN_F64) {
+            initial = " = 0";
+        }
+        if (like && (like->type.storage == PIN_STR || like->type.storage == PIN_NAME)) {
+            initial = " = \"\"";
+        }
+        if (like && like->type.container != PIN_CONTAINER_SINGLE) {
+            initial = "";
+        }
+        snprintf(fragment, sizeof fragment, "%s: %s%s;", name, type, initial);
+        free(type);
+        authoring_edit_request request = {
+            .kind = AUTHORING_EDIT_APPEND_DECLARATIONS,
+            .generation = authoring_source_edit_generation(editor_presentation(e)),
+            .fragment = fragment,
+        };
+        if (ed_source_edit(e, &request)) {
+            select_member(s, STUDIO_MEMBER_VARIABLE, 0);
+            s->members.filter[0] = 0;
+            s->members.collapsed &= ~(1u << SECTION_VARIABLES);
+            snprintf(s->members.source_renamed, sizeof s->members.source_renamed, "%s", name);
+            s->members.source_rename_generation = request.generation;
+            s->members.source_reveal = true;
+        }
+        return;
+    }
     const behavior_variable *like = sm_variable(s);
     pin_spec type = like ? sm_variable_pin(like)
                          : (pin_spec){ .type = PIN_BOOL, .type_name = "bool" };
@@ -229,6 +392,19 @@ static void add_variable(studio *s)
 static void duplicate_variable(studio *s)
 {
     editor *e = sg_graph_editor(s);
+    if (locked(s)) {
+        return;
+    }
+    const source_presentation_origin *source = selected_source_variable(s);
+    if (source) {
+        authoring_edit_request request = {
+            .kind = AUTHORING_EDIT_DUPLICATE_SELECTION,
+            .generation = authoring_source_edit_generation(editor_presentation(e)),
+            .origin = source->identity,
+        };
+        ed_source_edit(e, &request);
+        return;
+    }
     const behavior_variable *v = sm_variable(s);
     if (!v || locked(s)) {
         return;
@@ -250,6 +426,10 @@ static const char *graph_label(const graph *g)
 /* The selected member's name, for its toast. */
 static const char *member_name(const studio *s)
 {
+    const source_presentation_origin *source = selected_source_variable(s);
+    if (source) {
+        return sm_source_variable_node(s, source)->desc->name;
+    }
     switch (s->members.kind) {
         case STUDIO_MEMBER_GRAPH: return graph_label(sm_graph(s));
         case STUDIO_MEMBER_VARIABLE: return sm_variable(s)->name;
@@ -329,6 +509,15 @@ static void delete_member_now(studio *s)
             deleted = editor_delete_graph(e, m->id) == 0;
             break;
         case STUDIO_MEMBER_VARIABLE:
+            if (selected_source_variable(s)) {
+                authoring_edit_request request = {
+                    .kind = AUTHORING_EDIT_DELETE_SELECTION,
+                    .generation = authoring_source_edit_generation(editor_presentation(e)),
+                    .origin = selected_source_variable(s)->identity,
+                };
+                deleted = ed_source_edit(e, &request);
+                break;
+            }
             before = ed_snapshot(e);
             behavior_asset_remove_variable_uses(e->asset, m->id);
             deleted = sm_record(e, before, behavior_asset_delete_variable(e->asset, m->id) == 0);
@@ -341,7 +530,14 @@ static void delete_member_now(studio *s)
     }
     m->kind = STUDIO_MEMBER_NONE;
     if (deleted) {
-        offer_undo(s, name);
+        if (editor_presentation(e)) {
+            char title[160];
+            snprintf(title, sizeof title, "Deleted %s", name);
+            kit_toast(s->kit, 0, &(kit_toast_desc){ .title = title });
+            studio_record(s, KIT_TOAST_DEFAULT, title);
+        } else {
+            offer_undo(s, name);
+        }
     }
 }
 
@@ -384,6 +580,23 @@ bool studio_members_rename_across(
 bool sm_rename(studio *s, studio_member_kind kind, uint64_t id, const char *name)
 {
     editor *e = sg_graph_editor(s);
+    const source_presentation_origin *source = kind == STUDIO_MEMBER_VARIABLE
+                                                 ? sm_source_variable(s, id)
+                                                 : NULL;
+    if (source) {
+        authoring_edit_request request = {
+            .kind = AUTHORING_EDIT_RENAME_DECLARATION,
+            .generation = authoring_source_edit_generation(editor_presentation(e)),
+            .origin = source->identity,
+            .name = name,
+        };
+        bool changed = ed_source_edit(e, &request);
+        if (changed && s->members.kind == kind && s->members.id == id) {
+            snprintf(s->members.source_renamed, sizeof s->members.source_renamed, "%s", name);
+            s->members.source_rename_generation = request.generation;
+        }
+        return changed;
+    }
     graph *g = behavior_asset_find_graph(e->asset, id);
     const behavior_variable *v = behavior_asset_find_variable_by_id(e->asset, id);
     const graph_local *local = graph_local_by_id(sg_active_graph(s), id);
@@ -582,6 +795,24 @@ static int section_rows(const studio *s, section sec, member_row **rows)
     const char *filter = s->members.filter;
     int count = 0;
     if (sec == SECTION_VARIABLES) {
+        const authoring_source_presentation *p = editor_presentation(sg_graph_editor(s));
+        if (p) {
+            for (int i = 0; i < authoring_source_presentation_origin_count(p); i++) {
+                const source_presentation_origin
+                    *o = authoring_source_presentation_origin_at(p, i);
+                if (o->kind != SOURCE_PRESENTATION_SYMBOL || o->pin ||
+                    o->function >= 0 ||
+                    (o->operation != SCRIPT_STATE && o->operation != SCRIPT_SHARED_STATE)) {
+                    continue;
+                }
+                node *n = sm_source_variable_node(s, o);
+                if (studio_matches(filter, n->desc->name)) {
+                    apush(*rows, ((member_row){ ROW_SOURCE_VARIABLE, i, 1, 0 }));
+                    count++;
+                }
+            }
+            return count;
+        }
         return variable_rows(asset, filter, rows);
     }
     if (sec == SECTION_EVENTS) {
@@ -758,6 +989,16 @@ static bool row_symbol(const studio *s, const member_row *row, reference_symbol 
             *title = v->name;
             return asset->domain == BEHAVIOR_DOMAIN_EVENT;
         }
+        case ROW_SOURCE_VARIABLE: {
+            const source_presentation_origin *o = authoring_source_presentation_origin_at(
+                editor_presentation(sg_graph_editor(s)),
+                row->index
+            );
+            node *n = sm_source_variable_node(s, o);
+            *symbol = own_symbol(s, REFERENCE_SYMBOL_VARIABLE, 0, n->reference_id);
+            *title = n->desc->name;
+            return true;
+        }
         case ROW_LOCAL: {
             const graph_local *local = &active->locals[row->index];
             *symbol = own_symbol(
@@ -828,6 +1069,14 @@ static studio_member_kind row_member(const studio *s, const member_row *row, uin
         case ROW_VARIABLE:
             *id = asset->variables[row->index].id;
             return STUDIO_MEMBER_VARIABLE;
+        case ROW_SOURCE_VARIABLE: {
+            const source_presentation_origin *o = authoring_source_presentation_origin_at(
+                editor_presentation(sg_graph_editor(s)),
+                row->index
+            );
+            *id = sm_source_variable_node(s, o)->reference_id;
+            return STUDIO_MEMBER_VARIABLE;
+        }
         case ROW_LOCAL:
             *id = sg_active_graph(s)->locals[row->index].id;
             return STUDIO_MEMBER_LOCAL;
@@ -848,6 +1097,7 @@ static void row_key(const studio *s, const member_row *row, char *out, size_t si
             snprintf(out, size, "g%llu", (unsigned long long)id);
             return;
         case ROW_VARIABLE:
+        case ROW_SOURCE_VARIABLE:
             snprintf(out, size, "v%llu", (unsigned long long)id);
             return;
         case ROW_LOCAL:
@@ -1036,6 +1286,19 @@ static row_look row_look_of(const studio *s, const member_row *row, pin_spec *pi
                                .meta = meta };
         case ROW_GRAPH: return graph_look(s, row);
         case ROW_VARIABLE: return variable_look(s, row, pin, meta, size);
+        case ROW_SOURCE_VARIABLE: {
+            const source_presentation_origin *o = authoring_source_presentation_origin_at(
+                editor_presentation(sg_graph_editor(s)),
+                row->index
+            );
+            const node *n = sm_source_variable_node(s, o);
+            *pin = n->output_pins[0];
+            return (row_look){ .label = n->desc->name,
+                               .icon = KIT_ICON_VARIABLE,
+                               .meta = sm_type_label(pin, meta, size),
+                               .pin = pin,
+                               .draggable = true };
+        }
         case ROW_LOCAL: return local_look(s, row, meta, size);
         case ROW_EVENT:
             if (row->index >= 0) {
@@ -1318,6 +1581,14 @@ static void press_row(studio *s, const member_row *row)
             select_member(s, kind, id);
             return;
         case ROW_VARIABLE: select_member(s, kind, id); return;
+        case ROW_SOURCE_VARIABLE: {
+            const source_presentation_origin *o = sm_source_variable(s, id);
+            uint64_t graph_id = o->graph, node_id = o->node;
+            select_member(s, kind, id);
+            studio_reveal_node(s, graph_id, node_id);
+            s->members.shown_node = node_id;
+            return;
+        }
         case ROW_LOCAL:
             select_local(s, &sg_active_graph(s)->locals[row->index]);
             return;
@@ -1529,6 +1800,23 @@ void studio_members_drop(studio *s)
         return;
     }
     editor *e = sg_graph_editor(s);
+    if (editor_presentation(e) && payload[0] == 'v') {
+        uint64_t id = strtoull(payload + 1, NULL, 10);
+        const source_presentation_origin *o = sm_source_variable(s, id);
+        if (!o) {
+            return;
+        }
+        const node *n = sm_source_variable_node(s, o);
+        ed_search_match match = {
+            .desc = s->mods & SDL_KMOD_ALT ? &NODE_SetVariable : &NODE_GetVariable,
+            .source_variable = id,
+            .source_variable_name = n->desc->name,
+        };
+        if (ed_source_spawn_match(e, &match)) {
+            s->focus_area = s->graph.area;
+        }
+        return;
+    }
     behavior_asset *before = ed_snapshot(e);
     node *n = drop_node(s, payload[0], strtoull(payload + 1, NULL, 10));
     if (!sm_record(e, before, n != NULL)) {

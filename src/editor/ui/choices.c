@@ -14,8 +14,8 @@ int editor_choices_count(const editor_choices *choices)
         return choices->count;
     }
     int count = choices->enumeration->value_count;
-    if (!strcmp(choices->enumeration->name, "GameControl") && count > 0 &&
-        choices->enumeration->values[count - 1].value == GAME_CONTROL_COUNT) {
+    if (!strcmp(choices->enumeration->name, "Control") && count > 0 &&
+        choices->enumeration->values[count - 1].value == CONTROL_COUNT) {
         return count - 1;
     }
     return count;
@@ -28,22 +28,22 @@ editor_choice editor_choice_at(const editor_choices *choices, int index)
     }
     const enum_value_desc *value = &choices->enumeration->values[index];
     /* Enum values are numeric. Search their displayed labels, without common
-       implementation prefixes such as GAME_CONTROL matching every row. */
+       implementation prefixes such as CONTROL matching every row. */
     editor_choice choice = { .value = value->value, .label = value->label };
     /* Game controls are reused as enum choices by the inspector and graph
        editors, so keep their input categories and glyphs in this catalog. */
-    if (!strcmp(choices->enumeration->name, "GameControl")) {
-        if (value->value == GAME_CONTROL_NONE) {
+    if (!strcmp(choices->enumeration->name, "Control")) {
+        if (value->value == CONTROL_NONE) {
             choice.icon = KIT_ICON_CLOSE;
-        } else if (value->value < GAME_CONTROL_SPACE) {
-          choice.group = "Mouse";
-          choice.icon = KIT_ICON_MOUSE;
-        } else if (value->value < GAME_CONTROL_PAD_A) {
-          choice.group = "Keyboard";
-          choice.icon = KIT_ICON_KEYBOARD;
+        } else if (value->value < CONTROL_SPACE) {
+            choice.group = "Mouse";
+            choice.icon = KIT_ICON_MOUSE;
+        } else if (value->value < CONTROL_PAD_A) {
+            choice.group = "Keyboard";
+            choice.icon = KIT_ICON_KEYBOARD;
         } else {
-          choice.group = "Controller";
-          choice.icon = KIT_ICON_GAMEPAD;
+            choice.group = "Controller";
+            choice.icon = KIT_ICON_GAMEPAD;
         }
     }
     return choice;

@@ -1,0 +1,9 @@
+name "Camera"
+components {
+    Camera fov=0.61086524 height=180.0 width=320.0
+    Transform3D {
+        position x=230.0 y=187.7942 z=230.0
+        rotation w=0.8923991 x=-0.2391176 y=0.3696438 z=0.0990458
+        scale x=1.0 y=1.0 z=1.0
+    }
+}

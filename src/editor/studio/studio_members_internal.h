@@ -8,6 +8,9 @@
 
 /* The selected member of each kind, or NULL. */
 behavior_variable *sm_variable(const studio *s);
+/* Source state declarations are read directly from the presentation generation. */
+const source_presentation_origin *sm_source_variable(const studio *s, uint64_t id);
+node *sm_source_variable_node(const studio *s, const source_presentation_origin *origin);
 graph *sm_graph(const studio *s);
 const graph_local *sm_local(const studio *s);
 /* A variable as a pin, for its type label, swatch and value editor. */

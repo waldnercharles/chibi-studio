@@ -21,7 +21,7 @@
 
 typedef struct sg_menu_entry
 {
-    char key[64], label[272], shortcut[32];
+    char key[64], label[272], shortcut[32], about[512];
     uint32_t icon, swatch; /* a swatch tints a dot instead of an icon */
     bool disabled, current;
     bool sep;   /* a separator above it */
@@ -78,6 +78,13 @@ bool sg_menu_item(sg_menu *m, const char *key, const char *label, uint32_t icon,
     return false;
 }
 
+void sg_menu_tip(sg_menu *m, const char *about)
+{
+    if (!m->run && acount(m->entries)) {
+        snprintf(alast(m->entries).about, sizeof alast(m->entries).about, "%s", about);
+    }
+}
+
 bool sg_menu_swatch(sg_menu *m, const char *key, const char *label, uint32_t swatch, bool current, bool disabled)
 {
     if (m->run) {
@@ -103,11 +110,10 @@ void sg_menu_title(sg_menu *m, const char *title)
 
 void sg_submenu_begin(sg_menu *m, const char *key, const char *label, uint32_t icon)
 {
-    assert(m->parent < 0);
     if (m->run) {
         char path[64];
         key_path(m, key, path);
-        sg_menu_entry entry = { .parent = -1 };
+        sg_menu_entry entry = { .parent = m->parent };
         snprintf(entry.key, sizeof entry.key, "%s", path);
         apush(m->entries, entry);
     } else {
@@ -120,7 +126,8 @@ void sg_submenu_begin(sg_menu *m, const char *key, const char *label, uint32_t i
 
 void sg_submenu_end(sg_menu *m)
 {
-    m->parent = -1;
+    assert(m->parent >= 0);
+    m->parent = m->entries[m->parent].parent;
     m->sep = false;
 }
 
@@ -174,8 +181,7 @@ static void write_menu(studio *s, sg_menu *m)
 
 /* ---------- The variable ---------- */
 
-static const char *const TEXTS[] = { "key",      "label",  "icon",
-                                     "shortcut", "swatch", NULL };
+static const char *const TEXTS[] = { "key", "label", "icon", "shortcut", "swatch", "about", NULL };
 static const char *const FLAGS[] = { "checked", "disabled", "current",
                                      "sep",     "sub",      NULL };
 
@@ -216,16 +222,13 @@ static bool fit(yyjson_mut_doc *doc, yyjson_mut_val *array, int count)
 static bool put_entry(yyjson_mut_doc *doc, yyjson_mut_val *item, const sg_menu_entry *e)
 {
     char icon[5] = "", swatch[16] = "";
-    if (e->icon) {
-        studio_glyph(icon, e->icon);
-    }
-    if (e->swatch) {
-        snprintf(swatch, sizeof swatch, "#%08x", e->swatch);
-    }
+    if (e->icon) { studio_glyph(icon, e->icon); }
+    if (e->swatch) { snprintf(swatch, sizeof swatch, "#%08x", e->swatch); }
     bool changed = ui_data_put_text(doc, item, "key", e->key);
     changed |= ui_data_put_text(doc, item, "label", e->label);
     changed |= ui_data_put_text(doc, item, "icon", icon);
     changed |= ui_data_put_text(doc, item, "shortcut", e->shortcut);
+    changed |= ui_data_put_text(doc, item, "about", e->about);
     changed |= ui_data_put_text(doc, item, "swatch", swatch);
     changed |= ui_data_put_bool(item, "disabled", e->disabled);
     changed |= ui_data_put_bool(item, "current", e->current);
@@ -248,7 +251,7 @@ static bool put_entries(yyjson_mut_doc *doc, yyjson_mut_val *array, const sg_men
         }
         yyjson_mut_val *item = yyjson_mut_arr_iter_next(&it);
         changed |= put_entry(doc, item, &m->entries[i]);
-        if (parent < 0) {
+        if (m->entries[i].sub) {
             changed |= put_entries(doc, yyjson_mut_obj_get(item, "items"), m, i);
         }
     }
@@ -291,6 +294,7 @@ void studio_graph_menu_frame(studio *s)
 {
     studio_graph *g = &s->graph;
     if (g->menu_request) {
+        g->inline_call.checked = false;
         g->menu_open = g->menu_opening = true;
         g->menu_request = false;
     }

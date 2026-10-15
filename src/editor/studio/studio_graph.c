@@ -293,7 +293,8 @@ static bool selection_items(studio *s, sg_menu *m)
                 ran = true;
             }
         }
-        sg_menu_separator(m);
+        sg_submenu_end(m);
+        sg_submenu_begin(m, "distribute", "Distribute", KIT_ICON_LAYOUT);
         if (!ran && sg_menu_item(
                         m,
                         "horizontal",
@@ -356,6 +357,63 @@ static bool select_items(studio *s, sg_menu *m)
     return ran;
 }
 
+bool sg_inline_call_item(studio *s, sg_menu *m, node *call)
+{
+    editor *e = sg_graph_editor(s);
+    const graph *target = e->presentation ? editor_graph_call_target(e, call) : NULL;
+    if (!target) {
+        return false;
+    }
+    const source_presentation_origin *origin = authoring_source_presentation_origin(
+        e->presentation,
+        e->active_graph->graph_id,
+        call->id,
+        0
+    );
+    authoring_edit_request request = {
+        .kind = AUTHORING_EDIT_INLINE_CALL,
+        .generation = authoring_source_edit_generation(e->presentation),
+        .origin = origin->identity
+    };
+    studio_graph *g = &s->graph;
+    bool readonly = sg_graph_readonly(s);
+    unsigned edit = editor_edit_revision(e), assets = s->scene->asset_index_generation;
+    if (!g->inline_call.checked || g->inline_call.generation != request.generation ||
+        g->inline_call.origin != request.origin || g->inline_call.edit != edit ||
+        g->inline_call.assets != assets || g->inline_call.readonly != readonly) {
+        g->inline_call.generation = request.generation;
+        g->inline_call.origin = request.origin;
+        g->inline_call.edit = edit;
+        g->inline_call.assets = assets;
+        g->inline_call.readonly = readonly;
+        g->inline_call.reason[0] = '\0';
+        g->inline_call.eligible = !readonly && studio_code_check_edit(
+                                                   s,
+                                                   &request,
+                                                   g->inline_call.reason,
+                                                   sizeof g->inline_call.reason
+                                               );
+        g->inline_call.checked = true;
+    }
+    if (sg_menu_item(
+            m,
+            "inline-function",
+            target->kind == GRAPH_MACRO ? "Inline Macro into Caller"
+                                        : "Inline Function into Caller",
+            KIT_ICON_UNFOLD,
+            NULL,
+            !g->inline_call.eligible
+        )) {
+        sg_expand_node(s, call);
+        return true;
+    }
+    sg_menu_tip(
+        m,
+        g->inline_call.reason[0] ? g->inline_call.reason : "Replaces this call in the source code with its authored body. Undo restores the call."
+    );
+    return false;
+}
+
 /* An action may free the node, its graph or the whole asset, so the menu stops
    after one runs; the click closes it. */
 void sg_node_menu(studio *s, sg_menu *m, node *n)
@@ -363,15 +421,30 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
     editor *e = sg_graph_editor(s);
     graph *gr = sg_active_graph(s);
     bool readonly = sg_graph_readonly(s);
+    const graph *source_call = e->presentation ? editor_graph_call_target(e, n) : NULL;
     char title[256];
     sg_menu_title(m, ed_node_title(e, n, title, sizeof title));
+    bool navigate = source_call || ed_is_graph_call(n) ||
+                    studio_node_definable(s, n) ||
+                    studio_node_referable(s, n) || studio_node_traceable(s, n);
+    if (navigate) {
+        sg_submenu_begin(m, "navigate", "Navigate", KIT_ICON_EXTERNAL);
+    }
     const char *definition = studio_chord(s, "Alt+G");
-    if (ed_is_graph_call(n) &&
-        sg_menu_item(m, "open", "Open Graph", KIT_ICON_EXTERNAL, definition, false)) {
+    if ((source_call || ed_is_graph_call(n)) &&
+        sg_menu_item(
+            m,
+            "open",
+            source_call ? (source_call->kind == GRAPH_MACRO ? "Open Macro" : "Open Function")
+                        : "Open Graph",
+            KIT_ICON_EXTERNAL,
+            definition,
+            source_call == gr
+        )) {
         editor_open_graph_call(e, n->id);
         return;
     }
-    if (!ed_is_graph_call(n) && studio_node_definable(s, n) &&
+    if (!source_call && !ed_is_graph_call(n) && studio_node_definable(s, n) &&
         sg_menu_item(m, "definition", "Go to Definition", KIT_ICON_EXTERNAL, definition, false)) {
         studio_go_to_definition(s, n);
         return;
@@ -386,6 +459,8 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
         studio_calls_node(s, n);
         return;
     }
+    if (navigate) { sg_submenu_end(m); }
+    sg_submenu_begin(m, "edit", "Edit", KIT_ICON_EDIT);
     if (studio_event_renameable(s, n) &&
         sg_menu_item(m, "rename-event", "Rename Event", KIT_ICON_EDIT, "F2", readonly)) {
         studio_refactor_rename_event(s, studio_event_renameable(s, n));
@@ -405,7 +480,8 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
         sg_delete_selection(s);
         return;
     }
-    sg_menu_separator(m);
+    sg_submenu_end(m);
+    sg_submenu_begin(m, "refactor", "Refactor", KIT_ICON_FUNCTION);
     int count = acount(e->selected);
     bool locked = readonly || e->ui_context == EDITOR_UI_CONTEXT_SYSTEM;
     if (sg_menu_item(
@@ -430,7 +506,8 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
         sg_collapse(s, GRAPH_MACRO);
         return;
     }
-    if (ed_is_graph_call(n) && n->desc != &NODE_BehaviorExpression &&
+    if (sg_inline_call_item(s, m, n)) { return; }
+    if (!e->presentation && ed_is_graph_call(n) && n->desc != &NODE_BehaviorExpression &&
         sg_menu_item(
             m,
             "expand-node",
@@ -464,11 +541,25 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
         sg_convert_to_expression(s);
         return;
     }
-    sg_menu_separator(m);
-    if (select_items(s, m) || selection_items(s, m)) {
+    if (ed_source_scope_available(e) && graph_node_can_inline(gr, n) &&
+        sg_menu_item(m, "inline", "Fold into Input", KIT_ICON_EXPRESSION, NULL, readonly)) {
+        ed_snapshot_before(e);
+        (void)graph_inline_node(gr, n);
+        ed_select_node(e, graph_inline_owner(gr, n), false);
         return;
     }
-    sg_menu_separator(m);
+    if (folded_inputs(gr, n) &&
+        sg_menu_item(m, "expand", "Show Input Nodes", KIT_ICON_MAXIMIZE, NULL, readonly)) {
+        ed_snapshot_before(e);
+        expand_inputs(e, n);
+        return;
+    }
+    sg_submenu_end(m);
+    if (select_items(s, m)) { return; }
+    sg_submenu_begin(m, "layout", "Layout", KIT_ICON_LAYOUT);
+    if (selection_items(s, m)) { return; }
+    sg_submenu_end(m);
+    sg_submenu_begin(m, "debug", "Debug", KIT_ICON_TARGET);
     if (sg_menu_item(
             m,
             "mute",
@@ -502,21 +593,10 @@ void sg_node_menu(studio *s, sg_menu *m, node *n)
         }
         return;
     }
-    if (sg_node_comment_items(s, m, n)) {
-        return;
-    }
-    if (ed_source_scope_available(e) && graph_node_can_inline(gr, n) &&
-        sg_menu_item(m, "inline", "Inline", KIT_ICON_EXPRESSION, NULL, readonly)) {
-        ed_snapshot_before(e);
-        (void)graph_inline_node(gr, n);
-        ed_select_node(e, graph_inline_owner(gr, n), false);
-        return;
-    }
-    if (folded_inputs(gr, n) &&
-        sg_menu_item(m, "expand", "Expand Inputs", KIT_ICON_MAXIMIZE, NULL, readonly)) {
-        ed_snapshot_before(e);
-        expand_inputs(e, n);
-    }
+    sg_submenu_end(m);
+    sg_submenu_begin(m, "comments", "Comment", KIT_ICON_COMMENT);
+    if (sg_node_comment_items(s, m, n)) { return; }
+    sg_submenu_end(m);
 }
 
 /* ---------- Host ---------- */

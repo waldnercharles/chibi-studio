@@ -296,6 +296,11 @@ static void add_item(yyjson_mut_doc *doc, yyjson_mut_val *items, const char *lab
 void studio_scene_add(yyjson_mut_doc *doc)
 {
     yyjson_mut_val *scene = yyjson_mut_obj_add_obj(doc, yyjson_mut_doc_get_root(doc), "scene");
+    yyjson_mut_val *show = yyjson_mut_obj_add_obj(doc, scene, "show");
+    yyjson_mut_obj_add_strcpy(doc, show, "label", "Show");
+    char icon[5];
+    studio_glyph(icon, KIT_ICON_EYE);
+    yyjson_mut_obj_add_strcpy(doc, show, "icon", icon);
     yyjson_mut_obj_add_real(doc, scene, "mode", MODE_SCENE);
     yyjson_mut_obj_add_strcpy(doc, scene, "zoom", "");
     yyjson_mut_obj_add_bool(doc, scene, "zoomShown", false);
@@ -717,7 +722,7 @@ bool studio_scene_view_sync(studio *s, const studio_panel_sync *at)
     );
     const char *model_error = "", *model_source_error = "";
     if (model_shown) {
-        game_preview_definition *definition = game_preview_find_definition(s->scene->live, model);
+        preview_definition *definition = preview_find_definition(s->scene->live, model);
         if (definition && definition->diagnostics.error_count) {
             model_error = "Showing last valid model";
             for (int i = 0; i < acount(definition->diagnostics.items); i++) {

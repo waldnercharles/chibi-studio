@@ -236,7 +236,7 @@ static bool restore_source_metadata(
     if (!authoring_source_metadata_matches(metadata, text)) {
         return false;
     }
-    const authoring_sources *working = game_preview_sources_working(scene->live);
+    const authoring_sources *working = preview_sources_working(scene->live);
     if (!working) {
         return false;
     }
@@ -250,14 +250,14 @@ static bool restore_source_metadata(
                 .text = !strcmp(source->path, path) ? text : source->syntax->text })
         );
     }
-    for (int i = 0; i < game_preview_sources_overlay_count(scene->live); i++) {
-        const source_catalog_edit *edit = game_preview_sources_overlay_at(scene->live, i);
+    for (int i = 0; i < preview_sources_overlay_count(scene->live); i++) {
+        const source_catalog_edit *edit = preview_sources_overlay_at(scene->live, i);
         if (!source_catalog_source_path(scene->content_root, edit->path)) {
             apush(edits, ((source_catalog_edit){ .path = edit->path, .text = edit->text }));
         }
     }
     char error[256] = { 0 };
-    authoring_sources *defaults = game_preview_sources_candidate(
+    authoring_sources *defaults = preview_sources_candidate(
         scene->live,
         edits,
         acount(edits),
@@ -305,7 +305,7 @@ authoring_source_presentation *scene_source_projection_path(
         return NULL;
     }
     source_catalog_edit edit = { .path = path, .text = text };
-    authoring_sources *sources = game_preview_sources_candidate(scene->live, &edit, 1, false, error, size);
+    authoring_sources *sources = preview_sources_candidate(scene->live, &edit, 1, false, error, size);
     if (!sources) {
         return NULL;
     }
@@ -348,7 +348,7 @@ static authoring_source_presentation *resolve_source_presentation(
 )
 {
     app_scene_authoring *scene = user;
-    const authoring_sources *sources = game_preview_sources_working(scene->live);
+    const authoring_sources *sources = preview_sources_working(scene->live);
     for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
         const authoring_source *source = authoring_sources_at(sources, i);
         if (!strcmp(source->path, key) ||
@@ -369,13 +369,13 @@ int save_content_file(app_scene_authoring *scene, const char *path, const char *
     return result;
 }
 
-game_prototype_registry app_component_registry(void)
+prototype_registry app_component_registry(void)
 {
     ecs_component_catalog project = project_components();
-    return (game_prototype_registry){ project.components, project.component_count };
+    return (prototype_registry){ project.components, project.component_count };
 }
 
-int restore_retained_components(app_scene_authoring *scene, scene_actor *actor, const game_prototype *prototype);
+int restore_retained_components(app_scene_authoring *scene, scene_actor *actor, const prototype *prototype);
 
 int refresh_prototype_instances(app_scene_authoring *scene, scene_prototype_asset *asset);
 void finish_transform_edit(app_scene_authoring *scene, bool cancel);
@@ -458,11 +458,11 @@ static void free_global_choices(app_scene_authoring *scene)
 
 static void refresh_global_choices(app_scene_authoring *scene)
 {
-    const game_entities *entities = scene->live ? scene->live->runtime->entities : NULL;
-    int count = game_entities_global_name_count(entities);
+    const entities *entities = scene->live ? scene->live->runtime->entities : NULL;
+    int count = entities_global_name_count(entities);
     bool unchanged = scene->global_choices.count == count;
     for (int i = 0; unchanged && i < count; i++) {
-        const char *name = game_entities_global_name_at(entities, i);
+        const char *name = entities_global_name_at(entities, i);
         unchanged = name && !strcmp(scene->global_choices.items[i].name, name);
     }
     if (unchanged) {
@@ -474,7 +474,7 @@ static void refresh_global_choices(app_scene_authoring *scene)
     }
     editor_choice *choices = xmalloc((size_t)count * sizeof *choices);
     for (int i = 0; i < count; i++) {
-        const char *name = game_entities_global_name_at(entities, i);
+        const char *name = entities_global_name_at(entities, i);
         char label[128];
         editor_identifier_label(name, label, sizeof label);
         choices[i] = (editor_choice){ .name = xstrdup(name), .label = xstrdup(label) };
@@ -497,9 +497,9 @@ static bool format_entity_value(const pin_value *value, uint64_t owner, char *bu
     }
     app_scene_authoring *scene = user;
     ecs_world *world = scene->debug_target == APP_RUNTIME_PREVIEW
-                         ? game_prototype_preview_world(scene->prototype_preview)
+                         ? prototype_preview_world(scene->prototype_preview)
                          : scene->world;
-    ecs_world *preview_world = game_prototype_preview_world(scene->prototype_preview);
+    ecs_world *preview_world = prototype_preview_world(scene->prototype_preview);
     if (!world || (world != scene->world && world != preview_world)) {
         return false;
     }
@@ -517,7 +517,7 @@ static bool format_entity_value(const pin_value *value, uint64_t owner, char *bu
         }
     }
     if (world == preview_world && scene->preview_prototype_id &&
-        ecs_entity_to_u64(game_prototype_preview_entity(scene->prototype_preview)) ==
+        ecs_entity_to_u64(prototype_preview_entity(scene->prototype_preview)) ==
             value->u64) {
         snprintf(buf, cap, "%s", scene->preview_prototype_id);
         return true;
@@ -688,7 +688,7 @@ static const scene_actor *selected_actor_const(const app_scene_authoring *scene)
 ecs_entity selected_scene_entity(const app_scene_authoring *scene)
 {
     if (scene->runtime_selected.slot) {
-        return game_entities_owns(scene->live->runtime->entities, scene->runtime_selected)
+        return entities_owns(scene->live->runtime->entities, scene->runtime_selected)
                  ? scene->runtime_selected
                  : (ecs_entity){ 0 };
     }
@@ -701,11 +701,11 @@ ecs_entity selected_scene_entity(const app_scene_authoring *scene)
 const char *scene_entity_prototype(const app_scene_authoring *scene, ecs_entity entity)
 {
     for (int i = 0; i < acount(scene->prototypes); i++) {
-        const game_prototype *prototype = scene->prototypes[i].prototype;
+        const prototype *prototype = scene->prototypes[i].prototype;
         if (ecs_component_has(
                 scene->world,
                 entity,
-                game_prototype_tag_desc(prototype)->id
+                prototype_tag_desc(prototype)->id
             )) {
             return prototype->name;
         }
@@ -751,7 +751,7 @@ scene_prototype_asset *previewed_prototype(app_scene_authoring *scene)
     }
     for (int i = 0; i < acount(scene->prototypes); i++) {
         scene_prototype_asset *asset = &scene->prototypes[i];
-        if (strcmp(game_prototype_identity(asset->prototype), scene->preview_prototype_id) ==
+        if (strcmp(prototype_identity(asset->prototype), scene->preview_prototype_id) ==
             0) {
             return asset;
         }
@@ -771,14 +771,14 @@ void clear_prototype_history(scene_prototype_asset *asset)
     afree(asset->redo);
 }
 
-void prototype_history_before(app_scene_authoring *scene, game_prototype *prototype)
+void prototype_history_before(app_scene_authoring *scene, prototype *prototype)
 {
     if (!collab_record_history()) {
         return;
     }
     scene_prototype_asset *asset = find_prototype(scene, prototype->name);
     assert(asset && asset->prototype == prototype);
-    av_value *value = game_prototype_to_value(prototype);
+    av_value *value = prototype_to_value(prototype);
     if (value) {
         apush(asset->undo, value);
     }
@@ -827,11 +827,11 @@ static int behavior_prototype_index(app_scene_authoring *scene, const char *asse
     scene_actor *actor = selected_actor(scene);
     int index = actor ? prototype_index(scene, actor->prototype_name) : -1;
     scene_prototype_asset *asset = prototype_at(scene, index);
-    if (asset && game_prototype_has_graph(asset->prototype, asset_name)) {
+    if (asset && prototype_has_graph(asset->prototype, asset_name)) {
         return index;
     }
     for (int i = 0; i < acount(scene->prototypes); i++) {
-        if (game_prototype_has_graph(scene->prototypes[i].prototype, asset_name)) {
+        if (prototype_has_graph(scene->prototypes[i].prototype, asset_name)) {
             return i;
         }
     }
@@ -848,11 +848,11 @@ static int selected_behavior_attachment(app_scene_authoring *scene, scene_debug_
     if (!scene->definition || !scene->definition->name || !out) {
         return 0;
     }
-    game_source_registry *behaviors = scene->live->runtime->sources;
+    source_registry *behaviors = scene->live->runtime->sources;
     ecs_entity entity;
     if (scene->active_runtime_target == APP_RUNTIME_PREVIEW) {
-        behaviors = game_prototype_preview_sources(scene->prototype_preview);
-        entity = game_prototype_preview_entity(scene->prototype_preview);
+        behaviors = prototype_preview_sources(scene->prototype_preview);
+        entity = prototype_preview_entity(scene->prototype_preview);
     } else {
         entity = selected_scene_entity(scene);
         if (!entity.slot) {
@@ -870,11 +870,11 @@ static int selected_behavior_attachment(app_scene_authoring *scene, scene_debug_
         return 1;
     }
     if (scene_debug_owner_attachment(behaviors, scene->definition->name, entity, out)) {
-        const authoring_source *source = game_preview_source_find(
+        const authoring_source *source = preview_source_find(
             scene->active_runtime_target == APP_RUNTIME_PREVIEW
-                ? game_prototype_preview_live(scene->prototype_preview)
+                ? prototype_preview_live(scene->prototype_preview)
                 : scene->live,
-            game_preview_definition_path(scene->definition),
+            preview_definition_path(scene->definition),
             true
         );
         out->module = source ? source->module : NULL;
@@ -1011,7 +1011,7 @@ static void select_spawned(app_scene_authoring *scene, ecs_entity entity)
 
 int app_scene_authoring_select_runtime_entity(app_scene_authoring *scene, ecs_entity entity)
 {
-    if (!scene || !game_entities_owns(scene->live->runtime->entities, entity)) {
+    if (!scene || !entities_owns(scene->live->runtime->entities, entity)) {
         return -1;
     }
     select_spawned(scene, entity);
@@ -1027,7 +1027,7 @@ int app_scene_authoring_select_entity(app_scene_authoring *scene, ecs_entity ent
             return 0;
         }
     }
-    if (!game_entities_owns(scene->live->runtime->entities, entity)) {
+    if (!entities_owns(scene->live->runtime->entities, entity)) {
         return -1;
     }
     select_spawned(scene, entity);
@@ -1041,7 +1041,7 @@ bool scene_can_move(const app_scene_authoring *scene)
 {
     return scene->active_runtime_target == APP_RUNTIME_SCENE &&
            !scene->runtime_playing && !scene->runtime_step &&
-           !game_entities_initializing(scene->live->runtime->entities);
+           !entities_initializing(scene->live->runtime->entities);
 }
 
 bool scene_editing(const app_scene_authoring *scene)
@@ -1049,7 +1049,7 @@ bool scene_editing(const app_scene_authoring *scene)
     return scene_can_move(scene) && !scene->runtime_snapshot_valid;
 }
 
-void write_position(app_scene_authoring *scene, ecs_entity entity, GameTransform position)
+void write_position(app_scene_authoring *scene, ecs_entity entity, Transform position)
 {
     if (!isfinite(position.x) || !isfinite(position.y)) {
         return;
@@ -1057,14 +1057,14 @@ void write_position(app_scene_authoring *scene, ecs_entity entity, GameTransform
     ecs_component_write_field(
         scene->world,
         entity,
-        GAME_COMPONENT_GameTransform.id,
+        COMPONENT_Transform.id,
         0,
         (pin_value){ .type = PIN_F32, .f = position.x }
     );
     ecs_component_write_field(
         scene->world,
         entity,
-        GAME_COMPONENT_GameTransform.id,
+        COMPONENT_Transform.id,
         1,
         (pin_value){ .type = PIN_F32, .f = position.y }
     );
@@ -1270,12 +1270,12 @@ void begin_transform_edit(app_scene_authoring *scene, ecs_entity entity)
 {
     finish_transform_edit(scene, false);
     scene->edit_actor = entity;
-    scene->edit_before = *GAME_GameTransform_get_const(scene->world, entity);
+    scene->edit_before = *Transform_get_const(scene->world, entity);
     scene->edit_after = scene->edit_before;
     scene->edit_dirty = scene->scene_dirty;
 }
 
-void write_transform_edit(app_scene_authoring *scene, ecs_entity entity, GameTransform position)
+void write_transform_edit(app_scene_authoring *scene, ecs_entity entity, Transform position)
 {
     if (scene->runtime_snapshot_valid) {
         write_position(scene, entity, position);
@@ -1295,7 +1295,7 @@ void write_transform_edit(app_scene_authoring *scene, ecs_entity entity, GameTra
    with the authored scene; nothing records it. */
 static void finish_live_move(app_scene_authoring *scene, bool cancel)
 {
-    if (cancel && GAME_GameTransform_has(scene->world, scene->edit_actor)) {
+    if (cancel && Transform_has(scene->world, scene->edit_actor)) {
         write_position(scene, scene->edit_actor, scene->edit_before);
     }
     scene->edit_actor = (ecs_entity){ 0 };
@@ -1313,12 +1313,11 @@ void finish_transform_edit(app_scene_authoring *scene, bool cancel)
         finish_live_move(scene, cancel);
         return;
     }
-    const GameTransform
-        *position = GAME_GameTransform_get_const(scene->world, scene->edit_actor);
+    const Transform *position = Transform_get_const(scene->world, scene->edit_actor);
     bool editor = scene_collab_is_editor();
-    GameTransform after = editor   ? scene->edit_after
-                        : position ? *position
-                                   : scene->edit_before;
+    Transform after = editor   ? scene->edit_after
+                    : position ? *position
+                               : scene->edit_before;
     uint64_t identity = scene_actor_identity(scene, scene->edit_actor);
     bool recorded = false;
     char *action = NULL;
@@ -1375,34 +1374,34 @@ void finish_transform_edit(app_scene_authoring *scene, bool cancel)
 static ecs_world *debug_world(app_scene_authoring *scene, app_runtime_target target)
 {
     return target == APP_RUNTIME_PREVIEW
-             ? game_prototype_preview_world(scene->prototype_preview)
+             ? prototype_preview_world(scene->prototype_preview)
              : scene->world;
 }
 
-static game_preview_world *debug_live(app_scene_authoring *scene, app_runtime_target target)
+static preview_world *debug_live(app_scene_authoring *scene, app_runtime_target target)
 {
     return target == APP_RUNTIME_PREVIEW
-             ? game_prototype_preview_live(scene->prototype_preview)
+             ? prototype_preview_live(scene->prototype_preview)
              : scene->live;
 }
 
-static game_source_registry *debug_behaviors(app_scene_authoring *scene, app_runtime_target target)
+static source_registry *debug_behaviors(app_scene_authoring *scene, app_runtime_target target)
 {
     return target == APP_RUNTIME_PREVIEW
-             ? game_prototype_preview_sources(scene->prototype_preview)
+             ? prototype_preview_sources(scene->prototype_preview)
              : scene->live->runtime->sources;
 }
 
 /* The only live instance of the open behavior, when it has exactly one. */
 static bool sole_instance(app_scene_authoring *scene, scene_debug_attachment *out)
 {
-    game_source_registry *registry = debug_behaviors(scene, scene->active_runtime_target);
-    execution_program *program = game_source_program(registry, scene->definition->name);
+    source_registry *registry = debug_behaviors(scene, scene->active_runtime_target);
+    execution_program *program = source_program(registry, scene->definition->name);
     if (!program || execution_program_owner_count(program) != 1) {
         return false;
     }
     ecs_entity owner = ecs_entity_from_u64(execution_program_owner_at(program, 0));
-    for (int i = 0; i < game_source_attachment_count(registry); i++) {
+    for (int i = 0; i < source_attachment_count(registry); i++) {
         scene_debug_attachment info = scene_debug_attachment_index(registry, i);
         if (ecs_entity_to_u64(info.entity) == ecs_entity_to_u64(owner) &&
             !strcmp(info.asset_name, scene->definition->name)) {
@@ -1413,9 +1412,9 @@ static bool sole_instance(app_scene_authoring *scene, scene_debug_attachment *ou
     if (!scene_debug_owner_attachment(registry, scene->definition->name, owner, out)) {
         return false;
     }
-    const authoring_source *source = game_preview_source_find(
+    const authoring_source *source = preview_source_find(
         debug_live(scene, scene->active_runtime_target),
-        game_preview_definition_path(scene->definition),
+        preview_definition_path(scene->definition),
         true
     );
     out->module = source ? source->module : NULL;
@@ -1429,7 +1428,7 @@ static bool follow_changed(app_scene_authoring *scene)
 {
     app_runtime_target target = scene->active_runtime_target;
     ecs_entity entity = target == APP_RUNTIME_PREVIEW
-                          ? game_prototype_preview_entity(scene->prototype_preview)
+                          ? prototype_preview_entity(scene->prototype_preview)
                           : selected_scene_entity(scene);
     uint64_t session = scene->debug_sessions[target];
     const char *asset = scene->definition->name;
@@ -1463,7 +1462,7 @@ static void target_instance(
         &scene->debug,
         info,
         scene->debug_sessions[target],
-        game_preview_sources_applied(debug_live(scene, target))
+        preview_sources_applied(debug_live(scene, target))
     );
     scene->debug.prototype = prototype ? xstrdup(prototype) : NULL;
 }
@@ -1498,9 +1497,9 @@ static void follow_selection(app_scene_authoring *scene)
    attachments count up, so the greatest sequence is the newest. */
 static bool newest_instance(app_scene_authoring *scene, const char *prototype, scene_debug_attachment *out)
 {
-    game_source_registry *behaviors = scene->live->runtime->sources;
+    source_registry *behaviors = scene->live->runtime->sources;
     bool found = false;
-    for (int i = game_source_attachment_count(behaviors) - 1; i >= 0; i--) {
+    for (int i = source_attachment_count(behaviors) - 1; i >= 0; i--) {
         scene_debug_attachment info = scene_debug_attachment_index(behaviors, i);
         if ((found && info.sequence <= out->sequence) ||
             strcmp(info.asset_name, scene->definition->name)) {
@@ -1541,11 +1540,11 @@ static void follow_newest(app_scene_authoring *scene)
 static bool resolve_target(app_scene_authoring *scene, scene_debug_attachment *out)
 {
     app_runtime_target target = scene->debug_target;
-    game_source_registry *behaviors = debug_behaviors(scene, target);
+    source_registry *behaviors = debug_behaviors(scene, target);
     uint64_t session = scene->debug_sessions[target];
     if (scene_debug_resolve(&scene->debug, debug_world(scene, target), behaviors, session, out)) {
         if (!out->sequence) {
-            const authoring_sources *sources = game_preview_sources_applied(
+            const authoring_sources *sources = preview_sources_applied(
                 debug_live(scene, target)
             );
             for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
@@ -1576,7 +1575,7 @@ static void sync_source_breakpoints(app_scene_authoring *scene)
         }
     }
     uint64_t module = script_catalog_id("module", authoring_source_presentation_identity(view));
-    const authoring_sources *sources = game_preview_sources_applied(
+    const authoring_sources *sources = preview_sources_applied(
         debug_live(scene, scene->active_runtime_target)
     );
     bool current = false;
@@ -1593,7 +1592,7 @@ static void sync_source_breakpoints(app_scene_authoring *scene)
     }
     for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
         const authoring_source *source = authoring_sources_at(sources, i);
-        execution_program *program = game_source_program(
+        execution_program *program = source_program(
             debug_behaviors(scene, scene->active_runtime_target),
             source->analysis->name
         );
@@ -1638,14 +1637,11 @@ static void stop_source_recording(app_scene_authoring *scene, app_runtime_target
         (target == APP_RUNTIME_SCENE && !scene->live)) {
         return;
     }
-    const authoring_sources *sources = game_preview_sources_applied(
-        debug_live(scene, target)
-    );
-    game_source_registry *registry = debug_behaviors(scene, target);
+    const authoring_sources *sources = preview_sources_applied(debug_live(scene, target));
+    source_registry *registry = debug_behaviors(scene, target);
     for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
         const authoring_source *source = authoring_sources_at(sources, i);
-        execution_program
-            *program = game_source_program(registry, source->analysis->name);
+        execution_program *program = source_program(registry, source->analysis->name);
         execution_inspector *inspector = program
                                            ? execution_program_inspection(program)
                                            : NULL;
@@ -1716,7 +1712,7 @@ void sync_editor_inspection(app_scene_authoring *scene)
 
 int app_scene_authoring_choose_debug_target(app_scene_authoring *scene, ecs_entity entity)
 {
-    game_source_registry *behaviors = debug_behaviors(scene, scene->active_runtime_target);
+    source_registry *behaviors = debug_behaviors(scene, scene->active_runtime_target);
     scene_debug_attachment info = { 0 };
     for (int i = 0; entity.slot && !info.asset_name &&
                     i < scene_debug_attachment_count_for_entity(behaviors, entity);
@@ -1731,9 +1727,9 @@ int app_scene_authoring_choose_debug_target(app_scene_authoring *scene, ecs_enti
         if (!scene_debug_owner_attachment(behaviors, scene->definition->name, entity, &info)) {
             return -1;
         }
-        const authoring_source *source = game_preview_source_find(
+        const authoring_source *source = preview_source_find(
             debug_live(scene, scene->active_runtime_target),
-            game_preview_definition_path(scene->definition),
+            preview_definition_path(scene->definition),
             true
         );
         if (!source || !source->module) {
@@ -1776,7 +1772,7 @@ int app_scene_authoring_set_debug_target(
         !asset_name || !ecs_entity_is_alive(debug_world(scene, target), entity)) {
         return -1;
     }
-    game_source_registry *behaviors = debug_behaviors(scene, target);
+    source_registry *behaviors = debug_behaviors(scene, target);
     for (int i = 0; i < scene_debug_attachment_count_for_entity(behaviors, entity);
          i++) {
         scene_debug_attachment info;
@@ -1790,9 +1786,7 @@ int app_scene_authoring_set_debug_target(
     }
     scene_debug_attachment info;
     if (scene_debug_owner_attachment(behaviors, asset_name, entity, &info)) {
-        const authoring_sources *sources = game_preview_sources_applied(
-            debug_live(scene, target)
-        );
+        const authoring_sources *sources = preview_sources_applied(debug_live(scene, target));
         for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
             const authoring_source *source = authoring_sources_at(sources, i);
             if (!strcmp(source->analysis->name, asset_name)) {
@@ -1819,8 +1813,8 @@ void app_scene_authoring_set_debug_pinned(app_scene_authoring *scene, bool pinne
 
 app_scene_authoring *app_scene_authoring_new_with_content_root(
     ecs_world *world,
-    game_preview_world *live,
-    game_preview_definition *definition,
+    preview_world *live,
+    preview_definition *definition,
     const behavior_asset *editor_working,
     editor *graph_editor,
     app_scene_prototype_resolve_fn resolve_prototype,
@@ -1852,7 +1846,7 @@ app_scene_authoring *app_scene_authoring_new_with_content_root(
     scene->resolve_user = resolve_user;
     scene->registry = app_component_registry();
     scene->runtime = runtime;
-    scene->prototype_preview = game_prototype_preview_new(&scene->registry);
+    scene->prototype_preview = prototype_preview_new(&scene->registry);
     if (!scene->prototype_preview) {
         app_scene_renderer_free(scene->renderer);
         scene_history_free(scene->history);
@@ -1915,8 +1909,8 @@ app_scene_authoring *app_scene_authoring_new_with_content_root(
 
 app_scene_authoring *app_scene_authoring_new(
     ecs_world *world,
-    game_preview_world *live,
-    game_preview_definition *definition,
+    preview_world *live,
+    preview_definition *definition,
     const behavior_asset *editor_working,
     editor *graph_editor,
     app_scene_prototype_resolve_fn resolve_prototype,
@@ -1989,15 +1983,15 @@ int sync_behavior_working(app_scene_authoring *scene)
         assert(scene->definition->registered && scene->definition->path &&
                scene->definition->path[0]);
         authoring_source_presentation *copy = authoring_source_presentation_clone(presentation);
-        int result = game_preview_projection_set(scene->definition, copy, false);
+        int result = preview_projection_set(scene->definition, copy, false);
         authoring_source_presentation_free(copy);
         if (result) {
             return result;
         }
         const authoring_source
-            *working = game_preview_source_find(scene->live, scene->definition->path, false);
+            *working = preview_source_find(scene->live, scene->definition->path, false);
         const authoring_source
-            *applied = game_preview_source_find(scene->live, scene->definition->path, true);
+            *applied = preview_source_find(scene->live, scene->definition->path, true);
         scene->definition
             ->dirty = working &&
                       (!applied ||
@@ -2016,7 +2010,7 @@ int sync_behavior_working(app_scene_authoring *scene)
         return 0;
     }
     if (!scene->definition || !scene->editor_working ||
-        game_preview_sync_working(scene->definition, scene->editor_working) != 0) {
+        preview_sync_working(scene->definition, scene->editor_working) != 0) {
         snprintf(scene->message, sizeof scene->message, "Could not synchronize behavior graph.");
         return -1;
     }
@@ -2025,10 +2019,10 @@ int sync_behavior_working(app_scene_authoring *scene)
     return 0;
 }
 
-static int apply_behavior_definition(app_scene_authoring *scene, game_preview_definition *definition)
+static int apply_behavior_definition(app_scene_authoring *scene, preview_definition *definition)
 {
     if (definition->working_presentation) {
-        const char *source_path = game_preview_definition_path(definition);
+        const char *source_path = preview_definition_path(definition);
         assert(definition->registered && source_path && source_path[0]);
         char *path = xstrdup(source_path);
         int result = scene_publish_sources(
@@ -2044,7 +2038,7 @@ static int apply_behavior_definition(app_scene_authoring *scene, game_preview_de
         return result;
     }
     int dirty = definition->dirty;
-    int result = game_preview_apply(
+    int result = preview_apply(
         scene->live,
         definition,
         scene->message,
@@ -2058,9 +2052,8 @@ static int apply_behavior_definition(app_scene_authoring *scene, game_preview_de
 
 void preview_behavior_edits(app_scene_authoring *scene)
 {
-    const char *path = scene->definition
-                         ? game_preview_definition_path(scene->definition)
-                         : NULL;
+    const char *path = scene->definition ? preview_definition_path(scene->definition)
+                                         : NULL;
     if (path && scene->source_preview_hold[0] &&
         !strcmp(path, scene->source_preview_hold)) {
         return;
@@ -2080,8 +2073,8 @@ void preview_behavior_edits(app_scene_authoring *scene)
         return;
     }
     if (scene->definition->working_presentation) {
-        if (game_preview_sources_working(scene->live) ==
-            game_preview_sources_applied(scene->live)) {
+        if (preview_sources_working(scene->live) ==
+            preview_sources_applied(scene->live)) {
             scene->preview_retry = false;
             return; /* Only presentation metadata changed. */
         }
@@ -2107,7 +2100,7 @@ void preview_behavior_edits(app_scene_authoring *scene)
     }
     bool library = scene->definition->working->domain == BEHAVIOR_DOMAIN_LIBRARY ||
                    scene->definition->working->domain == BEHAVIOR_DOMAIN_SHADER_LIBRARY;
-    int prepared = library ? game_prototype_preview_prepare_library(
+    int prepared = library ? prototype_preview_prepare_library(
                                  scene->prototype_preview,
                                  scene->definition->name,
                                  scene->definition->working,
@@ -2116,7 +2109,7 @@ void preview_behavior_edits(app_scene_authoring *scene)
                              )
                            : 0;
     int result = prepared ? prepared
-                          : game_preview_update(
+                          : preview_update(
                                 scene->live,
                                 scene->definition,
                                 scene->preview_message,
@@ -2128,7 +2121,7 @@ void preview_behavior_edits(app_scene_authoring *scene)
                     scene->definition->working->domain == BEHAVIOR_DOMAIN_FIELD ||
                     scene->definition->working->domain == BEHAVIOR_DOMAIN_EVENT_DEFINITION;
     int prototype_result = result == 0 && mirrored
-                             ? game_prototype_preview_update_behavior(
+                             ? prototype_preview_update_behavior(
                                    scene->prototype_preview,
                                    scene->definition->name,
                                    scene->definition->working,
@@ -2168,7 +2161,7 @@ int app_scene_authoring_apply_pending(app_scene_authoring *scene)
     }
     if (scene->definition->working->domain == BEHAVIOR_DOMAIN_LIBRARY ||
         scene->definition->working->domain == BEHAVIOR_DOMAIN_SHADER_LIBRARY) {
-        int ready = game_prototype_preview_prepare_library(
+        int ready = prototype_preview_prepare_library(
             scene->prototype_preview,
             scene->definition->name,
             scene->definition->working,
@@ -2183,7 +2176,7 @@ int app_scene_authoring_apply_pending(app_scene_authoring *scene)
                    ? apply_behavior_definition(scene, scene->definition)
                    : 0;
     if (result == 0) {
-        result = game_prototype_preview_update_behavior(
+        result = prototype_preview_update_behavior(
             scene->prototype_preview,
             scene->definition->name,
             scene->definition->working,
@@ -2249,7 +2242,7 @@ void app_scene_authoring_free(app_scene_authoring *scene)
         remove_selected(scene);
     }
     afree(scene->actors);
-    game_prototype_owned_strings_free(scene->component_strings);
+    prototype_owned_strings_free(scene->component_strings);
     afree(scene->marquee_base);
     scene_view_free(scene);
     reference_index_free(scene->asset_index);
@@ -2258,10 +2251,10 @@ void app_scene_authoring_free(app_scene_authoring *scene)
     for (int i = 0; i < acount(scene->prototypes); i++) {
         clear_prototype_history(&scene->prototypes[i]);
         free(scene->prototypes[i].path);
-        game_prototype_free(scene->prototypes[i].prototype);
+        prototype_free(scene->prototypes[i].prototype);
     }
     afree(scene->prototypes);
-    game_prototype_preview_free(scene->prototype_preview);
+    prototype_preview_free(scene->prototype_preview);
     scene_model_preview_free(scene);
     free(scene->preview_prototype_id);
     free((void *)scene->image_choices.items);
@@ -2304,12 +2297,7 @@ static int open_library_source(void *user, const char *name, uint64_t graph_id)
    replaces or removes one refreshes the catalog before the editor reads it. */
 void refresh_asset_catalog(app_scene_authoring *scene)
 {
-    const behavior_asset **assets = NULL;
-    for (int i = 0; i < game_preview_definition_count(scene->live); i++) {
-        apush(assets, game_preview_definition_at(scene->live, i)->working);
-    }
-    editor_set_asset_catalog(scene->graph_editor, assets, acount(assets));
-    afree(assets);
+    editor_refresh_asset_catalog(scene->graph_editor, scene->live);
 }
 
 static void refresh_catalogs(app_scene_authoring *scene)
@@ -2326,7 +2314,7 @@ static void refresh_catalogs(app_scene_authoring *scene)
     refresh_asset_catalog(scene);
     sync_editor_inspection(scene);
     if (scene->runtime_selected.slot &&
-        !game_entities_owns(scene->live->runtime->entities, scene->runtime_selected)) {
+        !entities_owns(scene->live->runtime->entities, scene->runtime_selected)) {
         scene->runtime_selected = (ecs_entity){ 0 };
         sync_editor_inspection(scene);
     }

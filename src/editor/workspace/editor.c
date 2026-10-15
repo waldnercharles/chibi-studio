@@ -1,8 +1,9 @@
 #include "assets/ui_events.h"
+#include "authoring/preview.h"
 #include "editor/graph/eval_view.h"
 #include "editor/workspace/editor_internal.h"
-#include "graph/document/serialize.h"
 #include "graph/compiler/validation.h"
+#include "graph/document/serialize.h"
 #include "graph/model/registry.h"
 #include "support/xalloc.h"
 
@@ -33,7 +34,7 @@ static int ed_event_param_count(const node *n)
 
 /* Appends only the declared parameters this event is still missing, so no
  * existing pin is retyped or removed and no edge is invalidated under EVT-5. */
-int ed_event_add_declared_params(editor *e, node *n, const game_host_event_desc *signature)
+int ed_event_add_declared_params(editor *e, node *n, const host_event_desc *signature)
 {
     int added = 0;
     for (int i = ed_event_param_count(n); i < signature->payload_count; i++) {
@@ -49,7 +50,7 @@ int ed_name_spawned_event(editor *e, node *n)
         return 0;
     }
     for (int i = 0; i < e->event_catalog_count; i++) {
-        const game_host_event_desc *signature = &e->event_catalog[i];
+        const host_event_desc *signature = &e->event_catalog[i];
         if (ed_event_name_used(e, signature->name)) {
             continue;
         }
@@ -222,7 +223,7 @@ int editor_host_captures_keyboard(void)
     return retained_keyboard;
 }
 
-void editor_set_event_catalog(editor *e, const game_host_event_desc *events, int count)
+void editor_set_event_catalog(editor *e, const host_event_desc *events, int count)
 {
     if (!e) {
         return;
@@ -291,9 +292,32 @@ void editor_set_prototype_catalog(editor *e, const char *const *names, int count
 
 void editor_set_asset_catalog(editor *e, const behavior_asset *const *assets, int count)
 {
+    bool changed = acount(e->asset_catalog) != count;
+    for (int i = 0; !changed && i < count; i++) {
+        changed = e->asset_catalog[i] != assets[i];
+    }
+    if (!changed) {
+        return;
+    }
     aclear(e->asset_catalog);
     for (int i = 0; i < count; i++) {
         apush(e->asset_catalog, assets[i]);
+    }
+    e->asset_catalog_revision++;
+}
+
+void editor_refresh_asset_catalog(editor *e, preview_world *world)
+{
+    int previous = acount(e->asset_catalog), count = preview_definition_count(world);
+    bool changed = previous != count;
+    asetlen(e->asset_catalog, count);
+    for (int i = 0; i < count; i++) {
+        const behavior_asset *asset = preview_definition_at(world, i)->working;
+        changed |= i >= previous || e->asset_catalog[i] != asset;
+        e->asset_catalog[i] = asset;
+    }
+    if (changed) {
+        e->asset_catalog_revision++;
     }
 }
 
@@ -302,4 +326,3 @@ void ed_refresh_values(editor *e)
 {
     eval_view_set_inspector(e->ev, ed_display_inspector(e), e->inspection_owner, e->presentation);
 }
-

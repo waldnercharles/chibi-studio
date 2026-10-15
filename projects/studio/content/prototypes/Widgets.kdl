@@ -1,4 +1,4 @@
 name "Widgets"
 components {
-    GAME.GameUi document="Widgets" hidden=#true
+    Ui document="Widgets" hidden=#true
 }

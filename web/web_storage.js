@@ -114,21 +114,22 @@ if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
             const id = unique(title);
             root = `${workspace}/${id}`;
             const manifestPath = `${root}/${manifest}`;
-            const scenePath = `${root}/content/scenes/Start.kdl`;
             write(manifestPath, `version ${version}\nname ${kdlString(title)}\ncontent "content"\nstart_scene "scenes/Start.kdl"\n`);
-            write(scenePath, "version 1\nname \"Start\"\n(array)entities\n");
+            walk('/projects/starter/content', (path, data) => write(`${root}/content/${path}`, data));
             keep();
             persist();
             return JSON.stringify({root: `${root}/`});
         } catch (error) {
             if (root) {
                 try {
-                    for (const path of [`${root}/content/scenes/Start.kdl`, `${root}/${manifest}`]) {
-                        if (exists(path)) fs().unlink(path);
-                    }
-                    for (const path of [`${root}/content/scenes`, `${root}/content`, root]) {
-                        if (exists(path)) fs().rmdir(path);
-                    }
+                    const remove = path => {
+                        if (!fs().isDir(fs().stat(path).mode)) { fs().unlink(path); return; }
+                        for (const name of fs().readdir(path)) {
+                            if (name !== '.' && name !== '..') remove(`${path}/${name}`);
+                        }
+                        fs().rmdir(path);
+                    };
+                    if (exists(root)) remove(root);
                 } catch {
                     // Keep reporting the error that caused project creation to fail.
                 }

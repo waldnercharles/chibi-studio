@@ -22,7 +22,7 @@ static const float FAR_PIXELS = 0.6f;
 /* A graph opening in a small area shows its start at no less than this zoom
    instead of all of it as unreadable titles; expression code wraps to fit
    at it. */
-static const float OPEN_ZOOM_MIN = 0.75f;
+static const float OPEN_ZOOM_MIN = 1.0f;
 /* How long after a wheel tick zooming counts as continuous. */
 static const double WHEEL_SETTLE = 0.3;
 
@@ -130,6 +130,8 @@ bool sg_menu_item(
     const char *shortcut,
     bool disabled
 );
+/* Explanation for the item just described, including a disabled action. */
+void sg_menu_tip(sg_menu *, const char *);
 /* A color choice: a dot tinted `swatch` (0xRRGGBBAA), marked when current. */
 bool sg_menu_swatch(sg_menu *m, const char *key, const char *label, uint32_t swatch, bool current, bool disabled);
 /* A separator above the next item. */
@@ -141,6 +143,7 @@ void sg_submenu_begin(sg_menu *m, const char *key, const char *label, uint32_t i
 void sg_submenu_end(sg_menu *m);
 /* A node's menu (studio_graph.c). */
 void sg_node_menu(studio *s, sg_menu *m, node *n);
+bool sg_inline_call_item(studio *, sg_menu *, node *);
 
 /* Model access (studio_graph.c). */
 editor *sg_graph_editor(const studio *s);
@@ -296,6 +299,7 @@ void sg_find_panel(studio *s);
 /* Records the open graph and the calls entered to reach it as a visit once
    it differs from the one last seen; the Behavior header does as it shows. */
 void sg_nav_track(studio *s);
+void sg_nav_follow_source(studio *s);
 void sg_nav_keys(studio *s);
 
 /* Live values (studio_graph_live.c). */

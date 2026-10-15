@@ -150,7 +150,7 @@ static void add_tab_assets(reference_index *index, app_scene_authoring *scene)
     }
 }
 
-static int definition_asset(reference_index *index, app_scene_authoring *scene, game_preview_definition *definition)
+static int definition_asset(reference_index *index, app_scene_authoring *scene, preview_definition *definition)
 {
     return reference_index_add_asset(
         index,
@@ -170,7 +170,7 @@ static int prototype_asset(reference_index *index, scene_prototype_asset *asset)
         REFERENCE_ASSET_PROTOTYPE,
         asset->prototype->name,
         asset->path,
-        asset->path ? NULL : game_prototype_identity(asset->prototype)
+        asset->path ? NULL : prototype_identity(asset->prototype)
     );
 }
 
@@ -203,13 +203,13 @@ static void add_ui_references(reference_index *index, app_scene_authoring *scene
 static void add_scene_document(app_scene_authoring *scene, reference_index *index, int source, av_value *value)
 {
     char error[256];
-    game_scene_document *document = value
-                                      ? game_scene_document_load_value(value, error, sizeof error)
-                                      : NULL;
+    scene_document *document = value
+                                 ? scene_document_load_value(value, error, sizeof error)
+                                 : NULL;
     for (int i = 0; document && i < acount(document->entities); i++) {
-        game_scene_entity *entity = &document->entities[i];
+        scene_entity *entity = &document->entities[i];
         scene_prototype_asset *base = find_prototype(scene, entity->prototype);
-        char *path = game_scene_document_entity_path(document, i);
+        char *path = scene_document_entity_path(document, i);
         reference_object object = {
             .name = path,
             .prototype = entity->prototype,
@@ -224,7 +224,7 @@ static void add_scene_document(app_scene_authoring *scene, reference_index *inde
     if (document) {
         reference_index_add_page(index, source, document->ui, scene->default_ui);
     }
-    game_scene_document_free(document);
+    scene_document_free(document);
 }
 
 /* Scene tabs other than the current one, whose objects are live actors. */
@@ -240,7 +240,7 @@ static void add_scene_tab_references(reference_index *index, app_scene_authoring
 }
 
 /* The open graph's working copy holds edits live apply has not reached. */
-static const behavior_asset *definition_working(app_scene_authoring *scene, game_preview_definition *definition)
+static const behavior_asset *definition_working(app_scene_authoring *scene, preview_definition *definition)
 {
     const behavior_asset *working = definition->working;
     const behavior_asset *current = definition == scene->definition && scene->graph_editor
@@ -254,8 +254,8 @@ static const behavior_asset *definition_working(app_scene_authoring *scene, game
 
 static void add_definitions(reference_index *index, app_scene_authoring *scene, bool references)
 {
-    for (int i = 0; i < game_preview_definition_count(scene->live); i++) {
-        game_preview_definition *definition = game_preview_definition_at(scene->live, i);
+    for (int i = 0; i < preview_definition_count(scene->live); i++) {
+        preview_definition *definition = preview_definition_at(scene->live, i);
         int source = definition_asset(index, scene, definition);
         if (references && !definition->working_presentation) {
             reference_index_add_graphs(index, source, definition_working(scene, definition));
@@ -282,29 +282,27 @@ static void add_actor_references(
     scene_actor *actor
 )
 {
-    const game_prototype *snapshot = scene->runtime_snapshot_valid
-                                       ? actor->runtime_snapshot
-                                       : NULL;
+    const prototype *snapshot = scene->runtime_snapshot_valid ? actor->runtime_snapshot
+                                                              : NULL;
     assert(!scene->runtime_snapshot_valid || snapshot);
     const char **behaviors = NULL;
     for (int i = 0; snapshot && i < acount(snapshot->graphs); i++) {
         apush(behaviors, snapshot->graphs[i]);
     }
-    const game_source_registry *sources = scene->live->runtime->sources;
-    int count = snapshot ? 0 : game_source_attachment_count(sources);
+    const source_registry *sources = scene->live->runtime->sources;
+    int count = snapshot ? 0 : source_attachment_count(sources);
     for (int i = 0; i < count; i++) {
-        game_source_attachment_info info = game_source_attachment_at(sources, i);
+        source_attachment_info info = source_attachment_at(sources, i);
         if (ecs_entity_to_u64(info.entity) == ecs_entity_to_u64(actor->entity)) {
             apush(behaviors, info.name);
         }
     }
-    av_value *overrides = snapshot
-                            ? game_prototype_overrides_value(actor->base, snapshot)
-                            : game_prototype_capture_overrides_value(
-                                  actor->base,
-                                  scene->world,
-                                  actor->entity
-                              );
+    av_value *overrides = snapshot ? prototype_overrides_value(actor->base, snapshot)
+                                   : prototype_capture_overrides_value(
+                                         actor->base,
+                                         scene->world,
+                                         actor->entity
+                                     );
     reference_object object = {
         .name = actor->name,
         .prototype = actor->prototype_name,
@@ -337,7 +335,7 @@ static void add_active_scene_references(reference_index *index, app_scene_author
 
 static void add_source_references(reference_index *index, app_scene_authoring *scene)
 {
-    const authoring_sources *sources = game_preview_sources_working(scene->live);
+    const authoring_sources *sources = preview_sources_working(scene->live);
     if (!sources) {
         return;
     }

@@ -329,7 +329,9 @@ void sg_paste(studio *s)
             const source_presentation_origin *selected = authoring_source_presentation_origin(
                 e->presentation, e->active_graph->graph_id, anchor->id, 0
             );
-            if (selected && selected->kind == SOURCE_PRESENTATION_STATEMENT) {
+            if (selected && (selected->kind == SOURCE_PRESENTATION_STATEMENT ||
+                             (selected->kind == SOURCE_PRESENTATION_EXPRESSION &&
+                              node_behavior_for(anchor) == NODE_BEHAVIOR_EXEC))) {
                 origin = selected->identity;
                 kind = AUTHORING_EDIT_INSERT_AFTER;
             }
@@ -930,7 +932,7 @@ static void add_document_events(ui_event **events, const reference_index *index,
         ui_document_events(text, &found);
     }
     for (int i = 0; i < acount(found); i++) {
-        if (!game_host_event_reserved(found[i].name) &&
+        if (!host_event_reserved(found[i].name) &&
             reference_index_event_asset(index, found[i].name) < 0) {
             ui_events_add(events, &found[i], asset->name);
         }

@@ -272,7 +272,7 @@ typedef struct
     studio_workspace workspace;
     studio_layout layouts[STUDIO_WORKSPACE_COUNT];
     kit_wire_style wires; /* graph wire routing */
-    bool short_bindings; /* graph chips name "Aim › Manual", not "Self.GameAim.manual" */
+    bool short_bindings; /* graph chips name "Aim › Manual", not "Self.Aim.manual" */
     bool title_flow;    /* unlabeled execution pins sit in node titles */
     bool compact_nodes; /* operators as symbols, one-output reads as pills */
     bool live_values;   /* data outputs show the debug target's values */
@@ -567,6 +567,13 @@ typedef struct
     bool menu_open;    /* GraphMenu.rml shows (studio_graph_menu.c) */
     bool menu_opening; /* show its popover at menu_x, menu_y this frame */
     bool menu_mounted; /* its document showed last frame */
+    struct
+    {
+        uint64_t generation, origin;
+        unsigned edit, assets;
+        bool checked, readonly, eligible;
+        char reason[512];
+    } inline_call;    /* exact source preflight cached while the menu is open */
     uint64_t *unused; /* nodes no event reaches or whose values nothing reads */
     char expression_error[192]; /* why the last expression edit was refused */
     struct
@@ -654,6 +661,9 @@ typedef struct
     studio_member_kind kind; /* the selected member */
     uint64_t id;             /* its graph, variable or local ID */
     uint64_t shown_node;     /* graph node selection last seen */
+    char source_renamed[257]; /* follow a source variable into its next generation */
+    uint64_t source_rename_generation;
+    bool source_reveal; /* reveal a newly created declaration after source adoption */
     studio_member_kind rename_kind;
     uint64_t rename_id;
     bool rename_focus;  /* scroll the row being named into view */
@@ -1158,7 +1168,7 @@ struct studio
     struct studio_prototype_action
     {
         uint64_t actor;
-        game_prototype_field *skipped; /* array */
+        prototype_field *skipped; /* array */
         char name[128];
         char error[192];
         bool opening; /* a popover asks at the pointer next frame */
@@ -1294,7 +1304,7 @@ struct studio
        (studio_code_project_problems). */
     struct studio_ui_problem *ui_project_problems; /* array */
     /* ---------- arena2d end to end (wave 3, workstream X) ---------- */
-    rml_input *game_input; /* keys pressed and text typed this frame, for the Scene's game UI */
+    rml_input *input; /* keys pressed and text typed this frame, for the Scene's game UI */
     /* ---------- Studio in Studio (studio_host.c) ---------- */
     struct studio *guest; /* the Studio Play runs in the Scene area, or NULL */
     int guest_request; /* 1 starts the guest, -1 stops it, at the next frame */
@@ -1375,11 +1385,11 @@ studio_prefs studio_prefs_load();
 bool studio_prefs_save(const studio_prefs *prefs);
 /* Binds the scenes' editor view state to its user file, beside the
  * preferences' (localStorage on the web). */
-bool studio_prefs_open_scene_view(game_save *store);
+bool studio_prefs_open_scene_view(save *store);
 bool studio_prefs_equal(const studio_prefs *a, const studio_prefs *b);
 /* Shares the preferences with authored panels as saved keys: a change a panel
  * made since `seen` applies first, then the preferences are written back. */
-void studio_prefs_share(studio_prefs *prefs, game_save *save, uint64_t *seen);
+void studio_prefs_share(studio_prefs *prefs, save *save, uint64_t *seen);
 
 /* A theme custom property a Theme panel row shows (studio_sources.c). */
 typedef struct studio_token
@@ -1432,7 +1442,7 @@ bool studio_keymap_area(const char *area);
  * of the stylesheets the open scene's root document imports. */
 typedef struct studio_sources
 {
-    game_save *save; /* the one `world` shows */
+    save *save; /* the one `world` shows */
     uint64_t save_seen;
     char content_root[1024]; /* whose page `theme` shows */
     ui_page page;            /* the open scene's root document */
@@ -1485,7 +1495,7 @@ void studio_ui_free(studio_ui *ui);
  * when the host emission is due. */
 bool studio_ui_tick(studio *s);
 void studio_ui_frame(studio *s);
-/* Shows the Studio scene entity `name`'s GameUi document in a kit host;
+/* Shows the Studio scene entity `name`'s Ui document in a kit host;
  * returns the host, for native slots, or NULL when it shows none. */
 rml_element *studio_ui_panel(studio *s, const char *key, const char *name);
 /* The same over the editor in a modal host (kit_modal_host), as a dialog
@@ -1499,7 +1509,7 @@ bool studio_ui_panel_holds(studio *s, const char *name, rml_element *element);
 /* The Studio scene's panels, each an editor type an area can show. */
 int studio_ui_panel_count(const studio *s);
 const char *studio_ui_panel_name(const studio *s, int index);
-/* Shows panel `name` filling area `area`'s body, whether or not its GameUi
+/* Shows panel `name` filling area `area`'s body, whether or not its Ui
  * is hidden; returns its host, for native slots, or NULL when it has no
  * document. */
 rml_element *studio_ui_area(studio *s, int area, const char *name);
@@ -1515,7 +1525,7 @@ void studio_ui_send(studio *s, const char *name, const char *argument);
  * its document binds it with data-area-keys="Key:Event": an editor's own
  * keymap, as Blender's; false when it binds none. */
 bool studio_ui_area_key(studio *s, int area, SDL_Keycode key, SDL_Keymod mod);
-/* Shows it over the editor while its GameUi is not hidden, as for a dialog
+/* Shows it over the editor while its Ui is not hidden, as for a dialog
  * whose behaviors hide it again. */
 void studio_ui_modal(studio *s, const char *name);
 /* True when a focused authored chrome button, or anything but a text field
@@ -1532,11 +1542,11 @@ bool studio_ui_modal_open(studio *s);
 /* What the panels' data views have read, for the UI bench's counts. */
 rml_data_reads studio_ui_data_reads(const studio *s);
 /* The panels' behaviors, for the UI bench's behavior time. */
-game_source_registry *studio_ui_sources(studio *s);
+source_registry *studio_ui_sources(studio *s);
 /* Dirties every variable of the panels' data, so the next UI frame's reads
  * count their views. */
 void studio_ui_data_dirty_all(studio *s);
-/* Clears its GameUi.hidden. */
+/* Clears its Ui.hidden. */
 void studio_ui_show(studio *s, const char *name);
 /* Runs a collaboration action with transient values from the authored panel. */
 void studio_ui_collaboration_action(studio *s, studio_command command);
@@ -2118,6 +2128,8 @@ bool studio_code_graph_readonly(const studio *s);
 char *studio_code_expression(const studio *s, const node *n);
 bool studio_code_expression_replace(studio *, const node *, const char *, char *, size_t);
 bool studio_code_edit_source(void *, const authoring_edit_request *, bool coalesce, char *, size_t);
+/* Builds and discards a checked source candidate; no draft/history mutation. */
+bool studio_code_check_edit(const studio *, const authoring_edit_request *, char *, size_t);
 void studio_code_graph_label(const studio *s, const graph *g, char *out, size_t size);
 void studio_code_pin_label(const studio *s, const node *n, const pin_spec *pin, char *out, size_t size);
 char *studio_code_expression_resolve(
@@ -2128,6 +2140,7 @@ char *studio_code_expression_resolve(
     size_t size
 );
 void studio_code_reveal_node(studio *s, const studio_node_ref *at);
+void studio_code_reveal_graph(studio *s);
 int studio_behavior_view(const studio *s);
 void studio_behavior_show(studio *s, int view);
 /* Opens the UI document `path` belongs to (ui_buffer_document) at a 1-based
@@ -2295,7 +2308,7 @@ void studio_inspect_emit(studio *s);
 
 struct ui_event;
 struct ui_data_binding;
-/* The events the GameUi documents shown on whatever attaches the open
+/* The events the Ui documents shown on whatever attaches the open
  * behavior send it (studio_graph_edit.c), which the Add menu offers as Event
  * nodes. Free them with ui_events_free. */
 struct ui_event *studio_behavior_ui_events(studio *s);
@@ -2399,7 +2412,7 @@ void studio_prototype_action_open(studio *s, bool saving);
 void studio_prototype_actions_frame(studio *s);
 /* Applies the field to its instance's prototype (the field menu's Apply to
    Prototype). */
-void studio_apply_field(studio *s, scene_actor *actor, game_prototype_field field);
+void studio_apply_field(studio *s, scene_actor *actor, prototype_field field);
 
 /* Game UI errors (studio_canvas.c): the shown documents' error, the scene's
  * or the preview's, as "ui/Name.rml message". A change is recorded in
@@ -2450,7 +2463,7 @@ typedef struct studio_canvas
     engine_viewport *viewport; /* its frame and documents */
     rml_element *frame; /* latest emitted pane, also the owner of Studio's surface input */
     ecs_world *world; /* empty: only the preview shows */
-    game_save *save;  /* what its bindings set */
+    save *save;       /* what its bindings set */
     studio_sources sources; /* Studio's data, which it shows with the Studio project open */
     studio_canvas_action *actions;
     ui_list_state list; /* the Actions log's List (Canvas.rml) */

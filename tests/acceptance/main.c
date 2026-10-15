@@ -4,8 +4,10 @@
 #include "authoring/source_presentation.h"
 #include "editor/collab/collab.h"
 #include "editor/documents/asset_code.h"
+#include "editor/graph/search.h"
 #include "editor/studio/studio_graph_internal.h"
 #include "editor/studio/studio_internal.h"
+#include "editor/studio/studio_members_internal.h"
 #include "editor/studio/studio_properties_internal.h"
 #include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/asset_refactor.h"
@@ -20,6 +22,7 @@
 #include "support/array.h"
 #include "support/file_io.h"
 #include "support/xalloc.h"
+#include "ui/popover.h"
 #include "vendor/pico_unit.h"
 
 #include <SDL3/SDL_events.h>
@@ -56,7 +59,8 @@ static enum {
     PLAY_KEYS,
     PROMPTS,
     CODE_FOLLOWUPS,
-    CODE_GLYPHS
+    CODE_GLYPHS,
+    MENU_CHOICES
 } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
@@ -169,7 +173,7 @@ static bool counter_applied(studio *s)
     asset_code *code = counter_source(s);
     REQUIRE(code);
     const authoring_source
-        *applied = game_preview_source_find(s->scene->live, asset_code_path(code), true);
+        *applied = preview_source_find(s->scene->live, asset_code_path(code), true);
     REQUIRE(applied && applied->valid);
     REQUIRE(!strcmp(applied->syntax->text, asset_code_text(code)));
     return true;
@@ -187,7 +191,7 @@ static bool input_map_reloads(studio *s)
     remove(path);
     free(path);
     REQUIRE(result == APP_DISK_RELOADED);
-    const authoring_sources *sources = game_preview_sources_working(s->scene->live);
+    const authoring_sources *sources = preview_sources_working(s->scene->live);
     REQUIRE(sources);
     const script_catalog *catalog = authoring_sources_catalog(sources);
     REQUIRE(script_catalog_find_capability(catalog, "Jump", SCRIPT_CAPABILITY_EVENT) >= 0);
@@ -268,19 +272,466 @@ static bool opens_on_handler(studio *s)
     return show_state_graph(s);
 }
 
+static node *source_node(asset_code *code, editor *e, const char *text)
+{
+    const char *source = asset_code_text(code), *at = strstr(source, text);
+    uint64_t graph = 0, id = 0;
+    if (!at || !asset_code_node_at(code, (int)(at - source), &graph, &id) ||
+        editor_open_graph(e, graph) != 0) {
+        return NULL;
+    }
+    node *n = graph_node_by_id(e->active_graph, id);
+    return n ? graph_inline_owner(e->active_graph, n) : NULL;
+}
+
+static bool flow_port(node *n, bool output, const char *name, ed_pin_view *port)
+{
+    const pin_spec *pins = output ? n->output_pins : n->input_pins;
+    int count = output ? n->output_count : n->input_count;
+    for (int i = 0; i < count; i++) {
+        if (pins[i].kind == PIN_EXEC && !strcmp(pins[i].name, name)) {
+            *port = (ed_pin_view){ n, output ? ED_PIN_OUTPUT : ED_PIN_INPUT, i };
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool source_catalog_current(studio *s)
+{
+    editor *e = sg_graph_editor(s);
+    REQUIRE(acount(e->asset_catalog) == preview_definition_count(s->scene->live));
+    for (int i = 0; i < acount(e->asset_catalog); i++) {
+        REQUIRE(e->asset_catalog[i] == preview_definition_at(s->scene->live, i)->working);
+    }
+    return true;
+}
+
+/* Mount and activate the authored button through its real Rml binding. The
+   panel consumes its queued activation in the second composition pass; neither
+   pass adds a host frame or renders the GPU. */
+static bool source_member_add_button(studio *s)
+{
+    studio_ui_resync(s, "members");
+    studio_ui_frame(s);
+    kit_begin(s->kit, &s->in);
+    kit_root(s->kit, "app");
+    rml_element *host = studio_ui_panel(s, "acceptance-members", "Members");
+    kit_end(s->kit);
+    REQUIRE(host);
+    rml_context *context = rml_backend_context(s->backend);
+    rml_element *list = rml_element_query_selector(host, "#members-list");
+    REQUIRE(list);
+    rml_element_set_property(list, "height", "64dp");
+    rml_element_set_property(list, "max-height", "64dp");
+    rml_context_update(context);
+    rml_element *button = rml_element_query_selector(host, "#members-list button[data-tip='New Variable']");
+    REQUIRE(button && !rml_element_has_attribute(button, "data-disabled"));
+    rml_element_dispatch_event(button, "click", &(rml_event){ .button = 0 });
+    kit_begin(s->kit, &s->in);
+    kit_root(s->kit, "app");
+    studio_ui_panel(s, "acceptance-members", "Members");
+    kit_end(s->kit);
+    return true;
+}
+
+/* Layout the expanded list, then let its normal next composition retry the
+   reveal against the new scroll range. The viewport deliberately overflows. */
+static bool source_member_row_visible(studio *s)
+{
+    rml_element *host = NULL;
+    for (int i = 0; i < 2; i++) {
+        studio_ui_resync(s, "members");
+        studio_ui_frame(s);
+        kit_begin(s->kit, &s->in);
+        kit_root(s->kit, "app");
+        host = studio_ui_panel(s, "acceptance-members", "Members");
+        kit_end(s->kit);
+        REQUIRE(host);
+        rml_context_update(rml_backend_context(s->backend));
+    }
+    rml_element *list = rml_element_query_selector(host, "#members-list");
+    REQUIRE(list);
+    rml_element *selected = rml_element_query_selector(list, ".tree-row[data-selected]");
+    REQUIRE(selected);
+    float view = rml_element_client_height(list);
+    REQUIRE(view > 0 && rml_element_scroll_height(list) > view);
+    float top = rml_element_absolute_offset(list, RML_BOX_PADDING).y;
+    float selected_top = rml_element_absolute_offset(selected, RML_BOX_BORDER).y;
+    float selected_bottom = selected_top +
+                            rml_element_box_size(selected, RML_BOX_BORDER).y;
+    REQUIRE(selected_top >= top - 1 && selected_bottom <= top + view + 1);
+    return true;
+}
+
+static bool source_member_edits(studio *s, const char *probe)
+{
+    asset_code *code = counter_source(s);
+    editor *e = sg_graph_editor(s);
+    uint64_t id = 0;
+    for (int i = 0; i < authoring_source_presentation_origin_count(e->presentation);
+         i++) {
+        const source_presentation_origin
+            *o = authoring_source_presentation_origin_at(e->presentation, i);
+        if (o->kind == SOURCE_PRESENTATION_SYMBOL && !o->pin &&
+            o->function < 0 && o->operation == SCRIPT_STATE) {
+            node *n = graph_node_by_id(behavior_asset_find_graph(e->asset, o->graph), o->node);
+            if (!strcmp(n->desc->name, "count")) {
+                id = n->reference_id;
+                break;
+            }
+        }
+    }
+    REQUIRE(id && sm_source_variable(s, id));
+    ui_activation member = { .argc = 1 };
+    snprintf(member.args[0], sizeof member.args[0], "v%llu", (unsigned long long)id);
+    studio_members_action(s, "click", &member);
+    REQUIRE(s->members.kind == STUDIO_MEMBER_VARIABLE && s->members.id == id);
+    const source_presentation_origin *o = sm_source_variable(s, id);
+    REQUIRE(o && e->active_graph->graph_id == o->graph);
+    REQUIRE(acount(e->selected) == 1 && e->selected[0]->id == o->node);
+    int tab = s->tab;
+    s->tab = STUDIO_TAB_MEMBER;
+    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc_set_root(doc, yyjson_mut_obj(doc));
+    studio_graph_details_add(doc);
+    yyjson_mut_val *details = yyjson_mut_obj_get(yyjson_mut_doc_get_root(doc), "graph_details");
+    studio_panel_sync sync = { .doc = doc, .variable = details };
+    studio_graph_details_sync(s, &sync);
+    yyjson_mut_val *panels = yyjson_mut_obj_get(details, "panels");
+    bool initial = false;
+    for (size_t i = 0; i < yyjson_mut_arr_size(panels); i++) {
+        yyjson_mut_val *rows = yyjson_mut_obj_get(yyjson_mut_arr_get(panels, i), "rows");
+        for (size_t j = 0; j < yyjson_mut_arr_size(rows); j++) {
+            yyjson_mut_val *row = yyjson_mut_arr_get(rows, j);
+            const char *label = yyjson_mut_get_str(yyjson_mut_obj_get(row, "label"));
+            initial |= label && !strcmp(label, "Initial");
+        }
+    }
+    REQUIRE(initial);
+    yyjson_mut_doc_free(doc);
+    s->tab = tab;
+    s->graph.details.key = 0;
+    studio_members_action(s, "rename", &member);
+    snprintf(member.args[0], sizeof member.args[0], "total");
+    studio_members_action(s, "renamed", &member);
+    REQUIRE(strstr(asset_code_text(code), "state total: int = 1"));
+    REQUIRE(!strstr(asset_code_text(code), "count"));
+    REQUIRE(asset_code_replay(code, false, false));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    REQUIRE(!strcmp(asset_code_text(code), probe));
+    s->members.kind = STUDIO_MEMBER_NONE;
+    snprintf(s->members.filter, sizeof s->members.filter, "count");
+    REQUIRE(source_member_add_button(s));
+    REQUIRE(strstr(asset_code_text(code), "NewVariable: bool = false;"));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    id = 0;
+    for (int i = 0; i < authoring_source_presentation_origin_count(e->presentation);
+         i++) {
+        const source_presentation_origin
+            *added = authoring_source_presentation_origin_at(e->presentation, i);
+        if (added->kind == SOURCE_PRESENTATION_SYMBOL && !added->pin &&
+            added->function < 0 && added->operation == SCRIPT_STATE) {
+            node *n = sm_source_variable_node(s, added);
+            if (!strcmp(n->desc->name, "NewVariable")) {
+                id = n->reference_id;
+                break;
+            }
+        }
+    }
+    REQUIRE(id);
+    REQUIRE(studio_member_shown(s));
+    REQUIRE(s->members.kind == STUDIO_MEMBER_VARIABLE && s->members.id == id);
+    const source_presentation_origin *new_variable = sm_source_variable(s, id);
+    REQUIRE(new_variable && e->active_graph->graph_id == new_variable->graph);
+    REQUIRE(acount(e->selected) == 1 && e->selected[0]->id == new_variable->node);
+    REQUIRE(s->graph.reveal == new_variable->node && s->graph.reveal_frame);
+    REQUIRE(s->members.reveal);
+    REQUIRE(!s->members.filter[0]);
+    REQUIRE(source_member_row_visible(s));
+    member.argc = 2;
+    snprintf(member.args[0], sizeof member.args[0], "v%llu.n", (unsigned long long)id);
+    snprintf(member.args[1], sizeof member.args[1], "Level");
+    studio_member_details_action(s, "change", &member);
+    REQUIRE(strstr(asset_code_text(code), "Level: bool = false;"));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    REQUIRE(studio_member_shown(s));
+    REQUIRE(sm_source_variable(s, s->members.id));
+    s->members.pick.id = s->members.id;
+    s->members.pick.pin_id = 0;
+    studio_palette_entry *types = NULL;
+    studio_member_type_entries(s, &types);
+    const studio_palette_entry *entity = NULL;
+    for (int i = 0; i < acount(types); i++) {
+        if (!strcmp(types[i].label, "Entity")) {
+            entity = &types[i];
+            break;
+        }
+    }
+    REQUIRE(entity);
+    studio_member_type_choose(s, entity);
+    afree(types);
+    REQUIRE(strstr(asset_code_text(code), "Level: entity"));
+    REQUIRE(!strstr(asset_code_text(code), "Level: entity = false"));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    const source_presentation_origin *level = sm_source_variable(s, s->members.id);
+    REQUIRE(level && sm_source_variable_node(s, level)->input_count == 0);
+    snprintf(s->members.filter, sizeof s->members.filter, "Level");
+    REQUIRE(source_member_add_button(s));
+    REQUIRE(strstr(asset_code_text(code), "NewVariable: entity"));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    REQUIRE(studio_member_shown(s));
+    const source_presentation_origin
+        *added_entity = sm_source_variable(s, s->members.id);
+    REQUIRE(added_entity);
+    node *entity_variable = sm_source_variable_node(s, added_entity);
+    REQUIRE(!strcmp(entity_variable->desc->name, "NewVariable"));
+    REQUIRE(entity_variable->input_count == 0 && !s->members.filter[0]);
+    REQUIRE(e->active_graph->graph_id == added_entity->graph);
+    REQUIRE(acount(e->selected) == 1 && e->selected[0]->id == added_entity->node);
+    REQUIRE(s->graph.reveal == added_entity->node && s->graph.reveal_frame);
+    REQUIRE(s->members.reveal);
+    REQUIRE(source_member_row_visible(s));
+    s->tab = STUDIO_TAB_MEMBER;
+    s->shown_node = s->members.shown_node = 0;
+    properties_subject subject;
+    properties_subject_of(s, &subject);
+    bool available[STUDIO_TAB_COUNT] = { 0 };
+    properties_follow_tabs(s, &subject, available);
+    REQUIRE(s->tab == STUDIO_TAB_MEMBER && available[STUDIO_TAB_MEMBER]);
+    node *other_variable = NULL;
+    for (int i = 0; i < authoring_source_presentation_origin_count(e->presentation);
+         i++) {
+        const source_presentation_origin
+            *other = authoring_source_presentation_origin_at(e->presentation, i);
+        if (other->kind == SOURCE_PRESENTATION_SYMBOL && !other->pin &&
+            other->function < 0 && other->operation == SCRIPT_STATE) {
+            node *n = sm_source_variable_node(s, other);
+            if (!strcmp(n->desc->name, "count")) {
+                other_variable = n;
+                break;
+            }
+        }
+    }
+    REQUIRE(other_variable);
+    sg_select_only(e, other_variable);
+    properties_follow_tabs(s, &subject, available);
+    REQUIRE(s->tab == STUDIO_TAB_NODE && available[STUDIO_TAB_NODE]);
+    s->tab = tab;
+    REQUIRE(asset_code_replay(code, false, false));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    REQUIRE(!strstr(asset_code_text(code), "NewVariable"));
+    for (int i = 0; i < 3; i++) {
+        REQUIRE(asset_code_replay(code, false, false));
+        REQUIRE(asset_code_sync_graph(code, e, false));
+    }
+    REQUIRE(!strcmp(asset_code_text(code), probe));
+    int restored_variables = 0;
+    for (int i = 0; i < authoring_source_presentation_origin_count(e->presentation);
+         i++) {
+        const source_presentation_origin
+            *restored = authoring_source_presentation_origin_at(e->presentation, i);
+        if (restored->kind == SOURCE_PRESENTATION_SYMBOL && !restored->pin &&
+            restored->function < 0 && restored->operation == SCRIPT_STATE) {
+            node *n = sm_source_variable_node(s, restored);
+            REQUIRE(!strcmp(n->desc->name, "count"));
+            REQUIRE(n->output_count == 1 && n->output_pins[0].type == PIN_I32);
+            restored_variables++;
+        }
+    }
+    REQUIRE(restored_variables == 1);
+    return true;
+}
+
+/* Flow gestures on fused calls use statement ownership, and a branch port
+   still names its body. All edits return through the document's undo history. */
+static bool fused_call_flow_edits(studio *s)
+{
+    asset_code *code = counter_source(s);
+    editor *e = s->scene->graph_editor;
+    REQUIRE(code);
+    const char
+        probe[] = "// Authored behavior with a leading comment.\n"
+                  "behavior Counter {\n"
+                  "    state count: int = 1\n"
+                  "    function Add(amount:int)->() { count += amount }\n"
+                  "    function Double(amount:int)->(total:int) { return "
+                  "amount * 2 }\n"
+                  "    on Tick {\n"
+                  "        Add(1)\n"
+                  "        Add(2)\n"
+                  "        if true { count = Double(3) }\n"
+                  "    }\n"
+                  "}\n";
+    bool live = s->prefs.code_apply_live;
+    s->prefs.code_apply_live = false;
+    REQUIRE(studio_code_replace(s, asset_code_path(code), asset_code_text(code), probe, NULL));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    REQUIRE(!asset_code_error(code)[0]);
+    node *first = source_node(code, e, "Add(1)");
+    node *second = source_node(code, e, "Add(2)");
+    REQUIRE(first && second);
+    REQUIRE(sg_layout_of(s, first)->code_lines == 0);
+    REQUIRE(sg_layout_of(s, second)->code_lines == 0);
+    node *set = source_node(code, e, "count = Double(3)");
+    REQUIRE(set);
+    int value = -1;
+    for (int i = 0; i < set->input_count; i++) {
+        REQUIRE(strcmp(set->input_pins[i].name, "Target"));
+        if (!strcmp(set->input_pins[i].name, "Value")) {
+            pin_parts parts;
+            sg_pin_parts_of(s, set, ED_PIN_INPUT, i, &parts);
+            REQUIRE(parts.source_select && parts.inline_source);
+            REQUIRE(parts.value == VALUE_CHIP && !strcmp(parts.chip, "Double(3)"));
+            value = i;
+        }
+    }
+    REQUIRE(value >= 0);
+    const source_presentation_origin *called = NULL;
+    int call_start = (int)(strstr(asset_code_text(code), "Double(3)") -
+                           asset_code_text(code));
+    for (int i = 0; i < authoring_source_presentation_origin_count(e->presentation);
+         i++) {
+        const source_presentation_origin
+            *origin = authoring_source_presentation_origin_at(e->presentation, i);
+        if (origin->kind == SOURCE_PRESENTATION_EXPRESSION && !origin->pin &&
+            origin->range.start == call_start && origin->range.end == call_start + 9) {
+            called = origin;
+            break;
+        }
+    }
+    REQUIRE(called);
+    node *call = graph_node_by_id(e->active_graph, called->node);
+    REQUIRE(call && graph_node_is_inline(e->active_graph, call));
+    const graph *definition = editor_graph_call_target(e, call);
+    REQUIRE(definition && !strcmp(definition->name, "Double"));
+    uint64_t caller = e->active_graph->graph_id, call_id = call->id;
+    s->graph.menu_open = true;
+    s->graph.menu_node = set->id;
+    s->graph.menu_pin = set->input_pins[value].id;
+    ui_activation menu = { .argc = 1 };
+    snprintf(menu.args[0], sizeof menu.args[0], "open-function");
+    studio_graph_menu_action(s, "run", &menu);
+    REQUIRE(!strcmp(e->active_graph->name, "Double"));
+    REQUIRE(editor_graph_back(e) == 0 && e->active_graph->graph_id == caller);
+    REQUIRE(acount(e->selected) == 1 && e->selected[0]->id == call_id);
+    authoring_edit_request inline_call = {
+        .kind = AUTHORING_EDIT_INLINE_CALL,
+        .generation = authoring_source_edit_generation(e->presentation),
+        .origin = called->identity
+    };
+    char error[256];
+    bool accepted_inline = studio_code_check_edit(s, &inline_call, error, sizeof error);
+    if (!accepted_inline) {
+        fprintf(stderr, "Studio inline acceptance: %s\n", error);
+    }
+    REQUIRE(accepted_inline);
+    REQUIRE(!strcmp(asset_code_text(code), probe));
+    snprintf(menu.args[0], sizeof menu.args[0], "inline-function");
+    studio_graph_menu_action(s, "run", &menu);
+    REQUIRE(source_catalog_current(s));
+    s->graph.menu_open = false;
+    REQUIRE(!strstr(asset_code_text(code), "Double(3)"));
+    const char *inlined = strstr(asset_code_text(code), "on Tick");
+    REQUIRE(inlined && strstr(inlined, "* 2"));
+    REQUIRE(!strstr(inlined, "goto "));
+    REQUIRE(asset_code_replay(code, false, false));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    REQUIRE(!strcmp(asset_code_text(code), probe));
+    REQUIRE(acount(e->asset->variables) == 0);
+    REQUIRE(source_catalog_current(s));
+    const char *accesses[] = { "Get count", "Set count" };
+    const char *statements[] = { "countValue := state.\"count\";",
+                                 "state.\"count\" = 0;" };
+    for (int access = 0; access < 2; access++) {
+        ed_search_match *matches = ed_search_matches(e, accesses[access]);
+        const ed_search_match *match = NULL;
+        for (int i = 0; i < acount(matches); i++) {
+            if (matches[i].source_variable &&
+                matches[i].desc == (access ? &NODE_SetVariable : &NODE_GetVariable)) {
+                match = &matches[i];
+                break;
+            }
+        }
+        REQUIRE(match && ed_source_spawn_match(e, match));
+        afree(matches);
+        REQUIRE(strstr(asset_code_text(code), statements[access]));
+        REQUIRE(acount(e->asset->variables) == 0);
+        REQUIRE(asset_code_replay(code, false, false));
+        REQUIRE(asset_code_sync_graph(code, e, false));
+        REQUIRE(!strcmp(asset_code_text(code), probe));
+    }
+    REQUIRE(source_member_edits(s, probe));
+    first = source_node(code, e, "Add(1)");
+    second = source_node(code, e, "Add(2)");
+    REQUIRE(first && second);
+    ed_pin_view out, in;
+    REQUIRE(flow_port(second, true, "Then", &out));
+    REQUIRE(flow_port(first, false, "Exec", &in));
+    REQUIRE(ed_connect(e, &out, &in));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    const char *text = asset_code_text(code);
+    const char *one = strstr(text, "Add(1)"), *two = strstr(text, "Add(2)");
+    REQUIRE(one && two && two < one);
+    REQUIRE(asset_code_replay(code, false, false));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    REQUIRE(!strcmp(asset_code_text(code), probe));
+
+    first = source_node(code, e, "Add(1)");
+    node *branch = source_node(code, e, "if true");
+    REQUIRE(first && branch);
+    REQUIRE(flow_port(branch, true, "True", &out));
+    REQUIRE(flow_port(first, false, "Exec", &in));
+    REQUIRE(ed_connect(e, &out, &in));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    text = asset_code_text(code);
+    const char *body = strstr(text, "if true {");
+    const char *moved = strstr(text, "Add(1)");
+    REQUIRE(body && moved && body < moved);
+    const char *end = strchr(body, '}');
+    REQUIRE(end && moved < end);
+    REQUIRE(asset_code_replay(code, false, false));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    REQUIRE(!strcmp(asset_code_text(code), probe));
+    REQUIRE(asset_code_replay(code, false, false));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    s->prefs.code_apply_live = live;
+    REQUIRE(show_state_graph(s));
+    return check_counter(s, 1, false, NULL);
+}
+
+static bool frame_probe_drawn(studio *s, bool expected)
+{
+    REQUIRE(s->graph.backend);
+    rml_context *context = rml_backend_context(s->graph.backend);
+    bool found = false;
+    for (int i = 0; i < rml_context_document_count(context); i++) {
+        rml_element *cards[32];
+        int count = rml_element_query_selector_all(rml_context_document(context, i), ".gnode", cards, 32);
+        REQUIRE(count <= 32);
+        for (int j = 0; j < count; j++) {
+            char markup[4096];
+            rml_element_inner_rml(cards[j], markup, sizeof markup);
+            found |= strstr(markup, "FrameProbe") || strstr(markup, "Frame Probe");
+        }
+    }
+    REQUIRE(found == expected);
+    return true;
+}
+
 static bool source_edit_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
     REQUIRE(frames <= 4);
-    if (frames > 1) {
-        REQUIRE(counter_applied(s));
-    }
+    static uint64_t before_undo_texture;
+    if (frames > 1) { REQUIRE(counter_applied(s)); }
     if (frames == 1) {
         REQUIRE(projects_open(s));
         REQUIRE(reports_warn(s));
         REQUIRE(opens_on_handler(s));
+        REQUIRE(fused_call_flow_edits(s));
         const node *literal = NULL;
         REQUIRE(check_counter(s, 1, false, &literal));
         s->prefs.code_apply_live = true;
@@ -293,19 +744,53 @@ static bool source_edit_frame(void *state)
         }
         REQUIRE(changed);
         edits++;
+        asset_code *code = counter_source(s);
+        editor *e = sg_graph_editor(s);
+        REQUIRE(asset_code_sync_graph(code, e, true));
+        authoring_edit_request append = {
+            .kind = AUTHORING_EDIT_APPEND_DECLARATIONS,
+            .generation = authoring_source_edit_generation(editor_presentation(e)),
+            .fragment = "FrameProbe:int=0;"
+        };
+        REQUIRE(studio_code_edit_source(s, &append, false, error, sizeof error));
+        REQUIRE(asset_code_sync_graph(code, e, true));
+        REQUIRE(strstr(asset_code_text(code), "FrameProbe:int=0;"));
+        bool selected_probe = false;
+        for (int i = 0;
+             i < authoring_source_presentation_origin_count(e->presentation);
+             i++) {
+            const source_presentation_origin
+                *o = authoring_source_presentation_origin_at(e->presentation, i);
+            if (o->kind == SOURCE_PRESENTATION_SYMBOL && !o->pin &&
+                o->function < 0 && o->operation == SCRIPT_STATE &&
+                !strcmp(sm_source_variable_node(s, o)->desc->name, "FrameProbe")) {
+                studio_reveal_node(s, o->graph, o->node);
+                selected_probe = true;
+                break;
+            }
+        }
+        REQUIRE(selected_probe);
+        studio_behavior_show(s, 2);
     } else if (frames == 2) {
+        REQUIRE(check_counter(s, 2, true, NULL));
+    } else if (frames == 3) {
+        REQUIRE(frame_probe_drawn(s, true));
+        before_undo_texture = rml_backend_texture_revision(s->graph.backend);
+        sg_select_only(sg_graph_editor(s), NULL);
+        REQUIRE(studio_code_history(s, false, true));
+        REQUIRE(!strstr(asset_code_text(counter_source(s)), "FrameProbe"));
         REQUIRE(check_counter(s, 2, true, NULL));
         REQUIRE(studio_code_history(s, false, true));
         undos++;
         REQUIRE(check_counter(s, 1, false, NULL));
         /* Nothing unsaved: quitting needs no confirmation. */
         REQUIRE(studio_quit(s, true));
-    } else if (frames == 3) {
-        REQUIRE(check_counter(s, 1, false, NULL));
         REQUIRE(studio_code_history(s, true, true));
         redos++;
         REQUIRE(check_counter(s, 2, true, NULL));
     } else {
+        REQUIRE(frame_probe_drawn(s, false));
+        REQUIRE(rml_backend_texture_revision(s->graph.backend) != before_undo_texture);
         REQUIRE(check_counter(s, 2, true, NULL));
         REQUIRE(studio_editor_shown(s, STUDIO_EDITOR_BEHAVIOR));
         REQUIRE(studio_editor_shown(s, STUDIO_EDITOR_CODE));
@@ -609,8 +1094,8 @@ static const char unit_mismatch[] = "behavior Counter {\n"
                                     "    state count: int = 1\n"
                                     "    on Tick {\n"
                                     "        count = count + 1\n"
-                                    "        self.GameCollider.radius = "
-                                    "self.GameMovement.speed\n"
+                                    "        self.Collider.radius = "
+                                    "self.Movement.speed\n"
                                     "    }\n"
                                     "}\n";
 static bool unit_warned;
@@ -630,7 +1115,7 @@ static bool unit_warnings_frame(void *state)
         const char *path = asset_code_path(code);
         REQUIRE(studio_code_replace(s, path, asset_code_text(code), unit_mismatch, NULL));
     } else {
-        const char *statement = strstr(unit_mismatch, "self.GameCollider");
+        const char *statement = strstr(unit_mismatch, "self.Collider");
         const kit_code_marker *markers = asset_code_markers(code);
         for (int i = 0; i < acount(markers); i++) {
             const kit_code_marker *m = &markers[i];
@@ -650,26 +1135,26 @@ static bool tilemap_viewport(studio *s)
     ecs_world *world = scene->world;
     ecs_entity map = ecs_world_create_entity(world);
     ecs_entity foreground = ecs_world_create_entity(world);
-    REQUIRE(GAME_GameTransform_add(world, map, 0) == ECS_OK);
-    REQUIRE(GAME_GameOrientation_add(world, map, 0) == ECS_OK);
-    REQUIRE(GAME_GameTilemap_add(world, map, 0) == ECS_OK);
-    REQUIRE(GAME_GameTransform_add(world, foreground, 0) == ECS_OK);
-    REQUIRE(GAME_GameAppearance_add(world, foreground, 0) == ECS_OK);
-    REQUIRE(GAME_GameRenderState_add(world, foreground, 0) == ECS_OK);
+    REQUIRE(Transform_add(world, map, 0) == ECS_OK);
+    REQUIRE(Orientation_add(world, map, 0) == ECS_OK);
+    REQUIRE(Tilemap_add(world, map, 0) == ECS_OK);
+    REQUIRE(Transform_add(world, foreground, 0) == ECS_OK);
+    REQUIRE(Appearance_add(world, foreground, 0) == ECS_OK);
+    REQUIRE(RenderState_add(world, foreground, 0) == ECS_OK);
     REQUIRE(ecs_world_apply_commands(world) == ECS_OK);
-    *GAME_GameTransform_get(world, map) = (GameTransform){ 10, 20 };
-    *GAME_GameOrientation_get(world, map) = (GameOrientation){ 1.5707963267948966f };
-    *GAME_GameTilemap_get(world, map) = (GameTilemap){ .cells = "1 -1",
-                                                       .columns = 2,
-                                                       .rows = 1,
-                                                       .frame_width = 8,
-                                                       .frame_height = 4,
-                                                       .layer = -50 };
-    *GAME_GameTransform_get(world, foreground) = (GameTransform){ 8, 24 };
-    *GAME_GameAppearance_get(world, foreground) = (GameAppearance){ .shape = GAME_SHAPE_BOX,
-                                                                    .width = 2,
-                                                                    .height = 2,
-                                                                    .layer = 10 };
+    *Transform_get(world, map) = (Transform){ 10, 20 };
+    *Orientation_get(world, map) = (Orientation){ 1.5707963267948966f };
+    *Tilemap_get(world, map) = (Tilemap){ .cells = "1 -1",
+                                          .columns = 2,
+                                          .rows = 1,
+                                          .frame_width = 8,
+                                          .frame_height = 4,
+                                          .layer = -50 };
+    *Transform_get(world, foreground) = (Transform){ 8, 24 };
+    *Appearance_get(world, foreground) = (Appearance){ .shape = SHAPE_BOX,
+                                                       .width = 2,
+                                                       .height = 2,
+                                                       .layer = 10 };
     int actor_count = acount(scene->actors);
     apush(scene->actors, ((scene_actor){ .entity = map }));
     apush(scene->actors, ((scene_actor){ .entity = foreground }));
@@ -679,7 +1164,7 @@ static bool tilemap_viewport(studio *s)
     bool fit = fit_scene_view(s->viewport, world, &map, 1);
     engine_viewport_get_view(s->viewport, &fitted);
     ecs_entity top = pick_scene_entity(scene, 8, -24, (render_skip){ 0 });
-    GAME_GameRenderState_get(world, foreground)->hidden = true;
+    RenderState_get(world, foreground)->hidden = true;
     ecs_entity layer = pick_scene_entity(scene, 8, -24, (render_skip){ 0 });
     ecs_entity empty_cell = pick_scene_entity(scene, 8, -32, (render_skip){ 0 });
     ecs_entity outside = pick_scene_entity(scene, 10.5f, -24, (render_skip){ 0 });
@@ -698,6 +1183,181 @@ static bool tilemap_viewport(studio *s)
     return true;
 }
 
+/* A source graph's menu groups the user's entry points ahead of helpers.
+   The labels describe the source even before the scene runs. */
+static bool behavior_graph_choices(studio *s)
+{
+    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc_set_root(doc, yyjson_mut_obj(doc));
+    studio_graph_menus_add(doc);
+    yyjson_mut_val *menus = yyjson_mut_obj_get(yyjson_mut_doc_get_root(doc), "graph_menus");
+    studio_panel_sync sync = { .doc = doc, .variable = menus };
+    studio_graph_menus_sync(s, &sync);
+    yyjson_mut_val *groups = yyjson_mut_obj_get(menus, "graphs");
+    REQUIRE(yyjson_mut_arr_size(groups) == 3);
+    yyjson_mut_val *events = yyjson_mut_arr_get(groups, 0);
+    yyjson_mut_val *variables = yyjson_mut_arr_get(groups, 1);
+    yyjson_mut_val *functions = yyjson_mut_arr_get(groups, 2);
+    REQUIRE(!strcmp(yyjson_mut_get_str(yyjson_mut_obj_get(events, "label")), "Events"));
+    REQUIRE(!strcmp(yyjson_mut_get_str(yyjson_mut_obj_get(variables, "label")), "Variables"));
+    REQUIRE(!strcmp(yyjson_mut_get_str(yyjson_mut_obj_get(functions, "label")), "Functions"));
+    yyjson_mut_val *options = yyjson_mut_obj_get(events, "options");
+    REQUIRE(yyjson_mut_arr_size(options) == 2);
+    REQUIRE(
+        !strcmp(yyjson_mut_get_str(yyjson_mut_obj_get(yyjson_mut_arr_get(options, 0), "label")), "Tick")
+    );
+    REQUIRE(
+        !strcmp(yyjson_mut_get_str(yyjson_mut_obj_get(yyjson_mut_arr_get(options, 1), "label")), "Begin")
+    );
+    options = yyjson_mut_obj_get(variables, "options");
+    REQUIRE(yyjson_mut_arr_size(options) == 1);
+    REQUIRE(
+        !strcmp(yyjson_mut_get_str(yyjson_mut_obj_get(yyjson_mut_arr_get(options, 0), "label")), "Variables")
+    );
+    options = yyjson_mut_obj_get(functions, "options");
+    REQUIRE(yyjson_mut_arr_size(options) == 1);
+    REQUIRE(
+        !strcmp(yyjson_mut_get_str(yyjson_mut_obj_get(yyjson_mut_arr_get(options, 0), "label")), "Increment")
+    );
+    yyjson_mut_doc_free(doc);
+    /* A temporary sync document must not become a retained cache key. */
+    s->graph.menus_key = 0;
+    return true;
+}
+
+/* Both follows graph navigation and node selection while graph fields keep
+   keyboard focus; following source never turns navigation into a text edit. */
+static bool behavior_graph_source(studio *s, rml_context *context, rml_element *input)
+{
+    asset_code *code = counter_source(s);
+    REQUIRE(code);
+    kit_code_editor *text = asset_code_editor(code);
+    REQUIRE(text);
+    editor *e = s->scene->graph_editor;
+    const graph *handler = behavior_asset_find_graph_by_name(editor_behavior_asset(e), "Begin");
+    REQUIRE(handler);
+    kit_code_set_cursor(text, 0);
+    ui_activation pick = { .argc = 1 };
+    snprintf(
+        pick.args[0],
+        sizeof pick.args[0],
+        "%llu",
+        (unsigned long long)handler->graph_id
+    );
+    studio_graph_header_action(s, "graph", &pick);
+    sg_nav_track(s);
+    REQUIRE(editor_active_graph(e) == handler);
+    const char *source = asset_code_text(code);
+    const char *declaration = strstr(source, "on Begin");
+    REQUIRE(declaration && kit_code_cursor(text) == declaration - source);
+    REQUIRE(rml_context_focus_element(context) == input);
+    const source_presentation_origin *statement = NULL;
+    const authoring_source_presentation *view = editor_presentation(e);
+    for (int i = 0; i < authoring_source_presentation_origin_count(view); i++) {
+        const source_presentation_origin *origin = authoring_source_presentation_origin_at(view, i);
+        if (origin->graph == handler->graph_id && !origin->pin &&
+            origin->kind == SOURCE_PRESENTATION_STATEMENT) {
+            statement = origin;
+            break;
+        }
+    }
+    REQUIRE(statement);
+    node *entry = sg_node_by_id(s, handler->entry_id);
+    node *distant = sg_node_by_id(s, statement->node);
+    REQUIRE(entry && distant && entry != distant);
+    float old_x = distant->x, old_y = distant->y;
+    distant->x = entry->x - 10000;
+    distant->y = entry->y - 10000;
+    sg_frame_open(s);
+    float entry_box[4];
+    REQUIRE(sg_node_box(s, entry, entry_box));
+    float right = s->graph.x + s->graph.surface.rect.w / sg_zoom(s);
+    float bottom = s->graph.y + s->graph.surface.rect.h / sg_zoom(s);
+    bool entry_visible = entry_box[0] >= s->graph.x && entry_box[1] >= s->graph.y &&
+                         entry_box[0] + entry_box[2] <= right &&
+                         entry_box[1] + entry_box[3] <= bottom;
+    distant->x = old_x;
+    distant->y = old_y;
+    sg_frame_open(s);
+    REQUIRE(entry_visible);
+    studio_node_ref selected = { .graph_id = handler->graph_id,
+                                 .node_id = statement->node };
+    snprintf(selected.asset, sizeof selected.asset, "%s", s->scene->graph_document_id);
+    int start, end;
+    REQUIRE(asset_code_location(code, selected.graph_id, selected.node_id, &start, &end));
+    kit_code_set_cursor(text, 0);
+    studio_reveal_node(s, selected.graph_id, selected.node_id);
+    REQUIRE(acount(e->selected) == 1 && e->selected[0]->id == selected.node_id);
+    REQUIRE(kit_code_cursor(text) == start);
+    /* Repeated source/keyboard navigation reveals its target immediately,
+       including while a pointer-initiated camera transition is in flight. */
+    bool reduced_motion = s->prefs.reduced_motion;
+    s->prefs.reduced_motion = false;
+    s->graph.x -= 10000;
+    s->graph.y -= 10000;
+    sg_frame_nodes(s, false, true);
+    REQUIRE(s->graph.camera.active);
+    sg_show_node(s, e->selected[0], false);
+    REQUIRE(!s->graph.camera.active);
+    float selected_box[4];
+    REQUIRE(sg_node_box(s, e->selected[0], selected_box));
+    REQUIRE(selected_box[0] >= s->graph.x && selected_box[1] >= s->graph.y);
+    REQUIRE(
+        selected_box[0] + selected_box[2] <=
+        s->graph.x + s->graph.surface.rect.w / sg_zoom(s)
+    );
+    REQUIRE(
+        selected_box[1] + selected_box[3] <=
+        s->graph.y + s->graph.surface.rect.h / sg_zoom(s)
+    );
+    sg_frame_nodes(s, false, true);
+    REQUIRE(s->graph.camera.active);
+    sg_show_node(s, e->selected[0], false);
+    REQUIRE(!s->graph.camera.active);
+    sg_frame_again(s);
+    REQUIRE(!s->graph.camera.active);
+    s->prefs.reduced_motion = true;
+    sg_frame_nodes(s, false, true);
+    REQUIRE(!s->graph.camera.active);
+    s->prefs.reduced_motion = reduced_motion;
+    REQUIRE(rml_context_focus_element(context) == input);
+    REQUIRE(!asset_code_dirty(code));
+    return show_state_graph(s);
+}
+
+/* A behavior without state still has a Variables choice. Selecting that
+   empty root must stop displaying the previously selected function. */
+static bool behavior_empty_variables(studio *s)
+{
+    studio_behavior_show(s, 2);
+    asset_code *code = counter_source(s);
+    REQUIRE(code);
+    editor *e = s->scene->graph_editor;
+    const char empty[] = "behavior Counter {\n"
+                         "    function Helper() { return 1 }\n"
+                         "    on Tick {}\n"
+                         "}\n";
+    REQUIRE(studio_code_replace(s, asset_code_path(code), asset_code_text(code), empty, NULL));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    REQUIRE(!asset_code_error(code)[0]);
+    const graph *function = behavior_asset_find_graph_by_name(editor_behavior_asset(e), "Helper");
+    REQUIRE(function && editor_open_graph(e, function->graph_id) == 0);
+    studio_code_reveal_graph(s);
+    REQUIRE(kit_code_cursor(asset_code_editor(code)) > 0);
+    const graph *root = behavior_asset_find_graph(editor_behavior_asset(e), 0);
+    REQUIRE(root && !acount(root->nodes));
+    ui_activation pick = { .argc = 1 };
+    snprintf(pick.args[0], sizeof pick.args[0], "%llu", (unsigned long long)root->graph_id);
+    studio_graph_header_action(s, "graph", &pick);
+    sg_nav_track(s);
+    REQUIRE(editor_active_graph(e) == root);
+    REQUIRE(kit_code_cursor(asset_code_editor(code)) == 0);
+    REQUIRE(asset_code_replay(code, false, false));
+    REQUIRE(asset_code_sync_graph(code, e, false));
+    REQUIRE(show_state_graph(s));
+    return check_counter(s, 1, false, NULL);
+}
+
 /* Hidden graphs do no UI work. Both views follow one document, without
    losing the scene source draft selected between visits to the graph. */
 static bool graph_visibility_frame(void *state)
@@ -709,6 +1369,8 @@ static bool graph_visibility_frame(void *state)
     static const authoring_source_presentation *projection;
     static unsigned index_generation, index_revision;
     static rml_element *focus_document;
+    static uint64_t source_graph, source_node;
+    static int source_cursor;
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
@@ -722,7 +1384,7 @@ static bool graph_visibility_frame(void *state)
         REQUIRE(s->graph.backend);
         hidden = rml_backend_get_stats(s->graph.backend);
         REQUIRE(hidden.context_updates && hidden.render_captures);
-        sources = game_preview_sources_working(s->scene->live);
+        sources = preview_sources_working(s->scene->live);
         projection = s->scene->definition->working_presentation;
         index_generation = s->scene->asset_index_generation;
         index_revision = s->scene->asset_index_revision;
@@ -735,6 +1397,8 @@ static bool graph_visibility_frame(void *state)
         rml_element *input = rml_element_query_selector(focus_document, "input");
         REQUIRE(input && rml_element_focus(input, true));
         REQUIRE(studio_graph_wants_keyboard(s) && studio_graph_accepts_text(s));
+        REQUIRE(behavior_graph_choices(s));
+        REQUIRE(behavior_graph_source(s, context, input));
         studio_behavior_show(s, 1);
     } else if (frames == 4 || frames == 5 || frames == 10) {
         rml_backend_stats now = rml_backend_get_stats(s->graph.backend);
@@ -743,8 +1407,8 @@ static bool graph_visibility_frame(void *state)
         REQUIRE(s->scene->debug_hidden);
         REQUIRE(!studio_graph_wants_keyboard(s) && !studio_graph_accepts_text(s));
         if (frames < 10) {
-            REQUIRE(game_preview_sources_working(s->scene->live) == sources);
-            REQUIRE(game_preview_sources_applied(s->scene->live) == sources);
+            REQUIRE(preview_sources_working(s->scene->live) == sources);
+            REQUIRE(preview_sources_applied(s->scene->live) == sources);
             REQUIRE(s->scene->definition->working_presentation == projection);
             REQUIRE(s->scene->asset_index_generation == index_generation);
             REQUIRE(s->scene->asset_index_revision == index_revision);
@@ -752,9 +1416,31 @@ static bool graph_visibility_frame(void *state)
         if (frames == 5) {
             rml_document_close(focus_document);
             studio_behavior_show(s, 2);
+            s->code.find.refocus = true;
         }
+    } else if (frames == 6) {
+        asset_code *code = counter_source(s);
+        REQUIRE(code);
+        const char *text = asset_code_text(code);
+        const char *statement = strstr(text, "on Begin {\n        count");
+        REQUIRE(statement);
+        source_cursor = (int)(statement - text) + (int)strlen("on Begin {\n        ");
+        REQUIRE(asset_code_node_at(code, source_cursor, &source_graph, &source_node));
+        kit_code_set_cursor(asset_code_editor(code), source_cursor);
+        kit_code_post(asset_code_editor(code), KIT_CODE_CURSOR);
     } else if (frames == 7) {
-        /* Frame 6 lets the retained workspace resolve the Both layout. */
+        /* A focused source cursor follows its semantic graph/node, without
+           graph history moving the caret back to the handler declaration. */
+        editor *e = s->scene->graph_editor;
+        REQUIRE(editor_active_graph(e)->graph_id == source_graph);
+        node *semantic = graph_node_by_id(editor_active_graph(e), source_node);
+        REQUIRE(semantic);
+        node *shown = graph_inline_owner(editor_active_graph(e), semantic);
+        REQUIRE(acount(e->selected) == 1 && e->selected[0] == shown);
+        REQUIRE(kit_code_cursor(asset_code_editor(counter_source(s))) == source_cursor);
+        rml_element *focus = rml_context_focus_element(rml_backend_context(s->backend));
+        REQUIRE(focus && !strcmp(rml_element_tag_name(focus), "kit-code"));
+        REQUIRE(show_state_graph(s));
         rml_backend_stats now = rml_backend_get_stats(s->graph.backend);
         REQUIRE(now.context_updates > hidden.context_updates);
         REQUIRE(now.render_captures > hidden.render_captures);
@@ -841,6 +1527,7 @@ static bool graph_visibility_frame(void *state)
         REQUIRE(!strcmp(asset_code_text(code), draft));
         free(draft);
         draft = NULL;
+        REQUIRE(behavior_empty_variables(s));
         REQUIRE(s->graph.area >= 0);
         studio_active_layout(s)->editors[s->graph.area] = STUDIO_EDITOR_SCENE;
         s->ui_schedule.wake = true;
@@ -1279,8 +1966,9 @@ static bool click(studio *s, const char *selector)
     REQUIRE(size.x > 0 && size.y > 0);
     SDL_WindowID id = window_id();
     REQUIRE(id);
-    /* Layout is in dp; the window's pointer is in points, ui_scale to a dp. */
-    float scale = s->prefs.ui_scale;
+    /* RmlUi boxes are context pixels; SDL's pointer is in window points. */
+    float scale = s->prefs.ui_scale /
+                  rml_context_dp_ratio(rml_backend_context(s->backend));
     float x = (at.x + size.x / 2) * scale, y = (at.y + size.y / 2) * scale;
     SDL_Event move = {
         .motion = { .type = SDL_EVENT_MOUSE_MOTION, .windowID = id, .x = x, .y = y }
@@ -1298,6 +1986,78 @@ static bool click(studio *s, const char *selector)
         REQUIRE(SDL_PushEvent(&e));
     }
     return true;
+}
+
+/* The authored File menu keeps all new assets reachable within seven choices.
+   Pointer opening and native submenu keys must keep working after grouping. */
+#define MENU_FRAMES 8
+static rml_element *file_menu, *new_menu, *graphics_menu, *menu_focus;
+
+static bool menu_choices(rml_element *menu, int expected)
+{
+    REQUIRE(menu && popover_open(menu));
+    rml_element *rows[32];
+    int count = rml_element_query_selector_all(menu, "[role='menuitem']", rows, 32);
+    REQUIRE(count > 0 && count <= 7);
+    REQUIRE(!expected || count == expected);
+    return true;
+}
+
+static bool menu_choices_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    rml_context *context = rml_backend_context(s->backend);
+    frames++;
+    REQUIRE(frames <= MENU_FRAMES);
+    switch (frames) {
+        case 1: return true;
+        case 2:
+            s->prefs.reduced_motion = true;
+            return click(s, ".menus > button[popovertarget='menu-file']");
+        case 3:
+            file_menu = popover_top(context);
+            REQUIRE(file_menu == studio_element(s, "#menu-file"));
+            REQUIRE(menu_choices(file_menu, 0));
+            menu_focus = rml_context_focus_element(context);
+            REQUIRE(menu_focus);
+            REQUIRE(press_key(SDLK_HOME));
+            return press_key(SDLK_RIGHT);
+        case 4:
+            new_menu = popover_top(context);
+            REQUIRE(new_menu != file_menu);
+            REQUIRE(menu_choices(new_menu, 6));
+            REQUIRE(press_key(SDLK_G));
+            return press_key(SDLK_RIGHT);
+        case 5: {
+            graphics_menu = popover_top(context);
+            REQUIRE(graphics_menu != new_menu && graphics_menu != file_menu);
+            REQUIRE(menu_choices(graphics_menu, 5));
+            static const studio_command commands[] = { STUDIO_COMMAND_NEW_MATERIAL,
+                                                       STUDIO_COMMAND_NEW_SHAPE,
+                                                       STUDIO_COMMAND_NEW_FIELD,
+                                                       STUDIO_COMMAND_NEW_SHADER_LIBRARY,
+                                                       STUDIO_COMMAND_NEW_MODEL };
+            char markup[4096];
+            rml_element_inner_rml(graphics_menu, markup, sizeof markup);
+            for (int i = 0; i < (int)(sizeof commands / sizeof *commands); i++) {
+                REQUIRE(strstr(markup, studio_command_describe(s, commands[i]).menu));
+            }
+            return press_key(SDLK_ESCAPE);
+        }
+        case 6:
+            REQUIRE(popover_top(context) == new_menu);
+            REQUIRE(rml_context_focus_element(context) == menu_focus);
+            return press_key(SDLK_ESCAPE);
+        case 7:
+            REQUIRE(popover_top(context) == file_menu);
+            REQUIRE(rml_context_focus_element(context) == menu_focus);
+            return press_key(SDLK_ESCAPE);
+        default:
+            REQUIRE(!popover_top(context));
+            REQUIRE(rml_context_focus_element(context) == menu_focus);
+            return true;
+    }
 }
 
 static int counter_tab(studio *s)
@@ -1378,7 +2138,7 @@ static bool add_probe(studio *s)
     REQUIRE(
         app_scene_authoring_register_prototype(
             scene,
-            "name \"Probe\"\ncomponents {\n    GameTransform x=0 y=0\n}\n",
+            "name \"Probe\"\ncomponents {\n    Transform x=0 y=0\n}\n",
             NULL
         ) == 0
     );
@@ -1562,10 +2322,10 @@ static const char
 /* A turned ship whose turret sits ten units ahead of it. */
 static const char turned_scene[] =
     "version 1\nname \"Scene\"\n(array)entities {\n"
-    "    - name=\"Ship\" prototype=\"Hull\" { components { GameTransform "
+    "    - name=\"Ship\" prototype=\"Hull\" { components { Transform "
     "x=100.0 y=0.0; "
-    "GameOrientation radians=1.5707964; }; (array)children { - name=\"Turret\" "
-    "prototype=\"Hull\" { components { GameTransform x=10.0 y=0.0; }; }; }; }\n"
+    "Orientation radians=1.5707964; }; (array)children { - name=\"Turret\" "
+    "prototype=\"Hull\" { components { Transform x=10.0 y=0.0; }; }; }; }\n"
     "}\n";
 
 static bool child_of(app_scene_authoring *scene, int child, int parent)
@@ -1578,9 +2338,9 @@ static bool child_of(app_scene_authoring *scene, int child, int parent)
 static bool saves_as(app_scene_authoring *scene, const char *expected)
 {
     char error[256];
-    game_scene_document *document = game_scene_document_load(expected, error, sizeof error);
+    scene_document *document = scene_document_load(expected, error, sizeof error);
     char *canonical = document
-                        ? game_scene_document_save(document, (ecs_component_catalog){ 0 })
+                        ? scene_document_save(document, (ecs_component_catalog){ 0 })
                         : NULL;
     char *text = scene_authoring_scene_text(scene);
     bool same = canonical && text && !strcmp(canonical, text);
@@ -1589,7 +2349,7 @@ static bool saves_as(app_scene_authoring *scene, const char *expected)
     }
     free(canonical);
     free(text);
-    game_scene_document_free(document);
+    scene_document_free(document);
     return same;
 }
 
@@ -1623,7 +2383,7 @@ static bool select_crossed_links(studio *s)
 {
     app_scene_authoring *scene = s->scene;
     REQUIRE(
-        app_scene_authoring_register_prototype(scene, "name \"Linker\"\ncomponents {\n    Link\n    GameTransform x=0 y=0\n}\n", NULL) ==
+        app_scene_authoring_register_prototype(scene, "name \"Linker\"\ncomponents {\n    Link\n    Transform x=0 y=0\n}\n", NULL) ==
         0
     );
     REQUIRE(scene_authoring_load_text(scene, linked_scene, NULL) == 0);
@@ -1684,9 +2444,9 @@ static bool scene_hierarchy_frame(void *state)
     REQUIRE(
         app_scene_authoring_register_prototype(
             scene,
-            "name \"Hull\"\ncomponents {\n    GameTransform x=0 y=0\n    "
-            "GameOrientation "
-            "radians=0\n    GameAppearance shape=\"Box\" width=4.0 "
+            "name \"Hull\"\ncomponents {\n    Transform x=0 y=0\n    "
+            "Orientation "
+            "radians=0\n    Appearance shape=\"Box\" width=4.0 "
             "height=4.0\n}\n",
             NULL
         ) == 0
@@ -1698,10 +2458,10 @@ static bool scene_hierarchy_frame(void *state)
     /* Changing an object's components replaces it, which a parent waits for
        too; a child keeps its parent through the change and its undo. */
     scene->selected = 0;
-    REQUIRE(app_scene_authoring_add_instance_component(scene, "GameVelocity") != 0);
+    REQUIRE(app_scene_authoring_add_instance_component(scene, "Velocity") != 0);
     REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0));
     scene->selected = 1;
-    REQUIRE(app_scene_authoring_add_instance_component(scene, "GameVelocity") == 0);
+    REQUIRE(app_scene_authoring_add_instance_component(scene, "Velocity") == 0);
     REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0));
     REQUIRE(replay_scene_edit(scene, false) == 0);
     REQUIRE(acount(scene->actors) == 3 && child_of(scene, 1, 0) && saves_as(scene, nested_scene));
@@ -1738,9 +2498,9 @@ static bool scene_hierarchy_frame(void *state)
     REQUIRE(!pick_scene_entity(scene, 10, 0, (render_skip){ 0 }).slot);
     /* A copy moved ten units along the world's x moves along the ship's -y. */
     scene->selected = 1;
-    REQUIRE(scene_duplicate_selection(scene, (GameTransform){ 10, 0 }) == 0);
-    const GameTransform *
-        moved = GAME_GameTransform_get_const(scene->world, selected_actor(scene)->entity);
+    REQUIRE(scene_duplicate_selection(scene, (Transform){ 10, 0 }) == 0);
+    const Transform
+        *moved = Transform_get_const(scene->world, selected_actor(scene)->entity);
     REQUIRE(child_of(scene, scene->selected, 0));
     REQUIRE(fabsf(moved->x - 10) < 1e-3f && fabsf(moved->y + 10) < 1e-3f);
     edits++;
@@ -1748,13 +2508,13 @@ static bool scene_hierarchy_frame(void *state)
 }
 
 static const char physics_crate[] = "name \"Crate3D\"\ncomponents {\n"
-                                    "    GAME.GameBody3D type=\"Dynamic\"\n"
-                                    "    GAME.GameCollider3D {\n"
+                                    "    Body3D type=\"Dynamic\"\n"
+                                    "    Collider3D {\n"
                                     "        category 1\n"
                                     "        mask 1\n"
                                     "        size x=32.0 y=32.0 z=32.0\n"
                                     "    }\n"
-                                    "    GAME.GameTransform3D {\n"
+                                    "    Transform3D {\n"
                                     "        scale x=1.0 y=1.0 z=1.0\n"
                                     "    }\n"
                                     "}\n";
@@ -1768,7 +2528,7 @@ static bool moving_3d(app_scene_authoring *scene)
 {
     CF_Quat rotation;
     CF_V3 translation;
-    return game_physics3d_interpolation(
+    return physics3d_interpolation(
         scene->live->runtime->physics3d,
         scene->actors[0].entity,
         1,
@@ -1791,14 +2551,12 @@ static bool scene_physics_frame(void *state)
     app_scene_authoring *scene = s->scene;
     REQUIRE(app_scene_authoring_register_prototype(scene, physics_crate, NULL) == 0);
     REQUIRE(scene_authoring_load_text(scene, physics_scene, NULL) == 0);
-    game_physics3d *physics = scene->live->runtime->physics3d;
-    REQUIRE(game_physics3d_tick(physics, 1.0f / 60) == 0 && moving_3d(scene));
-    game_physics_settings settings = game_physics_configuration(
-        scene->live->runtime->physics
-    );
+    physics3d *physics = scene->live->runtime->physics3d;
+    REQUIRE(physics3d_tick(physics, 1.0f / 60) == 0 && moving_3d(scene));
+    physics_settings settings = physics_configuration(scene->live->runtime->physics);
     settings.sleep = !settings.sleep;
     REQUIRE(app_scene_authoring_set_physics(scene, settings) == 0 && !moving_3d(scene));
-    REQUIRE(game_physics3d_tick(physics, 1.0f / 60) == 0 && moving_3d(scene));
+    REQUIRE(physics3d_tick(physics, 1.0f / 60) == 0 && moving_3d(scene));
     REQUIRE(replay_scene_edit(scene, false) == 0 && !moving_3d(scene));
     edits++;
     return true;
@@ -1819,7 +2577,7 @@ static bool write_spare(const char *name)
 {
     char path[1024], text[128];
     REQUIRE(spare_path(name, path, sizeof path));
-    snprintf(text, sizeof text, "name \"%s\"\ncomponents {\n    (object)GAME.GameTransform\n}\n", name);
+    snprintf(text, sizeof text, "name \"%s\"\ncomponents {\n    (object)Transform\n}\n", name);
     FILE *file = fopen(path, "wb");
     REQUIRE(file);
     bool written = fputs(text, file) >= 0;
@@ -1946,7 +2704,7 @@ static bool select_and_delete(studio *s)
 static const char marked_scene
     [] = "version 1\nname \"Scene\"\n(array)entities {\n"
          "    - name=\"Box\" prototype=\"Box\"\n"
-         "    - name=\"Spot\" prototype=\"Spot\" { components { GameTransform "
+         "    - name=\"Spot\" prototype=\"Spot\" { components { Transform "
          "x=5.0 y=5.0; }; }\n"
          "}\n";
 /* More undrawn objects than any fixed count of markers the Scene kept, laid
@@ -2046,10 +2804,7 @@ static bool marker_and_gizmo(studio *s)
     REQUIRE(!strcmp(scene->gizmo.status, "Size 50 \xc3\x97 40"));
     scene->gizmo.in.cancel = true;
     REQUIRE(scene_gizmo_pointer(scene, scene->render_viewport, &pointer));
-    REQUIRE(
-        !scene->gizmo.active &&
-        GAME_GameAppearance_get_const(scene->world, box)->width == 40
-    );
+    REQUIRE(!scene->gizmo.active && Appearance_get_const(scene->world, box)->width == 40);
     return true;
 }
 
@@ -2085,7 +2840,7 @@ static bool previewed_prototype_plays(studio *s)
 
 /* A prototype that runs Counter, this project's source behavior. */
 static const char ticker_prototype[] = "name \"Ticker\"\ncomponents {\n"
-                                       "    GameTransform x=0 y=0\n}\n"
+                                       "    Transform x=0 y=0\n}\n"
                                        "(array)behaviors \"Counter\"\n";
 
 /* Counter's `count` state as the preview's world published it. */
@@ -2094,8 +2849,8 @@ static uint64_t previewed_count_state(app_scene_authoring *scene)
     char path[1024];
     int length = snprintf(path, sizeof path, "%s/content/behaviors/Counter.chibi", project);
     REQUIRE(length > 0 && (size_t)length < sizeof path);
-    const authoring_source *source = game_preview_source_find(
-        game_prototype_preview_live(scene->prototype_preview),
+    const authoring_source *source = preview_source_find(
+        prototype_preview_live(scene->prototype_preview),
         path,
         true
     );
@@ -2120,13 +2875,13 @@ static bool previewed_source_runs(studio *s)
         fprintf(stderr, "Studio viewport acceptance: %s\n", scene->prototype_message);
     }
     REQUIRE(previewed == 0);
-    execution_instance *counter = game_prototype_preview_instance(scene->prototype_preview, "Counter");
+    execution_instance *counter = prototype_preview_instance(scene->prototype_preview, "Counter");
     uint64_t count = previewed_count_state(scene);
     REQUIRE(counter && count);
     REQUIRE(execution_instance_state(counter, count)->i == 1);
-    REQUIRE(game_prototype_preview_tick(scene->prototype_preview, s->time) >= 0);
+    REQUIRE(prototype_preview_tick(scene->prototype_preview, s->time) >= 0);
     REQUIRE(
-        game_prototype_preview_tick(scene->prototype_preview, s->time + 2 * ENGINE_FIXED_SECONDS) >= 0
+        prototype_preview_tick(scene->prototype_preview, s->time + 2 * ENGINE_FIXED_SECONDS) >= 0
     );
     REQUIRE(execution_instance_state(counter, count)->i > 1);
     app_scene_authoring_stop_prototype_preview(scene);
@@ -2279,7 +3034,7 @@ static bool load_crowd(studio *s)
             text + at,
             size - (size_t)at,
             "    - name=\"Spot%d\" prototype=\"Spot\" { components { "
-            "GameTransform x=%d.0 y=%d.0; }; }\n",
+            "Transform x=%d.0 y=%d.0; }; }\n",
             i,
             x,
             y
@@ -2440,17 +3195,20 @@ static bool scene_viewport_frame(void *state)
             REQUIRE(
                 app_scene_authoring_register_prototype(
                     scene,
-                    "name \"Box\"\ncomponents {\n    GameTransform x=0 y=0\n   "
+                    "name \"Box\"\ncomponents {\n    Transform x=0 y=0\n   "
                     " "
-                    "GameOrientation radians=0\n    GameAppearance "
+                    "Orientation radians=0\n    Appearance "
                     "shape=\"Box\" "
                     "width=40.0 height=40.0\n}\n",
                     NULL
                 ) == 0
             );
             REQUIRE(
-                app_scene_authoring_register_prototype(scene, "name \"Spot\"\ncomponents {\n    GameTransform x=0 y=0\n}\n", NULL) ==
-                0
+                app_scene_authoring_register_prototype(
+                    scene,
+                    "name \"Spot\"\ncomponents {\n    Transform x=0 y=0\n}\n",
+                    NULL
+                ) == 0
             );
             REQUIRE(app_scene_authoring_register_prototype(scene, ticker_prototype, NULL) == 0);
             REQUIRE(scene_authoring_load_text(scene, marked_scene, NULL) == 0);
@@ -2533,7 +3291,7 @@ static const char probe_rml[] = "<div class=\"lonely" LONG_CLASS "\"></div>\n";
 static bool write_glyph_content()
 {
     REQUIRE(
-        write_content("prototypes", "Cr\xc3\xaapes.kdl", "name \"Cr\xc3\xaapes\"\ncomponents {\n    (object)GAME.GameTransform\n}\n")
+        write_content("prototypes", "Cr\xc3\xaapes.kdl", "name \"Cr\xc3\xaapes\"\ncomponents {\n    (object)Transform\n}\n")
     );
     REQUIRE(write_content("ui", "Probe.rml", probe_rml));
     REQUIRE(write_content("ui", "Probe.rcss", ".known" LONG_CLASS " { color: red; }\n"));
@@ -2835,6 +3593,7 @@ bool studio_acceptance_frame(void *state)
         case PROMPTS: callback_ok = prompts_frame(state); break;
         case CODE_FOLLOWUPS: callback_ok = code_followups_frame(state); break;
         case CODE_GLYPHS: callback_ok = code_glyphs_frame(state); break;
+        case MENU_CHOICES: callback_ok = menu_choices_frame(state); break;
     }
     return callback_ok;
 }
@@ -2900,9 +3659,36 @@ TEST_CASE(code_underlines_unit_mismatch)
     return true;
 }
 
+/* This fixture deliberately puts a helper before the event declarations. */
+static bool write_graph_counter(const char *bytes)
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/behaviors/Counter.chibi", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    FILE *file = fopen(path, "wb");
+    REQUIRE(file);
+    bool written = fputs(bytes, file) >= 0;
+    REQUIRE(fclose(file) == 0 && written);
+    return true;
+}
+
 TEST_CASE(graph_visibility_and_document_pair)
 {
     REQUIRE(unchanged_source());
+    REQUIRE(write_graph_counter(
+        "behavior Counter {\n"
+        "    state count: int = 1\n"
+        "    function Increment() {\n"
+        "        return count + 1\n"
+        "    }\n"
+        "    on Tick {\n"
+        "        count = count + 1\n"
+        "    }\n"
+        "    on Begin {\n"
+        "        count = 1\n"
+        "    }\n"
+        "}\n"
+    ));
     char *args[] = { (char *)executable, "--headless",
                      "--frames",         "10",
                      "--fixed-dt",       "0.016666666666666666",
@@ -2910,6 +3696,7 @@ TEST_CASE(graph_visibility_and_document_pair)
                      "--open",           "Counter" };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
     REQUIRE(callback_ok && frames == 10);
+    REQUIRE(write_graph_counter(counter_bytes));
     REQUIRE(unchanged_source());
     printf("\nStudio graph visibility accepted: frames=%d\n", frames);
     return true;
@@ -2999,7 +3786,7 @@ TEST_CASE(scene_hierarchy)
     return true;
 }
 
-TEST_CASE(scene_physics)
+TEST_CASE(scene_physics_settings)
 {
     char *args[] = { (char *)executable, "--headless",
                      "--frames",         "2",
@@ -3127,6 +3914,18 @@ TEST_CASE(code_glyphs)
     return true;
 }
 
+TEST_CASE(menu_choices_keyboard)
+{
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(MENU_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && frames == MENU_FRAMES);
+    printf("Studio menu choices accepted: frames=%d\n", frames);
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
@@ -3150,9 +3949,10 @@ int main(int argc, char **argv)
     bool prompting = argc == 4 && !strcmp(argv[1], "--unsaved-prompts");
     bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
+    bool menus = argc == 4 && !strcmp(argv[1], "--menu-choices");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
          !keys_mode && !labels && !units && !hierarchy && !physics && !assets &&
-         !viewport && !playing && !prompting && !followups && !glyphs) ||
+         !viewport && !playing && !prompting && !followups && !glyphs && !menus) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
@@ -3161,7 +3961,7 @@ int main(int argc, char **argv)
             "--graph-visibility|--graph-keys|--graph-labels|--unit-warnings|"
             "--scene-hierarchy|--scene-physics|"
             "--asset-selection|--scene-viewport|--play-keys|--unsaved-prompts|"
-            "--code-followups|--code-glyphs "
+            "--code-followups|--code-glyphs|--menu-choices "
             "--project-root PATH | --scene-cursors\n"
         );
         return 2;
@@ -3193,7 +3993,8 @@ int main(int argc, char **argv)
          : playing     ? PLAY_KEYS
          : prompting   ? PROMPTS
          : followups   ? CODE_FOLLOWUPS
-                       : CODE_GLYPHS;
+         : glyphs      ? CODE_GLYPHS
+                       : MENU_CHOICES;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -3206,13 +4007,14 @@ int main(int argc, char **argv)
         case GRAPH_LABELS: RUN_TEST_CASE(graph_labels); break;
         case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
-        case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics); break;
+        case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics_settings); break;
         case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;
         case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
         case PLAY_KEYS: RUN_TEST_CASE(play_keys); break;
         case PROMPTS: RUN_TEST_CASE(unsaved_prompts); break;
         case CODE_FOLLOWUPS: RUN_TEST_CASE(code_followups); break;
         case CODE_GLYPHS: RUN_TEST_CASE(code_glyphs); break;
+        case MENU_CHOICES: RUN_TEST_CASE(menu_choices_keyboard); break;
     }
     pu_print_stats();
     return pu_test_failed() ? 1 : 0;

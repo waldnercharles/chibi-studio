@@ -108,8 +108,11 @@ static bool fit(yyjson_mut_doc *doc, yyjson_mut_val *array, int length, item_sha
     return had != length;
 }
 
-static uint32_t graph_icon(const graph *gr)
+static uint32_t graph_icon(const editor *e, const graph *gr)
 {
+    if (editor_presentation(e) && gr == e->asset->graph) {
+        return KIT_ICON_VARIABLE;
+    }
     return gr->kind == GRAPH_FUNCTION ? KIT_ICON_FUNCTION
          : gr->kind == GRAPH_MACRO    ? KIT_ICON_EXPRESSION
                                       : KIT_ICON_EVENT;
@@ -280,7 +283,7 @@ static bool show_crumbs(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *h)
     char label[256];
     studio_code_graph_label(s, gr, label, sizeof label);
     changed |= ui_data_put_text(doc, shown, "label", label);
-    changed |= put_glyph(doc, shown, "icon", graph_icon(gr));
+    changed |= put_glyph(doc, shown, "icon", graph_icon(sg_graph_editor(s), gr));
     return show_callers(s, doc, yyjson_mut_obj_get(h, "callers")) || changed;
 }
 
@@ -342,7 +345,7 @@ void studio_graph_menus_add(yyjson_mut_doc *doc)
 {
     static const char *const ITEMS[] = { "refs",   "newFunction", "newMacro",
                                          "rename", "graphRefs",   "graphCalls",
-                                         "remove", NULL };
+                                         "remove", "functions",   NULL };
     yyjson_mut_val *m = yyjson_mut_obj_add_obj(doc, yyjson_mut_doc_get_root(doc), "graph_menus");
     add_items(doc, m, ITEMS);
     yyjson_mut_val *kind = yyjson_mut_obj_add_obj(doc, m, "kind");
@@ -386,32 +389,70 @@ static bool show_assets(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *m)
     return changed;
 }
 
-/* The picker's graphs. An expression's generated function belongs to its
-   node, which opens it; listing them would repeat every expression here. */
+enum
+{
+    PICKER_EVENTS,
+    PICKER_VARIABLES,
+    PICKER_FUNCTIONS,
+    PICKER_MACROS,
+    PICKER_GROUPS,
+};
+
+static int graph_group(const editor *e, const graph *g)
+{
+    if (editor_presentation(e) && g == e->asset->graph) {
+        return PICKER_VARIABLES;
+    }
+    return g->kind == GRAPH_FUNCTION ? PICKER_FUNCTIONS
+         : g->kind == GRAPH_MACRO    ? PICKER_MACROS
+                                     : PICKER_EVENTS;
+}
+
+/* Events stay ahead of helpers regardless of declaration order. Generated
+   expression graphs belong to their node; only list one while it is open. */
 static bool show_graphs(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *array)
 {
     editor *e = sg_graph_editor(s);
     const graph *gr = sg_active_graph(s);
-    int count = 0;
+    static const char *const labels[PICKER_GROUPS] = { "Events",
+                                                       "Variables",
+                                                       "Functions",
+                                                       "Macros" };
+    int counts[PICKER_GROUPS] = { 0 }, groups = 0;
     for (int i = 0; i < acount(e->asset->graphs); i++) {
-        count += !e->asset->graphs[i]->math_expression || e->asset->graphs[i] == gr;
+        const graph *g = e->asset->graphs[i];
+        if (!g->math_expression || g == gr) {
+            counts[graph_group(e, g)]++;
+        }
     }
-    bool changed = fit(doc, array, count, SHAPE_ITEM);
+    for (int i = 0; i < PICKER_GROUPS; i++) {
+        groups += counts[i] != 0;
+    }
+    bool changed = fit(doc, array, groups, SHAPE_GROUP);
     yyjson_mut_arr_iter it = yyjson_mut_arr_iter_with(array);
-    for (int i = 0; i < acount(e->asset->graphs); i++) {
-        const graph *item = e->asset->graphs[i];
-        if (item->math_expression && item != gr) {
+    for (int group = 0; group < PICKER_GROUPS; group++) {
+        if (!counts[group]) {
             continue;
         }
-        char id[24];
-        snprintf(id, sizeof id, "%llu", (unsigned long long)item->graph_id);
-        char label[256];
-        studio_code_graph_label(s, item, label, sizeof label);
-        header_item shown = { .id = id,
-                              .label = label,
-                              .icon = graph_icon(item),
-                              .current = item == gr };
-        changed |= put_item(doc, yyjson_mut_arr_iter_next(&it), &shown);
+        yyjson_mut_val *section = yyjson_mut_arr_iter_next(&it);
+        changed |= ui_data_put_text(doc, section, "label", labels[group]);
+        yyjson_mut_val *options = yyjson_mut_obj_get(section, "options");
+        changed |= fit(doc, options, counts[group], SHAPE_ITEM);
+        yyjson_mut_arr_iter choices = yyjson_mut_arr_iter_with(options);
+        for (int i = 0; i < acount(e->asset->graphs); i++) {
+            const graph *item = e->asset->graphs[i];
+            if ((item->math_expression && item != gr) || graph_group(e, item) != group) {
+                continue;
+            }
+            char id[24], label[256];
+            snprintf(id, sizeof id, "%llu", (unsigned long long)item->graph_id);
+            studio_code_graph_label(s, item, label, sizeof label);
+            header_item shown = { .id = id,
+                                  .label = label,
+                                  .icon = graph_icon(e, item),
+                                  .current = item == gr };
+            changed |= put_item(doc, yyjson_mut_arr_iter_next(&choices), &shown);
+        }
     }
     return changed;
 }
@@ -426,6 +467,7 @@ static bool show_graph_items(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *m)
     const char *remove = gr->kind == GRAPH_MACRO ? "Delete Macro" : "Delete Function";
     const header_item items[] = {
         { .name = "refs", .label = "Find References", .icon = KIT_ICON_REFERENCES },
+        { .name = "functions", .label = "Functions and Macros", .icon = KIT_ICON_FUNCTION },
         { .name = "newFunction", .label = "New Function", .icon = KIT_ICON_ADD, .disabled = locked },
         { .name = "newMacro", .label = "New Macro", .icon = KIT_ICON_ADD, .disabled = locked },
         { .name = "rename", .label = "Rename", .icon = KIT_ICON_EDIT, .disabled = locked },
@@ -506,6 +548,9 @@ void studio_graph_view_add(yyjson_mut_doc *doc)
     char glyph[5];
     studio_glyph(glyph, KIT_ICON_LAYOUT);
     yyjson_mut_obj_add_strcpy(doc, alignment, "icon", glyph);
+    yyjson_mut_val *wires = yyjson_mut_obj_add_obj(doc, v, "wires");
+    yyjson_mut_obj_add_strcpy(doc, wires, "label", "Wires");
+    yyjson_mut_obj_add_strcpy(doc, wires, "icon", glyph);
     yyjson_mut_val *edges = yyjson_mut_obj_add_arr(doc, v, "edges");
     for (int i = 0; i < ALIGN_COUNT; i++) {
         yyjson_mut_arr_append(edges, item_new(doc, SHAPE_ITEM));
@@ -603,7 +648,7 @@ void studio_graph_targets_add(yyjson_mut_doc *doc)
     yyjson_mut_obj_add_arr(doc, t, "groups");
 }
 
-static bool prototype_attaches(const game_prototype *prototype, const char *behavior)
+static bool prototype_attaches(const prototype *prototype, const char *behavior)
 {
     for (int i = 0; i < acount(prototype->graphs); i++) {
         if (!strcmp(prototype->graphs[i], behavior)) {
@@ -624,7 +669,7 @@ static void prototype_choices(studio *s, target_group *groups)
     }
     const char *newest = scene->debug_newest;
     for (int i = 0; i < acount(scene->prototypes); i++) {
-        const game_prototype *prototype = scene->prototypes[i].prototype;
+        const prototype *prototype = scene->prototypes[i].prototype;
         if (!prototype_attaches(prototype, scene->graph_document_id)) {
             continue;
         }
@@ -652,9 +697,9 @@ static void prototype_choices(studio *s, target_group *groups)
 static void target_choices(studio *s, target_group *groups)
 {
     app_scene_authoring *scene = s->scene;
-    game_source_registry *behaviors = scene->active_runtime_target == APP_RUNTIME_PREVIEW
-                                       ? game_prototype_preview_sources(scene->prototype_preview)
-                                       : scene->live->runtime->sources;
+    source_registry *behaviors = scene->active_runtime_target == APP_RUNTIME_PREVIEW
+                                   ? prototype_preview_sources(scene->prototype_preview)
+                                   : scene->live->runtime->sources;
     bool on = targeted(scene);
     target_choice none = { .value = "none",
                            .label = "No target",
@@ -662,7 +707,7 @@ static void target_choices(studio *s, target_group *groups)
                            .current = !on };
     apush(groups[GROUP_NONE].choices, none);
     prototype_choices(s, groups);
-    execution_program *program = game_source_program(behaviors, scene->graph_document_id);
+    execution_program *program = source_program(behaviors, scene->graph_document_id);
     for (int i = 0; program && i < execution_program_owner_count(program); i++) {
         ecs_entity entity = ecs_entity_from_u64(execution_program_owner_at(program, i));
         target_choice choice = {
@@ -816,7 +861,9 @@ static bool graph_action(studio *s, const char *action, const ui_activation *a)
     editor *e = sg_graph_editor(s);
     graph *gr = sg_active_graph(s);
     if (!strcmp(action, "graph")) {
-        editor_open_graph(e, strtoull(argument(a), NULL, 10));
+        if (editor_open_graph(e, strtoull(argument(a), NULL, 10)) == 0) {
+            studio_code_reveal_graph(s);
+        }
     } else if (!strcmp(action, "caller")) {
         editor_graph_ancestor(e, atoi(argument(a)));
     } else if (!strcmp(action, "newFunction") || !strcmp(action, "newMacro")) {

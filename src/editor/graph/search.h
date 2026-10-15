@@ -14,10 +14,12 @@ typedef struct ed_search_match
     const node_desc *desc;
     graph *function;
     const behavior_variable *variable;
+    uint64_t source_variable; /* Resolved state symbol; source owns its declaration. */
+    const char *source_variable_name;
     const char *prototype;
     const behavior_asset *event;
     int host_event; /* One-based index in the editor host event catalog. */
-    const struct ui_event *ui_event; /* an event a GameUi document sends */
+    const struct ui_event *ui_event;       /* an event a Ui document sends */
     const struct ui_data_binding *ui_data; /* a value one binds, for Set UI Data */
     /* Component node presets: the Component or Type setting, and for Set the
      * one field it writes. */

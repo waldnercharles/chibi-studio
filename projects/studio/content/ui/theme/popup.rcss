@@ -30,12 +30,12 @@ body.comfortable .popover .btn.sm { height: var(--studio-height-36, 36dp); }
    a shown one waits unseen until it is placed. */
 [popover]:not([data-open]) { display: none; }
 [popover][data-unplaced] { visibility: hidden; }
-/* An authored menu taller than the window scrolls, as the kit's do. */
+/* Authored menus share the seven-row cap and still fit smaller windows. */
 .popup.menu[popover] { max-height: var(--available-height, none); overflow-y: auto; }
 /* A list's search, as the kit's dropdown has it, and what it filtered out. */
 .choice-list { display: block; }
 .choice-list .field.search { margin: 2dp 2dp 6dp; }
-.choice-results { max-height: var(--dropdown-list-h); overflow-y: auto; }
+.choice-results { max-height: var(--menu-list-h); overflow-y: auto; }
 .choice-list [data-filtered] { display: none; }
 .choice-empty { display: none; padding: 8dp; color: var(--muted-foreground); }
 .choice-list[data-empty] .choice-empty { display: block; }
@@ -44,6 +44,10 @@ body.comfortable .popover .btn.sm { height: var(--studio-height-36, 36dp); }
 .popup { opacity: 1; transition: opacity 0.14s cubic-out; }
 .popup[data-starting-style], .popup[data-ending-style] { opacity: 0; }
 .popup[data-ending-style] { transition: opacity 0.1s cubic-out; }
+/* Repeated menu and search navigation responds immediately, including keys. */
+.popup.menu, .popup.dropdown { transition: none; }
+.popup.menu[data-starting-style], .popup.dropdown[data-starting-style],
+.popup.menu[data-ending-style], .popup.dropdown[data-ending-style] { opacity: 1; transition: none; }
 .menu-item {
     display: flex; align-items: center; gap: 8dp; height: var(--h); padding: 0dp 8dp 0dp 6dp; border-radius: var(--r);
     white-space: nowrap; color: var(--foreground);
@@ -69,13 +73,16 @@ body.comfortable .popover .btn.sm { height: var(--studio-height-36, 36dp); }
 .menu-group { height: var(--studio-height-22, 22dp); line-height: var(--studio-line-22, 22dp); display: block; padding: 0dp 6dp; font-size: var(--studio-font-11, 11dp); color: var(--faint-foreground); }
 .menu-note { display: block; padding: 0dp 8dp 6dp; font-size: var(--studio-font-11, 11dp); color: var(--muted-foreground); white-space: nowrap; }
 .dropdown .field.search { margin: 2dp 2dp 6dp; }
-/* Field choices show seven rows. Action menus use compact, font-scaled rows
-   and grow to their content until the viewport requires scrolling. */
-body { --menu-row-h: var(--studio-line-22, 22dp); --dropdown-list-h: 182dp; --dropdown-box-h: 192dp; }
-body.comfortable { --dropdown-list-h: 210dp; --dropdown-box-h: 220dp; }
-body.graph-canvas, body.graph-canvas.comfortable { --dropdown-list-h: 154dp; --dropdown-box-h: 164dp; }
+/* Seven rows follow each control's density and font metrics. */
+body { --menu-row-h: var(--studio-line-22, 22dp); --menu-list-h: 154dp; --dropdown-list-h: 182dp; }
+body.comfortable { --dropdown-list-h: 210dp; }
+body.graph-canvas, body.graph-canvas.comfortable { --dropdown-list-h: 154dp; }
 .dropdown-results, .autocomplete-results { max-height: var(--dropdown-list-h); overflow-y: auto; }
-.popup.menu { overflow-y: auto; }
+.popup.menu { --popover-max-height: var(--menu-list-h); max-height: var(--menu-list-h); overflow-y: auto; }
+/* These popovers edit values or review changes rather than list choices. */
+.popup.menu.struct-editor, .popup.menu.refactor, .popup.menu.new-asset {
+    --popover-max-height: 0dp; max-height: var(--available-height, none);
+}
 .dropdown-empty { display: block; padding: 8dp; color: var(--muted-foreground); }
 
 /* The label and shortcut stay on one line; a description wraps beneath them.

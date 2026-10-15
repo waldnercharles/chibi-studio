@@ -85,14 +85,15 @@ static const uint32_t PROTOTYPE_ICONS[COMPONENT_ICON_COUNT] = {
 /* A prototype's icon follows from what it is made of, never from its name: of
    the icons its components name in editor/Components.kdl, the first in
    component_icon order decides. */
-uint32_t studio_prototype_icon(const studio *s, const char *prototype)
+uint32_t studio_prototype_icon(const studio *s, const char *prototype_name)
 {
-    scene_prototype_asset *asset = prototype ? find_prototype(s->scene, prototype)
-                                             : NULL;
+    scene_prototype_asset *asset = prototype_name
+                                     ? find_prototype(s->scene, prototype_name)
+                                     : NULL;
     if (!asset || !asset->prototype) {
         return KIT_ICON_PROTOTYPE;
     }
-    const game_prototype *p = asset->prototype;
+    const prototype *p = asset->prototype;
     component_icon first = COMPONENT_ICON_COUNT;
     for (int c = 0; c < acount(p->components); c++) {
         component_icon icon = component_presentation_icon(
@@ -398,8 +399,8 @@ bool studio_active_dirty(studio *s)
         return ui_buffer_dirty(studio_ui_buffer(s));
     }
     if (graph_focused(s) && scene->graph_document_kind == APP_EDITOR_DOCUMENT_BEHAVIOR) {
-        game_preview_definition
-            *definition = game_preview_find_definition(scene->live, scene->graph_document_id);
+        preview_definition
+            *definition = preview_find_definition(scene->live, scene->graph_document_id);
         return definition && definition->unsaved;
     }
     return tab ? scene_tabs_dirty(scene, tab) : scene->scene_dirty;
@@ -614,7 +615,7 @@ void studio_duplicate(studio *s)
         return;
     }
     float step = s->prefs.scene_increment;
-    if (scene_duplicate_selection(scene, (GameTransform){ step, step }) != 0) {
+    if (scene_duplicate_selection(scene, (Transform){ step, step }) != 0) {
         warn_failure(s, "Could not duplicate");
         return;
     }
@@ -638,7 +639,7 @@ void studio_copy(studio *s)
 
 /* The pointer's place in the scene while it is over the Scene and the key
    came from there, as gameplay coordinates. */
-static bool scene_pointer(studio *s, GameTransform *at)
+static bool scene_pointer(studio *s, Transform *at)
 {
     int area = s->key_area;
     float x, y;
@@ -647,7 +648,7 @@ static bool scene_pointer(studio *s, GameTransform *at)
         !engine_viewport_mouse_world(s->viewport, &x, &y)) {
         return false;
     }
-    *at = (GameTransform){ x, -y };
+    *at = (Transform){ x, -y };
     return true;
 }
 
@@ -657,7 +658,7 @@ void studio_paste(studio *s)
         return;
     }
     float step = s->prefs.scene_increment;
-    GameTransform pointer;
+    Transform pointer;
     scene_paste_place place = { .offset = { step, step },
                                 .snap = s->prefs.scene_snap ? step : 0 };
     if (scene_pointer(s, &pointer)) {
@@ -1049,6 +1050,28 @@ static const struct
     { "exportProject", "Export Project", 0 },
     { "add", "Add", KIT_ICON_ADD },
     { "transform", "Transform", 0 },
+    { "scripting", "Scripting", 0 },
+    { "graphics", "Graphics", 0 },
+    { "userInterface", "User Interface", 0 },
+    { "document", "Document", 0 },
+    { "transfer", "Import / Export", 0 },
+    { "clipboard", "Edit Selection", 0 },
+    { "selection", "Selection", 0 },
+    { "panels", "Panels", 0 },
+    { "layout", "Layout", 0 },
+    { "tabs", "Tabs", 0 },
+    { "sceneView", "Scene", 0 },
+    { "uiScale", "UI Scale", 0 },
+    { "objectEdit", "Edit Object", 0 },
+    { "prototype", "Prototype", 0 },
+    { "grid", "Grid", 0 },
+    { "playbackSpeed", "Playback Speed", 0 },
+    { "debugger", "Debugger", 0 },
+    { "speedPresets", "Presets", 0 },
+    { "scalePresets", "Presets", 0 },
+    { "elementContent", "Content", 0 },
+    { "elementControls", "Controls", 0 },
+    { "elementFeedback", "Feedback", 0 },
 };
 
 void studio_menubar_add(yyjson_mut_doc *doc)

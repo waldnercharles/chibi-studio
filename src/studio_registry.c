@@ -32,7 +32,7 @@ static bool same_types(type_catalog_pack a, type_catalog_pack b)
 static bool graph_types(type_catalog_pack pack)
 {
     return (pack.type_count || pack.enum_count) &&
-           !same_types(pack, GAME_TYPE_PACK) && !same_types(pack, STUDIO_TYPE_PACK);
+           !same_types(pack, TYPE_PACK) && !same_types(pack, STUDIO_TYPE_PACK);
 }
 int type_catalog_pack_count()
 {
@@ -47,7 +47,7 @@ type_catalog_pack type_catalog_pack_at(int index)
 {
     assert(index >= 0);
     if (index == 0) {
-        return GAME_TYPE_PACK;
+        return TYPE_PACK;
     }
     if (index == 1) {
         return STUDIO_TYPE_PACK;
@@ -73,8 +73,8 @@ void studio_registry_init()
         catalog = authoring_graph_catalog_new(
             (authoring_graph_catalog_config){
                 .native = native,
-                .types = GAME_TYPE_PACK,
-                .components = { GAME_REGISTRY_COMPONENTS, GAME_REGISTRY_COMPONENT_COUNT },
+                .types = TYPE_PACK,
+                .components = { REGISTRY_COMPONENTS, REGISTRY_COMPONENT_COUNT },
                 .extra_packs = extra,
                 .extra_count = 1 },
             error,

@@ -21,7 +21,9 @@
       <use ui="MenuCommand" data-alias-command="commands.zoomOut"/>
       <use ui="MenuCommand" data-alias-command="commands.zoomReset"/>
       <use ui="MenuSeparator"/>
-      <use ui="MenuItem" data-for="preset, i : shell.scale.presets" data-alias-item="preset" data-event-click="emit('shell.scale', i)"/>
+      <use ui="Submenu" data-alias-item="menubar.items.scalePresets">
+        <use ui="MenuItem" data-for="preset, i : shell.scale.presets" data-alias-item="preset" data-event-click="emit('shell.scale', i)"/>
+      </use>
     </use>
   </div>
 </div>

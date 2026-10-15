@@ -378,7 +378,7 @@ static bool ed_event_handled(const editor *e, const char *name)
 static void ed_search_host_events(const editor *e, ed_search_match **matches, const char *filter)
 {
     for (int i = 0; i < e->event_catalog_count; i++) {
-        const game_host_event_desc *event = &e->event_catalog[i];
+        const host_event_desc *event = &e->event_catalog[i];
         if (ed_event_handled(e, event->name)) {
             continue;
         }
@@ -400,7 +400,7 @@ static void ed_search_host_events(const editor *e, ed_search_match **matches, co
     }
 }
 
-/* Events GameUi documents send, found by their name and by what the player
+/* Events Ui documents send, found by their name and by what the player
  * does to send them. */
 static void ed_search_ui_events(const editor *e, ed_search_match **matches, const char *filter)
 {
@@ -422,7 +422,7 @@ static void ed_search_ui_events(const editor *e, ed_search_match **matches, cons
     }
 }
 
-/* The values GameUi documents bind under self, as Set UI Data nodes that set
+/* The values Ui documents bind under self, as Set UI Data nodes that set
    them: "Set items" in UI Data, found by the document and its rows' fields. */
 static void ed_search_ui_data(const editor *e, ed_search_match **matches, const char *filter)
 {
@@ -498,6 +498,45 @@ static void ed_search_events(const editor *e, ed_search_match **matches, const c
             );
             ed_add_search_match(e, matches, match, &signature, filter);
             afree(pins);
+        }
+    }
+}
+
+static void search_source_variables(const editor *e, ed_search_match **matches, const char *filter)
+{
+    if (!e->presentation) { return; }
+    for (int i = 0; i < authoring_source_presentation_origin_count(e->presentation);
+         i++) {
+        const source_presentation_origin
+            *o = authoring_source_presentation_origin_at(e->presentation, i);
+        if (o->kind != SOURCE_PRESENTATION_SYMBOL || o->pin || o->function >= 0 ||
+            (o->operation != SCRIPT_STATE && o->operation != SCRIPT_SHARED_STATE)) {
+            continue;
+        }
+        graph *g = behavior_asset_find_graph(e->asset, o->graph);
+        node *declaration = graph_node_by_id(g, o->node);
+        if (!declaration || !declaration->output_count) { continue; }
+        for (int set = 0; set < 2; set++) {
+            if (set && !o->writable) { continue; }
+            const node_desc *desc = set ? &NODE_SetVariable : &NODE_GetVariable;
+            pin_spec data = declaration->output_pins[0];
+            data.name = "Value";
+            pin_spec inputs[] = { { .name = "Exec", .type = PIN_FLOW, .kind = PIN_EXEC },
+                                  data };
+            pin_spec then = { .name = "Then", .type = PIN_FLOW, .kind = PIN_EXEC };
+            node_desc signature = *desc;
+            signature.inputs = set ? inputs : NULL;
+            signature.input_count = set ? 2 : 0;
+            signature.outputs = set ? &then : &data;
+            signature.output_count = 1;
+            ed_search_match match = { .desc = desc,
+                                      .source_variable = declaration->reference_id,
+                                      .source_variable_name = declaration->desc->name,
+                                      .category = "Variables" };
+            char label[256];
+            editor_identifier_label(match.source_variable_name, label, sizeof label);
+            snprintf(match.name, sizeof match.name, "%s %s", set ? "Set" : "Get", label);
+            ed_add_search_match(e, matches, match, &signature, filter);
         }
     }
 }
@@ -664,6 +703,9 @@ ed_search_match *ed_search_matches(const editor *e, const char *filter)
             ed_add_search_match(e, &matches, match, spawn, filter);
         }
     }
+    if (!shader) {
+        search_source_variables(e, &matches, filter);
+    }
     if (acount(matches) > 1) {
         qsort(matches, (size_t)acount(matches), sizeof *matches, ed_search_match_cmp);
     }
@@ -729,7 +771,7 @@ static node *spawn_match(editor *e, const ed_search_match *match)
         graph_set_pin_container(g, n, 1, set ? 1 : 0, v->container);
     }
     if (match->host_event) {
-        const game_host_event_desc *signature = &e->event_catalog[match->host_event - 1];
+        const host_event_desc *signature = &e->event_catalog[match->host_event - 1];
         graph_set_node_reference(g, n, 0, signature->name);
         ed_event_add_declared_params(e, n, signature);
     }
@@ -904,6 +946,12 @@ bool ed_source_spawn_match(editor *e, const ed_search_match *match)
                                      : NULL,
         .field = match->field
     };
+    if (match->source_variable) {
+        request.kind = match->desc == &NODE_SetVariable
+                         ? AUTHORING_EDIT_CREATE_VARIABLE_SET
+                         : AUTHORING_EDIT_CREATE_VARIABLE_GET;
+        request.symbol = match->source_variable;
+    }
     if (match->event || match->host_event || match->ui_event) {
         request.kind = AUTHORING_EDIT_CREATE_EVENT;
     }

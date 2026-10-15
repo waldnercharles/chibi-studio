@@ -23,7 +23,7 @@ void asset_code_adopt_overlay(asset_code *code);
 /* Native checkpoint state; protocol conversion belongs to the workspace boundary. */
 av_value *asset_code_capture(asset_code *code);
 bool asset_code_has_state(const asset_code *code, const av_value *state);
-asset_code *asset_code_restore(const av_value *state, const game_prototype_registry *registry);
+asset_code *asset_code_restore(const av_value *state, const prototype_registry *registry);
 const char *asset_code_path(const asset_code *code);
 bool asset_code_dirty(const asset_code *code);
 const char *asset_code_error(const asset_code *code);
@@ -80,10 +80,10 @@ bool asset_code_graph_blocked(const asset_code *code);
 bool asset_code_runtime_held(const asset_code *code);
 void asset_code_hold_runtime(asset_code *code, bool hold);
 const kit_code_marker *asset_code_markers(const asset_code *code);
-void asset_code_set_registry(asset_code *code, const game_prototype_registry *registry);
+void asset_code_set_registry(asset_code *code, const prototype_registry *registry);
 /* Binds project preparation/publication while retained immutable generations
  * keep diagnostics/navigation safe across later edits and scene replacement. */
-void asset_code_set_source_world(asset_code *, game_preview_world *, const char *content_root);
+void asset_code_set_source_world(asset_code *, preview_world *, const char *content_root);
 void asset_code_set_names(asset_code *code, const char *const *names, int count);
 /* Check external/visual saves and update the editor with a single text edit. */
 void asset_code_refresh(asset_code *code);

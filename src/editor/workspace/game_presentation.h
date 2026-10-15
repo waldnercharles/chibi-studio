@@ -1,5 +1,5 @@
-#ifndef CHIBI_GAME_PRESENTATION_H
-#define CHIBI_GAME_PRESENTATION_H
+#ifndef CHIBI_PRESENTATION_H
+#define CHIBI_PRESENTATION_H
 
 #include "editor/workspace/viewport.h"
 #include "editor/workspace/scene_authoring.h"

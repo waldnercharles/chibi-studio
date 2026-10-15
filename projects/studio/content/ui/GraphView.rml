@@ -1,10 +1,11 @@
 <button class="btn icon-only" popovertarget="graph-view" aria-haspopup="menu" data-tip="View"><span class="icon">&#xeb2f;</span></button>
 <use ui="Menu" id="graph-view">
-  <use ui="MenuGroup">Wires</use>
-  <use ui="MenuOption" data-checked="save.wires" value="curved">Curved</use>
-  <use ui="MenuOption" data-checked="save.wires" value="orthogonal">Orthogonal</use>
-  <use ui="MenuOption" data-checked="save.wires" value="straight">Straight</use>
-  <use ui="MenuOption" data-checked="save.wires" value="subway">Subway</use>
+  <use ui="Submenu" data-alias-item="graph_view.wires">
+    <use ui="MenuOption" data-checked="save.wires" value="curved">Curved</use>
+    <use ui="MenuOption" data-checked="save.wires" value="orthogonal">Orthogonal</use>
+    <use ui="MenuOption" data-checked="save.wires" value="straight">Straight</use>
+    <use ui="MenuOption" data-checked="save.wires" value="subway">Subway</use>
+  </use>
   <use ui="MenuSeparator"/>
   <use ui="MenuGroup">Nodes</use>
   <use ui="MenuCheck" data-checked="save.shortBindings">Short Bindings</use>

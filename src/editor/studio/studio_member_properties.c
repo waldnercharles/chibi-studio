@@ -17,7 +17,9 @@
 #include "graph/model/registry.h"
 #include "support/arena.h"
 #include "support/array.h"
+#include "support/xalloc.h"
 
+#include <assert.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
@@ -191,6 +193,40 @@ static void put_default(gd_rows *r, yyjson_mut_val *row, const pin_spec *pin, co
 }
 
 /* ---------- Variables ---------- */
+
+static void source_variable_details(gd_view *v, studio *s, const source_presentation_origin *source)
+{
+    node *n = sm_source_variable_node(s, source);
+    uint64_t id = n->reference_id;
+    char row[GD_ROW_ID];
+    gd_identity(
+        v,
+        KIT_ICON_VARIABLE,
+        n->desc->name,
+        source->operation == SCRIPT_SHARED_STATE ? "Shared variable" : "Variable"
+    );
+    gd_rows r = gd_panel(v, "variable", "Variable");
+    if (r.open) {
+        row_id(row, 'v', id, "n");
+        text_row(&r, row, "Name", n->desc->name, "", locked(s));
+        row_id(row, 'v', id, "t");
+        char type[96];
+        gd_put_type(
+            &r,
+            gd_next_row(&r, &(gd_row){ .id = row, .label = "Type", .control = "type", .readonly = locked(s) }),
+            &n->output_pins[0],
+            sm_type_label(&n->output_pins[0], type, sizeof type)
+        );
+    }
+    gd_panel_end(&r);
+    if (n->input_count) {
+        gd_rows defaults = gd_panel(v, "default", "Default Value");
+        for (int p = 0; defaults.open && p < n->input_count; p++) {
+            sg_input_row(&defaults, s, n, p);
+        }
+        gd_panel_end(&defaults);
+    }
+}
 
 static void variable_details(gd_view *v, studio *s, const behavior_variable *var)
 {
@@ -372,6 +408,11 @@ static void local_details(gd_view *v, studio *s, const graph_local *local)
 
 void studio_member_details(studio *s, gd_view *v)
 {
+    if (s->members.kind == STUDIO_MEMBER_VARIABLE &&
+        sm_source_variable(s, s->members.id)) {
+        source_variable_details(v, s, sm_source_variable(s, s->members.id));
+        return;
+    }
     const behavior_variable *var = sm_variable(s);
     graph *g = sm_graph(s);
     const graph_local *local = sm_local(s);
@@ -404,8 +445,36 @@ static const pin_spec *signature_pin(graph *g, uint64_t pin_id, bool *result, in
     return NULL;
 }
 
-static bool retype_variable(editor *e, uint64_t id, pin_type type, const char *type_name)
+static bool retype_variable(studio *s, uint64_t id, pin_type type, const char *type_name)
 {
+    editor *e = member_editor(s);
+    const source_presentation_origin *source = sm_source_variable(s, id);
+    if (source) {
+        const char *name = type == PIN_HANDLE ? "entity"
+                         : type == PIN_STRUCT || type == PIN_ENUM
+                             ? type_name
+                             : script_scalar_name(type);
+        const char *format;
+        switch (source->type.container) {
+            case PIN_CONTAINER_SINGLE: format = "%s"; break;
+            case PIN_CONTAINER_ARRAY: format = "%s[]"; break;
+            case PIN_CONTAINER_SET: format = "set<%s>"; break;
+            case PIN_CONTAINER_MAP: format = "map<%s>"; break;
+            default: assert(false); return false;
+        }
+        size_t bytes = strlen(name) + 6;
+        char *signature = xmalloc(bytes);
+        snprintf(signature, bytes, format, name);
+        authoring_edit_request request = {
+            .kind = AUTHORING_EDIT_RETYPE_VARIABLE,
+            .generation = authoring_source_edit_generation(editor_presentation(e)),
+            .origin = source->identity,
+            .signature = signature,
+        };
+        bool changed = ed_source_edit(e, &request);
+        free(signature);
+        return changed;
+    }
     behavior_asset *before = ed_snapshot(e);
     return sm_record(e, before, behavior_asset_retype_variable(e->asset, id, type, type_name) == 0);
 }
@@ -557,6 +626,12 @@ void studio_member_type_entries(studio *s, studio_palette_entry **entries)
     bool exec = g && g->kind == GRAPH_MACRO, result = false;
     int index = -1;
     const pin_spec *pin = g ? signature_pin(g, m->pick.pin_id, &result, &index) : NULL;
+    const source_presentation_origin *source = !m->pick.pin_id
+                                                 ? sm_source_variable(s, m->pick.id)
+                                                 : NULL;
+    if (source) {
+        pin = &sm_source_variable_node(s, source)->output_pins[0];
+    }
     const behavior_variable *variable = m->pick.pin_id
                                           ? NULL
                                           : behavior_asset_find_variable_by_id(
@@ -597,7 +672,7 @@ void studio_member_type_choose(studio *s, const studio_palette_entry *entry)
     int index = -1;
     const pin_spec *pin = signature_pin(g, m->pick.pin_id, &result, &index);
     if (!m->pick.pin_id) {
-        retype_variable(e, m->pick.id, choice->type, choice->type_name);
+        retype_variable(s, m->pick.id, choice->type, choice->type_name);
     } else if (pin) {
         pin_spec type = { .kind = choice->type == PIN_FLOW ? PIN_EXEC : PIN_DATA,
                           .type = choice->type,
@@ -800,6 +875,19 @@ void studio_member_details_action(studio *s, const char *action, const ui_activa
         return;
     }
     const char *part = dot + 1;
+    if (id[0] == 'v' && s->members.kind == STUDIO_MEMBER_VARIABLE &&
+        s->members.id == member && sm_source_variable(s, member)) {
+        if (!strcmp(part, "n") && !strcmp(action, "change") && a->argc > 1) {
+            refused(
+                s,
+                sm_rename(s, STUDIO_MEMBER_VARIABLE, member, a->args[1]),
+                sm_name_taken(STUDIO_MEMBER_VARIABLE)
+            );
+        } else if (!strcmp(part, "t") && !strcmp(action, "type")) {
+            pick_type(s, member, 0, a);
+        }
+        return;
+    }
     if (!strcmp(action, "addPin")) {
         graph *g = sm_graph(s);
         if (g && g->graph_id == member) {

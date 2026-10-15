@@ -12,7 +12,15 @@
   <use ui="Menu" id="hierarchy-menu">
     <div class="menu-group">{{ hierarchy_ui.menu.label }}</div>
     <use ui="Submenu" data-alias-item="hierarchy_ui.menu.add">
-      <use ui="MenuItem" data-for="element : library.elements" data-alias-item="element" data-event-click="emit('library.add', element.markup, element.label)"/>
+      <use ui="Submenu" data-alias-item="menubar.items.elementContent">
+        <use ui="MenuItem" data-for="element : library.elements" data-if="element.group == 'Content'" data-alias-item="element" data-event-click="emit('library.add', element.markup, element.label)"/>
+      </use>
+      <use ui="Submenu" data-alias-item="menubar.items.elementControls">
+        <use ui="MenuItem" data-for="element : library.elements" data-if="element.group == 'Controls'" data-alias-item="element" data-event-click="emit('library.add', element.markup, element.label)"/>
+      </use>
+      <use ui="Submenu" data-alias-item="menubar.items.elementFeedback">
+        <use ui="MenuItem" data-for="element : library.elements" data-if="element.group == 'Feedback'" data-alias-item="element" data-event-click="emit('library.add', element.markup, element.label)"/>
+      </use>
       <use ui="MenuSeparator" data-if="!library.none"/>
       <use ui="Submenu" data-if="!library.none" data-alias-item="library.widget">
         <use ui="MenuItem" data-for="widget : library.widgets" data-alias-item="widget" data-event-click="emit('library.add', widget.markup, widget.label)"/>
