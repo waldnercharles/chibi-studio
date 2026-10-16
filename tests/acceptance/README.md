@@ -367,6 +367,28 @@ behavior drag at the same row edge remains a whole-row assignment target, then
 cancel it without assigning an asset. It saves nothing. The separate scene-move case covers persistence,
 history and collaboration.
 
+`studio-acceptance --outliner-rows --project-root PATH` takes a disposable copy
+and runs exactly two hidden fixed-dt frames. It freezes the existing C
+`scene_objects` result before migration: all twelve row fields, native scene
+order, filtered windows, clamping, empty results, full-width command-key
+resolution, selection, view flags, editability and rename guards. Four actors
+form a root/child/grandchild chain and a second root. Real prototype components
+supply camera/light icon precedence; those components and Bolt's unassigned
+instance `MaterialTerrain` supply all five assignable asset kinds. One Counter
+attachment supplies the behavior count. Sixteen direct row queries
+materialize twenty-four rows in total. It retains the producer's original
+result arenas through a real rename, empty-scene replacement and complete host
+shutdown, checking that all row strings and array/type-name headers are owned
+before retention. Counter remains unchanged and no scene is saved.
+
+This selector is a native baseline fixture, not a live authored cutover or a
+current-generation authority check. It does not exercise pointer input, root
+collapse/reveal, an authored policy library or browser parity. The precise
+workload, measured native result and migration obligations are in
+[Outliner migration parity](../../docs/outliner-migration-parity.md). Do not
+infer permission to run it from the historical offscreen result or another
+selector's admission.
+
 `studio-acceptance --scene-move --project-root PATH` runs two hidden frames on
 an isolated project. It checks moving multiple objects under a rotated parent,
 world placement and 2D picking, entity identity, authored and ECS sibling order, one-step undo
