@@ -34,13 +34,25 @@ That writes `build-studio/bin/chibi-dev` in the engine checkout. To build in
 this repository instead, see `README.md`
 (`cmake -DCMAKE_PREFIX_PATH=<sdk> ...`, output `build/bin/chibi-dev`).
 
-Smoke-test a build with two hidden frames. On Linux without a display, wrap it
-in `xvfb-run -a` and set `SDL_AUDIODRIVER=dummy`. From the engine checkout:
+Smoke-test a build with two hidden frames. On Linux without a display, prefer
+SDL's supported `offscreen` video driver when the installed SDL/Vulkan stack
+supports it. `--headless` only hides the window; it does not select a video
+driver. A working software Vulkan implementation such as Mesa llvmpipe can
+render without Xvfb. See [offscreen rendering](docs/offscreen-rendering.md) for
+prerequisites, isolated project/resources, the unchanged 60-second supervisor,
+and actual screenshot verification. From the engine checkout, the underlying
+bounded command is:
 
 ```sh
-xvfb-run -a env SDL_AUDIODRIVER=dummy build-studio/bin/chibi-dev \
-  --project-root ../chibi-studio/projects/starter --headless --frames 2 --fixed-dt 0.0166667
+env SDL_VIDEO_DRIVER=offscreen SDL_AUDIODRIVER=dummy build-studio/bin/chibi-dev \
+  --project-root /path/to/isolated/project --headless --frames 2 \
+  --fixed-dt 0.016666666666666666 --screenshot /path/to/studio.png
 ```
+
+Keep the entire invocation inside the production supervisor. If the selected
+SDL/backend lacks offscreen support, report its error; do not silently retry or
+increase frames/deadlines. An explicitly selected, supported Xvfb/X11 setup is a
+separate fallback requiring a usable graphics backend. Xvfb itself is not one.
 
 It must exit 0, and its log must not contain `Studio UI:`, `runtime frame failed`
 or `Could not initialize`. Two frames are a startup check, not UI coverage; say
