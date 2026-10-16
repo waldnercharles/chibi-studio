@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -259,17 +260,17 @@ int app_scene_authoring_save(app_scene_authoring *scene, const char *path)
     return result;
 }
 
-char *read_scene_file(const char *path)
+static char *read_scene_file_limit(const char *path, size_t limit)
 {
     FILE *file = fopen(path, "rb");
-    if (!file || fseek(file, 0, SEEK_END) || ftell(file) < 0) {
+    if (!file || fseek(file, 0, SEEK_END)) {
         if (file) {
             fclose(file);
         }
         return NULL;
     }
     long size = ftell(file);
-    if ((size_t)size > PROTOTYPE_READ_MAX || fseek(file, 0, SEEK_SET)) {
+    if (size < 0 || (uintmax_t)size > limit || fseek(file, 0, SEEK_SET)) {
         fclose(file);
         return NULL;
     }
@@ -286,6 +287,11 @@ char *read_scene_file(const char *path)
     }
     json[read] = '\0';
     return json;
+}
+
+char *read_scene_file(const char *path)
+{
+    return read_scene_file_limit(path, SIZE_MAX - 1);
 }
 
 static const char *prototype_source_include(const char *name, void *user)
@@ -313,9 +319,8 @@ bool scene_prototype_sources_refresh(app_scene_authoring *scene)
         if (!extension || (strcmp(extension, ".chibi") && strcmp(extension, ".kdl"))) {
             continue;
         }
-        char *text = read_scene_file(entry->path);
-        if (!text || strlen(text) > PROTOTYPE_READ_MAX - bytes ||
-            acount(sources) >= PROTOTYPE_EXPANSION_MAX) {
+        char *text = read_scene_file_limit(entry->path, PROTOTYPE_READ_MAX - bytes);
+        if (!text || acount(sources) >= PROTOTYPE_EXPANSION_MAX) {
             free(text);
             snprintf(
                 scene->message,

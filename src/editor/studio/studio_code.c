@@ -678,7 +678,7 @@ void studio_code_frame(studio *s)
 bool studio_code_history(studio *s, bool redo, bool apply)
 {
     scene_document_tab *tab = active_asset(s);
-    if (!tab || (tab->kind != APP_EDITOR_DOCUMENT_BEHAVIOR &&
+    if (!tab || (!tab->source_only && tab->kind != APP_EDITOR_DOCUMENT_BEHAVIOR &&
                  tab->kind != APP_EDITOR_DOCUMENT_SYSTEM)) {
         return false;
     }

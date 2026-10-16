@@ -114,6 +114,15 @@ Changes to browser build inputs on `main` publish automatically. A daily check
 also picks up new engine packages and skips compilation when the published
 Studio/engine pair is unchanged. Pull requests build without deploying.
 
+A same-repository PR that depends on an unmerged engine change can put its full
+lowercase 40-character commit SHA in `.github/engine-ref`. Desktop CI then
+packages that exact engine revision, and web CI builds and consumes its serial
+web SDK. These paired web builds do not create or upload distribution archives.
+The pin is ignored on main, scheduled runs and manual runs, which retain the
+normal main/released-SDK checks. Remove it after the engine dependency lands and
+the ordinary checks pass; a paired check is not evidence of compatibility with
+engine main or the latest released SDK.
+
 The public distribution is at
 <https://waldnercharles.github.io/chibi-studio/>. Its `studio.json` identifies
 both repository commits and the SHA-256 of an editor archive named for those

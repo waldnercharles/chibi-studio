@@ -73,6 +73,177 @@ static void move_fixture_free(move_fixture *fixture)
     ecs_world_free(fixture->world);
 }
 
+/* The prototype collection budget must not become every asset reader's budget.
+ * One file, at most 65 MiB, and one owned read; no large document is parsed. */
+static bool large_source_read_limits(void)
+{
+    char root[] = "/tmp/chibi-studio-large-read-XXXXXX", directory[256], path[256];
+    REQUIRE(mkdtemp(root));
+    snprintf(directory, sizeof directory, "%s/prototypes", root);
+    REQUIRE(!mkdir(directory, 0700));
+    snprintf(path, sizeof path, "%s/Large.chibi", directory);
+    FILE *file = fopen(path, "wb");
+    REQUIRE(file);
+    char chunk[8192];
+    memset(chunk, ' ', sizeof chunk);
+    size_t padding = (size_t)PROTOTYPE_READ_MAX + 1;
+    for (size_t written = 0; written < padding;) {
+        size_t bytes = padding - written;
+        if (bytes > sizeof chunk) {
+            bytes = sizeof chunk;
+        }
+        REQUIRE(fwrite(chunk, 1, bytes, file) == bytes);
+        written += bytes;
+    }
+    const char *suffix = "Large :: prototype {}";
+    REQUIRE(fputs(suffix, file) >= 0);
+    REQUIRE(!fclose(file));
+    char *text = read_scene_file(path);
+    bool read = text && strlen(text) == padding + strlen(suffix) &&
+                !strcmp(text + padding, suffix);
+    free(text);
+    move_fixture fixture = move_fixture_new_with_root(root);
+    app_scene_authoring_refresh_content(fixture.scene);
+    bool bounded = !scene_prototype_sources_refresh(fixture.scene) &&
+                   strstr(fixture.scene->message, "read limits");
+    move_fixture_free(&fixture);
+    REQUIRE(!unlink(path));
+    REQUIRE(!rmdir(directory));
+    REQUIRE(!rmdir(root));
+    REQUIRE(read);
+    REQUIRE(bounded);
+    return true;
+}
+
+/* Reach the same document/focus dispatch as the Undo command, not the buffer's
+ * replay API. Static source tabs must not consume scene/prototype history. */
+static bool source_history_reopens(
+    asset_code *code,
+    const av_value *checkpoint,
+    const prototype_registry *registry,
+    editor *graph,
+    bool relationship,
+    bool changed
+)
+{
+    asset_code *restored = checkpoint ? asset_code_restore(checkpoint, registry) : NULL;
+    bool valid = restored && asset_code_static(restored) &&
+                 asset_code_validate(restored, graph) &&
+                 !strcmp(asset_code_text(restored), asset_code_text(code));
+    char error[256];
+    if (valid && relationship) {
+        ecs_relationship_desc *value = authoring_relationship_source_read(
+            asset_code_text(restored),
+            error,
+            sizeof error
+        );
+        valid = value && ((value->traits & ECS_REL_EXCLUSIVE) != 0) == !changed;
+        authoring_relationship_source_free(value);
+    } else if (valid) {
+        av_doc *document = authoring_prototype_document_read(
+            asset_code_text(restored),
+            registry,
+            error,
+            sizeof error
+        );
+        prototype *value = document
+                             ? prototype_load_value(av_doc_root(document), registry, error, sizeof error)
+                             : NULL;
+        pin_value field;
+        valid = value && !prototype_read_field(value, "Transform", "x", &field) &&
+                field.type == PIN_F32 && field.f == (changed ? 2 : 1);
+        prototype_free(value);
+        av_doc_free(document);
+    }
+    asset_code_free(restored);
+    return valid;
+}
+
+static bool static_source_dispatch_history(void)
+{
+    char root[] = "/tmp/chibi-studio-source-undo-XXXXXX", directory[256],
+         path[256], error[256];
+    REQUIRE(mkdtemp(root));
+    const char *folders[] = { "relationships", "prototypes" };
+    const char *names[] = { "UndoTargets", "UndoEnemy" };
+    const char *before[] = { "UndoTargets :: relationship {exclusive:true}",
+                             "UndoEnemy :: prototype {Transform {x:1,y:0}}" };
+    const char *after[] = { "UndoTargets :: relationship {exclusive:false}",
+                            "UndoEnemy :: prototype {Transform {x:2,y:0}}" };
+    const app_editor_document_kind kinds[] = { APP_EDITOR_DOCUMENT_RELATIONSHIP,
+                                               APP_EDITOR_DOCUMENT_PROTOTYPE };
+    bool all_valid = true;
+    for (int i = 0; i < 2; i++) {
+        snprintf(directory, sizeof directory, "%s/%s", root, folders[i]);
+        REQUIRE(!mkdir(directory, 0700));
+        snprintf(path, sizeof path, "%s/%s.chibi", directory, names[i]);
+        REQUIRE(!write_file_atomic(path, before[i]));
+        move_fixture fixture = move_fixture_new_with_root(root);
+        studio *s = xcalloc(1, sizeof *s);
+        s->scene = fixture.scene;
+        s->key_area = -1;
+        s->focus_area = STUDIO_AREA_TOP;
+        s->graph.area = -1;
+        s->prefs.layouts[0].editors[STUDIO_AREA_TOP] = STUDIO_EDITOR_CODE;
+        s->prefs.code_apply_live = true;
+        REQUIRE(!scene_tabs_open_source(fixture.scene, kinds[i], names[i], path));
+        asset_code *code = asset_code_open(path, error, sizeof error);
+        REQUIRE(code && asset_code_static(code));
+        asset_code_set_registry(code, &fixture.scene->registry);
+        apush(s->code.assets, code);
+        REQUIRE(asset_code_replace(code, before[i], after[i]));
+        REQUIRE(asset_code_validate(code, fixture.graph));
+        bool undo_enabled = studio_can_replay(s, false);
+        studio_history(s, false);
+        bool undone = !strcmp(asset_code_text(code), before[i]) &&
+                      !asset_code_dirty(code);
+        undone &= source_history_reopens(
+            code,
+            fixture.scene->tabs[fixture.scene->active_tab].source_state,
+            &fixture.scene->registry,
+            fixture.graph,
+            i == 0,
+            false
+        );
+        bool redo_enabled = studio_can_replay(s, true);
+        studio_history(s, true);
+        bool redone = !strcmp(asset_code_text(code), after[i]) &&
+                      asset_code_dirty(code);
+        redone &= source_history_reopens(
+            code,
+            fixture.scene->tabs[fixture.scene->active_tab].source_state,
+            &fixture.scene->registry,
+            fixture.graph,
+            i == 0,
+            true
+        );
+        for (int j = 0; j < acount(s->code.assets); j++) {
+            asset_code_free(s->code.assets[j]);
+        }
+        afree(s->code.assets);
+        afree(s->records);
+        free(s);
+        move_fixture_free(&fixture);
+        REQUIRE(!unlink(path));
+        REQUIRE(!rmdir(directory));
+        if (!undo_enabled || !undone || !redo_enabled || !redone) {
+            fprintf(
+                stderr,
+                "Static source history %s: undo=%d/%d redo=%d/%d\n",
+                names[i],
+                undo_enabled,
+                undone,
+                redo_enabled,
+                redone
+            );
+        }
+        all_valid &= undo_enabled && undone && redo_enabled && redone;
+    }
+    REQUIRE(!rmdir(root));
+    REQUIRE(all_valid);
+    return true;
+}
+
 static bool static_relationship_refresh(void)
 {
     char root[] = "/tmp/chibi-studio-relation-XXXXXX", directory[256],

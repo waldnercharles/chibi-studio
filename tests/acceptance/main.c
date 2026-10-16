@@ -773,9 +773,13 @@ static bool frame_probe_drawn(studio *s, bool expected)
  * frame, without loading executable source or adding rendered frames. */
 static bool static_relationship_refresh(void);
 static bool static_prototype_refresh(void);
+static bool large_source_read_limits(void);
+static bool static_source_dispatch_history(void);
 
 static bool static_source_history(studio *s)
 {
+    REQUIRE(large_source_read_limits());
+    REQUIRE(static_source_dispatch_history());
     static const type_field current = { .name = "current",
                                         .type = PIN_I32,
                                         .size = sizeof(int32_t) };

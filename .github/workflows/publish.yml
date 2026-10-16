@@ -12,6 +12,7 @@ on:
       - "cmake/**"
       - "CMakeLists.txt"
       - ".github/workflows/publish.yml"
+      - ".github/engine-ref"
   pull_request:
     branches: [main]
     paths:
@@ -22,6 +23,7 @@ on:
       - "cmake/**"
       - "CMakeLists.txt"
       - ".github/workflows/publish.yml"
+      - ".github/engine-ref"
   schedule:
     - cron: "23 6 * * *"
 
@@ -42,15 +44,29 @@ jobs:
     outputs:
       engine: ${{ steps.version.outputs.engine }}
       build: ${{ steps.version.outputs.build }}
+      paired: ${{ steps.version.outputs.paired }}
     steps:
+      - uses: actions/checkout@v4
       - name: Select a complete engine package
         id: version
         env:
           GH_TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
           STUDIO: ${{ github.sha }}
+          ALLOW_PIN: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         shell: bash
         run: |
           test -n "$GH_TOKEN"
+          if [ "$ALLOW_PIN" = true ] && [ -f .github/engine-ref ]; then
+            engine=$(<.github/engine-ref)
+            if [[ ! "$engine" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::.github/engine-ref must contain one full lowercase engine commit SHA."
+              exit 1
+            fi
+            echo "engine=$engine" >> "$GITHUB_OUTPUT"
+            echo "paired=true" >> "$GITHUB_OUTPUT"
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           # Engine releases are prereleases, so the /latest endpoint excludes them.
           tag=$(gh api 'repos/waldnercharles/chibi/releases?per_page=100' | python3 -c '
           import json, re, sys
@@ -85,6 +101,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
       - name: Download and verify the installed web SDK
+        if: needs.version.outputs.paired != 'true'
         env:
           GH_TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
           ENGINE: ${{ needs.version.outputs.engine }}
@@ -100,6 +117,15 @@ jobs:
           sha256sum --check selected-sums
           python3 -c 'import json,os; p=json.load(open("build.json")); assert p["format"] == 1 and p["engine_sha"] == os.environ["ENGINE"] and p["emsdk_version"] == os.environ["EMSDK_VERSION"] and p["platform"] == "ubuntu-24.04-x64" and p["web_threads"] is False'
           tar -xzf chibi-web-sdk.tar.gz -C ../sdk
+      - name: Check out the paired engine
+        if: needs.version.outputs.paired == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: waldnercharles/chibi
+          token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
+          ref: ${{ needs.version.outputs.engine }}
+          persist-credentials: false
+          path: engine
       - name: Install CMake and Ninja
         run: |
           sudo apt-get update
@@ -107,9 +133,23 @@ jobs:
           python3 -m venv /tmp/cmake
           /tmp/cmake/bin/pip install 'cmake>=4.2,<5'
           echo /tmp/cmake/bin >> "$GITHUB_PATH"
+      - name: Install native reflection dependencies
+        if: needs.version.outputs.paired == 'true'
+        run: sudo apt-get install -y --no-install-recommends clang-18 libclang-18-dev
       - uses: mymindstorm/setup-emsdk@v14
         with:
           version: ${{ env.EMSDK_VERSION }}
+      - name: Package the paired engine web SDK
+        if: needs.version.outputs.paired == 'true'
+        working-directory: engine
+        env:
+          CC: clang-18
+          CXX: clang++-18
+          ENGINE: ${{ needs.version.outputs.engine }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$ENGINE"
+          make package-web-sdk WEB_THREADS=0 JOBS=4 LIBCLANG_ROOT=/usr/lib/llvm-18 \
+            WEB_SDK_PREFIX="$GITHUB_WORKSPACE/sdk"
       - name: Build Studio against the installed SDK
         run: |
           emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release \
@@ -117,6 +157,7 @@ jobs:
           cmake --build build-web --target chibi-studio --parallel 2
           cmake --install build-web --prefix "$GITHUB_WORKSPACE/site"
       - name: Package the reusable editor and its version
+        if: needs.version.outputs.paired != 'true'
         env:
           ENGINE: ${{ needs.version.outputs.engine }}
           STUDIO: ${{ github.sha }}
@@ -135,6 +176,7 @@ jobs:
           (root / ".nojekyll").touch()
           PY
       - uses: actions/upload-pages-artifact@v3
+        if: needs.version.outputs.paired != 'true'
         with:
           path: site
           retention-days: 1

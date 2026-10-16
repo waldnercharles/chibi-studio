@@ -124,8 +124,16 @@ static bool graph_focused(const studio *s)
             (s->tab == STUDIO_TAB_NODE || s->tab == STUDIO_TAB_MEMBER));
 }
 
-static bool behavior_history_focused(const studio *s)
+static bool source_history_focused(const studio *s)
 {
+    const app_scene_authoring *scene = s->scene;
+    int active = scene->active_tab;
+    bool source_only = active >= 0 && active < acount(scene->tabs) &&
+                       scene->tabs[active].source_only;
+    if (scene->document.kind != APP_EDITOR_DOCUMENT_BEHAVIOR &&
+        scene->document.kind != APP_EDITOR_DOCUMENT_SYSTEM && !source_only) {
+        return false;
+    }
     if (graph_focused(s)) {
         return true;
     }
@@ -364,9 +372,7 @@ bool studio_save_all(studio *s)
 bool studio_can_replay(studio *s, bool redo)
 {
     app_scene_authoring *scene = s->scene;
-    if ((scene->document.kind == APP_EDITOR_DOCUMENT_BEHAVIOR ||
-         scene->document.kind == APP_EDITOR_DOCUMENT_SYSTEM) &&
-        behavior_history_focused(s)) {
+    if (source_history_focused(s)) {
         return studio_code_history(s, redo, false);
     }
     if (graph_focused(s)) {
@@ -431,9 +437,7 @@ static void document_history(studio *s, bool redo)
 
 void studio_history(studio *s, bool redo)
 {
-    if ((s->scene->document.kind == APP_EDITOR_DOCUMENT_BEHAVIOR ||
-         s->scene->document.kind == APP_EDITOR_DOCUMENT_SYSTEM) &&
-        behavior_history_focused(s)) {
+    if (source_history_focused(s)) {
         if (studio_code_history(s, redo, true)) {
             studio_report(s, redo ? "Redo" : "Undo");
         }
