@@ -400,12 +400,14 @@ static void follow_disk(studio *s)
 
 studio_ui *studio_ui_new(studio *s, const char *project_root, char *error, size_t size)
 {
+    chibi_project project = { 0 };
+    if (chibi_project_open(&project, project_root, error, size)) {
+        chibi_project_free(&project);
+        return NULL;
+    }
     rml_context *context = rml_backend_context(s->backend);
     studio_ui *studio_ui_state = xcalloc(1, sizeof *studio_ui_state);
-    chibi_project project = { 0 };
-    char manifest_error[256];
-    if (chibi_project_open(&project, project_root, manifest_error, sizeof manifest_error) == 0 &&
-        project.ui) {
+    if (project.ui) {
         studio_ui_state->default_page = xstrdup(project.ui);
     }
     chibi_project_free(&project);

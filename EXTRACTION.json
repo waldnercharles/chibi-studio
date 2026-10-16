@@ -2283,7 +2283,7 @@
       "current_source_sha256": "4cc012974e9fb688f8ecaf94c80661d34e38a780341636777eda9caa59a010d9",
       "sha256": "262e7451d439607c4a6409da7aa56f473c19dec23546088992f0487ffe91a637",
       "source_path": "src/editor/studio/studio_ui.c",
-      "consumer_sha256": "83ef3afcf76601c0694e6224dcb21aed532062b3f8903bb2e4b861933a3523a2"
+      "consumer_sha256": "7ef44327804f0a8a3786164a137426a797e2d83a2629f86c0a5e9a3a0f05c3c1"
     },
     "src/editor/text/zep_bridge.cpp": {
       "current_source_sha256": "1fa3d063bd2ac8d2cbdfaa1146cf52d31d87dc2cff5c7412af9db7953092dc03",
