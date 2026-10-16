@@ -207,6 +207,19 @@ It saves no file.
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
 
+`studio-acceptance --scene-read` needs no project or renderer. Six pure-C cases
+exercise the private, unbound owned scene capture through thirteen calls: eight
+accepted captures and five rejections. They check raw actors, prototypes,
+component-icon enums, actual assignable field classifications, attachments,
+transforms, copied filter/path and editor flags; closed/reopened/nested scopes;
+wrong-owner and injected scene-association mismatches; and reads after producer
+retirement. One fixed empty behavior is prepared with the bytecode backend;
+four source registrations and twelve deferred attachments remain pending with
+begin=0. It runs no Begin, authored dispatch, engine frame, UI publication or
+child process. This leaf check does not establish queued/paused controller or
+live-panel behavior. Keep the complete invocation under the production
+60-second supervisor after independent exact-workload admission.
+
 `studio-acceptance --graph-visibility --project-root PATH` takes a disposable
 copy and runs ten hidden fixed-dt frames. A tiny Counter variant puts a helper
 before two handlers: the initial graph still opens on Tick, the picker groups
