@@ -32,13 +32,16 @@ SDL/Vulkan error rather than falling back automatically.
 
 Run from a matching engine checkout, using an already built Studio and an
 existing approved renderer environment. Set `STUDIO_BUILD`, `STUDIO_SOURCE`
-and `CAPTURE` to absolute paths. The capture destination must not already exist.
+and `CAPTURE` to absolute paths. The capture and its `.log` destination must not
+already exist.
 For task-local Mesa, preserve the verified `LD_LIBRARY_PATH` and
 `VK_DRIVER_FILES` from setup; do not guess a different driver path.
 
 ```sh
 set -eu
 test ! -e "$CAPTURE"
+log="$CAPTURE.log"
+test ! -e "$log"
 scratch=$(mktemp -d)
 mkdir -p "$scratch/runtime/bin" "$scratch/runtime/share" \
   "$scratch/prefs" "$scratch/cache" "$scratch/tmp" "$scratch/xdg"
@@ -52,7 +55,7 @@ export CHIBI_PREFS_DIR="$scratch/prefs"
 export CHIBI_RESOURCE_DIR="$scratch/runtime/share/chibi"
 export XDG_CACHE_HOME="$scratch/cache" MESA_SHADER_CACHE_DIR="$scratch/cache"
 export XDG_RUNTIME_DIR="$scratch/xdg" TMPDIR="$scratch/tmp"
-python3 - "$scratch" "$CAPTURE" <<'PY'
+python3 - "$scratch" "$CAPTURE" >"$log" 2>&1 <<'PY'
 import sys
 sys.path.insert(0, "tools")
 import test_policy
@@ -65,6 +68,14 @@ sys.exit(test_policy.run_commands([[
     "--screenshot", capture,
 ]], seconds=60))
 PY
+cat "$log"
+if grep -E 'Studio UI:|runtime frame failed|Could not initialize' "$log"; then
+    printf '%s\n' 'Studio capture failed: prohibited log marker' >&2
+    exit 1
+elif [ "$?" -ne 1 ]; then
+    printf '%s\n' 'Studio capture failed: log could not be checked' >&2
+    exit 1
+fi
 ```
 
 This uses the unchanged production process-group/descendant supervisor. Its
@@ -73,9 +84,13 @@ readback and teardown. The existing screenshot helper has an additional
 10-second readback wait inside that outer deadline. No checkpoint is supplied,
 so Studio's window/capture canvas is 1920×1080. External preparation/build time is separate.
 
-Require exit 0 and a freshly created, decodable 1920×1080 PNG. Inspect the pixels
-and actual Studio panels/text; a file or successful device enumeration alone is
-not sufficient. Record the executable/source/SDK/resource/driver identities,
+Require exit 0, no `Studio UI:`, `runtime frame failed` or `Could not initialize`
+marker anywhere in the retained stdout/stderr, and a freshly created, decodable
+1920×1080 PNG. Any prohibited marker makes the capture fail even if Studio exits
+0 and saves an image: a runtime frame error can otherwise continue to the frame
+limit. Inspect the pixels and actual Studio panels/text; a file or successful
+device enumeration alone is not sufficient. Record the
+executable/source/SDK/resource/driver identities,
 stdout/stderr, time, image hash and dimensions, and any initialization or runtime
 errors. Confirm no child remains. Preserve evidence before deleting only the
 scratch project/runtime/preferences/cache. On failure retain scratch for
