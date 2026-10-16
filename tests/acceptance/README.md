@@ -18,6 +18,14 @@ The final frame renders both graph and code views before normal host shutdown. T
 consumer edit-handler integration and UI rendering; it does not hit-test pointer
 input. No source save, scenario, playback or screenshot occurs.
 
+The first frame also checks prototype and relationship source tabs through
+Studio's focused Undo/Redo dispatch, including dirty state and typed values
+reopened from the tab's checkpoint. One temporary file just above the 64 MiB
+prototype collection budget (bounded by 65 MiB) checks that the common asset
+reader still reads it while prototype collection rejects it before parsing.
+These model checks add no rendered frames; temporary files and models are
+released before their final assertions.
+
 Within the first frame it also opens a tiny temporary draft with two calls and a
 branch. It checks that named calls have no duplicate code body and that a small
 value call folds into the setter's editable Value row without a Target input.

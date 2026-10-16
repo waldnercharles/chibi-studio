@@ -1,6 +1,8 @@
 #include "editor/documents/asset_code.h"
 
 #include "assets/scene_document.h"
+#include "authoring/source_asset.h"
+#include "authoring/source_format.h"
 #include "authoring/source_intelligence.h"
 #include "editor/workspace/editor_internal.h"
 #include "editor/workspace/scene_internal.h"
@@ -46,7 +48,7 @@ struct asset_code
     const behavior_asset *shared_asset;
     unsigned shared_revision;
     bool source_pending, replaying, runtime_held, graph_draft, native_view,
-        source_gesture, typing;
+        source_gesture, typing, static_source, relationship_source;
     uint64_t execution_graph, execution_node;
     double time, apply_due, typed_at, refresh_due;
     kit_code_editor *editor;
@@ -62,6 +64,8 @@ struct asset_code
     bool completing;
     char error[256], preparation_error[256];
     const prototype_registry *registry;
+    const ecs_relationship_desc *const *registry_relationships;
+    int registry_relationship_count;
     uintptr_t state_identity;
     unsigned long long overlay_revision;
 };
@@ -102,7 +106,24 @@ static kit_code_editor *create_view(asset_code *c, const char *text)
     size_t length = strlen(c->path), suffix = strlen(CODE_ASSET_EXTENSION);
     c->native_view = length >= suffix &&
                      !strcmp(c->path + length - suffix, CODE_ASSET_EXTENSION);
-    if (!c->native_view &&
+    if (c->native_view) {
+        script_syntax *syntax = script_parse(text);
+        TSNode root = ts_tree_root_node(syntax->tree);
+        c->relationship_source = strstr(c->path, "/relationships/") != NULL;
+        c->static_source = strstr(c->path, "/prototypes/") || c->relationship_source;
+        bool static_path = c->static_source;
+        for (uint32_t i = 0; i < ts_node_named_child_count(root); i++) {
+            const char *kind = ts_node_type(ts_node_named_child(root, i));
+            c->static_source |= !strcmp(kind, "prototype_declaration") ||
+                                !strcmp(kind, "relationship_declaration");
+            if (!static_path && !strcmp(kind, "relationship_declaration")) {
+                c->relationship_source = true;
+            }
+        }
+        script_syntax_free(syntax);
+        c->native_view = !c->static_source;
+    }
+    if (!c->native_view && !c->static_source &&
         !(length >= strlen(DECLARATIVE_ASSET_EXTENSION) &&
           !strcmp(c->path + length - strlen(DECLARATIVE_ASSET_EXTENSION), DECLARATIVE_ASSET_EXTENSION))) {
         script_syntax *syntax = script_parse(text);
@@ -229,7 +250,7 @@ static void decorate(asset_code *c)
     asetlen(c->markers, 0);
     asetlen(c->breakpoints, 0);
     c->error[0] = 0;
-    if (c->native_view) {
+    if (c->native_view || c->static_source) {
         if (c->facts) {
             for (int i = 0; i < c->facts->diagnostic_count; i++) {
                 diagnostic(c, &c->facts->diagnostics[i]);
@@ -262,6 +283,19 @@ static void decorate(asset_code *c)
                                         .message = c->preparation_error })
                 );
                 snprintf(c->error, sizeof c->error, "%s", c->preparation_error);
+            }
+            if (c->static_source) {
+                int count = 0;
+                authoring_highlight *spans = authoring_source_syntax_highlights(c->syntax, &count);
+                for (int i = 0; i < count; i++) {
+                    apush(
+                        c->spans,
+                        ((kit_code_span){ spans[i].range.start,
+                                          spans[i].range.end,
+                                          spans[i].cls })
+                    );
+                }
+                free(spans);
             }
         }
         breakpoint_markers(c);
@@ -484,6 +518,10 @@ const char *asset_code_text(const asset_code *c)
 {
     return c->text;
 }
+bool asset_code_static(const asset_code *c)
+{
+    return c->static_source;
+}
 
 kit_code_editor *asset_code_editor(asset_code *c)
 {
@@ -688,7 +726,42 @@ static void understand_with_metadata(asset_code *c, const char *text, const char
     c->working = NULL;
     c->facts = NULL;
     c->preparation_error[0] = 0;
-    if (c->native_view) {
+    if (c->static_source) {
+        c->syntax = script_parse(c->text);
+        if (!c->syntax->diagnostic_count) {
+            if (c->relationship_source) {
+                ecs_relationship_desc *value = authoring_relationship_source_read(
+                    c->text,
+                    c->preparation_error,
+                    sizeof c->preparation_error
+                );
+                authoring_relationship_source_free(value);
+            } else {
+                av_doc *value = authoring_prototype_source_read(
+                    c->text,
+                    c->registry,
+                    c->preparation_error,
+                    sizeof c->preparation_error
+                );
+                if (value && c->registry) {
+                    prototype *typed = prototype_load_value(
+                        av_doc_root(value),
+                        c->registry,
+                        c->preparation_error,
+                        sizeof c->preparation_error
+                    );
+                    prototype_free(typed);
+                } else if (value) {
+                    snprintf(c->preparation_error, sizeof c->preparation_error, "Prototype source needs its project component and relationship registry");
+                }
+                av_doc_free(value);
+            }
+        }
+        const authoring_sources *sources = c->world
+                                             ? preview_sources_working(c->world)
+                                             : NULL;
+        c->working = sources ? authoring_sources_retain(sources) : NULL;
+    } else if (c->native_view) {
         c->syntax = script_parse(c->text);
         if (c->world) {
             char error[256] = "";
@@ -904,16 +977,33 @@ void asset_code_free(asset_code *c)
 }
 void asset_code_set_registry(asset_code *c, const prototype_registry *registry)
 {
-    if (c->registry == registry) {
+    const ecs_relationship_desc *const *relationships = registry ? registry->relationships
+                                                                 : NULL;
+    int relationship_count = registry ? registry->relationship_count : 0;
+    if (c->registry == registry && c->registry_relationships == relationships &&
+        c->registry_relationship_count == relationship_count) {
         return;
     }
     c->registry = registry;
+    c->registry_relationships = relationships;
+    c->registry_relationship_count = relationship_count;
     if (!c->native_view) {
         understand(c, c->text);
     }
 }
 void asset_code_set_source_world(asset_code *c, preview_world *world, const char *content_root)
 {
+    if (c->static_source) {
+        const authoring_sources *fresh = world ? preview_sources_working(world) : NULL;
+        if (c->world == world && c->working == fresh) {
+            return;
+        }
+        c->world = world;
+        free(c->content_root);
+        c->content_root = content_root ? xstrdup(content_root) : NULL;
+        understand(c, c->text);
+        return;
+    }
     bool clean = !asset_code_dirty(c);
     bool same = c->world == world &&
                 !strcmp(c->content_root ? c->content_root : "", content_root ? content_root : "");
@@ -1036,6 +1126,10 @@ const authoring_source *asset_code_graph_source(const asset_code *c, const edito
 }
 bool asset_code_sync_graph(asset_code *c, editor *e, bool live)
 {
+    if (c->static_source) {
+        asset_code_validate(c, e);
+        return false;
+    }
     /* Preparing source replaces the world's working presentations, including
        library assets borrowed by the palette. Refresh even for invalid drafts
        or unchanged graph state before the editor can read those assets. */
@@ -1333,7 +1427,7 @@ void asset_code_refresh(asset_code *c)
         text = xstrdup(disk);
     } else if (!strcmp(disk, c->disk)) {
         text = xstrdup(c->text);
-    } else if (c->native_view) {
+    } else if (c->native_view || c->static_source) {
         text = merge_source(c->disk, c->text, disk);
     } else {
         char error[256];
@@ -1402,6 +1496,19 @@ bool asset_code_save(asset_code *c, char *error, size_t size)
         snprintf(error, size, "Presentation metadata changed on disk; refresh it before saving");
         return false;
     }
+    if (c->static_source) {
+        char *formatted = authoring_source_format(c->syntax, error, size);
+        if (!formatted) {
+            return false;
+        }
+        if (strcmp(formatted, c->text)) {
+            follow(c, formatted, false);
+            understand(c, formatted);
+            record(c, formatted);
+            valid_overlay(c, false);
+        }
+        free(formatted);
+    }
     if (write_file_atomic(c->path, c->text)) {
         snprintf(error, size, "Could not write %s", c->path);
         return false;
@@ -1447,8 +1554,15 @@ static void complete(asset_code *c, bool asked)
     asset_source_completions_free(&c->completions);
     authoring_completions_free(&c->source_completions);
     asetlen(c->items, 0);
-    if (c->native_view) {
-        if (c->navigation && c->facts) {
+    if (c->native_view || c->static_source) {
+        if (c->static_source) {
+            authoring_asset_source_complete(
+                c->syntax,
+                c->working ? authoring_sources_source_catalog(c->working) : NULL,
+                kit_code_cursor(c->editor),
+                &c->source_completions
+            );
+        } else if (c->navigation && c->facts) {
             authoring_source_complete(
                 c->navigation,
                 c->document,
@@ -1479,8 +1593,8 @@ static void complete(asset_code *c, bool asked)
             apush(c->items, ((kit_code_completion){ s->label, s->detail, s->insert, s->kind }));
         }
     }
-    int start = c->native_view ? c->source_completions.range.start
-                               : c->completions.start;
+    int start = c->native_view || c->static_source ? c->source_completions.range.start
+                                                   : c->completions.start;
     int typed = kit_code_cursor(c->editor) - start, count = acount(c->items);
     bool done = count == 1 && (int)strlen(c->items[0].label) == typed &&
                 !strncmp(c->text + start, c->items[0].label, (size_t)typed);
@@ -1537,7 +1651,8 @@ kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const ki
         asset_code_refresh(c);
     }
     free(c->hover);
-    c->hover = c->native_view
+    c->hover = c->static_source ? NULL
+             : c->native_view
                  ? (c->navigation
                         ? authoring_source_hover(c->navigation, c->document, kit_code_hover(c->editor))
                         : NULL)
@@ -1591,12 +1706,13 @@ kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const ki
     desc.marker_count = acount(shown_markers);
     desc.completions = c->completing ? c->items : NULL;
     desc.completion_count = c->completing ? acount(c->items) : 0;
-    desc.completion_start = c->native_view ? c->source_completions.range.start
-                                           : c->completions.start;
+    desc.completion_start = c->native_view || c->static_source
+                              ? c->source_completions.range.start
+                              : c->completions.start;
     desc.hover = c->hover;
     desc.history = true;
     /* KDL names take hyphens; .chibi names are C's. */
-    desc.word_chars = c->native_view ? NULL : "-";
+    desc.word_chars = c->native_view || c->static_source ? NULL : "-";
     link_symbol(c, &desc);
     kit_code_result result = kit_code(k, key, c->editor, &desc);
     afree(shown_markers);

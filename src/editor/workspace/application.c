@@ -8,6 +8,7 @@
 #include "authoring/image_prepare.h"
 #include "authoring/mesh_prepare.h"
 #include "authoring/preview.h"
+#include "authoring/project_open.h"
 #include "authoring/shader_prepare.h"
 #include "authoring/source_prepare.h"
 #include "authoring/source_presentation.h"
@@ -319,7 +320,12 @@ static bool open_workspace(
 {
     chibi_project project = { 0 };
     declared_components *declared = NULL;
-    if (chibi_project_open(&project, project_path, error, error_size) != 0) {
+    native_capabilities *native = authoring_application_catalog_new(true, error, error_size);
+    int opened = native
+                   ? authoring_project_open(&project, project_path, native, error, error_size)
+                   : -1;
+    native_capabilities_free(native);
+    if (opened != 0) {
         return false;
     }
     char *resolved_scene = chibi_project_scene_path(&project, scene_path);
@@ -347,8 +353,12 @@ static bool open_workspace(
     const script_catalog placeholder_catalog = { 0 };
     const script_lower_bindings placeholder_bindings = { 0 };
     authoring_source *source = authoring_source_prepare_document(
-        "AppBehavior.chibi", "behaviors/AppBehavior.chibi", "behavior AppBehavior {}",
-        &placeholder_catalog, &placeholder_bindings, BEHAVIOR_BYTECODE
+        "AppBehavior.chibi",
+        "behaviors/AppBehavior.chibi",
+        "AppBehavior :: behavior {}",
+        &placeholder_catalog,
+        &placeholder_bindings,
+        BEHAVIOR_BYTECODE
     );
     if (!source->valid) {
         snprintf(error, error_size, "Could not prepare workspace presentation: %s",
@@ -752,7 +762,7 @@ static const char *openable(char **roots)
     for (int i = 0; i < acount(roots); i++) {
         chibi_project project = { 0 };
         char error[256];
-        if (chibi_project_open(&project, roots[i], error, sizeof error) == 0) {
+        if (chibi_project_inspect(&project, roots[i], error, sizeof error) == 0) {
             chibi_project_free(&project);
             return roots[i];
         }

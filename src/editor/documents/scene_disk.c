@@ -168,6 +168,67 @@ static app_disk_result sync_system(app_scene_authoring *scene, const char *path,
     return APP_DISK_FAILED;
 }
 
+static bool prototype_uses(const prototype *asset, const char *name)
+{
+    for (int i = 0; i < acount(asset->includes); i++) {
+        if (!strcmp(asset->includes[i], name)) {
+            return true;
+        }
+    }
+    for (int i = 0; asset->children && i < acount(asset->children->entities); i++) {
+        const char *child = asset->children->entities[i].prototype;
+        if (child && !strcmp(child, name)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* The resolver's new text also changes flattened includes and child prototypes.
+ * Collect the transitive users before replacing any borrowed prototype names. */
+static app_disk_result reload_prototype_users(app_scene_authoring *scene, int changed)
+{
+    int *affected = NULL;
+    bool *seen = xcalloc((size_t)acount(scene->prototypes), sizeof *seen);
+    seen[changed] = true;
+    apush(affected, changed);
+    for (int next = 0; next < acount(affected); next++) {
+        const char *name = scene->prototypes[affected[next]].prototype->name;
+        for (int i = 0; i < acount(scene->prototypes); i++) {
+            if (!seen[i] && prototype_uses(scene->prototypes[i].prototype, name)) {
+                seen[i] = true;
+                apush(affected, i);
+            }
+        }
+    }
+    free(seen);
+    app_disk_result result = APP_DISK_RELOADED;
+    char message[256] = "";
+    for (int i = 1; i < acount(affected); i++) {
+        scene_prototype_asset *asset = &scene->prototypes[affected[i]];
+        if (!asset->path || asset->dirty) {
+            if (result != APP_DISK_FAILED) {
+                result = APP_DISK_UNSAVED;
+                snprintf(
+                    message,
+                    sizeof message,
+                    "%s has unsaved edits; reload it to apply changed "
+                    "prototype dependencies.",
+                    asset->prototype->name
+                );
+            }
+        } else if (reload_prototype_asset(scene, asset) != 0) {
+            result = APP_DISK_FAILED;
+            snprintf(message, sizeof message, "%s", scene->message);
+        }
+    }
+    afree(affected);
+    if (message[0]) {
+        snprintf(scene->message, sizeof scene->message, "%s", message);
+    }
+    return result;
+}
+
 static app_disk_result sync_prototype(app_scene_authoring *scene, const char *path, bool force)
 {
     for (int i = 0; i < acount(scene->prototypes); i++) {
@@ -178,8 +239,9 @@ static app_disk_result sync_prototype(app_scene_authoring *scene, const char *pa
         if (asset->dirty && !force) {
             return APP_DISK_UNSAVED;
         }
-        return reload_prototype_asset(scene, asset) == 0 ? APP_DISK_RELOADED
-                                                         : APP_DISK_FAILED;
+        return reload_prototype_asset(scene, asset) == 0
+                 ? reload_prototype_users(scene, i)
+                 : APP_DISK_FAILED;
     }
     char *json = read_scene_file(path);
     bool added = json &&
@@ -433,6 +495,7 @@ app_disk_result app_scene_authoring_reload_path(app_scene_authoring *scene, cons
     if (ui) {
         return reload_ui_document(scene, ui) == 0 ? APP_DISK_RELOADED : APP_DISK_FAILED;
     }
+    content_refresh(scene);
     return sync_path(scene, path, true);
 }
 

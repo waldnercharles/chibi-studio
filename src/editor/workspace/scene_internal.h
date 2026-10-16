@@ -19,6 +19,10 @@
 #include "editor/workspace/tree_watch.h"
 
 typedef struct scene_model_preview scene_model_preview;
+typedef struct
+{
+    char *name, *text, *path;
+} scene_prototype_source;
 
 typedef struct
 {
@@ -197,6 +201,11 @@ struct app_scene_authoring
     app_scene_prototype_resolve_fn resolve_prototype;
     void *resolve_user;
     prototype_registry registry;
+    ecs_relationship_desc **relationships;
+    /* Loaded prototype registries borrow prior pointer arrays; descriptors
+     * are shared with the newest append-only generation. */
+    ecs_relationship_desc ***relationship_generations;
+    scene_prototype_source *prototype_sources;
     editor_choices component_choices;
     editor_choices type_choices;
     editor_choices image_choices; /* Labels and names borrow content paths. */
@@ -394,6 +403,7 @@ void begin_transform_edit(app_scene_authoring *scene, ecs_entity entity);
 const char *content_basename(const char *path);
 bool content_path_in_folder(const app_scene_authoring *scene, const char *path, const char *folder);
 void content_refresh(app_scene_authoring *scene);
+bool scene_prototype_sources_refresh(app_scene_authoring *scene);
 void asset_index_invalidate(app_scene_authoring *scene);
 bool editable_scalar(const pin_value *value);
 bool scene_property_value_copy(pin_value *out, pin_value value);

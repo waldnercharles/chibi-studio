@@ -29,17 +29,17 @@
 #include <sys/stat.h>
 
 static const char *const KIND_LABELS[REFERENCE_ASSET_KIND_COUNT] = {
-    "Scenes", "Prototypes", "Behaviors", "Events",  "Materials",
-    "Shapes", "Fields",     "Libraries", "Systems", "UI",
+    "Scenes", "Prototypes", "Behaviors", "Events", "Materials",     "Shapes",
+    "Fields", "Libraries",  "Systems",   "UI",     "Relationships",
 };
 static const char *const KIND_NAMES[REFERENCE_ASSET_KIND_COUNT] = {
-    "scene", "prototype", "behavior", "event",  "material",
-    "shape", "field",     "library",  "system", "ui",
+    "scene", "prototype", "behavior", "event", "material",     "shape",
+    "field", "library",   "system",   "ui",    "relationship",
 };
 static const uint32_t KIND_ICONS[REFERENCE_ASSET_KIND_COUNT] = {
     KIT_ICON_SCENE,    KIT_ICON_PROTOTYPE, KIT_ICON_GRAPH, KIT_ICON_EVENT,
     KIT_ICON_MATERIAL, KIT_ICON_HEXAGON,   KIT_ICON_GRID,  KIT_ICON_LIBRARY,
-    KIT_ICON_SYSTEM,   KIT_ICON_LAYOUT,
+    KIT_ICON_SYSTEM,   KIT_ICON_LAYOUT,    KIT_ICON_EVENT,
 };
 
 /* A tile's padding around its picture, its label's line, the gap between
@@ -670,6 +670,7 @@ static const struct
 } NEW_KINDS[STUDIO_NEW_KIND_COUNT] = {
     { "Scene", "NewScene", REFERENCE_ASSET_SCENE },
     { "Scene", "NewPrototype", REFERENCE_ASSET_PROTOTYPE },
+    { "Logic", "NewRelationship", REFERENCE_ASSET_RELATIONSHIP },
     { "Logic", "NewBehavior", REFERENCE_ASSET_BEHAVIOR },
     { "Logic", "NewEvent", REFERENCE_ASSET_EVENT },
     { "Logic", "NewSystem", REFERENCE_ASSET_SYSTEM },
@@ -692,7 +693,10 @@ static bool is_ui(int kind)
 
 static studio_command new_command(int kind)
 {
-    return (studio_command)(STUDIO_COMMAND_NEW_SCENE + kind);
+    return kind == NEW_ASSET_RELATIONSHIP
+             ? STUDIO_COMMAND_NEW_RELATIONSHIP
+             : (studio_command)(STUDIO_COMMAND_NEW_SCENE + kind -
+                                (kind > NEW_ASSET_RELATIONSHIP));
 }
 
 /* Whether an asset of the project has the name; a name only referenced is
@@ -823,6 +827,8 @@ static void open_new(studio *s, int kind, const char *path)
     int asset = reference_index_find_asset(index, NEW_KINDS[kind].kind, path, NULL);
     if (app_scene_authoring_open_asset(s->scene, asset) != 0) {
         studio_error(s, "Could not open", app_scene_authoring_message(s->scene));
+    } else if (s->scene->active_tab >= 0 && s->scene->tabs[s->scene->active_tab].source_only) {
+        studio_behavior_show(s, 1);
     }
 }
 

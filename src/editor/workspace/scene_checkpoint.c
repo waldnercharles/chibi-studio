@@ -301,8 +301,8 @@ static bool restore_tabs(app_scene_authoring *scene, yyjson_val *root)
         int kind = yyjson_get_int(yyjson_obj_get(item, "kind"));
         const char *key = yyjson_get_str(yyjson_obj_get(item, "key"));
         const char *label = yyjson_get_str(yyjson_obj_get(item, "label"));
-        if (!yyjson_is_obj(item) || !key || !label ||
-            kind < APP_EDITOR_DOCUMENT_SCENE || kind > APP_EDITOR_DOCUMENT_UI) {
+        if (!yyjson_is_obj(item) || !key || !label || kind < APP_EDITOR_DOCUMENT_SCENE ||
+            kind > APP_EDITOR_DOCUMENT_RELATIONSHIP) {
             goto fail;
         }
         for (int j = 0; j < acount(candidate); j++) {
@@ -965,9 +965,9 @@ int app_scene_authoring_restore_checkpoint(app_scene_authoring *scene, const cha
     int result = -1;
     if (yyjson_get_int(yyjson_obj_get(root, "version")) != 2 ||
         !yyjson_is_obj(scene_value) || !document || !content ||
-        kind < APP_EDITOR_DOCUMENT_SCENE || kind > APP_EDITOR_DOCUMENT_UI ||
-        !yyjson_is_arr(prototypes) || !yyjson_is_arr(behaviors) ||
-        !yyjson_is_arr(actors)) {
+        kind < APP_EDITOR_DOCUMENT_SCENE ||
+        kind > APP_EDITOR_DOCUMENT_RELATIONSHIP || !yyjson_is_arr(prototypes) ||
+        !yyjson_is_arr(behaviors) || !yyjson_is_arr(actors)) {
         goto done;
     }
     if (scene_authoring_load_text(scene, "version 1\nname Checkpoint\n(array)entities\n", NULL) !=

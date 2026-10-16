@@ -20,6 +20,7 @@
 #include "support/arena.h"
 #include "support/array.h"
 #include "support/xalloc.h"
+#include "types/array.h"
 #include "ui/popover.h"
 
 #include <errno.h>
@@ -169,11 +170,13 @@ static bool leaf_at(const pin_value *value, const pin_spec *shape, const char *p
         int index = (int)strtol(at + 1, &end, 10);
         if (at[0] == 'a') {
             const pin_array *array = out->value.ptr;
-            if (out->shape.container == PIN_CONTAINER_SINGLE || !array ||
-                index < 0 || index >= array->count) {
+            if ((out->shape.container != PIN_CONTAINER_ARRAY &&
+                 out->shape.container != PIN_CONTAINER_SET) ||
+                !array || !pin_array_valid(array) || index < 0 ||
+                index >= array->count) {
                 return false;
             }
-            out->value = array->items[index];
+            out->value = pin_array_get(array, index);
             out->shape.container = PIN_CONTAINER_SINGLE;
             out->owner = NULL;
             out->field = NULL;
@@ -216,8 +219,14 @@ static bool write_at(pin_value *value, const pin_spec *shape, const char *path, 
         pin_array *array = value->ptr;
         pin_spec item = *shape;
         item.container = PIN_CONTAINER_SINGLE;
-        return array && index >= 0 && index < array->count &&
-               write_at(&array->items[index], &item, rest, with);
+        if ((shape->container != PIN_CONTAINER_ARRAY &&
+             shape->container != PIN_CONTAINER_SET) ||
+            !array || !pin_array_valid(array) || index < 0 || index >= array->count) {
+            return false;
+        }
+        pin_value entry = pin_array_get(array, index);
+        return write_at(&entry, &item, rest, with) &&
+               !pin_array_set(array, index, &entry);
     }
     const type_desc *type = type_catalog_find(shape->type_name);
     if (!type || !value->ptr || index < 0 || index >= type->field_count) {

@@ -69,6 +69,7 @@ static reference_asset_kind content_asset_kind(const app_scene_authoring *scene,
     } folders[] = {
         { "scenes", REFERENCE_ASSET_SCENE },
         { "prototypes", REFERENCE_ASSET_PROTOTYPE },
+        { "relationships", REFERENCE_ASSET_RELATIONSHIP },
         { "behaviors", REFERENCE_ASSET_BEHAVIOR },
         { "events", REFERENCE_ASSET_EVENT },
         { "materials", REFERENCE_ASSET_MATERIAL },
@@ -452,7 +453,24 @@ int app_scene_authoring_open_asset(app_scene_authoring *scene, int position)
                                                  );
         }
         case REFERENCE_ASSET_PROTOTYPE:
+            if (asset->path && strrchr(asset->path, '.') &&
+                !strcmp(strrchr(asset->path, '.'), CODE_ASSET_EXTENSION)) {
+                return scene_tabs_open_source(
+                    scene,
+                    APP_EDITOR_DOCUMENT_PROTOTYPE,
+                    asset->name,
+                    asset->path
+                );
+            }
             return app_scene_authoring_open_prototype(scene, asset->name);
+        case REFERENCE_ASSET_RELATIONSHIP:
+            return asset->path ? scene_tabs_open_source(
+                                     scene,
+                                     APP_EDITOR_DOCUMENT_RELATIONSHIP,
+                                     asset->name,
+                                     asset->path
+                                 )
+                               : -1;
         case REFERENCE_ASSET_BEHAVIOR:
         case REFERENCE_ASSET_EVENT:
         case REFERENCE_ASSET_MATERIAL:

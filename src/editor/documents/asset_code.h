@@ -29,6 +29,8 @@ bool asset_code_dirty(const asset_code *code);
 const char *asset_code_error(const asset_code *code);
 /* Complete executable source; optional graph metadata is stored separately. */
 const char *asset_code_text(const asset_code *code);
+/* Authored prototypes/relationships are data, never executable graph drafts. */
+bool asset_code_static(const asset_code *code);
 /* The editable view exposes the complete executable source. */
 kit_code_editor *asset_code_editor(asset_code *code);
 /* One source and metadata history serves both views, including invalid drafts. */

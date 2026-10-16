@@ -221,6 +221,10 @@ static void save_asset(studio *s, asset_code *code)
     }
     capture_asset(s, code);
     scene_document_tab *tab = active_asset(s);
+    if (asset_code_static(code)) {
+        app_scene_authoring_refresh_content(s->scene);
+        return;
+    }
     if (tab && tab->source_only) {
         int result;
         if (tab->kind == APP_EDITOR_DOCUMENT_SYSTEM) {
@@ -674,7 +678,7 @@ void studio_code_frame(studio *s)
 bool studio_code_history(studio *s, bool redo, bool apply)
 {
     scene_document_tab *tab = active_asset(s);
-    if (!tab || (tab->kind != APP_EDITOR_DOCUMENT_BEHAVIOR &&
+    if (!tab || (!tab->source_only && tab->kind != APP_EDITOR_DOCUMENT_BEHAVIOR &&
                  tab->kind != APP_EDITOR_DOCUMENT_SYSTEM)) {
         return false;
     }
@@ -1525,7 +1529,12 @@ bool studio_code_header_sync(studio *s, const studio_panel_sync *at)
         changed |= ui_data_put_text(at->doc, h, "error", code ? asset_code_error(code) : "");
         const char *runtime = "", *runtime_label = "";
         if (code && (asset->source_only || asset_code_source(code) != NULL)) {
-            if (asset->source_only) {
+            if (asset_code_static(code)) {
+                runtime_label = "Static asset";
+                runtime = "Prototype and relationship declarations are data. "
+                          "Save updates their source without creating an "
+                          "executable graph";
+            } else if (asset->source_only) {
                 runtime_label = "Source only";
                 runtime = "Fix source errors and Save to open its graph. "
                           "Existing scene runtime stays unchanged";

@@ -98,7 +98,7 @@ static void add_project(studio *s, const char *manifest)
 {
     chibi_project project = { 0 };
     char error[256];
-    if (chibi_project_open(&project, manifest, error, sizeof error) == 0 &&
+    if (chibi_project_inspect(&project, manifest, error, sizeof error) == 0 &&
         project_index(s, project.root) < 0) {
         apush(
             s->projects,
@@ -425,7 +425,7 @@ static bool open_folder(chibi_project *project, const char *folder, char *error,
         );
         return false;
     }
-    return chibi_project_open(project, manifest, error, size) == 0;
+    return chibi_project_inspect(project, manifest, error, size) == 0;
 }
 
 void studio_open_project_folder(studio *s, const char *folder)

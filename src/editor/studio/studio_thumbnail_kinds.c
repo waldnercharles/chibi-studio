@@ -149,6 +149,7 @@ int studio_thumb_cost(reference_asset_kind kind)
         case REFERENCE_ASSET_BEHAVIOR:
         case REFERENCE_ASSET_EVENT:
         case REFERENCE_ASSET_LIBRARY:
+        case REFERENCE_ASSET_RELATIONSHIP:
         case REFERENCE_ASSET_SYSTEM: return 0;
         case REFERENCE_ASSET_UI: return 1;
         case REFERENCE_ASSET_FIELD: return 2;
@@ -1066,6 +1067,7 @@ static studio_thumb_step render_scene(
 static bool render_still(studio *s, studio_thumb_renderers *r, const studio_thumb_job *job, CF_Canvas canvas)
 {
     switch (job->kind) {
+        case REFERENCE_ASSET_RELATIONSHIP: return false;
         case REFERENCE_ASSET_PROTOTYPE:
             return render_prototype(s, r, job, canvas);
         case REFERENCE_ASSET_MATERIAL:
@@ -1136,6 +1138,7 @@ char *studio_thumb_unsaved(studio *s, const reference_asset *a)
         case REFERENCE_ASSET_PROTOTYPE:
             return unsaved_prototype_text(s, a->name);
         case REFERENCE_ASSET_SYSTEM:
+        case REFERENCE_ASSET_RELATIONSHIP:
         case REFERENCE_ASSET_UI: return NULL;
         default: return unsaved_graph_text(s, a->name);
     }

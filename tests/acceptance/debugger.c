@@ -13,14 +13,14 @@
 #include <SDL3/SDL_video.h>
 #include <string.h>
 
-static const char counter[] = "behavior Counter {\n"
-                              "    state count: int = 1\n"
+static const char counter[] = "Counter :: behavior {\n"
+                              "    count: retain int = 1\n"
                               "    on Tick {\n"
                               "        count = count + 1\n"
                               "    }\n"
                               "}\n";
-static const char invalid_counter[] = "behavior Counter {\n"
-                                      "    state count: int = 1\n"
+static const char invalid_counter[] = "Counter :: behavior {\n"
+                                      "    count: retain int = 1\n"
                                       "    on Tick {\n"
                                       "        count = count + @\n"
                                       "    }\n"

@@ -3,15 +3,18 @@
 #include "authoring/application_catalog.h"
 #include "authoring/behavior_loader.h"
 #include "authoring/preview_source.h"
+#include "authoring/source_asset.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
 #include "runtime/declared_components.h"
 #include "support/asset_text.h"
+#include "support/xalloc.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -257,17 +260,17 @@ int app_scene_authoring_save(app_scene_authoring *scene, const char *path)
     return result;
 }
 
-char *read_scene_file(const char *path)
+static char *read_scene_file_limit(const char *path, size_t limit)
 {
     FILE *file = fopen(path, "rb");
-    if (!file || fseek(file, 0, SEEK_END) || ftell(file) < 0) {
+    if (!file || fseek(file, 0, SEEK_END)) {
         if (file) {
             fclose(file);
         }
         return NULL;
     }
     long size = ftell(file);
-    if (fseek(file, 0, SEEK_SET)) {
+    if (size < 0 || (uintmax_t)size > limit || fseek(file, 0, SEEK_SET)) {
         fclose(file);
         return NULL;
     }
@@ -278,19 +281,124 @@ char *read_scene_file(const char *path)
     }
     size_t read = fread(json, 1, (size_t)size, file);
     fclose(file);
+    if (read != (size_t)size || memchr(json, 0, read)) {
+        free(json);
+        return NULL;
+    }
     json[read] = '\0';
     return json;
 }
 
+char *read_scene_file(const char *path)
+{
+    return read_scene_file_limit(path, SIZE_MAX - 1);
+}
+
+static const char *prototype_source_include(const char *name, void *user)
+{
+    const app_scene_authoring *scene = user;
+    for (int i = 0; i < acount(scene->prototype_sources); i++) {
+        if (!strcmp(scene->prototype_sources[i].name, name)) {
+            return scene->prototype_sources[i].text;
+        }
+    }
+    return NULL;
+}
+bool scene_prototype_sources_refresh(app_scene_authoring *scene)
+{
+    scene_prototype_source *sources = NULL;
+    size_t bytes = 0;
+    bool valid = true;
+    for (int i = 0; valid && i < acount(scene->content); i++) {
+        const scene_content_entry *entry = &scene->content[i];
+        if (entry->directory ||
+            !content_path_in_folder(scene, entry->path, "prototypes")) {
+            continue;
+        }
+        const char *extension = strrchr(entry->path, '.');
+        if (!extension || (strcmp(extension, ".chibi") && strcmp(extension, ".kdl"))) {
+            continue;
+        }
+        char *text = read_scene_file_limit(entry->path, PROTOTYPE_READ_MAX - bytes);
+        if (!text || acount(sources) >= PROTOTYPE_EXPANSION_MAX) {
+            free(text);
+            snprintf(
+                scene->message,
+                sizeof scene->message,
+                "Prototype sources exceed their read limits: %s",
+                entry->path
+            );
+            valid = false;
+            break;
+        }
+        bytes += strlen(text);
+        av_doc *doc = authoring_prototype_document_read(
+            text,
+            &scene->registry,
+            scene->message,
+            sizeof scene->message
+        );
+        const char *name = doc ? av_get_str(av_obj_get(av_doc_root(doc), "name"))
+                               : NULL;
+        if (!name || !*name) {
+            free(text);
+            av_doc_free(doc);
+            valid = false;
+            break;
+        }
+        for (int j = 0; j < acount(sources); j++) {
+            if (!strcmp(name, sources[j].name)) {
+                snprintf(scene->message, sizeof scene->message, "Duplicate prototype name: %s", name);
+                valid = false;
+                break;
+            }
+        }
+        if (valid) {
+            apush(
+                sources,
+                ((scene_prototype_source){ xstrdup(name), text, xstrdup(entry->path) })
+            );
+        } else {
+            free(text);
+        }
+        av_doc_free(doc);
+    }
+    if (!valid) {
+        for (int i = 0; i < acount(sources); i++) {
+            free(sources[i].name);
+            free(sources[i].text);
+            free(sources[i].path);
+        }
+        afree(sources);
+        return false;
+    }
+    for (int i = 0; i < acount(scene->prototype_sources); i++) {
+        free(scene->prototype_sources[i].name);
+        free(scene->prototype_sources[i].text);
+        free(scene->prototype_sources[i].path);
+    }
+    afree(scene->prototype_sources);
+    scene->prototype_sources = sources;
+    scene->registry.include = prototype_source_include;
+    scene->registry.include_user = scene;
+    return true;
+}
 static int load_content_prototype(app_scene_authoring *scene, const char *path)
 {
-    char *json = read_scene_file(path);
-    if (!json) {
-        return 0;
+    for (int i = 0; i < acount(scene->prototype_sources); i++) {
+        if (!strcmp(scene->prototype_sources[i].path, path)) {
+            if (app_scene_authoring_register_prototype(
+                    scene,
+                    scene->prototype_sources[i].text,
+                    path
+                )) {
+                snprintf(scene->message, sizeof scene->message, "Could not load prototype: %s", path);
+                return -1;
+            }
+            return 1;
+        }
     }
-    int result = app_scene_authoring_register_prototype(scene, json, path) == 0;
-    free(json);
-    return result;
+    return 0;
 }
 
 int scene_attach_studio_nodes(app_scene_authoring *scene, preview_world *world, char *error, size_t size)
@@ -323,6 +431,9 @@ int app_scene_authoring_load_content(app_scene_authoring *scene)
         return -1;
     }
     content_refresh(scene);
+    if (!scene_prototype_sources_refresh(scene)) {
+        return -1;
+    }
     preview_world *worlds[] = {
         scene->live,
         prototype_preview_live(scene->prototype_preview),
@@ -365,7 +476,11 @@ int app_scene_authoring_load_content(app_scene_authoring *scene)
             }
         }
         if (content_path_in_folder(scene, entry->path, "prototypes")) {
-            loaded += load_content_prototype(scene, entry->path);
+            int count = load_content_prototype(scene, entry->path);
+            if (count < 0) {
+                return -1;
+            }
+            loaded += count;
         }
     }
     if (loaded || !first_runtime_asset) {
