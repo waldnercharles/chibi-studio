@@ -58,6 +58,7 @@ static enum {
     SCENE_HIERARCHY,
     SCENE_MOVE,
     OUTLINER_MOVE,
+    OUTLINER_ROWS,
     SCENE_PHYSICS,
     ASSET_SELECTION,
     SCENE_VIEWPORT,
@@ -3924,6 +3925,7 @@ static bool code_glyphs_frame(void *state)
 }
 
 #include "outliner_move.h"
+#include "outliner_rows.h"
 #include "panel_idle.h"
 #include "project_open.h"
 #include "scene_camera.h"
@@ -3952,6 +3954,7 @@ bool studio_acceptance_frame(void *state)
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
         case SCENE_MOVE: callback_ok = scene_move_frame(state); break;
         case OUTLINER_MOVE: callback_ok = outliner_move_frame(state); break;
+        case OUTLINER_ROWS: callback_ok = outliner_rows_frame(state); break;
         case SCENE_PHYSICS: callback_ok = scene_physics_frame(state); break;
         case ASSET_SELECTION: callback_ok = asset_selection_frame(state); break;
         case SCENE_VIEWPORT: callback_ok = scene_viewport_frame(state); break;
@@ -4359,6 +4362,7 @@ int main(int argc, char **argv)
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
     bool scene_move_mode = argc == 4 && !strcmp(argv[1], "--scene-move");
     bool outliner_move_mode = argc == 4 && !strcmp(argv[1], "--outliner-move");
+    bool outliner_rows_mode = argc == 4 && !strcmp(argv[1], "--outliner-rows");
     bool physics = argc == 4 && !strcmp(argv[1], "--scene-physics");
     bool assets = argc == 4 && !strcmp(argv[1], "--asset-selection");
     bool viewport = argc == 4 && !strcmp(argv[1], "--scene-viewport");
@@ -4372,9 +4376,10 @@ int main(int argc, char **argv)
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
          !keys_mode && !labels && !units && !hierarchy && !scene_move_mode &&
-         !outliner_move_mode && !physics && !assets && !viewport && !camera && !playing &&
-         !prompting && !followups && !glyphs && !idle && !graph_pointer_mode &&
-         !asset_pointer_mode && !debugging && !gizmo && !colliders) ||
+         !outliner_move_mode && !outliner_rows_mode && !physics && !assets &&
+         !viewport && !camera && !playing && !prompting && !followups &&
+         !glyphs && !idle && !graph_pointer_mode && !asset_pointer_mode &&
+         !debugging && !gizmo && !colliders) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
@@ -4382,7 +4387,8 @@ int main(int argc, char **argv)
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
             "--graph-visibility|--graph-keys|--graph-pointer|--asset-pointer|--"
             "graph-labels|--unit-warnings|"
-            "--scene-hierarchy|--scene-move|--outliner-move|--scene-physics|"
+            "--scene-hierarchy|--scene-move|--outliner-move|--outliner-rows|--"
+            "scene-physics|"
             "--asset-selection|--scene-viewport|--scene-camera|--scene-gizmo3d|"
             "--scene-collider3d|"
             "--play-keys|--unsaved-prompts|"
@@ -4417,6 +4423,7 @@ int main(int argc, char **argv)
          : units              ? UNIT_WARNINGS
          : scene_move_mode    ? SCENE_MOVE
          : outliner_move_mode ? OUTLINER_MOVE
+         : outliner_rows_mode ? OUTLINER_ROWS
          : hierarchy          ? SCENE_HIERARCHY
          : physics            ? SCENE_PHYSICS
          : assets             ? ASSET_SELECTION
@@ -4448,6 +4455,7 @@ int main(int argc, char **argv)
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
         case SCENE_MOVE: RUN_TEST_CASE(scene_move_contracts); break;
         case OUTLINER_MOVE: RUN_TEST_CASE(outliner_move); break;
+        case OUTLINER_ROWS: RUN_TEST_CASE(outliner_rows); break;
         case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics_settings); break;
         case ASSET_SELECTION: RUN_TEST_CASE(asset_selection); break;
         case SCENE_VIEWPORT: RUN_TEST_CASE(scene_viewport); break;
