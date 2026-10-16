@@ -659,17 +659,18 @@ bool sg_ramp_stops(const pin_spec *shape)
 
 static bool ramp_values(const pin_array *array, shader_ramp_stop stops[SHADER_RAMP_MAX])
 {
-    if (!array || array->element_type != PIN_STRUCT || !array->type_name ||
-        strcmp(array->type_name, "ShaderRampStop") || array->count > SHADER_RAMP_MAX) {
+    if (!array || !pin_array_valid(array) || array->element_type != PIN_STRUCT ||
+        !array->type_name || strcmp(array->type_name, "ShaderRampStop") ||
+        array->count > SHADER_RAMP_MAX) {
         return false;
     }
     for (int i = 0; i < array->count; i++) {
-        if (array->items[i].type != PIN_STRUCT || !array->items[i].ptr ||
-            !array->items[i].type_name ||
-            strcmp(array->items[i].type_name, "ShaderRampStop")) {
+        pin_value item = pin_array_get(array, i);
+        if (item.type != PIN_STRUCT || !item.ptr || !item.type_name ||
+            strcmp(item.type_name, "ShaderRampStop")) {
             return false;
         }
-        memcpy(&stops[i], array->items[i].ptr, sizeof stops[i]);
+        memcpy(&stops[i], item.ptr, sizeof stops[i]);
     }
     return shader_ramp_valid(stops, array->count);
 }
@@ -761,7 +762,8 @@ static pin_array *array_with_count(
         if (i == removed) {
             continue;
         }
-        if (pin_value_snapshot_to_arena(scratch, &copy->items[at++], &source->items[i])) {
+        pin_value item = pin_array_get(source, i);
+        if (pin_value_snapshot_to_arena(scratch, &copy->items[at++], &item)) {
             return NULL;
         }
     }
@@ -777,6 +779,9 @@ static pin_array *array_with_count(
    most, each between two others. */
 bool sg_array_can_add(const pin_value *value, const pin_spec *shape)
 {
+    if (shape->container != PIN_CONTAINER_ARRAY && shape->container != PIN_CONTAINER_SET) {
+        return false;
+    }
     const pin_array *array = value->ptr;
     if (!sg_ramp_stops(shape)) {
         return true;
@@ -789,6 +794,9 @@ bool sg_array_can_add(const pin_value *value, const pin_spec *shape)
 
 pin_array *sg_array_edit(arena *scratch, const pin_value *value, const pin_spec *shape, int remove, bool append)
 {
+    if (shape->container != PIN_CONTAINER_ARRAY && shape->container != PIN_CONTAINER_SET) {
+        return NULL;
+    }
     pin_array *array = value->ptr
                          ? value->ptr
                          : pin_array_allocate(scratch, shape->type, shape->type_name, 0);
@@ -866,11 +874,12 @@ static bool edit_array_control(
         }
         kit_prop_begin(k, item_key, item_label);
         literal_edit child = { 0 };
+        pin_value item = pin_array_get(array, i);
         bool changed = edit_literal_value(
             s,
             k,
             item_control,
-            &array->items[i],
+            &item,
             &item_shape,
             NULL,
             NULL,
@@ -880,6 +889,11 @@ static bool edit_array_control(
             depth + 1,
             position_range
         );
+        if (changed) {
+            int error = pin_array_set(array, i, &item);
+            assert(!error);
+            (void)error;
+        }
         kit_button_desc remove_button = {
             .icon = KIT_ICON_TRASH,
             .variant = KIT_GHOST,

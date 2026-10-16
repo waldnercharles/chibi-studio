@@ -45,6 +45,7 @@ static const char *tab_kind_name(app_editor_document_kind kind)
         case APP_EDITOR_DOCUMENT_BEHAVIOR: return "behavior";
         case APP_EDITOR_DOCUMENT_SYSTEM: return "system";
         case APP_EDITOR_DOCUMENT_UI: return "ui";
+        case APP_EDITOR_DOCUMENT_RELATIONSHIP: return "relationship";
     }
     return "document";
 }
@@ -357,7 +358,10 @@ static scene_document_tab *add_tab(
     char *key = tab_key(
         kind,
         id,
-        kind == APP_EDITOR_DOCUMENT_SCENE || kind == APP_EDITOR_DOCUMENT_SYSTEM ? path : NULL
+        kind == APP_EDITOR_DOCUMENT_SCENE || kind == APP_EDITOR_DOCUMENT_SYSTEM ||
+                kind == APP_EDITOR_DOCUMENT_RELATIONSHIP
+            ? path
+            : NULL
     );
     if (!key) {
         return NULL;
@@ -416,6 +420,7 @@ static const char *document_path(app_scene_authoring *scene, app_editor_document
             return definition ? preview_definition_path(definition) : NULL;
         }
         case APP_EDITOR_DOCUMENT_UI: return id;
+        case APP_EDITOR_DOCUMENT_RELATIONSHIP: return id;
     }
     return NULL;
 }
@@ -424,7 +429,8 @@ static const char *document_path(app_scene_authoring *scene, app_editor_document
 static bool keyed_by_path(app_editor_document_kind kind)
 {
     return kind == APP_EDITOR_DOCUMENT_SCENE ||
-           kind == APP_EDITOR_DOCUMENT_SYSTEM || kind == APP_EDITOR_DOCUMENT_UI;
+           kind == APP_EDITOR_DOCUMENT_SYSTEM || kind == APP_EDITOR_DOCUMENT_UI ||
+           kind == APP_EDITOR_DOCUMENT_RELATIONSHIP;
 }
 
 void scene_tabs_document_selected(
@@ -521,7 +527,10 @@ int scene_tabs_open_source(
     const char *path
 )
 {
-    assert(kind == APP_EDITOR_DOCUMENT_BEHAVIOR || kind == APP_EDITOR_DOCUMENT_SYSTEM);
+    assert(
+        kind == APP_EDITOR_DOCUMENT_BEHAVIOR || kind == APP_EDITOR_DOCUMENT_SYSTEM ||
+        kind == APP_EDITOR_DOCUMENT_PROTOTYPE || kind == APP_EDITOR_DOCUMENT_RELATIONSHIP
+    );
     scene_tabs_sync_current(scene);
     scene_document_tab *tab = add_tab(scene, kind, name, path);
     if (!tab) {
@@ -529,7 +538,7 @@ int scene_tabs_open_source(
     }
     tab->source_only = true;
     scene->active_tab = (int)(tab - scene->tabs);
-    scene_authoring_select_document(scene, kind, kind == APP_EDITOR_DOCUMENT_SYSTEM ? path : name);
+    scene_authoring_select_document(scene, kind, keyed_by_path(kind) ? path : name);
     free(scene->graph_document_id);
     scene->graph_document_id = NULL;
     scene->definition = NULL;
@@ -638,8 +647,9 @@ int scene_tabs_activate(app_scene_authoring *scene, int index)
         scene_authoring_select_document(
             scene,
             target->kind,
-            target->kind == APP_EDITOR_DOCUMENT_SYSTEM ? target->path
-                                                       : target->key + strlen("behavior:")
+            keyed_by_path(target->kind)
+                ? target->path
+                : target->key + strlen(tab_kind_name(target->kind)) + 1
         );
         free(scene->graph_document_id);
         scene->graph_document_id = NULL;
@@ -690,9 +700,9 @@ int scene_tabs_activate(app_scene_authoring *scene, int index)
                 scene_authoring_select_document(
                     scene,
                     prior->kind,
-                    prior->kind == APP_EDITOR_DOCUMENT_SYSTEM
+                    keyed_by_path(prior->kind)
                         ? prior->path
-                        : prior->key + strlen("behavior:")
+                        : prior->key + strlen(tab_kind_name(prior->kind)) + 1
                 );
             } else if (prior->kind == APP_EDITOR_DOCUMENT_PROTOTYPE) {
                 app_scene_authoring_open_prototype(scene, prior->key + strlen("prototype:"));
@@ -989,6 +999,7 @@ static int discard_tab(app_scene_authoring *scene, int index)
         case APP_EDITOR_DOCUMENT_SYSTEM: return discard_system(scene, tab);
         /* The edits go with the tab's buffer. */
         case APP_EDITOR_DOCUMENT_UI: return 0;
+        case APP_EDITOR_DOCUMENT_RELATIONSHIP: return 0;
     }
     return -1;
 }

@@ -432,7 +432,8 @@ static bool apply_tab_action(
     if (!strcmp(operation, "tab.close")) {
         const char *id = text(root, "target_id");
         int kind = yyjson_get_int(yyjson_obj_get(root, "target_kind"));
-        if (id && kind >= APP_EDITOR_DOCUMENT_SCENE && kind <= APP_EDITOR_DOCUMENT_UI) {
+        if (id && kind >= APP_EDITOR_DOCUMENT_SCENE &&
+            kind <= APP_EDITOR_DOCUMENT_RELATIONSHIP) {
             scene_tabs_close(scene, (app_editor_document_kind)kind, id);
             return true;
         }

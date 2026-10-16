@@ -7,14 +7,16 @@
  * are that world's saved keys. */
 #include "assets/project.h"
 #include "assets/scene_document.h"
-#include "authoring/behavior_loader.h"
 #include "authoring/application_catalog.h"
+#include "authoring/behavior_loader.h"
 #include "authoring/preview.h"
 #include "authoring/preview_source.h"
+#include "authoring/project_open.h"
 #include "authoring/prototype_preview.h"
 #include "editor/collab/collab.h"
 #include "editor/studio/studio_internal.h"
 #include "editor/studio/studio_nodes.h"
+#include "editor/workspace/tree_watch.h"
 #include "graph/document/serialize.h"
 #include "render/ui.h"
 #include "runtime/component_catalog.h"
@@ -22,7 +24,6 @@
 #include "support/array.h"
 #include "support/asset_text.h"
 #include "support/text_file.h"
-#include "editor/workspace/tree_watch.h"
 #include "support/xalloc.h"
 #include "ui/drag.h"
 
@@ -403,9 +404,16 @@ studio_ui *studio_ui_new(studio *s, const char *project_root, char *error, size_
     rml_context *context = rml_backend_context(s->backend);
     studio_ui *studio_ui_state = xcalloc(1, sizeof *studio_ui_state);
     chibi_project project = { 0 };
-    char manifest_error[256];
-    if (chibi_project_open(&project, project_root, manifest_error, sizeof manifest_error) == 0 &&
-        project.ui) {
+    native_capabilities *native = authoring_application_catalog_new(true, error, size);
+    int opened = native
+                   ? authoring_project_open(&project, project_root, native, error, size)
+                   : -1;
+    native_capabilities_free(native);
+    if (opened != 0) {
+        free(studio_ui_state);
+        return NULL;
+    }
+    if (project.ui) {
         studio_ui_state->default_page = xstrdup(project.ui);
     }
     chibi_project_free(&project);
