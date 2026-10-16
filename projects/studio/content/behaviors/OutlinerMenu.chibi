@@ -1,28 +1,27 @@
 behavior "OutlinerMenu" {
-    owner "ecs.entity";
-    action set_ui_data_8 = set_ui_data(Entity: 0, Name: "menu.actor", Value: bool = (convert<"To Real">(selection().Count) > 0));
-    on Begin as begin() {
-        await set_ui_data(Entity: 0, Name: "menu.spawnBreak.label", Value: string = engine["String"](Value: "Break When Spawned"));
-        await set_ui_data(Entity: 0, Name: "menu.spawnBreak.icon", Value: string = engine["String"](Value: ""));
-        await set_ui_data(Entity: 0, Name: "menu.spawnBreak.shortcut", Value: string = engine["String"](Value: ""));
-        if (editor_state().Mac) {
-            set_ui_data(Entity: 0, Name: "isolateTip", Value: string = engine["String"](Value: "⌥-click shows only this object"));
+    action set_ui_data_8 = set_ui_data(0, "menu.actor", convert<"To Real">(selection().Count) > 0)
+    on Begin {
+        await set_ui_data(0, "menu.spawnBreak.label", engine["String"]("Break When Spawned"))
+        await set_ui_data(0, "menu.spawnBreak.icon", engine["String"](""))
+        await set_ui_data(0, "menu.spawnBreak.shortcut", engine["String"](""))
+        if editor_state().Mac {
+            set_ui_data(0, "isolateTip", engine["String"]("⌥-click shows only this object"))
         } else {
-            set_ui_data(Entity: 0, Name: "isolateTip", Value: string = engine["String"](Value: "Alt+click shows only this object"));
+            set_ui_data(0, "isolateTip", engine["String"]("Alt+click shows only this object"))
         }
     }
-    on Refresh as refresh() {
+    on Refresh {
         Count := selection().Count
-        if ((convert<"To Real">(Count) == 1)) {
-            await set_ui_data(Entity: 0, Name: "menu.label", Value: string = selection().Name);
-            set_ui_data_8();
+        if convert<"To Real">(Count) == 1 {
+            await set_ui_data(0, "menu.label", selection().Name)
+            set_ui_data_8()
         } else {
-            await set_ui_data(Entity: 0, Name: "menu.label", Value: string = format_text(Format: "{} objects", Arg0: int = Count));
-            set_ui_data_8();
+            await set_ui_data(0, "menu.label", format_text("{} objects", Count))
+            set_ui_data_8()
         }
     }
     after set_ui_data_8 {
-        await set_ui_data(Entity: 0, Name: "menu.live", Value: bool = editor_state().Live);
-        set_ui_data(Entity: 0, Name: "menu.spawnBreak.checked", Value: bool = breaks_when_spawned(Prototype: selection().Prototype));
+        await set_ui_data(0, "menu.live", editor_state().Live)
+        set_ui_data(0, "menu.spawnBreak.checked", breaks_when_spawned(selection().Prototype))
     }
 }

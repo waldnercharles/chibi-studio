@@ -3925,6 +3925,7 @@ static bool code_glyphs_frame(void *state)
 }
 
 #include "outliner_move.h"
+#include "outliner_row_policies.h"
 #include "outliner_rows.h"
 #include "panel_idle.h"
 #include "project_open.h"
@@ -4336,6 +4337,10 @@ TEST_CASE(debugger_source_history)
 
 int main(int argc, char **argv)
 {
+    if (argc == 4 && !strcmp(argv[1], "--outliner-row-policies") &&
+        !strcmp(argv[2], "--source")) {
+        return outliner_row_policy_main(argv[3]);
+    }
     if (argc == 2 && !strcmp(argv[1], "--project-open")) {
         pu_setup(NULL, project_open_cleanup);
         RUN_TEST_CASE(project_open_errors_stop_before_ui);
@@ -4394,7 +4399,8 @@ int main(int argc, char **argv)
             "--play-keys|--unsaved-prompts|"
             "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
             "history "
-            "--project-root PATH | --scene-cursors | --project-open\n"
+            "--project-root PATH | --scene-cursors | --project-open | "
+            "--outliner-row-policies --source PATH\n"
         );
         return 2;
     }

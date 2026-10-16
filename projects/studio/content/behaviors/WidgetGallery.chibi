@@ -1,5 +1,5 @@
 behavior "WidgetGallery" {
-    state Rows: int[] = []
+    Rows: int[] = []
     action rows_2 = set_variable<"Rows">(resize(state."Rows", 10000))
     on Begin {
         rows_2()

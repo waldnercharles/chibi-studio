@@ -119,7 +119,8 @@
     "projects/studio/content/behaviors/OutlinerHeaderInput.chibi": {
       "current_source_sha256": "ca29948d03beaf7a9ce6d57ef888cc6c3554458068c9f5fff87d7141edd8f5c2",
       "sha256": "ca29948d03beaf7a9ce6d57ef888cc6c3554458068c9f5fff87d7141edd8f5c2",
-      "source_path": "projects/studio/content/behaviors/OutlinerHeaderInput.chibi"
+      "source_path": "projects/studio/content/behaviors/OutlinerHeaderInput.chibi",
+      "consumer_sha256": "c6f0acf153770085943c643cfa04a135c667815bef9acb5d450a5802d949696d"
     },
     "projects/studio/content/behaviors/OutlinerHeaderInput.chibi.meta": {
       "current_source_sha256": "acd6947116e3280fe498eb5b7523273bfbba6e03a22fec5782127cbcc464f296",
@@ -140,7 +141,8 @@
     "projects/studio/content/behaviors/OutlinerMenu.chibi": {
       "current_source_sha256": "cc9838ef4a4395c1bb2c7651333a6c73ba2f5254f65f66d1bf67de77cb6c765f",
       "sha256": "cc9838ef4a4395c1bb2c7651333a6c73ba2f5254f65f66d1bf67de77cb6c765f",
-      "source_path": "projects/studio/content/behaviors/OutlinerMenu.chibi"
+      "source_path": "projects/studio/content/behaviors/OutlinerMenu.chibi",
+      "consumer_sha256": "666e4c5ddbf3a385843738e4329d55a7a2d70bfd40839082bec4973b1a3e2343"
     },
     "projects/studio/content/behaviors/OutlinerMenu.chibi.meta": {
       "current_source_sha256": "f7ee4f0354c72be44ec4a48a47eb5f869ed3078440442602587e9e6967344381",
@@ -150,7 +152,8 @@
     "projects/studio/content/behaviors/OutlinerRename.chibi": {
       "current_source_sha256": "42170a3318be600cd7a33817c62f5de6d1c74f1139b4a36521885e89ae6e2336",
       "sha256": "42170a3318be600cd7a33817c62f5de6d1c74f1139b4a36521885e89ae6e2336",
-      "source_path": "projects/studio/content/behaviors/OutlinerRename.chibi"
+      "source_path": "projects/studio/content/behaviors/OutlinerRename.chibi",
+      "consumer_sha256": "be296f3265795fb00cf118d87c3777f12d1e6cc5f43f8d27f80b90660860e39e"
     },
     "projects/studio/content/behaviors/OutlinerRename.chibi.meta": {
       "current_source_sha256": "ec890e89a2f104d56f74e5bc4e7488df69bb8deecbf16f9693d322525ac1e5af",
@@ -161,7 +164,7 @@
       "current_source_sha256": "301c0d6ecd3846c145ae3472cf825fff08843921e592571541a9b93d2e776131",
       "sha256": "301c0d6ecd3846c145ae3472cf825fff08843921e592571541a9b93d2e776131",
       "source_path": "projects/studio/content/behaviors/OutlinerRows.chibi",
-      "consumer_sha256": "662153302b4add30584c36e47151b72dc2c3d147844842ab49d1adc1f774b4b2"
+      "consumer_sha256": "568b0bd873e40721059be74fa7680281bc49c9e7ffd0892e9b67b2944bc1f818"
     },
     "projects/studio/content/behaviors/OutlinerRows.chibi.meta": {
       "current_source_sha256": "1d13edeaa1a47e8689df12e3de3bbe9a927ca597bb298ebc3867e66892f22b79",
@@ -171,7 +174,8 @@
     "projects/studio/content/behaviors/VirtualList.chibi": {
       "current_source_sha256": "9bd499b427da9ba05d3fbc2dbd0cc6838219147c9762b3dc7a6e4a5960d15272",
       "sha256": "9bd499b427da9ba05d3fbc2dbd0cc6838219147c9762b3dc7a6e4a5960d15272",
-      "source_path": "projects/studio/content/behaviors/VirtualList.chibi"
+      "source_path": "projects/studio/content/behaviors/VirtualList.chibi",
+      "consumer_sha256": "22e409f9beaa6d05066a84f35a09bdc28ad006d2ddf409522fd5e4999de1d03d"
     },
     "projects/studio/content/behaviors/VirtualList.chibi.meta": {
       "current_source_sha256": "357f46a82f10161953a09766e8d64e17a5784509e82ef4edca3579ce213c3df8",
@@ -181,7 +185,8 @@
     "projects/studio/content/behaviors/WidgetGallery.chibi": {
       "current_source_sha256": "7863d213dd57ea861063728c5396f9a7951ef7417dd750cbd257ed119a50f11f",
       "sha256": "7863d213dd57ea861063728c5396f9a7951ef7417dd750cbd257ed119a50f11f",
-      "source_path": "projects/studio/content/behaviors/WidgetGallery.chibi"
+      "source_path": "projects/studio/content/behaviors/WidgetGallery.chibi",
+      "consumer_sha256": "80c2a7c0e305429944f28ddd33051880979d6510aaa8bd118ea1c0ba693126c6"
     },
     "projects/studio/content/behaviors/WidgetGallery.chibi.meta": {
       "current_source_sha256": "e9e3794ecd48804244f168f95c6deeedc54f4e3e3f36965bd83da86bb5959c05",
@@ -1470,7 +1475,7 @@
       "current_source_sha256": "4036c43aa6c17dfbc3d383de7fd4489abd5fe666b8bd1682437d4cc724a397cc",
       "sha256": "4036c43aa6c17dfbc3d383de7fd4489abd5fe666b8bd1682437d4cc724a397cc",
       "source_path": "projects/studio/project.kdl",
-      "consumer_sha256": "1b4dd6c06d1bbe7c4b4302c3ff059407c8bf5608c41c2609a32e375e5f7f0bd3"
+      "consumer_sha256": "e1b5a7c38a671d89aa5d71807d169dff6ffd108dff76cb2428269b2f473f3817"
     },
     "src/diagnostics/frame_log.c": {
       "current_source_sha256": "d170cf8927d1fcb08bf10a0251b64fe3240c41bac7c8dbabd9374c945de0d950",
@@ -2728,7 +2733,7 @@
   },
   "format": 1,
   "missing_current_sources": [],
-  "source_repository": "/Users/cwaldner/.codex/worktrees/e537/c-blueprints",
+  "source_repository": "https://github.com/waldnercharles/chibi",
   "source_revision": "1e5d65842516b4f3232c400b34ac2c3de03251c0",
   "source_state": "uncommitted canonical source Studio candidate; originals retained"
 }
