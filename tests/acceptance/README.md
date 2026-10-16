@@ -420,3 +420,30 @@ cp "$CHIBI_STUDIO_SOURCE/projects/studio/project.kdl" \
 
 Studio migrates that build copy when it starts. Restoring it keeps each run on
 the same pinned resource bytes; the source project remains unchanged.
+
+`studio-acceptance --project-open` checks project-open failures before UI backend
+access. Run it when changing `studio_ui_new` project loading or migration-error
+propagation. It uses one pico case and two constructor calls with a zeroed Studio:
+an invalid manifest and an invalid version-23 source. Both must return NULL with
+the original exact error, including the canonical source path for migration
+failure. All three temporary input files (122 bytes total) must remain unchanged,
+with no migration staging files. The fixture removes its temporary directory on
+normal completion.
+
+This selector returns before host, SDL or renderer initialization. It creates no
+window, world or authored execution and runs no host frames. It requires a current
+installed SDK with path-qualified migration diagnostics. From the matching engine
+checkout, after building this Studio acceptance target against that SDK, run the
+single command under the production deadline supervisor:
+
+```sh
+python3 - /absolute/studio-build/bin/studio-acceptance <<'PY'
+import sys
+from tools.test_policy import run_commands
+raise SystemExit(run_commands([[sys.argv[1], '--project-open']], seconds=60))
+PY
+```
+
+Configuration and compilation happen before this invocation. Fixture setup,
+both constructor calls and normal teardown stay inside its unchanged 60-second
+deadline. This focused selector does not run the rendering or interaction routes.

@@ -3925,6 +3925,7 @@ static bool code_glyphs_frame(void *state)
 
 #include "outliner_move.h"
 #include "panel_idle.h"
+#include "project_open.h"
 #include "scene_camera.h"
 #include "scene_collider3d.h"
 #include "scene_gizmo3d.h"
@@ -4332,6 +4333,13 @@ TEST_CASE(debugger_source_history)
 
 int main(int argc, char **argv)
 {
+    if (argc == 2 && !strcmp(argv[1], "--project-open")) {
+        pu_setup(NULL, project_open_cleanup);
+        RUN_TEST_CASE(project_open_errors_stop_before_ui);
+        pu_clear_setup();
+        pu_print_stats();
+        return pu_test_failed() ? 1 : 0;
+    }
     if (argc == 2 && !strcmp(argv[1], "--scene-cursors")) {
         RUN_TEST_CASE(scene_gizmo_cursors);
         pu_print_stats();
@@ -4380,7 +4388,7 @@ int main(int argc, char **argv)
             "--play-keys|--unsaved-prompts|"
             "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
             "history "
-            "--project-root PATH | --scene-cursors\n"
+            "--project-root PATH | --scene-cursors | --project-open\n"
         );
         return 2;
     }
