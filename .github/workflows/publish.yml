@@ -14,7 +14,7 @@ on:
       - ".github/workflows/publish.yml"
       - ".github/engine-ref"
   pull_request:
-    branches: [main]
+    branches: [main, codex/language-redesign-20261016]
     paths:
       - "src/**"
       - "include/**"
@@ -47,6 +47,8 @@ jobs:
       paired: ${{ steps.version.outputs.paired }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Select a complete engine package
         id: version
         env:
@@ -100,6 +102,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+          persist-credentials: false
       - name: Download and verify the installed web SDK
         if: needs.version.outputs.paired != 'true'
         env:

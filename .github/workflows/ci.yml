@@ -44,6 +44,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: chibi-studio
+          persist-credentials: false
       - name: Select the paired engine for a same-repository PR
         id: engine
         env:
