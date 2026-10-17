@@ -200,3 +200,220 @@ jobs:
           timeout 60 xvfb-run -a chibi-dev --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee "$RUNNER_TEMP/installed.log"
           chibi export . --output "$RUNNER_TEMP/export"
           ! grep -E 'Studio UI:|runtime frame failed|Could not initialize' "$RUNNER_TEMP/installed.log"
+
+  # Temporary validation for PR78 only; never merge this job into a product branch.
+  catalog-regression:
+    name: Empty-request catalog ASan and UBSan regression
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.number == 78 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'codex/validate-empty-source-requests-20261017' &&
+      github.event.pull_request.base.sha == '5685b25c11a12b8c010bb2fdabf1cddf525883b9' &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      ENGINE: e06395e3c65838a2286a7f2bc82f0eb28bbd4b3c
+      ENGINE_PARENT: 15b3845dbda3440a7fb831f51ef7d2a02e3c6f2d
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+      UBSAN_SYMBOLIZER_PATH: /usr/lib/llvm-18/bin/llvm-symbolizer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: waldnercharles/chibi
+          ref: e06395e3c65838a2286a7f2bc82f0eb28bbd4b3c
+          token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 2
+          path: chibi
+      - name: Verify source identities and isolate the negative control
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C chibi rev-parse HEAD)" = "$ENGINE"
+          test "$(git -C chibi rev-parse HEAD^)" = "$ENGINE_PARENT"
+          test -z "$(git -C chibi status --porcelain)"
+          test "$(git -C chibi rev-parse HEAD:src/authoring/source_catalog.c)" = e15d3d5ca64b2f92310351ab46f10d65d2513561
+          test "$(git -C chibi rev-parse "$ENGINE_PARENT:src/authoring/source_catalog.c")" = d179b82e172dcc9ff4c0b8e96d66081f6202429a
+          evidence="$RUNNER_TEMP/catalog-regression"
+          mkdir "$evidence"
+          git -C chibi worktree add --detach "$evidence/negative" "$ENGINE"
+          git -C chibi show "$ENGINE_PARENT:src/authoring/source_catalog.c" > "$evidence/negative/src/authoring/source_catalog.c"
+          test "$(git -C "$evidence/negative" diff --name-only)" = src/authoring/source_catalog.c
+          test -z "$(git -C "$evidence/negative" ls-files --others --exclude-standard)"
+          test "$(git -C "$evidence/negative" hash-object src/authoring/source_catalog.c)" = d179b82e172dcc9ff4c0b8e96d66081f6202429a
+          git -C chibi log -1 --format='candidate %H tree %T parent %P'
+          git -C "$evidence/negative" diff -- src/authoring/source_catalog.c
+          sha256sum chibi/test/language/source_assets.c chibi/tools/test_policy.py
+      - name: Install the engine's pinned native test toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y clang-18 llvm-18 libclang-18-dev libclang-rt-18-dev \
+            libgl1-mesa-dev libvulkan1 mesa-vulkan-drivers libx11-dev libxcursor-dev \
+            libxext-dev libxi-dev libxrandr-dev libxss-dev libxtst-dev \
+            libwayland-dev libxkbcommon-dev libasound2-dev libpulse-dev
+          python3 -m venv "$RUNNER_TEMP/catalog-regression/toolchain"
+          "$RUNNER_TEMP/catalog-regression/toolchain/bin/pip" install --only-binary=:all: --require-hashes -r chibi/.github/build-tools.txt
+          echo "$RUNNER_TEMP/catalog-regression/toolchain/bin" >> "$GITHUB_PATH"
+          mkdir -m 700 -p "$XDG_RUNTIME_DIR"
+          clang-18 --version
+          "$RUNNER_TEMP/catalog-regression/toolchain/bin/cmake" --version
+          "$RUNNER_TEMP/catalog-regression/toolchain/bin/ninja" --version
+          "$UBSAN_SYMBOLIZER_PATH" --version
+      - name: Prepare compilation and fixture evidence checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/catalog-regression/check-build.py" <<'PY'
+          import hashlib, json, pathlib, shlex, sys
+          root = pathlib.Path(sys.argv[1]).resolve()
+          cache = (root / 'build/CMakeCache.txt').read_text()
+          for setting in ('CMAKE_BUILD_TYPE:STRING=Debug', 'CHIBI_ENABLE_SANITIZERS:BOOL=ON',
+                          'CHIBI_SANITIZERS:STRING=address,undefined', 'CHIBI_ENABLE_WARNINGS:BOOL=ON'):
+              assert setting in cache.splitlines(), setting
+              print(setting)
+          commands = json.loads((root / 'build/compile_commands.json').read_text())
+          for source in ('src/authoring/source_catalog.c', 'test/language/source_assets.c'):
+              matches = [entry for entry in commands
+                         if (pathlib.Path(entry['directory']) / entry['file']).resolve() == root / source]
+              assert matches, source
+              for entry in matches:
+                  args = entry.get('arguments') or shlex.split(entry['command'])
+                  assert '-fsanitize=address,undefined' in args, args
+                  assert '-fno-omit-frame-pointer' in args, args
+                  assert not any(arg.startswith('-fno-sanitize') for arg in args), args
+                  assert '-DNDEBUG' not in args, args
+                  assert '-g' in args and '-Werror' in args, args
+                  if source.endswith('source_assets.c'):
+                      assert '-DCHIBI_TEST_SOURCE_ASSETS' in args, args
+                      assert '-UNDEBUG' in args, args
+                  print(json.dumps(entry, sort_keys=True))
+          binary = root / 'build/test/language/test_language'
+          assert binary.is_file(), binary
+          print('test artifact', hashlib.sha256(binary.read_bytes()).hexdigest(), binary)
+          PY
+          # This is workflow evidence/cleanup only. The behavioral test stays in C.
+          cat > "$RUNNER_TEMP/catalog-regression/fixtures.py" <<'PY'
+          import json, os, pathlib, sys
+          snapshot = pathlib.Path(sys.argv[2])
+          paths = set(pathlib.Path('/tmp').glob('chibi-source-no-requests.*'))
+          if sys.argv[1] == 'before':
+              snapshot.write_text(json.dumps(sorted(map(str, paths))))
+          else:
+              before = set(map(pathlib.Path, json.loads(snapshot.read_text())))
+              remaining = paths - before
+              for directory in sorted(remaining):
+                  assert not directory.is_symlink() and directory.stat().st_uid == os.getuid()
+                  library = directory / 'libraries'
+                  source = library / 'Plain.chibi'
+                  assert set(directory.iterdir()) == {library} and not library.is_symlink()
+                  assert set(library.iterdir()) == {source} and not source.is_symlink()
+                  assert source.read_text() == 'Plain :: library { Identity :: (value: int) -> int { return value } }\n'
+                  source.unlink()
+                  library.rmdir()
+                  directory.rmdir()
+                  print('Removed this run\'s leftover fixture:', directory)
+              if sys.argv[1] == 'after-candidate':
+                  assert not remaining, 'Candidate teardown left its temporary fixture behind'
+          PY
+      - name: Build the isolated parent-source control with existing sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/catalog-regression"
+          make -C "$evidence/negative" test-build JOBS=2 LIBCLANG_ROOT=/usr/lib/llvm-18
+          python3 "$evidence/check-build.py" "$evidence/negative" | tee "$evidence/negative-build.txt"
+          test "$(git -C "$evidence/negative" diff --name-only)" = src/authoring/source_catalog.c
+          test "$(git -C "$evidence/negative" hash-object src/authoring/source_catalog.c)" = d179b82e172dcc9ff4c0b8e96d66081f6202429a
+      - name: Measure the negative selector under its unchanged 60-second supervisor
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/catalog-regression"
+          python3 "$evidence/fixtures.py" before "$evidence/negative-fixtures.json"
+          cd "$evidence/negative"
+          set +e
+          CHIBI_LANGUAGE_BUILD_DIR=build/test/language python3 tools/test_policy.py tool prototype-document > "$evidence/negative.log" 2>&1
+          result=$?
+          set -e
+          printf '%s\n' "$result" > "$evidence/negative.exit"
+          cat "$evidence/negative.log"
+          echo "Negative selector exit: $result"
+          python3 "$evidence/fixtures.py" after-negative "$evidence/negative-fixtures.json"
+      - name: Build the exact clean candidate with existing sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/catalog-regression"
+          test "$(git -C chibi rev-parse HEAD)" = "$ENGINE"
+          test -z "$(git -C chibi status --porcelain)"
+          make -C chibi test-build JOBS=2 LIBCLANG_ROOT=/usr/lib/llvm-18
+          python3 "$evidence/check-build.py" chibi | tee "$evidence/candidate-build.txt"
+          test -z "$(git -C chibi status --porcelain)"
+      - name: Measure the clean candidate under the same 60-second supervisor
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/catalog-regression"
+          python3 "$evidence/fixtures.py" before "$evidence/candidate-fixtures.json"
+          cd chibi
+          set +e
+          CHIBI_LANGUAGE_BUILD_DIR=build/test/language python3 tools/test_policy.py tool prototype-document > "$evidence/candidate.log" 2>&1
+          result=$?
+          set -e
+          printf '%s\n' "$result" > "$evidence/candidate.exit"
+          cat "$evidence/candidate.log"
+          echo "Candidate selector exit: $result"
+          python3 "$evidence/fixtures.py" after-candidate "$evidence/candidate-fixtures.json"
+          test "$(git rev-parse HEAD)" = "$ENGINE"
+          test -z "$(git status --porcelain)"
+          sha256sum build/test/language/test_language test/language/source_assets.c src/authoring/source_catalog.c tools/test_policy.py
+      - name: Require the named failed-before and complete passed-after evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/catalog-regression" <<'PY'
+          import json, pathlib, re, shlex, sys
+          evidence = pathlib.Path(sys.argv[1])
+          negative = (evidence / 'negative.log').read_text()
+          candidate = re.sub(r'\x1b\[[0-9;]*m', '', (evidence / 'candidate.log').read_text())
+          case = 'source_catalog_analyzes_libraries_without_specialization_requests'
+          result = int((evidence / 'negative.exit').read_text())
+          assert result not in (0, 124, 130), f'Invalid negative result: {result}'
+          assert re.search(r'source_catalog\.c:1659:\d+: runtime error: null pointer passed as argument 1', negative), negative
+          assert re.search(r'#[0-9]+ .*analyze_requested\b', negative), negative
+          assert re.search(r'#[0-9]+ .*' + case + r'\b.*source_assets\.c:', negative), 'New fixture was not the failing caller'
+          assert 'UndefinedBehaviorSanitizer: undefined-behavior' in negative, negative
+          assert 'ceiling 60s' in negative and 'exceeded its aggregate deadline' not in negative
+          assert int((evidence / 'candidate.exit').read_text()) == 0, candidate
+          assert 'ceiling 60s' in candidate and 'runtime error:' not in candidate, candidate
+          assert 'ERROR: AddressSanitizer' not in candidate and 'ERROR: LeakSanitizer' not in candidate, candidate
+          root = pathlib.Path('chibi')
+          cases = []
+          for source in ('prototype.c', 'source_assets.c'):
+              cases += re.findall(r'RUN_TEST_CASE\((\w+)\)', (root / 'test/language' / source).read_text())
+          commands = json.loads((root / 'build/compile_commands.json').read_text())
+          native_services = any('-DCHIBI_TEST_RECORD_SERVICES' in (entry.get('arguments') or shlex.split(entry['command']))
+                                for entry in commands if pathlib.Path(entry['file']).name == 'source_assets.c')
+          if not native_services:
+              cases.remove('source_relationship_native_commands_are_deferred')
+          assert case in cases
+          for name in cases:
+              assert re.search(r'Running: ' + name + r' \(OK\)', candidate), name
+          assert re.search(r'Summary: Passed: ' + str(len(cases)) + r' Failed: 0 Total: ' + str(len(cases)) + r'\b', candidate), candidate
+          print(f'Verified {len(cases)} original and new cases; named NULL-qsort failure before, clean pass after.')
+          PY
+      - name: Remove only this job's disposable negative worktree
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          negative="$RUNNER_TEMP/catalog-regression/negative"
+          if [ -f "$negative/.git" ]; then
+            git -C chibi worktree remove --force "$negative"
+          fi
