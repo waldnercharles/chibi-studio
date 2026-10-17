@@ -389,6 +389,33 @@ workload, measured native result and migration obligations are in
 infer permission to run it from the historical offscreen result or another
 selector's admission.
 
+`studio-acceptance --outliner-row-policies --source PATH` reads the exact
+`projects/studio/content/libraries/OutlinerRowPolicies.chibi` source without
+opening a project or starting the host/renderer. One case prepares the library
+once for bytecode and once for actual SLJIT, with 38 direct calls per backend:
+four depths, sixteen icons, ten drop strings and eight flag records. The 76
+calls check ancestor depth, all icon categories and priority/fallback, ordered
+unique assignment kinds, selection/view/rename flags and full-width entity
+identity. Each call has a 2,000-step budget, at most seven arguments and arrays
+of at most six integers. Each backend constructs 30 arrays containing 61
+integers. Backend-entry counters reject compiled-backend fallback.
+
+The case also checks formatter canonicality/idempotence, unchanged inputs and
+owned result headers. It retains the final dynamic drop string and flag record
+through source/input retirement without a test-side snapshot; literal string
+results are checked while their source module remains alive. It writes no
+files, launches no child processes and renders no frames. This checks the
+authored helper policies, not live scene capture/currentness, row filtering,
+full-width text conversion, production panel cutover or browser parity.
+
+Build with the existing optional acceptance target; its explicit public SDK
+dependencies include `Chibi::array_capabilities` and `Chibi::text_capabilities`.
+Compilation and execution of this cumulative source are separate gates. Before
+running, independently review the exact source/header, installed SDK and binary,
+then use the unchanged production supervisor with one whole-invocation
+60-second deadline. Neither the native row baseline nor successful project
+migration/formatting admits or proves this helper route.
+
 `studio-acceptance --scene-move --project-root PATH` runs two hidden frames on
 an isolated project. It checks moving multiple objects under a rotated parent,
 world placement and 2D picking, entity identity, authored and ECS sibling order, one-step undo
