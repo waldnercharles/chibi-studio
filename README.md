@@ -10,7 +10,10 @@ Preserved test oracles live in `tests/held/engine_oracles`; they are held covera
 not passing tests. Agent and contributor rules are in `AGENTS.md`.
 The engine's [current status](https://github.com/waldnercharles/chibi/blob/main/docs/status.md)
 tracks implemented capabilities, remaining work, ownership and evidence limits
-across repositories.
+across repositories. There are no separate example projects: the engine's
+[examples](https://github.com/waldnercharles/chibi/blob/main/docs/examples.md)
+page lists the checked-in projects to open here, and Studio's own
+`projects/studio` is the largest authored one.
 
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
