@@ -1303,36 +1303,62 @@ static bool behavior_graph_source(studio *s, rml_context *context, rml_element *
     studio_reveal_node(s, selected.graph_id, selected.node_id);
     REQUIRE(acount(e->selected) == 1 && e->selected[0]->id == selected.node_id);
     REQUIRE(kit_code_cursor(text) == start);
-    /* Repeated source/keyboard navigation reveals its target immediately,
-       including while a pointer-initiated camera transition is in flight. */
+    /* A source reveal starts at the visible camera and moves toward its node.
+       Retargeting preserves that position and velocity, without changing zoom. */
     bool reduced_motion = s->prefs.reduced_motion;
+    double time = s->time;
     s->prefs.reduced_motion = false;
     s->graph.x -= 10000;
     s->graph.y -= 10000;
+    float from_x = s->graph.x, from_y = s->graph.y, zoom = s->graph.zoom;
+    sg_show_node(s, e->selected[0], false);
+    REQUIRE(s->graph.camera.active);
+    REQUIRE(s->graph.x == from_x && s->graph.y == from_y);
+    float to_x = s->graph.camera.x, to_y = s->graph.camera.y;
+    s->time += 1.0 / 60;
+    sg_camera_step(s);
+    REQUIRE(s->graph.x > from_x && s->graph.x < to_x);
+    REQUIRE(s->graph.y > from_y && s->graph.y < to_y);
+    REQUIRE(s->graph.zoom == zoom);
+    float moving_x = s->graph.x, moving_y = s->graph.y;
+    double velocity = s->graph.camera.pan_x.v;
+    sg_show_node(s, entry, false);
+    REQUIRE(s->graph.x == moving_x && s->graph.y == moving_y);
+    REQUIRE(s->graph.camera.pan_x.v == velocity);
+    for (int i = 0; i < 90; i++) {
+        s->time += 1.0 / 60;
+        sg_camera_step(s);
+    }
+    REQUIRE(!s->graph.camera.active);
+    float settled_x = s->graph.x, settled_y = s->graph.y;
+    sg_show_node(s, entry, false);
+    REQUIRE(!s->graph.camera.active);
+    REQUIRE(s->graph.x == settled_x && s->graph.y == settled_y);
+    REQUIRE(s->graph.zoom == zoom);
     sg_frame_nodes(s, false, true);
     REQUIRE(s->graph.camera.active);
-    sg_show_node(s, e->selected[0], false);
+    sg_show_node(s, entry, false);
     REQUIRE(!s->graph.camera.active);
-    float selected_box[4];
-    REQUIRE(sg_node_box(s, e->selected[0], selected_box));
-    REQUIRE(selected_box[0] >= s->graph.x && selected_box[1] >= s->graph.y);
-    REQUIRE(
-        selected_box[0] + selected_box[2] <=
-        s->graph.x + s->graph.surface.rect.w / sg_zoom(s)
-    );
-    REQUIRE(
-        selected_box[1] + selected_box[3] <=
-        s->graph.y + s->graph.surface.rect.h / sg_zoom(s)
-    );
-    sg_frame_nodes(s, false, true);
+    s->time += 1.0 / 60;
+    sg_camera_step(s);
+    REQUIRE(s->graph.x == settled_x && s->graph.y == settled_y);
+    /* Direct zoom takes over the camera, and reduced motion settles a reveal. */
+    s->graph.x -= 10000;
+    sg_show_node(s, entry, false);
     REQUIRE(s->graph.camera.active);
-    sg_show_node(s, e->selected[0], false);
+    sg_zoom_at(s, zoom, s->graph.surface.rect.x, s->graph.surface.rect.y);
     REQUIRE(!s->graph.camera.active);
-    sg_frame_again(s);
-    REQUIRE(!s->graph.camera.active);
+    moving_x = s->graph.x;
+    s->time += 1.0 / 60;
+    sg_camera_step(s);
+    REQUIRE(s->graph.x == moving_x);
     s->prefs.reduced_motion = true;
+    sg_show_node(s, entry, false);
+    REQUIRE(!s->graph.camera.active);
+    REQUIRE(s->graph.x != moving_x);
     sg_frame_nodes(s, false, true);
     REQUIRE(!s->graph.camera.active);
+    s->time = time;
     s->prefs.reduced_motion = reduced_motion;
     REQUIRE(rml_context_focus_element(context) == input);
     REQUIRE(!asset_code_dirty(code));
@@ -1372,6 +1398,8 @@ static bool behavior_empty_variables(studio *s)
     return check_counter(s, 1, false, NULL);
 }
 
+static rml_element *find_element(studio *s, const char *selector);
+
 /* Hidden graphs do no UI work. Both views follow one document, without
    losing the scene source draft selected between visits to the graph. */
 static bool graph_visibility_frame(void *state)
@@ -1385,6 +1413,8 @@ static bool graph_visibility_frame(void *state)
     static rml_element *focus_document;
     static uint64_t source_graph, source_node;
     static int source_cursor;
+    static float code_y, moving_code_y, manual_code_y;
+    static bool reduced_motion;
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && s->ui);
     frames++;
@@ -1392,9 +1422,32 @@ static bool graph_visibility_frame(void *state)
     if (frames == 1) {
         REQUIRE(opens_on_handler(s));
         studio_behavior_show(s, 2);
+        sg_nav_track(s);
+        reduced_motion = s->prefs.reduced_motion;
+        s->prefs.reduced_motion = false;
+        asset_code *code = counter_source(s);
+        const char *source = asset_code_text(code);
+        const char *begin = strstr(source, "on Begin");
+        REQUIRE(begin);
+        kit_code_reveal(asset_code_editor(code), (int)(begin - source));
     } else if (frames == 2) {
         REQUIRE(tilemap_viewport(s));
+        float x;
+        kit_code_scroll(asset_code_editor(counter_source(s)), &x, &code_y);
     } else if (frames == 3) {
+        kit_code_editor *text = asset_code_editor(counter_source(s));
+        float x, y;
+        kit_code_scroll(text, &x, &moving_code_y);
+        printf(
+            "Code reveal scroll: first=%.2f next=%.2f caret=%d\n",
+            code_y,
+            moving_code_y,
+            kit_code_cursor(text)
+        );
+        REQUIRE(moving_code_y > code_y);
+        kit_code_reveal(text, 0);
+        kit_code_scroll(text, &x, &y);
+        REQUIRE(y == moving_code_y);
         REQUIRE(s->graph.backend);
         hidden = rml_backend_get_stats(s->graph.backend);
         REQUIRE(hidden.context_updates && hidden.render_captures);
@@ -1414,7 +1467,34 @@ static bool graph_visibility_frame(void *state)
         REQUIRE(behavior_graph_choices(s));
         REQUIRE(behavior_graph_source(s, context, input));
         studio_behavior_show(s, 1);
+        sg_nav_track(s);
+        asset_code *code = counter_source(s);
+        const char *source = asset_code_text(code);
+        kit_code_reveal(text, (int)(strstr(source, "on Begin") - source));
+        s->prefs.reduced_motion = true;
     } else if (frames == 4 || frames == 5 || frames == 10) {
+        if (frames == 4) {
+            kit_code_editor *text = asset_code_editor(counter_source(s));
+            float x, y;
+            kit_code_scroll(text, &x, &y);
+            printf("Reduced-motion scroll: %.2f caret=%d\n", y, kit_code_cursor(text));
+            REQUIRE(y > moving_code_y);
+            s->prefs.reduced_motion = reduced_motion;
+            kit_code_reveal(text, 0);
+            rml_element *view = find_element(s, "kit-code");
+            REQUIRE(view);
+            rml_vec2 at = rml_element_absolute_offset(view, RML_BOX_CONTENT);
+            rml_context *context = rml_element_context(view);
+            rml_context_process_mouse_move(context, (int)at.x + 100, (int)at.y + 100, 0);
+            rml_context_process_mouse_wheel(context, (rml_vec2){ 0, -1 }, 0);
+            kit_code_scroll(text, &x, &manual_code_y);
+            REQUIRE(manual_code_y < y && manual_code_y > 0);
+        }
+        if (frames == 5) {
+            float x, y;
+            kit_code_scroll(asset_code_editor(counter_source(s)), &x, &y);
+            REQUIRE(y == manual_code_y);
+        }
         rml_backend_stats now = rml_backend_get_stats(s->graph.backend);
         REQUIRE(now.context_updates == hidden.context_updates);
         REQUIRE(now.render_captures == hidden.render_captures);
@@ -3274,14 +3354,24 @@ static bool asset_pointer_frame(void *state)
     }
 }
 
-/* Click the visible node title, away from sockets and editable fields. */
+/* Click the rendered node title or operator symbol, away from pin labels. */
 static bool point_node(studio *s, node *n)
 {
     const node_layout *layout = sg_layout_of(s, n);
     REQUIRE(layout && layout->w > 0);
+    char path[96];
+    snprintf(
+        path,
+        sizeof path,
+        "world/stage/n%llu/%s",
+        (unsigned long long)n->id,
+        layout->form == FORM_OPERATOR ? "b/sym" : "h/t"
+    );
+    kit_rect title;
+    REQUIRE(kit_find(s->graph.kit, path, &title));
     kit_rect r = s->graph.surface.rect;
-    float x = r.x + (n->x + layout->w / 2 - s->graph.x) * sg_zoom(s);
-    float y = r.y + (n->y + 10 - s->graph.y) * sg_zoom(s);
+    float x = r.x + (title.x + title.w / 2) * sg_zoom(s);
+    float y = r.y + (title.y + title.h / 2) * sg_zoom(s);
     REQUIRE(x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.h);
     return click_at(x * s->prefs.ui_scale, y * s->prefs.ui_scale);
 }
@@ -3296,10 +3386,11 @@ static bool graph_pointer_frame(void *state)
     editor *e = s->scene->graph_editor;
     switch (frames) {
         case 1:
-            studio_show_editor(s, STUDIO_EDITOR_BEHAVIOR);
             s->prefs.reduced_motion = true;
+            studio_show_editor(s, STUDIO_EDITOR_BEHAVIOR);
             return true;
-        case 3: {
+        /* Opening the pane finishes its host layout before queuing a click. */
+        case 4: {
             graph *gr = sg_active_graph(s);
             REQUIRE(gr);
             for (int i = 0; i < acount(gr->edges) && !to; i++) {
@@ -3313,13 +3404,13 @@ static bool graph_pointer_frame(void *state)
             REQUIRE(from && to);
             return point_node(s, sg_node_by_id(s, from));
         }
-        case 4:
+        case 5:
             REQUIRE(selected_only(e, from) && s->focus_area == s->graph.area);
             return press_key(SDLK_RIGHT);
-        case 5:
+        case 6:
             REQUIRE(selected_only(e, to));
             return press_chord(SDLK_F, s->mac ? SDL_KMOD_GUI : SDL_KMOD_CTRL);
-        case 7: REQUIRE(s->graph.find.open); return type_text("count");
+        case 8: REQUIRE(s->graph.find.open); return type_text("count");
         case 9:
             REQUIRE(
                 !strcmp(s->graph.find.query, "count") && acount(s->graph.find.hits) > 1
@@ -4062,6 +4153,10 @@ TEST_CASE(graph_visibility_and_document_pair)
         "    on Tick {\n"
         "        count = count + 1\n"
         "    }\n"
+        /* Keep Begin offscreen to exercise the receiving code viewport. */
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
         "    on Begin {\n"
         "        count = 1\n"
         "    }\n"

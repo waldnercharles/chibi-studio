@@ -226,8 +226,11 @@ before two handlers: the initial graph still opens on Tick, the picker groups
 Events before Variables and Functions, and the root is labeled Variables.
 Selecting Begin in Both reveals its declaration; revealing a statement selects
 its node and corresponding source while a graph field keeps keyboard focus.
-Source reveals and keyboard framing interrupt camera motion immediately; framing
-also settles immediately with reduced motion enabled.
+Source reveals preserve zoom and ease into view, including when retargeted during
+motion. Intermediate positions, velocity continuity, already-visible targets and
+manual interruption are checked. An offscreen handler also checks intermediate
+code scroll offsets, retargeting without a jump, reduced motion and manual-wheel
+cancellation. Reduced motion settles either reveal immediately.
 Moving the focused source caret to a statement selects its graph/node without
 moving the caret back to the declaration or taking focus from the text.
 A temporary distant statement tests that initial framing keeps the handler's

@@ -218,6 +218,10 @@ struct kit_code_editor
     bool no_wrap;
     float scroll_x; /* lines scrolled left, pixels */
     long followed;  /* the cursor last scrolled into view sideways */
+    bool reveal_pending, revealing;
+    spring reveal_x, reveal_y;
+    float reveal_target_x, reveal_target_y, reveal_max_x;
+    double reveal_time, frame_time;
     /* The pointer: where it last moved, in the context's pixels, and since
        when it rests there. A key or a press hides the card until it moves. */
     bool pointer_in, pointer_moved, hover_blocked;
@@ -712,8 +716,16 @@ void kit_code_editor_destroy(kit_code_editor *e)
     free(e);
 }
 
+static void cancel_reveal(kit_code_editor *e)
+{
+    e->reveal_pending = false;
+    e->revealing = false;
+    e->reveal_x = e->reveal_y = (spring){ 0 };
+}
+
 void kit_code_set_text(kit_code_editor *e, const char *text)
 {
+    cancel_reveal(e);
     e->quiet = true;
     zep_set_text(e->zep, text ? text : "");
     e->quiet = false;
@@ -827,12 +839,31 @@ int kit_code_cursor(const kit_code_editor *e)
 
 void kit_code_set_cursor(kit_code_editor *e, int byte)
 {
+    cancel_reveal(e);
     zep_set_cursor(e->zep, byte);
     e->cursor = zep_cursor(e->zep);
 }
 
+void kit_code_reveal(kit_code_editor *e, int byte)
+{
+    zep_set_cursor(e->zep, byte);
+    e->cursor = zep_cursor(e->zep);
+    e->reveal_pending = true;
+}
+
+void kit_code_scroll(kit_code_editor *e, float *x, float *y)
+{
+    *x = e->scroll_x;
+    *y = 0;
+    if (e->view && e->view->rendered) {
+        float maximum, top, bottom;
+        zep_scroll_info(e->zep, y, &maximum, &top, &bottom);
+    }
+}
+
 void kit_code_set_selection(kit_code_editor *e, int anchor, int cursor)
 {
+    cancel_reveal(e);
     if (e->vim) {
         if (cursor > anchor) {
             cursor--;
@@ -1912,6 +1943,13 @@ static void on_view_event(void *user, const rml_event *event)
     rml_vec2 at = local(v, event);
     switch (event->id) {
         case RML_EVENT_KEYDOWN:
+        case RML_EVENT_TEXTINPUT:
+        case RML_EVENT_MOUSEDOWN:
+        case RML_EVENT_MOUSESCROLL: cancel_reveal(e); break;
+        default: break;
+    }
+    switch (event->id) {
+        case RML_EVENT_KEYDOWN:
         case RML_EVENT_KEYUP:
             /* The host trades Control and Command in key events on a Mac. */
             e->primary_held = event->modifiers & RML_KM_CTRL;
@@ -2156,7 +2194,8 @@ static void follow_cursor(code_view *v)
 {
     kit_code_editor *e = v->editor;
     long cursor = zep_cursor(e->zep);
-    if (!e->no_wrap || !v->rendered || cursor == e->followed) {
+    if (e->reveal_pending || e->revealing || !e->no_wrap || !v->rendered ||
+        cursor == e->followed) {
         return;
     }
     e->followed = cursor;
@@ -2169,6 +2208,61 @@ static void follow_cursor(code_view *v)
                                          : 0;
     if (cells) {
         scroll_sideways(v, cells);
+    }
+}
+
+/* Reuse the shared exact spring: reveal only the distance needed to leave
+   context around the caret, and retarget an in-flight reveal from its current
+   rendered offset and velocity. Zep's regular input keeps its own following. */
+static void reveal_cursor(code_view *v)
+{
+    kit_code_editor *e = v->editor;
+    if (!e->reveal_pending && !e->revealing) {
+        return;
+    }
+    float offset, maximum, top, bottom;
+    zep_scroll_info(e->zep, &offset, &maximum, &top, &bottom);
+    if (e->reveal_pending) {
+        float x, y, w, h, left, right;
+        zep_cursor_rect(e->zep, &x, &y, &w, &h);
+        zep_text_region_x(e->zep, &left, &right);
+        float margin_y = math_min(3 * e->line, (bottom - top) / 4);
+        float move_y = y < top + margin_y        ? y - top - margin_y
+                     : y + h > bottom - margin_y ? y + h - bottom + margin_y
+                                                 : 0;
+        float margin_x = math_min(SCROLL_MARGIN_CELLS * e->advance, (right - left) / 4);
+        float move_x = x < left + margin_x      ? x - left - margin_x
+                     : x + w > right - margin_x ? x + w - right + margin_x
+                                                : 0;
+        e->reveal_target_y = math_clamp(offset + move_y, 0, maximum);
+        e->reveal_max_x = math_max(0, longest_line(e) - (right - left) + margin_x);
+        e->reveal_target_x = e->no_wrap
+                               ? math_clamp(e->scroll_x + move_x, 0, e->reveal_max_x)
+                               : 0;
+        e->reveal_y.x = offset - e->reveal_target_y;
+        e->reveal_x.x = e->scroll_x - e->reveal_target_x;
+        if (!e->revealing) {
+            e->reveal_time = e->frame_time;
+        }
+        e->reveal_pending = false;
+        e->revealing = true;
+        e->followed = zep_cursor(e->zep);
+    }
+    double dt = math_clamp(e->frame_time - e->reveal_time, 0.0, 0.1);
+    e->reveal_time = e->frame_time;
+    if (motion_reduced(v->el)) {
+        e->reveal_x = e->reveal_y = (spring){ 0 };
+    }
+    spring_params params = spring_for(0.22, 0);
+    spring_step(&e->reveal_x, params, dt);
+    spring_step(&e->reveal_y, params, dt);
+    e->scroll_x = math_clamp(e->reveal_target_x + (float)e->reveal_x.x, 0, e->reveal_max_x);
+    zep_set_text_offset_x(e->zep, e->scroll_x);
+    zep_set_text_offset_y(e->zep, e->reveal_target_y + (float)e->reveal_y.x);
+    e->revealing = e->reveal_x.x != 0 || e->reveal_y.x != 0 ||
+                   e->reveal_x.v != 0 || e->reveal_y.v != 0;
+    if (e->revealing) {
+        rml_context_request_next_update(rml_element_context(v->el), 0);
     }
 }
 
@@ -2190,8 +2284,9 @@ static void view_render(rml_element *el, void *user)
         v->height = size.y;
         zep_set_region(e->zep, 0, 0, size.x, size.y);
     }
-    follow_cursor(v);
     sync_face(v);
+    reveal_cursor(v);
+    follow_cursor(v);
     v->render++;
     v->clipped = false;
     zep_render(e->zep);
@@ -2313,6 +2408,7 @@ static void configure(kit *k, kit_code_editor *e, const kit_code_desc *d)
         e->vim = d->vim;
         zep_set_vim(e->zep, e->vim);
     }
+    e->frame_time = k->in.time;
     e->mac = d->mac;
     e->host_history = d->history;
     asetlen(e->chords, 0);
@@ -2820,6 +2916,9 @@ kit_code_result kit_code(kit *k, const char *key, kit_code_editor *e, const kit_
     code_view *v = view_of(n);
     attach(v, e);
     configure(k, e, d);
+    if (e->reveal_pending || e->revealing) {
+        rml_context_request_next_update(k->context, 0);
+    }
     set_flag(n, "data-link", d->link_end > d->link_start);
     highlight(v, e, d);
     sync_colors(v);

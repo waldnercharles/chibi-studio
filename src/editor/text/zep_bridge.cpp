@@ -579,6 +579,20 @@ void zep_set_text_offset_x(zep_editor *z, float offset)
     z->window().SetTextOffsetX(offset);
 }
 
+void zep_scroll_info(zep_editor *z, float *offset, float *maximum, float *top, float *bottom)
+{
+    Zep::NVec4f info = z->window().GetTextScrollInfo();
+    *offset = info.x;
+    *maximum = info.y;
+    *top = info.z;
+    *bottom = info.w;
+}
+
+void zep_set_text_offset_y(zep_editor *z, float offset)
+{
+    z->window().SetTextOffsetY(offset);
+}
+
 void zep_text_region_x(const zep_editor *z, float *left, float *right)
 {
     Zep::NVec2f x = z->window().GetTextRegionX();
