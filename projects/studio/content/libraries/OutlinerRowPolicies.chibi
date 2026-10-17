@@ -57,41 +57,13 @@ library OutlinerRowPolicies {
             }
             index = index + 1
         }
-        if first == CameraIcon {
-            return "󰵝"
-        }
-        if first == SystemIcon {
-            return ""
-        }
-        if first == LightIcon {
-            return "󰌶"
-        }
-        if first == EmitterIcon {
-            return "󰙴"
-        }
-        if first == WaterIcon {
-            return "󰸊"
-        }
-        if first == TerrainIcon {
-            return "󰖊"
-        }
-        if first == GamepadIcon {
-            return "󰊗"
-        }
-        if first == KeyboardIcon {
-            return "󰥻"
-        }
-        if first == ProjectileIcon {
-            return "󰳚"
-        }
-        if first == HealthIcon {
-            return "󰋕"
-        }
-        if first == DiamondIcon {
-            return "󰮋"
-        }
-        if first == ShapeIcon {
-            return "󰠲"
+        glyphs :: cast<string[]>([
+            "󰵝", "", "󰌶", "󰙴",
+            "󰸊", "󰖊", "󰊗", "󰥻",
+            "󰳚", "󰋕", "󰮋", "󰠲"
+        ])
+        if first >= 0 && first < IconCount {
+            return glyphs[first]
         }
         return "󰆧"
     }

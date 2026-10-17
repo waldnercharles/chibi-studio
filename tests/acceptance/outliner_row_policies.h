@@ -10,8 +10,8 @@
 #include "runtime/text_format.h"
 #include "types/record.h"
 
-/* Renderer-free exact-source check. One source preparation and 38 direct
- * helper invocations per backend: four depths, 16 icons, ten drop strings and
+/* Renderer-free exact-source check. One source preparation and 41 direct
+ * helper invocations per backend: four depths, 19 icons, ten drop strings and
  * eight flag records. No scene, host child, file mutation or UI is involved.
  * Arrays contain at most six integers; calls have at most seven arguments.
  * Bytecode and actual SLJIT must agree.
@@ -273,6 +273,11 @@ static bool outliner_policy_icons(behavior_backend backend)
     static const int repeated[] = { COMPONENT_ICON_HEALTH,
                                     COMPONENT_ICON_HEALTH,
                                     COMPONENT_ICON_NONE };
+    static const int unknown_negative[] = { -2, COMPONENT_ICON_CAMERA };
+    static const int unknown_high[] = { COMPONENT_ICON_COUNT, COMPONENT_ICON_COUNT + 1 };
+    static const int mixed_unknown_high[] = {
+        COMPONENT_ICON_COUNT + 1, COMPONENT_ICON_SHAPE, COMPONENT_ICON_NONE
+    };
     outliner_policy_call *call = &outliner_policy.calls[0];
     REQUIRE(COMPONENT_ICON_COUNT == 12);
     for (int i = 0; i < 12; i++) {
@@ -282,6 +287,15 @@ static bool outliner_policy_icons(behavior_backend backend)
     REQUIRE(outliner_policy_text("Icon", none, 1, false, "\xf3\xb0\x86\xa7", call, backend));
     REQUIRE(outliner_policy_text("Icon", mixed, 5, false, glyphs[0], call, backend));
     REQUIRE(outliner_policy_text("Icon", repeated, 3, false, glyphs[9], call, backend));
+    REQUIRE(
+        outliner_policy_text("Icon", unknown_negative, 2, false, "\xf3\xb0\x86\xa7", call, backend)
+    );
+    REQUIRE(
+        outliner_policy_text("Icon", unknown_high, 2, false, "\xf3\xb0\x86\xa7", call, backend)
+    );
+    REQUIRE(
+        outliner_policy_text("Icon", mixed_unknown_high, 3, false, glyphs[11], call, backend)
+    );
     return true;
 }
 
@@ -454,7 +468,7 @@ TEST_CASE(outliner_row_policy_contract)
         REQUIRE(outliner_policy_icons(backends[i]));
         REQUIRE(outliner_policy_drops(backends[i]));
         REQUIRE(outliner_policy_states(backends[i]));
-        REQUIRE(outliner_policy.invocations == 38);
+        REQUIRE(outliner_policy.invocations == 41);
         authoring_source_free(outliner_policy.source);
         outliner_policy.source = NULL;
         arena_free(&outliner_policy.inputs);
@@ -468,7 +482,7 @@ TEST_CASE(outliner_row_policy_contract)
         ));
         REQUIRE(!strcmp(outliner_policy.calls[1].result.str, "object behavior shape field"));
         printf(
-            "Outliner row policies accepted: backend=%s calls=38\n",
+            "Outliner row policies accepted: backend=%s calls=41\n",
             behavior_backend_name(backends[i])
         );
     }
