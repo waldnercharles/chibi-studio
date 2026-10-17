@@ -37,13 +37,29 @@ env:
 
 jobs:
   studio:
-    name: Build and startup against engine main
+    name: Build and startup against selected engine
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           path: chibi-studio
+          persist-credentials: false
+      - name: Select the paired engine for a same-repository PR
+        id: engine
+        env:
+          ALLOW_PIN: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        shell: bash
+        run: |
+          ref=main
+          if [ "$ALLOW_PIN" = true ] && [ -f chibi-studio/.github/engine-ref ]; then
+            ref=$(<chibi-studio/.github/engine-ref)
+            if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::.github/engine-ref must contain one full lowercase engine commit SHA."
+              exit 1
+            fi
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Require engine checkout access
         env:
           TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
@@ -56,6 +72,8 @@ jobs:
         with:
           repository: waldnercharles/chibi
           token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
+          ref: ${{ steps.engine.outputs.ref }}
+          persist-credentials: false
           path: chibi
       - name: Install build dependencies
         run: |
@@ -71,7 +89,12 @@ jobs:
       - name: Identify SDK and dependency sources
         id: deps
         working-directory: chibi
+        env:
+          ENGINE_REF: ${{ steps.engine.outputs.ref }}
         run: |
+          if [ "$ENGINE_REF" != main ]; then
+            test "$(git rev-parse HEAD)" = "$ENGINE_REF"
+          fi
           {
             echo "key=$(python3 tools/fetchcontent_cache.py fingerprint --source-dir .)"
             echo "engine=$(git rev-parse HEAD)"
