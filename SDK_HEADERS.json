@@ -108,7 +108,8 @@
     "src/editor/workspace/application.c"
   ],
   "authoring/component_presentation.h": [
-    "src/editor/studio/studio_internal.h"
+    "src/editor/studio/studio_internal.h",
+    "src/editor/studio/studio_scene_read.h"
   ],
   "authoring/engine_preview.h": [
     "src/editor/workspace/application.c"
@@ -176,6 +177,7 @@
     "src/editor/studio/studio_graph_details.c",
     "src/editor/studio/studio_graph_literals.c",
     "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_scene_read.h",
     "src/editor/studio/studio_thumbnails.h",
     "src/editor/workspace/asset_index.h",
     "src/editor/workspace/asset_refactor.h",
@@ -183,6 +185,9 @@
   ],
   "authoring/scene_hierarchy.h": [
     "src/editor/workspace/scene_hierarchy.c"
+  ],
+  "authoring/scene_snapshot.h": [
+    "src/editor/studio/studio_scene_read.h"
   ],
   "authoring/shader_prepare.h": [
     "src/editor/workspace/application.c"
@@ -711,7 +716,8 @@
   "support/arena.h": [
     "src/editor/studio/studio_graph_literals.c",
     "src/editor/studio/studio_graph_properties.c",
-    "src/editor/studio/studio_member_properties.c"
+    "src/editor/studio/studio_member_properties.c",
+    "src/editor/studio/studio_scene_read.c"
   ],
   "support/array.h": [
     "src/editor/collab/actions_scene.c",
@@ -773,6 +779,7 @@
     "src/editor/studio/studio_prototype_actions.c",
     "src/editor/studio/studio_refactor.c",
     "src/editor/studio/studio_scene.c",
+    "src/editor/studio/studio_scene_read.c",
     "src/editor/studio/studio_shell.c",
     "src/editor/studio/studio_sources.c",
     "src/editor/studio/studio_thumbnail_cache.c",
@@ -942,6 +949,7 @@
     "src/editor/studio/studio_projects.c",
     "src/editor/studio/studio_properties.c",
     "src/editor/studio/studio_refactor.c",
+    "src/editor/studio/studio_scene_read.c",
     "src/editor/studio/studio_shell.c",
     "src/editor/studio/studio_sources.c",
     "src/editor/studio/studio_thumbnail_cache.c",

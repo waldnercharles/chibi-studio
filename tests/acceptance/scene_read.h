@@ -664,6 +664,7 @@ TEST_CASE(scene_read_scope_lifetime)
     REQUIRE(studio_scene_read_begin(&scene_read_scope, f->s));
     studio_scene_read *second = scene_read_take();
     REQUIRE(second && studio_scene_read_current(&scene_read_scope, f->s, second));
+    REQUIRE(!scene_read_error[0]);
     REQUIRE(!studio_scene_read_current(&scene_read_scope, f->s, first));
     REQUIRE(!studio_scene_read_begin(&scene_read_scope, f->s));
     REQUIRE(scene_read_scope.entered && !scene_read_scope.owner);
