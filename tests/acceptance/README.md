@@ -405,13 +405,16 @@ selector's admission.
 `studio-acceptance --outliner-row-policies --source PATH` reads the exact
 `projects/studio/content/libraries/OutlinerRowPolicies.chibi` source without
 opening a project or starting the host/renderer. One case prepares the library
-once for bytecode and once for actual SLJIT, with 38 direct calls per backend:
-four depths, sixteen icons, ten drop strings and eight flag records. The 76
+once for bytecode and once for actual SLJIT, with 41 direct calls per backend:
+four depths, nineteen icons, ten drop strings and eight flag records. The 82
 calls check ancestor depth, all icon categories and priority/fallback, ordered
 unique assignment kinds, selection/view/rename flags and full-width entity
 identity. Each call has a 2,000-step budget, at most seven arguments and arrays
-of at most six integers. Each backend constructs 30 arrays containing 61
-integers. Backend-entry counters reject compiled-backend fallback.
+of at most six integers. Each backend constructs 33 input integer arrays
+containing 68 integers. Backend-entry counters reject compiled-backend fallback.
+Each module preparation also evaluates the named glyph-table initializer once
+through the existing 100,000-step bytecode preparation budget: two evaluations
+total, separate from the 82 direct calls.
 
 The case also checks formatter canonicality/idempotence, unchanged inputs and
 owned result headers. It retains the final dynamic drop string and flag record
