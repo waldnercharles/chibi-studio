@@ -197,8 +197,8 @@ jobs:
           retention-days: 1
 
   deploy:
-    needs: editor
-    if: github.ref == 'refs/heads/main'
+    needs: [version, editor]
+    if: github.ref == 'refs/heads/main' && needs.version.outputs.published == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
