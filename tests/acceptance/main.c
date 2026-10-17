@@ -29,12 +29,15 @@
 #include <SDL3/SDL_process.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
+#include <assert.h>
 #include <errno.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+
+#include "scene_read.h"
 
 studio *studio_acceptance_studio(void *);
 int studio_acceptance_host_main(int, char **);
@@ -4337,6 +4340,11 @@ TEST_CASE(debugger_source_history)
 
 int main(int argc, char **argv)
 {
+    if (argc == 2 && !strcmp(argv[1], "--scene-read")) {
+        studio_scene_read_tests();
+        pu_print_stats();
+        return pu_test_failed() ? 1 : 0;
+    }
     if (argc == 4 && !strcmp(argv[1], "--outliner-row-policies") &&
         !strcmp(argv[2], "--source")) {
         return outliner_row_policy_main(argv[3]);
@@ -4399,7 +4407,8 @@ int main(int argc, char **argv)
             "--play-keys|--unsaved-prompts|"
             "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
             "history "
-            "--project-root PATH | --scene-cursors | --project-open | "
+            "--project-root PATH | --scene-cursors | --scene-read | "
+            "--project-open | "
             "--outliner-row-policies --source PATH\n"
         );
         return 2;

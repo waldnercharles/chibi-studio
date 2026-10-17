@@ -104,6 +104,7 @@ set(STUDIO_SOURCES
     src/editor/studio/studio_refactor.c
     src/editor/studio/studio_scene_camera.c
     src/editor/studio/studio_scene.c
+    src/editor/studio/studio_scene_read.c
     src/editor/studio/studio_settings.c
     src/editor/studio/studio_shell.c
     src/editor/studio/studio_sources.c

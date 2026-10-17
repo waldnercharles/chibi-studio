@@ -108,11 +108,19 @@ not validate the combined candidate or establish threaded/cross-browser acceptan
 
 ## Automatic browser distribution
 
-`.github/workflows/publish.yml` builds the serial editor against the newest
-complete engine release, using its installed web SDK and Emscripten 6.0.10.
-Changes to browser build inputs on `main` publish automatically. A daily check
-also picks up new engine packages and skips compilation when the published
+`.github/workflows/publish.yml` resolves engine `main` once per run and builds
+with Emscripten 6.0.10 against an installed web SDK for that exact revision.
+It verifies the published SDK when available; if the release is absent, it
+packages the SDK from the pinned engine source. Incomplete releases and
+verification failures stop the workflow rather than selecting another SDK.
+
+Changes to browser build inputs on `main` build automatically. A daily check
+also resolves current engine `main` and skips compilation when the published
 Studio/engine pair is unchanged. Pull requests build without deploying.
+The shared distribution updates only after a successful build on `main` with a
+complete matching engine release, including its export package. Source-fallback
+builds validate the editor without replacing the public distribution; a later
+daily check can publish once the matching release is available.
 
 The public distribution is at
 <https://waldnercharles.github.io/chibi-studio/>. Its `studio.json` identifies
