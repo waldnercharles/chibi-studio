@@ -23,8 +23,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      CANDIDATE_SHA: a1126704c16040dc0d8f6e15e183314e8c60cac4
-      CANDIDATE_TREE: 6cdf50524b6263b5a9b818927b96ac310e4bdc9c
+      CANDIDATE_SHA: ec13962865b093bbeb2693a46ec6dc22fac6e498
+      CANDIDATE_TREE: 45a26cad149ec34ea6e2ba737077d903a8e5502e
       SEMANTIC_COMPONENTS_REVIEWED: 'true'
       EXPECTED_BASE_SHA: bee5b54e159cce44ee52ca9439be587d9a95f5d2
       SOURCE_BRANCH: refs/heads/codex/m5-semantic-components-20261018
