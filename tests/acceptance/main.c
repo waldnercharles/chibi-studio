@@ -776,6 +776,7 @@ static bool frame_probe_drawn(studio *s, bool expected)
 /* Two tiny static buffers exercise model history/save in the existing first
  * frame, without loading executable source or adding rendered frames. */
 static bool static_relationship_refresh(studio *);
+static bool cached_editor_registry(void);
 static bool static_prototype_refresh(void);
 static bool large_source_read_limits(void);
 static bool static_source_dispatch_history(void);
@@ -959,6 +960,7 @@ static bool source_edit_frame(void *state)
         REQUIRE(input_map_reloads(s));
         REQUIRE(quit_asks(s));
         REQUIRE(static_relationship_refresh(s));
+        REQUIRE(cached_editor_registry());
     }
     return true;
 }
@@ -4085,6 +4087,7 @@ static bool code_glyphs_frame(void *state)
 #include "scene_collider3d.h"
 #include "scene_gizmo3d.h"
 #include "scene_move.h"
+#include "scene_registry_context.h"
 
 bool studio_acceptance_frame(void *state)
 {

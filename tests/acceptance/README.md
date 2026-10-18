@@ -18,6 +18,17 @@ The final frame renders both graph and code views before normal host shutdown. T
 consumer edit-handler integration and UI rendering; it does not hit-test pointer
 input. Counter is not saved; no scenario, playback or screenshot occurs.
 
+At the end of the fourth frame, a retained-editor check opens one tiny prototype
+through Studio's normal history-query dispatch before its relationship exists.
+Adding one relationship and refreshing content must clear the same editor's
+diagnostic without editing or reopening the source. Text, clean/history state
+and the tab checkpoint stay unchanged; another query preserves its syntax cache.
+An unchanged executable-source generation ensures source-world rebinding cannot
+mask the registry refresh. This adds two files (at most 128 bytes total), one
+fixture with two worlds, four history queries, one content refresh and one
+validation. It adds no host frames, sleeps or child processes. Files and models
+are freed before the final regression assertion.
+
 The first frame also checks prototype and relationship source tabs through
 Studio's focused Undo/Redo dispatch, including dirty state and typed values
 reopened from the tab's checkpoint. One temporary file just above the 64 MiB

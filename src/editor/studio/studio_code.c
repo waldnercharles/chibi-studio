@@ -115,6 +115,7 @@ bool studio_code_replace(studio *s, const char *path, const char *before, const 
 
 static asset_code *asset_context(studio *s, asset_code *code)
 {
+    asset_code_set_registry(code, &s->scene->registry);
     asset_code_set_source_world(code, s->scene->live, s->scene->content_root);
     refresh_asset_catalog(s->scene);
     return code;
@@ -155,7 +156,6 @@ static asset_code *asset_editor(studio *s, scene_document_tab *tab)
         studio_warn(s, tab->source_state ? "Could not restore code source draft" : error);
         return NULL;
     }
-    asset_code_set_registry(code, &s->scene->registry);
     apush(s->code.assets, code);
     asset_context(s, code);
     capture_asset(s, code);
