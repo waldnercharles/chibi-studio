@@ -37,7 +37,7 @@ REVIEWED_FILES = {
 CONTROLS = {
     'red': {'product': PRODUCT, 'revision': BASELINE, 'baseline': 'baseline',
             'sha256': BASELINE_HASH, 'marker': RED_MARKER,
-            'assertion': r'scene_move\.h \(562\): ok\)'},
+            'assertion': r'scene_move\.h \(563\): ok\)'},
     'registry-red': {'product': REGISTRY_PRODUCT, 'revision': REGISTRY_BASELINE,
                      'baseline': 'registry_baseline', 'sha256': REGISTRY_OLD_HASH,
                      'marker': REGISTRY_MARKER,
