@@ -1,4 +1,4 @@
-behavior "NewProjectKeys" {
+NewProjectKeys :: behavior {
     on ConfirmDiscard {
         move_ui_focus(Element: "#new-project-cancel", Step: 1)
     }

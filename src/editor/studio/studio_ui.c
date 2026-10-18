@@ -401,8 +401,6 @@ static void follow_disk(studio *s)
 
 studio_ui *studio_ui_new(studio *s, const char *project_root, char *error, size_t size)
 {
-    rml_context *context = rml_backend_context(s->backend);
-    studio_ui *studio_ui_state = xcalloc(1, sizeof *studio_ui_state);
     chibi_project project = { 0 };
     native_capabilities *native = authoring_application_catalog_new(true, error, size);
     int opened = native
@@ -410,9 +408,11 @@ studio_ui *studio_ui_new(studio *s, const char *project_root, char *error, size_
                    : -1;
     native_capabilities_free(native);
     if (opened != 0) {
-        free(studio_ui_state);
+        chibi_project_free(&project);
         return NULL;
     }
+    rml_context *context = rml_backend_context(s->backend);
+    studio_ui *studio_ui_state = xcalloc(1, sizeof *studio_ui_state);
     if (project.ui) {
         studio_ui_state->default_page = xstrdup(project.ui);
     }

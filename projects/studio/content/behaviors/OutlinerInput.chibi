@@ -1,14 +1,14 @@
-behavior "OutlinerInput" {
-    action show_ui_popover = engine["Show UI Popover"](0, "#outliner-menu", rowmenu.Pointer)
+OutlinerInput :: behavior {
+    action show_ui_popover_action = show_ui_popover(0, "#outliner-menu", rowmenu.Pointer)
     on RowClicked {
         select_object(event.Key, event.Mod, event.Shift)
     }
     on RowMenu as rowmenu {
         if object_selected(rowmenu.Key) {
-            show_ui_popover()
+            show_ui_popover_action()
         } else {
             await select_object(rowmenu.Key, false, false)
-            show_ui_popover()
+            show_ui_popover_action()
         }
     }
     on EyeClicked {

@@ -215,6 +215,19 @@ It saves no file.
 `studio-acceptance --scene-cursors` needs no project or renderer. It checks the
 cursor each Scene gizmo part asks for, a resize handle's as its box turns.
 
+`studio-acceptance --scene-read` needs no project or renderer. Six pure-C cases
+exercise the private, unbound owned scene capture through thirteen calls: eight
+accepted captures and five rejections. They check raw actors, prototypes,
+component-icon enums, actual assignable field classifications, attachments,
+transforms, copied filter/path and editor flags; closed/reopened/nested scopes;
+wrong-owner and injected scene-association mismatches; and reads after producer
+retirement. One fixed empty behavior is prepared with the bytecode backend;
+four source registrations and twelve deferred attachments remain pending with
+begin=0. It runs no Begin, authored dispatch, engine frame, UI publication or
+child process. This leaf check does not establish queued/paused controller or
+live-panel behavior. Keep the complete invocation under the production
+60-second supervisor after independent exact-workload admission.
+
 `studio-acceptance --graph-visibility --project-root PATH` takes a disposable
 copy and runs ten hidden fixed-dt frames. A tiny Counter variant puts a helper
 before two handlers: the initial graph still opens on Tick, the picker groups
@@ -375,6 +388,58 @@ behavior drag at the same row edge remains a whole-row assignment target, then
 cancel it without assigning an asset. It saves nothing. The separate scene-move case covers persistence,
 history and collaboration.
 
+`studio-acceptance --outliner-rows --project-root PATH` takes a disposable copy
+and runs exactly two hidden fixed-dt frames. It freezes the existing C
+`scene_objects` result before migration: all twelve row fields, native scene
+order, filtered windows, clamping, empty results, full-width command-key
+resolution, selection, view flags, editability and rename guards. Four actors
+form a root/child/grandchild chain and a second root. Real prototype components
+supply camera/light icon precedence; those components and Bolt's unassigned
+instance `MaterialTerrain` supply all five assignable asset kinds. One Counter
+attachment supplies the behavior count. Sixteen direct row queries
+materialize twenty-four rows in total. It retains the producer's original
+result arenas through a real rename, empty-scene replacement and complete host
+shutdown, checking that all row strings and array/type-name headers are owned
+before retention. Counter remains unchanged and no scene is saved.
+
+This selector is a native baseline fixture, not a live authored cutover or a
+current-generation authority check. It does not exercise pointer input, root
+collapse/reveal, an authored policy library or browser parity. The precise
+workload, measured native result and migration obligations are in
+[Outliner migration parity](../../docs/outliner-migration-parity.md). Do not
+infer permission to run it from the historical offscreen result or another
+selector's admission.
+
+`studio-acceptance --outliner-row-policies --source PATH` reads the exact
+`projects/studio/content/libraries/OutlinerRowPolicies.chibi` source without
+opening a project or starting the host/renderer. One case prepares the library
+once for bytecode and once for actual SLJIT, with 41 direct calls per backend:
+four depths, nineteen icons, ten drop strings and eight flag records. The 82
+calls check ancestor depth, all icon categories and priority/fallback, ordered
+unique assignment kinds, selection/view/rename flags and full-width entity
+identity. Each call has a 2,000-step budget, at most seven arguments and arrays
+of at most six integers. Each backend constructs 33 input integer arrays
+containing 68 integers. Backend-entry counters reject compiled-backend fallback.
+Each module preparation also evaluates the named glyph-table initializer once
+through the existing 100,000-step bytecode preparation budget: two evaluations
+total, separate from the 82 direct calls.
+
+The case also checks formatter canonicality/idempotence, unchanged inputs and
+owned result headers. It retains the final dynamic drop string and flag record
+through source/input retirement without a test-side snapshot; literal string
+results are checked while their source module remains alive. It writes no
+files, launches no child processes and renders no frames. This checks the
+authored helper policies, not live scene capture/currentness, row filtering,
+full-width text conversion, production panel cutover or browser parity.
+
+Build with the existing optional acceptance target; its explicit public SDK
+dependencies include `Chibi::array_capabilities` and `Chibi::text_capabilities`.
+Compilation and execution of this cumulative source are separate gates. Before
+running, independently review the exact source/header, installed SDK and binary,
+then use the unchanged production supervisor with one whole-invocation
+60-second deadline. Neither the native row baseline nor successful project
+migration/formatting admits or proves this helper route.
+
 `studio-acceptance --scene-move --project-root PATH` runs two hidden frames on
 an isolated project. It checks moving multiple objects under a rotated parent,
 world placement and 2D picking, entity identity, authored and ECS sibling order, one-step undo
@@ -428,3 +493,30 @@ cp "$CHIBI_STUDIO_SOURCE/projects/studio/project.kdl" \
 
 Studio migrates that build copy when it starts. Restoring it keeps each run on
 the same pinned resource bytes; the source project remains unchanged.
+
+`studio-acceptance --project-open` checks project-open failures before UI backend
+access. Run it when changing `studio_ui_new` project loading or migration-error
+propagation. It uses one pico case and two constructor calls with a zeroed Studio:
+an invalid manifest and an invalid version-23 source. Both must return NULL with
+the original exact error, including the canonical source path for migration
+failure. All three temporary input files (122 bytes total) must remain unchanged,
+with no migration staging files. The fixture removes its temporary directory on
+normal completion.
+
+This selector returns before host, SDL or renderer initialization. It creates no
+window, world or authored execution and runs no host frames. It requires a current
+installed SDK with path-qualified migration diagnostics. From the matching engine
+checkout, after building this Studio acceptance target against that SDK, run the
+single command under the production deadline supervisor:
+
+```sh
+python3 - /absolute/studio-build/bin/studio-acceptance <<'PY'
+import sys
+from tools.test_policy import run_commands
+raise SystemExit(run_commands([[sys.argv[1], '--project-open']], seconds=60))
+PY
+```
+
+Configuration and compilation happen before this invocation. Fixture setup,
+both constructor calls and normal teardown stay inside its unchanged 60-second
+deadline. This focused selector does not run the rendering or interaction routes.

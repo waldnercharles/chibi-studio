@@ -1,6 +1,6 @@
-behavior "WidgetGallery" {
-    state Rows: int[] = []
-    action rows_2 = set_variable<"Rows">(resize(state."Rows", 10000))
+WidgetGallery :: behavior {
+    Rows: int[] = []
+    action rows_2 = set_variable<Rows>(resize(Rows, 10000))
     on Begin {
         rows_2()
     }
@@ -8,6 +8,6 @@ behavior "WidgetGallery" {
         set_ui_data(Name: "total", Value: length(rows_2.Value))
     }
     on ShowRows {
-        set_ui_data(Name: "rows", Value: slice(state."Rows", event.First, event.Count))
+        set_ui_data(Name: "rows", Value: slice(Rows, event.First, event.Count))
     }
 }

@@ -137,7 +137,8 @@ if(CHIBI_STUDIO_BUILD_ACCEPTANCE)
         tests/acceptance/debugger.c
         src/host/state_file.c src/host/stacktrace.c src/studio_registry.c)
     target_include_directories(studio-acceptance PRIVATE src include)
-    target_link_libraries(studio-acceptance PRIVATE studio)
+    target_link_libraries(studio-acceptance PRIVATE studio
+        Chibi::array_capabilities Chibi::text_capabilities)
     foreach(package IN LISTS STUDIO_PACKAGES)
         target_link_libraries(studio-acceptance PRIVATE Chibi::${package})
     endforeach()

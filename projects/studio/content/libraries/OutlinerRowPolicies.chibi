@@ -1,0 +1,137 @@
+OutlinerRowPolicies :: library {
+    Flags :: struct {
+        active: bool
+        marked: bool
+        hidden: bool
+        locked: bool
+        renaming: bool
+    }
+
+    // Raw component_icon values, in the native presentation priority order.
+    NoIcon :: -1
+    CameraIcon :: 0
+    SystemIcon :: 1
+    LightIcon :: 2
+    EmitterIcon :: 3
+    WaterIcon :: 4
+    TerrainIcon :: 5
+    GamepadIcon :: 6
+    KeyboardIcon :: 7
+    ProjectileIcon :: 8
+    HealthIcon :: 9
+    DiamondIcon :: 10
+    ShapeIcon :: 11
+    IconCount :: 12
+
+    // Raw reference_asset_kind values. Display order is deliberately separate.
+    MaterialAsset :: 4
+    ShapeAsset :: 5
+    FieldAsset :: 6
+    SystemAsset :: 8
+    UiAsset :: 9
+    HiddenView :: cast<int>(1)
+    LockedView :: cast<int>(2)
+
+    // The input contains the complete validated hierarchy, including ancestors
+    // outside the filtered row window. Roots use -1; index names a valid node.
+    Depth :: (parents: int[], index: int) -> int {
+        depth: int = 1
+        parent := parents[index]
+        while parent >= 0 {
+            depth = depth + 1
+            parent = parents[parent]
+        }
+        return depth
+    }
+
+    // Inputs are raw component hints. An absent or unresolved prototype has no
+    // hints. Selecting the minimum and choosing its glyph are authored policy.
+    Icon :: (componentIcons: int[]) -> string {
+        first: int = IconCount
+        index: int = 0
+        count := length(componentIcons)
+        while index < count {
+            icon := componentIcons[index]
+            if icon != NoIcon && icon < first {
+                first = icon
+            }
+            index = index + 1
+        }
+        glyphs :: [
+            "󰵝", "", "󰌶", "󰙴",
+            "󰸊", "󰖊", "󰊗", "󰥻",
+            "󰳚", "󰋕", "󰮋", "󰠲"
+        ]
+        if first >= 0 && first < IconCount {
+            return glyphs[first]
+        }
+        return "󰆧"
+    }
+
+    // Each kind comes from an actual assignable field, never from an icon or
+    // prototype name. Repeated fields still contribute their kind only once.
+    Drop :: (assignableKinds: int[], editable: bool) -> string {
+        if !editable {
+            return ""
+        }
+        hasMaterial := false
+        hasShape := false
+        hasUi := false
+        hasField := false
+        hasSystem := false
+        index: int = 0
+        count := length(assignableKinds)
+        while index < count {
+            kind := assignableKinds[index]
+            if kind == MaterialAsset {
+                hasMaterial = true
+            }
+            if kind == ShapeAsset {
+                hasShape = true
+            }
+            if kind == UiAsset {
+                hasUi = true
+            }
+            if kind == FieldAsset {
+                hasField = true
+            }
+            if kind == SystemAsset {
+                hasSystem = true
+            }
+            index = index + 1
+        }
+        text: string = "object behavior"
+        if hasMaterial {
+            text = format_text("{} material", text)
+        }
+        if hasShape {
+            text = format_text("{} shape", text)
+        }
+        if hasUi {
+            text = format_text("{} ui", text)
+        }
+        if hasField {
+            text = format_text("{} field", text)
+        }
+        if hasSystem {
+            text = format_text("{} system", text)
+        }
+        return text
+    }
+
+    // Actor indexes, selection membership, view flags and exact entity handles
+    // are separate facts. In particular, the active row is never also marked.
+    SelectState :: (
+        index: int, activeIndex: int, selected: bool, viewFlags: int,
+        actor: entity, rename: entity, renameOutliner: bool
+    ) -> Flags {
+        active := activeIndex == index
+        return {
+            active: active,
+            marked: selected && !active,
+            hidden: (viewFlags & HiddenView) != 0,
+            locked: (viewFlags & LockedView) != 0,
+            renaming: renameOutliner && rename == actor
+        }
+    }
+}

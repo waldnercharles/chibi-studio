@@ -43,11 +43,12 @@ jobs:
     timeout-minutes: 5
     outputs:
       engine: ${{ steps.version.outputs.engine }}
+      published: ${{ steps.version.outputs.published }}
       build: ${{ steps.version.outputs.build }}
       paired: ${{ steps.version.outputs.paired }}
     steps:
       - uses: actions/checkout@v4
-      - name: Select a complete engine package
+      - name: Select the exact engine SDK
         id: version
         env:
           GH_TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
@@ -56,30 +57,44 @@ jobs:
         shell: bash
         run: |
           test -n "$GH_TOKEN"
+          # Match native CI's selected engine, resolved once for this workflow.
+          paired=false
           if [ "$ALLOW_PIN" = true ] && [ -f .github/engine-ref ]; then
-            engine=$(<.github/engine-ref)
-            if [[ ! "$engine" =~ ^[0-9a-f]{40}$ ]]; then
+            ENGINE=$(<.github/engine-ref)
+            if [[ ! "$ENGINE" =~ ^[0-9a-f]{40}$ ]]; then
               echo "::error::.github/engine-ref must contain one full lowercase engine commit SHA."
               exit 1
             fi
-            echo "engine=$engine" >> "$GITHUB_OUTPUT"
-            echo "paired=true" >> "$GITHUB_OUTPUT"
-            echo "build=true" >> "$GITHUB_OUTPUT"
-            exit 0
+            paired=true
+          else
+            ENGINE=$(gh api repos/waldnercharles/chibi/commits/main --jq .sha)
           fi
-          # Engine releases are prereleases, so the /latest endpoint excludes them.
-          tag=$(gh api 'repos/waldnercharles/chibi/releases?per_page=100' | python3 -c '
-          import json, re, sys
+          echo "paired=$paired" >> "$GITHUB_OUTPUT"
+          export ENGINE
+          gh api --paginate --slurp 'repos/waldnercharles/chibi/releases?per_page=100' > "$RUNNER_TEMP/engine-releases.json"
+          python3 - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          engine = os.environ["ENGINE"]
+          if not re.fullmatch(r"[0-9a-f]{40}", engine):
+              raise SystemExit("Invalid engine revision")
+          pages = json.loads((Path(os.environ["RUNNER_TEMP"]) / "engine-releases.json").read_text())
+          if not isinstance(pages, list) or any(not isinstance(page, list) for page in pages):
+              raise SystemExit("Invalid engine release response")
+          releases = [release for page in pages for release in page]
+          release = next((r for r in releases
+                          if r["tag_name"] == "engine-" + engine and not r["draft"]), None)
           required = {"chibi-web-sdk.tar.gz", "chibi-export-linux-x64.tar.gz", "SHA256SUMS", "build.json"}
-          releases = [r for r in json.load(sys.stdin) if not r["draft"]
-                      and re.fullmatch(r"engine-[0-9a-f]{40}", r["tag_name"])
-                      and required <= {a["name"] for a in r["assets"] if a["state"] == "uploaded"}]
-          if not releases:
-              sys.exit("No complete engine release is available")
-          # The API does not list releases newest first; take the last published.
-          print(max(releases, key=lambda r: r["published_at"])["tag_name"])')
-          engine=${tag#engine-}
-          echo "engine=$engine" >> "$GITHUB_OUTPUT"
+          if release:
+              assets = {a["name"] for a in release["assets"]
+                        if a["state"] == "uploaded" and a["size"] > 0}
+              if not required <= assets:
+                  raise SystemExit("Published engine release is incomplete; refusing source fallback")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print("engine=" + engine, file=output)
+              print("published=" + str(release is not None).lower(), file=output)
+          PY
+          engine=$ENGINE
           build=true
           if [ "$GITHUB_REF" = refs/heads/main ]; then
             if curl --fail --silent --show-error --retry 3 \
@@ -101,7 +116,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
       - name: Download and verify the installed web SDK
-        if: needs.version.outputs.paired != 'true'
+        if: needs.version.outputs.published == 'true'
         env:
           GH_TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
           ENGINE: ${{ needs.version.outputs.engine }}
@@ -117,15 +132,6 @@ jobs:
           sha256sum --check selected-sums
           python3 -c 'import json,os; p=json.load(open("build.json")); assert p["format"] == 1 and p["engine_sha"] == os.environ["ENGINE"] and p["emsdk_version"] == os.environ["EMSDK_VERSION"] and p["platform"] == "ubuntu-24.04-x64" and p["web_threads"] is False'
           tar -xzf chibi-web-sdk.tar.gz -C ../sdk
-      - name: Check out the paired engine
-        if: needs.version.outputs.paired == 'true'
-        uses: actions/checkout@v4
-        with:
-          repository: waldnercharles/chibi
-          token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
-          ref: ${{ needs.version.outputs.engine }}
-          persist-credentials: false
-          path: engine
       - name: Install CMake and Ninja
         run: |
           sudo apt-get update
@@ -133,23 +139,50 @@ jobs:
           python3 -m venv /tmp/cmake
           /tmp/cmake/bin/pip install 'cmake>=4.2,<5'
           echo /tmp/cmake/bin >> "$GITHUB_PATH"
-      - name: Install native reflection dependencies
-        if: needs.version.outputs.paired == 'true'
-        run: sudo apt-get install -y --no-install-recommends clang-18 libclang-18-dev
       - uses: mymindstorm/setup-emsdk@v14
         with:
           version: ${{ env.EMSDK_VERSION }}
-      - name: Package the paired engine web SDK
-        if: needs.version.outputs.paired == 'true'
+      - uses: actions/checkout@v4
+        if: needs.version.outputs.published != 'true'
+        with:
+          repository: waldnercharles/chibi
+          token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
+          ref: ${{ needs.version.outputs.engine }}
+          path: engine
+          persist-credentials: false
+      - name: Install the host reflection compiler
+        if: needs.version.outputs.published != 'true'
+        run: sudo apt-get install -y --no-install-recommends clang-18 libclang-18-dev
+      - name: Package the exact engine web SDK from source
+        if: needs.version.outputs.published != 'true'
         working-directory: engine
         env:
-          CC: clang-18
-          CXX: clang++-18
           ENGINE: ${{ needs.version.outputs.engine }}
         run: |
           test "$(git rev-parse HEAD)" = "$ENGINE"
-          make package-web-sdk WEB_THREADS=0 JOBS=4 LIBCLANG_ROOT=/usr/lib/llvm-18 \
-            WEB_SDK_PREFIX="$GITHUB_WORKSPACE/sdk"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          make package-web-sdk WEB_SDK_PREFIX="$GITHUB_WORKSPACE/sdk" \
+            LIBCLANG_ROOT=/usr/lib/llvm-18 \
+            NATIVE_TOOLCHAIN_FLAGS='-DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18' \
+            WEB_THREADS=0 JOBS=2
+          test -z "$(git status --porcelain --untracked-files=normal)"
+      - name: Verify the installed SDK identity
+        env:
+          ENGINE: ${{ needs.version.outputs.engine }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          sdk = json.loads(Path("sdk/share/chibi/package.json").read_text())
+          assert sdk["manifest_format"] == 1
+          assert sdk["kind"] == "sdk"
+          assert sdk["source"]["revision"] == os.environ["ENGINE"]
+          assert sdk["source"]["dirty"] is False
+          assert sdk["requirements"]["system"] == "Emscripten"
+          assert sdk["requirements"]["web_threads"] is False
+          assert sdk["build"]["configuration"] == "Release"
+          assert sdk["build"]["native_backend"] is False
+          PY
       - name: Build Studio against the installed SDK
         run: |
           emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release \
@@ -182,8 +215,8 @@ jobs:
           retention-days: 1
 
   deploy:
-    needs: editor
-    if: github.ref == 'refs/heads/main'
+    needs: [version, editor]
+    if: github.ref == 'refs/heads/main' && needs.version.outputs.published == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
