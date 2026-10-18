@@ -3,6 +3,7 @@
 #include "authoring/behavior_loader.h"
 #include "authoring/preview_source.h"
 #include "editor/collab/actions_scene.h"
+#include "editor/documents/prototype_source_input.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
 #include "support/array.h"
@@ -864,6 +865,9 @@ static bool authored_values_equal(av_value *a, av_value *b)
 
 bool scene_tabs_dirty(app_scene_authoring *scene, const scene_document_tab *tab)
 {
+    if (tab->path && scene_source_input_blocked(scene, tab->path)) {
+        return true;
+    }
     scene_prototype_asset *source = tab->kind == APP_EDITOR_DOCUMENT_PROTOTYPE
                                       ? scene_prototype_for_path(scene, tab->path)
                                       : NULL;

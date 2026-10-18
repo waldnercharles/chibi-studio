@@ -1,3 +1,4 @@
+#include "editor/documents/prototype_source_input.h"
 /* Properties' view: the `properties` variable Properties.rml and
  * PropertiesHeader.rml bind (docs/studio-rml-migration.md, Data):
  *
@@ -1204,6 +1205,15 @@ static void show_prototype_field(
         .path = scene_link_path(asset->prototype->links, component->desc->id, index)
     };
     pin_read_field(component->data, field, &f.value);
+    const prototype *shown = scene_source_input_preview(s->scene, asset);
+    if (shown != asset->prototype) {
+        pin_value pending = { 0 };
+        if (prototype_read_field(shown, component->desc->name, field->name, &pending) ==
+            0) {
+            f.value = pending;
+            f.path = scene_link_path(shown->links, component->desc->id, index);
+        }
+    }
     field_row(r, &f);
 }
 

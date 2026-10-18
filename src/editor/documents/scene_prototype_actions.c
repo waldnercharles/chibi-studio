@@ -1,3 +1,4 @@
+#include "editor/documents/prototype_source_input.h"
 /* Prototype actions on a scene instance. Apply Overrides to Prototype copies
  * chosen overridden fields into the instance's prototype, as Unity's
  * Overrides dropdown applies them and Unreal's Apply Instance Changes to
@@ -362,7 +363,11 @@ int scene_apply_overrides(
     int count
 )
 {
+    scene_source_input_harvest(scene);
     scene_prototype_asset *asset = find_prototype(scene, source->prototype_name);
+    if (asset && asset->path && scene_source_input_blocked(scene, asset->path)) {
+        return -1;
+    }
     if (!asset || count <= 0 || !scene_editing(scene) || collab_active()) {
         return -1;
     }

@@ -13,7 +13,7 @@ import sys
 
 sys.dont_write_bytecode = True
 # Deliberately fail closed until coordinator supplies the reviewed published pair.
-FINAL = 'be6144abb73acd243a094e75cfa72f953d2899f7'
+FINAL = '4302ca9c0b3ad13a1eab82b3511d90977ef51065'
 ENGINE = '7bc6aa3cd69b29cfb006aab94d50d695007d9abe'
 PRIOR_ENGINE_EVIDENCE = {'run_id': 39102355375,
  'validation_revision': 'aba0cc5e0fd6745f6e1dbd100b50c0073051df2b',
@@ -34,33 +34,43 @@ SUCCESS = 'Studio source edit accepted: frames=4 edits=1 undo=1 redo=1'
 PROTOTYPE_SUCCESS = 'Studio prototype source ownership accepted: frames=2 prototypes=4 actors=3 checkpoints=1'
 EDGE_SUCCESS = 'Prototype source edge controls: deleted_source_retained=1 queued_commands_quiet=1'
 REVIEWED_FILES = {'.github/engine-ref': '0aa450a62d7457af7dab66b47d1555806707bbd621c6d7a2c909dfb4fe967875',
- 'EXTRACTION.json': '6ba07d702b911204cfb26fe9c257f03dd93f82a8308acdd22e36f32619d84bd9',
+ 'EXTRACTION.json': 'e3296f9baac39dc71927c1bf48c53c0536d36ad3726df8e9d33e89dc8a66f55e',
  'SDK_HEADERS.json': '56e445f1f418a6f5e838ecb05645748c40167e3ec5a146871e78ddedb02d874b',
- 'src/editor/documents/asset_code.c': '88d4fc52daae2127fc78b212c8999b3adbc65ea88c8ec8899809093f6d700909',
- 'src/editor/documents/asset_code.h': '4b616b73004ef470c3337bbf67ee2605aa2df210225398e227e8c6636395b619',
+ 'src/editor/documents/asset_code.c': '87ffc2770a876ae48da68f2f979f2470e6effc238a90df4e0e0f0f1435f4103d',
+ 'src/editor/documents/asset_code.h': '012f40bdfc5a1d5b5d71aa9c2f6a6ff988c154b4b83b4890316283ac76400201',
  'src/editor/documents/scene_disk.c': '61df3e4276a2d24f311727aea2056a5e314a15f6f3ea9eb0366f320e78db5e65',
  'src/editor/documents/scene_documents.c': '829844d7c5f026835c33b608f2a4611586bf8b87959674a5586ca2c0a87acee2',
  'src/editor/documents/scene_history.c': 'c85f0c20e977bb1e679a6904b0812eee01e148b2f1390469f6a509355bccc7ab',
  'src/editor/documents/scene_history.h': 'b4ff9050dd63cb59ad410efb7aa9a384eca64ff549766597535a8eba2e63946d',
- 'src/editor/documents/scene_prototype_actions.c': '4a55ebdaf715daeed794bd822a3351885be67a806c0fb83f6b12aede1ad352e2',
- 'src/editor/documents/scene_prototypes.c': '26c08d26cde9b9449accdfaf8b756778d317db3006ab08c9f22b10b15cca41bb',
- 'src/editor/studio/studio_code.c': '9f26268c88307106361751c353c9e82cccd5975159cd7e8a717feace28bb6182',
- 'src/editor/studio/studio_internal.h': '54b4f8f26d01c397d4894f79328a94acaf1b4f59510791e6accedd05cb99d29d',
- 'src/editor/studio/studio_properties.c': 'c669abd6d4e6e8af5320f1777e77a58c2d0bb1930ee4563d5758a7754e9b4135',
+ 'src/editor/documents/scene_prototype_actions.c': '02184147bc3e50eecf4703520ca13435f1128b1f95f9a4c498fbf1a908cabba3',
+ 'src/editor/documents/scene_prototypes.c': '4374bdeffcb95e4cdab94434af50123a811781cd4b08044c814a5c01f936b492',
+ 'src/editor/studio/studio_code.c': 'c4753f808a43513155b507b1e8fef0992761c63f0362f5f15a8831326c733b65',
+ 'src/editor/studio/studio_internal.h': '3f99a1b03d39441bc2cd486e36c2662037cd43055242c8953d1a0f27b7c4e4da',
+ 'src/editor/studio/studio_properties.c': 'd20368e746e6070e7fdc8942c5e73d5504f89ffafd62e107998a4bf4e45e34a4',
  'src/editor/studio/studio_prototype_actions.c': '61f768872d015bb3d9ea9e140a077434b86cb5e29e88607cd408fd730fb5373f',
- 'src/editor/studio/studio_shell.c': '755390847f70234eb8a1c23037ef05b506aba0623bb8b3614e44564cf09d2595',
+ 'src/editor/studio/studio_shell.c': '04bf2ee8660e9d4fe10c6deac391eea6a9b5315cabe7b653a369fbc929dd5202',
  'src/editor/workspace/scene_actors.c': '2e18d5ca42dcfb77671a0937bca2d0018f865239e27db13dfdac2caa4296f9b4',
- 'src/editor/workspace/scene_authoring.c': 'f93a8765c7453c3baa53e2bc733b9d640d0634204b6fd7c049e9478d23c55f39',
- 'src/editor/workspace/scene_checkpoint.c': 'b2062bf8a02e5404a72e467ec6b44972d48b3900b931422e0553bcb39b711dc0',
- 'src/editor/workspace/scene_internal.h': '78f8b3fc4c404b0f758074a6db44d922c4847847f2095b8eee35c65d6b52481d',
- 'src/editor/workspace/scene_tabs.c': '50db79500f0ee4ec32835da2a9b61592c63da0b056ce8e6fdf766abacbdecf80',
- 'tests/acceptance/README.md': 'bcb64567844980b9263248513f37428ccbcc7a17bc7e0fa07a6edb3f01038a48',
- 'tests/acceptance/main.c': '6385e9bc9cd9d43cd96c3ca6a2299eb82722d8ba1051489507d528726f0db4ab',
- 'tests/acceptance/prototype_source.h': 'd6d496275fc50f2157d63bd05d80daa8b91f841c339d8238873fbe8ce2f47734',
+ 'src/editor/workspace/scene_authoring.c': '01af66a689b2141df3bdad469360f92da3b4c9d4acc8751b21590e900c2a7a37',
+ 'src/editor/workspace/scene_checkpoint.c': '3a80436d6f4d135264549f018c95fbb83e1c6e5fa5abf646ccb743be58aa7581',
+ 'src/editor/workspace/scene_internal.h': 'ce497c867a2fe4419801d1e7b2cc54c66bafd4f8f3f4f537e41139348d30ce9f',
+ 'src/editor/workspace/scene_tabs.c': '8c4f04ed722496c82b54b924d7570a04ccc0d5408dc6931a08bc9a97d5e44131',
+ 'tests/acceptance/README.md': 'b9e171fbfba9a49a1b38bab32bf0782f70df8e0de45b6fdd4dd83e9c48ec68e9',
+ 'tests/acceptance/main.c': 'e5d4833c864134a4bf5cc767903d436cf3c90b012414736a4822d5cee71c00af',
+ 'tests/acceptance/prototype_source.h': '98062f9197c45356fdd7d84b430e3fe73aae5a627edfbf496e93442b6d99a80b',
  'tests/acceptance/scene_move.h': '9a84ba7af42c74f384f0bd4db432b4d29aad66a580317c22a3f35bcdb29e07f2',
  'tests/acceptance/source_discard.h': '38eb2fb91b2385b8e98e0694e78fda83ee68e7ab62979712169663c5af55187b',
- 'src/editor/collab/actions_scene.c': '08ac118bcd628864a736e991a5c60607a2ede32bc367af3544e353c4c751e8ed',
- 'src/editor/workspace/scene_authoring.h': '73d7890233f253eca58066ce9aa1b44b4ac2c47f9a30a4ec42ff457dd89e3c47'}
+ 'src/editor/collab/actions_scene.c': 'ccd7e001355c6b1e00641b3190e995f951ded077c77d6569743d91f312ca6d6e',
+ 'src/editor/workspace/scene_authoring.h': '73d7890233f253eca58066ce9aa1b44b4ac2c47f9a30a4ec42ff457dd89e3c47',
+ 'cmake/studio_sources.cmake': '02705e472a50898a7068f5f7993c7479870ab1e247eaa3a1cd116be5faa35aca',
+ 'src/editor/collab/collab.c': 'af5959e30bc7ec83da31547d9d1d2ec1169df84bf70878d60209e3df8ec2a353',
+ 'src/editor/collab/collab.h': '5ad2e237b948e3818ea595e9f38efb0557e51dee09f190c2bd176fc4f6023d4b',
+ 'src/editor/collab/protocol.h': 'd30ffb61a1d099eb5d7399d9f3f09020c94cce0476bf758ee7ce4c1b9fd1e92d',
+ 'src/editor/documents/prototype_source_input.c': 'a387a3ba07cd9304a849867c918154c61c2bbf5ef2a9cc8e3d66e517b96d940a',
+ 'src/editor/documents/prototype_source_input.h': '76772f93dc0458baf0695b85f7851c9a521c19bb8b4afc0d0f52edf3c4668971',
+ 'src/editor/studio/studio_projects.c': '4c02c4fab9462e86aa6ef40f2d3cd75842cbc4c69dade6d43d3d5e422b083a47',
+ 'src/editor/studio/studio_properties_view.c': '728ddaa0c20b1806bf0a8e375cd2c39b8bf6a2f3f63bb5c9cede856ac40374cb',
+ 'tests/acceptance/prototype_source_authority.h': '895a2b6a824e3ebe26872130b992c34a53dd1fc50f1fd4010e3607bb686657c9',
+ 'tests/acceptance/source_action_outcomes.h': 'efdb4571214e15a104428f68e0fcf8b9835e222264908fca076a79898a098f32'}
 ENGINE_REVIEWED_FILES = {'src/authoring/source_prototype_edit.h': '94f01e0783d40fe3b574c94ba07850eb89356692d083d575c6a338ee6195017e',
  'src/authoring/source_prototype_edit.c': 'f980580b3f3e93a0b5cf52ce50990ca4a9604c336458b5e632379029901061bc',
  'sdk/source_authoring.cmake': 'd9f20ed5ea7f59e68cbc8681d52de1934e2af3af0514f853d0b5a0911191e61c',
@@ -181,25 +191,26 @@ ENGINE_MUTATION = {'replacements': [{'before': '    }\n'
  'reference_revision': 'c4a8b09a837a737126b8b560b3ff67af9b7af9c2'}
 ENGINE_ASSERTION = 'source_assets\\.c \\(1110\\): !prototype_has_graph\\(bridge_result\\.value, "First"\\)\\)'
 STUDIO_CONTROL = {'product': 'src/editor/studio/studio_properties.c',
- 'before': '            int result = scene_prototype_source_edit(\n'
+ 'before': '            int result = scene_source_input_edit(\n'
            '                s->scene,\n'
            '                asset,\n'
            '                &change,\n'
            '                1,\n'
+           '                key,\n'
            '                !strcmp(s->prototype_edit, key)\n'
            '            );',
  'after': '            (void)change;\n'
           '            int result = prototype_write_field(asset->prototype, desc->name, field->name, '
           'value);\n'
           '            asset->dirty = 1;',
- 'sha256': '744608a305b19d66f56b08e4998901cbed119f19fd68a9db27cd2364b0f8471d',
+ 'sha256': '3c84f7736a8ebd369d245d76a448d8f42f5669dcafcada824d94cf260bc26991',
  'assertion': 'prototype_source\\.h \\(221\\): source_owned_gesture\\)'}
 EDGE_CONTROL = {'files': {'src/editor/documents/asset_code.c': {'replacements': [{'before': '    if (c->file_missing) {\n'
                                                                              '        return true;\n'
                                                                              '    }\n',
                                                                    'after': ''}],
-                                                 'sha256': '0ea4457eff2412b302778b6ac4df411c57a72094bbf73c280a4024b808b6f100',
-                                                 'git_blob': 'c18d862521bdc15765bc37006e5f38cf99120e89'},
+                                                 'sha256': '181e210c3ea64c97074e0d96bac9a17cc84258639c84889eb3f88efcfb773702',
+                                                 'git_blob': '3079f5a8a07e82a8e73e8cc3890e13f4082e68f6'},
            'src/editor/studio/studio_properties.c': {'replacements': [{'before': '        if (added == '
                                                                                  'APP_PROTOTYPE_EDIT_NOT_APPLIED) '
                                                                                  '{',
@@ -226,13 +237,50 @@ EDGE_CONTROL = {'files': {'src/editor/documents/asset_code.c': {'replacements': 
                                                                                  'APP_PROTOTYPE_EDIT_NOT_APPLIED) '
                                                                                  '{',
                                                                        'after': '    if (result > 0) {'}],
-                                                     'sha256': '1d9f1bacedd2e8e5a1efb4c76fefb4158720afc3b511213c956fd4415e4fefa2',
-                                                     'git_blob': 'f22f83217e288a875d9bdf3a05937170a3298de1'}},
- 'assertion': 'prototype_source\\.h \\(698\\): deleted_source_retained && queued_commands_quiet\\)',
+                                                     'sha256': '88812cce2791a700932a476362c84ebbf660c9d2d23246c25f2c1416322d1e20',
+                                                     'git_blob': 'a09c785fd5f7adbe1409cf743875760b28f23614'}},
+ 'assertion': 'prototype_source\\.h \\(699\\): deleted_source_retained && queued_commands_quiet\\)',
  'required_markers': ['Prototype source edge controls: deleted_source_retained=0 queued_commands_quiet=0']}
+AUTHORITY_CONTROL = {'files': {'src/editor/documents/prototype_source_input.c': {'before': '    if (gate == '
+                                                                       'COLLAB_ACTION_PENDING) {\n'
+                                                                       '        input->waiting = '
+                                                                       'collab_pending_action(&input->sent);',
+                                                             'after': '    if (gate == '
+                                                                      'COLLAB_ACTION_PENDING) {\n'
+                                                                      '        yyjson_doc *optimistic = '
+                                                                      'yyjson_read(json, strlen(json), 0);\n'
+                                                                      '        char optimistic_error[256] = '
+                                                                      '"";\n'
+                                                                      '        '
+                                                                      '(void)scene_source_input_apply(scene, '
+                                                                      'yyjson_doc_get_root(optimistic), '
+                                                                      'optimistic_error, sizeof '
+                                                                      'optimistic_error);\n'
+                                                                      '        yyjson_doc_free(optimistic);\n'
+                                                                      '        input->waiting = '
+                                                                      'collab_pending_action(&input->sent);',
+                                                             'sha256': 'dd320e57be88e2b064aa6fbbb7270e92bf29a600f0bd6b41cd1e8368c4686704',
+                                                             'git_blob': 'a954252eab385a36f12b1a8f5130e0444f309ffe'}},
+ 'assertion': 'prototype_source_authority\\.h \\(759\\): test\\.code_authority && '
+              'test\\.property_authority\\)',
+ 'required_markers': ['Prototype source authority: Code unchanged=0, Properties unchanged=0',
+                      'Prototype source intent: retry_held=-1']}
+AUTHORITY_SUCCESS = 'Studio prototype source authority accepted: frames=2 prototypes=1 actors=0 checkpoints=1 incoming=64 outgoing=91'
+AUTHORITY_DIAGNOSTIC = 'Prototype source authority: Code unchanged=1, Properties unchanged=1'
+INTENT_CONTROL = {'files': {'src/editor/documents/prototype_source_input.c': {'before': '    bool live = input->live;\n',
+                                                             'after': '    bool live = '
+                                                                      '!asset_code_runtime_held(asset->source);\n',
+                                                             'sha256': '8ee0dfbbbc9dba287eb9033fd55815ce7091b0c04098159490ea4cce7fdc3f27',
+                                                             'git_blob': '67ff487344c84f5443d4a1e1736037e677f33902'}},
+ 'assertion': 'prototype_source_authority\\.h \\(761\\): test\\.retry_held == 1\\)',
+ 'required_markers': ['Prototype source authority: Code unchanged=1, Properties unchanged=1',
+                      'Prototype source intent: retry_held=0']}
+INTENT_SUCCESS = 'Prototype source intent: retry_held=1'
 CONTROLS = {
     'ownership-red': {'files': {STUDIO_CONTROL['product']: STUDIO_CONTROL}, 'assertion': STUDIO_CONTROL['assertion']},
     'edges-red': EDGE_CONTROL,
+    'authority-red': AUTHORITY_CONTROL,
+    'intent-red': INTENT_CONTROL,
 }
 PROHIBITED = ('Studio UI:', 'runtime frame failed', 'Could not initialize')
 INFRA = {'.github/workflows/ci.yml', 'tools/validate_studio_refresh.py'}
@@ -409,15 +457,18 @@ def source_inputs(args, controls=True):
             shutil.copy2(args.source / name, target, follow_symlinks=False)
         manifest = json.loads(json.dumps(final_manifest))
         for product, mutation in control['files'].items():
-            require(product in source_names and product in final_manifest['files'],
-                    'Studio control lacks tracked extraction provenance: ' + product)
+            require(product in source_names and product in REVIEWED_FILES,
+                    'Studio control lacks tracked reviewed source identity: ' + product)
             (red / product).write_text(mutate((red / product).read_text(), mutation))
-            manifest['files'][product]['consumer_sha256'] = mutation['sha256']
-        save(red / 'EXTRACTION.json', manifest)
+            if product in manifest['files']:
+                manifest['files'][product]['consumer_sha256'] = mutation['sha256']
+        extraction_changed = manifest != final_manifest
+        if extraction_changed:
+            save(red / 'EXTRACTION.json', manifest)
         require(extraction(red) == manifest, 'Studio counterfactual extraction audit failed')
         red_files = snapshot(red, source_names, SOURCE_LINKS)
         changed = {name for name in source_names if red_files[name] != final_files[name]}
-        require(changed == set(control['files']) | {'EXTRACTION.json'},
+        require(changed == set(control['files']) | ({'EXTRACTION.json'} if extraction_changed else set()),
                 'Studio red has an unintended source difference')
         records[label] = {'files': red_files, 'counterfactual': True, 'dirty': True,
                           'changed_files': sorted(changed), 'control': control}
@@ -858,18 +909,24 @@ def prototype_child(arguments):
     # Fixture cloning and cleanup share the inherited production deadline with
     # this single two-frame invocation; no fresh budget for its descendant.
     import tempfile
-    engine, source, binary, scratch = map(Path, arguments)
+    selector, *paths = arguments
+    require(selector in ('--prototype-source', '--prototype-source-authority'), 'Unreviewed prototype selector')
+    engine, source, binary, scratch = map(Path, paths)
     sys.path.insert(0, str(engine / 'tools'))
     from test_policy import run_commands
     from agent import clone_project
     with tempfile.TemporaryDirectory(prefix='prototype-', dir=scratch) as directory:
         fixture = Path(directory) / 'project'
         clone_project(source / 'tests/acceptance/project', fixture)
-        return run_commands([['xvfb-run', '-a', str(binary), '--prototype-source', '--project-root', str(fixture)]], seconds=60)
+        return run_commands([['xvfb-run', '-a', str(binary), selector, '--project-root', str(fixture)]], seconds=60)
 
 
-def prototype_test(args, label, source, artifact, env):
+def prototype_test(args, label, source, artifact, env, authority=False):
     build, _, native, evidence = artifact
+    selector = '--prototype-source-authority' if authority else '--prototype-source'
+    case = 'prototype_source_authority' if authority else 'prototype_source_ownership'
+    fixture_header = 'tests/acceptance/prototype_source_authority.h' if authority else 'tests/acceptance/prototype_source.h'
+    success = AUTHORITY_SUCCESS if authority else PROTOTYPE_SUCCESS
     require(digest(build / 'bin/studio-acceptance') == evidence['binary_sha256'], 'Prototype binary changed')
     require(digest(build / 'compile_commands.json') == evidence['compile_commands_sha256'], 'Prototype build inputs changed')
     from agent import studio_acceptance_sources, studio_resource_preflight, external_project
@@ -884,20 +941,24 @@ def prototype_test(args, label, source, artifact, env):
         'content/scenes/Start.kdl': b'version 1\nname "Start"\n(array)entities\n',
         'content/behaviors/Counter.chibi': b'Counter :: behavior {\n    count: retain int = 1\n    on Tick {\n        count = count + 1\n    }\n}\n'}
     require(all((fixture / p).read_bytes() == value for p, value in expected.items()), 'Prototype host source changed')
-    code, output = supervised(args, label + '-prototype-source', [[sys.executable, str(Path(__file__).resolve()),
-        '--prototype-child', str(args.engine), str(source), str(build / 'bin/studio-acceptance'), str(args.output / 'scratch')]], env)
+    code, output = supervised(args, label + selector[1:], [[sys.executable, str(Path(__file__).resolve()),
+        '--prototype-child', selector, str(args.engine), str(source), str(build / 'bin/studio-acceptance'), str(args.output / 'scratch')]], env)
     red = label in CONTROLS
     control = CONTROLS.get(label)
-    inventory = pico_cases(code, output, ['prototype_source_ownership'], control['assertion'] if red else None)
-    markers = control.get('required_markers', []) if red else [EDGE_SUCCESS]
+    require((label in ('authority-red', 'intent-red')) == (red and authority), 'Control selector mismatch')
+    inventory = pico_cases(code, output, [case], control['assertion'] if red else None)
+    markers = control.get('required_markers', []) if red else ([AUTHORITY_DIAGNOSTIC, INTENT_SUCCESS] if authority else [EDGE_SUCCESS])
     observed_edges = [line for line in output.splitlines() if line.startswith('Prototype source edge controls:')]
-    require(observed_edges == markers, 'Studio edge diagnostics differ from the unique reviewed result')
-    require(output.splitlines().count(PROTOTYPE_SUCCESS) == (0 if red else 1), 'Prototype completion marker differs')
-    save(args.output / 'evidence' / (label + '-prototype-inventory.json'), {
-        **inventory, 'selector': '--prototype-source', 'frames_limit': 2,
-        'success': PROTOTYPE_SUCCESS, 'required_control_markers': markers,
+    require(observed_edges == ([] if authority else markers), 'Studio edge diagnostics differ from the unique reviewed result')
+    observed_authority = [line for line in output.splitlines() if line.startswith(('Prototype source authority:', 'Prototype source intent:'))]
+    require(observed_authority == (markers if authority else []), 'Studio authority diagnostics differ from the unique reviewed result')
+    require(output.splitlines().count(success) == (0 if red else 1), 'Prototype completion marker differs')
+    save(args.output / 'evidence' / (label + ('-authority-inventory.json' if authority else '-prototype-inventory.json')), {
+        **inventory, 'selector': selector, 'frames_limit': 2,
+        'success': success, 'required_control_markers': markers,
+        'retry_intent_probe': 'not reached' if label == 'authority-red' else ('reached' if authority else 'not selected'),
         'binary_sha256': evidence['binary_sha256'],
-        'source_sha256': evidence['files']['tests/acceptance/prototype_source.h']['sha256']})
+        'source_sha256': evidence['files'][fixture_header]['sha256']})
     require(not any((args.output / 'scratch').iterdir()), 'Prototype fixture cleanup incomplete')
     # Opening Studio can migrate its disposable bundled project manifest. Only
     # this known input is restored before another selector uses the same build.
@@ -993,9 +1054,10 @@ def main():
     for label, source in controls.items():
         artifact = build_variant(args, label, source, sdk)
         control_builds.append(artifact[0])
-        prototype_test(args, label, source, artifact, env)
+        prototype_test(args, label, source, artifact, env, authority=label in ('authority-red', 'intent-red'))
     green_artifact = build_variant(args, 'green', args.source, sdk)
     prototype_test(args, 'green', args.source, green_artifact, env)
+    prototype_test(args, 'green', args.source, green_artifact, env, authority=True)
     gpu_test(args, 'green', args.source, green_artifact, env)
     binary = green_artifact[0] / 'bin/studio-acceptance'
     policy_source = args.source / 'projects/studio/content/libraries/OutlinerRowPolicies.chibi'
@@ -1015,9 +1077,10 @@ def main():
     require(not any((args.output / 'scratch').iterdir()), 'Temporary fixture cleanup incomplete')
     save(args.output / 'summary.json', {'passed': True, 'final_revision': FINAL, 'engine_revision': ENGINE,
          'scope': 'Studio-only resume',
-         'red_controls': ['Studio source ownership', 'Studio deleted-source and queued-command edges'],
+         'red_controls': ['Studio source ownership', 'Studio deleted-source and queued-command edges', 'Studio accepted source authority', 'Studio retained Retry Apply Live intent'],
          'prior_engine_evidence': PRIOR_ENGINE_EVIDENCE,
          'prototype_source': PROTOTYPE_SUCCESS,
+         'prototype_source_authority': AUTHORITY_SUCCESS,
          'green': 'four-frame source-edit accepted',
          'cpu': ['project-open', 'scene-read', 'outliner-row-policies'], 'full_suite': 'not run',
          'rendering': 'Xvfb/X11 with forced Vulkan and verified Mesa software ICD',
@@ -1031,7 +1094,7 @@ def main():
 
 if __name__ == '__main__':
     try:
-        if len(sys.argv) == 6 and sys.argv[1] == '--prototype-child':
+        if len(sys.argv) == 7 and sys.argv[1] == '--prototype-child':
             sys.exit(prototype_child(sys.argv[2:]))
         main()
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.CalledProcessError) as error:

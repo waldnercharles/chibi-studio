@@ -11,6 +11,7 @@
 #include "editor/collab/actions_scene.h"
 #include "editor/collab/collab.h"
 #include "editor/documents/component_properties.h"
+#include "editor/documents/prototype_source_input.h"
 #include "editor/documents/scene_history.h"
 #include "editor/documents/scene_retention.h"
 #include "editor/ui/choices.h"
@@ -2408,6 +2409,7 @@ void app_scene_authoring_free(app_scene_authoring *scene)
     if (!scene) {
         return;
     }
+    scene_source_input_free(scene);
     scene_kept_clear(scene);
     scene_field_previews_clear(scene);
     scene_selection_free(scene);

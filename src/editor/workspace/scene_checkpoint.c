@@ -3,6 +3,7 @@
 #include "authoring/prototype_prepare.h"
 #include "authoring/source_presentation.h"
 #include "editor/collab/actions_scene.h"
+#include "editor/documents/prototype_source_input.h"
 #include "editor/workspace/checkpoint.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
@@ -209,7 +210,17 @@ static void checkpoint_tabs(yyjson_mut_doc *doc, yyjson_mut_val *root, app_scene
         }
         yyjson_mut_obj_add_val(doc, item, "asset_saved", av_to_json(doc, tab->asset_saved));
         yyjson_mut_obj_add_val(doc, item, "source", av_to_json(doc, tab->source_state));
-        yyjson_mut_obj_add_bool(doc, item, "source_dirty", tab->source_dirty);
+        scene_prototype_asset *source_owner = tab->path
+                                                ? scene_prototype_for_path(scene, tab->path)
+                                                : NULL;
+        yyjson_mut_obj_add_bool(
+            doc,
+            item,
+            "source_dirty",
+            source_owner && source_owner->source
+                ? asset_code_canonical_dirty(source_owner->source)
+                : tab->source_dirty
+        );
         yyjson_mut_obj_add_bool(doc, item, "source_only", tab->source_only);
         if (tab->ui) {
             yyjson_mut_obj_add_val(doc, item, "ui", ui_buffer_checkpoint(tab->ui, doc));
@@ -517,7 +528,12 @@ char *app_scene_authoring_checkpoint(app_scene_authoring *scene)
         yyjson_mut_val *item = yyjson_mut_arr_add_obj(doc, prototypes);
         checkpoint_text(doc, item, "path", asset->path);
         owned_text(doc, item, "json", prototype_save(asset->prototype));
-        yyjson_mut_obj_add_bool(doc, item, "dirty", scene_prototype_dirty(asset));
+        yyjson_mut_obj_add_bool(
+            doc,
+            item,
+            "dirty",
+            asset->source ? asset_code_canonical_dirty(asset->source) : asset->dirty
+        );
         if (asset->source) {
             av_value *source = asset_code_capture(asset->source);
             yyjson_mut_obj_add_val(doc, item, "source", av_to_json(doc, source));
@@ -1057,6 +1073,7 @@ int app_scene_authoring_restore_checkpoint(app_scene_authoring *scene, const cha
         !yyjson_is_arr(behaviors) || !yyjson_is_arr(actors)) {
         goto done;
     }
+    scene_source_input_harvest(scene);
     if (scene_authoring_load_text(scene, "version 1\nname Checkpoint\n(array)entities\n", NULL) !=
             0 ||
         !clear_behavior_models(scene) || !restore_sources(scene, root) ||
@@ -1148,6 +1165,7 @@ int app_scene_authoring_restore_checkpoint(app_scene_authoring *scene, const cha
         scene->definition = NULL;
         scene->behavior_apply_pending = false;
     }
+    scene_source_input_rebind(scene);
     result = 0;
 done:
     afree(before);

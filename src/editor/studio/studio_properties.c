@@ -1,3 +1,4 @@
+#include "editor/documents/prototype_source_input.h"
 /* Studio Properties: its model and intents. The panel is authored
  * (Properties.rml and PropertiesHeader.rml over the `properties` variable,
  * studio_properties_view.c); it sends intents (emit('properties.<action>',
@@ -866,14 +867,15 @@ static void edit_prototype(studio *s, const edit *e)
                                                 .component = desc->name,
                                                 .field = path,
                                                 .value = leaf };
-            int result = scene_prototype_source_edit(
+            int result = scene_source_input_edit(
                 s->scene,
                 asset,
                 &change,
                 1,
+                key,
                 !strcmp(s->prototype_edit, key)
             );
-            if (result) {
+            if (result < 0 || result == APP_PROTOTYPE_EDIT_NOT_APPLIED) {
                 studio_error(
                     s,
                     result < 0 ? "Could not edit prototype" : "Edited, but not applied",
@@ -891,6 +893,7 @@ static void edit_prototype(studio *s, const edit *e)
     if (!e->active) {
         s->prototype_edit[0] = '\0';
         if (asset->source) {
+            scene_source_input_end(s->scene, asset->path);
             asset_code_end_typing(asset->source);
         }
     }
@@ -1364,6 +1367,8 @@ void studio_component_toast(studio *s)
             int result = undo_removal(s);
             if (!result) {
                 studio_report(s, "Undo");
+            } else if (result == APP_PROTOTYPE_EDIT_PENDING && !s->components.scene_step) {
+                studio_error(s, "Waiting for shared edit", s->scene->prototype_message);
             } else if (result > 0) {
                 studio_error(s, "Edited, but not applied", s->scene->prototype_message);
             }

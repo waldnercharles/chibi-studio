@@ -1,4 +1,5 @@
 #include "assets/ui_document.h"
+#include "editor/documents/prototype_source_input.h"
 #include "graph/nodes/core_nodes.h"
 /* The Text Editor area (Blender's): code asset source, a UI document's RML
  * and RCSS, or a stylesheet's RCSS. Code follows the active asset; UI editing
@@ -111,18 +112,18 @@ bool studio_code_replace(studio *s, const char *path, const char *before, const 
     if (prototype && scene_prototype_source_owned(prototype)) {
         char error[256];
         asset_code *code = scene_prototype_source_session(s->scene, prototype, error, sizeof error);
-        if (!code || !asset_code_replace_with_metadata(code, before, text, metadata)) {
+        if (!code || metadata) {
             return false;
         }
-        if (!s->prefs.code_apply_live && asset_code_dirty(code)) {
-            asset_code_hold_runtime(code, true);
-        }
-        int result = scene_prototype_source_sync(s->scene, prototype, s->prefs.code_apply_live);
-        if (result > 0) {
-            studio_error(s, "Edited, but not applied", s->scene->prototype_message);
-        }
-        scene_prototype_source_capture(s->scene, prototype);
-        return true;
+        int result = scene_source_input_replace(
+            s->scene,
+            prototype,
+            before,
+            text,
+            false,
+            s->prefs.code_apply_live
+        );
+        return result == 0 || result == APP_PROTOTYPE_EDIT_NOT_APPLIED;
     }
     for (int i = 0; i < acount(s->code.assets); i++) {
         asset_code *code = s->code.assets[i];
@@ -739,8 +740,107 @@ static void capture_caret(studio *s)
     c->capture_due = 0;
 }
 
+/* The delegate is scoped to this draw; sessions never retain a Studio pointer. */
+typedef struct
+{
+    studio *studio;
+    const char *path;
+} prototype_code_input;
+
+static void prototype_code_edit(void *context, const char *before, const char *after, bool coalesce)
+{
+    prototype_code_input *input = context;
+    studio *s = input->studio;
+    scene_prototype_asset *asset = scene_prototype_for_path(s->scene, input->path);
+    if (!asset || !asset->source) {
+        return;
+    }
+    int result = scene_source_input_replace(
+        s->scene,
+        asset,
+        before,
+        after,
+        coalesce,
+        s->prefs.code_apply_live
+    );
+    if (result < 0 || result == APP_PROTOTYPE_EDIT_NOT_APPLIED) {
+        studio_error(
+            s,
+            result < 0 ? "Could not edit source" : "Edited, but not applied",
+            s->scene->prototype_message
+        );
+    }
+}
+
+static void prototype_code_history(void *context, bool redo)
+{
+    prototype_code_input *input = context;
+    studio *s = input->studio;
+    scene_prototype_asset *asset = scene_prototype_for_path(s->scene, input->path);
+    if (!asset || !asset->source) {
+        return;
+    }
+    int result = scene_source_input_history(s->scene, asset, redo, s->prefs.code_apply_live);
+    if (result == APP_PROTOTYPE_EDIT_PENDING) {
+        studio_error(s, "Waiting for shared edit", s->scene->prototype_message);
+    } else if (result == APP_PROTOTYPE_EDIT_NOT_APPLIED) {
+        studio_error(s, "Edited, but not applied", s->scene->prototype_message);
+    }
+}
+
+static void prototype_source_notice(studio *s)
+{
+    char message[384];
+    const char *path = scene_source_input_conflict(s->scene, message, sizeof message);
+    if (!path) {
+        if (s->source_input_toast) {
+            kit_toast_dismiss(s->kit, s->source_input_toast);
+            s->source_input_toast = 0;
+        }
+        s->source_input_path[0] = 0;
+        return;
+    }
+    uint64_t identity = scene_source_input_conflict_identity(s->scene);
+    if (s->source_input_toast && identity == s->source_input_identity) {
+        if (kit_toast_action(s->kit, s->source_input_toast)) {
+            (void)scene_source_input_retry_identity(s->scene, s->source_input_identity);
+            kit_toast_dismiss(s->kit, s->source_input_toast);
+            s->source_input_toast = 0;
+        } else if (kit_toast_cancel(s->kit, s->source_input_toast)) {
+            if (scene_source_input_use_shared_identity(s->scene, s->source_input_identity)) {
+                kit_toast_dismiss(s->kit, s->source_input_toast);
+                s->source_input_toast = 0;
+            }
+        }
+    }
+    path = scene_source_input_conflict(s->scene, message, sizeof message);
+    if (!path) {
+        return;
+    }
+    s->source_input_identity = scene_source_input_conflict_identity(s->scene);
+    snprintf(s->source_input_path, sizeof s->source_input_path, "%s", path);
+    /* Primary action styling does not move focus from the editor or consume Enter. */
+    s->source_input_toast = kit_toast(
+        s->kit,
+        s->source_input_toast,
+        &(kit_toast_desc){ .type = KIT_TOAST_WARNING,
+                           .title = "Source draft needs review",
+                           .description = message,
+                           .action = "Retry Draft",
+                           .cancel = "Use Shared",
+                           .duration = -1 }
+    );
+}
+
 void studio_code_frame(studio *s)
 {
+    for (int i = 0; i < acount(s->scene->prototypes); i++) {
+        if (s->scene->prototypes[i].source) {
+            asset_code_time(s->scene->prototypes[i].source, s->time);
+        }
+    }
+    scene_source_input_tick(s->scene);
+    prototype_source_notice(s);
     scene_document_tab *tab = active_asset(s);
     bool behavior = tab && tab->kind == APP_EDITOR_DOCUMENT_BEHAVIOR &&
                     s->scene->definition &&
@@ -760,7 +860,7 @@ void studio_code_frame(studio *s)
             if (tab->kind == APP_EDITOR_DOCUMENT_PROTOTYPE) {
                 scene_prototype_asset *prototype = scene_prototype_for_path(s->scene, tab->path);
                 if (prototype && prototype->source == code) {
-                    if (!s->prefs.code_apply_live && asset_code_dirty(code)) {
+                    if (!s->prefs.code_apply_live && asset_code_canonical_dirty(code)) {
                         asset_code_hold_runtime(code, true);
                     }
                     scene_prototype_source_sync(s->scene, prototype, s->prefs.code_apply_live);
@@ -818,6 +918,22 @@ bool studio_code_history(studio *s, bool redo, bool apply)
     if (!code) {
         return false;
     }
+    scene_prototype_asset *owned = scene_prototype_for_path(s->scene, asset_code_path(code));
+    if (owned && owned->source == code) {
+        if (!apply) {
+            return scene_source_input_blocked(s->scene, owned->path) ||
+                   asset_code_can_replay(code, redo);
+        }
+        int result = scene_source_input_history(s->scene, owned, redo, s->prefs.code_apply_live);
+        if (result == APP_PROTOTYPE_EDIT_PENDING) {
+            studio_error(s, "Waiting for shared edit", s->scene->prototype_message);
+            return false;
+        }
+        if (result == APP_PROTOTYPE_EDIT_NOT_APPLIED) {
+            studio_error(s, "Edited, but not applied", s->scene->prototype_message);
+        }
+        return result >= 0;
+    }
     sync_asset_graph(s, code);
     if (!apply) {
         return asset_code_can_replay(code, redo);
@@ -827,7 +943,7 @@ bool studio_code_history(studio *s, bool redo, bool apply)
     }
     scene_prototype_asset *prototype = scene_prototype_for_path(s->scene, asset_code_path(code));
     if (prototype && prototype->source == code) {
-        if (!s->prefs.code_apply_live && asset_code_dirty(code)) {
+        if (!s->prefs.code_apply_live && asset_code_canonical_dirty(code)) {
             asset_code_hold_runtime(code, true);
         }
         int result = scene_prototype_source_sync(s->scene, prototype, s->prefs.code_apply_live);
@@ -2988,8 +3104,25 @@ void studio_code_body(studio *s, int)
             paused_here ? s->pause.at.node_id : 0
         );
         asset_code_time(code, s->time);
+        scene_prototype_asset *owned = scene_prototype_for_path(s->scene, asset_code_path(code));
+        prototype_code_input context = { .studio = s, .path = asset_code_path(code) };
+        asset_code_input input = { .context = &context,
+                                   .text = owned && owned->source == code
+                                             ? scene_source_input_text(s->scene, owned)
+                                             : NULL,
+                                   .edit = prototype_code_edit,
+                                   .history = prototype_code_history };
         kit_code_result
-            r = asset_code_draw(code, k, "text", &preferences, s->prefs.code_apply_live);
+            r = owned && owned->source == code
+                  ? asset_code_draw_input(
+                        code,
+                        k,
+                        "text",
+                        &preferences,
+                        s->prefs.code_apply_live,
+                        &input
+                    )
+                  : asset_code_draw(code, k, "text", &preferences, s->prefs.code_apply_live);
         if (s->code.find.refocus) {
             kit_focus(k);
             s->code.find.refocus = false;
@@ -3003,20 +3136,8 @@ void studio_code_body(studio *s, int)
             capture_caret(s);
         }
         if (r.events & (KIT_CODE_CHANGED | KIT_CODE_UNDO | KIT_CODE_REDO)) {
-            scene_prototype_asset *prototype = scene_prototype_for_path(s->scene, asset_code_path(code));
-            if (prototype && prototype->source == code) {
-                if (!s->prefs.code_apply_live && asset_code_dirty(code)) {
-                    asset_code_hold_runtime(code, true);
-                }
-                int result = scene_prototype_source_sync(
-                    s->scene,
-                    prototype,
-                    s->prefs.code_apply_live
-                );
-                if (result > 0) {
-                    studio_error(s, "Edited, but not applied", s->scene->prototype_message);
-                }
-            }
+            /* The managed delegate applies owned source only after acceptance;
+             * queued input must not change its canonical runtime hold here. */
             capture_asset(s, code);
             s->code.capture_due = 0;
         } else if (r.events & KIT_CODE_CURSOR) {
