@@ -216,18 +216,19 @@ jobs:
     permissions:
       contents: read
     env:
-      ENGINE: e06395e3c65838a2286a7f2bc82f0eb28bbd4b3c
-      ENGINE_PARENT: 15b3845dbda3440a7fb831f51ef7d2a02e3c6f2d
+      ENGINE: 6e6b39dd9d902e25310ef53e810c5784b9124cb4
+      ENGINE_PARENT: e06395e3c65838a2286a7f2bc82f0eb28bbd4b3c
+      ENGINE_BASELINE: 15b3845dbda3440a7fb831f51ef7d2a02e3c6f2d
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
       UBSAN_SYMBOLIZER_PATH: /usr/lib/llvm-18/bin/llvm-symbolizer
     steps:
       - uses: actions/checkout@v4
         with:
           repository: waldnercharles/chibi
-          ref: e06395e3c65838a2286a7f2bc82f0eb28bbd4b3c
+          ref: 6e6b39dd9d902e25310ef53e810c5784b9124cb4
           token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
           persist-credentials: false
-          fetch-depth: 2
+          fetch-depth: 3
           path: chibi
       - name: Verify source identities and isolate the negative control
         shell: bash
@@ -235,13 +236,15 @@ jobs:
           set -euo pipefail
           test "$(git -C chibi rev-parse HEAD)" = "$ENGINE"
           test "$(git -C chibi rev-parse HEAD^)" = "$ENGINE_PARENT"
+          test "$(git -C chibi rev-parse HEAD^^)" = "$ENGINE_BASELINE"
           test -z "$(git -C chibi status --porcelain)"
           test "$(git -C chibi rev-parse HEAD:src/authoring/source_catalog.c)" = e15d3d5ca64b2f92310351ab46f10d65d2513561
-          test "$(git -C chibi rev-parse "$ENGINE_PARENT:src/authoring/source_catalog.c")" = d179b82e172dcc9ff4c0b8e96d66081f6202429a
+          test "$(git -C chibi rev-parse HEAD:test/language/source_assets.c)" = 5add44c2b5bcc28a270a2e3fcd925f186b58ef65
+          test "$(git -C chibi rev-parse "$ENGINE_BASELINE:src/authoring/source_catalog.c")" = d179b82e172dcc9ff4c0b8e96d66081f6202429a
           evidence="$RUNNER_TEMP/catalog-regression"
           mkdir "$evidence"
           git -C chibi worktree add --detach "$evidence/negative" "$ENGINE"
-          git -C chibi show "$ENGINE_PARENT:src/authoring/source_catalog.c" > "$evidence/negative/src/authoring/source_catalog.c"
+          git -C chibi show "$ENGINE_BASELINE:src/authoring/source_catalog.c" > "$evidence/negative/src/authoring/source_catalog.c"
           test "$(git -C "$evidence/negative" diff --name-only)" = src/authoring/source_catalog.c
           test -z "$(git -C "$evidence/negative" ls-files --others --exclude-standard)"
           test "$(git -C "$evidence/negative" hash-object src/authoring/source_catalog.c)" = d179b82e172dcc9ff4c0b8e96d66081f6202429a
