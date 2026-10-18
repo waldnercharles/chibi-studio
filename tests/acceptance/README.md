@@ -39,6 +39,16 @@ frames. Files and models are freed before the final assertion; copied notices
 remain owned by the host kit until ordinary shutdown. This checks notice dispatch
 and Output records, not toast pixels or pointer hit testing.
 
+The existing prototype dependency fixture also batches an invalid relationship
+edit with a saved Base change. Base, Middle, Leaf and a nested child must all
+observe the new value while the live relationship schema stays unchanged and
+the owned watcher error survives subsequent refreshes. Duplicate prototype
+names cover both-failed and prototype-only failure reporting before restoring
+the valid sources. This reuses the four prototype files and adds one relationship
+file under 64 bytes, two synthetic watcher times and no host frames. Existing
+direct-reload and unsaved-dependent checks remain unchanged; expected negative
+results are asserted only after the fixture is cleaned up.
+
 Within the first frame it also opens a tiny temporary draft with two calls and a
 branch. It checks that named calls have no duplicate code body and that a small
 value call folds into the setter's editable Value row without a Target input.

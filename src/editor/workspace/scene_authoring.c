@@ -730,8 +730,16 @@ bool content_refresh(app_scene_authoring *scene)
     qsort(scene->content, (size_t)acount(scene->content), sizeof *scene->content, content_entry_compare);
     bool refreshed = true;
     if (scene->prototype_preview) {
-        refreshed = refresh_relationships(scene) &&
-                    scene_prototype_sources_refresh(scene);
+        bool relationships = refresh_relationships(scene);
+        char error[sizeof scene->message];
+        if (!relationships) {
+            snprintf(error, sizeof error, "%s", scene->message);
+        }
+        bool prototypes = scene_prototype_sources_refresh(scene);
+        if (!relationships) {
+            snprintf(scene->message, sizeof scene->message, "%s", error);
+        }
+        refreshed = relationships && prototypes;
     }
     if (!acount(scene->content)) {
         return refreshed;

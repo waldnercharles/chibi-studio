@@ -403,7 +403,10 @@ static bool static_relationship_refresh(studio *host)
 
 static bool static_prototype_refresh(void)
 {
-    char root[] = "/tmp/chibi-studio-prototype-XXXXXX", directory[256], paths[4][256];
+    char root[] = "/tmp/chibi-studio-prototype-XXXXXX", directory[256],
+         paths[4][256], relationships[256], relationship[256];
+    const char
+        *relation = "AcceptanceTargets :: relationship { exclusive:true }";
     REQUIRE(mkdtemp(root));
     move_fixture fixture = move_fixture_new_with_root(root);
     app_scene_authoring *scene = fixture.scene;
@@ -424,7 +427,14 @@ static bool static_prototype_refresh(void)
         snprintf(paths[i], sizeof paths[i], "%s/%s.chibi", directory, names[i]);
         REQUIRE(!write_file_atomic(paths[i], sources[i]));
     }
-    app_scene_authoring_refresh_content(scene);
+    snprintf(relationships, sizeof relationships, "%s/relationships", root);
+    REQUIRE(!mkdir(relationships, 0700));
+    snprintf(relationship, sizeof relationship, "%s/AcceptanceTargets.chibi", relationships);
+    REQUIRE(!write_file_atomic(relationship, relation));
+    REQUIRE(app_scene_authoring_refresh_content(scene));
+    REQUIRE(scene->registry.relationship_count == 1);
+    const ecs_relationship_desc *schema = scene->registry.relationships[0];
+    REQUIRE(relationship_schema_kept(&fixture, schema));
     for (int i = 0; i < 4; i++) {
         REQUIRE(!app_scene_authoring_register_prototype(scene, sources[i], paths[i]));
     }
@@ -448,6 +458,60 @@ static bool static_prototype_refresh(void)
     );
     REQUIRE(value.type == PIN_F32 && value.f == 2);
 
+    /* A relationship error must not leave include sources stale when the
+     * same watcher batch reloads a prototype and its transitive users. */
+    app_disk_change *changes = app_scene_authoring_sync_disk(scene, 0);
+    bool baseline = !acount(changes);
+    app_disk_changes_free(changes);
+    REQUIRE(!write_file_atomic(relationship, "AcceptanceTargets :: relationship { exclusive:1 }"));
+    REQUIRE(!write_file_atomic(paths[0], "AcceptanceBase :: prototype { Transform {x:20, y:0} }"));
+    changes = app_scene_authoring_sync_disk(scene, 1);
+    float refreshed[4] = { 0 };
+    bool propagated = true, reloaded = false;
+    for (int i = 0; i < 3; i++) {
+        bool read = !app_scene_authoring_read_prototype_field(scene, names[i], "Transform", "x", &value) &&
+                    value.type == PIN_F32;
+        if (read) {
+            refreshed[i] = value.f;
+        }
+        propagated &= read && refreshed[i] == 20;
+    }
+    nest = find_prototype(scene, names[3]);
+    bool child = nest && acount(nest->prototype->child_prototypes) == 1 &&
+                 !prototype_read_field(nest->prototype->child_prototypes[0], "Transform", "x", &value) &&
+                 value.type == PIN_F32;
+    if (child) {
+        refreshed[3] = value.f;
+    }
+    propagated &= child && refreshed[3] == 20;
+    bool kept = relationship_schema_kept(&fixture, schema);
+
+    /* If both refreshes fail, the first relationship diagnostic wins. If
+     * only prototype refresh fails, keep its error and failure result. */
+    REQUIRE(!write_file_atomic(paths[3], "AcceptanceBase :: prototype {}"));
+    bool combined_failed = !app_scene_authoring_refresh_content(scene) &&
+                           strstr(app_scene_authoring_message(scene), "Invalid relationship property or value type");
+    REQUIRE(!write_file_atomic(relationship, relation));
+    bool prototype_failed = !app_scene_authoring_refresh_content(scene) &&
+                            strstr(app_scene_authoring_message(scene), "Duplicate prototype name: AcceptanceBase");
+    REQUIRE(!write_file_atomic(paths[3], sources[3]));
+    bool restored = app_scene_authoring_refresh_content(scene);
+    kept &= relationship_schema_kept(&fixture, schema);
+
+    /* The owned watcher diagnostic survives every later status overwrite. */
+    bool notice = false;
+    for (int i = 0; i < acount(changes); i++) {
+        if (changes[i].result == APP_DISK_FAILED && !strcmp(changes[i].path, root)) {
+            notice |= strstr(changes[i].message, "Invalid relationship property or value type") !=
+                      NULL;
+        }
+        if (changes[i].result == APP_DISK_RELOADED &&
+            !strcmp(changes[i].path, paths[0])) {
+            reloaded = true;
+        }
+    }
+    app_disk_changes_free(changes);
+
     /* Dirty dependents retain their working values. Clean transitive users
      * still reload from the saved dependency graph. */
     scene_prototype_asset *middle = find_prototype(scene, names[1]);
@@ -470,7 +534,33 @@ static bool static_prototype_refresh(void)
         REQUIRE(!unlink(paths[i]));
     }
     REQUIRE(!rmdir(directory));
+    REQUIRE(!unlink(relationship));
+    REQUIRE(!rmdir(relationships));
     REQUIRE(!rmdir(root));
+    bool ok = baseline && propagated && reloaded && kept && combined_failed &&
+              prototype_failed && restored && notice;
+    if (!ok) {
+        fprintf(
+            stderr,
+            "Prototype refresh after relationship failure: base=%g middle=%g "
+            "leaf=%g child=%g "
+            "baseline=%d propagated=%d reloaded=%d kept=%d combined=%d "
+            "prototype=%d restored=%d notice=%d\n",
+            refreshed[0],
+            refreshed[1],
+            refreshed[2],
+            refreshed[3],
+            baseline,
+            propagated,
+            reloaded,
+            kept,
+            combined_failed,
+            prototype_failed,
+            restored,
+            notice
+        );
+    }
+    REQUIRE(ok);
     return true;
 }
 
