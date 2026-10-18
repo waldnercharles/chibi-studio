@@ -2496,7 +2496,7 @@
       "current_source_sha256": "b60c6ff2f94a8a5733efdb4ec8fe811f89d0d02e8d1635b0ec68dc73588f9612",
       "sha256": "0e6389b4bfcaf9c1f64637bf80918284091122a81e90e2efa2c77e99f36c1421",
       "source_path": "src/editor/workspace/scene_authoring.c",
-      "consumer_sha256": "3c4999ce53fa6c6c437f81ae6207503d33cc71a23e916c6ca5911bbf164ccff6"
+      "consumer_sha256": "b1d66f21245824e957ac27cb8c7718cc739d8465c96716d8b9bcb21648d90978"
     },
     "src/editor/workspace/scene_authoring.h": {
       "current_source_sha256": "8b5270dfd0df43786a42529669ece1f70460727a5fb805aefabab953e5139a1f",

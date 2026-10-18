@@ -1,5 +1,5 @@
 # Temporary validation child only. Do not merge this workflow into the product PR.
-name: PR71 refresh regression validation
+name: PR71 source-tab selection validation
 
 on:
   pull_request:
@@ -20,7 +20,7 @@ env:
 
 jobs:
   studio:
-    name: Bounded red/green source-refresh acceptance
+    name: Bounded red/green prototype-tab acceptance
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -33,20 +33,14 @@ jobs:
       - name: Check out the immutable final Studio 71 candidate
         uses: actions/checkout@v4
         with:
-          ref: 58f6283140e369366c58be72c1f9103ea3ff64fd
+          ref: 95ca95bc3ca2da5b899ec06596982ade26d2d94f
           path: chibi-studio
           persist-credentials: false
       - name: Read the immutable old product for the red control
         uses: actions/checkout@v4
         with:
-          ref: 27d55e67e902863b68a06ec0b8559869b0b021b9
+          ref: 58f6283140e369366c58be72c1f9103ea3ff64fd
           path: chibi-studio-baseline
-          persist-credentials: false
-      - name: Read the immutable cached-registry product for its red control
-        uses: actions/checkout@v4
-        with:
-          ref: 3ed1986b5ed9eb407f776e03d50caa891c2e57f0
-          path: chibi-studio-registry-baseline
           persist-credentials: false
       - name: Select the paired engine for a same-repository PR
         id: engine
@@ -180,20 +174,19 @@ jobs:
           python3 "$GITHUB_WORKSPACE/validation/tools/validate_studio_refresh.py" \
             --source "$GITHUB_WORKSPACE/chibi-studio" \
             --baseline "$GITHUB_WORKSPACE/chibi-studio-baseline" \
-            --registry-baseline "$GITHUB_WORKSPACE/chibi-studio-registry-baseline" \
             --engine "$GITHUB_WORKSPACE/chibi" \
             --sdk "$GITHUB_WORKSPACE/chibi/dist/sdk" \
             --validation "$GITHUB_WORKSPACE/validation" \
-            --output "$RUNNER_TEMP/studio-refresh-validation"
+            --output "$RUNNER_TEMP/studio-selection-validation"
       - name: Retain bounded validation evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: studio71-refresh-evidence
+          name: studio71-selection-evidence
           path: |
-            ${{ runner.temp }}/studio-refresh-validation/logs
-            ${{ runner.temp }}/studio-refresh-validation/evidence
-            ${{ runner.temp }}/studio-refresh-validation/summary.json
+            ${{ runner.temp }}/studio-selection-validation/logs
+            ${{ runner.temp }}/studio-selection-validation/evidence
+            ${{ runner.temp }}/studio-selection-validation/summary.json
           if-no-files-found: warn
           retention-days: 3
 

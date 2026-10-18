@@ -401,6 +401,18 @@ static bool static_relationship_refresh(studio *host)
     return true;
 }
 
+/* Match the actual inspector subject, not only the active tab's label. */
+static bool source_prototype_subject(studio *s, const char *name)
+{
+    app_scene_authoring *scene = s->scene;
+    properties_subject subject;
+    properties_subject_of(s, &subject);
+    app_editor_document_context document = app_scene_authoring_document(scene);
+    return document.kind == APP_EDITOR_DOCUMENT_PROTOTYPE &&
+           !strcmp(document.id, name) && scene->tabs[scene->active_tab].source_only &&
+           subject.asset == find_prototype(scene, name) && !subject.actor;
+}
+
 static bool static_prototype_refresh(void)
 {
     char root[] = "/tmp/chibi-studio-prototype-XXXXXX", directory[256],
@@ -529,6 +541,63 @@ static bool static_prototype_refresh(void)
     );
     REQUIRE(value.f == 3);
     REQUIRE(strstr(app_scene_authoring_message(scene), "unsaved edits"));
+
+    /* Reuse these registered sources through the real Assets open route. */
+    studio *s = xcalloc(1, sizeof *s);
+    s->scene = scene;
+    int tabs_before = acount(scene->tabs), undo_before = acount(middle->undo);
+    REQUIRE(!app_scene_authoring_refresh_asset_index(scene));
+    int base = reference_index_find_asset(scene->asset_index, REFERENCE_ASSET_PROTOTYPE, paths[0], NULL);
+    int leaf = reference_index_find_asset(scene->asset_index, REFERENCE_ASSET_PROTOTYPE, paths[2], NULL);
+    REQUIRE(base >= 0 && leaf >= 0);
+    scene->selected_prototype = -1;
+    REQUIRE(!app_scene_authoring_open_asset(scene, base));
+    bool initial = source_prototype_subject(s, names[0]);
+    REQUIRE(!app_scene_authoring_open_prototype(scene, names[1]));
+    REQUIRE(!app_scene_authoring_open_asset(scene, leaf));
+    bool opened = source_prototype_subject(s, names[2]);
+    int leaf_tab = scene->active_tab;
+    REQUIRE(!app_scene_authoring_open_prototype(scene, names[1]));
+    REQUIRE(!scene_tabs_activate(scene, leaf_tab));
+    bool activated = source_prototype_subject(s, names[2]);
+    REQUIRE(!app_scene_authoring_open_asset(scene, leaf));
+    REQUIRE(!scene_tabs_activate(scene, leaf_tab));
+    bool repeated = scene->active_tab == leaf_tab &&
+                    acount(scene->tabs) == tabs_before + 3 &&
+                    source_prototype_subject(s, names[2]);
+
+    /* Invalid source remains openable without a registered prototype. It
+     * must not inherit another asset's inspector or replace its diagnostic. */
+    char invalid_path[256], message[sizeof scene->message],
+        prototype_message[sizeof scene->prototype_message];
+    snprintf(invalid_path, sizeof invalid_path, "%s/Unloaded.chibi", directory);
+    REQUIRE(!write_file_atomic(invalid_path, "Unloaded :: prototype {"));
+    REQUIRE(!app_scene_authoring_refresh_content(scene));
+    REQUIRE(scene->message[0] && !find_prototype(scene, "Unloaded"));
+    REQUIRE(!app_scene_authoring_refresh_asset_index(scene));
+    int missing = reference_index_find_asset(scene->asset_index, REFERENCE_ASSET_PROTOTYPE, invalid_path, NULL);
+    REQUIRE(missing >= 0);
+    snprintf(message, sizeof message, "%s", scene->message);
+    snprintf(prototype_message, sizeof prototype_message, "%s", scene->prototype_message);
+    REQUIRE(!app_scene_authoring_open_asset(scene, missing));
+    bool invalid = source_prototype_subject(s, "Unloaded") &&
+                   scene->selected_prototype == -1;
+    int invalid_tab = scene->active_tab;
+    REQUIRE(!scene_tabs_activate(scene, leaf_tab));
+    REQUIRE(!scene_tabs_activate(scene, invalid_tab));
+    invalid &= source_prototype_subject(s, "Unloaded") &&
+               scene->selected_prototype == -1;
+    bool diagnostics = !strcmp(scene->message, message) &&
+                       !strcmp(scene->prototype_message, prototype_message);
+    bool preserved = acount(scene->tabs) == tabs_before + 4 &&
+                     !scene->tabs[leaf_tab].source_dirty &&
+                     !scene->tabs[invalid_tab].source_dirty && middle->dirty &&
+                     acount(middle->undo) == undo_before &&
+                     !scene_history_can_undo(scene->history) &&
+                     !scene_history_can_redo(scene->history) &&
+                     relationship_schema_kept(&fixture, schema);
+    free(s);
+    REQUIRE(!unlink(invalid_path));
     move_fixture_free(&fixture);
     for (int i = 0; i < 4; i++) {
         REQUIRE(!unlink(paths[i]));
@@ -561,6 +630,23 @@ static bool static_prototype_refresh(void)
         );
     }
     REQUIRE(ok);
+    bool source_selection = initial && opened && activated && repeated &&
+                            invalid && diagnostics && preserved;
+    if (!source_selection) {
+        fprintf(
+            stderr,
+            "Prototype source selection: initial=%d opened=%d activated=%d "
+            "repeated=%d invalid=%d diagnostics=%d preserved=%d\n",
+            initial,
+            opened,
+            activated,
+            repeated,
+            invalid,
+            diagnostics,
+            preserved
+        );
+    }
+    REQUIRE(source_selection);
     return true;
 }
 

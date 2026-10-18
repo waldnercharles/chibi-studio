@@ -12,36 +12,17 @@ import subprocess
 import sys
 
 sys.dont_write_bytecode = True
-FINAL = '58f6283140e369366c58be72c1f9103ea3ff64fd'
-BASELINE = '27d55e67e902863b68a06ec0b8559869b0b021b9'
-REGISTRY_BASELINE = '3ed1986b5ed9eb407f776e03d50caa891c2e57f0'
+FINAL = '95ca95bc3ca2da5b899ec06596982ade26d2d94f'
+BASELINE = '58f6283140e369366c58be72c1f9103ea3ff64fd'
 ENGINE = 'ff6d06c888fe660894776255ec7f9fc507db6393'
 PRODUCT = 'src/editor/workspace/scene_authoring.c'
-REGISTRY_PRODUCT = 'src/editor/studio/studio_code.c'
-FIXTURE = 'tests/acceptance/scene_move.h'
-PRODUCT_HASH = '3c4999ce53fa6c6c437f81ae6207503d33cc71a23e916c6ca5911bbf164ccff6'
-BASELINE_HASH = '320e1832a516ee1c482b6ed8b70d286efe1bfd6fefdc8e08ca6d8203e7b15f2c'
-FIXTURE_HASH = 'f765b7140fb1c69c4818f7046fa0db6c9168a2d89eff9c88e8b014a96c952ae5'
+BASELINE_HASH = '3c4999ce53fa6c6c437f81ae6207503d33cc71a23e916c6ca5911bbf164ccff6'
 SUCCESS = 'Studio source edit accepted: frames=4 edits=1 undo=1 redo=1'
-RED_MARKER = ('Prototype refresh after relationship failure: base=20 middle=2 leaf=2 '
-              'child=2 baseline=1 propagated=0 reloaded=1 kept=1 combined=1 '
-              'prototype=1 restored=1 notice=1')
-REGISTRY_MARKER = 'Cached editor registry: refreshed=1 generation=1 same=1 valid=0 unchanged=1 stable=1'
-REGISTRY_HASH = '4f659262c6a6e9b12c2a97044b3d6933218187b3642381ad135c8d4f6da750ca'
-REGISTRY_OLD_HASH = 'e85e3585b95b5c1642bcfb8a80c1b65ed8c4ce0506622ee420f0ba6e40e71f1e'
-REVIEWED_FILES = {
-    PRODUCT: PRODUCT_HASH, FIXTURE: FIXTURE_HASH, REGISTRY_PRODUCT: REGISTRY_HASH,
-    'tests/acceptance/scene_registry_context.h': 'f16682a829dd46c6aa958203e52be82462fe96eb481db7b7ab1f4cc8dffa66ca',
-    'tests/acceptance/main.c': 'b49bb43d7243bf4783a00e8894102b062e458c1338714e0efe2f2e640c4655bf',
-}
+REVIEWED_FILES = {'src/editor/workspace/scene_authoring.c': 'b1d66f21245824e957ac27cb8c7718cc739d8465c96716d8b9bcb21648d90978', 'tests/acceptance/scene_move.h': 'bb39370aa389fbc1ff55f02a083300564b6d65f108c00b76bacf98a33cb92b43', 'tests/acceptance/README.md': '7c00d1a8b3ea8aa823452855b67db1ee803efec3af2cdb5ad6bfd388ca8d1ee4', 'EXTRACTION.json': 'c59e458a3b1d2f1248c58b60b9434c685d7f863359c56c5c4e80d1c02d79ec65'}
 CONTROLS = {
-    'red': {'product': PRODUCT, 'revision': BASELINE, 'baseline': 'baseline',
-            'sha256': BASELINE_HASH, 'marker': RED_MARKER,
-            'assertion': r'scene_move\.h \(563\): ok\)'},
-    'registry-red': {'product': REGISTRY_PRODUCT, 'revision': REGISTRY_BASELINE,
-                     'baseline': 'registry_baseline', 'sha256': REGISTRY_OLD_HASH,
-                     'marker': REGISTRY_MARKER,
-                     'assertion': r'scene_registry_context\.h \(87\): cached_registry_current\)'},
+    'selection-red': {'product': PRODUCT, 'revision': BASELINE, 'baseline': 'baseline',
+                      'sha256': BASELINE_HASH, 'marker': 'Prototype source selection: initial=0 opened=0 activated=0 repeated=0 invalid=0 diagnostics=1 preserved=1',
+                      'assertion': r'scene_move\.h \(649\): source_selection\)'},
 }
 PROHIBITED = ('Studio UI:', 'runtime frame failed', 'Could not initialize')
 INFRA = {'.github/workflows/ci.yml', 'tools/validate_studio_refresh.py'}
@@ -138,7 +119,7 @@ def assertions_enabled(arguments):
 
 def extraction(source):
     value = json.loads((source / 'EXTRACTION.json').read_text())
-    for name in (PRODUCT, REGISTRY_PRODUCT):
+    for name in (PRODUCT,):
         require(name in value['files'] and 'consumer_sha256' in value['files'][name],
                 'Missing edited-product consumer checksum: ' + name)
     for name, row in value['files'].items():
@@ -158,9 +139,10 @@ def extraction(source):
 def source_inputs(args):
     require(re.fullmatch(r'[0-9a-f]{40}', FINAL), 'Final reviewed Studio SHA has not been supplied')
     for path, revision in ((args.source, FINAL), (args.baseline, BASELINE),
-                           (args.registry_baseline, REGISTRY_BASELINE), (args.engine, ENGINE)):
+                           (args.engine, ENGINE)):
         clean_checkout(path, revision)
     require((args.source / '.github/engine-ref').read_text().strip() == ENGINE, 'Engine pin changed')
+    require(REVIEWED_FILES, 'Reviewed source identities have not been supplied')
     for name, checksum in REVIEWED_FILES.items():
         require(digest(args.source / name) == checksum, 'Unreviewed source: ' + name)
     source_names = tracked(args.source)
@@ -335,7 +317,6 @@ def build_variant(args, name, source, sdk):
                 'files': files, 'resources': resources, 'candidate_revision': FINAL,
                 'counterfactual': name in CONTROLS, 'source_dirty': name in CONTROLS, 'variant': name,
                 'product_sha256': digest(source / PRODUCT), 'sdk_build_id': sdk['build_id'],
-                'registry_product_sha256': digest(source / REGISTRY_PRODUCT),
                 'assertions_enabled': True, 'private_engine_source_include': False}
     evidence_bounds(evidence, compile_file.stat().st_size)
     evidence_path = args.output / 'evidence' / (name + '-acceptance.json')
@@ -455,7 +436,7 @@ def cpu_inventory(selector, code, output, cases, assertions):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('source', 'baseline', 'registry-baseline', 'engine', 'sdk', 'validation', 'output'):
+    for name in ('source', 'baseline', 'engine', 'sdk', 'validation', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
     for name in vars(args):
@@ -502,7 +483,7 @@ def main():
     for path in (*controls.values(), *control_builds, green_artifact[0], args.output / 'scratch',
                  args.output / 'cache', args.output / 'prefs'):
         shutil.rmtree(path)
-    print('Both reviewed red assertions reproduced; clean final four-frame and three CPU checks passed.', flush=True)
+    print('Reviewed selection defect reproduced; clean final four-frame and three CPU checks passed.', flush=True)
 
 
 if __name__ == '__main__':
