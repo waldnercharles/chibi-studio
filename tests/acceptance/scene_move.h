@@ -244,14 +244,40 @@ static bool static_source_dispatch_history(void)
     return true;
 }
 
-static bool static_relationship_refresh(void)
+static bool relationship_schema_kept(const move_fixture *fixture, const ecs_relationship_desc *schema)
+{
+    if (fixture->scene->registry.relationship_count != 1 ||
+        fixture->scene->registry.relationships[0] != schema) {
+        return false;
+    }
+    ecs_world *worlds[] = { fixture->world,
+                            prototype_preview_world(fixture->scene->prototype_preview) };
+    for (int i = 0; i < 2; i++) {
+        const ecs_relationship_desc
+            *live = ecs_world_relationship(worlds[i], schema->id);
+        if (!live || !(live->traits & ECS_REL_EXCLUSIVE) ||
+            strcmp(live->name, "AcceptanceTargets")) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool static_relationship_refresh(studio *host)
 {
     char root[] = "/tmp/chibi-studio-relation-XXXXXX", directory[256],
-         path[256], probe[256], error[256];
+         prototypes[256], path[256], probe[256], error[256];
+    const char *before = "AcceptanceTargets :: relationship { exclusive:true }";
+    const char *after = "AcceptanceTargets :: relationship { exclusive:false }";
+    const char *prototype_source = "RegistryProbe :: prototype { "
+                                   "links:{AcceptanceTargets:[]} }";
+    REQUIRE(host && host->kit);
     REQUIRE(mkdtemp(root));
     move_fixture fixture = move_fixture_new_with_root(root);
-    snprintf(probe, sizeof probe, "%s/RegistryProbe.chibi", root);
-    REQUIRE(!write_file_atomic(probe, "RegistryProbe :: prototype { links:{AcceptanceTargets:[]} }"));
+    snprintf(prototypes, sizeof prototypes, "%s/prototypes", root);
+    REQUIRE(!mkdir(prototypes, 0700));
+    snprintf(probe, sizeof probe, "%s/RegistryProbe.chibi", prototypes);
+    REQUIRE(!write_file_atomic(probe, prototype_source));
     asset_code *code = asset_code_open(probe, error, sizeof error);
     REQUIRE(code && asset_code_static(code));
     asset_code_set_registry(code, &fixture.scene->registry);
@@ -259,38 +285,119 @@ static bool static_relationship_refresh(void)
     snprintf(directory, sizeof directory, "%s/relationships", root);
     REQUIRE(!mkdir(directory, 0700));
     snprintf(path, sizeof path, "%s/AcceptanceTargets.chibi", directory);
-    REQUIRE(!write_file_atomic(path, "AcceptanceTargets :: relationship { exclusive:true }"));
+    REQUIRE(!write_file_atomic(path, before));
     app_scene_authoring_refresh_content(fixture.scene);
     REQUIRE(fixture.scene->registry.relationship_count == 1);
     asset_code_set_registry(code, &fixture.scene->registry);
     REQUIRE(!asset_code_error(code)[0]);
     REQUIRE(asset_code_validate(code, fixture.graph));
     const ecs_relationship_desc *schema = fixture.scene->registry.relationships[0];
-    ecs_world *worlds[] = { fixture.world,
-                            prototype_preview_world(fixture.scene->prototype_preview) };
-    for (int i = 0; i < 2; i++) {
-        const ecs_relationship_desc
-            *live = ecs_world_relationship(worlds[i], schema->id);
-        REQUIRE(
-            live && (live->traits & ECS_REL_EXCLUSIVE) &&
-            !strcmp(live->name, "AcceptanceTargets")
-        );
-    }
-    REQUIRE(!write_file_atomic(path, "AcceptanceTargets :: relationship { exclusive:1 }"));
-    app_scene_authoring_refresh_content(fixture.scene);
-    REQUIRE(fixture.scene->registry.relationship_count == 1);
-    REQUIRE(fixture.scene->registry.relationships[0] == schema);
-    for (int i = 0; i < 2; i++) {
-        const ecs_relationship_desc
-            *live = ecs_world_relationship(worlds[i], schema->id);
-        REQUIRE(live && (live->traits & ECS_REL_EXCLUSIVE));
-    }
+    REQUIRE(relationship_schema_kept(&fixture, schema));
     asset_code_free(code);
+
+    /* Use the real save/report path, borrowing only the existing host's kit.
+     * The private studio owns its source buffer, tab state and Output records. */
+    studio *s = xcalloc(1, sizeof *s);
+    s->scene = fixture.scene;
+    s->kit = host->kit;
+    s->key_area = -1;
+    s->focus_area = STUDIO_AREA_TOP;
+    s->graph.area = -1;
+    s->prefs.layouts[0].editors[STUDIO_AREA_TOP] = STUDIO_EDITOR_CODE;
+    s->prefs.code_apply_live = true;
+    REQUIRE(
+        !scene_tabs_open_source(fixture.scene, APP_EDITOR_DOCUMENT_RELATIONSHIP, "AcceptanceTargets", path)
+    );
+    code = asset_code_open(path, error, sizeof error);
+    REQUIRE(code && asset_code_static(code));
+    asset_code_set_registry(code, &fixture.scene->registry);
+    apush(s->code.assets, code);
+    REQUIRE(asset_code_replace(code, before, after));
+    REQUIRE(asset_code_validate(code, fixture.graph));
+    studio_code_save(s);
+    /* asset_editor may restore a tab checkpoint, so retrieve its owned buffer. */
+    code = s->code.assets[0];
+    char *disk = file_read_text(path);
+    bool saved = disk && !strcmp(disk, asset_code_text(code)) &&
+                 strstr(disk, "false") && strlen(disk) <= 128 &&
+                 !asset_code_dirty(code) &&
+                 !fixture.scene->tabs[fixture.scene->active_tab].source_dirty;
+    free(disk);
+    bool saved_notice = acount(s->records) == 1 &&
+                        s->records[0].kind == KIT_TOAST_ERROR &&
+                        strstr(s->records[0].text, "Saved, but not applied") &&
+                        strstr(s->records[0].text, "AcceptanceTargets") &&
+                        strstr(s->records[0].text, "Reopen the project");
+    bool kept = relationship_schema_kept(&fixture, schema);
+    asset_code_free(code);
+    afree(s->code.assets);
+    s->code.assets = NULL;
+    REQUIRE(!text_overlay_text(path) && !text_overlay_text(probe));
+
+    /* Start watching after the save. File sizes change, so no sleep or mtime
+     * assumption is needed. The second edit is a successful prototype load
+     * that overwrites scene->message after relationship refresh fails. */
+    s->time = 0;
+    studio_disk_frame(s);
+    bool baseline = acount(s->records) == (saved_notice ? 1 : 0) &&
+                    acount(fixture.scene->prototypes) == 0;
+    REQUIRE(!write_file_atomic(path, "AcceptanceTargets :: relationship { exclusive:1 }"));
+    REQUIRE(!write_file_atomic(probe, "RegistryProbe :: prototype { links:{AcceptanceTargets:[]} }\n"));
+    s->time = 1;
+    studio_disk_frame(s);
+    bool invalid_notice = acount(s->records) == 2 &&
+                          s->records[1].kind == KIT_TOAST_ERROR &&
+                          strstr(s->records[1].text, "Invalid relationship property or value type");
+    bool overwritten = acount(fixture.scene->prototypes) == 1 &&
+                       !strcmp(app_scene_authoring_message(fixture.scene), "Added RegistryProbe.chibi.");
+    kept &= relationship_schema_kept(&fixture, schema);
+
+    REQUIRE(!unlink(path));
+    s->time = 2;
+    studio_disk_frame(s);
+    bool removed_notice = acount(s->records) == 3 &&
+                          s->records[2].kind == KIT_TOAST_ERROR &&
+                          strstr(s->records[2].text, "AcceptanceTargets") &&
+                          strstr(s->records[2].text, "Reopen the project");
+    kept &= relationship_schema_kept(&fixture, schema);
+    bool reload_failed = app_scene_authoring_reload_path(fixture.scene, path) ==
+                         APP_DISK_FAILED;
+    kept &= relationship_schema_kept(&fixture, schema);
+    int records = acount(s->records);
+    s->time = 3;
+    studio_disk_frame(s);
+    bool quiet = acount(s->records) == records;
+
+    /* Expected failures on the old product are asserted only after cleanup.
+     * Error notices copied into the borrowed kit remain host-owned and are
+     * released at its ordinary shutdown; no extra frame or kit is created. */
+    studio_disk_free(s);
+    afree(s->records);
+    free(s);
     move_fixture_free(&fixture);
     REQUIRE(!unlink(probe));
-    REQUIRE(!unlink(path));
+    REQUIRE(!rmdir(prototypes));
     REQUIRE(!rmdir(directory));
     REQUIRE(!rmdir(root));
+    bool ok = saved && saved_notice && baseline && invalid_notice &&
+              overwritten && removed_notice && reload_failed && kept && quiet;
+    if (!ok) {
+        fprintf(
+            stderr,
+            "Relationship notices: saved=%d notice=%d baseline=%d invalid=%d "
+            "overwritten=%d removed=%d reload=%d kept=%d quiet=%d\n",
+            saved,
+            saved_notice,
+            baseline,
+            invalid_notice,
+            overwritten,
+            removed_notice,
+            reload_failed,
+            kept,
+            quiet
+        );
+    }
+    REQUIRE(ok);
     return true;
 }
 

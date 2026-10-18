@@ -16,7 +16,7 @@ nothing unsaved, quitting needs no confirmation; with Counter unsaved, the windo
 title marks it and a quit request asks once, in a toast a repeated request updates.
 The final frame renders both graph and code views before normal host shutdown. This proves
 consumer edit-handler integration and UI rendering; it does not hit-test pointer
-input. No source save, scenario, playback or screenshot occurs.
+input. Counter is not saved; no scenario, playback or screenshot occurs.
 
 The first frame also checks prototype and relationship source tabs through
 Studio's focused Undo/Redo dispatch, including dirty state and typed values
@@ -25,6 +25,19 @@ prototype collection budget (bounded by 65 MiB) checks that the common asset
 reader still reads it while prototype collection rejects it before parsing.
 These model checks add no rendered frames; temporary files and models are
 released before their final assertions.
+
+After the fourth frame's existing interactions, a relationship source check
+saves one tiny temporary declaration through the normal editor path. An
+incompatible edit must leave its saved buffer and tab clean while reporting
+"Saved, but not applied" and retaining the old schema in both authoring worlds.
+An invalid external edit shares a watcher batch with a successful prototype
+reload: the owned error record must survive that reload's status message.
+Deletion reports the reopen diagnostic, direct reload returns failure, and an
+unchanged poll adds no duplicate notice. This uses two files (at most 256 bytes),
+one fixture with two worlds, four synthetic watcher times and the same four host
+frames. Files and models are freed before the final assertion; copied notices
+remain owned by the host kit until ordinary shutdown. This checks notice dispatch
+and Output records, not toast pixels or pointer hit testing.
 
 Within the first frame it also opens a tiny temporary draft with two calls and a
 branch. It checks that named calls have no duplicate code body and that a small

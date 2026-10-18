@@ -775,7 +775,7 @@ static bool frame_probe_drawn(studio *s, bool expected)
 
 /* Two tiny static buffers exercise model history/save in the existing first
  * frame, without loading executable source or adding rendered frames. */
-static bool static_relationship_refresh(void);
+static bool static_relationship_refresh(studio *);
 static bool static_prototype_refresh(void);
 static bool large_source_read_limits(void);
 static bool static_source_dispatch_history(void);
@@ -875,7 +875,6 @@ static bool static_source_history(studio *s)
         REQUIRE(!rmdir(directory));
     }
     REQUIRE(!rmdir(root));
-    REQUIRE(static_relationship_refresh());
     REQUIRE(static_prototype_refresh());
     return true;
 }
@@ -959,6 +958,7 @@ static bool source_edit_frame(void *state)
         REQUIRE(studio_editor_shown(s, STUDIO_EDITOR_CODE));
         REQUIRE(input_map_reloads(s));
         REQUIRE(quit_asks(s));
+        REQUIRE(static_relationship_refresh(s));
     }
     return true;
 }

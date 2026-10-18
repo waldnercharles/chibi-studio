@@ -458,8 +458,8 @@ app_disk_change *app_scene_authoring_sync_disk(app_scene_authoring *scene, doubl
     if (!changed && (!acount(scene->disk_pending) || runtime_session(scene))) {
         return changes;
     }
-    if (changed) {
-        content_refresh(scene);
+    if (changed && !content_refresh(scene)) {
+        add_change(&changes, APP_DISK_FAILED, scene->content_root, scene->message);
     }
     char **paths = scene->disk_pending;
     scene->disk_pending = NULL;
@@ -495,7 +495,9 @@ app_disk_result app_scene_authoring_reload_path(app_scene_authoring *scene, cons
     if (ui) {
         return reload_ui_document(scene, ui) == 0 ? APP_DISK_RELOADED : APP_DISK_FAILED;
     }
-    content_refresh(scene);
+    if (!content_refresh(scene)) {
+        return APP_DISK_FAILED;
+    }
     return sync_path(scene, path, true);
 }
 

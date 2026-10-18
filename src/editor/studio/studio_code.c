@@ -222,7 +222,9 @@ static void save_asset(studio *s, asset_code *code)
     capture_asset(s, code);
     scene_document_tab *tab = active_asset(s);
     if (asset_code_static(code)) {
-        app_scene_authoring_refresh_content(s->scene);
+        if (!app_scene_authoring_refresh_content(s->scene)) {
+            studio_error(s, "Saved, but not applied", app_scene_authoring_message(s->scene));
+        }
         return;
     }
     if (tab && tab->source_only) {

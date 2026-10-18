@@ -402,7 +402,7 @@ void begin_transform_edit(app_scene_authoring *scene, ecs_entity entity);
 
 const char *content_basename(const char *path);
 bool content_path_in_folder(const app_scene_authoring *scene, const char *path, const char *folder);
-void content_refresh(app_scene_authoring *scene);
+bool content_refresh(app_scene_authoring *scene);
 bool scene_prototype_sources_refresh(app_scene_authoring *scene);
 void asset_index_invalidate(app_scene_authoring *scene);
 bool editable_scalar(const pin_value *value);

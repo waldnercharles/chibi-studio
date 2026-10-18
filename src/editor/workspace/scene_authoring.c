@@ -717,7 +717,7 @@ failed:
     return false;
 }
 
-void content_refresh(app_scene_authoring *scene)
+bool content_refresh(app_scene_authoring *scene)
 {
     asset_index_invalidate(scene);
     free((void *)scene->image_choices.items);
@@ -728,11 +728,13 @@ void content_refresh(app_scene_authoring *scene)
     asetlen(scene->content, 0);
     content_scan_directory(scene, scene->content_root);
     qsort(scene->content, (size_t)acount(scene->content), sizeof *scene->content, content_entry_compare);
-    if (scene->prototype_preview && refresh_relationships(scene)) {
-        scene_prototype_sources_refresh(scene);
+    bool refreshed = true;
+    if (scene->prototype_preview) {
+        refreshed = refresh_relationships(scene) &&
+                    scene_prototype_sources_refresh(scene);
     }
     if (!acount(scene->content)) {
-        return;
+        return refreshed;
     }
     editor_choice *images = xmalloc((size_t)acount(scene->content) * sizeof *images);
     for (int i = 0; i < acount(scene->content); i++) {
@@ -745,6 +747,7 @@ void content_refresh(app_scene_authoring *scene)
         }
     }
     scene->image_choices.items = images;
+    return refreshed;
 }
 
 void asset_index_invalidate(app_scene_authoring *scene)
@@ -2374,11 +2377,9 @@ int app_scene_authoring_set_content_root(app_scene_authoring *scene, const char 
     return 0;
 }
 
-void app_scene_authoring_refresh_content(app_scene_authoring *scene)
+bool app_scene_authoring_refresh_content(app_scene_authoring *scene)
 {
-    if (scene) {
-        content_refresh(scene);
-    }
+    return scene && content_refresh(scene);
 }
 
 void app_scene_authoring_free(app_scene_authoring *scene)

@@ -118,7 +118,7 @@ app_scene_authoring *app_scene_authoring_new_with_content_root(
 void app_scene_authoring_set_editor_working(app_scene_authoring *scene, const behavior_asset *editor_working);
 int app_scene_authoring_apply_pending(app_scene_authoring *scene);
 int app_scene_authoring_set_content_root(app_scene_authoring *scene, const char *path);
-void app_scene_authoring_refresh_content(app_scene_authoring *scene);
+bool app_scene_authoring_refresh_content(app_scene_authoring *scene);
 int app_scene_authoring_load_content(app_scene_authoring *scene);
 int app_scene_authoring_register_prototype(
     app_scene_authoring *scene,
