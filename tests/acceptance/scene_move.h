@@ -1,4 +1,5 @@
 #include "authoring/engine_preview.h"
+#include "authoring/source_format.h"
 #include "editor/collab/actions_scene.h"
 #include "runtime/component_catalog.h"
 #include "runtime/transform_propagation.h"
@@ -159,28 +160,49 @@ static bool source_history_reopens(
     return valid;
 }
 
-static bool static_source_dispatch_history(void)
+static bool static_source_dispatch_history(studio *host)
 {
     char root[] = "/tmp/chibi-studio-source-undo-XXXXXX", directory[256],
-         path[256], error[256];
+         path[256], scene_path[256], error[256];
+    REQUIRE(host && host->kit);
     REQUIRE(mkdtemp(root));
+    const char *scene_text = "// Unrelated scene stays unchanged.\n";
+    snprintf(scene_path, sizeof scene_path, "%s/Unrelated.chibi", root);
     const char *folders[] = { "relationships", "prototypes" };
     const char *names[] = { "UndoTargets", "UndoEnemy" };
     const char *before[] = { "UndoTargets :: relationship {exclusive:true}",
                              "UndoEnemy :: prototype {Transform {x:1,y:0}}" };
     const char *after[] = { "UndoTargets :: relationship {exclusive:false}",
                             "UndoEnemy :: prototype {Transform {x:2,y:0}}" };
+    const char *invalid[] = {
+        "UndoTargets :: relationship {exclusive:1}",
+        "UndoEnemy :: prototype {Transform {x:\"bad\",y:0}}"
+    };
     const app_editor_document_kind kinds[] = { APP_EDITOR_DOCUMENT_RELATIONSHIP,
                                                APP_EDITOR_DOCUMENT_PROTOTYPE };
-    bool all_valid = true;
+    bool all_valid = true, clean_saves = true;
     for (int i = 0; i < 2; i++) {
+        const char *unformatted[] = { before[i], after[i] };
+        char *text[2];
+        for (int j = 0; j < 2; j++) {
+            script_syntax *syntax = script_parse(unformatted[j]);
+            text[j] = authoring_source_format(syntax, error, sizeof error);
+            script_syntax_free(syntax);
+            REQUIRE(text[j] && strlen(text[j]) <= 128);
+        }
         snprintf(directory, sizeof directory, "%s/%s", root, folders[i]);
         REQUIRE(!mkdir(directory, 0700));
         snprintf(path, sizeof path, "%s/%s.chibi", directory, names[i]);
-        REQUIRE(!write_file_atomic(path, before[i]));
+        REQUIRE(!write_file_atomic(path, text[0]));
+        REQUIRE(!write_file_atomic(scene_path, scene_text));
         move_fixture fixture = move_fixture_new_with_root(root);
+        fixture.scene->scene_path = xstrdup(scene_path);
+        if (i) {
+            REQUIRE(!app_scene_authoring_register_prototype(fixture.scene, text[0], path));
+        }
         studio *s = xcalloc(1, sizeof *s);
         s->scene = fixture.scene;
+        s->kit = host->kit;
         s->key_area = -1;
         s->focus_area = STUDIO_AREA_TOP;
         s->graph.area = -1;
@@ -191,11 +213,35 @@ static bool static_source_dispatch_history(void)
         REQUIRE(code && asset_code_static(code));
         asset_code_set_registry(code, &fixture.scene->registry);
         apush(s->code.assets, code);
-        REQUIRE(asset_code_replace(code, before[i], after[i]));
+
+        /* A clean canonical source owns Save before it has any edits. The
+         * background scene's sentinel also catches the relationship fallback. */
+        int source_tab = fixture.scene->active_tab;
+        studio_save(s);
+        code = s->code.assets[0];
+        char *disk = file_read_text(path), *background = file_read_text(scene_path);
+        bool clean_saved = disk && !strcmp(disk, text[0]) && background &&
+                           !strcmp(background, scene_text) &&
+                           !strcmp(asset_code_text(code), text[0]) &&
+                           !asset_code_dirty(code) &&
+                           !scene_tabs_dirty(fixture.scene, &fixture.scene->tabs[source_tab]) &&
+                           fixture.scene->active_tab == source_tab &&
+                           fixture.scene->document.kind == kinds[i] &&
+                           !fixture.scene->scene_dirty && !acount(s->records) &&
+                           !studio_can_replay(s, false) &&
+                           !studio_can_replay(s, true);
+        free(disk);
+        free(background);
+        /* Keep the old-product control running through cleanup after a bad
+         * clean Save, with the same source bytes as the fixed product. */
+        REQUIRE(!write_file_atomic(path, text[0]));
+        REQUIRE(!write_file_atomic(scene_path, scene_text));
+        REQUIRE(!scene_tabs_open_source(fixture.scene, kinds[i], names[i], path));
+        REQUIRE(studio_code_replace(s, path, text[0], text[1], NULL));
         REQUIRE(asset_code_validate(code, fixture.graph));
         bool undo_enabled = studio_can_replay(s, false);
         studio_history(s, false);
-        bool undone = !strcmp(asset_code_text(code), before[i]) &&
+        bool undone = !strcmp(asset_code_text(code), text[0]) &&
                       !asset_code_dirty(code);
         undone &= source_history_reopens(
             code,
@@ -207,7 +253,7 @@ static bool static_source_dispatch_history(void)
         );
         bool redo_enabled = studio_can_replay(s, true);
         studio_history(s, true);
-        bool redone = !strcmp(asset_code_text(code), after[i]) &&
+        bool redone = !strcmp(asset_code_text(code), text[1]) &&
                       asset_code_dirty(code);
         redone &= source_history_reopens(
             code,
@@ -217,6 +263,77 @@ static bool static_source_dispatch_history(void)
             i == 0,
             true
         );
+        int records = acount(s->records);
+        studio_save(s);
+        code = s->code.assets[0];
+        disk = file_read_text(path);
+        bool dirty_saved = disk && !strcmp(disk, text[1]) &&
+                           !asset_code_dirty(code) &&
+                           !scene_tabs_dirty(fixture.scene, &fixture.scene->tabs[source_tab]) &&
+                           studio_can_replay(s, false) &&
+                           !studio_can_replay(s, true);
+        free(disk);
+        bool notice = i ? acount(s->records) == records
+                        : acount(s->records) == records + 1 &&
+                              s->records[records].kind == KIT_TOAST_ERROR &&
+                              strstr(s->records[records].text, "Saved, but not applied") &&
+                              strstr(s->records[records].text, "Reopen the project");
+        studio_history(s, false);
+        bool saved_history = !strcmp(asset_code_text(code), text[0]) &&
+                             asset_code_dirty(code) && studio_can_replay(s, true);
+        bool saved_all = studio_save_all(s);
+        code = s->code.assets[0];
+        disk = file_read_text(path);
+        background = file_read_text(scene_path);
+        saved_all &= disk && !strcmp(disk, text[0]) && background &&
+                     !strcmp(background, scene_text) &&
+                     !asset_code_dirty(code) && !studio_active_dirty(s) &&
+                     fixture.scene->active_tab == source_tab &&
+                     studio_can_replay(s, true);
+        free(disk);
+        free(background);
+        records = acount(s->records);
+        bool clean_all = studio_save_all(s) && acount(s->records) == records;
+        REQUIRE(studio_code_replace(s, path, text[0], invalid[i], NULL));
+        studio_save(s);
+        code = s->code.assets[0];
+        disk = file_read_text(path);
+        bool invalid_dirty = disk && !strcmp(disk, text[0]) &&
+                             !strcmp(asset_code_text(code), invalid[i]) &&
+                             asset_code_error(code)[0] &&
+                             asset_code_dirty(code) && studio_active_dirty(s) &&
+                             acount(s->records) == records + 1 &&
+                             s->records[records].kind == KIT_TOAST_ERROR &&
+                             strstr(s->records[records].text, "Could not save");
+        free(disk);
+        studio_discard_tab(s, source_tab);
+        disk = file_read_text(path);
+        bool discarded = disk && !strcmp(disk, text[0]) &&
+                         !text_overlay_text(path) && !acount(s->code.assets) &&
+                         acount(fixture.scene->tabs) == 1;
+        free(disk);
+
+        /* A malformed file opens clean and can be closed without repairing it.
+         * Saving it must report its diagnostic, never serialize a stale model. */
+        REQUIRE(!write_file_atomic(path, invalid[i]));
+        REQUIRE(!scene_tabs_open_source(fixture.scene, kinds[i], names[i], path));
+        records = acount(s->records);
+        studio_save(s);
+        code = acount(s->code.assets) ? s->code.assets[0] : NULL;
+        disk = file_read_text(path);
+        background = file_read_text(scene_path);
+        bool invalid_clean = code && disk && !strcmp(disk, invalid[i]) &&
+                             background && !strcmp(background, scene_text) &&
+                             asset_code_error(code)[0] &&
+                             !asset_code_dirty(code) && !studio_active_dirty(s) &&
+                             acount(s->records) == records + 1 &&
+                             s->records[records].kind == KIT_TOAST_ERROR &&
+                             strstr(s->records[records].text, "Could not save");
+        free(disk);
+        free(background);
+        studio_discard_tab(s, fixture.scene->active_tab);
+        bool closed = !acount(s->code.assets) && acount(fixture.scene->tabs) == 1 &&
+                      !text_overlay_text(path);
         for (int j = 0; j < acount(s->code.assets); j++) {
             asset_code_free(s->code.assets[j]);
         }
@@ -224,22 +341,43 @@ static bool static_source_dispatch_history(void)
         afree(s->records);
         free(s);
         move_fixture_free(&fixture);
+        free(text[0]);
+        free(text[1]);
         REQUIRE(!unlink(path));
         REQUIRE(!rmdir(directory));
-        if (!undo_enabled || !undone || !redo_enabled || !redone) {
+        bool valid = clean_saved && undo_enabled && undone && redo_enabled &&
+                     redone && dirty_saved && notice && saved_history &&
+                     saved_all && clean_all && invalid_dirty && discarded &&
+                     invalid_clean && closed;
+        if (!valid) {
             fprintf(
                 stderr,
-                "Static source history %s: undo=%d/%d redo=%d/%d\n",
+                "Static source save %s: clean=%d undo=%d/%d redo=%d/%d "
+                "dirty=%d notice=%d history=%d all=%d clean_all=%d "
+                "invalid=%d/%d discard=%d close=%d\n",
                 names[i],
+                clean_saved,
                 undo_enabled,
                 undone,
                 redo_enabled,
-                redone
+                redone,
+                dirty_saved,
+                notice,
+                saved_history,
+                saved_all,
+                clean_all,
+                invalid_dirty,
+                invalid_clean,
+                discarded,
+                closed
             );
         }
-        all_valid &= undo_enabled && undone && redo_enabled && redone;
+        clean_saves &= clean_saved;
+        all_valid &= valid;
     }
+    REQUIRE(!unlink(scene_path));
     REQUIRE(!rmdir(root));
+    REQUIRE(clean_saves);
     REQUIRE(all_valid);
     return true;
 }
@@ -314,7 +452,7 @@ static bool static_relationship_refresh(studio *host)
     apush(s->code.assets, code);
     REQUIRE(asset_code_replace(code, before, after));
     REQUIRE(asset_code_validate(code, fixture.graph));
-    studio_code_save(s);
+    studio_save(s);
     /* asset_editor may restore a tab checkpoint, so retrieve its owned buffer. */
     code = s->code.assets[0];
     char *disk = file_read_text(path);

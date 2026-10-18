@@ -12,17 +12,32 @@ import subprocess
 import sys
 
 sys.dont_write_bytecode = True
-FINAL = '95ca95bc3ca2da5b899ec06596982ade26d2d94f'
-BASELINE = '58f6283140e369366c58be72c1f9103ea3ff64fd'
+FINAL = 'a5dc980a8d066288c23c55b349d68528c5a13a95'
+BASELINE = '95ca95bc3ca2da5b899ec06596982ade26d2d94f'
 ENGINE = 'ff6d06c888fe660894776255ec7f9fc507db6393'
-PRODUCT = 'src/editor/workspace/scene_authoring.c'
-BASELINE_HASH = '3c4999ce53fa6c6c437f81ae6207503d33cc71a23e916c6ca5911bbf164ccff6'
+PRODUCT = 'src/editor/studio/studio_shell.c'
+DISCARD_PRODUCT = 'src/editor/studio/studio_code.c'
+BASELINE_HASH = '0d193b285b64f614b8094fb13c30c6988a39534af359fde76933b738f1cdc6ce'
 SUCCESS = 'Studio source edit accepted: frames=4 edits=1 undo=1 redo=1'
-REVIEWED_FILES = {'src/editor/workspace/scene_authoring.c': 'b1d66f21245824e957ac27cb8c7718cc739d8465c96716d8b9bcb21648d90978', 'tests/acceptance/scene_move.h': 'bb39370aa389fbc1ff55f02a083300564b6d65f108c00b76bacf98a33cb92b43', 'tests/acceptance/README.md': '7c00d1a8b3ea8aa823452855b67db1ee803efec3af2cdb5ad6bfd388ca8d1ee4', 'EXTRACTION.json': 'c59e458a3b1d2f1248c58b60b9434c685d7f863359c56c5c4e80d1c02d79ec65'}
+REVIEWED_FILES = {
+    'EXTRACTION.json': '4f7564b91bf1ebbc36b1fb27a8b1a06505d689962cf8cb5db481b403a0f778a6',
+    'src/editor/studio/studio_code.c': 'fa25dfdf5515461d9a70cf677ee821ebb5d0fc7ed9610f3af0d9ef81033279bc',
+    'src/editor/studio/studio_shell.c': 'd7a9d60016386326d193b0141c7d23d73a001afb06fbd299f33425dd93565eb7',
+    'tests/acceptance/README.md': '9c00e19661d9d7d51534c108c21f13af71a32f58bb52c2d8cef6479a6ae61347',
+    'tests/acceptance/main.c': '0ae8cccdd3e3eda6403d7bf9b6e84cd41f1dfd39a77e2307f3861c9b3ce148f2',
+    'tests/acceptance/scene_move.h': '9a84ba7af42c74f384f0bd4db432b4d29aad66a580317c22a3f35bcdb29e07f2',
+    'tests/acceptance/source_discard.h': '38eb2fb91b2385b8e98e0694e78fda83ee68e7ab62979712169663c5af55187b',
+}
 CONTROLS = {
-    'selection-red': {'product': PRODUCT, 'revision': BASELINE, 'baseline': 'baseline',
-                      'sha256': BASELINE_HASH, 'marker': 'Prototype source selection: initial=0 opened=0 activated=0 repeated=0 invalid=0 diagnostics=1 preserved=1',
-                      'assertion': r'scene_move\.h \(649\): source_selection\)'},
+    'save-red': {'product': PRODUCT, 'revision': BASELINE, 'baseline': 'baseline',
+                 'sha256': BASELINE_HASH,
+                 'markers': ('Static source save UndoTargets: clean=0',
+                             'Static source save UndoEnemy: clean=0'),
+                 'assertion': r'scene_move\.h \(380\): clean_saves\)'},
+    'discard-red': {'product': DISCARD_PRODUCT, 'revision': BASELINE, 'baseline': 'baseline',
+                    'sha256': '4f659262c6a6e9b12c2a97044b3d6933218187b3642381ad135c8d4f6da750ca',
+                    'markers': ('Source-only executable discard cleanup complete: cases=6 passed=0 ordinary=1/1',),
+                    'assertion': r'source_discard\.h \(185\): all_valid\)'},
 }
 PROHIBITED = ('Studio UI:', 'runtime frame failed', 'Could not initialize')
 INFRA = {'.github/workflows/ci.yml', 'tools/validate_studio_refresh.py'}
@@ -119,7 +134,7 @@ def assertions_enabled(arguments):
 
 def extraction(source):
     value = json.loads((source / 'EXTRACTION.json').read_text())
-    for name in (PRODUCT,):
+    for name in (PRODUCT, DISCARD_PRODUCT):
         require(name in value['files'] and 'consumer_sha256' in value['files'][name],
                 'Missing edited-product consumer checksum: ' + name)
     for name, row in value['files'].items():
@@ -412,7 +427,8 @@ def gpu_test(args, name, source, artifact, base_env):
         reason = report.get('reason', '')
         require(code != 0 and report.get('status') == 'failed' and reason.startswith('child_exit_1:'),
                 'Red did not fail as the intended assertion workload')
-        require(control['marker'] in reason and re.search(control['assertion'], reason),
+        require(all(marker in reason for marker in control['markers']) and
+                re.search(control['assertion'], reason),
                 'Red did not reproduce its exact reviewed defect assertion: ' + name)
         require(SUCCESS not in reason, 'Red unexpectedly reported success')
     else:
@@ -483,7 +499,7 @@ def main():
     for path in (*controls.values(), *control_builds, green_artifact[0], args.output / 'scratch',
                  args.output / 'cache', args.output / 'prefs'):
         shutil.rmtree(path)
-    print('Reviewed selection defect reproduced; clean final four-frame and three CPU checks passed.', flush=True)
+    print('Reviewed Save/Discard defects reproduced; clean final four-frame and three CPU checks passed.', flush=True)
 
 
 if __name__ == '__main__':

@@ -779,12 +779,12 @@ static bool static_relationship_refresh(studio *);
 static bool cached_editor_registry(void);
 static bool static_prototype_refresh(void);
 static bool large_source_read_limits(void);
-static bool static_source_dispatch_history(void);
+static bool static_source_dispatch_history(studio *);
 
 static bool static_source_history(studio *s)
 {
     REQUIRE(large_source_read_limits());
-    REQUIRE(static_source_dispatch_history());
+    REQUIRE(static_source_dispatch_history(s));
     static const type_field current = { .name = "current",
                                         .type = PIN_I32,
                                         .size = sizeof(int32_t) };
@@ -879,6 +879,8 @@ static bool static_source_history(studio *s)
     REQUIRE(static_prototype_refresh());
     return true;
 }
+#include "source_discard.h"
+
 static bool source_edit_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -895,6 +897,7 @@ static bool source_edit_frame(void *state)
         REQUIRE(reports_warn(s));
         REQUIRE(opens_on_handler(s));
         REQUIRE(fused_call_flow_edits(s));
+        REQUIRE(executable_source_discard(s));
         const node *literal = NULL;
         REQUIRE(check_counter(s, 1, false, &literal));
         s->prefs.code_apply_live = true;

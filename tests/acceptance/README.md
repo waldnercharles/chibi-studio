@@ -31,7 +31,20 @@ are freed before the final regression assertion.
 
 The first frame also checks prototype and relationship source tabs through
 Studio's focused Undo/Redo dispatch, including dirty state and typed values
-reopened from the tab's checkpoint. One temporary file just above the 64 MiB
+reopened from the tab's checkpoint. The same two fixtures now use the public
+Save dispatch on clean, formatter-canonical prototype and relationship sources:
+their exact bytes, history and cleanliness must survive, and a tiny unrelated
+scene sentinel must stay unchanged. Dirty Save retains undo and reports an
+incompatible relationship as saved but not applied. Undo followed by Save All
+saves the restored source, keeps redo and the active tab, and a clean Save All
+reports nothing. Invalid drafts reject Save without changing disk and can be
+discarded; invalid clean files reject Save with diagnostics and can be closed.
+This reuses both fixtures and adds one 36-byte sentinel file
+(the two source files are each bounded by 128 bytes), four fixture formatting calls,
+eight Save calls and four Save All calls, with six save-triggered content refreshes.
+All files and models are freed before the aggregate regression assertion,
+including on the old-product control's expected clean-save failures.
+One temporary file just above the 64 MiB
 prototype collection budget (bounded by 65 MiB) checks that the common asset
 reader still reads it while prototype collection rejects it before parsing.
 These model checks add no rendered frames; temporary files and models are
@@ -101,6 +114,20 @@ first two frames in Both, then deselected and undone in the third frame. The
 fourth frame checks that its graph card disappeared and the graph texture
 revision changed. This uses the
 same four host frames and adds one source edit and undo.
+
+The first frame also checks Discard on malformed behavior, library and system source
+tabs, both active and in the background, through `studio_discard_tab`. Their
+editors bind the host's real source world. Discard restores invalid disk text
+and diagnostics to the working catalog, releases the buffer and tab, preserves
+disk bytes and the applied generation, and leaves an unrelated dirty Counter
+draft and its overlay intact. An unreadable disk file keeps its draft; an
+ordinary Counter Discard still reloads the saved model. This uses three temporary
+sources (at most 128 bytes total), six source-only opens/edits/closes, one failed
+read attempt and one Counter edit/discard/reopen. It adds no fixtures, worlds,
+frames, sleeps or watcher times. Files and buffers are removed before the final
+regression assertion; the expected read-error notice remains host-owned until
+normal shutdown. The four-frame invocation and its supervisor deadline are
+unchanged. This exercises the production handlers, not pointer hit testing.
 
 `studio-acceptance --code-keys --project-root PATH` takes another disposable copy.
 It shows Counter in the Text Editor, focuses it and places the cursor after the

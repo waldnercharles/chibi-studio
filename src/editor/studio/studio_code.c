@@ -34,6 +34,7 @@
 #include "graph/document/serialize.h"
 #include "support/array.h"
 #include "support/asset_text.h"
+#include "support/file_io.h"
 #include "support/text_file.h"
 #include "support/text_overlay.h"
 #include "support/xalloc.h"
@@ -405,13 +406,56 @@ void studio_code_save(studio *s)
     );
 }
 
+/* A source-only executable has no model to restore. Put its disk text back
+   in the working catalog, including its diagnostics, without publishing it. */
+static bool discard_source_only(studio *s, const scene_document_tab *tab)
+{
+    if (!tab->source_only ||
+        (tab->kind != APP_EDITOR_DOCUMENT_BEHAVIOR &&
+         tab->kind != APP_EDITOR_DOCUMENT_SYSTEM) ||
+        !scene_tabs_dirty(s->scene, tab)) {
+        return true;
+    }
+    char *text = file_read_text(tab->path), error[256];
+    if (!text) {
+        snprintf(error, sizeof error, "Could not read %s", tab->path);
+        studio_error(s, "Could not discard changes", error);
+        return false;
+    }
+    const authoring_sources *working = preview_sources_working(s->scene->live);
+    authoring_sources *previous = working ? authoring_sources_retain(working) : NULL;
+    int result = preview_source_edit(s->scene->live, tab->path, text, error, sizeof error);
+    bool restored = result == 0;
+    /* Invalid source returns a diagnostic after retaining the edit. A rejected
+       edit (for example a staged publication) must instead keep the draft. */
+    bool prepared = preview_sources_working(s->scene->live) != previous;
+    for (int i = 0;
+         !restored && prepared && i < preview_sources_overlay_count(s->scene->live);
+         i++) {
+        const source_catalog_edit *edit = preview_sources_overlay_at(s->scene->live, i);
+        restored = !strcmp(edit->path, tab->path) && edit->text &&
+                   !strcmp(edit->text, text);
+    }
+    free(text);
+    if (restored) {
+        refresh_asset_catalog(s->scene);
+        asset_index_invalidate(s->scene);
+    }
+    authoring_sources_free(previous);
+    if (!restored) {
+        studio_error(s, "Could not discard changes", error);
+        return false;
+    }
+    return true;
+}
+
 /* A behavior shown from its source keeps no snapshot of its saved graph:
    its file is the saved state, so discarding its edits reloads the file.
    False, with an error toast, when that failed. */
 static bool reload_source_behavior(studio *s, const scene_document_tab *tab)
 {
-    if (tab->kind != APP_EDITOR_DOCUMENT_BEHAVIOR || tab->asset_saved ||
-        !tab->path || !scene_tabs_dirty(s->scene, tab)) {
+    if (tab->source_only || tab->kind != APP_EDITOR_DOCUMENT_BEHAVIOR ||
+        tab->asset_saved || !tab->path || !scene_tabs_dirty(s->scene, tab)) {
         return true;
     }
     char *path = xstrdup(tab->path);
@@ -436,7 +480,7 @@ void studio_discard_tab(studio *s, int index)
         scene_tabs_close(s->scene, APP_EDITOR_DOCUMENT_UI, tab->path);
         return;
     }
-    if (!reload_source_behavior(s, tab)) {
+    if (!discard_source_only(s, tab) || !reload_source_behavior(s, tab)) {
         return;
     }
     tab = &s->scene->tabs[index];

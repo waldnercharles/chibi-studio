@@ -1,5 +1,5 @@
 # Temporary validation child only. Do not merge this workflow into the product PR.
-name: PR71 source-tab selection validation
+name: PR71 source-tab lifecycle validation
 
 on:
   pull_request:
@@ -20,7 +20,7 @@ env:
 
 jobs:
   studio:
-    name: Bounded red/green prototype-tab acceptance
+    name: Bounded red/green Save and Discard acceptance
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -33,13 +33,13 @@ jobs:
       - name: Check out the immutable final Studio 71 candidate
         uses: actions/checkout@v4
         with:
-          ref: 95ca95bc3ca2da5b899ec06596982ade26d2d94f
+          ref: a5dc980a8d066288c23c55b349d68528c5a13a95
           path: chibi-studio
           persist-credentials: false
-      - name: Read the immutable old product for the red control
+      - name: Read the immutable old products for the red controls
         uses: actions/checkout@v4
         with:
-          ref: 58f6283140e369366c58be72c1f9103ea3ff64fd
+          ref: 95ca95bc3ca2da5b899ec06596982ade26d2d94f
           path: chibi-studio-baseline
           persist-credentials: false
       - name: Select the paired engine for a same-repository PR
@@ -177,16 +177,16 @@ jobs:
             --engine "$GITHUB_WORKSPACE/chibi" \
             --sdk "$GITHUB_WORKSPACE/chibi/dist/sdk" \
             --validation "$GITHUB_WORKSPACE/validation" \
-            --output "$RUNNER_TEMP/studio-selection-validation"
+            --output "$RUNNER_TEMP/studio-lifecycle-validation"
       - name: Retain bounded validation evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: studio71-selection-evidence
+          name: studio71-lifecycle-evidence
           path: |
-            ${{ runner.temp }}/studio-selection-validation/logs
-            ${{ runner.temp }}/studio-selection-validation/evidence
-            ${{ runner.temp }}/studio-selection-validation/summary.json
+            ${{ runner.temp }}/studio-lifecycle-validation/logs
+            ${{ runner.temp }}/studio-lifecycle-validation/evidence
+            ${{ runner.temp }}/studio-lifecycle-validation/summary.json
           if-no-files-found: warn
           retention-days: 3
 
