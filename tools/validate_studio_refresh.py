@@ -138,8 +138,19 @@ def assertions_enabled(arguments):
 
 def extraction(source):
     value = json.loads((source / 'EXTRACTION.json').read_text())
+    for name in (PRODUCT, REGISTRY_PRODUCT):
+        require(name in value['files'] and 'consumer_sha256' in value['files'][name],
+                'Missing edited-product consumer checksum: ' + name)
     for name, row in value['files'].items():
-        require(digest(source / name) == row.get('consumer_sha256', row['sha256']),
+        # sha256 is historical extraction provenance; current_source_sha256 hashes
+        # raw engine bytes before consumer replacements. Only consumer_sha256
+        # asserts current Studio bytes; the complete source has its own Git snapshot.
+        if 'consumer_sha256' not in row:
+            continue
+        checksum = row['consumer_sha256']
+        require(isinstance(checksum, str) and re.fullmatch(r'[0-9a-f]{64}', checksum),
+                'Malformed consumer checksum: ' + name)
+        require(digest(source / name) == checksum,
                 f'Extraction checksum differs: {name}')
     return value
 
