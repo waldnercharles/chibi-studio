@@ -110,6 +110,9 @@ classify() {
     local selector=$1 outcome=$2 key log rc mode summary passed=-1 failed=-1 total=-1 suites=-1 asserts=-1
     local witness_bytecode=false witness_sljit=false zero_bytecode=false zero_sljit=false
     local depth_bytecode=false depth_compiled=false supervisor=false
+    local fixture_failure=false two_fixture_failures=false
+    local prepare_call_failure=false prepared_assertion_failure=false
+    local snapshot_diagnostic=false package_diagnostic=false preparation_status=not_observed
     key="execute-$selector"
     log="$WORK/$key.log"
     mode=$(jq -r .expected_result "$ADMISSION")
@@ -151,6 +154,23 @@ classify() {
             if [[ "$rc:$mode:$passed:$failed:$total:$supervisor:$witness_bytecode:$witness_sljit:$depth_bytecode:$depth_compiled" == 1:red:0:2:2:true:true:true:true:true ]] &&
                [[ $(grep -c '^compiler fixture failure:' "$log") == 2 ]]; then outcome=intended_assertion_failure; fi
         fi
+        # Presence checks only: never copy an assertion, path, source or message.
+        grep -q '^compiler fixture failure:' "$log" && fixture_failure=true
+        [[ $(grep -c '^compiler fixture failure:' "$log") == 2 ]] && two_fixture_failures=true
+        grep -Eq '^\(FAILED: [^[:cntrl:]]+ \([0-9]+\): prepare\(\)\)$' "$log" && prepare_call_failure=true
+        grep -Eq '^\(FAILED: [^[:cntrl:]]+ \([0-9]+\): prepared\)$' "$log" && prepared_assertion_failure=true
+        grep -Eq '^compiler fixture:[0-9]+:[0-9]+: ' "$log" && snapshot_diagnostic=true
+        grep -Eq '^(project|core):[[:alnum:]_]+:[0-9]+:[0-9]+: ' "$log" && package_diagnostic=true
+        if [[ "$prepare_call_failure:$prepared_assertion_failure" != false:false ]]; then
+            preparation_status=partial_preparation_marker
+            if [[ "$prepare_call_failure:$prepared_assertion_failure:$witness_bytecode:$witness_sljit" == true:true:false:false ]]; then
+                preparation_status=authored_preparation_failed
+                if [[ "$snapshot_diagnostic:$package_diagnostic" == true:false ]]; then preparation_status=snapshot_preparation_failed; fi
+                if [[ "$snapshot_diagnostic:$package_diagnostic" == false:true ]]; then preparation_status=package_preparation_failed; fi
+                if [[ "$snapshot_diagnostic:$package_diagnostic" == true:true ]]; then preparation_status=multiple_preparation_diagnostics; fi
+            fi
+            if [[ "$witness_bytecode:$witness_sljit" != false:false ]]; then preparation_status=conflicting_preparation_markers; fi
+        fi
     fi
     [[ -z "$(git -C "$ROOT" status --porcelain)" ]] || outcome=source_mutation
     [[ "$(git -C "$ROOT" rev-parse HEAD)" == "$CANDIDATE_SHA" ]] || outcome=source_mutation
@@ -163,9 +183,23 @@ classify() {
     jq -n --arg selector "$selector" --arg outcome "$outcome" \
       --argjson identity "$identity_verified" --argjson summary "$summary_verified" \
       --argjson regression "$regression_verified" --argjson supervisor "$supervisor" \
+      --argjson witness_bytecode "$witness_bytecode" --argjson witness_sljit "$witness_sljit" \
+      --argjson zero_bytecode "$zero_bytecode" --argjson zero_sljit "$zero_sljit" \
+      --argjson depth_bytecode "$depth_bytecode" --argjson depth_compiled "$depth_compiled" \
+      --argjson fixture_failure "$fixture_failure" --argjson two_fixture_failures "$two_fixture_failures" \
+      --argjson prepare_call_failure "$prepare_call_failure" --argjson prepared_assertion_failure "$prepared_assertion_failure" \
+      --argjson snapshot_diagnostic "$snapshot_diagnostic" --argjson package_diagnostic "$package_diagnostic" \
+      --arg preparation_status "$preparation_status" \
       '{selector:$selector,outcome:$outcome,execution_identity_verified:$identity,
         expected_pico_summary_verified:$summary,expected_red_markers_verified:$regression,
-        production_supervisor_60s_report_verified:$supervisor}' > "$WORK/result-$selector.json"
+        production_supervisor_60s_report_verified:$supervisor,
+        markers:{c_witness_bytecode_verified:$witness_bytecode,c_witness_sljit_verified:$witness_sljit,
+          zero_id_bytecode_observed:$zero_bytecode,zero_id_sljit_observed:$zero_sljit,
+          depth_bytecode_observed:$depth_bytecode,depth_compiled_observed:$depth_compiled,
+          compiler_fixture_failure_observed:$fixture_failure,exact_two_compiler_fixture_failures_verified:$two_fixture_failures,
+          prepare_call_assertion_failed:$prepare_call_failure,prepared_assertion_failed:$prepared_assertion_failure,
+          snapshot_diagnostic_observed:$snapshot_diagnostic,package_diagnostic_observed:$package_diagnostic},
+        authored_preparation_status:$preparation_status}' > "$WORK/result-$selector.json"
 
 }
 
