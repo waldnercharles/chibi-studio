@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Temporary paired prototype bridge evidence; reviewed hosted validation PR only."""
+"""Temporary Studio-only exact-head validation; independently reviewed child PR only."""
 import argparse
+import contextlib
 import hashlib
 import json
 import os
@@ -10,211 +11,114 @@ import shlex
 import shutil
 import subprocess
 import sys
+import zlib
 
 sys.dont_write_bytecode = True
 # Deliberately fail closed until coordinator supplies the reviewed published pair.
-FINAL = '4302ca9c0b3ad13a1eab82b3511d90977ef51065'
+FINAL = '522593bb302072d7726b26de315efdbd1db60fdf'
+FINAL_TREE = 'cb57408b7b60511cda5e324ce78cf58b32927bff'
 ENGINE = '7bc6aa3cd69b29cfb006aab94d50d695007d9abe'
-PRIOR_ENGINE_EVIDENCE = {'run_id': 39102355375,
- 'validation_revision': 'aba0cc5e0fd6745f6e1dbd100b50c0073051df2b',
- 'engine_revision': '7bc6aa3cd69b29cfb006aab94d50d695007d9abe',
- 'native_artifact_sha256': '3c94d7a5015a617c7ffea05db6efd8bc7bfa8d4108eb9f04785bc50b85b9da77',
- 'native_log_sha256': {'engine-green': 'bcdae5a815f879d296cf007b0ca60721cb01abbca7d01b82c4554bfe7171088a',
-                       'engine-asan': '02e9b7c25996727745d4118612659e31377a4cc6fca6c90bcaa2e04468c73e08',
-                       'engine-red': 'e923b9d4998cece98f0b3ee7d80ccb404ce635d2a90140ef61b4629832940193'},
- 'wasm_job_id': 117601042506,
- 'wasm_job_log_sha256': '2ce3d3246f8423db1b46f93679bf22f5fe5cec3b6d9a3c6c3a89c34d433ccf92',
- 'completed_contracts': ['installed Debug SDK green: 8 cases / 79 assertions',
-                         'root ASan and fatal UBSan green: 8 cases / 79 assertions',
-                         'prior-writer red: intended duplicate-detach assertion at source_assets.c:1110',
-                         'serial Wasm green: 8 cases / 79 assertions'],
- 'scope': 'Prior run evidence only; these engine invocations are not repeated by this Studio resume.'}
+# These completed engine checks are reused, never reconstructed here.
+PRIOR_ENGINE_EVIDENCE = {
+    'run_id': 39102355375,
+    'validation_revision': 'aba0cc5e0fd6745f6e1dbd100b50c0073051df2b',
+    'engine_revision': ENGINE,
+    'native': {'passed': 8, 'assertions': 79},
+    'asan_fatal_ubsan': {'passed': 8, 'assertions': 79},
+    'prior_writer_negative': 'verified intended failure',
+    'serial_wasm': {'passed': 8, 'assertions': 79},
+}
+PRIOR_OWNERSHIP_EVIDENCE = {
+    'run_id': 39106120887,
+    'validation_revision': 'bdad5e64486662f502a7e343b36ceb6293a10f7e',
+    'studio_revision': '4302ca9c0b3ad13a1eab82b3511d90977ef51065',
+    'status': 'verified intended source_owned_gesture failure',
+    'assertion_line': 221,
+}
+# All retained files are from this dedicated allowlist directory. Logs and
+# rich preflight records remain ephemeral and are never artifact inputs.
+PUBLIC_DIRECTORY = None
+CURRENT_STAGE = 'startup'
+FAILURE_REASONS = {
+    'First negative failure is not its reviewed assertion': 'unexpected_first_assertion',
+    'Compiled selector case identity differs from reviewed workload': 'case_inventory_mismatch',
+    'Missing unique pico summary': 'missing_or_duplicate_case_summary',
+    'Wrong pico inventory': 'case_count_mismatch',
+    'Candidate assertion workload failed': 'candidate_assertion_failure',
+    'Infrastructure/sanitizer failure is not assertion evidence': 'infrastructure_or_sanitizer_failure',
+    'Studio edge diagnostics differ from the unique reviewed result': 'edge_diagnostic_mismatch',
+    'Studio authority diagnostics differ from the unique reviewed result': 'authority_diagnostic_mismatch',
+    'Prototype completion marker differs': 'completion_marker_mismatch',
+    'Control selector mismatch': 'control_selector_mismatch',
+    'Mutation bytes differ from review': 'mutation_hash_mismatch',
+    'Mutation requires exactly one reviewed original span': 'mutation_span_mismatch',
+    'Counterfactual writer differs from published Git blob': 'mutation_git_blob_mismatch',
+    'Reviewed Studio tree differs': 'studio_tree_mismatch',
+    'Validation child changes files outside its two infrastructure files': 'validation_scope_mismatch',
+    'SDK source is not the exact clean engine pin': 'sdk_revision_mismatch',
+    'Missing link-time debug stripping': 'studio_build_configuration_mismatch',
+    'Private engine source compiled': 'installed_sdk_boundary_violation',
+    'Studio assertions disabled': 'studio_assertions_disabled',
+    'Prototype binary changed': 'binary_identity_mismatch',
+    'Prototype build inputs changed': 'build_identity_mismatch',
+    'Prototype fixture cleanup incomplete': 'fixture_cleanup_failed',
+    'Production admission/supervisor changed': 'policy_identity_mismatch',
+    'Installed SDK changed during validation': 'sdk_identity_mismatch',
+}
+
 PRODUCT = 'src/editor/studio/studio_shell.c'
 SUCCESS = 'Studio source edit accepted: frames=4 edits=1 undo=1 redo=1'
 PROTOTYPE_SUCCESS = 'Studio prototype source ownership accepted: frames=2 prototypes=4 actors=3 checkpoints=1'
 EDGE_SUCCESS = 'Prototype source edge controls: deleted_source_retained=1 queued_commands_quiet=1'
 REVIEWED_FILES = {'.github/engine-ref': '0aa450a62d7457af7dab66b47d1555806707bbd621c6d7a2c909dfb4fe967875',
- 'EXTRACTION.json': 'e3296f9baac39dc71927c1bf48c53c0536d36ad3726df8e9d33e89dc8a66f55e',
+ 'EXTRACTION.json': '9ee786222b904d633a59904001e1eb808f014d63307757fd1200d4354531a194',
  'SDK_HEADERS.json': '56e445f1f418a6f5e838ecb05645748c40167e3ec5a146871e78ddedb02d874b',
+ 'cmake/studio_sources.cmake': '02705e472a50898a7068f5f7993c7479870ab1e247eaa3a1cd116be5faa35aca',
+ 'src/editor/collab/actions_scene.c': 'ccd7e001355c6b1e00641b3190e995f951ded077c77d6569743d91f312ca6d6e',
+ 'src/editor/collab/collab.c': 'af5959e30bc7ec83da31547d9d1d2ec1169df84bf70878d60209e3df8ec2a353',
+ 'src/editor/collab/collab.h': '5ad2e237b948e3818ea595e9f38efb0557e51dee09f190c2bd176fc4f6023d4b',
+ 'src/editor/collab/protocol.h': 'd30ffb61a1d099eb5d7399d9f3f09020c94cce0476bf758ee7ce4c1b9fd1e92d',
  'src/editor/documents/asset_code.c': '87ffc2770a876ae48da68f2f979f2470e6effc238a90df4e0e0f0f1435f4103d',
  'src/editor/documents/asset_code.h': '012f40bdfc5a1d5b5d71aa9c2f6a6ff988c154b4b83b4890316283ac76400201',
+ 'src/editor/documents/prototype_source_input.c': 'c4bd1cb21c3aa3199e657b9abe57fb954486be8bf9186271489321244b511b68',
+ 'src/editor/documents/prototype_source_input.h': '76772f93dc0458baf0695b85f7851c9a521c19bb8b4afc0d0f52edf3c4668971',
  'src/editor/documents/scene_disk.c': '61df3e4276a2d24f311727aea2056a5e314a15f6f3ea9eb0366f320e78db5e65',
  'src/editor/documents/scene_documents.c': '829844d7c5f026835c33b608f2a4611586bf8b87959674a5586ca2c0a87acee2',
  'src/editor/documents/scene_history.c': 'c85f0c20e977bb1e679a6904b0812eee01e148b2f1390469f6a509355bccc7ab',
  'src/editor/documents/scene_history.h': 'b4ff9050dd63cb59ad410efb7aa9a384eca64ff549766597535a8eba2e63946d',
  'src/editor/documents/scene_prototype_actions.c': '02184147bc3e50eecf4703520ca13435f1128b1f95f9a4c498fbf1a908cabba3',
  'src/editor/documents/scene_prototypes.c': '4374bdeffcb95e4cdab94434af50123a811781cd4b08044c814a5c01f936b492',
- 'src/editor/studio/studio_code.c': 'c4753f808a43513155b507b1e8fef0992761c63f0362f5f15a8831326c733b65',
+ 'src/editor/studio/studio_code.c': 'b8a6a580373cf1aa5caeb7311effbc309d62ff6dc3dc7370bab5a10ea3c8c37d',
  'src/editor/studio/studio_internal.h': '3f99a1b03d39441bc2cd486e36c2662037cd43055242c8953d1a0f27b7c4e4da',
+ 'src/editor/studio/studio_projects.c': '4c02c4fab9462e86aa6ef40f2d3cd75842cbc4c69dade6d43d3d5e422b083a47',
  'src/editor/studio/studio_properties.c': 'd20368e746e6070e7fdc8942c5e73d5504f89ffafd62e107998a4bf4e45e34a4',
+ 'src/editor/studio/studio_properties_view.c': '728ddaa0c20b1806bf0a8e375cd2c39b8bf6a2f3f63bb5c9cede856ac40374cb',
  'src/editor/studio/studio_prototype_actions.c': '61f768872d015bb3d9ea9e140a077434b86cb5e29e88607cd408fd730fb5373f',
  'src/editor/studio/studio_shell.c': '04bf2ee8660e9d4fe10c6deac391eea6a9b5315cabe7b653a369fbc929dd5202',
  'src/editor/workspace/scene_actors.c': '2e18d5ca42dcfb77671a0937bca2d0018f865239e27db13dfdac2caa4296f9b4',
  'src/editor/workspace/scene_authoring.c': '01af66a689b2141df3bdad469360f92da3b4c9d4acc8751b21590e900c2a7a37',
+ 'src/editor/workspace/scene_authoring.h': '73d7890233f253eca58066ce9aa1b44b4ac2c47f9a30a4ec42ff457dd89e3c47',
  'src/editor/workspace/scene_checkpoint.c': '3a80436d6f4d135264549f018c95fbb83e1c6e5fa5abf646ccb743be58aa7581',
  'src/editor/workspace/scene_internal.h': 'ce497c867a2fe4419801d1e7b2cc54c66bafd4f8f3f4f537e41139348d30ce9f',
  'src/editor/workspace/scene_tabs.c': '8c4f04ed722496c82b54b924d7570a04ccc0d5408dc6931a08bc9a97d5e44131',
- 'tests/acceptance/README.md': 'b9e171fbfba9a49a1b38bab32bf0782f70df8e0de45b6fdd4dd83e9c48ec68e9',
- 'tests/acceptance/main.c': 'e5d4833c864134a4bf5cc767903d436cf3c90b012414736a4822d5cee71c00af',
- 'tests/acceptance/prototype_source.h': '98062f9197c45356fdd7d84b430e3fe73aae5a627edfbf496e93442b6d99a80b',
+ 'tests/acceptance/README.md': 'e2e3078eebf7aec8f07c075c86a2286f929caf3df7aa039271bad770d54bdcdd',
+ 'tests/acceptance/main.c': 'f62699332037f6a677ae713bc5f6fc0cf586c744d8b2860c89564a2bf0309c00',
+ 'tests/acceptance/prototype_source.h': '2d3b2e57c5031ea7c3a2020b9786827d849e591509300a60b411341ba96f8f83',
+ 'tests/acceptance/prototype_source_authority.h': 'd566b4dfc0b4b44a548c70f3bd0332ebacad7687239640aeac383403bee6fb26',
+ 'tests/acceptance/prototype_source_capture.h': '525a1436a4673e4c7c51fbe5eec2cd24d48276aa3c7c30fe15e45bca5dded2f9',
  'tests/acceptance/scene_move.h': '9a84ba7af42c74f384f0bd4db432b4d29aad66a580317c22a3f35bcdb29e07f2',
- 'tests/acceptance/source_discard.h': '38eb2fb91b2385b8e98e0694e78fda83ee68e7ab62979712169663c5af55187b',
- 'src/editor/collab/actions_scene.c': 'ccd7e001355c6b1e00641b3190e995f951ded077c77d6569743d91f312ca6d6e',
- 'src/editor/workspace/scene_authoring.h': '73d7890233f253eca58066ce9aa1b44b4ac2c47f9a30a4ec42ff457dd89e3c47',
- 'cmake/studio_sources.cmake': '02705e472a50898a7068f5f7993c7479870ab1e247eaa3a1cd116be5faa35aca',
- 'src/editor/collab/collab.c': 'af5959e30bc7ec83da31547d9d1d2ec1169df84bf70878d60209e3df8ec2a353',
- 'src/editor/collab/collab.h': '5ad2e237b948e3818ea595e9f38efb0557e51dee09f190c2bd176fc4f6023d4b',
- 'src/editor/collab/protocol.h': 'd30ffb61a1d099eb5d7399d9f3f09020c94cce0476bf758ee7ce4c1b9fd1e92d',
- 'src/editor/documents/prototype_source_input.c': 'a387a3ba07cd9304a849867c918154c61c2bbf5ef2a9cc8e3d66e517b96d940a',
- 'src/editor/documents/prototype_source_input.h': '76772f93dc0458baf0695b85f7851c9a521c19bb8b4afc0d0f52edf3c4668971',
- 'src/editor/studio/studio_projects.c': '4c02c4fab9462e86aa6ef40f2d3cd75842cbc4c69dade6d43d3d5e422b083a47',
- 'src/editor/studio/studio_properties_view.c': '728ddaa0c20b1806bf0a8e375cd2c39b8bf6a2f3f63bb5c9cede856ac40374cb',
- 'tests/acceptance/prototype_source_authority.h': '895a2b6a824e3ebe26872130b992c34a53dd1fc50f1fd4010e3607bb686657c9',
- 'tests/acceptance/source_action_outcomes.h': 'efdb4571214e15a104428f68e0fcf8b9835e222264908fca076a79898a098f32'}
-ENGINE_REVIEWED_FILES = {'src/authoring/source_prototype_edit.h': '94f01e0783d40fe3b574c94ba07850eb89356692d083d575c6a338ee6195017e',
- 'src/authoring/source_prototype_edit.c': 'f980580b3f3e93a0b5cf52ce50990ca4a9604c336458b5e632379029901061bc',
- 'sdk/source_authoring.cmake': 'd9f20ed5ea7f59e68cbc8681d52de1934e2af3af0514f853d0b5a0911191e61c',
- 'test/language/source_assets.c': 'ad88162a2898936e3331a557de2e46236b13f420bd6aebc888cda9e9b3915750',
- 'test/language/main.c': 'b3e03cb31493e89cd9b421a42828373a4adf540161a1c05c596843cd44c966f0',
- 'tools/test_policy.py': '899913e620109fc172e9c882a7d529df2996efbb5a581f95e641c239f50c0f6a',
- 'docs/source-prototype-edits.md': '608a97f3334eae719909f9a88a4200bedb07461999d402f503049d82cbeba9b1'}
-ENGINE_CASES = ['source_edit_replaces_only_the_normalized_value_span', 'source_edit_sparse_component_keeps_other_base_fields_live', 'source_edit_nested_axis_obeys_existing_whole_record_semantics', 'source_edit_add_uses_explicit_creation_payload_and_local_remove', 'source_edit_inherited_remove_preserves_children_links_and_behavior_order', 'source_edit_behavior_splices_and_inherited_detach', 'source_edit_typed_batch_and_null_symbolic_link', 'source_edit_batch_rejections_have_no_partial_result']
-ENGINE_WRITER = 'src/authoring/source_prototype_edit.c'
-ENGINE_MUTATION = {'replacements': [{'before': '    }\n'
-                             '    return replace(c, s, (int)ts_node_start_byte(node), '
-                             '(int)ts_node_end_byte(node), "");\n'
-                             '}\n'
-                             'static char *remove_behavior(context *c, const snapshot *s, av_value *array, '
-                             'const char *name)\n'
-                             '{\n'
-                             '    TSNode node = value_node(s, array);\n'
-                             '    text_edit *edits = NULL;\n'
-                             '    size_t index = 0;\n'
-                             '    bool removed = false;\n'
-                             '    for (uint32_t i = 0; i < ts_node_child_count(node); i++) {\n'
-                             '        TSNode child = ts_node_child(node, i);\n'
-                             '        if (is(child, "comment")) {\n'
-                             '            continue;\n'
-                             '        }\n'
-                             '        if (ts_node_is_named(child)) {\n'
-                             '            if (index >= av_arr_size(array)) {\n'
-                             '                afree(edits);\n'
-                             '                fail(c, "Behavior array has inconsistent source items");\n'
-                             '                return NULL;\n'
-                             '            }\n'
-                             '            removed = !strcmp(av_get_str(av_arr_get(array, index++)), name);\n'
-                             '        } else if (!is(child, ",")) {\n'
-                             '            continue;\n'
-                             '        }\n'
-                             '        if (removed) {\n'
-                             '            apush(edits, ((text_edit){ (int)ts_node_start_byte(child), '
-                             '(int)ts_node_end_byte(child), "" }));\n'
-                             '        }\n'
-                             '    }\n'
-                             '    /* A comma belongs to its preceding value, so each deleted value/comma is\n'
-                             '     * visited once. A surviving last value may retain a legal trailing '
-                             'comma.\n'
-                             '     * Comments and surviving values stay byte-for-byte in their original '
-                             'order. */\n'
-                             '    if (index != av_arr_size(array) || !acount(edits)) {\n'
-                             '        afree(edits);\n'
-                             '        fail(c, "Behavior array has no matching source items");\n'
-                             '        return NULL;\n'
-                             '    }\n'
-                             '    char *source = text_edits_apply(s->source, edits, acount(edits));\n'
-                             '    afree(edits);\n'
-                             '    return source;\n'
-                             '}\n'
-                             'static bool write_path(void *data, const type_desc *type, const char *path, '
-                             'pin_value value)\n'
-                             '{\n',
-                   'after': '    }\n'
-                            '    return replace(c, s, (int)ts_node_start_byte(node), '
-                            '(int)ts_node_end_byte(node), "");\n'
-                            '}\n'
-                            'static char *remove_array_item(context *c, const snapshot *s, av_value *array, '
-                            'size_t index)\n'
-                            '{\n'
-                            '    TSNode node = value_node(s, array);\n'
-                            '    av_source at = av_get_source(av_arr_get(array, index));\n'
-                            '    int start = (int)at.start, end = (int)at.end;\n'
-                            '    TSNode comma_before = { 0 }, comma_after = { 0 };\n'
-                            '    for (uint32_t i = 0; i < ts_node_child_count(node); i++) {\n'
-                            '        TSNode child = ts_node_child(node, i);\n'
-                            '        if (is(child, ",") && ts_node_end_byte(child) <= at.start) {\n'
-                            '            comma_before = child;\n'
-                            '        }\n'
-                            '        if (is(child, ",") && ts_node_start_byte(child) >= at.end) {\n'
-                            '            comma_after = child;\n'
-                            '            break;\n'
-                            '        }\n'
-                            '    }\n'
-                            '    /* Delete punctuation separately so comments between values survive. */\n'
-                            '    text_edit edits[2] = { { start, end, "" } };\n'
-                            '    TSNode comma = !ts_node_is_null(comma_after) ? comma_after : comma_before;\n'
-                            '    int count = 1;\n'
-                            '    if (!ts_node_is_null(comma)) {\n'
-                            '        edits[count++] = (text_edit){ (int)ts_node_start_byte(comma),\n'
-                            '                                      (int)ts_node_end_byte(comma),\n'
-                            '                                      "" };\n'
-                            '    }\n'
-                            '    (void)c;\n'
-                            '    return text_edits_apply(s->source, edits, count);\n'
-                            '}\n'
-                            'static bool write_path(void *data, const type_desc *type, const char *path, '
-                            'pin_value value)\n'
-                            '{\n'},
-                  {'before': '                *materialized = true;\n'
-                             '            }\n'
-                             '            av_value *behaviors = av_obj_get(av_doc_root(s->doc), '
-                             '"behaviors");\n'
-                             '            source = remove_behavior(c, s, behaviors, op->behavior);\n'
-                             '            break;\n'
-                             '        }\n'
-                             '    }\n',
-                   'after': '                *materialized = true;\n'
-                            '            }\n'
-                            '            av_value *behaviors = av_obj_get(av_doc_root(s->doc), '
-                            '"behaviors");\n'
-                            '            for (size_t i = 0; i < av_arr_size(behaviors); i++) {\n'
-                            '                if (!strcmp(av_get_str(av_arr_get(behaviors, i)), '
-                            'op->behavior)) {\n'
-                            '                    source = remove_array_item(c, s, behaviors, i);\n'
-                            '                    break;\n'
-                            '                }\n'
-                            '            }\n'
-                            '            break;\n'
-                            '        }\n'
-                            '    }\n'}],
- 'sha256': '745a7f422fe218a5b23053f0e367c0abdddd0d6948912b4b578636fe93620110',
- 'git_blob': '1586d46923a741f1ccbf9f60d3f9323b2079d2f8',
- 'reference_revision': 'c4a8b09a837a737126b8b560b3ff67af9b7af9c2'}
-ENGINE_ASSERTION = 'source_assets\\.c \\(1110\\): !prototype_has_graph\\(bridge_result\\.value, "First"\\)\\)'
-STUDIO_CONTROL = {'product': 'src/editor/studio/studio_properties.c',
- 'before': '            int result = scene_source_input_edit(\n'
-           '                s->scene,\n'
-           '                asset,\n'
-           '                &change,\n'
-           '                1,\n'
-           '                key,\n'
-           '                !strcmp(s->prototype_edit, key)\n'
-           '            );',
- 'after': '            (void)change;\n'
-          '            int result = prototype_write_field(asset->prototype, desc->name, field->name, '
-          'value);\n'
-          '            asset->dirty = 1;',
- 'sha256': '3c84f7736a8ebd369d245d76a448d8f42f5669dcafcada824d94cf260bc26991',
- 'assertion': 'prototype_source\\.h \\(221\\): source_owned_gesture\\)'}
-EDGE_CONTROL = {'files': {'src/editor/documents/asset_code.c': {'replacements': [{'before': '    if (c->file_missing) {\n'
+ 'tests/acceptance/source_action_outcomes.h': 'efdb4571214e15a104428f68e0fcf8b9835e222264908fca076a79898a098f32',
+ 'tests/acceptance/source_discard.h': '38eb2fb91b2385b8e98e0694e78fda83ee68e7ab62979712169663c5af55187b'}
+OWNERSHIP_PREFIX_SHA256 = '52bfca49f933549aae955962c692f9bca02bd6e27222aed69945f857c070d88c'
+EDGE_CONTROL = {'assertion': 'prototype_source\\.h \\(700\\): deleted_source_retained && queued_commands_quiet\\)',
+ 'files': {'src/editor/documents/asset_code.c': {'git_blob': '3079f5a8a07e82a8e73e8cc3890e13f4082e68f6',
+                                                 'replacements': [{'after': '',
+                                                                   'before': '    if (c->file_missing) {\n'
                                                                              '        return true;\n'
-                                                                             '    }\n',
-                                                                   'after': ''}],
-                                                 'sha256': '181e210c3ea64c97074e0d96bac9a17cc84258639c84889eb3f88efcfb773702',
-                                                 'git_blob': '3079f5a8a07e82a8e73e8cc3890e13f4082e68f6'},
-           'src/editor/studio/studio_properties.c': {'replacements': [{'before': '        if (added == '
-                                                                                 'APP_PROTOTYPE_EDIT_NOT_APPLIED) '
-                                                                                 '{',
-                                                                       'after': '        '
+                                                                             '    }\n'}],
+                                                 'sha256': '181e210c3ea64c97074e0d96bac9a17cc84258639c84889eb3f88efcfb773702'},
+           'src/editor/studio/studio_properties.c': {'git_blob': 'a09c785fd5f7adbe1409cf743875760b28f23614',
+                                                     'replacements': [{'after': '        '
                                                                                 'scene_prototype_asset '
                                                                                 '*asset = '
                                                                                 'find_prototype(scene, '
@@ -222,30 +126,29 @@ EDGE_CONTROL = {'files': {'src/editor/documents/asset_code.c': {'replacements': 
                                                                                 '        if (added > 0 && '
                                                                                 'asset && '
                                                                                 'asset->source_not_applied) '
-                                                                                '{'},
-                                                                      {'before': '    if (result == '
+                                                                                '{',
+                                                                       'before': '        if (added == '
+                                                                                 'APP_PROTOTYPE_EDIT_NOT_APPLIED) '
+                                                                                 '{'},
+                                                                      {'after': '    if (result < 0 || '
+                                                                                '(result > 0 && '
+                                                                                '!asset->source_not_applied)) '
+                                                                                '{',
+                                                                       'before': '    if (result == '
                                                                                  'APP_PROTOTYPE_EDIT_PENDING) '
                                                                                  '{\n'
                                                                                  '        return;\n'
                                                                                  '    }\n'
-                                                                                 '    if (result < 0) {',
-                                                                       'after': '    if (result < 0 || '
-                                                                                '(result > 0 && '
-                                                                                '!asset->source_not_applied)) '
-                                                                                '{'},
-                                                                      {'before': '    if (result == '
+                                                                                 '    if (result < 0) {'},
+                                                                      {'after': '    if (result > 0) {',
+                                                                       'before': '    if (result == '
                                                                                  'APP_PROTOTYPE_EDIT_NOT_APPLIED) '
-                                                                                 '{',
-                                                                       'after': '    if (result > 0) {'}],
-                                                     'sha256': '88812cce2791a700932a476362c84ebbf660c9d2d23246c25f2c1416322d1e20',
-                                                     'git_blob': 'a09c785fd5f7adbe1409cf743875760b28f23614'}},
- 'assertion': 'prototype_source\\.h \\(699\\): deleted_source_retained && queued_commands_quiet\\)',
+                                                                                 '{'}],
+                                                     'sha256': '88812cce2791a700932a476362c84ebbf660c9d2d23246c25f2c1416322d1e20'}},
  'required_markers': ['Prototype source edge controls: deleted_source_retained=0 queued_commands_quiet=0']}
-AUTHORITY_CONTROL = {'files': {'src/editor/documents/prototype_source_input.c': {'before': '    if (gate == '
-                                                                       'COLLAB_ACTION_PENDING) {\n'
-                                                                       '        input->waiting = '
-                                                                       'collab_pending_action(&input->sent);',
-                                                             'after': '    if (gate == '
+AUTHORITY_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(836\\): test\\.code_authority && '
+              'test\\.property_authority\\)',
+ 'files': {'src/editor/documents/prototype_source_input.c': {'after': '    if (gate == '
                                                                       'COLLAB_ACTION_PENDING) {\n'
                                                                       '        yyjson_doc *optimistic = '
                                                                       'yyjson_read(json, strlen(json), 0);\n'
@@ -259,28 +162,74 @@ AUTHORITY_CONTROL = {'files': {'src/editor/documents/prototype_source_input.c': 
                                                                       '        yyjson_doc_free(optimistic);\n'
                                                                       '        input->waiting = '
                                                                       'collab_pending_action(&input->sent);',
-                                                             'sha256': 'dd320e57be88e2b064aa6fbbb7270e92bf29a600f0bd6b41cd1e8368c4686704',
-                                                             'git_blob': 'a954252eab385a36f12b1a8f5130e0444f309ffe'}},
- 'assertion': 'prototype_source_authority\\.h \\(759\\): test\\.code_authority && '
-              'test\\.property_authority\\)',
+                                                             'before': '    if (gate == '
+                                                                       'COLLAB_ACTION_PENDING) {\n'
+                                                                       '        input->waiting = '
+                                                                       'collab_pending_action(&input->sent);',
+                                                             'git_blob': '2cc916784135e35f70f31b5437ed1a1f1e1b3dd1',
+                                                             'sha256': '067cd0df960296e74823f05f8f742438e2e3d7e93241666ea02e73e833dcb197'}},
  'required_markers': ['Prototype source authority: Code unchanged=0, Properties unchanged=0',
-                      'Prototype source intent: retry_held=-1']}
-AUTHORITY_SUCCESS = 'Studio prototype source authority accepted: frames=2 prototypes=1 actors=0 checkpoints=1 incoming=64 outgoing=91'
-AUTHORITY_DIAGNOSTIC = 'Prototype source authority: Code unchanged=1, Properties unchanged=1'
-INTENT_CONTROL = {'files': {'src/editor/documents/prototype_source_input.c': {'before': '    bool live = input->live;\n',
-                                                             'after': '    bool live = '
+                      'Prototype source intent: retry_held=-1',
+                      'Prototype source frame: held=-1, live=-1',
+                      'Prototype source disk: conflict=-1']}
+INTENT_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(838\\): test\\.retry_held == 1\\)',
+ 'files': {'src/editor/documents/prototype_source_input.c': {'after': '    bool live = '
                                                                       '!asset_code_runtime_held(asset->source);\n',
-                                                             'sha256': '8ee0dfbbbc9dba287eb9033fd55815ce7091b0c04098159490ea4cce7fdc3f27',
-                                                             'git_blob': '67ff487344c84f5443d4a1e1736037e677f33902'}},
- 'assertion': 'prototype_source_authority\\.h \\(761\\): test\\.retry_held == 1\\)',
+                                                             'before': '    bool live = input->live;\n',
+                                                             'git_blob': '6f2a3250834b25f0d4856b9d5f18d4310a39a008',
+                                                             'sha256': 'f866cb067c2df543b25bbfc67020bf96e7366fcbb039d33772320bcd86bbb150'}},
  'required_markers': ['Prototype source authority: Code unchanged=1, Properties unchanged=1',
-                      'Prototype source intent: retry_held=0']}
+                      'Prototype source intent: retry_held=0',
+                      'Prototype source frame: held=-1, live=-1',
+                      'Prototype source disk: conflict=-1']}
+FRAME_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(839\\): test\\.frame_held == 1 && test\\.frame_live == 1\\)',
+ 'files': {'src/editor/studio/studio_code.c': {'after': '                    if (!s->prefs.code_apply_live '
+                                                        '&& asset_code_canonical_dirty(code)) {\n'
+                                                        '                        '
+                                                        'asset_code_hold_runtime(code, true);\n'
+                                                        '                    }\n'
+                                                        '                    '
+                                                        'scene_prototype_source_sync(s->scene, prototype, '
+                                                        's->prefs.code_apply_live);\n',
+                                               'before': '                    '
+                                                         'scene_prototype_source_sync(s->scene, prototype, '
+                                                         '!asset_code_runtime_held(code));\n',
+                                               'git_blob': '42055b451bfd84dcd4e8c39d35286ec6a280aa92',
+                                               'sha256': 'c4753f808a43513155b507b1e8fef0992761c63f0362f5f15a8831326c733b65'}},
+ 'required_markers': ['Prototype source authority: Code unchanged=1, Properties unchanged=1',
+                      'Prototype source intent: retry_held=1',
+                      'Prototype source frame: held=0, live=0',
+                      'Prototype source disk: conflict=1']}
+DISK_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(840\\): test\\.disk_conflict == 1\\)',
+ 'files': {'src/editor/documents/prototype_source_input.c': {'after': '        if '
+                                                                      '(asset_code_prepare_refresh(asset->source, '
+                                                                      '&disk, error, sizeof error) &&\n'
+                                                                      '            disk.text) {\n',
+                                                             'before': '        if '
+                                                                       '(!asset_code_prepare_refresh(asset->source, '
+                                                                       '&disk, error, sizeof error)) {\n'
+                                                                       '            '
+                                                                       'asset_code_reject_static(asset->source, '
+                                                                       'error);\n'
+                                                                       '        } else if (disk.text) {\n',
+                                                             'git_blob': '3cf332acd750dfa03212646565946aeb955f2553',
+                                                             'sha256': 'a387a3ba07cd9304a849867c918154c61c2bbf5ef2a9cc8e3d66e517b96d940a'}},
+ 'required_markers': ['Prototype source authority: Code unchanged=1, Properties unchanged=1',
+                      'Prototype source intent: retry_held=1',
+                      'Prototype source frame: held=1, live=1',
+                      'Prototype source disk: conflict=0']}
+AUTHORITY_SUCCESS = 'Studio prototype source authority accepted: frames=2 prototypes=2 actors=0 checkpoints=1 incoming=70 outgoing=98'
+AUTHORITY_DIAGNOSTIC = 'Prototype source authority: Code unchanged=1, Properties unchanged=1'
 INTENT_SUCCESS = 'Prototype source intent: retry_held=1'
+FRAME_SUCCESS = 'Prototype source frame: held=1, live=1'
+DISK_SUCCESS = 'Prototype source disk: conflict=1'
+CAPTURE_SUCCESS = 'Prototype source controls: notice_retained=1 focus_retained=1 enter_edits_draft=1'
 CONTROLS = {
-    'ownership-red': {'files': {STUDIO_CONTROL['product']: STUDIO_CONTROL}, 'assertion': STUDIO_CONTROL['assertion']},
     'edges-red': EDGE_CONTROL,
-    'authority-red': AUTHORITY_CONTROL,
-    'intent-red': INTENT_CONTROL,
+    'authority-red': dict(AUTHORITY_CONTROL, authority=True),
+    'intent-red': dict(INTENT_CONTROL, authority=True),
+    'frame-red': dict(FRAME_CONTROL, authority=True),
+    'disk-red': dict(DISK_CONTROL, authority=True),
 }
 PROHIBITED = ('Studio UI:', 'runtime frame failed', 'Could not initialize')
 INFRA = {'.github/workflows/ci.yml', 'tools/validate_studio_refresh.py'}
@@ -312,8 +261,68 @@ def save(path, value):
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
 
 
+def public_status(name, status, **counts):
+    require(re.fullmatch(r'[a-z0-9-]+', name), 'Invalid public status name')
+    require(status in ('completed', 'failed', 'executed', 'verified',
+                       'verified-negative', 'blocked-or-failed'), 'Invalid public status')
+    require(all(isinstance(value, (int, bool)) for value in counts.values()),
+            'Public status must contain only verified numeric counts')
+    if PUBLIC_DIRECTORY is not None:
+        save(PUBLIC_DIRECTORY / (name + '.json'), {'status': status, **counts})
+    print(name + ': ' + status, flush=True)
+
+
+def stage(name):
+    global CURRENT_STAGE
+    require(re.fullmatch(r'[a-z0-9-]+', name), 'Invalid validation stage')
+    CURRENT_STAGE = name
+
+
+def failure_status(error):
+    if isinstance(error, RuntimeError):
+        reason = FAILURE_REASONS.get(str(error), 'validation_requirement_failed')
+    elif isinstance(error, subprocess.CalledProcessError):
+        reason = 'subprocess_failed'
+    elif isinstance(error, OSError):
+        reason = 'filesystem_or_process_error'
+    elif isinstance(error, (ValueError, KeyError, TypeError)):
+        reason = 'invalid_structured_input'
+    else:
+        reason = 'unexpected_helper_error'
+    if PUBLIC_DIRECTORY is not None:
+        save(PUBLIC_DIRECTORY / 'failure.json', {
+            'status': 'blocked-or-failed', 'stage': CURRENT_STAGE, 'reason': reason,
+        })
+    public_status('validation', 'blocked-or-failed')
+
+
+def studio_failure_locations(source, output):
+    # Only names present in the reviewed public Studio fixture are eligible.
+    # Never retain assertion expressions, arbitrary paths or engine diagnostics.
+    headers, cases = set(), set()
+    for path in (source / 'tests/acceptance').rglob('*'):
+        if path.is_file() and not path.is_symlink() and path.suffix in ('.c', '.h'):
+            headers.add(path.relative_to(source).as_posix())
+            cases.update(re.findall(r'\bTEST_CASE\(([A-Za-z0-9_]+)\)', path.read_text()))
+    active, failures = None, []
+    plain = re.sub(r'\x1b\[[0-9;]*m', '', output)
+    for line in plain.splitlines():
+        running = re.search(r'Running: ([A-Za-z0-9_]+)', line)
+        if running:
+            active = running[1] if running[1] in cases else None
+        failed = re.search(r'\(FAILED: ([^\r\n]+?) \((\d+)\):', line)
+        if not failed or active is None:
+            continue
+        file = failed[1].replace('\\', '/')
+        eligible = [name for name in headers if file == name or file.endswith('/' + name) or
+                    ('/' not in file and file == Path(name).name)]
+        if len(eligible) == 1 and 0 < int(failed[2]) <= 1000000:
+            failures.append({'case': active, 'file': eligible[0], 'line': int(failed[2])})
+    return {'failures': failures[:16], 'additional_failures': max(0, len(failures) - 16)}
+
+
 def git(root, *arguments):
-    return subprocess.check_output(['git', '-C', str(root), *arguments], text=True).strip()
+    return subprocess.check_output(['git', '-C', str(root), *arguments], text=True, stderr=subprocess.PIPE).strip()
 
 
 def clean_checkout(root, revision):
@@ -392,19 +401,18 @@ def extraction(source):
 
 
 def reviewed_pins():
-    for name, value in (('Studio', FINAL), ('engine', ENGINE)):
+    for name, value in (('Studio', FINAL), ('Studio tree', FINAL_TREE), ('engine', ENGINE)):
         require(re.fullmatch(r'[0-9a-f]{40}', value), 'Final reviewed ' + name + ' SHA has not been supplied')
-    require(REVIEWED_FILES and ENGINE_REVIEWED_FILES, 'Reviewed source identities have not been supplied')
+    require(REVIEWED_FILES, 'Reviewed source identities have not been supplied')
     for variant in CONTROLS.values():
         require(variant['files'] and variant['assertion'] != 'PENDING', 'Studio control is not frozen')
         require(all(marker != 'PENDING' for marker in variant.get('required_markers', [])),
                 'Studio control diagnostics are not frozen')
-    for control in (ENGINE_MUTATION, *(mutation for variant in CONTROLS.values()
-                                      for mutation in variant['files'].values())):
+    for control in (mutation for variant in CONTROLS.values()
+                    for mutation in variant['files'].values()):
         require(re.fullmatch(r'[0-9a-f]{64}', control['sha256']), 'Reviewed mutation has not been supplied')
         for change in control.get('replacements', [control]):
             require(change['before'] != change['after'] and change['before'] != 'PENDING', 'Mutation is not frozen')
-    require(STUDIO_CONTROL['assertion'] != 'PENDING', 'Ownership negative assertion is not frozen')
 
 
 def mutate(content, control):
@@ -420,14 +428,19 @@ def mutate(content, control):
     return result
 
 
-def source_inputs(args, controls=True):
+def source_inputs(args):
+    stage('source-preflight')
     reviewed_pins()
     clean_checkout(args.source, FINAL)
+    require(git(args.source, 'rev-parse', 'HEAD^{tree}') == FINAL_TREE, 'Reviewed Studio tree differs')
     clean_checkout(args.engine, ENGINE)
+    clean_checkout(args.validation, git(args.validation, 'rev-parse', 'HEAD'))
     require((args.source / '.github/engine-ref').read_text().strip() == ENGINE, 'Engine pin changed')
-    for root, reviewed in ((args.source, REVIEWED_FILES), (args.engine, ENGINE_REVIEWED_FILES)):
-        for name, checksum in reviewed.items():
-            require(digest(root / name) == checksum, 'Unreviewed source: ' + name)
+    for name, checksum in REVIEWED_FILES.items():
+        require(digest(args.source / name) == checksum, 'Unreviewed source: ' + name)
+    prefix = ''.join((args.source / 'tests/acceptance/prototype_source.h').read_text().splitlines(True)[:221])
+    require(hashlib.sha256(prefix.encode()).hexdigest() == OWNERSHIP_PREFIX_SHA256,
+            'Prior ownership negative no longer covers the unchanged exercised fixture prefix')
     source_names = tracked(args.source)
     final_files = snapshot(args.source, source_names, SOURCE_LINKS)
     validation_files = snapshot(args.validation, tracked(args.validation), SOURCE_LINKS)
@@ -440,12 +453,6 @@ def source_inputs(args, controls=True):
     for name in REVIEWED_FILES.keys() & final_manifest['files'].keys():
         require(final_manifest['files'][name].get('consumer_sha256') == digest(args.source / name),
                 'Edited extracted file lacks current consumer checksum: ' + name)
-    if not controls:
-        save(args.output / 'evidence/source-identity.json', {
-            'final_revision': FINAL, 'final_tree': git(args.source, 'rev-parse', 'HEAD^{tree}'),
-            'engine_revision': ENGINE, 'engine_tree': git(args.engine, 'rev-parse', 'HEAD^{tree}'),
-            'engine_reviewed_files': ENGINE_REVIEWED_FILES, 'final_files': final_files})
-        return {}, final_files
     sources = {}
     records = {}
     for label, control in CONTROLS.items():
@@ -473,19 +480,31 @@ def source_inputs(args, controls=True):
         records[label] = {'files': red_files, 'counterfactual': True, 'dirty': True,
                           'changed_files': sorted(changed), 'control': control}
         sources[label] = red
+    save(PUBLIC_DIRECTORY / 'identity.json', {
+        'studio_revision': FINAL, 'studio_tree': git(args.source, 'rev-parse', 'HEAD^{tree}'),
+        'validation_revision': git(args.validation, 'rev-parse', 'HEAD'),
+        'helper_sha256': digest(Path(__file__).resolve()),
+        'workflow_sha256': digest(args.validation / '.github/workflows/ci.yml'),
+        'engine_revision': ENGINE, 'engine_tree': git(args.engine, 'rev-parse', 'HEAD^{tree}'),
+        'reused_engine_run': PRIOR_ENGINE_EVIDENCE['run_id'],
+        'reused_ownership_run': PRIOR_OWNERSHIP_EVIDENCE['run_id'],
+        'studio_reviewed_files': REVIEWED_FILES,
+    })
     save(args.output / 'evidence/source-identity.json', {
         'final_revision': FINAL, 'final_tree': git(args.source, 'rev-parse', 'HEAD^{tree}'),
-        'engine_revision': ENGINE, 'engine_tree': git(args.engine, 'rev-parse', 'HEAD^{tree}'),
-        'engine_reviewed_files': ENGINE_REVIEWED_FILES, 'final_files': final_files,
+        'final_files': final_files,
         'studio_controls': records,
     })
     return sources, final_files
 
 
 def sdk_identity(args):
+    stage('sdk-preflight')
     # Existing production package verifier checks identity, all files and symlinks.
     from package_sdk import previous_package
-    manifest = previous_package(args.sdk, 'sdk')
+    with (args.output / 'logs/sdk-verification.log').open('w') as log:
+        with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
+            manifest = previous_package(args.sdk, 'sdk')
     require(manifest['source']['revision'] == ENGINE and manifest['source']['dirty'] is False,
             'SDK source is not the exact clean engine pin')
     require(manifest['requirements']['system'] == 'Linux', 'SDK is not native Linux')
@@ -501,18 +520,22 @@ def sdk_identity(args):
               'verified_files': len(manifest['files']), 'verified_engine_objects': len(engine_objects),
               'source': manifest['source'], 'configuration': manifest['build']['configuration'],
               'sdk_config_sha256': digest(args.sdk / 'lib/cmake/Chibi/ChibiConfig.cmake')}
+    save(PUBLIC_DIRECTORY / 'sdk-identity.json', {
+        'build_id': result['build_id'], 'package_sha256': result['manifest_sha256'],
+        'exact_engine_pin_verified': True, 'debug_assertions_verified': True,
+        'native_backend_verified': True, 'sanitizers': False,
+    })
     save(args.output / 'evidence/sdk-identity.json', result)
     return result
 
 
 def build_command(args, name, command):
+    stage(name)
     path = args.output / 'logs' / (name + '.log')
     with path.open('w') as log:
-        print('+ ' + shlex.join(command), flush=True)
         code = subprocess.run(command, cwd=args.engine, stdout=log, stderr=subprocess.STDOUT).returncode
-    if code:
-        print(path.read_text()[-8000:], end='', flush=True)
-    require(code == 0, f'{name} failed with exit {code}; see its build log')
+    public_status(name, 'completed' if code == 0 else 'failed', exit_code=code)
+    require(code == 0, f'{name} build failed')
     return code
 
 
@@ -578,10 +601,8 @@ def build_variant(args, name, source, sdk):
                         f'Private engine source include: {path}')
     require(own_entries, 'No Studio compilation entries')
     link = subprocess.check_output(['ninja', '-C', str(build), '-t', 'commands',
-                                    'bin/studio-acceptance'], text=True)
+                                    'bin/studio-acceptance'], text=True, stderr=subprocess.PIPE)
     require('-Wl,--strip-debug' in link.splitlines()[-1], 'Missing link-time debug stripping')
-    (args.output / 'evidence' / (name + '-build-commands.txt')).write_text(link)
-    shutil.copy2(build / 'compile_commands.json', args.output / 'evidence' / (name + '-compile_commands.json'))
     binary = build / 'bin/studio-acceptance'
     require(binary.is_file() and not binary.is_symlink() and 0 < binary.stat().st_size <= 64 * 1024 * 1024,
             'Acceptance binary exceeds unchanged 64 MiB preflight bound')
@@ -616,6 +637,11 @@ def build_variant(args, name, source, sdk):
     evidence_path = args.output / 'evidence' / (name + '-acceptance.json')
     save(evidence_path, evidence)
     save(args.output / 'evidence' / (name + '-native.json'), native)
+    save(PUBLIC_DIRECTORY / (name + '-build-identity.json'), {
+        'binary_sha256': evidence['binary_sha256'], 'binary_bytes': evidence['binary_bytes'],
+        'fixture_files': evidence['files'], 'variant': name,
+        'assertions_enabled': True, 'private_engine_source_include': False,
+    })
     return build, evidence_path, native, evidence
 
 
@@ -628,17 +654,24 @@ def fixture_directories(source):
 
 
 def supervised(args, name, commands, env):
+    stage(name)
     from test_policy import run_commands
     path = args.output / 'logs' / (name + '.log')
     fixtures_before = fixture_directories(args.source)
     with path.open('w') as log:
         code = run_commands(commands, seconds=60, env=env, output=log)
     output = path.read_text()
-    print(output, end='', flush=True)
+    observations = studio_failure_locations(args.source, output)
+    if code or observations['failures']:
+        save(PUBLIC_DIRECTORY / (name + '-observations.json'), {
+            'exit_code': code, **observations,
+            'infrastructure_marker': any(marker in output for marker in PROHIBITED),
+        })
     new_fixtures = sorted(fixture_directories(args.source) - fixtures_before)
     save(args.output / 'evidence' / (name + '-result.json'), {
         'exit_code': code, 'log_sha256': digest(path), 'new_hardcoded_tmp_fixtures': new_fixtures})
     require(not new_fixtures, 'Test left scoped /tmp fixtures (retained, not deleted): ' + ', '.join(new_fixtures))
+    public_status(name, 'executed', exit_code=code)
     return code, output
 
 
@@ -646,7 +679,7 @@ def graphics_environment(args):
     env = os.environ.copy()
     for key in ('DISPLAY', 'WAYLAND_DISPLAY', 'SDL_VIDEODRIVER'):
         env.pop(key, None)
-    paths = subprocess.check_output(['dpkg-query', '-L', 'mesa-vulkan-drivers'], text=True).splitlines()
+    paths = subprocess.check_output(['dpkg-query', '-L', 'mesa-vulkan-drivers'], text=True, stderr=subprocess.PIPE).splitlines()
     icds = [Path(p) for p in paths if re.fullmatch(r'lvp_icd.*\.json', Path(p).name)]
     require(len(icds) == 1 and icds[0].is_file(), 'Expected one installed Mesa Lavapipe ICD')
     for directory in ('scratch', 'cache', 'prefs'):
@@ -671,8 +704,9 @@ def graphics_environment(args):
             health.get('acceleration') == 'software' and health.get('devices') and
             all(row.get('type') == 4 for row in health['devices']),
             'Expected an enumerated software Vulkan device')
+    public_status('graphics-discovery', 'verified')
     save(args.output / 'evidence/backend.json', {'icd': str(icds[0]), 'icd_sha256': digest(icds[0]),
-         'mesa_package': subprocess.check_output(['dpkg-query', '-W', '-f=${Version}', 'mesa-vulkan-drivers'], text=True),
+         'mesa_package': subprocess.check_output(['dpkg-query', '-W', '-f=${Version}', 'mesa-vulkan-drivers'], text=True, stderr=subprocess.PIPE),
          'environment': {k: env[k] for k in ('VK_DRIVER_FILES', 'SDL_GPU_DRIVER', 'SDL_VIDEO_DRIVER')},
          'discovery': health, 'scope': 'discovery only; acceptance must actually render'})
     return env
@@ -706,6 +740,7 @@ def gpu_test(args, name, source, artifact, base_env):
             report.get('execution_evidence') == {'frames': 4, 'edits': 1, 'undo': 1, 'redo': 1},
             'Green source-edit did not pass all existing/new assertions')
     require(not any((args.output / 'scratch').iterdir()), 'Supervised test left temporary fixture state')
+    public_status(name + '-source-edit', 'verified', frames=4, edits=1, undo=1, redo=1)
 
 
 def cpu_inventory(selector, code, output, cases, assertions):
@@ -717,29 +752,6 @@ def cpu_inventory(selector, code, output, cases, assertions):
     require((passed, failed, total, observed_assertions) == (cases, 0, cases, assertions),
             selector + ' case/assertion inventory differs from reviewed admission')
     return {'passed': passed, 'failed': failed, 'total': total, 'suites': suites, 'assertions': observed_assertions}
-
-
-def compilation(build, sources, sanitized=False):
-    commands = json.loads((build / 'compile_commands.json').read_text())
-    selected = {}
-    for entry in commands:
-        file = (Path(entry['directory']) / entry['file']).resolve()
-        if file not in sources:
-            continue
-        arguments = entry.get('arguments') or shlex.split(entry['command'])
-        require(assertions_enabled(arguments), 'Selected C assertions are disabled')
-        require(not any(arg.startswith('@') for arg in arguments), 'Unexpanded selected compiler command')
-        instrumentation = set()
-        for arg in arguments:
-            if arg.startswith('-fsanitize='):
-                instrumentation.update(arg.split('=', 1)[1].split(','))
-            require(not arg.startswith('-fno-sanitize='), 'Sanitizer disable flag in selected object')
-        require({'address', 'undefined'} <= instrumentation if sanitized else not instrumentation,
-                'Selected object instrumentation differs from admitted configuration')
-        require(file not in selected, 'Ambiguous selected C compilation')
-        selected[file] = entry
-    require(set(selected) == sources, 'Selected C source was not compiled')
-    return {str(file): entry for file, entry in selected.items()}
 
 
 def pico_cases(code, output, names, negative_assertion=None):
@@ -755,154 +767,11 @@ def pico_cases(code, output, names, negative_assertion=None):
     if negative_assertion is None:
         require(code == 0 and failed == 0 and '(FAILED:' not in plain, 'Candidate assertion workload failed')
     else:
-        require(code == 1 and failed > 0 and re.search(negative_assertion, plain),
-                'Negative control did not reproduce its reviewed assertion')
+        failures = [line for line in plain.splitlines() if '(FAILED:' in line]
+        require(code == 1 and failed > 0 and failures and re.search(negative_assertion, failures[0]),
+                'First negative failure is not its reviewed assertion')
     return {'cases': names, 'passed': passed, 'failed': failed, 'total': total,
             'suites': suites, 'assertions': assertions, 'negative_assertion': negative_assertion}
-
-
-def native_driver(args, label, sdk):
-    build = args.output / (label + '-build')
-    build_command(args, label + '-configure', [
-        'cmake', '-S', str(args.engine / 'test/language'), '-B', str(build), '-G', 'Ninja',
-        '-DCMAKE_BUILD_TYPE=Debug', '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
-        '-DCHIBI_INSTALLED_SDK=ON', '-DChibi_DIR=' + str(sdk / 'lib/cmake/Chibi'),
-        '-DCMAKE_EXE_LINKER_FLAGS=-Wl,--gc-sections'])
-    build_command(args, label + '-build', ['cmake', '--build', str(build), '--target', 'test_language', '--parallel', '2'])
-    selected = compilation(build, {args.engine / 'test/language/main.c', args.engine / 'test/language/source_assets.c'})
-    source_command = selected[str(args.engine / 'test/language/source_assets.c')]
-    arguments = source_command.get('arguments') or shlex.split(source_command['command'])
-    require('-DCHIBI_TEST_SOURCE_ASSETS' in arguments, 'Source API dispatcher was compiled out')
-    # Only the new public-API fixture is asserted to avoid private headers. The
-    # existing whole dispatcher includes deliberate unrelated private tests.
-    tokens = iter(arguments)
-    for token in tokens:
-        include = next(tokens, '') if token in ('-I', '-isystem', '-iquote') else None
-        for prefix in ('-isystem', '-iquote', '-I'):
-            if token.startswith(prefix) and len(token) > len(prefix):
-                include = token[len(prefix):]
-                break
-        if include is not None:
-            path = (Path(source_command['directory']) / include).resolve()
-            require(not within(path, args.engine / 'src'), 'Public API fixture includes private engine source')
-    link = subprocess.check_output(['ninja', '-C', str(build), '-t', 'commands', 'test_language'], text=True)
-    require(str(sdk / 'lib/libchibi_source_catalog.a') in link.splitlines()[-1], 'Native dispatcher did not link selected installed source catalog')
-    require('-Wl,--gc-sections' in link.splitlines()[-1], 'Missing existing-dispatcher dead stripping')
-    binary = build / 'test_language'
-    record = {'binary_sha256': digest(binary), 'binary': str(binary), 'sdk': str(sdk),
-              'source_catalog_archive_sha256': digest(sdk / 'lib/libchibi_source_catalog.a'),
-              'selected_compilation': selected, 'compile_commands_sha256': digest(build / 'compile_commands.json'),
-              'counterfactual': label == 'engine-red', 'selected_cases': ENGINE_CASES}
-    save(args.output / 'evidence' / (label + '-build.json'), record)
-    (args.output / 'evidence' / (label + '-link.txt')).write_text(link.splitlines()[-1] + '\n')
-    return build, binary, record
-
-
-def native_run(args, label, artifact, env, red=False):
-    build, binary, record = artifact
-    require(digest(binary) == record['binary_sha256'], 'Native dispatcher changed after compilation audit')
-    test_env = dict(env, CHIBI_LANGUAGE_BUILD_DIR=str(binary.parent))
-    code, output = supervised(args, label, [[sys.executable, 'tools/test_policy.py', 'tool', 'source-prototype-edits']], test_env)
-    inventory = pico_cases(code, output, ENGINE_CASES, ENGINE_ASSERTION if red else None)
-    save(args.output / 'evidence' / (label + '-inventory.json'), inventory)
-
-
-def tree_files(root):
-    return {p.relative_to(root).as_posix(): {'link': os.readlink(p)} if p.is_symlink() else digest(p)
-            for p in root.rglob('*') if p.is_symlink() or p.is_file()}
-
-
-def mutant_sdk(args):
-    # Counterfactual package copy: its untouched manifest deliberately remains
-    # invalid for the changed archive. Never label this as a verified SDK.
-    red = args.output / 'engine-red-sdk'
-    before = tree_files(args.sdk)
-    shutil.copytree(args.sdk, red, symlinks=True)
-    writer = args.engine / ENGINE_WRITER
-    original = writer.read_bytes()
-    build = args.output / 'engine-red-catalog-build'
-    reflect = args.output / 'engine-red-reflect-build'
-    try:
-        writer.write_text(mutate(original.decode(), ENGINE_MUTATION))
-        build_command(args, 'engine-red-reflect-build', ['make', 'sdk-reflect-build',
-            'SDK_REFLECT_BUILD_DIR=' + str(reflect), 'LIBCLANG_ROOT=/usr/lib/llvm-18', 'JOBS=2'])
-        # This is the unchanged package-sdk Debug/nonsanitized configuration,
-        # building only the existing source-catalog archive for the control.
-        build_command(args, 'engine-red-catalog-configure', ['sh', 'tools/configure.sh', 'sdk-native', str(build),
-            '-DCMAKE_BUILD_TYPE=Debug', '-DCHIBI_ENABLE_SANITIZERS=OFF',
-            '-DCHIBI_SDK_BUILD_COMPILER=ON', '-DCHIBI_SDK_BUILD_NATIVE=ON', '-DCHIBI_SDK_BUILD_DESKTOP=ON',
-            '-DCHIBI_REFLECT_EXECUTABLE=' + str(reflect / 'reflect'), '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'])
-        build_command(args, 'engine-red-catalog-build', ['cmake', '--build', str(build),
-            '--target', 'chibi_source_catalog', '--parallel', '2'])
-        selected = compilation(build, {writer})
-        require(git(args.engine, 'diff', '--name-only').splitlines() == [ENGINE_WRITER],
-                'Counterfactual engine changed more than the reviewed writer')
-        require(digest(writer) == ENGINE_MUTATION['sha256'], 'Compiled mutant writer changed')
-        rows = (build / 'chibi_package_targets-Debug.txt').read_text().splitlines()
-        require(rows[0] == '1', 'Unexpected package-target inventory format')
-        archives = [Path(row.split('\t')[2]) for row in rows[1:]
-                    if row.startswith('STATIC_LIBRARY\tchibi_source_catalog\t')]
-        require(len(archives) == 1 and archives[0].is_file() and within(archives[0], build),
-                'Missing unique configured source-catalog artifact')
-        member = 'lib/libchibi_source_catalog.a'
-        require(member in before and not (red / member).is_symlink(), 'Installed source catalog is not a regular archive')
-        shutil.copy2(archives[0], red / member)
-        after = tree_files(red)
-        require(set(after) == set(before) and {p for p in before if after[p] != before[p]} == {member},
-                'Counterfactual SDK changed anything except source-catalog archive')
-        save(args.output / 'evidence/engine-red-sdk.json', {
-            'counterfactual': True, 'package_verified': False, 'source_revision': ENGINE, 'source_dirty': True,
-            'writer_sha256': digest(writer), 'mutation': ENGINE_MUTATION,
-            'original_sdk_manifest_sha256': digest(args.sdk / 'share/chibi/package.json'),
-            'changed_archive': member, 'before_sha256': before[member], 'after_sha256': after[member],
-            'configured_artifact': str(archives[0]), 'writer_compilation': selected,
-            'remaining_package_files_unchanged': True})
-    finally:
-        writer.write_bytes(original)
-    clean_checkout(args.engine, ENGINE)
-    return red, build, reflect
-
-
-def sanitizer_environment(env):
-    # Fail rather than silently normalize inherited sanitizer overrides.
-    # Leaving ASAN_OPTIONS/LSAN_OPTIONS unset preserves default leak detection.
-    for name in ('ASAN_OPTIONS', 'LSAN_OPTIONS', 'UBSAN_OPTIONS'):
-        require(not env.get(name), 'Root sanitizer check rejects inherited ' + name)
-    result = dict(env)
-    for name in ('ASAN_OPTIONS', 'LSAN_OPTIONS', 'UBSAN_OPTIONS',
-                 'ASAN_SYMBOLIZER_PATH', 'LSAN_SYMBOLIZER_PATH', 'UBSAN_SYMBOLIZER_PATH',
-                 'LLVM_SYMBOLIZER_PATH'):
-        result.pop(name, None)
-    symbolizer = shutil.which('llvm-symbolizer-18') or shutil.which('llvm-symbolizer')
-    require(symbolizer, 'Root sanitizer check requires an available llvm-symbolizer')
-    result['ASAN_SYMBOLIZER_PATH'] = symbolizer
-    result['LLVM_SYMBOLIZER_PATH'] = symbolizer
-    result['UBSAN_OPTIONS'] = 'halt_on_error=1:print_stacktrace=1:external_symbolizer_path=' + symbolizer
-    return result
-
-
-def sanitized_native(args, env):
-    env = sanitizer_environment(env)
-    build = args.output / 'engine-asan-build'
-    # Existing root native defaults are ASan+UBSan. Never override them to make
-    # the ownership workload pass; compilation and linking are checked below.
-    build_command(args, 'engine-asan-build', ['make', 'build', 'BUILD_DIR=' + str(build),
-        'BUILD_TARGET=test_language', 'LIBCLANG_ROOT=/usr/lib/llvm-18', 'JOBS=2'])
-    selected = compilation(build, {args.engine / ENGINE_WRITER, args.engine / 'test/language/main.c',
-                                  args.engine / 'test/language/source_assets.c'}, sanitized=True)
-    link = subprocess.check_output(['ninja', '-C', str(build), '-t', 'commands', 'test_language'], text=True).splitlines()[-1]
-    require('-fsanitize=address,undefined' in link and '-fno-sanitize=' not in link,
-            'Root dispatcher link lacks unchanged ASan/UBSan')
-    binary = build / 'test/language/test_language'
-    record = {'binary_sha256': digest(binary), 'binary': str(binary), 'selected_compilation': selected,
-              'counterfactual': False, 'selected_cases': ENGINE_CASES, 'instrumentation': ['address', 'undefined'],
-              'runtime_environment': {name: env.get(name) for name in ('ASAN_OPTIONS', 'LSAN_OPTIONS',
-                  'UBSAN_OPTIONS', 'ASAN_SYMBOLIZER_PATH', 'LLVM_SYMBOLIZER_PATH')},
-              'asan_leak_detection': 'runtime default, no inherited disabling or suppression options'}
-    save(args.output / 'evidence/engine-asan-build.json', record)
-    (args.output / 'evidence/engine-asan-link.txt').write_text(link + '\n')
-    native_run(args, 'engine-asan', (build, binary, record), env)
-    return build
 
 
 def prototype_child(arguments):
@@ -941,18 +810,29 @@ def prototype_test(args, label, source, artifact, env, authority=False):
         'content/scenes/Start.kdl': b'version 1\nname "Start"\n(array)entities\n',
         'content/behaviors/Counter.chibi': b'Counter :: behavior {\n    count: retain int = 1\n    on Tick {\n        count = count + 1\n    }\n}\n'}
     require(all((fixture / p).read_bytes() == value for p, value in expected.items()), 'Prototype host source changed')
+    env = dict(env)
+    env.pop('CHIBI_STUDIO_CONTROLS_CAPTURE', None)
+    capture = PUBLIC_DIRECTORY / 'studio-controls.png' if authority and label == 'green' else None
+    if capture is not None:
+        require(not capture.exists(), 'Capture output already exists')
+        env['CHIBI_STUDIO_CONTROLS_CAPTURE'] = str(capture)
     code, output = supervised(args, label + selector[1:], [[sys.executable, str(Path(__file__).resolve()),
         '--prototype-child', selector, str(args.engine), str(source), str(build / 'bin/studio-acceptance'), str(args.output / 'scratch')]], env)
     red = label in CONTROLS
     control = CONTROLS.get(label)
-    require((label in ('authority-red', 'intent-red')) == (red and authority), 'Control selector mismatch')
+    require((red and CONTROLS[label].get('authority', False)) == (red and authority), 'Control selector mismatch')
     inventory = pico_cases(code, output, [case], control['assertion'] if red else None)
-    markers = control.get('required_markers', []) if red else ([AUTHORITY_DIAGNOSTIC, INTENT_SUCCESS] if authority else [EDGE_SUCCESS])
+    markers = control.get('required_markers', []) if red else ([AUTHORITY_DIAGNOSTIC, INTENT_SUCCESS, FRAME_SUCCESS, DISK_SUCCESS, CAPTURE_SUCCESS] if authority else [EDGE_SUCCESS])
     observed_edges = [line for line in output.splitlines() if line.startswith('Prototype source edge controls:')]
     require(observed_edges == ([] if authority else markers), 'Studio edge diagnostics differ from the unique reviewed result')
-    observed_authority = [line for line in output.splitlines() if line.startswith(('Prototype source authority:', 'Prototype source intent:'))]
+    observed_authority = [line for line in output.splitlines() if line.startswith(('Prototype source authority:', 'Prototype source intent:', 'Prototype source frame:', 'Prototype source disk:', 'Prototype source controls:'))]
     require(observed_authority == (markers if authority else []), 'Studio authority diagnostics differ from the unique reviewed result')
     require(output.splitlines().count(success) == (0 if red else 1), 'Prototype completion marker differs')
+    if capture is not None:
+        image = verify_capture(capture)
+        save(PUBLIC_DIRECTORY / 'studio-controls.json', {**image, 'frames': 2,
+             'notice_retained': True, 'focus_retained': True, 'enter_edits_draft': True,
+             'visual_review': 'pending independent pixel inspection'})
     save(args.output / 'evidence' / (label + ('-authority-inventory.json' if authority else '-prototype-inventory.json')), {
         **inventory, 'selector': selector, 'frames_limit': 2,
         'success': success, 'required_control_markers': markers,
@@ -964,72 +844,55 @@ def prototype_test(args, label, source, artifact, env, authority=False):
     # this known input is restored before another selector uses the same build.
     shutil.copy2(source / 'projects/studio/project.kdl', build / 'share/chibi/studio/project.kdl')
     studio_resource_preflight(build, evidence['resources'])
+    save(PUBLIC_DIRECTORY / (label + selector[1:] + '-inventory.json'), {
+        **inventory, 'selector': selector, 'expected_diagnostics': markers,
+        'status': 'verified-negative' if red else 'verified',
+        'binary_sha256': evidence['binary_sha256'], 'frames_limit': 2,
+    })
+    public_status(label + selector[1:], 'verified-negative' if red else 'verified',
+                  cases=inventory['total'], assertions=inventory['assertions'],
+                  frames_limit=2, intended_failure=red)
 
 
-def wasm_sdk_identity(args):
-    from package_sdk import previous_package
-    manifest = previous_package(args.sdk, 'sdk')
-    require(manifest['source']['revision'] == ENGINE and manifest['source']['dirty'] is False,
-            'Wasm SDK is not the exact clean engine pin')
-    require(manifest['requirements']['system'] == 'Emscripten' and
-            manifest['requirements']['web_threads'] is False and
-            manifest['requirements']['pointer_bits'] == 32 and
-            manifest['build']['configuration'] == 'Release' and
-            manifest['build']['native_backend'] is False,
-            'Wasm SDK differs from the existing serial Release product configuration')
-    # Preserve normal Release SDK flags, including NDEBUG. Fixture target
-    # assertions are checked independently; root native ASan covers ownership.
-    result = {'source': manifest['source'], 'build_id': manifest['build_id'],
-              'manifest_sha256': digest(args.sdk / 'share/chibi/package.json'),
-              'requirements': {key: manifest['requirements'][key] for key in ('system', 'web_threads', 'pointer_bits')},
-              'configuration': manifest['build']['configuration'], 'native_backend': False,
-              'configuration_c_flags': manifest['build']['configuration_c_flags'],
-              'source_catalog_archive_sha256': digest(args.sdk / 'lib/libchibi_source_catalog.a')}
-    save(args.output / 'evidence/wasm-sdk-identity.json', result)
-    return result
-
-
-def wasm_validate(args, final_files, policy_hashes):
-    sdk = wasm_sdk_identity(args)
-    build = args.output / 'wasm-language-build'
-    build_command(args, 'wasm-language-configure', ['sh', 'tools/web_env.sh', 'emcmake', 'cmake',
-        '-S', str(args.engine / 'test/language'), '-B', str(build), '-G', 'Ninja',
-        '-DCMAKE_BUILD_TYPE=Release', '-DCHIBI_WEB_THREADS=OFF',
-        '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON', '-DCHIBI_INSTALLED_SDK=ON',
-        '-DChibi_DIR=' + str(args.sdk / 'lib/cmake/Chibi')])
-    build_command(args, 'wasm-language-build', ['cmake', '--build', str(build),
-        '--target', 'test_language', '--parallel', '2'])
-    selected = compilation(build, {args.engine / 'test/language/main.c', args.engine / 'test/language/source_assets.c'})
-    row = selected[str(args.engine / 'test/language/source_assets.c')]
-    arguments = row.get('arguments') or shlex.split(row['command'])
-    require('-DCHIBI_TEST_SOURCE_ASSETS' in arguments, 'Wasm source API cases compiled out')
-    link = subprocess.check_output(['ninja', '-C', str(build), '-t', 'commands', 'test_language'], text=True).splitlines()[-1]
-    require(str(args.sdk / 'lib/libchibi_source_catalog.a') in link and '-pthread' not in shlex.split(link),
-            'Wasm test did not link the reviewed installed serial SDK')
-    javascript, wasm = build / 'test_language.js', build / 'test_language.wasm'
-    require(wasm.read_bytes()[:8] == b'\x00asm\x01\x00\x00\x00', 'Missing compiled WebAssembly module')
-    files = {p.name: digest(p) for p in (javascript, wasm)}
-    save(args.output / 'evidence/wasm-language-build.json', {
-        'source_revision': ENGINE, 'sdk_build_id': sdk['build_id'], 'selected_cases': ENGINE_CASES,
-        'source_catalog_archive_sha256': sdk['source_catalog_archive_sha256'],
-        'selected_compilation': selected, 'compiled_files': files,
-        'fixture_assertions_enabled': True, 'counterfactual': False,
-        'node_version': subprocess.check_output(['node', '--version'], text=True).strip()})
-    (args.output / 'evidence/wasm-language-link.txt').write_text(link + '\n')
-    code, output = supervised(args, 'wasm-source-prototype-edits',
-        [['node', str(javascript), '--source-prototype-edits']], os.environ.copy())
-    save(args.output / 'evidence/wasm-inventory.json', pico_cases(code, output, ENGINE_CASES))
-    require(all(digest(build / name) == checksum for name, checksum in files.items()), 'Wasm binary changed during test')
-    require(snapshot(args.source, final_files, SOURCE_LINKS) == final_files, 'Studio source changed during Wasm validation')
-    clean_checkout(args.source, FINAL)
-    clean_checkout(args.engine, ENGINE)
-    require(snapshot(args.engine, POLICY) == policy_hashes, 'Production supervisor/admission changed')
-    require(wasm_sdk_identity(args) == sdk, 'Installed serial web SDK changed')
-    save(args.output / 'summary.json', {'passed': True, 'engine_revision': ENGINE, 'studio_revision': FINAL,
-        'sdk_build_id': sdk['build_id'], 'scope': 'one candidate-only serial Wasm/Node eight-case invocation',
-        'seconds_limit': 60, 'browser': 'not run', 'full_suite': 'not run', 'product_configuration': 'unchanged Release'})
-    shutil.rmtree(build)
-    print('Serial installed-SDK Wasm prototype source cases passed; no browser/full suite run.', flush=True)
+def verify_capture(path):
+    # A bounded PNG integrity check. Pixel decoding/review remains independent.
+    require(path.is_file() and not path.is_symlink() and 0 < path.stat().st_size <= 24 * 1024 * 1024,
+            'Screenshot file bound')
+    data = path.read_bytes()
+    require(data[:8] == b'\x89PNG\r\n\x1a\n', 'Screenshot is not PNG')
+    offset, chunks, compressed = 8, [], bytearray()
+    while offset < len(data):
+        require(offset + 12 <= len(data), 'Truncated PNG chunk')
+        size = int.from_bytes(data[offset:offset + 4], 'big')
+        kind = data[offset + 4:offset + 8]
+        end = offset + 8 + size
+        require(end + 4 <= len(data), 'PNG chunk exceeds file')
+        payload = data[offset + 8:end]
+        require(zlib.crc32(kind + payload) & 0xffffffff == int.from_bytes(data[end:end + 4], 'big'),
+                'Screenshot chunk checksum differs')
+        chunks.append(kind)
+        if kind == b'IHDR':
+            require(len(chunks) == 1 and size == 13, 'Unexpected screenshot header')
+            width, height = int.from_bytes(payload[:4], 'big'), int.from_bytes(payload[4:8], 'big')
+            depth, color, compression, filtering, interlace = payload[8:]
+            require((width, height, depth, compression, filtering, interlace) == (1920, 1080, 8, 0, 0, 0)
+                    and color in (2, 6), 'Screenshot format differs from reviewed canvas')
+        elif kind == b'IDAT':
+            compressed.extend(payload)
+        elif kind == b'IEND':
+            require(size == 0 and end + 4 == len(data), 'Unexpected PNG end')
+        else:
+            require(kind[0] & 32, 'Unsupported critical screenshot chunk')
+        offset = end + 4
+    require(chunks and chunks[0] == b'IHDR' and chunks[-1] == b'IEND' and compressed,
+            'Screenshot lacks complete image')
+    stride = width * (3 if color == 2 else 4) + 1
+    decoder = zlib.decompressobj()
+    pixels = decoder.decompress(compressed, stride * height + 1)
+    require(len(pixels) == stride * height and decoder.eof and not decoder.unused_data and
+            not decoder.unconsumed_tail and all(pixels[i] <= 4 for i in range(0, len(pixels), stride)),
+            'Screenshot image data did not decode completely')
+    return {'sha256': digest(path), 'width': width, 'height': height, 'image_stream_verified': True}
 
 
 def main():
@@ -1039,22 +902,27 @@ def main():
     args = parser.parse_args()
     for name in ('source', 'engine', 'sdk', 'validation', 'output'):
         setattr(args, name, getattr(args, name).resolve())
+    global PUBLIC_DIRECTORY
     args.output.mkdir(exist_ok=False)
-    for directory in ('logs', 'evidence'):
+    PUBLIC_DIRECTORY = args.output / 'public'
+    for directory in ('logs', 'evidence', 'public'):
         (args.output / directory).mkdir()
     os.chdir(args.engine)
     sys.path.insert(0, str(args.engine / 'tools'))
     policy_hashes = snapshot(args.engine, POLICY)
+    save(PUBLIC_DIRECTORY / 'policy-identity.json', {'policy_sha256': canonical(policy_hashes),
+         'supervisor_sha256': policy_hashes['tools/test_policy.py'], 'seconds_limit': 60})
     controls, final_files = source_inputs(args)
     require(ENGINE == PRIOR_ENGINE_EVIDENCE['engine_revision'], 'Prior engine evidence does not cover this pin')
     save(args.output / 'evidence/prior-engine-evidence.json', PRIOR_ENGINE_EVIDENCE)
+    save(args.output / 'evidence/prior-ownership-evidence.json', PRIOR_OWNERSHIP_EVIDENCE)
     sdk = sdk_identity(args)
     env = graphics_environment(args)
     control_builds = []
     for label, source in controls.items():
         artifact = build_variant(args, label, source, sdk)
         control_builds.append(artifact[0])
-        prototype_test(args, label, source, artifact, env, authority=label in ('authority-red', 'intent-red'))
+        prototype_test(args, label, source, artifact, env, authority=CONTROLS[label].get('authority', False))
     green_artifact = build_variant(args, 'green', args.source, sdk)
     prototype_test(args, 'green', args.source, green_artifact, env)
     prototype_test(args, 'green', args.source, green_artifact, env, authority=True)
@@ -1066,30 +934,32 @@ def main():
             ('--outliner-row-policies', ['--source', str(policy_source)], 1, 1848)):
         require(digest(binary) == green_artifact[3]['binary_sha256'], 'Green binary changed before CPU selector')
         code, output = supervised(args, selector[2:], [[str(binary), selector, *extra]], env)
-        save(args.output / 'evidence' / (selector[2:] + '-inventory.json'),
-             cpu_inventory(selector, code, output, cases, assertions))
+        inventory = cpu_inventory(selector, code, output, cases, assertions)
+        save(args.output / 'evidence' / (selector[2:] + '-inventory.json'), inventory)
+        public_status(selector[2:], 'verified', cases=cases, assertions=assertions)
+    stage('final-integrity')
     require(snapshot(args.source, final_files, SOURCE_LINKS) == final_files,
             'Final source changed during validation')
     clean_checkout(args.source, FINAL)
+    require(git(args.source, 'rev-parse', 'HEAD^{tree}') == FINAL_TREE, 'Reviewed Studio tree differs')
     clean_checkout(args.engine, ENGINE)
     require(snapshot(args.engine, POLICY) == policy_hashes, 'Production admission/supervisor changed')
     require(sdk_identity(args) == sdk, 'Installed SDK changed during validation')
     require(not any((args.output / 'scratch').iterdir()), 'Temporary fixture cleanup incomplete')
-    save(args.output / 'summary.json', {'passed': True, 'final_revision': FINAL, 'engine_revision': ENGINE,
-         'scope': 'Studio-only resume',
-         'red_controls': ['Studio source ownership', 'Studio deleted-source and queued-command edges', 'Studio accepted source authority', 'Studio retained Retry Apply Live intent'],
-         'prior_engine_evidence': PRIOR_ENGINE_EVIDENCE,
-         'prototype_source': PROTOTYPE_SUCCESS,
-         'prototype_source_authority': AUTHORITY_SUCCESS,
-         'green': 'four-frame source-edit accepted',
-         'cpu': ['project-open', 'scene-read', 'outliner-row-policies'], 'full_suite': 'not run',
-         'rendering': 'Xvfb/X11 with forced Vulkan and verified Mesa software ICD',
-         'policy_sha256': policy_hashes, 'sdk_build_id': sdk['build_id'],
-         'logging': 'native/prototype raw logs; existing source-edit agent failure tail and success JSON'})
+    save(PUBLIC_DIRECTORY / 'summary.json', {
+        'passed': True, 'scope': 'Studio-only exact-head validation',
+        'engine_checks_reused': True, 'ownership_negative_reused': True,
+        'new_negative_controls': len(CONTROLS), 'clean_prototype_selectors': 2,
+        'source_edit': {'frames': 4, 'edits': 1, 'undo': 1, 'redo': 1},
+        'cpu': {'cases': 8, 'assertions': 3039}, 'seconds_limit_per_invocation': 60,
+        'full_suite': 'not run', 'browser': 'not run',
+        'rendered_controls': 'captured; independent visual review pending',
+        'logging': 'fixed statuses and verified counts only; raw output ephemeral',
+    })
     for path in (*controls.values(), *control_builds, green_artifact[0], args.output / 'scratch',
                  args.output / 'cache', args.output / 'prefs'):
         shutil.rmtree(path)
-    print('Reviewed Studio resume controls and clean candidate checks passed; prior engine checks were not repeated.', flush=True)
+    public_status('validation', 'verified')
 
 
 if __name__ == '__main__':
@@ -1097,6 +967,8 @@ if __name__ == '__main__':
         if len(sys.argv) == 7 and sys.argv[1] == '--prototype-child':
             sys.exit(prototype_child(sys.argv[2:]))
         main()
-    except (OSError, ValueError, KeyError, RuntimeError, subprocess.CalledProcessError) as error:
-        print('Validation blocked/failed: ' + str(error), file=sys.stderr, flush=True)
+    except Exception as error:
+        # SDK/driver/compiler exceptions can contain private paths or source text.
+        # Keep those in ephemeral captured output, never in public Actions logs.
+        failure_status(error)
         sys.exit(1)

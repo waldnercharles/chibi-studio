@@ -860,10 +860,7 @@ void studio_code_frame(studio *s)
             if (tab->kind == APP_EDITOR_DOCUMENT_PROTOTYPE) {
                 scene_prototype_asset *prototype = scene_prototype_for_path(s->scene, tab->path);
                 if (prototype && prototype->source == code) {
-                    if (!s->prefs.code_apply_live && asset_code_canonical_dirty(code)) {
-                        asset_code_hold_runtime(code, true);
-                    }
-                    scene_prototype_source_sync(s->scene, prototype, s->prefs.code_apply_live);
+                    scene_prototype_source_sync(s->scene, prototype, !asset_code_runtime_held(code));
                 }
             }
             if (tab->source_only) {

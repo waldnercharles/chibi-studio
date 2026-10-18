@@ -30,10 +30,20 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           path: validation
           persist-credentials: false
+      - name: Verify candidate is bound before any private checkout
+        run: |
+          python3 - <<'PYCODE'
+          import importlib.util, sys
+          sys.dont_write_bytecode = True
+          spec = importlib.util.spec_from_file_location('validation', 'validation/tools/validate_studio_refresh.py')
+          helper = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(helper)
+          helper.reviewed_pins()
+          PYCODE
       - name: Check out the immutable final Studio 71 candidate
         uses: actions/checkout@v4
         with:
-          ref: 4302ca9c0b3ad13a1eab82b3511d90977ef51065
+          ref: 522593bb302072d7726b26de315efdbd1db60fdf
           path: chibi-studio
           persist-credentials: false
       - name: Select the paired engine for a same-repository PR
@@ -146,7 +156,16 @@ jobs:
       - name: Package the engine SDK
         if: steps.sdk.outputs.cache-hit != 'true' && steps.published-sdk.outputs.available != 'true'
         working-directory: chibi
-        run: make package-sdk SDK_PREFIX=dist/sdk LIBCLANG_ROOT=/usr/lib/llvm-18
+        shell: bash
+        run: |
+          log=$(mktemp "$RUNNER_TEMP/engine-package.XXXXXX")
+          trap 'rm -f "$log"' EXIT
+          if make package-sdk SDK_PREFIX=dist/sdk LIBCLANG_ROOT=/usr/lib/llvm-18 >"$log" 2>&1; then
+            echo 'Engine SDK packaging completed.'
+          else
+            echo '::error::Engine SDK packaging failed; raw build output remains private.'
+            exit 1
+          fi
       # PRs consume main's caches without uploading another branch-scoped copy.
       - name: Save packaged engine SDK
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.sdk.outputs.cache-hit != 'true' && steps.published-sdk.outputs.available != 'true'
@@ -171,14 +190,12 @@ jobs:
             --sdk "$GITHUB_WORKSPACE/chibi/dist/sdk" \
             --validation "$GITHUB_WORKSPACE/validation" \
             --output "$RUNNER_TEMP/studio-prototype-validation"
-      - name: Retain bounded validation evidence
+      - name: Retain only verified public statuses and counts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: studio71-prototype-evidence
-          path: |
-            ${{ runner.temp }}/studio-prototype-validation/logs
-            ${{ runner.temp }}/studio-prototype-validation/evidence
-            ${{ runner.temp }}/studio-prototype-validation/summary.json
+          path: ${{ runner.temp }}/studio-prototype-validation/public
           if-no-files-found: warn
           retention-days: 3
+

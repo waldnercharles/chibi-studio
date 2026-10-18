@@ -4096,6 +4096,7 @@ static bool code_glyphs_frame(void *state)
 /* Uses the fixture defined by scene_move.h. */
 #include "prototype_source.h"
 #include "prototype_source_authority.h"
+#include "prototype_source_capture.h"
 #include "source_action_outcomes.h"
 
 static bool prototype_source_authority_frame(void *state)
@@ -4107,20 +4108,39 @@ static bool prototype_source_authority_frame(void *state)
     if (frames == 1) {
         REQUIRE(source_action_outcomes_contract());
         REQUIRE(prototype_source_authority_contract(s));
+        if (getenv("CHIBI_STUDIO_CONTROLS_CAPTURE")) {
+            REQUIRE(prototype_source_capture_begin(s));
+        }
+    } else if (getenv("CHIBI_STUDIO_CONTROLS_CAPTURE")) {
+        REQUIRE(prototype_source_capture_verify(s));
     }
     return true;
 }
 
 TEST_CASE(prototype_source_authority)
 {
-    char *args[] = { (char *)executable, "--headless",
-                     "--frames",         "2",
-                     "--fixed-dt",       "0.016666666666666666",
-                     "--project-root",   (char *)project,
-                     "--open",           "Counter" };
-    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    const char *capture = getenv("CHIBI_STUDIO_CONTROLS_CAPTURE");
+    char *args[] = { (char *)executable,
+                     "--headless",
+                     "--frames",
+                     "2",
+                     "--fixed-dt",
+                     "0.016666666666666666",
+                     "--project-root",
+                     (char *)project,
+                     capture ? "--screenshot" : "--open",
+                     capture ? (char *)capture : "Counter" };
+    int status = studio_acceptance_host_main(sizeof args / sizeof *args, args);
+    bool clean = prototype_source_capture_cleanup();
+    REQUIRE(status == 0 && clean);
     REQUIRE(callback_ok && frames == 2);
-    printf("\nStudio prototype source authority accepted: frames=2 prototypes=1 actors=0 checkpoints=1 incoming=64 outgoing=91\n");
+    printf(
+        "\nStudio prototype source authority accepted: frames=2 prototypes=%d "
+        "actors=0 checkpoints=1 incoming=%d outgoing=%d\n",
+        capture ? 2 : 1,
+        capture ? 70 : 68,
+        capture ? 98 : 96
+    );
     return true;
 }
 
