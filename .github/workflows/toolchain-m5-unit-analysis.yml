@@ -1,7 +1,7 @@
-name: Engine M5 minimal-evidence validation (temporary public host)
+name: Native unit adapter validation (review-gated draft)
 
-# Replacement proposal for the existing temporary control workflow, not a
-# second route. Publish only after exact-source and route admission.
+# SOURCE-ONLY DRAFT. Replace the temporary workflow only after independent
+# source/configuration review; do not add a parallel workflow or publish this draft.
 on:
   pull_request:
     branches: [main]
@@ -11,49 +11,43 @@ permissions:
   contents: read
 
 concurrency:
-  group: host-m5-unit-analysis-${{ github.event.pull_request.number }}
+  group: host-m5-native-unit-${{ github.event.pull_request.number }}
+  # Preserve every admitted baseline/candidate run; do not silently cancel it.
   cancel-in-progress: false
 
 jobs:
-  type-relations:
+  native-unit:
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.head.ref == 'codex/host-m5-unit-validation-20261018'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      TYPE_RELATIONS_REVIEWED: 'true'
-      CANDIDATE_SHA: 6787ff61d3516ad4d9064ec34b16b5514233d64e
-      CANDIDATE_TREE: 95ddc9104ad6015f54c10fb59987ef31a65eaa34
-      SOURCE_BRANCH: refs/heads/codex/m5-type-relations-20261018
+      CANDIDATE_SHA: cfa8a7bbcdba7ec40e5cf75539ee7af9ae911bac
+      CANDIDATE_TREE: d816b99df0ab5c327303250d45e90d9d1d133287
+      NATIVE_UNIT_REVIEWED: 'true'
       CONTROL_SHA: ${{ github.event.pull_request.head.sha }}
       PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
       PR_BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
       PR_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-      CC: clang-18
-      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
-      - name: Require admission, safe checkout logging and fresh paths
+      - name: Require safe normal checkout logging and a fresh source path
         env:
           RUNNER_DEBUG_ENABLED: ${{ runner.debug }}
-        shell: bash
         run: |
+          if [[ "$NATIVE_UNIT_REVIEWED" != true || ! "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ || ! "$CANDIDATE_TREE" =~ ^[0-9a-f]{40}$ ]]; then
+            printf 'phase=source-admission exit=1\n'
+            exit 1
+          fi
           case "$RUNNER_DEBUG_ENABLED" in
             ''|0) ;;
             *) printf 'phase=checkout-privacy-guard exit=1\n'; exit 1 ;;
           esac
-          if [[ "$TYPE_RELATIONS_REVIEWED" != true || ! "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ||
-                ! "$CANDIDATE_TREE" =~ ^[0-9a-f]{40}$ ||
-                ! "$SOURCE_BRANCH" =~ ^refs/heads/codex/m5-type-relations-[0-9]{8}$ ]]; then
-            printf 'phase=checkout-admission-guard exit=1\n'; exit 1
+          if [ -e "$GITHUB_WORKSPACE/validation" ] || [ -e "$GITHUB_WORKSPACE/chibi" ] || ! git --version >/dev/null 2>&1; then
+            printf 'phase=checkout-privacy-guard exit=1\n'
+            exit 1
           fi
-          for path in "$GITHUB_WORKSPACE/validation" "$GITHUB_WORKSPACE/chibi" \
-                      "$RUNNER_TEMP/chibi-m5-private" "$RUNNER_TEMP/chibi-m5-sanitized"; do
-            if [[ -e "$path" || -L "$path" ]]; then
-              printf 'phase=checkout-privacy-guard exit=1\n'; exit 1
-            fi
-          done
-          git --version >/dev/null 2>&1 || { printf 'phase=checkout-privacy-guard exit=1\n'; exit 1; }
           printf 'phase=checkout-privacy-guard exit=0\n'
 
       - name: Check out the immutable reviewed control candidate
@@ -64,14 +58,14 @@ jobs:
           persist-credentials: false
           path: validation
 
-      - name: Read the one engine branch, then require its admitted identity
-        # Branch checkout avoids detached-HEAD commit-subject logging. A moved
-        # branch fails exact SHA/tree/cleanliness checks before source execution.
+      - name: Read the one engine branch, then require the immutable admitted identity
+        # Branch checkout avoids Git's detached-HEAD commit-subject message.
+        # The trusted source-identity gate rejects moved branches before helper execution.
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: waldnercharles/chibi
           token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
-          ref: ${{ env.SOURCE_BRANCH }}
+          ref: refs/heads/codex/m5-unit-native-adapter-20261018
           fetch-depth: 1
           persist-credentials: false
           path: chibi
@@ -81,41 +75,74 @@ jobs:
           submodules: false
           lfs: false
 
-      - name: Verify exact source admission
-        run: bash validation/.github/scripts/toolchain-m5-validation.sh prepare
+      - name: Reject any unreviewed source before invoking its private helper
+        id: source_identity
+        run: |
+          set +x
+          if [[ ! "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ || ! "$CANDIDATE_TREE" =~ ^[0-9a-f]{40}$ ]] ||
+             ! source_head=$(git -C "$GITHUB_WORKSPACE/chibi" rev-parse HEAD 2>/dev/null) ||
+             ! source_tree=$(git -C "$GITHUB_WORKSPACE/chibi" rev-parse 'HEAD^{tree}' 2>/dev/null) ||
+             ! source_status=$(git -C "$GITHUB_WORKSPACE/chibi" status --porcelain 2>/dev/null) ||
+             [[ "$source_head" != "$CANDIDATE_SHA" || "$source_tree" != "$CANDIDATE_TREE" || -n "$source_status" ]]; then
+            printf 'phase=source-identity-guard exit=1\n'
+            exit 1
+          fi
+          printf 'phase=source-identity-guard exit=0\n'
 
-      - name: Acquire pinned build inputs
-        run: bash validation/.github/scripts/toolchain-m5-validation.sh dependencies
+      - name: Verify reviewed source and control identities
+        run: bash chibi/.github/scripts/native-unit-validation.sh prepare
+      - name: Acquire pinned native and compiler build inputs privately
+        run: bash chibi/.github/scripts/native-unit-validation.sh dependencies
+      - name: Configure the native reflection generator
+        run: bash chibi/.github/scripts/native-unit-validation.sh configure_reflect
+      - name: Build reflect only
+        run: bash chibi/.github/scripts/native-unit-validation.sh build_reflect
+      - name: Configure actual compiler native desktop tools closure
+        run: bash chibi/.github/scripts/native-unit-validation.sh configure_tools
+      - name: Build actual test_tools and declared dependencies
+        run: bash chibi/.github/scripts/native-unit-validation.sh build_tools
+      - name: Configure standalone language dispatcher
+        run: bash chibi/.github/scripts/native-unit-validation.sh configure_language
+      - name: Build test_language separately from execution
+        run: bash chibi/.github/scripts/native-unit-validation.sh build_language
 
-      - name: Configure the standalone stage-zero language target
-        run: bash validation/.github/scripts/toolchain-m5-validation.sh configure
-
-      - name: Build test_language separately from test execution
-        run: bash validation/.github/scripts/toolchain-m5-validation.sh build
-
-      - name: Validate the full admitted type-relations selector once
+      - name: Existing semantic selector under its own production 60-second ceiling
         continue-on-error: true
         timeout-minutes: 2
         env:
-          SELECTOR: language-type-relations-chibi
-        run: bash validation/.github/scripts/toolchain-m5-validation.sh execute
+          SELECTOR: language-semantic
+        run: bash chibi/.github/scripts/native-unit-validation.sh execute
+      - name: Existing incremental selector under its own production 60-second ceiling
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          SELECTOR: language-incremental
+        run: bash chibi/.github/scripts/native-unit-validation.sh execute
+      - name: Existing real unit-fixtures selector under its own production 60-second ceiling
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          SELECTOR: unit-fixtures
+        run: bash chibi/.github/scripts/native-unit-validation.sh execute
 
-      - name: Project runner-local logs into allowlisted public evidence
-        if: always()
-        run: bash validation/.github/scripts/toolchain-m5-validation.sh collect
+      - name: Existing full unit differential under its own production 60-second ceiling
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          SELECTOR: language-unit-analysis-chibi
+        run: bash chibi/.github/scripts/native-unit-validation.sh execute
 
-      - name: Upload minimal evidence only
-        if: always()
+      - name: Project raw runner-local logs into minimal statuses
+        if: always() && steps.source_identity.outcome == 'success'
+        run: bash chibi/.github/scripts/native-unit-validation.sh collect
+      - name: Upload status timing and SHA identities only
+        if: always() && steps.source_identity.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: chibi-m5-sanitized-${{ env.CANDIDATE_SHA }}-${{ github.run_attempt }}
-          path: |
-            ${{ runner.temp }}/chibi-m5-sanitized/sanitized.json
-            ${{ runner.temp }}/chibi-m5-sanitized/SHA256SUMS
+          name: native-unit-status-${{ env.CANDIDATE_SHA }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/chibi-native-unit-status/status.json
           if-no-files-found: error
           retention-days: 7
-          compression-level: 6
-
-      - name: Preserve the actual validation verdict
-        if: always()
-        run: bash validation/.github/scripts/toolchain-m5-validation.sh verdict
+      - name: Require all four exact existing selectors to pass
+        if: always() && steps.source_identity.outcome == 'success'
+        run: bash chibi/.github/scripts/native-unit-validation.sh verdict
