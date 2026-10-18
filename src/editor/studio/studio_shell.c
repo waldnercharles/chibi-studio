@@ -212,7 +212,8 @@ static void save_document(studio *s, bool graph)
         return;
     }
     if (scene->active_tab >= 0 && scene->active_tab < acount(scene->tabs) &&
-        scene->tabs[scene->active_tab].source_dirty) {
+        (scene->tabs[scene->active_tab].source_only ||
+         scene->tabs[scene->active_tab].source_dirty)) {
         studio_code_save(s);
         return;
     }
