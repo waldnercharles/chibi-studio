@@ -1,8 +1,7 @@
-name: Native unit adapter validation (review-gated draft)
+name: Semantic components validation (review-gated draft)
 
-# Temporary test-only control. Source, configuration and the complete five-selector
-# workload require independent admission for these exact immutable pins.
-# Retain this branch; do not merge this workflow or deploy from it.
+# Temporary test-only control. Publish only after exact source/control review.
+# Raw logs and private source stay on the ephemeral runner.
 on:
   pull_request:
     branches: [main]
@@ -12,21 +11,23 @@ permissions:
   contents: read
 
 concurrency:
-  group: host-m5-native-unit-${{ github.event.pull_request.number }}
+  group: host-m5-semantic-components-${{ github.event.pull_request.number }}
   # Preserve every admitted baseline/candidate run; do not silently cancel it.
   cancel-in-progress: false
 
 jobs:
-  native-unit:
+  semantic-components:
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.head.ref == 'codex/host-m5-unit-validation-20261018'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      CANDIDATE_SHA: 06a5ae206b4daf2a5f58d66969faa008bf9c57f3
-      CANDIDATE_TREE: da159481fb0d25c9deacd9e87525ac4a82846dff
-      NATIVE_UNIT_REVIEWED: 'true'
+      CANDIDATE_SHA: b57ac78c53c170139d8f807158c076f971a2202b
+      CANDIDATE_TREE: 09d520fe2a5723226126b0879faaee390e87b7b9
+      SEMANTIC_COMPONENTS_REVIEWED: 'true'
+      EXPECTED_BASE_SHA: bee5b54e159cce44ee52ca9439be587d9a95f5d2
+      SOURCE_BRANCH: refs/heads/codex/m5-semantic-components-20261018
       CONTROL_SHA: ${{ github.event.pull_request.head.sha }}
       PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
       PR_BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
@@ -37,7 +38,7 @@ jobs:
         env:
           RUNNER_DEBUG_ENABLED: ${{ runner.debug }}
         run: |
-          if [[ "$NATIVE_UNIT_REVIEWED" != true || ! "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ || ! "$CANDIDATE_TREE" =~ ^[0-9a-f]{40}$ ]]; then
+          if [[ "$SEMANTIC_COMPONENTS_REVIEWED" != true || ! "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ || ! "$CANDIDATE_TREE" =~ ^[0-9a-f]{40}$ ]]; then
             printf 'phase=source-admission exit=1\n'
             exit 1
           fi
@@ -66,7 +67,7 @@ jobs:
         with:
           repository: waldnercharles/chibi
           token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
-          ref: refs/heads/codex/m5-unit-native-adapter-20261018
+          ref: ${{ env.SOURCE_BRANCH }}
           fetch-depth: 1
           persist-credentials: false
           path: chibi
@@ -91,66 +92,56 @@ jobs:
           printf 'phase=source-identity-guard exit=0\n'
 
       - name: Verify reviewed source and control identities
-        run: bash chibi/.github/scripts/native-unit-validation.sh prepare
-      - name: Acquire pinned native and compiler build inputs privately
-        run: bash chibi/.github/scripts/native-unit-validation.sh dependencies
-      - name: Configure the native reflection generator
-        run: bash chibi/.github/scripts/native-unit-validation.sh configure_reflect
-      - name: Build reflect only
-        run: bash chibi/.github/scripts/native-unit-validation.sh build_reflect
-      - name: Configure actual compiler native desktop tools closure
-        run: bash chibi/.github/scripts/native-unit-validation.sh configure_tools
-      - name: Build actual test_tools and declared dependencies
-        run: bash chibi/.github/scripts/native-unit-validation.sh build_tools
-      - name: Configure standalone language dispatcher
-        run: bash chibi/.github/scripts/native-unit-validation.sh configure_language
+        run: bash chibi/.github/scripts/semantic-components-validation.sh prepare
+      - name: Acquire pinned compiler build inputs privately
+        run: bash chibi/.github/scripts/semantic-components-validation.sh dependencies
+      - name: Configure the standalone compiler-enabled language dispatcher
+        run: bash chibi/.github/scripts/semantic-components-validation.sh configure
       - name: Build test_language separately from execution
-        run: bash chibi/.github/scripts/native-unit-validation.sh build_language
+        run: bash chibi/.github/scripts/semantic-components-validation.sh build
 
-      - name: Existing semantic selector under its own production 60-second ceiling
+      - name: Union members full selector under its production 60-second ceiling
         continue-on-error: true
         timeout-minutes: 2
         env:
-          SELECTOR: language-semantic
-        run: bash chibi/.github/scripts/native-unit-validation.sh execute
-      - name: Existing incremental selector under its own production 60-second ceiling
+          SELECTOR: language-union-members-chibi
+        run: bash chibi/.github/scripts/semantic-components-validation.sh execute
+      - name: Effect analysis full selector under its production 60-second ceiling
         continue-on-error: true
         timeout-minutes: 2
         env:
-          SELECTOR: language-incremental
-        run: bash chibi/.github/scripts/native-unit-validation.sh execute
-      - name: Existing real unit-fixtures selector under its own production 60-second ceiling
+          SELECTOR: language-effect-analysis-chibi
+        run: bash chibi/.github/scripts/semantic-components-validation.sh execute
+      - name: Record members full selector under its production 60-second ceiling
         continue-on-error: true
         timeout-minutes: 2
         env:
-          SELECTOR: unit-fixtures
-        run: bash chibi/.github/scripts/native-unit-validation.sh execute
-
-      - name: Existing full unit differential under its own production 60-second ceiling
+          SELECTOR: language-record-members-chibi
+        run: bash chibi/.github/scripts/semantic-components-validation.sh execute
+      - name: Unit analysis full selector under its production 60-second ceiling
         continue-on-error: true
         timeout-minutes: 2
         env:
           SELECTOR: language-unit-analysis-chibi
-        run: bash chibi/.github/scripts/native-unit-validation.sh execute
-
-      - name: Complete desktop-dependencies selector under its own production 60-second ceiling
+        run: bash chibi/.github/scripts/semantic-components-validation.sh execute
+      - name: Type relations full selector under its production 60-second ceiling
         continue-on-error: true
         timeout-minutes: 2
         env:
-          SELECTOR: desktop-dependencies
-        run: bash chibi/.github/scripts/native-unit-validation.sh execute
+          SELECTOR: language-type-relations-chibi
+        run: bash chibi/.github/scripts/semantic-components-validation.sh execute
 
       - name: Project raw runner-local logs into minimal statuses
         if: always() && steps.source_identity.outcome == 'success'
-        run: bash chibi/.github/scripts/native-unit-validation.sh collect
+        run: bash chibi/.github/scripts/semantic-components-validation.sh collect
       - name: Upload status timing and SHA identities only
         if: always() && steps.source_identity.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: native-unit-status-${{ env.CANDIDATE_SHA }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/chibi-native-unit-status/status.json
+          name: semantic-components-status-${{ env.CANDIDATE_SHA }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/chibi-m5-semantic-status/status.json
           if-no-files-found: error
           retention-days: 7
-      - name: Require all five exact complete selectors to pass
+      - name: Require all five exact semantic selectors to pass
         if: always() && steps.source_identity.outcome == 'success'
-        run: bash chibi/.github/scripts/native-unit-validation.sh verdict
+        run: bash chibi/.github/scripts/semantic-components-validation.sh verdict
