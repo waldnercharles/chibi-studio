@@ -527,6 +527,9 @@ static bool prototype_source_contract(studio *s)
     char *checkpoint = app_scene_authoring_checkpoint(scene);
     REQUIRE(checkpoint);
     move_fixture restored = move_fixture_new_with_root(scene->content_root);
+    REQUIRE(
+        !preview_sources_prepare(restored.live, scene->content_root, behavior_default_backend(), error, sizeof error)
+    );
     REQUIRE(!app_scene_authoring_restore_checkpoint(restored.scene, checkpoint));
     scene_prototype_asset *restored_asset = find_prototype(restored.scene, names[1]);
     REQUIRE(

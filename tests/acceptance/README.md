@@ -601,7 +601,9 @@ checked-in acceptance project, with the exact installed SDK that exports
 `authoring/source_prototype_edit.h`, under the unchanged 60-second production
 supervisor. It runs two hidden frames. Its first frame uses four tiny prototype
 files, three scene actors, and one additional workspace fixture/checkpoint
-restore. It creates the fixture root's `prototypes` directory if absent and
+restore. That fixture prepares its source catalog once from the same fixed
+acceptance-project root before restoring the host checkpoint. It creates the
+fixture root's `prototypes` directory if absent and
 removes only that newly created directory after its four files, including before
 the intended negative-control assertion. An existing directory is preserved. No large files, sleeps, new linked probes, or extra rendering passes
 are included. It does not expand the existing four-frame `--source-edit` case.

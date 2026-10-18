@@ -714,8 +714,9 @@ static bool authority_frame_and_disk(authority_fixture *test)
 {
     studio *s = test->s;
     app_scene_authoring *scene = s->scene;
-    REQUIRE(authority_start(test, "editor"));
+    collab_shutdown();
     REQUIRE(!app_scene_authoring_open_prototype(scene, "AuthoritySource"));
+    REQUIRE(authority_start(test, "editor"));
     s->prefs.code_apply_live = true;
     REQUIRE(authority_peer(test, AUTHORITY_SOURCE(20, 10), 0, false));
     asset_code *code = authority_asset(test)->source;
