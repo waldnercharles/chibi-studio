@@ -42,6 +42,9 @@ discarded; invalid clean files reject Save with diagnostics and can be closed.
 This reuses both fixtures and adds one 36-byte sentinel file
 (the two source files are each bounded by 128 bytes), four fixture formatting calls,
 eight Save calls and four Save All calls, with six save-triggered content refreshes.
+Before reopening the malformed prototype, one explicit Reload adopts its disk
+text into the retained workspace source, adding one content refresh and one
+CPU-only prerequisite assertion without another file, fixture or rendered frame.
 All files and models are freed before the aggregate regression assertion,
 including on the old-product control's expected clean-save failures.
 One temporary file just above the 64 MiB
@@ -707,7 +710,12 @@ After frame one's original fixture has cleaned up, it creates one 53-byte public
 prototype source in the disposable project, submits one local proposal as an
 editor guest and rejects it through the in-process transport. Two finite
 nonrendering compositions call the actual `studio_emit` under its real workspace,
-area and document keys. Code takes focus before rejection; adding the notice
+area and document keys. Each existing composition resolves styles/layout once
+without adding a host/GPU frame or sleep, so the next emission reads styled Code
+swatches. The fixture applies its reduced-motion choice through the normal kit
+theme API before composition; the host normally applies preferences afterward.
+A fixed public status label replaces the temporary fixture path in the image.
+Code takes focus before rejection; adding the notice
 must leave that exact element focused. One queued Enter is consumed by Code in
 the existing second frame, adding only a local newline while canonical bytes,
 history and disk stay unchanged. Neither Retry Draft nor Use Shared is activated.

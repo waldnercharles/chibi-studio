@@ -18,6 +18,9 @@ static void prototype_source_capture_compose(studio *s)
     kit_begin(s->kit, &s->in);
     studio_emit(s);
     kit_end(s->kit);
+    /* Manual composition needs the normal style/layout phase before the next
+     * emission samples Code's swatches. No host/GPU frame is added. */
+    rml_context_update(rml_backend_context(s->backend));
 }
 
 static bool prototype_source_capture_begin(studio *s)
@@ -39,6 +42,9 @@ static bool prototype_source_capture_begin(studio *s)
     studio_active_layout(s)->editors[STUDIO_AREA_TOP] = STUDIO_EDITOR_CODE;
     s->prefs.code_vim = false;
     s->prefs.reduced_motion = true;
+    /* Host preferences normally apply after emission. Apply this test-only
+     * choice before the manual passes so the new toast is already settled. */
+    kit_set_theme(s->kit, "reduced-motion", true);
     s->code.find.refocus = true;
     source_capture = (authority_fixture){ .s = s,
                                           .path = source_capture_path,
@@ -54,6 +60,8 @@ static bool prototype_source_capture_begin(studio *s)
     REQUIRE(authority_reject(&source_capture));
     REQUIRE(authority_text(&source_capture, source_capture_shared, source_capture_draft));
     prototype_source_capture_compose(s);
+    /* Do not publish the temporary runner path in the host status bar. */
+    studio_report(s, "Retained draft review fixture");
     source_capture_identity = scene_source_input_conflict_identity(s->scene);
     source_capture_toast = s->source_input_toast;
     REQUIRE(source_capture_identity && source_capture_toast);

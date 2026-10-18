@@ -316,6 +316,11 @@ static bool static_source_dispatch_history(studio *host)
         /* A malformed file opens clean and can be closed without repairing it.
          * Saving it must report its diagnostic, never serialize a stale model. */
         REQUIRE(!write_file_atomic(path, invalid[i]));
+        /* Closing a prototype tab retains its workspace-owned source. Reload
+         * the external edit before checking a clean malformed document. */
+        if (i) {
+            REQUIRE(studio_code_reload_path(s, path) == APP_DISK_RELOADED);
+        }
         REQUIRE(!scene_tabs_open_source(fixture.scene, kinds[i], names[i], path));
         records = acount(s->records);
         studio_save(s);

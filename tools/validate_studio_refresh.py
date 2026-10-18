@@ -15,8 +15,8 @@ import zlib
 
 sys.dont_write_bytecode = True
 # Deliberately fail closed until coordinator supplies the reviewed published pair.
-FINAL = '73ff33c4985f96c49078e215ac612db756e06c0a'
-FINAL_TREE = '14081bdd896955d298349d8ca56545bf6dfcaa73'
+FINAL = 'e3530c7ca34f45ef31e4835ebb26c64664e9ba56'
+FINAL_TREE = '1dc48fc04fb9801da83ea0c5fd7f9947efa3319f'
 ENGINE = '7bc6aa3cd69b29cfb006aab94d50d695007d9abe'
 # These completed engine checks are reused, never reconstructed here.
 PRIOR_ENGINE_EVIDENCE = {
@@ -113,15 +113,14 @@ PRIOR_INTENT_EVIDENCE = {'run_id': 39157069362,
                'status': 'verified-negative',
                'suites': 0,
                'total': 1}}
-# One reviewed fixture-only amendment; this is not exact-head execution evidence.
+# Reviewed fixture-only amendment chain; this is not exact-head execution evidence.
 REUSED_SOURCE_SCOPE = {'basis': 'independently reviewed unchanged exercised scope; historical binaries were not run on '
           'the new head',
  'prior_studio_revision': '9d329fd4899c361f2f68774963138e5e1b797779',
  'prior_studio_tree': '776177eba14519ce20e79ae220906a3a044050ac',
- 'studio_revision': '73ff33c4985f96c49078e215ac612db756e06c0a',
- 'studio_tree': '14081bdd896955d298349d8ca56545bf6dfcaa73',
+ 'studio_revision': 'e3530c7ca34f45ef31e4835ebb26c64664e9ba56',
+ 'studio_tree': '1dc48fc04fb9801da83ea0c5fd7f9947efa3319f',
  'engine_revision': '7bc6aa3cd69b29cfb006aab94d50d695007d9abe',
- 'only_changed_file': 'tests/acceptance/prototype_source_authority.h',
  'prior_file_sha256': '4edb6d7e4d0b6e025d660c5ce9ad43de03e1b329fd7643b7eb5e56e777c3490c',
  'file_sha256': '4bf10c84b6b2902bd0ab5f4ff797bd980ba7918b679bf526e2075c157d3e946a',
  'reviewed_patch_sha256': '9b0ad8180abb04b43220842cc9fb4e775ecd2de0ddf1e0dc96da557a9ed956a7',
@@ -136,12 +135,119 @@ REUSED_SOURCE_SCOPE = {'basis': 'independently reviewed unchanged exercised scop
  'intent': {'prior_assertion_line': 839,
             'candidate_assertion_line': 853,
             'scope': 'unchanged retry_held false return before invalid-draft loop; unchanged '
-                     'cleanup and final guards'}}
+                     'cleanup and final guards'},
+ 'retained_model_file': 'tests/acceptance/prototype_source_authority.h',
+ 'retained_model_target_revision': '73ff33c4985f96c49078e215ac612db756e06c0a',
+ 'retained_model_target_tree': '14081bdd896955d298349d8ca56545bf6dfcaa73',
+ 'subsequent_fixture_amendment': {'prior_studio_revision': '73ff33c4985f96c49078e215ac612db756e06c0a',
+                                  'prior_studio_tree': '14081bdd896955d298349d8ca56545bf6dfcaa73',
+                                  'studio_revision': 'e3530c7ca34f45ef31e4835ebb26c64664e9ba56',
+                                  'studio_tree': '1dc48fc04fb9801da83ea0c5fd7f9947efa3319f',
+                                  'reviewed_patch_sha256': 'e18729b076601bc486065c761f2004712bed2e84fce145dc0d995d4a0dababb6',
+                                  'files': {'tests/acceptance/README.md': {'base_sha256': 'e258405389d955a43240c69a03b7dd3499c68a4e90bbfbff0babc7355742e086',
+                                                                           'sha256': 'f7946dc3831d5dc4595c74fb3e8f5e526ce0f478ccc6eb64df199e2c20b4a988',
+                                                                           'git_blob': '7148b868a0763b0573c909cfbbe762c0c51afdbd'},
+                                            'tests/acceptance/prototype_source_capture.h': {'base_sha256': '525a1436a4673e4c7c51fbe5eec2cd24d48276aa3c7c30fe15e45bca5dded2f9',
+                                                                                            'sha256': '9efc027d65b1f4e44b2269c09abe8439900c7224914a8c22bfd9c4b65eb25807',
+                                                                                            'git_blob': '6bf66cc447a70004bc2eab7904a075b98ce4d315'},
+                                            'tests/acceptance/scene_move.h': {'base_sha256': '9a84ba7af42c74f384f0bd4db432b4d29aad66a580317c22a3f35bcdb29e07f2',
+                                                                              'sha256': '372a9b66ed379d4ba6da965eea6233814627fc9422348729c0808a075f95a205',
+                                                                              'git_blob': '5be2b8ec4a390b3e28f250030d1da1fce8c4e5cf'}},
+                                  'exercised_source': 'Capture branch disabled for all reused '
+                                                      'selectors; static_source_dispatch_history '
+                                                      'is uncalled. Ownership and authority '
+                                                      'contract headers, shared fixture helpers, '
+                                                      'entrypoints, control mutations and all '
+                                                      'final guards are unchanged.',
+                                  'clean_authority_capture': 'must run on new head; prior '
+                                                             'behavioral green and rejected pixels '
+                                                             'are not reused',
+                                  'source_edit': 'must run on new head; prior aggregate failure is '
+                                                 'not reused'}}
+# These exact prior results passed every strict oracle; the changed branches were not invoked.
+PRIOR_COMPLETED_PROTOTYPES = {'run_id': 39158483422,
+ 'validation_revision': '0ce57905c441bb183e6f097a163147b8acb638ea',
+ 'studio_revision': '73ff33c4985f96c49078e215ac612db756e06c0a',
+ 'studio_tree': '14081bdd896955d298349d8ca56545bf6dfcaa73',
+ 'engine_revision': '7bc6aa3cd69b29cfb006aab94d50d695007d9abe',
+ 'artifact_sha256': 'eb73b57017c678c441c70b61f5c88020e39b29aac0ff0e6f30b792ea8e942ca8',
+ 'policy_sha256': 'b9b006b3b773138d144bb028e06898565902a6177cf08e16e7c60679fb0487ef',
+ 'sdk_identity': {'build_id': '87ea46c521bbeeace728a7188fd1c1254fcff3e826871a80112a826e8ea818d7',
+                  'debug_assertions_verified': True,
+                  'exact_engine_pin_verified': True,
+                  'native_backend_verified': True,
+                  'package_sha256': 'e74230df23b63b14295a3c64fc4cb3f94fa5d1a10cb7f6d131d7357cec34460e',
+                  'sanitizers': False},
+ 'controls_sha256': {'frame-red': '080a7c69d7c6d2153ec427e7f9b789370cdccf290fcca80730a01010c34da6d5',
+                     'disk-red': '4c6a0c91574ce837c6ddb237a9957af1e5e63210e633ae8797c21ee9e54cbdb1'},
+ 'inventories': {'frame': {'inventory_file_sha256': 'facd1fc9fa8c156932c128ddf0bcda9ae01f319655d63f8d0b032150dd10d787',
+                           'inventory': {'assertions': 868,
+                                         'binary_sha256': '5733f61edf2fe2640292fd2837268220168063088fbf6e1af789a737ce628a07',
+                                         'cases': ['prototype_source_authority'],
+                                         'expected_diagnostics': ['Prototype source authority: '
+                                                                  'Code unchanged=1, Properties '
+                                                                  'unchanged=1',
+                                                                  'Prototype source intent: '
+                                                                  'retry_held=1',
+                                                                  'Prototype source frame: held=0, '
+                                                                  'live=0',
+                                                                  'Prototype source disk: '
+                                                                  'conflict=1'],
+                                         'failed': 1,
+                                         'frames_limit': 2,
+                                         'negative_assertion': 'prototype_source_authority\\.h '
+                                                               '\\(854\\): test\\.frame_held == 1 '
+                                                               '&& test\\.frame_live == 1\\)',
+                                         'passed': 0,
+                                         'selector': '--prototype-source-authority',
+                                         'status': 'verified-negative',
+                                         'suites': 0,
+                                         'total': 1}},
+                 'disk': {'inventory_file_sha256': '2ee813c733971db14e6eaee37179fa269b7a551554eb3b24f101cdb89cd1a449',
+                          'inventory': {'assertions': 869,
+                                        'binary_sha256': '27c0710396fce0c9cc2746e0d4d179fb311963bff128e7feff9fa20ae6d4c68a',
+                                        'cases': ['prototype_source_authority'],
+                                        'expected_diagnostics': ['Prototype source authority: Code '
+                                                                 'unchanged=1, Properties '
+                                                                 'unchanged=1',
+                                                                 'Prototype source intent: '
+                                                                 'retry_held=1',
+                                                                 'Prototype source frame: held=1, '
+                                                                 'live=1',
+                                                                 'Prototype source disk: '
+                                                                 'conflict=0'],
+                                        'failed': 1,
+                                        'frames_limit': 2,
+                                        'negative_assertion': 'prototype_source_authority\\.h '
+                                                              '\\(855\\): test\\.disk_conflict == '
+                                                              '1\\)',
+                                        'passed': 0,
+                                        'selector': '--prototype-source-authority',
+                                        'status': 'verified-negative',
+                                        'suites': 0,
+                                        'total': 1}},
+                 'ownership': {'inventory_file_sha256': 'f155b6dda203b32708239b4c304ebf8038edb8cc5f6e28e8b5e9082de663fc36',
+                               'inventory': {'assertions': 267,
+                                             'binary_sha256': '4fcb9e2bce08ef1ae10e21722ff9a7d3df6c4fa4af89a1b3c3a79dfc763aea55',
+                                             'cases': ['prototype_source_ownership'],
+                                             'expected_diagnostics': ['Prototype source edge '
+                                                                      'controls: '
+                                                                      'deleted_source_retained=1 '
+                                                                      'queued_commands_quiet=1'],
+                                             'failed': 0,
+                                             'frames_limit': 2,
+                                             'negative_assertion': None,
+                                             'passed': 1,
+                                             'selector': '--prototype-source',
+                                             'status': 'verified',
+                                             'suites': 0,
+                                             'total': 1}}}}
 # All retained files are from this dedicated allowlist directory. Logs and
 # rich preflight records remain ephemeral and are never artifact inputs.
 PUBLIC_DIRECTORY = None
 CURRENT_STAGE = 'startup'
 FAILURE_REASONS = {
+    'Prior completed prototype evidence no longer matches reviewed workload': 'reused_completed_prototype_evidence_mismatch',
     'Prior intent evidence no longer matches reviewed workload': 'reused_intent_evidence_mismatch',
     'Prior authority evidence no longer matches reviewed workload': 'reused_authority_evidence_mismatch',
     'Prior edge evidence no longer matches reviewed workload': 'reused_edge_evidence_mismatch',
@@ -206,12 +312,12 @@ REVIEWED_FILES = {'.github/engine-ref': '0aa450a62d7457af7dab66b47d1555806707bbd
  'src/editor/workspace/scene_checkpoint.c': '3a80436d6f4d135264549f018c95fbb83e1c6e5fa5abf646ccb743be58aa7581',
  'src/editor/workspace/scene_internal.h': 'ce497c867a2fe4419801d1e7b2cc54c66bafd4f8f3f4f537e41139348d30ce9f',
  'src/editor/workspace/scene_tabs.c': '8c4f04ed722496c82b54b924d7570a04ccc0d5408dc6931a08bc9a97d5e44131',
- 'tests/acceptance/README.md': 'e258405389d955a43240c69a03b7dd3499c68a4e90bbfbff0babc7355742e086',
+ 'tests/acceptance/README.md': 'f7946dc3831d5dc4595c74fb3e8f5e526ce0f478ccc6eb64df199e2c20b4a988',
  'tests/acceptance/main.c': 'f62699332037f6a677ae713bc5f6fc0cf586c744d8b2860c89564a2bf0309c00',
  'tests/acceptance/prototype_source.h': '61c08b44b025cd63494b5c9097e2d35f928c2e8d3dc16e1f32ec4b45e9f9688f',
  'tests/acceptance/prototype_source_authority.h': '4bf10c84b6b2902bd0ab5f4ff797bd980ba7918b679bf526e2075c157d3e946a',
- 'tests/acceptance/prototype_source_capture.h': '525a1436a4673e4c7c51fbe5eec2cd24d48276aa3c7c30fe15e45bca5dded2f9',
- 'tests/acceptance/scene_move.h': '9a84ba7af42c74f384f0bd4db432b4d29aad66a580317c22a3f35bcdb29e07f2',
+ 'tests/acceptance/prototype_source_capture.h': '9efc027d65b1f4e44b2269c09abe8439900c7224914a8c22bfd9c4b65eb25807',
+ 'tests/acceptance/scene_move.h': '372a9b66ed379d4ba6da965eea6233814627fc9422348729c0808a075f95a205',
  'tests/acceptance/source_action_outcomes.h': 'efdb4571214e15a104428f68e0fcf8b9835e222264908fca076a79898a098f32',
  'tests/acceptance/source_discard.h': '38eb2fb91b2385b8e98e0694e78fda83ee68e7ab62979712169663c5af55187b'}
 OWNERSHIP_PREFIX_SHA256 = '52bfca49f933549aae955962c692f9bca02bd6e27222aed69945f857c070d88c'
@@ -434,6 +540,30 @@ def studio_failure_locations(source, output):
             'summary_count': len(summaries),
             'summary': dict(zip(('passed', 'failed', 'total', 'suites', 'assertions'), map(int, summaries[0])))
                        if len(summaries) == 1 else None}
+
+
+def static_source_observations(output):
+    # Only the two public fixtures and the existing fourteen boolean fields.
+    # These observations never determine success or replace the failure oracle.
+    pattern = (r'Static source save (UndoTargets|UndoEnemy): clean=([01]) '
+               r'undo=([01])/([01]) redo=([01])/([01]) dirty=([01]) notice=([01]) '
+               r'history=([01]) all=([01]) clean_all=([01]) '
+               r'invalid=([01])/([01]) discard=([01]) close=([01])')
+    fields = ('clean', 'undo_enabled', 'undone', 'redo_enabled', 'redone', 'dirty',
+              'notice', 'history', 'all', 'clean_all', 'invalid_dirty', 'invalid_clean',
+              'discard', 'close')
+    plain = re.sub(r'\x1b\[[0-9;]*m', '', output)
+    records, count = [], 0
+    for line in plain.splitlines():
+        if not line.startswith('Static source save '):
+            continue
+        count += 1
+        match = re.fullmatch(pattern, line)
+        if match:
+            records.append({'fixture': match[1], **dict(zip(fields, map(int, match.groups()[1:])))})
+    return {'static_source_save': records[:4], 'static_source_save_marker_count': count,
+            'static_source_save_malformed': count - len(records),
+            'static_source_save_additional': max(0, len(records) - 4)}
 
 
 def git(root, *arguments):
@@ -778,6 +908,8 @@ def supervised(args, name, commands, env):
     output = path.read_text()
     observations = studio_failure_locations(args.source, output)
     if code or observations['failures']:
+        if name == 'green-source-edit':
+            observations.update(static_source_observations(output))
         save(PUBLIC_DIRECTORY / (name + '-observations.json'), {
             'exit_code': code, **observations, **wrapper_observations(output),
             'infrastructure_marker': any(marker in output for marker in PROHIBITED),
@@ -966,7 +1098,7 @@ def reuse_edge_evidence(policy_sha256):
     valid = (FINAL, FINAL_TREE, ENGINE) == (scope['studio_revision'], scope['studio_tree'], scope['engine_revision'])
     valid &= (prior['studio_revision'], prior['studio_tree'], prior['engine_revision']) == (
         scope['prior_studio_revision'], scope['prior_studio_tree'], scope['engine_revision'])
-    valid &= REVIEWED_FILES[scope['only_changed_file']] == scope['file_sha256']
+    valid &= REVIEWED_FILES[scope['retained_model_file']] == scope['file_sha256']
     valid &= canonical(EDGE_CONTROL) == prior['control_sha256']
     valid &= policy_sha256 == prior['policy_sha256']
     valid &= canonical(prior['inventory']) == 'bf85ed32c78b95a7036bd90998619c9edd8ab6cd2a4a569644e2d4bee338ed18'
@@ -981,7 +1113,7 @@ def reuse_authority_evidence(policy_sha256):
     valid = (FINAL, FINAL_TREE, ENGINE) == (scope['studio_revision'], scope['studio_tree'], scope['engine_revision'])
     valid &= (prior['studio_revision'], prior['studio_tree'], prior['engine_revision']) == (
         scope['prior_studio_revision'], scope['prior_studio_tree'], scope['engine_revision'])
-    valid &= REVIEWED_FILES[scope['only_changed_file']] == scope['file_sha256']
+    valid &= REVIEWED_FILES[scope['retained_model_file']] == scope['file_sha256']
     control = dict(CONTROLS['authority-red'])
     valid &= control['assertion'] == r'prototype_source_authority\.h \(851\): test\.code_authority && test\.property_authority\)'
     control['assertion'] = prior['inventory']['negative_assertion']
@@ -999,7 +1131,7 @@ def reuse_intent_evidence(policy_sha256):
     valid = (FINAL, FINAL_TREE, ENGINE) == (scope['studio_revision'], scope['studio_tree'], scope['engine_revision'])
     valid &= (prior['studio_revision'], prior['studio_tree'], prior['engine_revision']) == (
         scope['prior_studio_revision'], scope['prior_studio_tree'], scope['engine_revision'])
-    valid &= REVIEWED_FILES[scope['only_changed_file']] == scope['file_sha256']
+    valid &= REVIEWED_FILES[scope['retained_model_file']] == scope['file_sha256']
     control = dict(CONTROLS['intent-red'])
     valid &= control['assertion'] == r'prototype_source_authority\.h \(853\): test\.retry_held == 1\)'
     control['assertion'] = prior['inventory']['negative_assertion']
@@ -1009,6 +1141,24 @@ def reuse_intent_evidence(policy_sha256):
     require(valid, 'Prior intent evidence no longer matches reviewed workload')
     save(PUBLIC_DIRECTORY / 'prior-intent-evidence.json', prior)
     public_status('intent-negative-reuse', 'verified-negative', reused=True, cases=1, assertions=472)
+
+
+def reuse_completed_prototypes(policy_sha256):
+    prior = PRIOR_COMPLETED_PROTOTYPES
+    scope = REUSED_SOURCE_SCOPE['subsequent_fixture_amendment']
+    valid = (FINAL, FINAL_TREE) == (scope['studio_revision'], scope['studio_tree'])
+    valid &= (prior['studio_revision'], prior['studio_tree']) == (
+        scope['prior_studio_revision'], scope['prior_studio_tree'])
+    valid &= ENGINE == prior['engine_revision'] and policy_sha256 == prior['policy_sha256']
+    valid &= all(REVIEWED_FILES[name] == item['sha256'] for name, item in scope['files'].items())
+    valid &= canonical(CONTROLS['frame-red']) == prior['controls_sha256']['frame-red']
+    valid &= canonical(CONTROLS['disk-red']) == prior['controls_sha256']['disk-red']
+    valid &= canonical(prior) == '3fd101b28437a0459312412c1e5a550d6cfcc7229d438e0dbd9c785a26d398e4'
+    require(valid, 'Prior completed prototype evidence no longer matches reviewed workload')
+    save(PUBLIC_DIRECTORY / 'prior-completed-prototypes.json', prior)
+    public_status('frame-negative-reuse', 'verified-negative', reused=True, cases=1, assertions=868)
+    public_status('disk-negative-reuse', 'verified-negative', reused=True, cases=1, assertions=869)
+    public_status('ownership-clean-reuse', 'verified', reused=True, cases=1, assertions=267)
 
 
 def prototype_test(args, label, source, artifact, env, authority=False):
@@ -1137,21 +1287,14 @@ def main():
     reuse_edge_evidence(canonical(policy_hashes))
     reuse_authority_evidence(canonical(policy_hashes))
     reuse_intent_evidence(canonical(policy_hashes))
+    reuse_completed_prototypes(canonical(policy_hashes))
     save(PUBLIC_DIRECTORY / 'reused-source-scope.json', REUSED_SOURCE_SCOPE)
     require(ENGINE == PRIOR_ENGINE_EVIDENCE['engine_revision'], 'Prior engine evidence does not cover this pin')
     save(args.output / 'evidence/prior-engine-evidence.json', PRIOR_ENGINE_EVIDENCE)
     save(args.output / 'evidence/prior-ownership-evidence.json', PRIOR_OWNERSHIP_EVIDENCE)
     sdk = sdk_identity(args)
     env = graphics_environment(args)
-    control_builds = []
-    for label, source in controls.items():
-        if label in ('edges-red', 'authority-red', 'intent-red'):
-            continue  # Historical results and reviewed unchanged exercised scope were checked above.
-        artifact = build_variant(args, label, source, sdk)
-        control_builds.append(artifact[0])
-        prototype_test(args, label, source, artifact, env, authority=CONTROLS[label].get('authority', False))
     green_artifact = build_variant(args, 'green', args.source, sdk)
-    prototype_test(args, 'green', args.source, green_artifact, env)
     prototype_test(args, 'green', args.source, green_artifact, env, authority=True)
     gpu_test(args, 'green', args.source, green_artifact, env)
     binary = green_artifact[0] / 'bin/studio-acceptance'
@@ -1177,14 +1320,15 @@ def main():
         'passed': True, 'scope': 'Studio-only exact-head validation',
         'engine_checks_reused': True, 'ownership_negative_reused': True,
         'edge_negative_reused': True, 'authority_negative_reused': True, 'intent_negative_reused': True,
-        'new_negative_controls': len(CONTROLS) - 3, 'clean_prototype_selectors': 2,
+        'frame_negative_reused': True, 'disk_negative_reused': True, 'clean_ownership_reused': True,
+        'new_negative_controls': 0, 'clean_prototype_selectors': 1,
         'source_edit': {'frames': 4, 'edits': 1, 'undo': 1, 'redo': 1},
         'cpu': {'cases': 8, 'assertions': 3039}, 'seconds_limit_per_invocation': 60,
         'full_suite': 'not run', 'browser': 'not run',
         'rendered_controls': 'captured; independent visual review pending',
         'logging': 'fixed statuses and verified counts only; raw output ephemeral',
     })
-    for path in (*controls.values(), *control_builds, green_artifact[0], args.output / 'scratch',
+    for path in (*controls.values(), green_artifact[0], args.output / 'scratch',
                  args.output / 'cache', args.output / 'prefs'):
         shutil.rmtree(path)
     public_status('validation', 'verified')

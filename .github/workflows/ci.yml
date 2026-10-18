@@ -43,7 +43,7 @@ jobs:
       - name: Check out the immutable final Studio 71 candidate
         uses: actions/checkout@v4
         with:
-          ref: 73ff33c4985f96c49078e215ac612db756e06c0a
+          ref: e3530c7ca34f45ef31e4835ebb26c64664e9ba56
           path: chibi-studio
           persist-credentials: false
       - name: Select the paired engine for a same-repository PR
