@@ -23,8 +23,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      CANDIDATE_SHA: 4dcd9705a724fafa161f440c555880205d50f5d1
-      CANDIDATE_TREE: 5e6228f7244f318bda7f5ddf41aa9c90992664bb
+      CANDIDATE_SHA: c505ec08ca674b0f18562e63911ab55c6a5fdafb
+      CANDIDATE_TREE: 2005b39d236edc18529483fdb485498eedd0a9b0
       NATIVE_UNIT_REVIEWED: 'true'
       CONTROL_SHA: ${{ github.event.pull_request.head.sha }}
       PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
