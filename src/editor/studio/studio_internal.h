@@ -1262,6 +1262,9 @@ struct studio
         ecs_component_id component;
         int field;
     } context;                /* property under the field context menu */
+    int source_input_toast;
+    uint64_t source_input_identity;
+    char source_input_path[1024];
     char prototype_edit[192]; /* component.field of the prototype gesture in progress */
     SDL_Event *events; /* queued by the SDL event watch, replayed in order */
     studio_key *keys;  /* keys pressed this frame */

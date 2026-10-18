@@ -1,6 +1,7 @@
 #include "authoring/native_prototype.h"
 #include "authoring/prototype_prepare.h"
 #include "editor/collab/actions_scene.h"
+#include "editor/documents/prototype_source_input.h"
 #include "editor/workspace/scene_internal.h"
 #include "runtime/component_catalog.h"
 #include "support/asset_json.h"
@@ -235,19 +236,24 @@ asset_code *scene_prototype_source_session(
         return NULL;
     }
     if (asset->source) {
-        bool checkpoint = false;
-        for (int i = 0; i < acount(scene->tabs); i++) {
-            scene_document_tab *tab = &scene->tabs[i];
-            checkpoint |= tab->path && !strcmp(tab->path, asset->path) &&
-                          tab->source_state;
-        }
-        if (!checkpoint && !asset_code_dirty(asset->source)) {
-            asset_code_refresh(asset->source);
-        }
         asset_code_set_registry(asset->source, &scene->registry);
         asset_code_set_source_world(asset->source, scene->live, scene->content_root);
         return asset->source;
     }
+    asset_code *code = scene_prototype_source_prepare(scene, asset, error, size);
+    if (code) {
+        scene_prototype_source_adopt_session(scene, asset, code);
+    }
+    return code;
+}
+
+asset_code *scene_prototype_source_prepare(
+    app_scene_authoring *scene,
+    scene_prototype_asset *asset,
+    char *error,
+    size_t size
+)
+{
     const av_value *state = NULL;
     for (int i = 0; i < acount(scene->tabs); i++) {
         scene_document_tab *tab = &scene->tabs[i];
@@ -256,8 +262,7 @@ asset_code *scene_prototype_source_session(
             break;
         }
     }
-    asset_code *code = state ? asset_code_restore(state, &scene->registry)
-                             : asset_code_open(asset->path, error, size);
+    asset_code *code = asset_code_prepare_prototype(asset->path, state, &scene->registry, error, size);
     if (!code) {
         return NULL;
     }
@@ -269,11 +274,21 @@ asset_code *scene_prototype_source_session(
         asset_code_free(code);
         return NULL;
     }
+    return code;
+}
+
+void scene_prototype_source_adopt_session(
+    app_scene_authoring *scene,
+    scene_prototype_asset *asset,
+    asset_code *code
+)
+{
+    assert(!asset->source && code);
     asset->source = code;
+    asset_code_adopt_overlay(code);
     clear_prototype_history(asset);
     scene_tabs_ensure_prototype(scene, asset);
     scene_prototype_source_capture(scene, asset);
-    return code;
 }
 
 static int source_apply(app_scene_authoring *scene, scene_prototype_asset *asset)
@@ -480,9 +495,13 @@ int scene_prototype_source_edit(
 
 int scene_prototype_source_save(app_scene_authoring *scene, scene_prototype_asset *asset)
 {
+    scene_source_input_harvest(scene);
     char error[256] = "";
     asset_code *code = scene_prototype_source_session(scene, asset, error, sizeof error);
-    if (!code || scene_prototype_source_sync(scene, asset, true) < 0) {
+    if (!code || scene_source_input_blocked(scene, asset->path)) {
+        return -1;
+    }
+    if (scene_prototype_source_sync(scene, asset, true) < 0) {
         return -1;
     }
     int retried = scene_prototype_source_accept(
@@ -499,8 +518,12 @@ int scene_prototype_source_save(app_scene_authoring *scene, scene_prototype_asse
         snprintf(scene->prototype_message, sizeof scene->prototype_message, "%s", error);
         return -1;
     }
-    bool saved = asset_code_save(code, error, sizeof error);
-    /* A formatter can change the draft even when the write fails. */
+    int saved_result = scene_source_input_save(scene, asset);
+    bool saved = saved_result == 0;
+    if (!saved) {
+        snprintf(error, sizeof error, "%s", scene->prototype_message);
+    }
+    /* Accepted formatting and saved source use the same canonical model. */
     int applied = scene_prototype_source_sync(scene, asset, true);
     scene_prototype_source_capture(scene, asset);
     if (!saved) {
@@ -525,51 +548,28 @@ int scene_prototype_source_save(app_scene_authoring *scene, scene_prototype_asse
 int scene_prototype_source_reload(app_scene_authoring *scene, scene_prototype_asset *asset)
 {
     char error[256] = "";
-    const char *current = text_overlay_text(asset->path);
-    char *overlay = current ? xstrdup(current) : NULL;
-    text_overlay_set(asset->path, NULL);
-    asset_code *fresh = asset_code_open(asset->path, error, sizeof error);
-    if (!fresh) {
-        text_overlay_set(asset->path, overlay);
-        if (asset->source) {
-            asset_code_adopt_overlay(asset->source);
-        }
-        free(overlay);
+    if (!asset->source &&
+        !scene_prototype_source_session(scene, asset, error, sizeof error)) {
         snprintf(scene->message, sizeof scene->message, "%s", error);
         return -1;
     }
-    free(overlay);
-    asset_code_own_prototype(fresh);
-    asset_code_set_registry(fresh, &scene->registry);
-    asset_code_set_source_world(fresh, scene->live, scene->content_root);
-    char **pending_behaviors = asset->source_pending_behaviors;
-    bool not_applied = asset->source_not_applied;
-    asset->source_pending_behaviors = NULL;
-    scene_prototype_source_free(asset);
-    asset->source_pending_behaviors = pending_behaviors;
-    asset->source_not_applied = not_applied;
-    asset->source = fresh;
-    clear_prototype_history(asset);
-    int result = scene_prototype_source_sync(scene, asset, true);
-    scene_prototype_source_capture(scene, asset);
-    if (result < 0) {
-        /* Invalid disk is still the clean document. Its last-good runtime is
-         * retained, but Properties cannot edit that stale model. */
-        snprintf(
-            scene->message,
-            sizeof scene->message,
-            "Discarded draft; disk source cannot be applied: %.190s",
-            scene->prototype_message
-        );
-        return 0;
+    int result = scene_source_input_reload(scene, asset);
+    if (result == APP_PROTOTYPE_EDIT_PENDING) {
+        snprintf(scene->message, sizeof scene->message, "%s", scene->prototype_message);
+        return -1;
     }
+    if (result < 0) {
+        snprintf(scene->message, sizeof scene->message, "%s", scene->prototype_message);
+        return -1;
+    }
+    scene_prototype_source_capture(scene, asset);
     snprintf(
         scene->message,
         sizeof scene->message,
         "%s",
         result ? "Reloaded source, but not applied to the runtime." : "Reloaded prototype source."
     );
-    return result;
+    return result == APP_PROTOTYPE_EDIT_NOT_APPLIED ? 1 : 0;
 }
 
 int register_prototype_hosts(app_scene_authoring *scene, const prototype *native_prototype)
@@ -1146,13 +1146,7 @@ static int replay_prototype_source(app_scene_authoring *scene, scene_prototype_a
 {
     char error[256];
     asset_code *code = scene_prototype_source_session(scene, asset, error, sizeof error);
-    if (!code || !asset_code_replay(code, redo, true)) {
-        return -1;
-    }
-    int result = scene_prototype_source_sync(scene, asset, true);
-    scene_prototype_source_capture(scene, asset);
-    /* Invalid drafts are still valid source-history destinations. */
-    return result < 0 ? 0 : result;
+    return code ? scene_source_input_history(scene, asset, redo) : -1;
 }
 
 int prototype_undo(app_scene_authoring *scene)

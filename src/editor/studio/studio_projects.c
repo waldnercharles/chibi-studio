@@ -1,3 +1,4 @@
+#include "editor/documents/prototype_source_input.h"
 /* The projects Studio opens: those opened recently, most recent first, then
  * the workspace's own and those in its projects directory, and any folder
  * File ▸ Open Project… picks. Opening one rebuilds the editor, so the
@@ -361,6 +362,11 @@ static void answer_unsaved(studio *s)
     kit_toast_dismiss(s->kit, prompt->toast);
     prompt->toast = 0;
     if (save && !save_pending(s, tab) && pending_unsaved(s, tab)) {
+        ask_again(s, tab);
+        return;
+    }
+    if (discard && scene_source_input_any(s->scene)) {
+        studio_error(s, "Source draft retained", "Resolve the source draft with Retry Draft or Use Shared before closing.");
         ask_again(s, tab);
         return;
     }

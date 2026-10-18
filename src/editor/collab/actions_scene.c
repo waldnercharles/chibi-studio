@@ -1,6 +1,8 @@
 #include "editor/collab/actions_scene.h"
 
 #include "editor/collab/collab.h"
+#include "editor/collab/protocol.h"
+#include "editor/documents/prototype_source_input.h"
 #include "graph/model/registry.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
@@ -157,7 +159,8 @@ static bool fail(char *error, size_t size, const char *message)
 static const char *text(yyjson_val *object, const char *name)
 {
     yyjson_val *value = yyjson_obj_get(object, name);
-    return yyjson_is_str(value) ? yyjson_get_str(value) : NULL;
+    const char *result = yyjson_is_str(value) ? yyjson_get_str(value) : NULL;
+    return result && yyjson_get_len(value) == strlen(result) ? result : NULL;
 }
 
 static int tab_index(const app_scene_authoring *scene, const char *key)
@@ -459,6 +462,14 @@ bool scene_collab_apply_action(app_scene_authoring *scene, const char *json, cha
         yyjson_get_int(yyjson_obj_get(root, "version")) != 1 || !family ||
         strcmp(family, "scene") || !operation) {
         fail(error, error_size, "Invalid scene action");
+        goto done;
+    }
+    if (!strcmp(operation, "prototype.source")) {
+        if (strlen(json) > COLLAB_MAX_ACTION) {
+            fail(error, error_size, "Prototype source action exceeds the room action limit");
+            goto done;
+        }
+        ok = scene_source_input_apply(scene, root, error, error_size);
         goto done;
     }
     if (!strncmp(operation, "tab.", 4)) {

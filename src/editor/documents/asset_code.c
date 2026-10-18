@@ -29,12 +29,14 @@ static const double DISK_POLL = 0.5;
 typedef struct
 {
     char *text, *metadata;
+    char *origin, *kind, *key, *group;
 } source_snapshot;
 struct asset_code
 {
     int references;
     char *path, *text, *disk, *valid, *valid_metadata, *metadata, *disk_metadata;
     char *observed_metadata; /* Exact disk bytes; generated layout may form a clean baseline. */
+    char *view_text; /* Last displayed/reported managed widget text; never checkpointed. */
     char *content_root;
     asset_source *source; /* Declarative KDL only. */
     script_syntax *syntax; /* Canonical draft before project context is attached. */
@@ -50,7 +52,7 @@ struct asset_code
     unsigned shared_revision;
     bool source_pending, replaying, runtime_held, graph_draft, native_view,
         source_gesture, typing, static_source, relationship_source,
-        prototype_owned, file_missing;
+        prototype_owned, file_missing, local_dirty, history_group_open;
     uint64_t execution_graph, execution_node;
     double time, apply_due, typed_at, refresh_due;
     kit_code_editor *editor;
@@ -341,6 +343,11 @@ static char *edited_text(asset_code *c)
 static void follow(asset_code *c, const char *source, bool land)
 {
     kit_code_editor *editor = c->editor;
+    /* Backend input arrives before kit_code reports it. An accepted action or
+     * rebind must leave those bytes available to the next scoped delegate. */
+    if (c->view_text && strcmp(kit_code_text(editor, NULL), c->view_text)) {
+        return;
+    }
     char *text = visible_text(c, source);
     int cursor = kit_code_cursor(editor), anchor = cursor, selection_start,
         selection_end;
@@ -353,6 +360,10 @@ static void follow(asset_code *c, const char *source, bool land)
         start++;
     }
     if (start == a && start == b) {
+        if (c->view_text) {
+            free(c->view_text);
+            c->view_text = xstrdup(text);
+        }
         free(text);
         return;
     }
@@ -379,6 +390,10 @@ static void follow(asset_code *c, const char *source, bool land)
         kit_code_set_selection(editor, positions[0], positions[1]);
     }
     free(replacement);
+    if (c->view_text) {
+        free(c->view_text);
+        c->view_text = xstrdup(text);
+    }
     free(text);
 }
 
@@ -423,17 +438,23 @@ static void snapshot_free(source_snapshot snapshot)
 {
     free(snapshot.text);
     free(snapshot.metadata);
+    free(snapshot.origin);
+    free(snapshot.kind);
+    free(snapshot.key);
+    free(snapshot.group);
 }
 
 static source_snapshot snapshot_create(asset_code *c, const char *text)
 {
-    return (source_snapshot){ xstrdup(text), c->metadata ? xstrdup(c->metadata) : NULL };
+    return (source_snapshot){ .text = xstrdup(text),
+                              .metadata = c->metadata ? xstrdup(c->metadata) : NULL };
 }
 
 static void record(asset_code *c, const char *text)
 {
     c->source_gesture = false;
     c->typing = false;
+    c->history_group_open = false;
     while (acount(c->history) > c->step + 1) {
         snapshot_free(alast(c->history));
         apop(c->history);
@@ -469,6 +490,7 @@ av_value *asset_code_capture(asset_code *c)
     av_obj_add_bool(doc, root, "prototype_owned", c->prototype_owned);
     av_obj_add_bool(doc, root, "file_missing", c->file_missing);
     av_obj_add_int(doc, root, "step", c->step);
+    av_obj_add_bool(doc, root, "history_group_open", c->history_group_open);
     if (c->runtime_held) {
         av_obj_add_bool(doc, root, "runtime_hold", true);
     }
@@ -481,6 +503,12 @@ av_value *asset_code_capture(asset_code *c)
         av_obj_add_str(doc, snapshot, "text", c->history[i].text);
         if (c->history[i].metadata) {
             av_obj_add_str(doc, snapshot, "metadata", c->history[i].metadata);
+        }
+        if (c->history[i].origin) {
+            av_obj_add_str(doc, snapshot, "origin", c->history[i].origin);
+            av_obj_add_str(doc, snapshot, "kind", c->history[i].kind);
+            av_obj_add_str(doc, snapshot, "key", c->history[i].key);
+            av_obj_add_str(doc, snapshot, "group", c->history[i].group);
         }
     }
     int cursor = kit_code_cursor(c->editor), start, end;
@@ -506,7 +534,30 @@ const char *asset_code_path(const asset_code *c)
     return c->path;
 }
 
+static bool unreported_input(const asset_code *c)
+{
+    return c->view_text && strcmp(kit_code_text(c->editor, NULL), c->view_text);
+}
+
+bool asset_code_take_unreported(asset_code *c, char **before, char **text)
+{
+    *before = *text = NULL;
+    if (!unreported_input(c)) {
+        return false;
+    }
+    *before = xstrdup(c->view_text);
+    *text = xstrdup(kit_code_text(c->editor, NULL));
+    free(c->view_text);
+    c->view_text = xstrdup(*text);
+    return true;
+}
+
 bool asset_code_dirty(const asset_code *c)
+{
+    return c->local_dirty || unreported_input(c) || asset_code_canonical_dirty(c);
+}
+
+bool asset_code_canonical_dirty(const asset_code *c)
 {
     if (c->file_missing) {
         return true;
@@ -514,6 +565,16 @@ bool asset_code_dirty(const asset_code *c)
     return strcmp(c->disk, c->text) != 0 ||
            strcmp(c->metadata ? c->metadata : "", c->disk_metadata ? c->disk_metadata : "") !=
                0;
+}
+
+void asset_code_set_local_dirty(asset_code *c, bool dirty)
+{
+    c->local_dirty = dirty;
+}
+
+bool asset_code_local_dirty(const asset_code *c)
+{
+    return c->local_dirty;
 }
 
 const char *asset_code_error(const asset_code *c)
@@ -541,6 +602,13 @@ bool asset_code_can_replay(const asset_code *c, bool redo)
     return next >= 0 && next < acount(c->history);
 }
 
+char *asset_code_history_target(const asset_code *c, bool redo)
+{
+    return asset_code_can_replay(c, redo)
+             ? xstrdup(c->history[c->step + (redo ? 1 : -1)].text)
+             : NULL;
+}
+
 bool asset_code_replay(asset_code *c, bool redo, bool live)
 {
     c->source_gesture = false;
@@ -548,6 +616,7 @@ bool asset_code_replay(asset_code *c, bool redo, bool live)
     if (!asset_code_can_replay(c, redo)) {
         return false;
     }
+    c->history_group_open = false;
     c->step += redo ? 1 : -1;
     source_snapshot snapshot = c->history[c->step];
     follow(c, snapshot.text, true);
@@ -605,6 +674,54 @@ bool asset_code_edit_source(asset_code *c, const char *before, const char *text,
 bool asset_code_replace(asset_code *c, const char *before, const char *text)
 {
     return asset_code_replace_with_metadata(c, before, text, NULL);
+}
+
+static bool same_provenance(const source_snapshot *snapshot, const asset_code_provenance *p)
+{
+    return snapshot->origin && !strcmp(snapshot->origin, p->origin) &&
+           !strcmp(snapshot->kind, p->kind) && !strcmp(snapshot->key, p->key) &&
+           !strcmp(snapshot->group, p->group);
+}
+
+bool asset_code_source_commit(
+    asset_code *c,
+    const char *before,
+    const char *text,
+    const asset_code_provenance *p,
+    int history
+)
+{
+    if (!before || !text || strcmp(before, c->text) || history < -1 ||
+        history > 2 || !p || !p->origin || !*p->origin || !p->kind ||
+        !*p->kind || !p->key || !p->group || !*p->group) {
+        return false;
+    }
+    if (history == -1 || history == 1) {
+        bool redo = history > 0;
+        if (!asset_code_can_replay(c, redo) ||
+            strcmp(c->history[c->step + history].text, text)) {
+            return false;
+        }
+        return asset_code_replay(c, redo, false);
+    }
+    bool amend = !history && p->coalesce && c->history_group_open &&
+                 amendable(c) && same_provenance(&c->history[c->step], p);
+    /* The caller may have obtained bytes from this session's current text or
+     * history. Copy every input that replacement can release before mutation. */
+    char *after = xstrdup(text);
+    source_snapshot provenance = { .origin = xstrdup(p->origin),
+                                   .kind = xstrdup(p->kind),
+                                   .key = xstrdup(p->key),
+                                   .group = xstrdup(p->group) };
+    replace_source(c, before, after, NULL, amend);
+    free(after);
+    source_snapshot *snapshot = &c->history[c->step];
+    snapshot->origin = provenance.origin;
+    snapshot->kind = provenance.kind;
+    snapshot->key = provenance.key;
+    snapshot->group = provenance.group;
+    c->history_group_open = !history;
+    return true;
 }
 
 void asset_code_time(asset_code *c, double time)
@@ -855,6 +972,9 @@ void asset_code_own_prototype(asset_code *c)
 {
     assert(c->static_source && !c->relationship_source);
     c->prototype_owned = true;
+    if (!c->view_text) {
+        c->view_text = xstrdup(c->text);
+    }
 }
 
 void asset_code_file_removed(asset_code *c)
@@ -887,7 +1007,7 @@ void asset_code_publish_static(asset_code *c)
     c->overlay_revision = text_overlay_revision(c->path);
 }
 
-asset_code *asset_code_open(const char *path, char *error, size_t size)
+static asset_code *open_source(const char *path, char *error, size_t size, bool adopt)
 {
     char *disk = file_read_text(path);
     if (!disk) {
@@ -902,7 +1022,7 @@ asset_code *asset_code_open(const char *path, char *error, size_t size)
     const char *text = text_overlay_text(path);
     text = text ? text : disk;
     c->editor = create_view(c, text);
-    c->overlay_revision = text_overlay_revision(path);
+    c->overlay_revision = adopt ? text_overlay_revision(path) : 0;
     c->disk_metadata = read_metadata(c);
     c->observed_metadata = c->disk_metadata ? xstrdup(c->disk_metadata) : NULL;
     understand_with_metadata(c, text, c->disk_metadata);
@@ -913,7 +1033,13 @@ asset_code *asset_code_open(const char *path, char *error, size_t size)
     apush(c->history, snapshot_create(c, text));
     return c;
 }
-asset_code *asset_code_restore(const av_value *state, const prototype_registry *registry)
+
+asset_code *asset_code_open(const char *path, char *error, size_t size)
+{
+    return open_source(path, error, size, true);
+}
+
+static asset_code *restore_source(const av_value *state, const prototype_registry *registry, bool publish)
 {
     const char *path = av_get_str(av_obj_get(state, "path")),
                *text = av_get_str(av_obj_get(state, "text"));
@@ -925,7 +1051,17 @@ asset_code *asset_code_restore(const av_value *state, const prototype_registry *
         return NULL;
     }
     for (size_t i = 0; i < av_arr_size(history); i++) {
-        if (!av_get_str(av_obj_get(av_arr_get(history, i), "text"))) {
+        const av_value *snapshot = av_arr_get(history, i);
+        if (!av_get_str(av_obj_get(snapshot, "text"))) {
+            return NULL;
+        }
+        const char *origin = av_get_str(av_obj_get(snapshot, "origin")),
+                   *kind = av_get_str(av_obj_get(snapshot, "kind")),
+                   *key = av_get_str(av_obj_get(snapshot, "key")),
+                   *group = av_get_str(av_obj_get(snapshot, "group"));
+        if ((av_obj_get(snapshot, "origin") || av_obj_get(snapshot, "kind") ||
+             av_obj_get(snapshot, "key") || av_obj_get(snapshot, "group")) &&
+            (!origin || !*origin || !kind || !*kind || !key || !group || !*group)) {
             return NULL;
         }
     }
@@ -938,6 +1074,7 @@ asset_code *asset_code_restore(const av_value *state, const prototype_registry *
     c->runtime_held = av_get_bool(av_obj_get(state, "runtime_hold"));
     c->prototype_owned = av_get_bool(av_obj_get(state, "prototype_owned"));
     c->file_missing = av_get_bool(av_obj_get(state, "file_missing"));
+    c->history_group_open = av_get_bool(av_obj_get(state, "history_group_open"));
     c->state_identity = (uintptr_t)state;
     const char *valid = av_get_str(av_obj_get(state, "valid"));
     c->valid = valid ? xstrdup(valid) : NULL;
@@ -948,15 +1085,22 @@ asset_code *asset_code_restore(const av_value *state, const prototype_registry *
     const char *observed = av_get_str(av_obj_get(state, "observed_metadata"));
     c->observed_metadata = observed ? xstrdup(observed) : NULL;
     c->editor = create_view(c, text);
+    c->view_text = c->prototype_owned ? xstrdup(text) : NULL;
     understand_with_metadata(c, text, av_get_str(av_obj_get(state, "metadata")));
     c->graph_draft = av_get_bool(av_obj_get(state, "graph_draft"));
     for (size_t i = 0; i < av_arr_size(history); i++) {
         const av_value *s = av_arr_get(history, i);
         const char *m = av_get_str(av_obj_get(s, "metadata"));
+        const char *origin = av_get_str(av_obj_get(s, "origin"));
         apush(
             c->history,
-            ((source_snapshot){ xstrdup(av_get_str(av_obj_get(s, "text"))),
-                                m ? xstrdup(m) : NULL })
+            ((source_snapshot){
+                .text = xstrdup(av_get_str(av_obj_get(s, "text"))),
+                .metadata = m ? xstrdup(m) : NULL,
+                .origin = origin ? xstrdup(origin) : NULL,
+                .kind = origin ? xstrdup(av_get_str(av_obj_get(s, "kind"))) : NULL,
+                .key = origin ? xstrdup(av_get_str(av_obj_get(s, "key"))) : NULL,
+                .group = origin ? xstrdup(av_get_str(av_obj_get(s, "group"))) : NULL })
         );
     }
     c->step = step;
@@ -970,12 +1114,45 @@ asset_code *asset_code_restore(const av_value *state, const prototype_registry *
         anchor = cursor;
     }
     kit_code_set_selection(c->editor, anchor, cursor);
-    if (!c->prototype_owned && c->valid && av_get_bool(av_obj_get(state, "overlay"))) {
+    if (publish && !c->prototype_owned && c->valid &&
+        av_get_bool(av_obj_get(state, "overlay"))) {
         text_overlay_set(path, c->valid);
         c->overlay_revision = text_overlay_revision(path);
     }
     return c;
 }
+
+asset_code *asset_code_restore(const av_value *state, const prototype_registry *registry)
+{
+    return restore_source(state, registry, true);
+}
+
+asset_code *asset_code_prepare_prototype(
+    const char *path,
+    const av_value *state,
+    const prototype_registry *registry,
+    char *error,
+    size_t size
+)
+{
+    asset_code *c = state ? restore_source(state, registry, false)
+                          : open_source(path, error, size, false);
+    if (!c) {
+        if (state) {
+            snprintf(error, size, "Could not restore the prototype source");
+        }
+        return NULL;
+    }
+    if (strcmp(c->path, path) || !c->static_source || c->relationship_source) {
+        snprintf(error, size, "Prototype source identity no longer matches");
+        asset_code_free(c);
+        return NULL;
+    }
+    asset_code_own_prototype(c);
+    asset_code_set_registry(c, registry);
+    return c;
+}
+
 void asset_code_adopt_overlay(asset_code *c)
 {
     c->overlay_revision = text_overlay_revision(c->path);
@@ -1034,6 +1211,7 @@ void asset_code_free(asset_code *c)
     free(c->metadata);
     free(c->disk_metadata);
     free(c->observed_metadata);
+    free(c->view_text);
     free(c->content_root);
     free(c->hover);
     free(c);
@@ -1439,7 +1617,7 @@ static changed_span difference(const char *before, const char *after)
     text[b - start] = 0;
     return (changed_span){ start, a, text };
 }
-static char *merge_source(const char *base, const char *current, const char *incoming)
+char *asset_code_merge_source(const char *base, const char *current, const char *incoming)
 {
     if (!strcmp(current, base)) {
         return xstrdup(incoming);
@@ -1500,7 +1678,7 @@ void asset_code_refresh(asset_code *c)
     } else if (!strcmp(disk, c->disk)) {
         text = xstrdup(c->text);
     } else if (c->native_view || c->static_source) {
-        text = merge_source(c->disk, c->text, disk);
+        text = asset_code_merge_source(c->disk, c->text, disk);
     } else {
         char error[256];
         av_doc *base = av_doc_read(c->disk, error, sizeof error),
@@ -1544,8 +1722,12 @@ void asset_code_refresh(asset_code *c)
         valid_overlay(c, true);
     }
 }
-bool asset_code_save(asset_code *c, char *error, size_t size)
+static bool save_ready(asset_code *c, char *error, size_t size)
 {
+    if (c->local_dirty || unreported_input(c)) {
+        snprintf(error, size, "Resolve the retained local source draft before saving");
+        return false;
+    }
     if (c->source_pending || c->error[0] ||
         (c->native_view && (!c->facts || !c->facts->valid))) {
         snprintf(error, size, "%s", c->error[0] ? c->error : "Validate the source before saving");
@@ -1568,24 +1750,11 @@ bool asset_code_save(asset_code *c, char *error, size_t size)
         snprintf(error, size, "Presentation metadata changed on disk; refresh it before saving");
         return false;
     }
-    if (c->static_source) {
-        char *formatted = authoring_source_format(c->syntax, error, size);
-        if (!formatted) {
-            return false;
-        }
-        if (strcmp(formatted, c->text)) {
-            follow(c, formatted, false);
-            understand(c, formatted);
-            record(c, formatted);
-            valid_overlay(c, false);
-        }
-        free(formatted);
-        /* Formatting is a draft edit until the formatted candidate validates. */
-        if (c->error[0] || !asset_code_validate(c, NULL)) {
-            snprintf(error, size, "%s", c->error[0] ? c->error : "Formatted source is invalid");
-            return false;
-        }
-    }
+    return true;
+}
+
+static bool save_text(asset_code *c, char *error, size_t size)
+{
     if (write_file_atomic(c->path, c->text)) {
         snprintf(error, size, "Could not write %s", c->path);
         return false;
@@ -1612,6 +1781,145 @@ bool asset_code_save(asset_code *c, char *error, size_t size)
     c->error[0] = 0;
     return true;
 }
+bool asset_code_save_committed(asset_code *c, char *error, size_t size)
+{
+    return save_ready(c, error, size) && save_text(c, error, size);
+}
+
+bool asset_code_save(asset_code *c, char *error, size_t size)
+{
+    if (!save_ready(c, error, size)) {
+        return false;
+    }
+    if (c->static_source) {
+        char *formatted = authoring_source_format(c->syntax, error, size);
+        if (!formatted) {
+            return false;
+        }
+        if (strcmp(formatted, c->text)) {
+            follow(c, formatted, false);
+            understand(c, formatted);
+            record(c, formatted);
+            valid_overlay(c, false);
+        }
+        free(formatted);
+        /* Formatting is a draft edit until the formatted candidate validates. */
+        if (c->error[0] || !asset_code_validate(c, NULL)) {
+            snprintf(error, size, "%s", c->error[0] ? c->error : "Formatted source is invalid");
+            return false;
+        }
+    }
+    return save_text(c, error, size);
+}
+
+void asset_code_stage_free(asset_code_stage *stage)
+{
+    free(stage->path);
+    free(stage->before);
+    free(stage->text);
+    free(stage->baseline);
+    free(stage->disk);
+    *stage = (asset_code_stage){ 0 };
+}
+
+static asset_code_stage stage_source(const asset_code *c, char *text, char *disk)
+{
+    return (asset_code_stage){ .path = xstrdup(c->path),
+                               .before = xstrdup(c->text),
+                               .text = text,
+                               .baseline = xstrdup(c->disk),
+                               .disk = disk };
+}
+
+bool asset_code_prepare_save(asset_code *c, asset_code_stage *stage, char *error, size_t size)
+{
+    assert(c->prototype_owned);
+    *stage = (asset_code_stage){ 0 };
+    if (!save_ready(c, error, size)) {
+        return false;
+    }
+    char *text = authoring_source_format(c->syntax, error, size);
+    if (!text) {
+        return false;
+    }
+    *stage = stage_source(c, text, NULL);
+    return true;
+}
+
+bool asset_code_prepare_refresh(asset_code *c, asset_code_stage *stage, char *error, size_t size)
+{
+    assert(c->prototype_owned);
+    *stage = (asset_code_stage){ 0 };
+    if (c->file_missing || c->local_dirty || unreported_input(c) ||
+        (c->time < c->refresh_due && c->time >= c->refresh_due - DISK_POLL)) {
+        return true;
+    }
+    c->refresh_due = c->time + DISK_POLL;
+    char *disk = file_read_text(c->path);
+    if (!disk) {
+        return true;
+    }
+    if (!strcmp(disk, c->disk)) {
+        free(disk);
+        return true;
+    }
+    char *text = asset_code_merge_source(c->disk, c->text, disk);
+    if (!text) {
+        snprintf(error, size, "Source conflicts with a disk edit; the current text is retained");
+        free(disk);
+        return false;
+    }
+    *stage = stage_source(c, text, disk);
+    return true;
+}
+
+bool asset_code_prepare_reload(asset_code *c, asset_code_stage *stage, char *error, size_t size)
+{
+    assert(c->prototype_owned);
+    *stage = (asset_code_stage){ 0 };
+    if (c->local_dirty || unreported_input(c)) {
+        snprintf(error, size, "Resolve the retained local source draft before reloading");
+        return false;
+    }
+    char *disk = file_read_text(c->path);
+    if (!disk) {
+        snprintf(error, size, "Could not read %s", c->path);
+        return false;
+    }
+    *stage = stage_source(c, xstrdup(disk), disk);
+    return true;
+}
+
+bool asset_code_accept_disk(asset_code *c, const asset_code_stage *stage, bool reload)
+{
+    assert(c->prototype_owned);
+    if (!stage->path || !stage->before || !stage->text || !stage->baseline ||
+        !stage->disk || strcmp(c->path, stage->path) ||
+        strcmp(c->text, stage->text) || strcmp(c->disk, stage->baseline)) {
+        return false;
+    }
+    /* Adopt the bytes that were read, never a fresh read: a second external
+     * edit must remain different from this accepted disk baseline. */
+    free(c->disk);
+    c->disk = xstrdup(stage->disk);
+    c->file_missing = false;
+    if (reload) {
+        source_snapshot accepted = c->history[c->step];
+        for (int i = 0; i < acount(c->history); i++) {
+            if (i != c->step) {
+                snapshot_free(c->history[i]);
+            }
+        }
+        asetlen(c->history, 0);
+        apush(c->history, accepted);
+        c->step = 0;
+        c->history_group_open = false;
+        c->typing = false;
+        c->source_gesture = false;
+    }
+    return true;
+}
+
 static code_completion_kind completion_kind(authoring_completion_kind kind)
 {
     switch (kind) {
@@ -1722,9 +2030,39 @@ static void link_symbol(const asset_code *c, kit_code_desc *desc)
     }
 }
 
+void asset_code_show_text(asset_code *c, const char *text)
+{
+    follow(c, text, false);
+}
+
 kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const kit_code_desc *preferences, bool live)
 {
-    if (c->time >= c->refresh_due || c->time < c->refresh_due - DISK_POLL) {
+    return asset_code_draw_input(c, k, key, preferences, live, NULL);
+}
+
+kit_code_result asset_code_draw_input(
+    asset_code *c,
+    kit *k,
+    const char *key,
+    const kit_code_desc *preferences,
+    bool live,
+    const asset_code_input *input
+)
+{
+    char *before = NULL;
+    if (input) {
+        assert(input->edit && input->history);
+        asset_code_retain(c);
+        if (!c->view_text) {
+            c->view_text = xstrdup(c->text);
+        }
+        follow(c, input->text ? input->text : c->text, false);
+        before = xstrdup(c->view_text);
+    }
+    /* follow preserves unreported input and its older display base, even when
+     * accepted text changed before this draw. The delegate can rebase it. */
+    bool local = input && strcmp(kit_code_text(c->editor, NULL), c->text);
+    if (!input && (c->time >= c->refresh_due || c->time < c->refresh_due - DISK_POLL)) {
         c->refresh_due = c->time + DISK_POLL;
         asset_code_refresh(c);
     }
@@ -1736,9 +2074,9 @@ kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const ki
                         : NULL)
                  : asset_source_hover(c->source, kit_code_hover(c->editor));
     kit_code_desc desc = *preferences;
-    int length = (int)visible_length(c, c->text);
+    int length = (int)visible_length(c, before ? before : c->text);
     kit_code_span *shown_spans = NULL;
-    for (int i = 0; i < acount(c->spans); i++) {
+    for (int i = 0; !local && i < acount(c->spans); i++) {
         kit_code_span span = c->spans[i];
         if (span.start >= length) {
             continue;
@@ -1751,7 +2089,7 @@ kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const ki
     desc.markers = c->markers;
     desc.marker_count = acount(c->markers);
     kit_code_marker *shown_markers = NULL;
-    for (int i = 0; i < acount(c->markers); i++) {
+    for (int i = 0; !local && i < acount(c->markers); i++) {
         if (c->markers[i].start < length) {
             kit_code_marker marker = c->markers[i];
             marker.end = marker.end < length ? marker.end : length;
@@ -1759,13 +2097,13 @@ kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const ki
         }
     }
     int start, end;
-    for (int i = 0; i < acount(c->breakpoints); i++) {
+    for (int i = 0; !local && i < acount(c->breakpoints); i++) {
         if (c->breakpoints[i].start < length) {
             apush(shown_markers, c->breakpoints[i]);
         }
     }
-    if (c->execution_node && asset_code_execution_location(c, &start, &end) &&
-        start < length) {
+    if (!local && c->execution_node &&
+        asset_code_execution_location(c, &start, &end) && start < length) {
         int line, column;
         position(c->text, start, &line, &column);
         apush(
@@ -1782,31 +2120,50 @@ kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const ki
     }
     desc.markers = shown_markers;
     desc.marker_count = acount(shown_markers);
-    desc.completions = c->completing ? c->items : NULL;
-    desc.completion_count = c->completing ? acount(c->items) : 0;
+    desc.completions = !local && c->completing ? c->items : NULL;
+    desc.completion_count = !local && c->completing ? acount(c->items) : 0;
     desc.completion_start = c->native_view || c->static_source
                               ? c->source_completions.range.start
                               : c->completions.start;
-    desc.hover = c->hover;
+    desc.hover = local ? NULL : c->hover;
     desc.history = true;
     /* KDL names take hyphens; .chibi names are C's. */
     desc.word_chars = c->native_view || c->static_source ? NULL : "-";
-    link_symbol(c, &desc);
+    if (!local) {
+        link_symbol(c, &desc);
+    }
     kit_code_result result = kit_code(k, key, c->editor, &desc);
     afree(shown_markers);
     afree(shown_spans);
     bool asked = result.events & KIT_CODE_SUGGEST;
+    if (input && strcmp(kit_code_text(c->editor, NULL), before)) {
+        result.events |= KIT_CODE_CHANGED;
+    }
     if (result.events & KIT_CODE_CHANGED) {
         char *text = edited_text(c);
         /* A programmatic follow also changes the widget revision. */
-        if (strcmp(text, c->text)) {
+        if (strcmp(text, before ? before : c->text)) {
             bool typing = !(result.events & (KIT_CODE_COMPLETED | KIT_CODE_STEP));
             asked |= typing &&
-                     starts_completion(c->text, text, kit_code_cursor(c->editor));
-            understand(c, text);
-            typed(c, text, typing);
-            c->apply_due = c->time + 0.2;
-            valid_overlay(c, live);
+                     starts_completion(before ? before : c->text, text, kit_code_cursor(c->editor));
+            /* This edit is now reported. A callback may show its merged
+             * draft, or synchronously accept and display canonical text. */
+            if (c->view_text) {
+                free(c->view_text);
+                c->view_text = xstrdup(text);
+            }
+            if (input) {
+                bool coalesce = c->typing && typing &&
+                                c->time - c->typed_at < TYPING_PAUSE;
+                input->edit(input->context, before, text, coalesce);
+                c->typing = typing;
+                c->typed_at = c->time;
+            } else {
+                understand(c, text);
+                typed(c, text, typing);
+                c->apply_due = c->time + 0.2;
+                valid_overlay(c, live);
+            }
         } else {
             result.events &= ~KIT_CODE_CHANGED;
         }
@@ -1815,13 +2172,23 @@ kit_code_result asset_code_draw(asset_code *c, kit *k, const char *key, const ki
         c->typing = false;
     }
     if (result.events & (KIT_CODE_UNDO | KIT_CODE_REDO)) {
-        asset_code_replay(c, result.events & KIT_CODE_REDO, live);
+        if (input) {
+            input->history(input->context, (result.events & KIT_CODE_REDO) != 0);
+            c->typing = false;
+        } else {
+            asset_code_replay(c, result.events & KIT_CODE_REDO, live);
+        }
     }
-    if (result.events &
-        (KIT_CODE_COMPLETED | KIT_CODE_DISMISSED | KIT_CODE_UNDO | KIT_CODE_REDO)) {
+    if ((input && strcmp(kit_code_text(c->editor, NULL), c->text)) ||
+        (result.events & (KIT_CODE_COMPLETED | KIT_CODE_DISMISSED |
+                          KIT_CODE_UNDO | KIT_CODE_REDO))) {
         c->completing = false;
     } else if (asked || (c->completing && result.events & (KIT_CODE_CHANGED | KIT_CODE_CURSOR))) {
         complete(c, asked);
+    }
+    free(before);
+    if (input) {
+        asset_code_free(c);
     }
     return result;
 }

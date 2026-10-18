@@ -1,14 +1,14 @@
 #ifndef CHIBI_COLLAB_PROTOCOL_H
 #define CHIBI_COLLAB_PROTOCOL_H
 
-#include <yyjson.h>
+#include "editor/collab/collab.h"
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <yyjson.h>
 
 #define COLLAB_PROTOCOL 1
 #define COLLAB_MAX_MESSAGE (32 * 1024 * 1024)
-#define COLLAB_MAX_ID 96
 #define COLLAB_MAX_SEQUENCE UINT64_C(9007199254740991)
 
 typedef struct

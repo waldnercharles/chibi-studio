@@ -1,7 +1,8 @@
-#include "editor/workspace/viewport.h"
+#include "editor/documents/prototype_source_input.h"
 #include "editor/studio/studio_internal.h"
 #include "editor/workspace/asset_index.h"
 #include "editor/workspace/model_preview.h"
+#include "editor/workspace/viewport.h"
 #include "support/array.h"
 #include "support/text_file.h"
 #include "support/xalloc.h"
@@ -418,6 +419,9 @@ bool studio_active_dirty(studio *s)
 bool studio_unsaved(studio *s)
 {
     app_scene_authoring *scene = s->scene;
+    if (scene_source_input_any(scene)) {
+        return true;
+    }
     for (int i = 0; i < acount(scene->tabs); i++) {
         if (scene_tabs_dirty(scene, &scene->tabs[i])) {
             return true;
@@ -435,6 +439,8 @@ static void document_history(studio *s, bool redo)
                    : replay_scene_edit(s->scene, redo);
     if (result == 0) {
         studio_report(s, redo ? "Redo" : "Undo");
+    } else if (result == APP_PROTOTYPE_EDIT_PENDING && s->scene->document.kind == APP_EDITOR_DOCUMENT_PROTOTYPE) {
+        studio_error(s, "Waiting for shared edit", s->scene->prototype_message);
     } else if (result > 0) {
         studio_error(s, "Edited, but not applied", s->scene->prototype_message);
     }

@@ -652,3 +652,39 @@ After normal cleanup the fixture prints both `deleted_source_retained` and
 `queued_commands_quiet`, then requires both. The control must report both as 0
 and fail that exact final assertion; the clean case reports both as 1. This is
 one additional fixed selector run/build, not a replay of historical controls.
+
+## Prototype source host authority
+
+`studio-acceptance --prototype-source-authority --project-root PATH` is a
+separate fixed two-frame selector, under the same unchanged 60-second production
+supervisor and isolated checked-in acceptance project. It does not add work to
+`--source-edit` or `--prototype-source`. The source fixture uses one temporary
+prototype file, one workspace fixture, zero actors, four nonrendering Code
+compositions and one real same-workspace checkpoint restoration. Its in-process
+transport has no sockets or production test hooks. Including the focused
+transport-outcome helper, the fixed workload is 64 incoming envelopes, 91 sends,
+27 apply callbacks, 15 restore callbacks (one real workspace restore), two close
+callbacks, four direct decoder rejection checks, two offline probe Reloads and
+33 tiny retained inputs for the bounded-queue limit.
+
+It checks Code and Properties canonical text/model/history remain unchanged
+before guest acceptance; host-own echo applies only once; rapid typing and
+successive scalar/vector gestures retain their local values and grouping; exact
+accepted outcomes release the tail; stale rejection, disjoint merge, overlap,
+explicit Retry Draft and Use Shared preserve recoverable input; raw invalid and
+identity-changing drafts retain the last-good model; own Undo/Redo validates its
+local destination while peer history changes append ordinary local steps; and
+pending Save/Undo/Reload, canonical-only snapshots, rebind, interruption and role
+loss respect the existing authority boundary. Retry Draft is an explicit primary
+control and does not take editor focus or consume a newline.
+
+The one authority counterfactual optimistically commits a guest's prepared source
+inside the common pending boundary while retaining normal transport sequencing.
+The dedicated case must print `Code unchanged=0, Properties unchanged=0` and fail
+at `REQUIRE(test.code_authority && test.property_authority)` after complete
+fixture and collaboration cleanup. This independently demonstrates both reported
+entry gaps without bypassing the SDK, dropping later positive assertions or
+changing the frame/message limits. Candidate success requires both booleans 1
+and all remaining source/model/history assertions. Source review and workload
+admission do not establish runtime success; native and web builds and the hosted
+selector results are reported separately.

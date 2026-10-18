@@ -213,6 +213,8 @@ struct app_scene_authoring
      * are shared with the newest append-only generation. */
     ecs_relationship_desc ***relationship_generations;
     scene_prototype_source *prototype_sources;
+    struct scene_source_input *source_inputs; /* client-local, never checkpointed */
+    uint64_t source_input_generation;
     editor_choices component_choices;
     editor_choices type_choices;
     editor_choices image_choices; /* Labels and names borrow content paths. */
@@ -556,6 +558,8 @@ scene_prototype_asset *selected_prototype(app_scene_authoring *scene);
 ecs_entity selected_scene_entity(const app_scene_authoring *scene);
 bool scene_prototype_source_owned(const scene_prototype_asset *asset);
 scene_prototype_asset *scene_prototype_for_path(app_scene_authoring *, const char *path);
+asset_code *scene_prototype_source_prepare(app_scene_authoring *, scene_prototype_asset *, char *, size_t);
+void scene_prototype_source_adopt_session(app_scene_authoring *, scene_prototype_asset *, asset_code *);
 asset_code *scene_prototype_source_session(
     app_scene_authoring *,
     scene_prototype_asset *,
