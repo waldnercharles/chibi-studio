@@ -46,6 +46,10 @@ CONTROLS = {
 PROHIBITED = ('Studio UI:', 'runtime frame failed', 'Could not initialize')
 INFRA = {'.github/workflows/ci.yml', 'tools/validate_studio_refresh.py'}
 POLICY = ('tools/agent.py', 'tools/test_policy.py', 'test/execution_selectors.h')
+# The sole tracked link in FINAL's reviewed Git tree; never dereference it in evidence.
+SOURCE_LINKS = {'CLAUDE.md': {'type': 'symlink', 'git_mode': '120000',
+                             'target': 'AGENTS.md',
+                             'git_blob': '47dc3e3d863cfb5727b87d785d09abf9743c0a72'}}
 
 
 def require(condition, message):
@@ -78,10 +82,38 @@ def clean_checkout(root, revision):
     require(not git(root, 'status', '--porcelain', '--untracked-files=normal'), f'Dirty checkout: {root}')
 
 
-def snapshot(root, names):
+def snapshot(root, names, links=None):
+    names = set(names)
+    if links is not None:
+        require(set(links) <= names, 'Missing reviewed source link')
+        for directory, directories, files in os.walk(root, followlinks=False):
+            if Path(directory) == root:
+                directories[:] = [name for name in directories if name != '.git']
+            for name in directories + files:
+                path = Path(directory) / name
+                if path.is_symlink():
+                    relative = path.relative_to(root).as_posix()
+                    require(relative in names and relative in links,
+                            'Unreviewed or untracked source link: ' + relative)
     result = {}
     for name in sorted(names):
         path = root / name
+        if links is not None and name in links:
+            expected = links[name]
+            require(path.is_symlink(), 'Source link type changed: ' + name)
+            target = os.readlink(path)
+            require(target == expected['target'], 'Source link target changed: ' + name)
+            destination = path.parent / target
+            require(not Path(target).is_absolute() and '..' not in Path(target).parts and
+                    destination.relative_to(root).as_posix() in names and
+                    destination.is_file() and not destination.is_symlink() and
+                    root.resolve() in destination.resolve().parents,
+                    'Source link target is not a tracked in-tree regular file: ' + name)
+            content = os.fsencode(target)
+            blob = hashlib.sha1(b'blob ' + str(len(content)).encode() + b'\0' + content).hexdigest()
+            require(blob == expected['git_blob'], 'Source link Git blob changed: ' + name)
+            result[name] = dict(expected)
+            continue
         require(not path.is_symlink() and path.is_file(), f'Non-regular source: {name}')
         result[name] = digest(path)
     return result
@@ -121,8 +153,8 @@ def source_inputs(args):
     for name, checksum in REVIEWED_FILES.items():
         require(digest(args.source / name) == checksum, 'Unreviewed source: ' + name)
     source_names = tracked(args.source)
-    final_files = snapshot(args.source, source_names)
-    validation_files = snapshot(args.validation, tracked(args.validation))
+    final_files = snapshot(args.source, source_names, SOURCE_LINKS)
+    validation_files = snapshot(args.validation, tracked(args.validation), SOURCE_LINKS)
     require({k: v for k, v in final_files.items() if k not in INFRA} ==
             {k: v for k, v in validation_files.items() if k not in INFRA},
             'Validation child changes files outside its two infrastructure files')
@@ -139,7 +171,7 @@ def source_inputs(args):
         for name in source_names:
             target = red / name
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(args.source / name, target)
+            shutil.copy2(args.source / name, target, follow_symlinks=False)
         shutil.copy2(baseline / product, red / product)
         manifest = json.loads(json.dumps(final_manifest))
         manifest['files'][product]['consumer_sha256'] = control['sha256']
@@ -148,7 +180,7 @@ def source_inputs(args):
         expected_manifest = json.loads(json.dumps(final_manifest))
         expected_manifest['files'][product]['consumer_sha256'] = control['sha256']
         require(manifest == expected_manifest, 'Red changed unrelated extraction metadata')
-        red_files = snapshot(red, source_names)
+        red_files = snapshot(red, source_names, SOURCE_LINKS)
         changed = {name for name in source_names if red_files[name] != final_files[name]}
         require(changed == {product, 'EXTRACTION.json'}, 'Red has an unintended source difference: ' + label)
         require(all(red_files[name] == checksum for name, checksum in final_files.items()
@@ -442,7 +474,8 @@ def main():
         code, output = supervised(args, selector[2:], [[str(binary), selector, *extra]], env)
         save(args.output / 'evidence' / (selector[2:] + '-inventory.json'),
              cpu_inventory(selector, code, output, cases, assertions))
-    require(snapshot(args.source, final_files) == final_files, 'Final source changed during validation')
+    require(snapshot(args.source, final_files, SOURCE_LINKS) == final_files,
+            'Final source changed during validation')
     clean_checkout(args.source, FINAL)
     clean_checkout(args.engine, ENGINE)
     require(snapshot(args.engine, POLICY) == policy_hashes, 'Production admission/supervisor changed')
