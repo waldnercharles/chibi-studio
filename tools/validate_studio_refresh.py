@@ -59,11 +59,39 @@ PRIOR_EDGE_EVIDENCE = {'run_id': 39154718997,
                'status': 'verified-negative',
                'suites': 0,
                'total': 1}}
+# The authority negative is also complete on this identical product/control pair.
+PRIOR_AUTHORITY_EVIDENCE = {'run_id': 39155893168,
+ 'validation_revision': 'daf6f13d94ebe2633c2947ffc82c9c4b4ca6685c',
+ 'studio_revision': '9d329fd4899c361f2f68774963138e5e1b797779',
+ 'studio_tree': '776177eba14519ce20e79ae220906a3a044050ac',
+ 'engine_revision': '7bc6aa3cd69b29cfb006aab94d50d695007d9abe',
+ 'artifact_sha256': '6d6cef3b548ac795cf3d08f53dcd74d42d2e3a23f673687b65b6e4b8a1fd025b',
+ 'inventory_file_sha256': '756f0b1b4fbe0147831d0b14ccb00eb0f6f9b9db12fee02091c9adadf8ecde85',
+ 'control_sha256': '72fcab0969cd9f8ac387d4c54f1a3455612adf0129a492c859a8aa23db09c942',
+ 'policy_sha256': 'b9b006b3b773138d144bb028e06898565902a6177cf08e16e7c60679fb0487ef',
+ 'inventory': {'assertions': 348,
+               'binary_sha256': 'c6b1052d45dc697d89d54ee599dd171a879d8473df58d172af1028df71ff2406',
+               'cases': ['prototype_source_authority'],
+               'expected_diagnostics': ['Prototype source authority: Code unchanged=0, Properties '
+                                        'unchanged=0',
+                                        'Prototype source intent: retry_held=-1',
+                                        'Prototype source frame: held=-1, live=-1',
+                                        'Prototype source disk: conflict=-1'],
+               'failed': 1,
+               'frames_limit': 2,
+               'negative_assertion': 'prototype_source_authority\\.h \\(837\\): '
+                                     'test\\.code_authority && test\\.property_authority\\)',
+               'passed': 0,
+               'selector': '--prototype-source-authority',
+               'status': 'verified-negative',
+               'suites': 0,
+               'total': 1}}
 # All retained files are from this dedicated allowlist directory. Logs and
 # rich preflight records remain ephemeral and are never artifact inputs.
 PUBLIC_DIRECTORY = None
 CURRENT_STAGE = 'startup'
 FAILURE_REASONS = {
+    'Prior authority evidence no longer matches reviewed workload': 'reused_authority_evidence_mismatch',
     'Prior edge evidence no longer matches reviewed workload': 'reused_edge_evidence_mismatch',
     'First negative failure is not its reviewed assertion': 'unexpected_first_assertion',
     'Compiled selector case identity differs from reviewed workload': 'case_inventory_mismatch',
@@ -256,7 +284,9 @@ CONTROLS = {
     'frame-red': dict(FRAME_CONTROL, authority=True),
     'disk-red': dict(DISK_CONTROL, authority=True),
 }
-PROHIBITED = ('Studio UI:', 'runtime frame failed', 'Could not initialize')
+XVFB_WRAPPER_SHA256 = '48ee444c30fdaaede4cc311644b30e554162e956f949b206858e37eb8ba1ae05'
+XVFB_CLEANUP_ERROR = 'xvfb-run: error: problem while cleaning up temporary directory'
+PROHIBITED = ('Studio UI:', 'runtime frame failed', 'Could not initialize', XVFB_CLEANUP_ERROR)
 INFRA = {'.github/workflows/ci.yml', 'tools/validate_studio_refresh.py'}
 POLICY = ('tools/agent.py', 'tools/test_policy.py', 'test/execution_selectors.h')
 # The sole tracked link in FINAL's reviewed Git tree; never dereference it in evidence.
@@ -697,7 +727,7 @@ def supervised(args, name, commands, env):
     observations = studio_failure_locations(args.source, output)
     if code or observations['failures']:
         save(PUBLIC_DIRECTORY / (name + '-observations.json'), {
-            'exit_code': code, **observations,
+            'exit_code': code, **observations, **wrapper_observations(output),
             'infrastructure_marker': any(marker in output for marker in PROHIBITED),
         })
     new_fixtures = sorted(fixture_directories(args.source) - fixtures_before)
@@ -820,7 +850,27 @@ def prototype_child(arguments):
     with tempfile.TemporaryDirectory(prefix='prototype-', dir=scratch) as directory:
         fixture = Path(directory) / 'project'
         clone_project(source / 'tests/acceptance/project', fixture)
-        return run_commands([['xvfb-run', '-a', str(binary), selector, '--project-root', str(fixture)]], seconds=60)
+        try:
+            wrapper_hash = digest(Path(shutil.which('xvfb-run')))
+        except (OSError, TypeError):
+            wrapper_hash = 'unknown'  # Observation only; never change admission.
+        result = run_commands([['xvfb-run', '-a', str(binary), selector, '--project-root', str(fixture)]], seconds=60)
+        print(f'Studio prototype wrapper: supervised_exit={result} sha256={wrapper_hash}', flush=True)
+        return result
+
+
+def wrapper_observations(output):
+    # Keep only the nested wrapper's integer status/hash and one fixed error.
+    # No stderr, shell expressions, internal paths or wrapper source is retained.
+    reports = [line for line in output.splitlines() if line.startswith('Studio prototype wrapper:')]
+    match = re.fullmatch(r'Studio prototype wrapper: supervised_exit=(\d{1,3}) sha256=([0-9a-f]{64}|unknown)', reports[0]) if len(reports) == 1 else None
+    return {
+        'wrapper_report_count': len(reports),
+        'inner_supervised_wrapper_exit_code': int(match[1]) if match else None,
+        'wrapper_sha256': match[2] if match and match[2] != 'unknown' else None,
+        'wrapper_matches_reviewed': bool(match and match[2] == XVFB_WRAPPER_SHA256),
+        'wrapper_cleanup_error': XVFB_CLEANUP_ERROR in output.splitlines(),
+    }
 
 
 def prototype_markers(output, case):
@@ -867,6 +917,17 @@ def reuse_edge_evidence(policy_sha256):
     require(valid, 'Prior edge evidence no longer matches reviewed workload')
     save(PUBLIC_DIRECTORY / 'prior-edge-evidence.json', prior)
     public_status('edges-negative-reuse', 'verified-negative', reused=True, cases=1, assertions=264)
+
+
+def reuse_authority_evidence(policy_sha256):
+    prior = PRIOR_AUTHORITY_EVIDENCE
+    valid = (FINAL, FINAL_TREE, ENGINE) == (prior['studio_revision'], prior['studio_tree'], prior['engine_revision'])
+    valid &= canonical(CONTROLS['authority-red']) == prior['control_sha256']
+    valid &= policy_sha256 == prior['policy_sha256']
+    valid &= canonical(prior['inventory']) == '974f7998b91cc2c0cdee6a0e2b6304e5f7e681ba44f108e617648a2fffca42c9'
+    require(valid, 'Prior authority evidence no longer matches reviewed workload')
+    save(PUBLIC_DIRECTORY / 'prior-authority-evidence.json', prior)
+    public_status('authority-negative-reuse', 'verified-negative', reused=True, cases=1, assertions=348)
 
 
 def prototype_test(args, label, source, artifact, env, authority=False):
@@ -993,6 +1054,7 @@ def main():
          'supervisor_sha256': policy_hashes['tools/test_policy.py'], 'seconds_limit': 60})
     controls, final_files = source_inputs(args)
     reuse_edge_evidence(canonical(policy_hashes))
+    reuse_authority_evidence(canonical(policy_hashes))
     require(ENGINE == PRIOR_ENGINE_EVIDENCE['engine_revision'], 'Prior engine evidence does not cover this pin')
     save(args.output / 'evidence/prior-engine-evidence.json', PRIOR_ENGINE_EVIDENCE)
     save(args.output / 'evidence/prior-ownership-evidence.json', PRIOR_OWNERSHIP_EVIDENCE)
@@ -1000,7 +1062,7 @@ def main():
     env = graphics_environment(args)
     control_builds = []
     for label, source in controls.items():
-        if label == 'edges-red':
+        if label in ('edges-red', 'authority-red'):
             continue  # Exact successful prior evidence was checked above; do not rebuild/rerun.
         artifact = build_variant(args, label, source, sdk)
         control_builds.append(artifact[0])
@@ -1031,8 +1093,8 @@ def main():
     save(PUBLIC_DIRECTORY / 'summary.json', {
         'passed': True, 'scope': 'Studio-only exact-head validation',
         'engine_checks_reused': True, 'ownership_negative_reused': True,
-        'edge_negative_reused': True,
-        'new_negative_controls': len(CONTROLS) - 1, 'clean_prototype_selectors': 2,
+        'edge_negative_reused': True, 'authority_negative_reused': True,
+        'new_negative_controls': len(CONTROLS) - 2, 'clean_prototype_selectors': 2,
         'source_edit': {'frames': 4, 'edits': 1, 'undo': 1, 'redo': 1},
         'cpu': {'cases': 8, 'assertions': 3039}, 'seconds_limit_per_invocation': 60,
         'full_suite': 'not run', 'browser': 'not run',
