@@ -1,7 +1,7 @@
-name: Engine M5 sanitized validation (temporary public host)
+name: Engine M5 minimal-evidence validation (temporary public host)
 
-# Proposal only. Do not publish/open the validation PR until exact-source
-# independent admission is recorded in toolchain-m5-admission.json.
+# Replacement proposal for the existing temporary control workflow, not a
+# second route. Publish only after exact-source and route admission.
 on:
   pull_request:
     branches: [main]
@@ -12,38 +12,48 @@ permissions:
 
 concurrency:
   group: host-m5-unit-analysis-${{ github.event.pull_request.number }}
-  # Preserve every admitted baseline/candidate run; do not silently cancel it.
   cancel-in-progress: false
 
 jobs:
-  unit-analysis:
+  type-relations:
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.head.ref == 'codex/host-m5-unit-validation-20261018'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      CANDIDATE_SHA: ce379205fc529f8d5d2142bc6346e0079c7ec827
+      TYPE_RELATIONS_REVIEWED: 'true'
+      CANDIDATE_SHA: 6787ff61d3516ad4d9064ec34b16b5514233d64e
+      CANDIDATE_TREE: 95ddc9104ad6015f54c10fb59987ef31a65eaa34
+      SOURCE_BRANCH: refs/heads/codex/m5-type-relations-20261018
       CONTROL_SHA: ${{ github.event.pull_request.head.sha }}
       PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
       PR_BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
       PR_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
       CC: clang-18
       CMAKE_BUILD_PARALLEL_LEVEL: '2'
     steps:
-      - name: Require safe normal checkout logging and a fresh source path
+      - name: Require admission, safe checkout logging and fresh paths
         env:
           RUNNER_DEBUG_ENABLED: ${{ runner.debug }}
+        shell: bash
         run: |
           case "$RUNNER_DEBUG_ENABLED" in
             ''|0) ;;
             *) printf 'phase=checkout-privacy-guard exit=1\n'; exit 1 ;;
           esac
-          if [ -e "$GITHUB_WORKSPACE/validation" ] || [ -e "$GITHUB_WORKSPACE/chibi" ] || ! git --version >/dev/null 2>&1; then
-            printf 'phase=checkout-privacy-guard exit=1\n'
-            exit 1
+          if [[ "$TYPE_RELATIONS_REVIEWED" != true || ! "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ||
+                ! "$CANDIDATE_TREE" =~ ^[0-9a-f]{40}$ ||
+                ! "$SOURCE_BRANCH" =~ ^refs/heads/codex/m5-type-relations-[0-9]{8}$ ]]; then
+            printf 'phase=checkout-admission-guard exit=1\n'; exit 1
           fi
+          for path in "$GITHUB_WORKSPACE/validation" "$GITHUB_WORKSPACE/chibi" \
+                      "$RUNNER_TEMP/chibi-m5-private" "$RUNNER_TEMP/chibi-m5-sanitized"; do
+            if [[ -e "$path" || -L "$path" ]]; then
+              printf 'phase=checkout-privacy-guard exit=1\n'; exit 1
+            fi
+          done
+          git --version >/dev/null 2>&1 || { printf 'phase=checkout-privacy-guard exit=1\n'; exit 1; }
           printf 'phase=checkout-privacy-guard exit=0\n'
 
       - name: Check out the immutable reviewed control candidate
@@ -54,14 +64,14 @@ jobs:
           persist-credentials: false
           path: validation
 
-      - name: Read the one engine branch, then require the immutable admitted identity
-        # Branch checkout avoids Git's detached-HEAD commit-subject message.
-        # A moved branch is rejected by prepare before any source execution.
+      - name: Read the one engine branch, then require its admitted identity
+        # Branch checkout avoids detached-HEAD commit-subject logging. A moved
+        # branch fails exact SHA/tree/cleanliness checks before source execution.
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: waldnercharles/chibi
           token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
-          ref: refs/heads/codex/m5-unit-analysis-20261018
+          ref: ${{ env.SOURCE_BRANCH }}
           fetch-depth: 1
           persist-credentials: false
           path: chibi
@@ -71,8 +81,7 @@ jobs:
           submodules: false
           lfs: false
 
-      - name: Verify exact source admission and record provenance
-        id: prepare
+      - name: Verify exact source admission
         run: bash validation/.github/scripts/toolchain-m5-validation.sh prepare
 
       - name: Acquire pinned build inputs
@@ -81,38 +90,21 @@ jobs:
       - name: Configure the standalone stage-zero language target
         run: bash validation/.github/scripts/toolchain-m5-validation.sh configure
 
-      - name: Build test_language, separately from test execution
+      - name: Build test_language separately from test execution
         run: bash validation/.github/scripts/toolchain-m5-validation.sh build
 
-      - name: Record the zero-ID red baseline under its own 60-second supervisor
-        if: steps.prepare.outputs.mode == 'red'
+      - name: Validate the full admitted type-relations selector once
         continue-on-error: true
         timeout-minutes: 2
         env:
-          SELECTOR: language-unit-analysis-zero-id
+          SELECTOR: language-type-relations-chibi
         run: bash validation/.github/scripts/toolchain-m5-validation.sh execute
 
-      - name: Record the independent deep-chain red baseline under its own 60-second supervisor
-        if: steps.prepare.outputs.mode == 'red'
-        continue-on-error: true
-        timeout-minutes: 2
-        env:
-          SELECTOR: language-unit-analysis-deep
-        run: bash validation/.github/scripts/toolchain-m5-validation.sh execute
-
-      - name: Validate the exact fixed candidate with the admitted full pico selector
-        if: steps.prepare.outputs.mode == 'green'
-        continue-on-error: true
-        timeout-minutes: 2
-        env:
-          SELECTOR: language-unit-analysis-chibi
-        run: bash validation/.github/scripts/toolchain-m5-validation.sh execute
-
-      - name: Classify runner-local logs into allowlisted public evidence
+      - name: Project runner-local logs into allowlisted public evidence
         if: always()
         run: bash validation/.github/scripts/toolchain-m5-validation.sh collect
 
-      - name: Upload sanitized evidence only
+      - name: Upload minimal evidence only
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

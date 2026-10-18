@@ -1,18 +1,17 @@
 {
+  "schema": 2,
   "expected_result": "green",
   "test_ceiling_seconds": 60,
   "build_parallelism": 2,
-  "control_base_sha": "bee5b54e159cce44ee52ca9439be587d9a95f5d2",
-  "source_sha": "ce379205fc529f8d5d2142bc6346e0079c7ec827",
-  "source_tree": "ebfae34988e334412d2239e3b277475391898edc",
-  "schema": 2,
-  "source_review_sha256": "d52e3645ab0768826712d3312e05dd12c0d31dcc1beed1dea78723f7c2ec33fd",
-  "route_review_sha256": "3276b42a59ef88cb8a29db7e85810c3e7770234b0e5bf1bd9b72d8d9a8962d68",
-  "baseline_evidence_sha256": "d4ec88911f4523f3231d0332fb12cb03e97c1e9386c5cb411fc58dc15c647313",
-  "checkout_policy": "single_qualified_branch_shallow_debug_disabled_identity_guard",
   "minimal_evidence": true,
+  "control_base_sha": "bee5b54e159cce44ee52ca9439be587d9a95f5d2",
   "host_repository": "waldnercharles/chibi-studio",
   "control_base_branch": "main",
   "control_branch": "codex/host-m5-unit-validation-20261018",
-  "source_branch": "refs/heads/codex/m5-unit-analysis-20261018"
+  "source_sha": "6787ff61d3516ad4d9064ec34b16b5514233d64e",
+  "source_tree": "95ddc9104ad6015f54c10fb59987ef31a65eaa34",
+  "source_branch": "refs/heads/codex/m5-type-relations-20261018",
+  "source_review_sha256": "3fb1bb23a174aafd5ba86a88af6dcb2ba43e4678a4b165858fe3740f28d0f236",
+  "route_review_sha256": "e63444a389fd0b92ee5ee4f1c8981e68e3a30cef44a236574d67f50e0647b0a6",
+  "checkout_policy": "single_qualified_branch_shallow_debug_disabled_identity_guard"
 }
