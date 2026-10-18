@@ -13,13 +13,13 @@ import sys
 
 sys.dont_write_bytecode = True
 # Deliberately fail closed until coordinator supplies the reviewed published pair.
-FINAL = '13a323fd2bdd7c3ca71169858f0dabeb3657fbef'
-ENGINE = '3284208070410c515af8de30158b5038c5994d3d'
+FINAL = '1d173d67e8a574c81eb24e1ce6113790770b6b89'
+ENGINE = '7bc6aa3cd69b29cfb006aab94d50d695007d9abe'
 PRODUCT = 'src/editor/studio/studio_shell.c'
 SUCCESS = 'Studio source edit accepted: frames=4 edits=1 undo=1 redo=1'
 PROTOTYPE_SUCCESS = 'Studio prototype source ownership accepted: frames=2 prototypes=4 actors=3 checkpoints=1'
 EDGE_SUCCESS = 'Prototype source edge controls: deleted_source_retained=1 queued_commands_quiet=1'
-REVIEWED_FILES = {'.github/engine-ref': 'aca5d3099fbeaf3fa4b3c4f1295af978d3a72381d9c76ad9b16aba5afda24a7c',
+REVIEWED_FILES = {'.github/engine-ref': '0aa450a62d7457af7dab66b47d1555806707bbd621c6d7a2c909dfb4fe967875',
  'EXTRACTION.json': '6ba07d702b911204cfb26fe9c257f03dd93f82a8308acdd22e36f32619d84bd9',
  'SDK_HEADERS.json': '56e445f1f418a6f5e838ecb05645748c40167e3ec5a146871e78ddedb02d874b',
  'src/editor/documents/asset_code.c': '88d4fc52daae2127fc78b212c8999b3adbc65ea88c8ec8899809093f6d700909',
@@ -50,7 +50,7 @@ REVIEWED_FILES = {'.github/engine-ref': 'aca5d3099fbeaf3fa4b3c4f1295af978d3a7238
 ENGINE_REVIEWED_FILES = {'src/authoring/source_prototype_edit.h': '94f01e0783d40fe3b574c94ba07850eb89356692d083d575c6a338ee6195017e',
  'src/authoring/source_prototype_edit.c': 'f980580b3f3e93a0b5cf52ce50990ca4a9604c336458b5e632379029901061bc',
  'sdk/source_authoring.cmake': 'd9f20ed5ea7f59e68cbc8681d52de1934e2af3af0514f853d0b5a0911191e61c',
- 'test/language/source_assets.c': '34ee007b734ad4b536448a2d3d608faf4fb9cf7687d8f08d1681530eb821d71a',
+ 'test/language/source_assets.c': 'ad88162a2898936e3331a557de2e46236b13f420bd6aebc888cda9e9b3915750',
  'test/language/main.c': 'b3e03cb31493e89cd9b421a42828373a4adf540161a1c05c596843cd44c966f0',
  'tools/test_policy.py': '899913e620109fc172e9c882a7d529df2996efbb5a581f95e641c239f50c0f6a',
  'docs/source-prototype-edits.md': '608a97f3334eae719909f9a88a4200bedb07461999d402f503049d82cbeba9b1'}

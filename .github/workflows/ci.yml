@@ -33,7 +33,7 @@ jobs:
       - name: Check out the immutable final Studio 71 candidate
         uses: actions/checkout@v4
         with:
-          ref: 13a323fd2bdd7c3ca71169858f0dabeb3657fbef
+          ref: 1d173d67e8a574c81eb24e1ce6113790770b6b89
           path: chibi-studio
           persist-credentials: false
       - name: Select the paired engine for a same-repository PR
@@ -50,7 +50,7 @@ jobs:
               exit 1
             fi
           fi
-          test "$ref" = 3284208070410c515af8de30158b5038c5994d3d
+          test "$ref" = 7bc6aa3cd69b29cfb006aab94d50d695007d9abe
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Require engine checkout access
         env:
@@ -200,7 +200,7 @@ jobs:
       - name: Check out the immutable paired Studio source
         uses: actions/checkout@v4
         with:
-          ref: 13a323fd2bdd7c3ca71169858f0dabeb3657fbef
+          ref: 1d173d67e8a574c81eb24e1ce6113790770b6b89
           path: chibi-studio
           persist-credentials: false
       - name: Require the reviewed engine pin and existing read access
@@ -208,12 +208,12 @@ jobs:
           TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
         run: |
           test -n "$TOKEN"
-          test "$(cat chibi-studio/.github/engine-ref)" = 3284208070410c515af8de30158b5038c5994d3d
+          test "$(cat chibi-studio/.github/engine-ref)" = 7bc6aa3cd69b29cfb006aab94d50d695007d9abe
       - uses: actions/checkout@v4
         with:
           repository: waldnercharles/chibi
           token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
-          ref: 3284208070410c515af8de30158b5038c5994d3d
+          ref: 7bc6aa3cd69b29cfb006aab94d50d695007d9abe
           path: chibi
           persist-credentials: false
       - name: Install CMake and Ninja
@@ -231,7 +231,7 @@ jobs:
       - name: Package the exact serial web SDK from source
         working-directory: chibi
         env:
-          ENGINE: 3284208070410c515af8de30158b5038c5994d3d
+          ENGINE: 7bc6aa3cd69b29cfb006aab94d50d695007d9abe
         run: |
           test "$(git rev-parse HEAD)" = "$ENGINE"
           test -z "$(git status --porcelain --untracked-files=normal)"
