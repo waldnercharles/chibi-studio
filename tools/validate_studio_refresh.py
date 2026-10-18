@@ -35,11 +35,36 @@ PRIOR_OWNERSHIP_EVIDENCE = {
     'status': 'verified intended source_owned_gesture failure',
     'assertion_line': 221,
 }
+# The edge negative passed on this identical product/engine/control pair.
+PRIOR_EDGE_EVIDENCE = {'run_id': 39154718997,
+ 'validation_revision': '01f1e11eb2ca91e2cfdb0adf2e84765737efa01e',
+ 'studio_revision': '9d329fd4899c361f2f68774963138e5e1b797779',
+ 'studio_tree': '776177eba14519ce20e79ae220906a3a044050ac',
+ 'engine_revision': '7bc6aa3cd69b29cfb006aab94d50d695007d9abe',
+ 'artifact_sha256': '48bde257c2215e1a6152f7b27543d1145aa5f3dde841eff21f704a7a34d34fc7',
+ 'inventory_file_sha256': '9ce3052411fa44703c752eb5b1070ee669d228a7389e978483a1ca49f669f1cb',
+ 'control_sha256': '788d104ec4478c3802fc0c223200ad1be14797d4e9e59b0c20f8ff6ce839526d',
+ 'policy_sha256': 'b9b006b3b773138d144bb028e06898565902a6177cf08e16e7c60679fb0487ef',
+ 'inventory': {'assertions': 264,
+               'binary_sha256': '1a1fc2d8b3e1d6ffe2a23ccdcdbc3e23bef35e11abf4c49729fad0274f251a34',
+               'cases': ['prototype_source_ownership'],
+               'expected_diagnostics': ['Prototype source edge controls: deleted_source_retained=0 '
+                                        'queued_commands_quiet=0'],
+               'failed': 1,
+               'frames_limit': 2,
+               'negative_assertion': 'prototype_source\\.h \\(703\\): deleted_source_retained && '
+                                     'queued_commands_quiet\\)',
+               'passed': 0,
+               'selector': '--prototype-source',
+               'status': 'verified-negative',
+               'suites': 0,
+               'total': 1}}
 # All retained files are from this dedicated allowlist directory. Logs and
 # rich preflight records remain ephemeral and are never artifact inputs.
 PUBLIC_DIRECTORY = None
 CURRENT_STAGE = 'startup'
 FAILURE_REASONS = {
+    'Prior edge evidence no longer matches reviewed workload': 'reused_edge_evidence_mismatch',
     'First negative failure is not its reviewed assertion': 'unexpected_first_assertion',
     'Compiled selector case identity differs from reviewed workload': 'case_inventory_mismatch',
     'Missing unique pico summary': 'missing_or_duplicate_case_summary',
@@ -798,6 +823,52 @@ def prototype_child(arguments):
         return run_commands([['xvfb-run', '-a', str(binary), selector, '--project-root', str(fixture)]], seconds=60)
 
 
+def prototype_markers(output, case):
+    # pico emits this exact case banner without a newline. The authority
+    # fixture's first stdout printf can immediately follow it on the same line.
+    # The caller first verifies the unique compiled case with pico_cases.
+    banner = 'Running: ' + case + ' '
+    lines = [line.removeprefix(banner) for line in output.splitlines()]
+    formats = (
+        ('edge', 'Prototype source edge controls:',
+         r'Prototype source edge controls: deleted_source_retained=(-?\d{1,10}) queued_commands_quiet=(-?\d{1,10})'),
+        ('authority', 'Prototype source authority:',
+         r'Prototype source authority: Code unchanged=(-?\d{1,10}), Properties unchanged=(-?\d{1,10})'),
+        ('intent', 'Prototype source intent:', r'Prototype source intent: retry_held=(-?\d{1,10})'),
+        ('frame', 'Prototype source frame:', r'Prototype source frame: held=(-?\d{1,10}), live=(-?\d{1,10})'),
+        ('disk', 'Prototype source disk:', r'Prototype source disk: conflict=(-?\d{1,10})'),
+        ('controls', 'Prototype source controls:',
+         r'Prototype source controls: notice_retained=(-?\d{1,10}) focus_retained=(-?\d{1,10}) enter_edits_draft=(-?\d{1,10})'),
+    )
+    edges, authority, records, malformed = [], [], [], 0
+    for line in lines:
+        for name, prefix, pattern in formats:
+            if not line.startswith(prefix):
+                continue
+            (edges if name == 'edge' else authority).append(line)
+            match = re.fullmatch(pattern, line)
+            records.append({name: list(map(int, match.groups())) if match else None})
+            malformed += match is None
+            break
+    # Only these fixed public grammar keys and integers reach retained evidence.
+    return edges, authority, {
+        'markers': records[:16], 'marker_count': len(records), 'malformed_markers': malformed,
+        'additional_markers': max(0, len(records) - 16),
+        'normalized_banners': sum(line.startswith(banner) for line in output.splitlines()),
+    }
+
+
+def reuse_edge_evidence(policy_sha256):
+    prior = PRIOR_EDGE_EVIDENCE
+    valid = (FINAL, FINAL_TREE, ENGINE) == (prior['studio_revision'], prior['studio_tree'], prior['engine_revision'])
+    valid &= canonical(EDGE_CONTROL) == prior['control_sha256']
+    valid &= policy_sha256 == prior['policy_sha256']
+    valid &= canonical(prior['inventory']) == 'bf85ed32c78b95a7036bd90998619c9edd8ab6cd2a4a569644e2d4bee338ed18'
+    require(valid, 'Prior edge evidence no longer matches reviewed workload')
+    save(PUBLIC_DIRECTORY / 'prior-edge-evidence.json', prior)
+    public_status('edges-negative-reuse', 'verified-negative', reused=True, cases=1, assertions=264)
+
+
 def prototype_test(args, label, source, artifact, env, authority=False):
     build, _, native, evidence = artifact
     selector = '--prototype-source-authority' if authority else '--prototype-source'
@@ -831,9 +902,9 @@ def prototype_test(args, label, source, artifact, env, authority=False):
     require((red and CONTROLS[label].get('authority', False)) == (red and authority), 'Control selector mismatch')
     inventory = pico_cases(code, output, [case], control['assertion'] if red else None)
     markers = control.get('required_markers', []) if red else ([AUTHORITY_DIAGNOSTIC, INTENT_SUCCESS, FRAME_SUCCESS, DISK_SUCCESS, CAPTURE_SUCCESS] if authority else [EDGE_SUCCESS])
-    observed_edges = [line for line in output.splitlines() if line.startswith('Prototype source edge controls:')]
+    observed_edges, observed_authority, observations = prototype_markers(output, case)
+    save(PUBLIC_DIRECTORY / (label + selector[1:] + '-markers.json'), observations)
     require(observed_edges == ([] if authority else markers), 'Studio edge diagnostics differ from the unique reviewed result')
-    observed_authority = [line for line in output.splitlines() if line.startswith(('Prototype source authority:', 'Prototype source intent:', 'Prototype source frame:', 'Prototype source disk:', 'Prototype source controls:'))]
     require(observed_authority == (markers if authority else []), 'Studio authority diagnostics differ from the unique reviewed result')
     require(output.splitlines().count(success) == (0 if red else 1), 'Prototype completion marker differs')
     if capture is not None:
@@ -921,6 +992,7 @@ def main():
     save(PUBLIC_DIRECTORY / 'policy-identity.json', {'policy_sha256': canonical(policy_hashes),
          'supervisor_sha256': policy_hashes['tools/test_policy.py'], 'seconds_limit': 60})
     controls, final_files = source_inputs(args)
+    reuse_edge_evidence(canonical(policy_hashes))
     require(ENGINE == PRIOR_ENGINE_EVIDENCE['engine_revision'], 'Prior engine evidence does not cover this pin')
     save(args.output / 'evidence/prior-engine-evidence.json', PRIOR_ENGINE_EVIDENCE)
     save(args.output / 'evidence/prior-ownership-evidence.json', PRIOR_OWNERSHIP_EVIDENCE)
@@ -928,6 +1000,8 @@ def main():
     env = graphics_environment(args)
     control_builds = []
     for label, source in controls.items():
+        if label == 'edges-red':
+            continue  # Exact successful prior evidence was checked above; do not rebuild/rerun.
         artifact = build_variant(args, label, source, sdk)
         control_builds.append(artifact[0])
         prototype_test(args, label, source, artifact, env, authority=CONTROLS[label].get('authority', False))
@@ -957,7 +1031,8 @@ def main():
     save(PUBLIC_DIRECTORY / 'summary.json', {
         'passed': True, 'scope': 'Studio-only exact-head validation',
         'engine_checks_reused': True, 'ownership_negative_reused': True,
-        'new_negative_controls': len(CONTROLS), 'clean_prototype_selectors': 2,
+        'edge_negative_reused': True,
+        'new_negative_controls': len(CONTROLS) - 1, 'clean_prototype_selectors': 2,
         'source_edit': {'frames': 4, 'edits': 1, 'undo': 1, 'redo': 1},
         'cpu': {'cases': 8, 'assertions': 3039}, 'seconds_limit_per_invocation': 60,
         'full_suite': 'not run', 'browser': 'not run',
