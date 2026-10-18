@@ -15,8 +15,8 @@ import zlib
 
 sys.dont_write_bytecode = True
 # Deliberately fail closed until coordinator supplies the reviewed published pair.
-FINAL = '9d329fd4899c361f2f68774963138e5e1b797779'
-FINAL_TREE = '776177eba14519ce20e79ae220906a3a044050ac'
+FINAL = '73ff33c4985f96c49078e215ac612db756e06c0a'
+FINAL_TREE = '14081bdd896955d298349d8ca56545bf6dfcaa73'
 ENGINE = '7bc6aa3cd69b29cfb006aab94d50d695007d9abe'
 # These completed engine checks are reused, never reconstructed here.
 PRIOR_ENGINE_EVIDENCE = {
@@ -35,7 +35,7 @@ PRIOR_OWNERSHIP_EVIDENCE = {
     'status': 'verified intended source_owned_gesture failure',
     'assertion_line': 221,
 }
-# The edge negative passed on this identical product/engine/control pair.
+# Historical results retain their actual head and binary; scoped equivalence is recorded below.
 PRIOR_EDGE_EVIDENCE = {'run_id': 39154718997,
  'validation_revision': '01f1e11eb2ca91e2cfdb0adf2e84765737efa01e',
  'studio_revision': '9d329fd4899c361f2f68774963138e5e1b797779',
@@ -59,7 +59,7 @@ PRIOR_EDGE_EVIDENCE = {'run_id': 39154718997,
                'status': 'verified-negative',
                'suites': 0,
                'total': 1}}
-# The authority negative is also complete on this identical product/control pair.
+# The authority negative completed before the changed fixture operations.
 PRIOR_AUTHORITY_EVIDENCE = {'run_id': 39155893168,
  'validation_revision': 'daf6f13d94ebe2633c2947ffc82c9c4b4ca6685c',
  'studio_revision': '9d329fd4899c361f2f68774963138e5e1b797779',
@@ -86,11 +86,63 @@ PRIOR_AUTHORITY_EVIDENCE = {'run_id': 39155893168,
                'status': 'verified-negative',
                'suites': 0,
                'total': 1}}
+# Intent completed with the strict first failure, markers and exit1 before the changed operations.
+PRIOR_INTENT_EVIDENCE = {'run_id': 39157069362,
+ 'validation_revision': '0310c5cbf8748de7c76e90c1cea58f08f30dbe01',
+ 'studio_revision': '9d329fd4899c361f2f68774963138e5e1b797779',
+ 'studio_tree': '776177eba14519ce20e79ae220906a3a044050ac',
+ 'engine_revision': '7bc6aa3cd69b29cfb006aab94d50d695007d9abe',
+ 'artifact_sha256': '99aa182ce136c73e03b0bde189e6c9ab10c2e726114685f54cf907a68b0f2418',
+ 'inventory_file_sha256': '083f7208e6be7e90453136eb61b90725f4a9404f8839268f7edd8d32a8af20fc',
+ 'control_sha256': 'e4cbccebfcb6cdd01b344a182babbe9bbd74000d953d7c8729e5c4ca417293ec',
+ 'policy_sha256': 'b9b006b3b773138d144bb028e06898565902a6177cf08e16e7c60679fb0487ef',
+ 'inventory': {'assertions': 472,
+               'binary_sha256': '560d3529530019def512145c507f0746d8620f3499b1d0e5261ef32f68c0bd11',
+               'cases': ['prototype_source_authority'],
+               'expected_diagnostics': ['Prototype source authority: Code unchanged=1, Properties '
+                                        'unchanged=1',
+                                        'Prototype source intent: retry_held=0',
+                                        'Prototype source frame: held=-1, live=-1',
+                                        'Prototype source disk: conflict=-1'],
+               'failed': 1,
+               'frames_limit': 2,
+               'negative_assertion': 'prototype_source_authority\\.h \\(839\\): test\\.retry_held '
+                                     '== 1\\)',
+               'passed': 0,
+               'selector': '--prototype-source-authority',
+               'status': 'verified-negative',
+               'suites': 0,
+               'total': 1}}
+# One reviewed fixture-only amendment; this is not exact-head execution evidence.
+REUSED_SOURCE_SCOPE = {'basis': 'independently reviewed unchanged exercised scope; historical binaries were not run on '
+          'the new head',
+ 'prior_studio_revision': '9d329fd4899c361f2f68774963138e5e1b797779',
+ 'prior_studio_tree': '776177eba14519ce20e79ae220906a3a044050ac',
+ 'studio_revision': '73ff33c4985f96c49078e215ac612db756e06c0a',
+ 'studio_tree': '14081bdd896955d298349d8ca56545bf6dfcaa73',
+ 'engine_revision': '7bc6aa3cd69b29cfb006aab94d50d695007d9abe',
+ 'only_changed_file': 'tests/acceptance/prototype_source_authority.h',
+ 'prior_file_sha256': '4edb6d7e4d0b6e025d660c5ce9ad43de03e1b329fd7643b7eb5e56e777c3490c',
+ 'file_sha256': '4bf10c84b6b2902bd0ab5f4ff797bd980ba7918b679bf526e2075c157d3e946a',
+ 'reviewed_patch_sha256': '9b0ad8180abb04b43220842cc9fb4e775ecd2de0ddf1e0dc96da557a9ed956a7',
+ 'edges': {'prior_assertion_line': 703,
+           'candidate_assertion_line': 703,
+           'scope': 'unchanged ownership selector, fixture, control and entrypoint; authority '
+                    'contract not invoked'},
+ 'authority': {'prior_assertion_line': 837,
+               'candidate_assertion_line': 851,
+               'scope': 'unchanged source_guard false return before authority_conflicts; unchanged '
+                        'cleanup and final guards'},
+ 'intent': {'prior_assertion_line': 839,
+            'candidate_assertion_line': 853,
+            'scope': 'unchanged retry_held false return before invalid-draft loop; unchanged '
+                     'cleanup and final guards'}}
 # All retained files are from this dedicated allowlist directory. Logs and
 # rich preflight records remain ephemeral and are never artifact inputs.
 PUBLIC_DIRECTORY = None
 CURRENT_STAGE = 'startup'
 FAILURE_REASONS = {
+    'Prior intent evidence no longer matches reviewed workload': 'reused_intent_evidence_mismatch',
     'Prior authority evidence no longer matches reviewed workload': 'reused_authority_evidence_mismatch',
     'Prior edge evidence no longer matches reviewed workload': 'reused_edge_evidence_mismatch',
     'First negative failure is not its reviewed assertion': 'unexpected_first_assertion',
@@ -157,7 +209,7 @@ REVIEWED_FILES = {'.github/engine-ref': '0aa450a62d7457af7dab66b47d1555806707bbd
  'tests/acceptance/README.md': 'e258405389d955a43240c69a03b7dd3499c68a4e90bbfbff0babc7355742e086',
  'tests/acceptance/main.c': 'f62699332037f6a677ae713bc5f6fc0cf586c744d8b2860c89564a2bf0309c00',
  'tests/acceptance/prototype_source.h': '61c08b44b025cd63494b5c9097e2d35f928c2e8d3dc16e1f32ec4b45e9f9688f',
- 'tests/acceptance/prototype_source_authority.h': '4edb6d7e4d0b6e025d660c5ce9ad43de03e1b329fd7643b7eb5e56e777c3490c',
+ 'tests/acceptance/prototype_source_authority.h': '4bf10c84b6b2902bd0ab5f4ff797bd980ba7918b679bf526e2075c157d3e946a',
  'tests/acceptance/prototype_source_capture.h': '525a1436a4673e4c7c51fbe5eec2cd24d48276aa3c7c30fe15e45bca5dded2f9',
  'tests/acceptance/scene_move.h': '9a84ba7af42c74f384f0bd4db432b4d29aad66a580317c22a3f35bcdb29e07f2',
  'tests/acceptance/source_action_outcomes.h': 'efdb4571214e15a104428f68e0fcf8b9835e222264908fca076a79898a098f32',
@@ -199,7 +251,7 @@ EDGE_CONTROL = {'assertion': 'prototype_source\\.h \\(703\\): deleted_source_ret
                                                                                  '{'}],
                                                      'sha256': '88812cce2791a700932a476362c84ebbf660c9d2d23246c25f2c1416322d1e20'}},
  'required_markers': ['Prototype source edge controls: deleted_source_retained=0 queued_commands_quiet=0']}
-AUTHORITY_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(837\\): test\\.code_authority && '
+AUTHORITY_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(851\\): test\\.code_authority && '
               'test\\.property_authority\\)',
  'files': {'src/editor/documents/prototype_source_input.c': {'after': '    if (gate == '
                                                                       'COLLAB_ACTION_PENDING) {\n'
@@ -225,7 +277,7 @@ AUTHORITY_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(837\\): tes
                       'Prototype source intent: retry_held=-1',
                       'Prototype source frame: held=-1, live=-1',
                       'Prototype source disk: conflict=-1']}
-INTENT_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(839\\): test\\.retry_held == 1\\)',
+INTENT_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(853\\): test\\.retry_held == 1\\)',
  'files': {'src/editor/documents/prototype_source_input.c': {'after': '    bool live = '
                                                                       '!asset_code_runtime_held(asset->source);\n',
                                                              'before': '    bool live = input->live;\n',
@@ -235,7 +287,7 @@ INTENT_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(839\\): test\\
                       'Prototype source intent: retry_held=0',
                       'Prototype source frame: held=-1, live=-1',
                       'Prototype source disk: conflict=-1']}
-FRAME_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(840\\): test\\.frame_held == 1 && test\\.frame_live == 1\\)',
+FRAME_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(854\\): test\\.frame_held == 1 && test\\.frame_live == 1\\)',
  'files': {'src/editor/studio/studio_code.c': {'after': '                    if (!s->prefs.code_apply_live '
                                                         '&& asset_code_canonical_dirty(code)) {\n'
                                                         '                        '
@@ -253,7 +305,7 @@ FRAME_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(840\\): test\\.
                       'Prototype source intent: retry_held=1',
                       'Prototype source frame: held=0, live=0',
                       'Prototype source disk: conflict=1']}
-DISK_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(841\\): test\\.disk_conflict == 1\\)',
+DISK_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(855\\): test\\.disk_conflict == 1\\)',
  'files': {'src/editor/documents/prototype_source_input.c': {'after': '        if '
                                                                       '(asset_code_prepare_refresh(asset->source, '
                                                                       '&disk, error, sizeof error) &&\n'
@@ -910,7 +962,11 @@ def prototype_markers(output, case):
 
 def reuse_edge_evidence(policy_sha256):
     prior = PRIOR_EDGE_EVIDENCE
-    valid = (FINAL, FINAL_TREE, ENGINE) == (prior['studio_revision'], prior['studio_tree'], prior['engine_revision'])
+    scope = REUSED_SOURCE_SCOPE
+    valid = (FINAL, FINAL_TREE, ENGINE) == (scope['studio_revision'], scope['studio_tree'], scope['engine_revision'])
+    valid &= (prior['studio_revision'], prior['studio_tree'], prior['engine_revision']) == (
+        scope['prior_studio_revision'], scope['prior_studio_tree'], scope['engine_revision'])
+    valid &= REVIEWED_FILES[scope['only_changed_file']] == scope['file_sha256']
     valid &= canonical(EDGE_CONTROL) == prior['control_sha256']
     valid &= policy_sha256 == prior['policy_sha256']
     valid &= canonical(prior['inventory']) == 'bf85ed32c78b95a7036bd90998619c9edd8ab6cd2a4a569644e2d4bee338ed18'
@@ -921,13 +977,38 @@ def reuse_edge_evidence(policy_sha256):
 
 def reuse_authority_evidence(policy_sha256):
     prior = PRIOR_AUTHORITY_EVIDENCE
-    valid = (FINAL, FINAL_TREE, ENGINE) == (prior['studio_revision'], prior['studio_tree'], prior['engine_revision'])
-    valid &= canonical(CONTROLS['authority-red']) == prior['control_sha256']
+    scope = REUSED_SOURCE_SCOPE
+    valid = (FINAL, FINAL_TREE, ENGINE) == (scope['studio_revision'], scope['studio_tree'], scope['engine_revision'])
+    valid &= (prior['studio_revision'], prior['studio_tree'], prior['engine_revision']) == (
+        scope['prior_studio_revision'], scope['prior_studio_tree'], scope['engine_revision'])
+    valid &= REVIEWED_FILES[scope['only_changed_file']] == scope['file_sha256']
+    control = dict(CONTROLS['authority-red'])
+    valid &= control['assertion'] == r'prototype_source_authority\.h \(851\): test\.code_authority && test\.property_authority\)'
+    control['assertion'] = prior['inventory']['negative_assertion']
+    valid &= canonical(control) == prior['control_sha256']
     valid &= policy_sha256 == prior['policy_sha256']
     valid &= canonical(prior['inventory']) == '974f7998b91cc2c0cdee6a0e2b6304e5f7e681ba44f108e617648a2fffca42c9'
     require(valid, 'Prior authority evidence no longer matches reviewed workload')
     save(PUBLIC_DIRECTORY / 'prior-authority-evidence.json', prior)
     public_status('authority-negative-reuse', 'verified-negative', reused=True, cases=1, assertions=348)
+
+
+def reuse_intent_evidence(policy_sha256):
+    prior = PRIOR_INTENT_EVIDENCE
+    scope = REUSED_SOURCE_SCOPE
+    valid = (FINAL, FINAL_TREE, ENGINE) == (scope['studio_revision'], scope['studio_tree'], scope['engine_revision'])
+    valid &= (prior['studio_revision'], prior['studio_tree'], prior['engine_revision']) == (
+        scope['prior_studio_revision'], scope['prior_studio_tree'], scope['engine_revision'])
+    valid &= REVIEWED_FILES[scope['only_changed_file']] == scope['file_sha256']
+    control = dict(CONTROLS['intent-red'])
+    valid &= control['assertion'] == r'prototype_source_authority\.h \(853\): test\.retry_held == 1\)'
+    control['assertion'] = prior['inventory']['negative_assertion']
+    valid &= canonical(control) == prior['control_sha256']
+    valid &= policy_sha256 == prior['policy_sha256']
+    valid &= canonical(prior['inventory']) == 'a0b7b95f1d89469d42a659c54a02256d737b7feeef3dc24f852955c480b3aacf'
+    require(valid, 'Prior intent evidence no longer matches reviewed workload')
+    save(PUBLIC_DIRECTORY / 'prior-intent-evidence.json', prior)
+    public_status('intent-negative-reuse', 'verified-negative', reused=True, cases=1, assertions=472)
 
 
 def prototype_test(args, label, source, artifact, env, authority=False):
@@ -1055,6 +1136,8 @@ def main():
     controls, final_files = source_inputs(args)
     reuse_edge_evidence(canonical(policy_hashes))
     reuse_authority_evidence(canonical(policy_hashes))
+    reuse_intent_evidence(canonical(policy_hashes))
+    save(PUBLIC_DIRECTORY / 'reused-source-scope.json', REUSED_SOURCE_SCOPE)
     require(ENGINE == PRIOR_ENGINE_EVIDENCE['engine_revision'], 'Prior engine evidence does not cover this pin')
     save(args.output / 'evidence/prior-engine-evidence.json', PRIOR_ENGINE_EVIDENCE)
     save(args.output / 'evidence/prior-ownership-evidence.json', PRIOR_OWNERSHIP_EVIDENCE)
@@ -1062,8 +1145,8 @@ def main():
     env = graphics_environment(args)
     control_builds = []
     for label, source in controls.items():
-        if label in ('edges-red', 'authority-red'):
-            continue  # Exact successful prior evidence was checked above; do not rebuild/rerun.
+        if label in ('edges-red', 'authority-red', 'intent-red'):
+            continue  # Historical results and reviewed unchanged exercised scope were checked above.
         artifact = build_variant(args, label, source, sdk)
         control_builds.append(artifact[0])
         prototype_test(args, label, source, artifact, env, authority=CONTROLS[label].get('authority', False))
@@ -1093,8 +1176,8 @@ def main():
     save(PUBLIC_DIRECTORY / 'summary.json', {
         'passed': True, 'scope': 'Studio-only exact-head validation',
         'engine_checks_reused': True, 'ownership_negative_reused': True,
-        'edge_negative_reused': True, 'authority_negative_reused': True,
-        'new_negative_controls': len(CONTROLS) - 2, 'clean_prototype_selectors': 2,
+        'edge_negative_reused': True, 'authority_negative_reused': True, 'intent_negative_reused': True,
+        'new_negative_controls': len(CONTROLS) - 3, 'clean_prototype_selectors': 2,
         'source_edit': {'frames': 4, 'edits': 1, 'undo': 1, 'redo': 1},
         'cpu': {'cases': 8, 'assertions': 3039}, 'seconds_limit_per_invocation': 60,
         'full_suite': 'not run', 'browser': 'not run',
