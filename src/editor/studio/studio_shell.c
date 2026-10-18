@@ -385,7 +385,9 @@ bool studio_can_replay(studio *s, bool redo)
     }
     if (scene->document.kind == APP_EDITOR_DOCUMENT_PROTOTYPE) {
         scene_prototype_asset *asset = selected_prototype(scene);
-        return asset && acount(redo ? asset->redo : asset->undo) > 0;
+        return asset &&
+               (asset->source ? asset_code_can_replay(asset->source, redo)
+                              : acount(redo ? asset->redo : asset->undo) > 0);
     }
     return redo ? scene_history_can_redo(scene->history)
                 : scene_history_can_undo(scene->history);
@@ -433,6 +435,8 @@ static void document_history(studio *s, bool redo)
                    : replay_scene_edit(s->scene, redo);
     if (result == 0) {
         studio_report(s, redo ? "Redo" : "Undo");
+    } else if (result > 0) {
+        studio_error(s, "Edited, but not applied", s->scene->prototype_message);
     }
 }
 

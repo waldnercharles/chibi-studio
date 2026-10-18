@@ -139,6 +139,14 @@ int app_scene_authoring_read_prototype_field(
     const char *field,
     pin_value *value
 );
+/* Prototype mutation commands return 0 when applied/no-op, 1 when queued
+ * with the collaboration host, 2 when accepted but runtime application failed,
+ * and -1 when rejected. Accepted edits retain their source and history. */
+enum
+{
+    APP_PROTOTYPE_EDIT_PENDING = 1,
+    APP_PROTOTYPE_EDIT_NOT_APPLIED = 2
+};
 int app_scene_authoring_set_prototype_field(
     app_scene_authoring *scene,
     const char *prototype_name,

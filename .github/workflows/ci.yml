@@ -1,5 +1,5 @@
 # Temporary validation child only. Do not merge this workflow into the product PR.
-name: PR71 source-tab lifecycle validation
+name: PR71 prototype source bridge validation
 
 on:
   pull_request:
@@ -20,7 +20,7 @@ env:
 
 jobs:
   studio:
-    name: Bounded red/green Save and Discard acceptance
+    name: Bounded prototype bridge contracts
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -33,14 +33,8 @@ jobs:
       - name: Check out the immutable final Studio 71 candidate
         uses: actions/checkout@v4
         with:
-          ref: a5dc980a8d066288c23c55b349d68528c5a13a95
+          ref: 13a323fd2bdd7c3ca71169858f0dabeb3657fbef
           path: chibi-studio
-          persist-credentials: false
-      - name: Read the immutable old products for the red controls
-        uses: actions/checkout@v4
-        with:
-          ref: 95ca95bc3ca2da5b899ec06596982ade26d2d94f
-          path: chibi-studio-baseline
           persist-credentials: false
       - name: Select the paired engine for a same-repository PR
         id: engine
@@ -56,7 +50,7 @@ jobs:
               exit 1
             fi
           fi
-          test "$ref" = ff6d06c888fe660894776255ec7f9fc507db6393
+          test "$ref" = 3284208070410c515af8de30158b5038c5994d3d
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Require engine checkout access
         env:
@@ -173,20 +167,97 @@ jobs:
         run: |
           python3 "$GITHUB_WORKSPACE/validation/tools/validate_studio_refresh.py" \
             --source "$GITHUB_WORKSPACE/chibi-studio" \
-            --baseline "$GITHUB_WORKSPACE/chibi-studio-baseline" \
             --engine "$GITHUB_WORKSPACE/chibi" \
             --sdk "$GITHUB_WORKSPACE/chibi/dist/sdk" \
             --validation "$GITHUB_WORKSPACE/validation" \
-            --output "$RUNNER_TEMP/studio-lifecycle-validation"
+            --output "$RUNNER_TEMP/studio-prototype-validation"
       - name: Retain bounded validation evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: studio71-lifecycle-evidence
+          name: studio71-prototype-evidence
           path: |
-            ${{ runner.temp }}/studio-lifecycle-validation/logs
-            ${{ runner.temp }}/studio-lifecycle-validation/evidence
-            ${{ runner.temp }}/studio-lifecycle-validation/summary.json
+            ${{ runner.temp }}/studio-prototype-validation/logs
+            ${{ runner.temp }}/studio-prototype-validation/evidence
+            ${{ runner.temp }}/studio-prototype-validation/summary.json
           if-no-files-found: warn
           retention-days: 3
 
+  wasm:
+    name: Bounded serial Wasm prototype source contract
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    # Existing serial web SDK job build budget; the test itself remains 60s.
+    timeout-minutes: 30
+    env:
+      EMSDK_VERSION: 6.0.10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: validation
+          persist-credentials: false
+      - name: Check out the immutable paired Studio source
+        uses: actions/checkout@v4
+        with:
+          ref: 13a323fd2bdd7c3ca71169858f0dabeb3657fbef
+          path: chibi-studio
+          persist-credentials: false
+      - name: Require the reviewed engine pin and existing read access
+        env:
+          TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
+        run: |
+          test -n "$TOKEN"
+          test "$(cat chibi-studio/.github/engine-ref)" = 3284208070410c515af8de30158b5038c5994d3d
+      - uses: actions/checkout@v4
+        with:
+          repository: waldnercharles/chibi
+          token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
+          ref: 3284208070410c515af8de30158b5038c5994d3d
+          path: chibi
+          persist-credentials: false
+      - name: Install CMake and Ninja
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build
+          python3 -m venv /tmp/cmake
+          /tmp/cmake/bin/pip install 'cmake>=4.2,<5'
+          echo /tmp/cmake/bin >> "$GITHUB_PATH"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: ${{ env.EMSDK_VERSION }}
+      - name: Install the host reflection compiler
+        run: sudo apt-get install -y --no-install-recommends clang-18 libclang-18-dev
+      - name: Package the exact serial web SDK from source
+        working-directory: chibi
+        env:
+          ENGINE: 3284208070410c515af8de30158b5038c5994d3d
+        run: |
+          test "$(git rev-parse HEAD)" = "$ENGINE"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          make package-web-sdk WEB_SDK_PREFIX="$GITHUB_WORKSPACE/sdk" \
+            LIBCLANG_ROOT=/usr/lib/llvm-18 \
+            NATIVE_TOOLCHAIN_FLAGS='-DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18' \
+            WEB_THREADS=0 JOBS=2
+          test -z "$(git status --porcelain --untracked-files=normal)"
+      - name: Build and run only the reviewed serial Wasm C cases
+        working-directory: chibi
+        run: |
+          python3 "$GITHUB_WORKSPACE/validation/tools/validate_studio_refresh.py" \
+            --wasm-only \
+            --source "$GITHUB_WORKSPACE/chibi-studio" \
+            --engine "$GITHUB_WORKSPACE/chibi" \
+            --sdk "$GITHUB_WORKSPACE/sdk" \
+            --validation "$GITHUB_WORKSPACE/validation" \
+            --output "$RUNNER_TEMP/studio-prototype-wasm-validation"
+      - name: Retain bounded Wasm validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio71-prototype-wasm-evidence
+          path: |
+            ${{ runner.temp }}/studio-prototype-wasm-validation/logs
+            ${{ runner.temp }}/studio-prototype-wasm-validation/evidence
+            ${{ runner.temp }}/studio-prototype-wasm-validation/summary.json
+          if-no-files-found: warn
+          retention-days: 3

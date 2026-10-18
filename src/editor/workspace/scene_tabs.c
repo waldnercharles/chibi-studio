@@ -7,6 +7,7 @@
 #include "graph/document/serialize.h"
 #include "support/array.h"
 #include "support/asset_text.h"
+#include "support/text_overlay.h"
 #include "support/xalloc.h"
 
 #include <assert.h>
@@ -520,6 +521,19 @@ void scene_tabs_document_selected(
     }
 }
 
+void scene_tabs_ensure_prototype(app_scene_authoring *scene, scene_prototype_asset *asset)
+{
+    scene_document_tab *tab = add_tab(
+        scene,
+        APP_EDITOR_DOCUMENT_PROTOTYPE,
+        asset->prototype->name,
+        asset->path
+    );
+    if (tab) {
+        tab->source_only = true;
+    }
+}
+
 int scene_tabs_open_source(
     app_scene_authoring *scene,
     app_editor_document_kind kind,
@@ -850,6 +864,12 @@ static bool authored_values_equal(av_value *a, av_value *b)
 
 bool scene_tabs_dirty(app_scene_authoring *scene, const scene_document_tab *tab)
 {
+    scene_prototype_asset *source = tab->kind == APP_EDITOR_DOCUMENT_PROTOTYPE
+                                      ? scene_prototype_for_path(scene, tab->path)
+                                      : NULL;
+    if (source && scene_prototype_source_owned(source)) {
+        return scene_prototype_dirty(source);
+    }
     if (tab->source_only || tab->source_dirty) {
         return tab->source_dirty;
     }
@@ -988,6 +1008,17 @@ static int discard_system(app_scene_authoring *scene, scene_document_tab *tab)
 static int discard_tab(app_scene_authoring *scene, int index)
 {
     scene_document_tab *tab = &scene->tabs[index];
+    scene_prototype_asset *asset = tab->kind == APP_EDITOR_DOCUMENT_PROTOTYPE
+                                     ? scene_prototype_for_path(scene, tab->path)
+                                     : NULL;
+    if (asset && scene_prototype_source_owned(asset)) {
+        int result = scene_prototype_source_reload(scene, asset);
+        if (result >= 0) {
+            text_overlay_set(asset->path, NULL);
+            asset_code_adopt_overlay(asset->source);
+        }
+        return result < 0 ? -1 : 0;
+    }
     if (tab->source_only) {
         return 0;
     }

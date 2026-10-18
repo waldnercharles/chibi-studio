@@ -131,6 +131,16 @@ void properties_subject_of(studio *s, properties_subject *out)
                      APP_EDITOR_DOCUMENT_PROTOTYPE;
     *out = (properties_subject){ .asset = prototype ? selected_prototype(scene) : NULL,
                                  .locked = !studio_editable(s) };
+    if (out->asset && scene_prototype_source_owned(out->asset)) {
+        char error[256];
+        asset_code *code = scene_prototype_source_session(scene, out->asset, error, sizeof error);
+        if (!code ||
+            scene_prototype_source_sync(scene, out->asset, !asset_code_runtime_held(code)) <
+                0) {
+            out->asset = NULL;
+            out->locked = true;
+        }
+    }
     out->actor = prototype ? NULL : selected_actor(scene);
     if (!out->actor && !prototype) {
         out->actor = spawned_actor(scene, &out->spawned);
@@ -830,16 +840,59 @@ static void edit_prototype(studio *s, const edit *e)
     pin_read_field(component->data, field, &value);
     const void *original = value.ptr;
     char key[192];
-    snprintf(key, sizeof key, "%s.%s", desc->name, field->name);
+    snprintf(
+        key,
+        sizeof key,
+        "%s.%s.%s.%s",
+        asset->prototype->name,
+        desc->name,
+        field->name,
+        e->axis
+    );
     if (parse_field(desc, field, e->text, e->axis, &value) && editable_scalar(&value)) {
-        if (strcmp(s->prototype_edit, key)) {
-            prototype_history_before(s->scene, asset->prototype);
-            snprintf(s->prototype_edit, sizeof s->prototype_edit, "%s", key);
+        if (scene_prototype_source_owned(asset)) {
+            char path[192];
+            snprintf(path, sizeof path, "%s", field->name);
+            pin_value leaf = value;
+            const type_desc *vector = properties_vector(&value);
+            for (int i = 0; vector && i < vector->field_count; i++) {
+                if (!strcmp(vector->fields[i].name, e->axis)) {
+                    snprintf(path, sizeof path, "%s.%s", field->name, e->axis);
+                    pin_read_field(value.ptr, &vector->fields[i], &leaf);
+                    break;
+                }
+            }
+            authoring_prototype_edit change = { .kind = AUTHORING_PROTOTYPE_SET_FIELD,
+                                                .component = desc->name,
+                                                .field = path,
+                                                .value = leaf };
+            int result = scene_prototype_source_edit(
+                s->scene,
+                asset,
+                &change,
+                1,
+                !strcmp(s->prototype_edit, key)
+            );
+            if (result) {
+                studio_error(
+                    s,
+                    result < 0 ? "Could not edit prototype" : "Edited, but not applied",
+                    s->scene->prototype_message
+                );
+            }
+        } else {
+            if (strcmp(s->prototype_edit, key)) {
+                prototype_history_before(s->scene, asset->prototype);
+            }
+            write_prototype_field(s->scene, asset, desc->name, field->name, value);
         }
-        write_prototype_field(s->scene, asset, desc->name, field->name, value);
+        snprintf(s->prototype_edit, sizeof s->prototype_edit, "%s", key);
     }
     if (!e->active) {
         s->prototype_edit[0] = '\0';
+        if (asset->source) {
+            asset_code_end_typing(asset->source);
+        }
     }
     if (value.type == PIN_STRUCT && value.ptr != original) {
         free(value.ptr);
@@ -1071,6 +1124,10 @@ static int add_to_target(studio *s, const ecs_component_desc *desc, char target[
         if (added < 0) {
             studio_error(s, "Could not add component", scene->prototype_message);
         }
+        if (added == APP_PROTOTYPE_EDIT_NOT_APPLIED) {
+            studio_error(s, "Edited, but not applied", scene->prototype_message);
+            return 0;
+        }
         return added;
     }
     scene_actor *actor = scene_actor_by_identity(scene, s->components.object);
@@ -1226,16 +1283,28 @@ static void remove_component(studio *s, scene_prototype_asset *asset)
     char label[128], title[320];
     editor_component_label(name, label, sizeof label);
     snprintf(title, sizeof title, "Removed %s from %s", label, asset->prototype->name);
-    if (app_scene_authoring_remove_prototype_component(
-            s->scene,
-            asset->prototype->name,
-            name
-        ) != 0) {
+    int result = app_scene_authoring_remove_prototype_component(
+        s->scene,
+        asset->prototype->name,
+        name
+    );
+    if (result == APP_PROTOTYPE_EDIT_PENDING) {
+        return;
+    }
+    if (result < 0) {
         studio_error(s, "Could not remove component", s->scene->prototype_message);
         return;
     }
     removed_toast(s, title);
-    s->components.step = alast(asset->undo);
+    if (!result &&
+        strstr(s->scene->prototype_message, "Inherited composition is now local")) {
+        studio_report(s, s->scene->prototype_message);
+    }
+    if (result == APP_PROTOTYPE_EDIT_NOT_APPLIED) {
+        studio_error(s, "Edited, but not applied", s->scene->prototype_message);
+    }
+    s->components.step = asset->source ? asset_code_step(asset->source)
+                                       : alast(asset->undo);
     s->components.scene_step = 0;
 }
 
@@ -1267,7 +1336,11 @@ static bool removal_current(studio *s)
     scene_prototype_asset *asset = scene->document.kind == APP_EDITOR_DOCUMENT_PROTOTYPE
                                      ? selected_prototype(scene)
                                      : NULL;
-    return asset && acount(asset->undo) && alast(asset->undo) == s->components.step;
+    return asset &&
+           (asset->source
+                ? asset_code_can_replay(asset->source, false) &&
+                      asset_code_step(asset->source) == s->components.step
+                : acount(asset->undo) && alast(asset->undo) == s->components.step);
 }
 
 static int undo_removal(studio *s)
@@ -1287,8 +1360,13 @@ void studio_component_toast(studio *s)
     bool current = removal_current(s);
     if (kit_toast_action(s->kit, toast)) {
         s->components.toast = 0;
-        if (current && studio_editable(s) && undo_removal(s) == 0) {
-            studio_report(s, "Undo");
+        if (current && studio_editable(s)) {
+            int result = undo_removal(s);
+            if (!result) {
+                studio_report(s, "Undo");
+            } else if (result > 0) {
+                studio_error(s, "Edited, but not applied", s->scene->prototype_message);
+            }
         }
         return;
     }

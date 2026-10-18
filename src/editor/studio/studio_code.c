@@ -82,6 +82,11 @@ static scene_document_tab *active_asset(studio *s)
 static void capture_asset(studio *s, asset_code *code)
 {
     refresh_asset_catalog(s->scene);
+    scene_prototype_asset *prototype = scene_prototype_for_path(s->scene, asset_code_path(code));
+    if (prototype && scene_prototype_source_owned(prototype)) {
+        scene_prototype_source_capture(s->scene, prototype);
+        return;
+    }
     for (int i = 0; i < acount(s->scene->tabs); i++) {
         scene_document_tab *tab = &s->scene->tabs[i];
         if (!tab->path || strcmp(tab->path, asset_code_path(code))) {
@@ -101,6 +106,23 @@ bool studio_code_replace(studio *s, const char *path, const char *before, const 
     }
     if (!open) {
         return false;
+    }
+    scene_prototype_asset *prototype = scene_prototype_for_path(s->scene, path);
+    if (prototype && scene_prototype_source_owned(prototype)) {
+        char error[256];
+        asset_code *code = scene_prototype_source_session(s->scene, prototype, error, sizeof error);
+        if (!code || !asset_code_replace_with_metadata(code, before, text, metadata)) {
+            return false;
+        }
+        if (!s->prefs.code_apply_live && asset_code_dirty(code)) {
+            asset_code_hold_runtime(code, true);
+        }
+        int result = scene_prototype_source_sync(s->scene, prototype, s->prefs.code_apply_live);
+        if (result > 0) {
+            studio_error(s, "Edited, but not applied", s->scene->prototype_message);
+        }
+        scene_prototype_source_capture(s->scene, prototype);
+        return true;
     }
     for (int i = 0; i < acount(s->code.assets); i++) {
         asset_code *code = s->code.assets[i];
@@ -131,6 +153,30 @@ static const authoring_reference *source_reference(const asset_code *code, int o
 
 static asset_code *asset_editor(studio *s, scene_document_tab *tab)
 {
+    scene_prototype_asset *prototype = tab->kind == APP_EDITOR_DOCUMENT_PROTOTYPE
+                                         ? scene_prototype_for_path(s->scene, tab->path)
+                                         : NULL;
+    if (prototype && scene_prototype_source_owned(prototype)) {
+        char error[256];
+        asset_code *shared = scene_prototype_source_session(s->scene, prototype, error, sizeof error);
+        if (!shared) {
+            studio_warn(s, error);
+            return NULL;
+        }
+        for (int i = 0; i < acount(s->code.assets); i++) {
+            if (strcmp(asset_code_path(s->code.assets[i]), asset_code_path(shared))) {
+                continue;
+            }
+            if (s->code.assets[i] != shared) {
+                asset_code_free(s->code.assets[i]);
+                s->code.assets[i] = asset_code_retain(shared);
+            }
+            return asset_context(s, shared);
+        }
+        apush(s->code.assets, asset_code_retain(shared));
+        return asset_context(s, shared);
+    }
+
     for (int i = 0; i < acount(s->code.assets); i++) {
         asset_code *code = s->code.assets[i];
         if (strcmp(asset_code_path(code), tab->path)) {
@@ -199,6 +245,19 @@ static bool sync_asset_graph(studio *s, asset_code *code)
 
 static void save_asset(studio *s, asset_code *code)
 {
+    scene_prototype_asset *prototype = scene_prototype_for_path(s->scene, asset_code_path(code));
+    if (prototype && scene_prototype_source_owned(prototype)) {
+        int result = scene_prototype_source_save(s->scene, prototype);
+        if (result) {
+            studio_error(
+                s,
+                result < 0 ? "Could not save" : "Saved, but not applied",
+                s->scene->prototype_message
+            );
+        }
+        return;
+    }
+
     scene_document_tab *saving = active_asset(s);
     if (saving && saving->source_only) {
         asset_code_time(code, s->time + 0.2);
@@ -322,6 +381,24 @@ ui_buffer *studio_ui_buffer(studio *s)
    checkpoint until the reload succeeds so an unreadable file loses no edits. */
 app_disk_result studio_code_reload_path(studio *s, const char *path)
 {
+    scene_prototype_asset *prototype = scene_prototype_for_path(s->scene, path);
+    if (prototype && scene_prototype_source_owned(prototype)) {
+        /* Target acceptance and dependent warnings are distinct. Never put an
+         * old cached overlay back over a successfully reloaded source owner. */
+        app_disk_result result = app_scene_authoring_reload_path(s->scene, path);
+        for (int i = acount(s->code.assets) - 1; i >= 0; i--) {
+            asset_code *code = s->code.assets[i];
+            if (!strcmp(asset_code_path(code), path) && code != prototype->source) {
+                if (s->code.editor == asset_code_editor(code)) {
+                    s->code.editor = NULL;
+                }
+                asset_code_free(code);
+                adel(s->code.assets, i);
+            }
+        }
+        scene_prototype_source_capture(s->scene, prototype);
+        return result;
+    }
     const char *current = text_overlay_text(path);
     char *overlay = current ? xstrdup(current) : NULL;
     if (overlay) {
@@ -680,6 +757,15 @@ void studio_code_frame(studio *s)
         if (code) {
             bool pending = asset_code_pending(code);
             bool changed = false;
+            if (tab->kind == APP_EDITOR_DOCUMENT_PROTOTYPE) {
+                scene_prototype_asset *prototype = scene_prototype_for_path(s->scene, tab->path);
+                if (prototype && prototype->source == code) {
+                    if (!s->prefs.code_apply_live && asset_code_dirty(code)) {
+                        asset_code_hold_runtime(code, true);
+                    }
+                    scene_prototype_source_sync(s->scene, prototype, s->prefs.code_apply_live);
+                }
+            }
             if (tab->source_only) {
                 asset_code_validate(code, s->scene->graph_editor);
             } else {
@@ -739,7 +825,18 @@ bool studio_code_history(studio *s, bool redo, bool apply)
     if (!asset_code_replay(code, redo, s->prefs.code_apply_live)) {
         return false;
     }
-    sync_asset_graph(s, code);
+    scene_prototype_asset *prototype = scene_prototype_for_path(s->scene, asset_code_path(code));
+    if (prototype && prototype->source == code) {
+        if (!s->prefs.code_apply_live && asset_code_dirty(code)) {
+            asset_code_hold_runtime(code, true);
+        }
+        int result = scene_prototype_source_sync(s->scene, prototype, s->prefs.code_apply_live);
+        if (result > 0) {
+            studio_error(s, "Edited, but not applied", s->scene->prototype_message);
+        }
+    } else {
+        sync_asset_graph(s, code);
+    }
     capture_asset(s, code);
     return true;
 }
@@ -2906,6 +3003,20 @@ void studio_code_body(studio *s, int)
             capture_caret(s);
         }
         if (r.events & (KIT_CODE_CHANGED | KIT_CODE_UNDO | KIT_CODE_REDO)) {
+            scene_prototype_asset *prototype = scene_prototype_for_path(s->scene, asset_code_path(code));
+            if (prototype && prototype->source == code) {
+                if (!s->prefs.code_apply_live && asset_code_dirty(code)) {
+                    asset_code_hold_runtime(code, true);
+                }
+                int result = scene_prototype_source_sync(
+                    s->scene,
+                    prototype,
+                    s->prefs.code_apply_live
+                );
+                if (result > 0) {
+                    studio_error(s, "Edited, but not applied", s->scene->prototype_message);
+                }
+            }
             capture_asset(s, code);
             s->code.capture_due = 0;
         } else if (r.events & KIT_CODE_CURSOR) {
