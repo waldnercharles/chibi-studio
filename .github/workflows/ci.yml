@@ -1,26 +1,9 @@
-name: CI
+# Temporary validation child only. Do not merge this workflow into the product PR.
+name: PR71 refresh regression validation
 
 on:
-  workflow_dispatch:
   pull_request:
-    paths-ignore:
-      - "README.md"
-      - "AGENTS.md"
-      - "docs/**"
-      - ".claude/**"
-      - "web/**"
-      - "EXTRACTION.json"
-      - ".github/workflows/publish.yml"
-  push:
-    branches: [main]
-    paths-ignore:
-      - "README.md"
-      - "AGENTS.md"
-      - "docs/**"
-      - ".claude/**"
-      - "web/**"
-      - "EXTRACTION.json"
-      - ".github/workflows/publish.yml"
+    branches: [codex/language-redesign-20261016]
 
 permissions:
   contents: read
@@ -37,13 +20,34 @@ env:
 
 jobs:
   studio:
-    name: Build and startup against selected engine
+    name: Bounded red/green source-refresh acceptance
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: validation
+          persist-credentials: false
+      - name: Check out the immutable final Studio 71 candidate
+        uses: actions/checkout@v4
+        with:
+          ref: 58f6283140e369366c58be72c1f9103ea3ff64fd
           path: chibi-studio
+          persist-credentials: false
+      - name: Read the immutable old product for the red control
+        uses: actions/checkout@v4
+        with:
+          ref: 27d55e67e902863b68a06ec0b8559869b0b021b9
+          path: chibi-studio-baseline
+          persist-credentials: false
+      - name: Read the immutable cached-registry product for its red control
+        uses: actions/checkout@v4
+        with:
+          ref: 3ed1986b5ed9eb407f776e03d50caa891c2e57f0
+          path: chibi-studio-registry-baseline
+          persist-credentials: false
       - name: Select the paired engine for a same-repository PR
         id: engine
         env:
@@ -58,6 +62,7 @@ jobs:
               exit 1
             fi
           fi
+          test "$ref" = ff6d06c888fe660894776255ec7f9fc507db6393
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Require engine checkout access
         env:
@@ -169,33 +174,26 @@ jobs:
             ~/.cache/chibi-fetchcontent
             ~/.cache/chibi-dependency-packages
           key: ${{ steps.cache-deps.outputs.cache-primary-key }}
-      - name: Build Studio against the packaged SDK
+      - name: Build and validate the reviewed red/green candidates
         working-directory: chibi
-        run: make studio-build STUDIO_SOURCE="$GITHUB_WORKSPACE/chibi-studio" STUDIO_SDK_PREFIX=dist/sdk
-      - name: Two hidden Studio frames
-        working-directory: chibi
-        shell: bash
         run: |
-          timeout 60 xvfb-run -a build-studio/bin/chibi-dev \
-            --project-root ../chibi-studio/projects/starter --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee studio.log
-          ! grep -E 'Studio UI:|runtime frame failed|Could not initialize' studio.log
-      - name: Two hidden frames of Studio's own project
-        working-directory: chibi
-        shell: bash
-        run: |
-          timeout 60 xvfb-run -a build-studio/bin/chibi-dev \
-            --project-root build-studio/share/chibi/studio --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee own.log
-          ! grep -E 'Studio UI:|runtime frame failed|Could not initialize|Could not load graph asset' own.log
-      - name: Installed Studio opens the project it starts in
-        shell: bash
-        run: |
-          prefix="$RUNNER_TEMP/chibi"
-          # SDK packages are relocatable; reuse the verified package without rebuilding.
-          mkdir -p "$prefix"
-          cp -a chibi/dist/sdk/. "$prefix/"
-          make -C chibi-studio install PREFIX="$prefix"
-          export PATH="$prefix/bin:$PATH"
-          cd chibi-studio/projects/starter
-          timeout 60 xvfb-run -a chibi-dev --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee "$RUNNER_TEMP/installed.log"
-          chibi export . --output "$RUNNER_TEMP/export"
-          ! grep -E 'Studio UI:|runtime frame failed|Could not initialize' "$RUNNER_TEMP/installed.log"
+          python3 "$GITHUB_WORKSPACE/validation/tools/validate_studio_refresh.py" \
+            --source "$GITHUB_WORKSPACE/chibi-studio" \
+            --baseline "$GITHUB_WORKSPACE/chibi-studio-baseline" \
+            --registry-baseline "$GITHUB_WORKSPACE/chibi-studio-registry-baseline" \
+            --engine "$GITHUB_WORKSPACE/chibi" \
+            --sdk "$GITHUB_WORKSPACE/chibi/dist/sdk" \
+            --validation "$GITHUB_WORKSPACE/validation" \
+            --output "$RUNNER_TEMP/studio-refresh-validation"
+      - name: Retain bounded validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio71-refresh-evidence
+          path: |
+            ${{ runner.temp }}/studio-refresh-validation/logs
+            ${{ runner.temp }}/studio-refresh-validation/evidence
+            ${{ runner.temp }}/studio-refresh-validation/summary.json
+          if-no-files-found: warn
+          retention-days: 3
+
