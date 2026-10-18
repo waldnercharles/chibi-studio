@@ -919,6 +919,9 @@ void scene_authoring_select_document(
     free(scene->document_id);
     scene->document_id = copy;
     scene->document = (app_editor_document_context){ kind, copy };
+    if (kind == APP_EDITOR_DOCUMENT_PROTOTYPE) {
+        scene->selected_prototype = prototype_index(scene, copy);
+    }
     scene_tabs_document_selected(scene, kind, id);
     if (kind != APP_EDITOR_DOCUMENT_BEHAVIOR && kind != APP_EDITOR_DOCUMENT_SYSTEM) {
         return;

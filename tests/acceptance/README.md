@@ -37,6 +37,17 @@ reader still reads it while prototype collection rejects it before parsing.
 These model checks add no rendered frames; temporary files and models are
 released before their final assertions.
 
+The existing first-frame prototype-refresh fixture also opens its registered
+sources through the real Assets route and checks the Properties subject with no
+previous selection, a different prototype selected, tab reactivation and repeated
+opening. One additional malformed source (23 bytes, bounded by 64 bytes) remains
+openable with no prototype inspector; opening and reactivating it preserve both
+diagnostics. Tab identity/count, source cleanliness, existing prototype history
+and the relationship schema in both worlds are retained. This adds two asset-index
+rebuilds, one content refresh, four asset opens, two ordinary prototype opens and
+four tab activations (one a no-op), with no extra fixtures, worlds or host frames.
+All files and models are freed before the separate selection assertion.
+
 After the fourth frame's existing interactions, a relationship source check
 saves one tiny temporary declaration through the normal editor path. An
 incompatible edit must leave its saved buffer and tab clean while reporting
