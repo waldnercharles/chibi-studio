@@ -17,7 +17,10 @@ typedef struct behavior_asset behavior_asset;
 /* An editor session owns exact source text and a last valid overlay, shared by
  * loaders and live preview. Invalid typing never replaces that overlay. */
 asset_code *asset_code_open(const char *path, char *error, size_t size);
+asset_code *asset_code_retain(asset_code *code);
 void asset_code_free(asset_code *code);
+/* Identity of the current source history entry, for latest-edit Undo actions. */
+const void *asset_code_step(const asset_code *code);
 /* Follow ownership when the workspace restores this source's preview overlay. */
 void asset_code_adopt_overlay(asset_code *code);
 /* Native checkpoint state; protocol conversion belongs to the workspace boundary. */
@@ -31,6 +34,10 @@ const char *asset_code_error(const asset_code *code);
 const char *asset_code_text(const asset_code *code);
 /* Authored prototypes/relationships are data, never executable graph drafts. */
 bool asset_code_static(const asset_code *code);
+void asset_code_publish_static(asset_code *code);
+/* Canonical prototype overlays publish only with workspace model acceptance. */
+void asset_code_own_prototype(asset_code *code);
+void asset_code_reject_static(asset_code *code, const char *error);
 /* The editable view exposes the complete executable source. */
 kit_code_editor *asset_code_editor(asset_code *code);
 /* One source and metadata history serves both views, including invalid drafts. */

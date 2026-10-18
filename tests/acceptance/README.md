@@ -592,3 +592,41 @@ PY
 Configuration and compilation happen before this invocation. Fixture setup,
 both constructor calls and normal teardown stay inside its unchanged 60-second
 deadline. This focused selector does not run the rendering or interaction routes.
+
+## Canonical prototype source ownership
+
+`studio-acceptance --prototype-source --project-root PATH` is a separate,
+independently admitted workload. Run only against an isolated copy of the
+checked-in acceptance project, with the exact installed SDK that exports
+`authoring/source_prototype_edit.h`, under the unchanged 60-second production
+supervisor. It runs two hidden frames. Its first frame uses four tiny prototype
+files, three scene actors, and one additional workspace fixture/checkpoint
+restore. It creates the fixture root's `prototypes` directory if absent and
+removes only that newly created directory after its four files, including before
+the intended negative-control assertion. An existing directory is preserved. No large files, sleeps, new linked probes, or extra rendering passes
+are included. It does not expand the existing four-frame `--source-edit` case.
+
+The C/pico case `prototype_source_ownership` exercises ordinary Properties then
+Assets open, Assets-first dirty-model conversion, scalar gesture grouping,
+omitted/inherited fields and saved-base cache refresh, native component defaults
+and a vector axis, structural removal and exact-source Undo, public behavior
+attach/detach, raw invalid and identity-changing drafts, a held draft and Save,
+source history/checkpoint restoration, Save/Undo/Discard, and background Apply
+with inheriting and overridden peers plus source-backed scene Undo/Redo. The one
+checkpoint includes populated scene source payloads and a rejected identity
+draft. Scene Undo followed by source Undo must recover a later invalid draft.
+A missing behavior exercises accepted-but-not-applied status, no-op Apply status,
+and reversal of touched behavior attachments. Stale and invalid acceptance
+proposals must retain source bytes, typed model, and history.
+A failure is not UI interaction proof beyond the explicit command/control paths
+listed here. Existing partial runtime refresh and independent scene/prototype
+history ordering are not claimed repaired.
+
+The focused negative control keeps the exact engine API/SDK and candidate tests,
+but replaces only `edit_prototype`'s canonical field bridge call with the prior
+model-only `prototype_write_field` plus `asset->dirty = 1`. The case must fail at
+`REQUIRE(source_owned_gesture)` after unlinking its four fixture source files.
+This isolates the demonstrated hidden-model Properties regression, rather than
+failing because an SDK symbol is absent. Do not run the historical Save/Discard
+negative controls again for this bridge. Retain their green four-frame case and
+the existing three admitted CPU selectors as adjacent coverage.

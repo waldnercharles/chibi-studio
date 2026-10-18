@@ -1046,6 +1046,16 @@ int app_scene_authoring_open_prototype(app_scene_authoring *scene, const char *n
         free(action);
         return gate == COLLAB_ACTION_PENDING ? 1 : -1;
     }
+    if (scene_prototype_source_owned(asset)) {
+        char error[256];
+        if (!scene_prototype_source_session(scene, asset, error, sizeof error)) {
+            snprintf(scene->prototype_message, sizeof scene->prototype_message, "%s", error);
+            scene_action_finish(scene, action, false);
+            free(action);
+            return -1;
+        }
+        scene_prototype_source_sync(scene, asset, !asset_code_runtime_held(asset->source));
+    }
     open_prototype(scene, (int)(asset - scene->prototypes));
     scene_action_finish(scene, action, true);
     free(action);
@@ -2434,6 +2444,7 @@ void app_scene_authoring_free(app_scene_authoring *scene)
     scene_tabs_free(scene);
     scene_history_free(scene->history);
     for (int i = 0; i < acount(scene->prototypes); i++) {
+        scene_prototype_source_free(&scene->prototypes[i]);
         clear_prototype_history(&scene->prototypes[i]);
         free(scene->prototypes[i].path);
         prototype_free(scene->prototypes[i].prototype);

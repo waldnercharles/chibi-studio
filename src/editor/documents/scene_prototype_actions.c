@@ -8,12 +8,14 @@
  * Branch as Scene do; Undo makes it an instance of its old prototype again
  * and keeps the new asset, as both editors keep theirs. */
 #include "assets/new_asset.h"
+#include "authoring/source_prototype_edit.h"
 #include "editor/collab/collab.h"
+#include "editor/documents/asset_code.h"
 #include "editor/workspace/scene_internal.h"
-#include "types/array.h"
 #include "support/array.h"
 #include "support/asset_text.h"
 #include "support/xalloc.h"
+#include "types/array.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -98,15 +100,39 @@ static int rebase_instances(app_scene_authoring *scene, scene_prototype_asset *a
         prototype_free(actor->base);
         actor->base = base;
     }
-    asset->dirty = 1;
+    if (!scene_prototype_source_owned(asset)) {
+        asset->dirty = 1;
+    }
     scene->scene_dirty = true;
     asset_index_invalidate(scene);
-    return register_prototype_hosts(scene, asset->prototype);
+    int result = register_prototype_hosts(scene, asset->prototype);
+    if (!scene_prototype_source_owned(asset)) {
+        return result;
+    }
+    if (result != 0) {
+        asset->source_not_applied = true;
+        snprintf(
+            scene->prototype_message,
+            sizeof scene->prototype_message,
+            "Edited, but not applied: could not update runtime prototype %s.",
+            asset->prototype->name
+        );
+    }
+    return asset->source_not_applied ? 1 : 0;
 }
 
 int scene_restore_prototype(app_scene_authoring *scene, const char *name, av_value *value)
 {
     scene_prototype_asset *asset = find_prototype(scene, name);
+    if (asset && scene_prototype_source_owned(asset)) {
+        snprintf(
+            scene->prototype_message,
+            sizeof scene->prototype_message,
+            "Cannot restore %s without its original source text.",
+            name
+        );
+        return -1;
+    }
     char error[256];
     prototype *prototype = asset
                              ? prototype_load_value(value, &scene->registry, error, sizeof error)
@@ -119,9 +145,47 @@ int scene_restore_prototype(app_scene_authoring *scene, const char *name, av_val
     return rebase_instances(scene, asset);
 }
 
+int scene_restore_prototype_edit(app_scene_authoring *scene, const scene_prototype_edit *edit, bool redo)
+{
+    if (!edit->source_before && !edit->source_after) {
+        return scene_restore_prototype(scene, edit->name, redo ? edit->after : edit->before);
+    }
+    scene_prototype_asset *asset = find_prototype(scene, edit->name);
+    if (!asset || !scene_prototype_source_owned(asset) ||
+        !edit->source_before || !edit->source_after) {
+        return -1;
+    }
+    asset_code *code = scene_prototype_source_session(
+        scene,
+        asset,
+        scene->prototype_message,
+        sizeof scene->prototype_message
+    );
+    if (!code) {
+        return -1;
+    }
+    /* Keep an intervening draft in the prototype's own Undo history. Never
+       replace its checkpoint or run full instance refresh: this scene group
+       already owns the affected instance field entries and their replay order. */
+    int accepted = scene_prototype_source_accept(
+        scene,
+        asset,
+        asset_code_text(code),
+        redo ? edit->source_after : edit->source_before,
+        false,
+        false,
+        scene->prototype_message,
+        sizeof scene->prototype_message
+    );
+    if (accepted < 0) {
+        return -1;
+    }
+    return rebase_instances(scene, asset);
+}
+
 /* The fields of `actor` that inherit from the prototype take its new values,
    recorded as one step of the open group. */
-static void follow_prototype(
+static bool follow_prototype(
     app_scene_authoring *scene,
     scene_actor *actor,
     const prototype *prototype,
@@ -130,6 +194,7 @@ static void follow_prototype(
 )
 {
     scene_field_edit *edits = NULL;
+    bool complete = true;
     for (int i = 0; i < count; i++) {
         prototype_field o = fields[i];
         const prototype_component *after = NULL;
@@ -144,16 +209,30 @@ static void follow_prototype(
             continue;
         }
         pin_value now = { 0 }, next = { 0 };
-        ecs_component_read_field(scene->world, actor->entity, o.component->id, o.field, &now);
-        pin_read_field(after->data, &o.component->type->fields[o.field], &next);
-        scene_field_edit edit = { .component = o.component->id, .field = o.field };
-        if (pin_value_equal(&now, &next) ||
-            !scene_property_value_copy(&edit.before, now) ||
-            !scene_property_value_copy(&edit.after, next)) {
-            scene_property_value_free(&edit.before);
+        if (ecs_component_read_field(scene->world, actor->entity, o.component->id, o.field, &now) !=
+            ECS_OK) {
+            complete = false;
             continue;
         }
-        ecs_component_write_field(scene->world, actor->entity, o.component->id, o.field, next);
+        pin_read_field(after->data, &o.component->type->fields[o.field], &next);
+        if (pin_value_equal(&now, &next)) {
+            continue;
+        }
+        scene_field_edit edit = { .component = o.component->id, .field = o.field };
+        if (!scene_property_value_copy(&edit.before, now) ||
+            !scene_property_value_copy(&edit.after, next)) {
+            scene_property_value_free(&edit.before);
+            scene_property_value_free(&edit.after);
+            complete = false;
+            continue;
+        }
+        if (ecs_component_write_field(scene->world, actor->entity, o.component->id, o.field, next) !=
+            ECS_OK) {
+            scene_property_value_free(&edit.before);
+            scene_property_value_free(&edit.after);
+            complete = false;
+            continue;
+        }
         apush(edits, edit);
     }
     if (acount(edits)) {
@@ -165,6 +244,115 @@ static void follow_prototype(
         scene_property_value_free(&edits[i].after);
     }
     afree(edits);
+    return complete;
+}
+
+/* Source-owned Apply is one immutable batch. Only after validation and source
+   acceptance do selected inheriting peers follow; the source actor is untouched. */
+static int apply_source_overrides(
+    app_scene_authoring *scene,
+    scene_prototype_asset *asset,
+    scene_actor *source,
+    const prototype_field *fields,
+    int count
+)
+{
+    asset_code *code = scene_prototype_source_session(
+        scene,
+        asset,
+        scene->prototype_message,
+        sizeof scene->prototype_message
+    );
+    if (!code) {
+        return -1;
+    }
+    if (scene_prototype_source_sync(scene, asset, false) < 0) {
+        return -1;
+    }
+    authoring_prototype_edit *edits = NULL;
+    for (int i = 0; i < count; i++) {
+        const ecs_component_desc *component = fields[i].component;
+        int field = fields[i].field;
+        pin_value value = { 0 };
+        if (!component || !component->type || field < 0 ||
+            field >= component->type->field_count ||
+            ecs_component_read_field(scene->world, source->entity, component->id, field, &value) !=
+                ECS_OK) {
+            snprintf(scene->prototype_message, sizeof scene->prototype_message, "Could not read the selected instance fields.");
+            afree(edits);
+            return -1;
+        }
+        apush(
+            edits,
+            ((authoring_prototype_edit){ .kind = AUTHORING_PROTOTYPE_SET_FIELD,
+                                         .component = component->name,
+                                         .field = component->type->fields[field].name,
+                                         .value = value })
+        );
+    }
+    char *before_text = xstrdup(asset_code_text(code));
+    authoring_prototype_edit_result candidate = { 0 };
+    bool valid = authoring_prototype_source_edit(
+        before_text,
+        &scene->registry,
+        asset_code_catalog(code),
+        edits,
+        acount(edits),
+        &candidate,
+        scene->prototype_message,
+        sizeof scene->prototype_message
+    );
+    afree(edits);
+    if (!valid || !candidate.changed) {
+        authoring_prototype_edit_result_free(&candidate);
+        free(before_text);
+        return valid ? (asset->source_not_applied ? 1 : 0) : -1;
+    }
+    av_value *before = prototype_to_value(asset->prototype);
+    int accepted = scene_prototype_source_accept(
+        scene,
+        asset,
+        before_text,
+        candidate.source,
+        false,
+        false,
+        scene->prototype_message,
+        sizeof scene->prototype_message
+    );
+    if (accepted < 0) {
+        av_value_free(before);
+        authoring_prototype_edit_result_free(&candidate);
+        free(before_text);
+        return -1;
+    }
+    av_value *after = prototype_to_value(asset->prototype);
+    scene_history_begin_group(scene->history);
+    bool recorded = scene_history_push_prototype(
+        scene->history,
+        &(scene_prototype_edit){ .name = asset->prototype->name,
+                                 .before = before,
+                                 .after = after,
+                                 .source_before = before_text,
+                                 .source_after = candidate.source }
+    );
+    assert(recorded);
+    bool followed = true;
+    for (int i = 0; i < acount(scene->actors); i++) {
+        scene_actor *actor = &scene->actors[i];
+        if (actor != source && !strcmp(actor->prototype_name, source->prototype_name)) {
+            followed &= follow_prototype(scene, actor, asset->prototype, fields, count);
+        }
+    }
+    scene_history_end_group(scene->history);
+    av_value_free(before);
+    av_value_free(after);
+    authoring_prototype_edit_result_free(&candidate);
+    free(before_text);
+    if (!followed) {
+        asset->source_not_applied = true;
+        snprintf(scene->prototype_message, sizeof scene->prototype_message, "Edited, but not applied: some inheriting instance fields could not be updated.");
+    }
+    return rebase_instances(scene, asset);
 }
 
 int scene_apply_overrides(
@@ -180,6 +368,9 @@ int scene_apply_overrides(
     }
     finish_transform_edit(scene, false);
     finish_property_edit(scene);
+    if (scene_prototype_source_owned(asset)) {
+        return apply_source_overrides(scene, asset, source, fields, count);
+    }
     av_value *before = prototype_to_value(asset->prototype);
     prototype_history_before(scene, asset->prototype);
     prototype_apply_instance(asset->prototype, scene->world, source->entity, fields, count);
@@ -187,7 +378,7 @@ int scene_apply_overrides(
     scene_history_begin_group(scene->history);
     scene_history_push_prototype(
         scene->history,
-        &(scene_prototype_edit){ asset->prototype->name, before, after }
+        &(scene_prototype_edit){ .name = asset->prototype->name, .before = before, .after = after }
     );
     for (int i = 0; i < acount(scene->actors); i++) {
         scene_actor *actor = &scene->actors[i];

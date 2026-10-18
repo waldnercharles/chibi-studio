@@ -1350,7 +1350,7 @@ struct studio
         char added[128];     /* the component added last, whose panel opens */
         char menu[128];      /* the component whose panel menu is open */
         int toast;           /* offers Undo after Remove Component */
-        const av_value *step; /* the removal's undo snapshot; never dereferenced */
+        const void *step; /* model snapshot or source-step identity; never dereferenced */
         uint64_t scene_step;  /* else an object's removal's scene step */
     } components;
     struct

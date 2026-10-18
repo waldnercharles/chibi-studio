@@ -248,6 +248,10 @@
     "src/editor/workspace/scene_authoring.c",
     "src/editor/workspace/scene_checkpoint.c"
   ],
+  "authoring/source_prototype_edit.h": [
+    "src/editor/documents/scene_prototype_actions.c",
+    "src/editor/workspace/scene_internal.h"
+  ],
   "authoring/source_references.h": [
     "src/editor/workspace/asset_index.c"
   ],
@@ -872,6 +876,7 @@
     "src/editor/documents/scene_document.c",
     "src/editor/documents/scene_documents.c",
     "src/editor/documents/scene_prototype_actions.c",
+    "src/editor/documents/scene_prototypes.c",
     "src/editor/studio/studio_assets.c",
     "src/editor/studio/studio_canvas.c",
     "src/editor/studio/studio_code.c",
@@ -943,11 +948,13 @@
   ],
   "support/text_overlay.h": [
     "src/editor/documents/asset_code.c",
+    "src/editor/documents/scene_prototypes.c",
     "src/editor/documents/ui_buffer.c",
     "src/editor/studio/studio_code.c",
     "src/editor/studio/studio_designer.c",
     "src/editor/studio/studio_thumbnails.c",
-    "src/editor/workspace/scene_checkpoint.c"
+    "src/editor/workspace/scene_checkpoint.c",
+    "src/editor/workspace/scene_tabs.c"
   ],
   "support/text_rank.h": [
     "src/editor/rmlui/kit_command.c",

@@ -63,6 +63,7 @@ static enum {
     UNIT_WARNINGS,
     SCENE_HIERARCHY,
     SCENE_MOVE,
+    PROTOTYPE_SOURCE,
     OUTLINER_MOVE,
     OUTLINER_ROWS,
     SCENE_PHYSICS,
@@ -4090,6 +4091,9 @@ static bool code_glyphs_frame(void *state)
 #include "scene_collider3d.h"
 #include "scene_gizmo3d.h"
 #include "scene_move.h"
+
+/* Uses the fixture defined by scene_move.h. */
+#include "prototype_source.h"
 #include "scene_registry_context.h"
 
 bool studio_acceptance_frame(void *state)
@@ -4112,6 +4116,9 @@ bool studio_acceptance_frame(void *state)
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
         case SCENE_MOVE: callback_ok = scene_move_frame(state); break;
+        case PROTOTYPE_SOURCE:
+            callback_ok = prototype_source_frame(state);
+            break;
         case OUTLINER_MOVE: callback_ok = outliner_move_frame(state); break;
         case OUTLINER_ROWS: callback_ok = outliner_rows_frame(state); break;
         case SCENE_PHYSICS: callback_ok = scene_physics_frame(state); break;
@@ -4528,6 +4535,7 @@ int main(int argc, char **argv)
     bool labels = argc == 4 && !strcmp(argv[1], "--graph-labels");
     bool units = argc == 4 && !strcmp(argv[1], "--unit-warnings");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
+    bool prototype_source_mode = argc == 4 && !strcmp(argv[1], "--prototype-source");
     bool scene_move_mode = argc == 4 && !strcmp(argv[1], "--scene-move");
     bool outliner_move_mode = argc == 4 && !strcmp(argv[1], "--outliner-move");
     bool outliner_rows_mode = argc == 4 && !strcmp(argv[1], "--outliner-rows");
@@ -4544,10 +4552,10 @@ int main(int argc, char **argv)
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
          !keys_mode && !labels && !units && !hierarchy && !scene_move_mode &&
-         !outliner_move_mode && !outliner_rows_mode && !physics && !assets &&
-         !viewport && !camera && !playing && !prompting && !followups &&
-         !glyphs && !idle && !graph_pointer_mode && !asset_pointer_mode &&
-         !debugging && !gizmo && !colliders) ||
+         !prototype_source_mode && !outliner_move_mode && !outliner_rows_mode &&
+         !physics && !assets && !viewport && !camera && !playing &&
+         !prompting && !followups && !glyphs && !idle && !graph_pointer_mode &&
+         !asset_pointer_mode && !debugging && !gizmo && !colliders) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
@@ -4555,7 +4563,8 @@ int main(int argc, char **argv)
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
             "--graph-visibility|--graph-keys|--graph-pointer|--asset-pointer|--"
             "graph-labels|--unit-warnings|"
-            "--scene-hierarchy|--scene-move|--outliner-move|--outliner-rows|--"
+            "--scene-hierarchy|--scene-move|--prototype-source|--outliner-move|"
+            "--outliner-rows|--"
             "scene-physics|"
             "--asset-selection|--scene-viewport|--scene-camera|--scene-gizmo3d|"
             "--scene-collider3d|"
@@ -4580,32 +4589,33 @@ int main(int argc, char **argv)
         return 2;
     }
     pu_display_time(true);
-    mode = source_edit        ? SOURCE_EDIT
-         : code_keys          ? CODE_KEYS
-         : kdl_keys           ? KDL_KEYS
-         : exporting          ? EXPORT_GAME
-         : visibility         ? GRAPH_VISIBILITY
-         : keys_mode          ? GRAPH_KEYS
-         : debugging          ? DEBUGGER_SOURCE_HISTORY
-         : graph_pointer_mode ? GRAPH_POINTER
-         : asset_pointer_mode ? ASSET_POINTER
-         : labels             ? GRAPH_LABELS
-         : units              ? UNIT_WARNINGS
-         : scene_move_mode    ? SCENE_MOVE
-         : outliner_move_mode ? OUTLINER_MOVE
-         : outliner_rows_mode ? OUTLINER_ROWS
-         : hierarchy          ? SCENE_HIERARCHY
-         : physics            ? SCENE_PHYSICS
-         : assets             ? ASSET_SELECTION
-         : viewport           ? SCENE_VIEWPORT
-         : camera             ? SCENE_CAMERA
-         : gizmo              ? SCENE_GIZMO3D
-         : colliders          ? SCENE_COLLIDER3D
-         : playing            ? PLAY_KEYS
-         : prompting          ? PROMPTS
-         : followups          ? CODE_FOLLOWUPS
-         : idle               ? PANEL_IDLE
-                              : CODE_GLYPHS;
+    mode = source_edit           ? SOURCE_EDIT
+         : code_keys             ? CODE_KEYS
+         : kdl_keys              ? KDL_KEYS
+         : exporting             ? EXPORT_GAME
+         : visibility            ? GRAPH_VISIBILITY
+         : keys_mode             ? GRAPH_KEYS
+         : debugging             ? DEBUGGER_SOURCE_HISTORY
+         : graph_pointer_mode    ? GRAPH_POINTER
+         : asset_pointer_mode    ? ASSET_POINTER
+         : labels                ? GRAPH_LABELS
+         : units                 ? UNIT_WARNINGS
+         : prototype_source_mode ? PROTOTYPE_SOURCE
+         : scene_move_mode       ? SCENE_MOVE
+         : outliner_move_mode    ? OUTLINER_MOVE
+         : outliner_rows_mode    ? OUTLINER_ROWS
+         : hierarchy             ? SCENE_HIERARCHY
+         : physics               ? SCENE_PHYSICS
+         : assets                ? ASSET_SELECTION
+         : viewport              ? SCENE_VIEWPORT
+         : camera                ? SCENE_CAMERA
+         : gizmo                 ? SCENE_GIZMO3D
+         : colliders             ? SCENE_COLLIDER3D
+         : playing               ? PLAY_KEYS
+         : prompting             ? PROMPTS
+         : followups             ? CODE_FOLLOWUPS
+         : idle                  ? PANEL_IDLE
+                                 : CODE_GLYPHS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -4624,6 +4634,7 @@ int main(int argc, char **argv)
         case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
         case SCENE_MOVE: RUN_TEST_CASE(scene_move_contracts); break;
+        case PROTOTYPE_SOURCE: RUN_TEST_CASE(prototype_source_ownership); break;
         case OUTLINER_MOVE: RUN_TEST_CASE(outliner_move); break;
         case OUTLINER_ROWS: RUN_TEST_CASE(outliner_rows); break;
         case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics_settings); break;
