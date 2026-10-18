@@ -15,8 +15,8 @@ import zlib
 
 sys.dont_write_bytecode = True
 # Deliberately fail closed until coordinator supplies the reviewed published pair.
-FINAL = '522593bb302072d7726b26de315efdbd1db60fdf'
-FINAL_TREE = 'cb57408b7b60511cda5e324ce78cf58b32927bff'
+FINAL = '9d329fd4899c361f2f68774963138e5e1b797779'
+FINAL_TREE = '776177eba14519ce20e79ae220906a3a044050ac'
 ENGINE = '7bc6aa3cd69b29cfb006aab94d50d695007d9abe'
 # These completed engine checks are reused, never reconstructed here.
 PRIOR_ENGINE_EVIDENCE = {
@@ -101,16 +101,16 @@ REVIEWED_FILES = {'.github/engine-ref': '0aa450a62d7457af7dab66b47d1555806707bbd
  'src/editor/workspace/scene_checkpoint.c': '3a80436d6f4d135264549f018c95fbb83e1c6e5fa5abf646ccb743be58aa7581',
  'src/editor/workspace/scene_internal.h': 'ce497c867a2fe4419801d1e7b2cc54c66bafd4f8f3f4f537e41139348d30ce9f',
  'src/editor/workspace/scene_tabs.c': '8c4f04ed722496c82b54b924d7570a04ccc0d5408dc6931a08bc9a97d5e44131',
- 'tests/acceptance/README.md': 'e2e3078eebf7aec8f07c075c86a2286f929caf3df7aa039271bad770d54bdcdd',
+ 'tests/acceptance/README.md': 'e258405389d955a43240c69a03b7dd3499c68a4e90bbfbff0babc7355742e086',
  'tests/acceptance/main.c': 'f62699332037f6a677ae713bc5f6fc0cf586c744d8b2860c89564a2bf0309c00',
- 'tests/acceptance/prototype_source.h': '2d3b2e57c5031ea7c3a2020b9786827d849e591509300a60b411341ba96f8f83',
- 'tests/acceptance/prototype_source_authority.h': 'd566b4dfc0b4b44a548c70f3bd0332ebacad7687239640aeac383403bee6fb26',
+ 'tests/acceptance/prototype_source.h': '61c08b44b025cd63494b5c9097e2d35f928c2e8d3dc16e1f32ec4b45e9f9688f',
+ 'tests/acceptance/prototype_source_authority.h': '4edb6d7e4d0b6e025d660c5ce9ad43de03e1b329fd7643b7eb5e56e777c3490c',
  'tests/acceptance/prototype_source_capture.h': '525a1436a4673e4c7c51fbe5eec2cd24d48276aa3c7c30fe15e45bca5dded2f9',
  'tests/acceptance/scene_move.h': '9a84ba7af42c74f384f0bd4db432b4d29aad66a580317c22a3f35bcdb29e07f2',
  'tests/acceptance/source_action_outcomes.h': 'efdb4571214e15a104428f68e0fcf8b9835e222264908fca076a79898a098f32',
  'tests/acceptance/source_discard.h': '38eb2fb91b2385b8e98e0694e78fda83ee68e7ab62979712169663c5af55187b'}
 OWNERSHIP_PREFIX_SHA256 = '52bfca49f933549aae955962c692f9bca02bd6e27222aed69945f857c070d88c'
-EDGE_CONTROL = {'assertion': 'prototype_source\\.h \\(700\\): deleted_source_retained && queued_commands_quiet\\)',
+EDGE_CONTROL = {'assertion': 'prototype_source\\.h \\(703\\): deleted_source_retained && queued_commands_quiet\\)',
  'files': {'src/editor/documents/asset_code.c': {'git_blob': '3079f5a8a07e82a8e73e8cc3890e13f4082e68f6',
                                                  'replacements': [{'after': '',
                                                                    'before': '    if (c->file_missing) {\n'
@@ -146,7 +146,7 @@ EDGE_CONTROL = {'assertion': 'prototype_source\\.h \\(700\\): deleted_source_ret
                                                                                  '{'}],
                                                      'sha256': '88812cce2791a700932a476362c84ebbf660c9d2d23246c25f2c1416322d1e20'}},
  'required_markers': ['Prototype source edge controls: deleted_source_retained=0 queued_commands_quiet=0']}
-AUTHORITY_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(836\\): test\\.code_authority && '
+AUTHORITY_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(837\\): test\\.code_authority && '
               'test\\.property_authority\\)',
  'files': {'src/editor/documents/prototype_source_input.c': {'after': '    if (gate == '
                                                                       'COLLAB_ACTION_PENDING) {\n'
@@ -172,7 +172,7 @@ AUTHORITY_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(836\\): tes
                       'Prototype source intent: retry_held=-1',
                       'Prototype source frame: held=-1, live=-1',
                       'Prototype source disk: conflict=-1']}
-INTENT_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(838\\): test\\.retry_held == 1\\)',
+INTENT_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(839\\): test\\.retry_held == 1\\)',
  'files': {'src/editor/documents/prototype_source_input.c': {'after': '    bool live = '
                                                                       '!asset_code_runtime_held(asset->source);\n',
                                                              'before': '    bool live = input->live;\n',
@@ -182,7 +182,7 @@ INTENT_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(838\\): test\\
                       'Prototype source intent: retry_held=0',
                       'Prototype source frame: held=-1, live=-1',
                       'Prototype source disk: conflict=-1']}
-FRAME_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(839\\): test\\.frame_held == 1 && test\\.frame_live == 1\\)',
+FRAME_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(840\\): test\\.frame_held == 1 && test\\.frame_live == 1\\)',
  'files': {'src/editor/studio/studio_code.c': {'after': '                    if (!s->prefs.code_apply_live '
                                                         '&& asset_code_canonical_dirty(code)) {\n'
                                                         '                        '
@@ -200,7 +200,7 @@ FRAME_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(839\\): test\\.
                       'Prototype source intent: retry_held=1',
                       'Prototype source frame: held=0, live=0',
                       'Prototype source disk: conflict=1']}
-DISK_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(840\\): test\\.disk_conflict == 1\\)',
+DISK_CONTROL = {'assertion': 'prototype_source_authority\\.h \\(841\\): test\\.disk_conflict == 1\\)',
  'files': {'src/editor/documents/prototype_source_input.c': {'after': '        if '
                                                                       '(asset_code_prepare_refresh(asset->source, '
                                                                       '&disk, error, sizeof error) &&\n'
