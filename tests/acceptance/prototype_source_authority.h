@@ -33,6 +33,16 @@ static scene_prototype_asset *authority_asset(authority_fixture *test)
     return find_prototype(test->s->scene, "AuthoritySource");
 }
 
+/* Read the retained model even when canonical source has a diagnostic. */
+static bool authority_model_x(authority_fixture *test, float expected)
+{
+    pin_value value = { 0 };
+    scene_prototype_asset *asset = authority_asset(test);
+    REQUIRE(asset && !prototype_read_field(asset->prototype, "Transform", "x", &value));
+    REQUIRE(value.type == PIN_F32 && value.f == expected);
+    return true;
+}
+
 static void authority_send(void *context, const char *json)
 {
     authority_fixture *test = context;
@@ -519,7 +529,11 @@ static bool authority_conflicts(authority_fixture *test)
         REQUIRE(authority_echo(test));
         REQUIRE(authority_text(test, invalid[i], NULL));
         REQUIRE(asset_code_error(authority_asset(test)->source)[0]);
-        REQUIRE(bridge_field(scene, "AuthoritySource", "x", 10));
+        pin_value rejected = { 0 };
+        REQUIRE(
+            app_scene_authoring_read_prototype_field(scene, "AuthoritySource", "Transform", "x", &rejected) < 0
+        );
+        REQUIRE(authority_model_x(test, 10));
         REQUIRE(
             text_overlay_text(test->path) &&
             !strcmp(text_overlay_text(test->path), AUTHORITY_SOURCE(10, 10))
@@ -746,7 +760,7 @@ static bool authority_frame_and_disk(authority_fixture *test)
                           NULL;
     REQUIRE(authority_text(test, AUTHORITY_SOURCE(21, 10), NULL));
     REQUIRE(asset_code_step(code) == step && asset_code_canonical_dirty(code));
-    REQUIRE(bridge_field(scene, "AuthoritySource", "x", 21));
+    REQUIRE(authority_model_x(test, 21));
     REQUIRE(!scene_source_input_any(scene));
     s->time += 1;
     studio_code_frame(s);
