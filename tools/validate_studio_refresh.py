@@ -13,8 +13,22 @@ import sys
 
 sys.dont_write_bytecode = True
 # Deliberately fail closed until coordinator supplies the reviewed published pair.
-FINAL = '1d173d67e8a574c81eb24e1ce6113790770b6b89'
+FINAL = '613ecd0bdfda72a5dd33a68228bceb6bb854b332'
 ENGINE = '7bc6aa3cd69b29cfb006aab94d50d695007d9abe'
+PRIOR_ENGINE_EVIDENCE = {'run_id': 39102355375,
+ 'validation_revision': 'aba0cc5e0fd6745f6e1dbd100b50c0073051df2b',
+ 'engine_revision': '7bc6aa3cd69b29cfb006aab94d50d695007d9abe',
+ 'native_artifact_sha256': '3c94d7a5015a617c7ffea05db6efd8bc7bfa8d4108eb9f04785bc50b85b9da77',
+ 'native_log_sha256': {'engine-green': 'bcdae5a815f879d296cf007b0ca60721cb01abbca7d01b82c4554bfe7171088a',
+                       'engine-asan': '02e9b7c25996727745d4118612659e31377a4cc6fca6c90bcaa2e04468c73e08',
+                       'engine-red': 'e923b9d4998cece98f0b3ee7d80ccb404ce635d2a90140ef61b4629832940193'},
+ 'wasm_job_id': 117601042506,
+ 'wasm_job_log_sha256': '2ce3d3246f8423db1b46f93679bf22f5fe5cec3b6d9a3c6c3a89c34d433ccf92',
+ 'completed_contracts': ['installed Debug SDK green: 8 cases / 79 assertions',
+                         'root ASan and fatal UBSan green: 8 cases / 79 assertions',
+                         'prior-writer red: intended duplicate-detach assertion at source_assets.c:1110',
+                         'serial Wasm green: 8 cases / 79 assertions'],
+ 'scope': 'Prior run evidence only; these engine invocations are not repeated by this Studio resume.'}
 PRODUCT = 'src/editor/studio/studio_shell.c'
 SUCCESS = 'Studio source edit accepted: frames=4 edits=1 undo=1 redo=1'
 PROTOTYPE_SUCCESS = 'Studio prototype source ownership accepted: frames=2 prototypes=4 actors=3 checkpoints=1'
@@ -42,7 +56,7 @@ REVIEWED_FILES = {'.github/engine-ref': '0aa450a62d7457af7dab66b47d1555806707bbd
  'src/editor/workspace/scene_tabs.c': '50db79500f0ee4ec32835da2a9b61592c63da0b056ce8e6fdf766abacbdecf80',
  'tests/acceptance/README.md': 'bcb64567844980b9263248513f37428ccbcc7a17bc7e0fa07a6edb3f01038a48',
  'tests/acceptance/main.c': '6385e9bc9cd9d43cd96c3ca6a2299eb82722d8ba1051489507d528726f0db4ab',
- 'tests/acceptance/prototype_source.h': '3279ab3df4cf53c5984d3a845cb09062f243cd2d6745165b24179b9fd727b11c',
+ 'tests/acceptance/prototype_source.h': 'cfdf9387c01484c89fc8af1d483248d7422020f8e6fad98d4b5d7a8f54099049',
  'tests/acceptance/scene_move.h': '9a84ba7af42c74f384f0bd4db432b4d29aad66a580317c22a3f35bcdb29e07f2',
  'tests/acceptance/source_discard.h': '38eb2fb91b2385b8e98e0694e78fda83ee68e7ab62979712169663c5af55187b',
  'src/editor/collab/actions_scene.c': '08ac118bcd628864a736e991a5c60607a2ede32bc367af3544e353c4c751e8ed',
@@ -961,7 +975,6 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('source', 'engine', 'sdk', 'validation', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
-    parser.add_argument('--wasm-only', action='store_true')
     args = parser.parse_args()
     for name in ('source', 'engine', 'sdk', 'validation', 'output'):
         setattr(args, name, getattr(args, name).resolve())
@@ -971,19 +984,10 @@ def main():
     os.chdir(args.engine)
     sys.path.insert(0, str(args.engine / 'tools'))
     policy_hashes = snapshot(args.engine, POLICY)
-    controls, final_files = source_inputs(args, controls=not args.wasm_only)
-    if args.wasm_only:
-        wasm_validate(args, final_files, policy_hashes)
-        return
+    controls, final_files = source_inputs(args)
+    require(ENGINE == PRIOR_ENGINE_EVIDENCE['engine_revision'], 'Prior engine evidence does not cover this pin')
+    save(args.output / 'evidence/prior-engine-evidence.json', PRIOR_ENGINE_EVIDENCE)
     sdk = sdk_identity(args)
-    native_env = os.environ.copy()
-    clean_native = native_driver(args, 'engine-green', args.sdk)
-    native_run(args, 'engine-green', clean_native, native_env)
-    asan_build = sanitized_native(args, native_env)
-    red_sdk, red_catalog_build, red_reflect_build = mutant_sdk(args)
-    red_native = native_driver(args, 'engine-red', red_sdk)
-    native_run(args, 'engine-red', red_native, native_env, red=True)
-    require(sdk_identity(args) == sdk, 'Clean installed SDK changed during negative control')
     env = graphics_environment(args)
     control_builds = []
     for label, source in controls.items():
@@ -1010,19 +1014,19 @@ def main():
     require(sdk_identity(args) == sdk, 'Installed SDK changed during validation')
     require(not any((args.output / 'scratch').iterdir()), 'Temporary fixture cleanup incomplete')
     save(args.output / 'summary.json', {'passed': True, 'final_revision': FINAL, 'engine_revision': ENGINE,
-         'red_controls': ['engine published duplicate-detach writer', 'Studio source ownership', 'Studio deleted-source and queued-command edges'],
-         'native': 'installed SDK eight-case positive and negative; root ASan/UBSan eight-case positive',
+         'scope': 'Studio-only resume',
+         'red_controls': ['Studio source ownership', 'Studio deleted-source and queued-command edges'],
+         'prior_engine_evidence': PRIOR_ENGINE_EVIDENCE,
          'prototype_source': PROTOTYPE_SUCCESS,
          'green': 'four-frame source-edit accepted',
          'cpu': ['project-open', 'scene-read', 'outliner-row-policies'], 'full_suite': 'not run',
          'rendering': 'Xvfb/X11 with forced Vulkan and verified Mesa software ICD',
          'policy_sha256': policy_hashes, 'sdk_build_id': sdk['build_id'],
          'logging': 'native/prototype raw logs; existing source-edit agent failure tail and success JSON'})
-    for path in (*controls.values(), *control_builds, green_artifact[0], clean_native[0], red_native[0],
-                 asan_build, red_sdk, red_catalog_build, red_reflect_build, args.output / 'scratch',
+    for path in (*controls.values(), *control_builds, green_artifact[0], args.output / 'scratch',
                  args.output / 'cache', args.output / 'prefs'):
         shutil.rmtree(path)
-    print('Reviewed prototype bridge controls and clean candidate checks passed; full suites not run.', flush=True)
+    print('Reviewed Studio resume controls and clean candidate checks passed; prior engine checks were not repeated.', flush=True)
 
 
 if __name__ == '__main__':

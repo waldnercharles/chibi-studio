@@ -262,8 +262,8 @@ static bool prototype_source_contract(studio *s)
     /* Native component defaults and the actual axis control use the source
        writer. Undo removes the authored component and restores exact text. */
     char *before_component = xstrdup(asset_code_text(code));
-    REQUIRE(!app_scene_authoring_add_prototype_component(scene, names[1], "VisualTransform"));
-    const ecs_component_desc *visual = component_descriptor(scene, "VisualTransform");
+    REQUIRE(!app_scene_authoring_add_prototype_component(scene, names[1], "Aim"));
+    const ecs_component_desc *visual = component_descriptor(scene, "Aim");
     REQUIRE(visual);
     const prototype_component *component = NULL;
     for (int i = 0; i < acount(asset->prototype->components); i++) {
