@@ -780,7 +780,7 @@ static void prototype_code_history(void *context, bool redo)
     if (!asset || !asset->source) {
         return;
     }
-    int result = scene_source_input_history(s->scene, asset, redo);
+    int result = scene_source_input_history(s->scene, asset, redo, s->prefs.code_apply_live);
     if (result == APP_PROTOTYPE_EDIT_PENDING) {
         studio_error(s, "Waiting for shared edit", s->scene->prototype_message);
     } else if (result == APP_PROTOTYPE_EDIT_NOT_APPLIED) {
@@ -924,7 +924,7 @@ bool studio_code_history(studio *s, bool redo, bool apply)
             return scene_source_input_blocked(s->scene, owned->path) ||
                    asset_code_can_replay(code, redo);
         }
-        int result = scene_source_input_history(s->scene, owned, redo);
+        int result = scene_source_input_history(s->scene, owned, redo, s->prefs.code_apply_live);
         if (result == APP_PROTOTYPE_EDIT_PENDING) {
             studio_error(s, "Waiting for shared edit", s->scene->prototype_message);
             return false;
@@ -3136,20 +3136,8 @@ void studio_code_body(studio *s, int)
             capture_caret(s);
         }
         if (r.events & (KIT_CODE_CHANGED | KIT_CODE_UNDO | KIT_CODE_REDO)) {
-            scene_prototype_asset *prototype = scene_prototype_for_path(s->scene, asset_code_path(code));
-            if (prototype && prototype->source == code) {
-                if (!s->prefs.code_apply_live && asset_code_canonical_dirty(code)) {
-                    asset_code_hold_runtime(code, true);
-                }
-                int result = scene_prototype_source_sync(
-                    s->scene,
-                    prototype,
-                    s->prefs.code_apply_live
-                );
-                if (result > 0) {
-                    studio_error(s, "Edited, but not applied", s->scene->prototype_message);
-                }
-            }
+            /* The managed delegate applies owned source only after acceptance;
+             * queued input must not change its canonical runtime hold here. */
             capture_asset(s, code);
             s->code.capture_due = 0;
         } else if (r.events & KIT_CODE_CURSOR) {

@@ -42,9 +42,9 @@ bool asset_code_canonical_dirty(const asset_code *code);
 /* Workspace-local recovery is dirty, but is never part of a checkpoint. */
 void asset_code_set_local_dirty(asset_code *code, bool dirty);
 bool asset_code_local_dirty(const asset_code *code);
-/* Copy and report queued widget input before replacing a source session.
- * Only the local view baseline advances; canonical state is untouched. */
-bool asset_code_take_unreported(asset_code *, char **before, char **text);
+/* Copy and report queued widget input and its managed-view apply intent before
+ * replacing a source session. Only the local view baseline advances. */
+bool asset_code_take_unreported(asset_code *, char **before, char **text, bool *live);
 const char *asset_code_error(const asset_code *code);
 /* Complete executable source; optional graph metadata is stored separately. */
 const char *asset_code_text(const asset_code *code);

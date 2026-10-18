@@ -16,6 +16,7 @@ typedef struct
     uint64_t peer;
     int compositions;
     bool valid, source_guard, code_authority, property_authority;
+    int retry_held; /* -1 means this phase was not reached. */
 } authority_fixture;
 
 static char *authority_keep(authority_fixture *test, char *text)
@@ -426,8 +427,13 @@ static bool authority_pending_and_history(authority_fixture *test)
     REQUIRE(authority_echo(test));
     REQUIRE(authority_text(test, AUTHORITY_SOURCE(5, 9), NULL));
     REQUIRE(!scene_source_input_any(scene));
+    REQUIRE(!asset_code_runtime_held(authority_asset(test)->source));
+    test->s->prefs.code_apply_live = false;
     REQUIRE(authority_history(test, false, AUTHORITY_SOURCE(4, 9)));
+    REQUIRE(asset_code_runtime_held(authority_asset(test)->source));
+    test->s->prefs.code_apply_live = true;
     REQUIRE(authority_history(test, true, AUTHORITY_SOURCE(5, 9)));
+    REQUIRE(!asset_code_runtime_held(authority_asset(test)->source));
     REQUIRE(authority_peer(test, AUTHORITY_SOURCE(4, 9), -1));
     char *target = authority_keep(
         test,
@@ -442,16 +448,34 @@ static bool authority_conflicts(authority_fixture *test)
 {
     app_scene_authoring *scene = test->s->scene;
     char message[256];
-    REQUIRE(!authority_raw(test, AUTHORITY_SOURCE(6, 9)));
+    REQUIRE(!asset_code_runtime_held(authority_asset(test)->source));
+    test->s->prefs.code_apply_live = false;
+    authority_code_paste(test, AUTHORITY_SOURCE(6, 9));
+    authority_code_draw(test);
+    REQUIRE(authority_text(test, AUTHORITY_SOURCE(5, 9), AUTHORITY_SOURCE(6, 9)));
+    REQUIRE(!asset_code_runtime_held(authority_asset(test)->source));
     REQUIRE(authority_reject(test));
     REQUIRE(authority_text(test, AUTHORITY_SOURCE(5, 9), AUTHORITY_SOURCE(6, 9)));
     REQUIRE(scene_source_input_conflict(scene, message, sizeof message));
     int sent = test->sent;
-    REQUIRE(!authority_raw(test, AUTHORITY_SOURCE(7, 9)));
+    /* The conflict tail arrives before the next draw. Harvest must keep the
+     * managed widget's held intent, rather than the still-live canonical flag. */
+    authority_code_paste(test, AUTHORITY_SOURCE(7, 9));
+    scene_source_input_harvest(scene);
+    REQUIRE(authority_text(test, AUTHORITY_SOURCE(5, 9), AUTHORITY_SOURCE(7, 9)));
     REQUIRE(test->sent == sent);
     REQUIRE(scene_source_input_retry(scene, test->path) == APP_PROTOTYPE_EDIT_PENDING);
     REQUIRE(authority_text(test, AUTHORITY_SOURCE(5, 9), AUTHORITY_SOURCE(7, 9)));
+    yyjson_doc *retry = yyjson_read(test->action, strlen(test->action), 0);
+    yyjson_val *retry_live = yyjson_obj_get(yyjson_doc_get_root(retry), "live");
+    test->retry_held = yyjson_is_bool(retry_live) && !yyjson_get_bool(retry_live);
+    yyjson_doc_free(retry);
+    if (!test->retry_held) {
+        return false;
+    }
     REQUIRE(authority_echo(test));
+    REQUIRE(asset_code_runtime_held(authority_asset(test)->source));
+    test->s->prefs.code_apply_live = true;
     REQUIRE(!authority_raw(test, AUTHORITY_SOURCE(8, 9)));
     REQUIRE(authority_reject(test));
     REQUIRE(scene_source_input_use_shared(scene, test->path));
@@ -670,7 +694,7 @@ static bool authority_checkpoint_and_limits(authority_fixture *test)
         test->snapshots == 7
     );
     REQUIRE(test->applies == 23 && test->restores == 7 && test->restored == 1);
-    REQUIRE(test->compositions == 4);
+    REQUIRE(test->compositions == 5);
     REQUIRE(acount(scene->actors) == 0 && acount(scene->prototypes) == 1);
     return true;
 }
@@ -703,7 +727,11 @@ static bool prototype_source_authority_contract(studio *host)
     s->graph.area = -1;
     s->prefs.layouts[0].editors[STUDIO_AREA_TOP] = STUDIO_EDITOR_CODE;
     s->prefs.code_apply_live = true;
-    authority_fixture test = { .s = s, .path = path, .valid = true, .source_guard = true };
+    authority_fixture test = { .s = s,
+                               .path = path,
+                               .valid = true,
+                               .source_guard = true,
+                               .retry_held = -1 };
     bool ok = !app_scene_authoring_register_prototype(fixture.scene, AUTHORITY_SOURCE(1, 2), path) &&
               authority_unopened_rejection(&test) &&
               !app_scene_authoring_open_prototype(fixture.scene, "AuthoritySource");
@@ -726,9 +754,11 @@ static bool prototype_source_authority_contract(studio *host)
     clean &= !rmdir(directory);
     clean &= !rmdir(root);
     printf("Prototype source authority: Code unchanged=%d, Properties unchanged=%d\n", test.code_authority, test.property_authority);
+    printf("Prototype source intent: retry_held=%d\n", test.retry_held);
     REQUIRE(clean);
     REQUIRE(test.code_authority && test.property_authority);
     REQUIRE(test.source_guard);
+    REQUIRE(test.retry_held == 1);
     REQUIRE(ok);
     return true;
 }

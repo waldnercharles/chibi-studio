@@ -33,7 +33,7 @@ typedef struct scene_source_input
     source_input_group *groups;
     collab_action_identity sent;
     uint64_t observed;
-    bool waiting, conflict;
+    bool waiting, conflict, live;
     char active_kind[32], active_key[192], active_group[96];
     char message[256];
 } scene_source_input;
@@ -247,7 +247,7 @@ static const char *relative_path(const app_scene_authoring *scene, const char *p
              : NULL;
 }
 
-static char *input_action(app_scene_authoring *scene, scene_source_input *input)
+static char *source_input_action_json(app_scene_authoring *scene, scene_source_input *input)
 {
     const char *path = relative_path(scene, input->path);
     if (!path || !acount(input->groups)) {
@@ -430,7 +430,7 @@ static int submit(app_scene_authoring *scene, scene_source_input *input)
         }
         return APP_PROTOTYPE_EDIT_PENDING;
     }
-    char *json = input_action(scene, input);
+    char *json = source_input_action_json(scene, input);
     if (!json || (collab_active() && strlen(json) > COLLAB_MAX_ACTION)) {
         free(json);
         conflict(input, "This source edit exceeds the room action limit; your local draft is retained.");
@@ -545,6 +545,7 @@ static int enqueue_mode(
     }
     free(input->draft);
     input->draft = xstrdup(text);
+    input->live = live;
     prepare_preview(scene, input);
     if (input->conflict) {
         show_input(scene, input);
@@ -627,8 +628,9 @@ void scene_source_input_harvest(app_scene_authoring *scene)
     for (int i = 0; i < acount(scene->prototypes); i++) {
         scene_prototype_asset *asset = &scene->prototypes[i];
         char *before = NULL, *text = NULL;
+        bool live = false;
         if (!asset->source ||
-            !asset_code_take_unreported(asset->source, &before, &text)) {
+            !asset_code_take_unreported(asset->source, &before, &text, &live)) {
             continue;
         }
         const char *current = scene_source_input_text(scene, asset);
@@ -639,19 +641,7 @@ void scene_source_input_harvest(app_scene_authoring *scene)
                 conflict(input, "Your latest typing overlaps a source replacement; the local draft is retained.");
             }
         }
-        (void)enqueue_mode(
-            scene,
-            asset,
-            merged ? merged : text,
-            "raw",
-            "typing",
-            false,
-            0,
-            !asset_code_runtime_held(asset->source),
-            NULL,
-            false,
-            true
-        );
+        (void)enqueue_mode(scene, asset, merged ? merged : text, "raw", "typing", false, 0, live, NULL, false, true);
         free(merged);
         free(before);
         free(text);
@@ -757,7 +747,7 @@ int scene_source_input_edit(
     return result;
 }
 
-int scene_source_input_history(app_scene_authoring *scene, scene_prototype_asset *asset, bool redo)
+int scene_source_input_history(app_scene_authoring *scene, scene_prototype_asset *asset, bool redo, bool live)
 {
     scene_source_input_harvest(scene);
     if (scene_source_input_blocked(scene, asset->path)) {
@@ -775,7 +765,7 @@ int scene_source_input_history(app_scene_authoring *scene, scene_prototype_asset
         redo ? "redo" : "undo",
         false,
         redo ? 1 : -1,
-        !asset_code_runtime_held(asset->source),
+        live,
         NULL,
         false
     );
@@ -909,20 +899,10 @@ int scene_source_input_retry_identity(app_scene_authoring *scene, uint64_t ident
         return -1;
     }
     char *draft = xstrdup(input->draft);
+    bool live = input->live;
     input_clean(input);
     input->active_group[0] = 0;
-    int result = enqueue(
-        scene,
-        asset,
-        draft,
-        "raw",
-        "retry",
-        false,
-        0,
-        !asset_code_runtime_held(asset->source),
-        NULL,
-        false
-    );
+    int result = enqueue(scene, asset, draft, "raw", "retry", false, 0, live, NULL, false);
     free(draft);
     return result;
 }

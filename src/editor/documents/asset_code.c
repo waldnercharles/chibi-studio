@@ -52,7 +52,7 @@ struct asset_code
     unsigned shared_revision;
     bool source_pending, replaying, runtime_held, graph_draft, native_view,
         source_gesture, typing, static_source, relationship_source,
-        prototype_owned, file_missing, local_dirty, history_group_open;
+        prototype_owned, file_missing, local_dirty, history_group_open, view_live;
     uint64_t execution_graph, execution_node;
     double time, apply_due, typed_at, refresh_due;
     kit_code_editor *editor;
@@ -539,7 +539,7 @@ static bool unreported_input(const asset_code *c)
     return c->view_text && strcmp(kit_code_text(c->editor, NULL), c->view_text);
 }
 
-bool asset_code_take_unreported(asset_code *c, char **before, char **text)
+bool asset_code_take_unreported(asset_code *c, char **before, char **text, bool *live)
 {
     *before = *text = NULL;
     if (!unreported_input(c)) {
@@ -547,6 +547,7 @@ bool asset_code_take_unreported(asset_code *c, char **before, char **text)
     }
     *before = xstrdup(c->view_text);
     *text = xstrdup(kit_code_text(c->editor, NULL));
+    *live = c->view_live;
     free(c->view_text);
     c->view_text = xstrdup(*text);
     return true;
@@ -974,6 +975,7 @@ void asset_code_own_prototype(asset_code *c)
     c->prototype_owned = true;
     if (!c->view_text) {
         c->view_text = xstrdup(c->text);
+        c->view_live = !c->runtime_held;
     }
 }
 
@@ -1086,6 +1088,7 @@ static asset_code *restore_source(const av_value *state, const prototype_registr
     c->observed_metadata = observed ? xstrdup(observed) : NULL;
     c->editor = create_view(c, text);
     c->view_text = c->prototype_owned ? xstrdup(text) : NULL;
+    c->view_live = !c->runtime_held;
     understand_with_metadata(c, text, av_get_str(av_obj_get(state, "metadata")));
     c->graph_draft = av_get_bool(av_obj_get(state, "graph_draft"));
     for (size_t i = 0; i < av_arr_size(history); i++) {
@@ -2053,6 +2056,7 @@ kit_code_result asset_code_draw_input(
     if (input) {
         assert(input->edit && input->history);
         asset_code_retain(c);
+        c->view_live = live;
         if (!c->view_text) {
             c->view_text = xstrdup(c->text);
         }

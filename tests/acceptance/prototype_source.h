@@ -423,6 +423,7 @@ static bool prototype_source_contract(studio *s)
        source history. Scene Undo restores source using a recoverable step. */
     REQUIRE(!scene_authoring_load_text(
         scene,
+        "version 1\nname \"Scene\"\n"
         "(array)entities { - name=\"Source\" prototype=\"SourceBridgeApply\" { "
         "components {Transform x=20.0;}; }\n"
         "- name=\"Peer\" prototype=\"SourceBridgeApply\"\n"

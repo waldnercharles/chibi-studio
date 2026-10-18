@@ -37,7 +37,7 @@ int scene_source_input_edit(
     const char *key,
     bool coalesce
 );
-int scene_source_input_history(app_scene_authoring *, scene_prototype_asset *, bool redo);
+int scene_source_input_history(app_scene_authoring *, scene_prototype_asset *, bool redo, bool live);
 bool scene_source_input_apply(app_scene_authoring *, yyjson_val *, char *, size_t);
 /* First unresolved local conflict, including a source absent from a snapshot. */
 const char *scene_source_input_conflict(app_scene_authoring *, char *message, size_t);

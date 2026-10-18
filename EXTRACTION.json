@@ -1579,13 +1579,13 @@
       "current_source_sha256": "91f77c6e1b3d60ddab4c59fa395ba78c9122e54cb6707f866eb2fb9730d2615c",
       "sha256": "5bcaf149c81eb750ce0da5b74954c40758aedfa32e6cb590849d723050c3ce64",
       "source_path": "src/editor/documents/asset_code.c",
-      "consumer_sha256": "aee982335273984086b49234f010d0be80ffd910ccbf202097e9a98246ad6dd1"
+      "consumer_sha256": "87ffc2770a876ae48da68f2f979f2470e6effc238a90df4e0e0f0f1435f4103d"
     },
     "src/editor/documents/asset_code.h": {
       "current_source_sha256": "15d34e8aae5a3df6a5ef4a2632b6c6784714b03b3c0cb6c74be401afbb35d2e1",
       "sha256": "1199a5f51fd1b59918263a77197311471897d051d8833304e5c6dfa11a9633e1",
       "source_path": "src/editor/documents/asset_code.h",
-      "consumer_sha256": "275ad7a3ff32279e80dc6e1d68ff47e1240733850558b4f6a97f7c29288f0f7e"
+      "consumer_sha256": "012f40bdfc5a1d5b5d71aa9c2f6a6ff988c154b4b83b4890316283ac76400201"
     },
     "src/editor/documents/commands.c": {
       "current_source_sha256": "055ac0716c23f7d2078177827b141486c080318eea4bd8288e4c16c707d8a9b4",
@@ -1667,7 +1667,7 @@
       "current_source_sha256": "a724d0af657b5ab587528c2d1f475b7d303938d5a5e2c8e897122829748fa68d",
       "sha256": "3ac2e12fa9e512325a07c336a9ea0c908bbd8447098aa6ec4b52d6b80366041b",
       "source_path": "src/editor/documents/scene_prototypes.c",
-      "consumer_sha256": "f8ed754219b21088c478a7d090ee142305984fbc5a423a881fea8c048d5221bc"
+      "consumer_sha256": "4374bdeffcb95e4cdab94434af50123a811781cd4b08044c814a5c01f936b492"
     },
     "src/editor/documents/scene_retention.c": {
       "current_source_sha256": "0b6d547334a3b7ccf89d76e832172e1a8ae997755d1d1e37ffe4d33887cf6941",
@@ -1887,7 +1887,7 @@
       "current_source_sha256": "2bc7f3689067a8ad2916dfa0dfc0ec0147a874721d165ec20f1be8f202867690",
       "sha256": "9129512614d262430a863e4cf6ccac6f161691d62449660f709ced5dfa89421c",
       "source_path": "src/editor/studio/studio_code.c",
-      "consumer_sha256": "cad1d04485d2d4c6c41aa485e362451e5ae8fcc2125b4703896fa88364a06829"
+      "consumer_sha256": "c4753f808a43513155b507b1e8fef0992761c63f0362f5f15a8831326c733b65"
     },
     "src/editor/studio/studio_collab.c": {
       "current_source_sha256": "a9eb6419e86730bd61449fef5116d2575a54ae5d21887d5d31c740c84313ddd6",

@@ -1146,7 +1146,9 @@ static int replay_prototype_source(app_scene_authoring *scene, scene_prototype_a
 {
     char error[256];
     asset_code *code = scene_prototype_source_session(scene, asset, error, sizeof error);
-    return code ? scene_source_input_history(scene, asset, redo) : -1;
+    return code
+             ? scene_source_input_history(scene, asset, redo, !asset_code_runtime_held(code))
+             : -1;
 }
 
 int prototype_undo(app_scene_authoring *scene)

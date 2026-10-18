@@ -659,7 +659,7 @@ one additional fixed selector run/build, not a replay of historical controls.
 separate fixed two-frame selector, under the same unchanged 60-second production
 supervisor and isolated checked-in acceptance project. It does not add work to
 `--source-edit` or `--prototype-source`. The source fixture uses one temporary
-prototype file, one workspace fixture, zero actors, four nonrendering Code
+prototype file, one workspace fixture, zero actors, five nonrendering Code
 compositions and one real same-workspace checkpoint restoration. Its in-process
 transport has no sockets or production test hooks. Including the focused
 transport-outcome helper, the fixed workload is 64 incoming envelopes, 91 sends,
@@ -671,9 +671,11 @@ It checks Code and Properties canonical text/model/history remain unchanged
 before guest acceptance; host-own echo applies only once; rapid typing and
 successive scalar/vector gestures retain their local values and grouping; exact
 accepted outcomes release the tail; stale rejection, disjoint merge, overlap,
-explicit Retry Draft and Use Shared preserve recoverable input; raw invalid and
+explicit Retry Draft and Use Shared preserve recoverable input and the latest
+Apply Live intent, including unreported widget input; raw invalid and
 identity-changing drafts retain the last-good model; own Undo/Redo validates its
-local destination while peer history changes append ordinary local steps; and
+local destination and current Code Apply Live preference while peer history
+changes append ordinary local steps; and
 pending Save/Undo/Reload, canonical-only snapshots, rebind, interruption and role
 loss respect the existing authority boundary. Retry Draft is an explicit primary
 control and does not take editor focus or consume a newline.
@@ -688,3 +690,13 @@ changing the frame/message limits. Candidate success requires both booleans 1
 and all remaining source/model/history assertions. Source review and workload
 admission do not establish runtime success; native and web builds and the hosted
 selector results are reported separately.
+
+The separate held-intent counterfactual reverses only Retry's apply-policy lookup
+from the retained draft to the accepted source's runtime hold. It keeps the
+compiler helper rename, managed-widget capture, Code history fix and all final
+fixtures. The same authority selector must reach its held rejection/Retry phase,
+then print `Code unchanged=1, Properties unchanged=1` and `retry_held=0` after
+cleanup before failing at `REQUIRE(test.retry_held == 1)`. This is separate from the
+original authority control, whose early exit prints `retry_held=-1` (not run);
+candidate requires `retry_held=1`. It adds no frames,
+transport envelopes or actors to either invocation.
