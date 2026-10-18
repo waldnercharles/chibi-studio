@@ -37,6 +37,11 @@ env:
 
 jobs:
   studio:
+    # Isolate the temporary, explicitly do-not-merge M5 validation control PR.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository ||
+      github.event.pull_request.head.ref != 'codex/host-m5-unit-validation-20261018'
     name: Build and startup against engine main
     runs-on: ubuntu-24.04
     timeout-minutes: 20

@@ -1,0 +1,129 @@
+name: Engine M5 sanitized validation (temporary public host)
+
+# Proposal only. Do not publish/open the validation PR until exact-source
+# independent admission is recorded in toolchain-m5-admission.json.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: host-m5-unit-analysis-${{ github.event.pull_request.number }}
+  # Preserve every admitted baseline/candidate run; do not silently cancel it.
+  cancel-in-progress: false
+
+jobs:
+  unit-analysis:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'codex/host-m5-unit-validation-20261018'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CANDIDATE_SHA: f2624cb2963c7327487a3c499f7a725d0ed3252f
+      CONTROL_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      PR_BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+      PR_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      CC: clang-18
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+    steps:
+      - name: Require safe normal checkout logging and a fresh source path
+        env:
+          RUNNER_DEBUG_ENABLED: ${{ runner.debug }}
+        run: |
+          case "$RUNNER_DEBUG_ENABLED" in
+            ''|0) ;;
+            *) printf 'phase=checkout-privacy-guard exit=1\n'; exit 1 ;;
+          esac
+          if [ -e "$GITHUB_WORKSPACE/validation" ] || [ -e "$GITHUB_WORKSPACE/chibi" ] || ! git --version >/dev/null 2>&1; then
+            printf 'phase=checkout-privacy-guard exit=1\n'
+            exit 1
+          fi
+          printf 'phase=checkout-privacy-guard exit=0\n'
+
+      - name: Check out the immutable reviewed control candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CONTROL_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          path: validation
+
+      - name: Read the one engine branch, then require the immutable admitted identity
+        # Branch checkout avoids Git's detached-HEAD commit-subject message.
+        # A moved branch is rejected by prepare before any source execution.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: waldnercharles/chibi
+          token: ${{ secrets.CHIBI_ENGINE_TOKEN }}
+          ref: refs/heads/codex/m5-unit-analysis-20261018
+          fetch-depth: 1
+          persist-credentials: false
+          path: chibi
+          show-progress: false
+          fetch-tags: false
+          clean: false
+          submodules: false
+          lfs: false
+
+      - name: Verify exact source admission and record provenance
+        id: prepare
+        run: bash validation/.github/scripts/toolchain-m5-validation.sh prepare
+
+      - name: Acquire pinned build inputs
+        run: bash validation/.github/scripts/toolchain-m5-validation.sh dependencies
+
+      - name: Configure the standalone stage-zero language target
+        run: bash validation/.github/scripts/toolchain-m5-validation.sh configure
+
+      - name: Build test_language, separately from test execution
+        run: bash validation/.github/scripts/toolchain-m5-validation.sh build
+
+      - name: Record the zero-ID red baseline under its own 60-second supervisor
+        if: steps.prepare.outputs.mode == 'red'
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          SELECTOR: language-unit-analysis-zero-id
+        run: bash validation/.github/scripts/toolchain-m5-validation.sh execute
+
+      - name: Record the independent deep-chain red baseline under its own 60-second supervisor
+        if: steps.prepare.outputs.mode == 'red'
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          SELECTOR: language-unit-analysis-deep
+        run: bash validation/.github/scripts/toolchain-m5-validation.sh execute
+
+      - name: Validate the exact fixed candidate with the admitted full pico selector
+        if: steps.prepare.outputs.mode == 'green'
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          SELECTOR: language-unit-analysis-chibi
+        run: bash validation/.github/scripts/toolchain-m5-validation.sh execute
+
+      - name: Classify runner-local logs into allowlisted public evidence
+        if: always()
+        run: bash validation/.github/scripts/toolchain-m5-validation.sh collect
+
+      - name: Upload sanitized evidence only
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: chibi-m5-sanitized-${{ env.CANDIDATE_SHA }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/chibi-m5-sanitized/sanitized.json
+            ${{ runner.temp }}/chibi-m5-sanitized/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6
+
+      - name: Preserve the actual validation verdict
+        if: always()
+        run: bash validation/.github/scripts/toolchain-m5-validation.sh verdict
