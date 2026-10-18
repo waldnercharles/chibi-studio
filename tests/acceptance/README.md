@@ -662,8 +662,8 @@ supervisor and isolated checked-in acceptance project. It does not add work to
 prototype file, one workspace fixture, zero actors, five nonrendering Code
 compositions and one real same-workspace checkpoint restoration. Its in-process
 transport has no sockets or production test hooks. Including the focused
-transport-outcome helper, the fixed workload is 64 incoming envelopes, 91 sends,
-27 apply callbacks, 15 restore callbacks (one real workspace restore), two close
+transport-outcome helper, the fixed workload is 68 incoming envelopes, 96 sends,
+30 apply callbacks, 16 restore callbacks (one real workspace restore), two close
 callbacks, four direct decoder rejection checks, two offline probe Reloads and
 33 tiny retained inputs for the bounded-queue limit.
 
@@ -679,6 +679,47 @@ changes append ordinary local steps; and
 pending Save/Undo/Reload, canonical-only snapshots, rebind, interruption and role
 loss respect the existing authority boundary. Retry Draft is an explicit primary
 control and does not take editor focus or consume a newline.
+
+After the original message-count guards, the same fixture accepts two peer
+actions with opposite local Apply Live preferences and calls the production
+`studio_code_frame` update after each. Accepted `live=false` remains held with
+the local preference enabled; accepted `live=true` remains live with it disabled.
+Two further nonrendering Code updates poll one overlapping external edit of the
+same file. Its diagnostic remains visible without changing canonical text,
+model or history; one explicitly accepted Reload then clears the conflict and
+adopts the disk bytes. These four Code updates add no rendered frames, actors,
+files or checkpoint restores. The final diagnostics report `held=1, live=1`
+and `conflict=1` only after cleanup.
+
+Two separate counterfactuals use this unchanged authority selector. The frame
+control restores only the prior per-frame local-preference interpretation and
+must report `held=0, live=0` before failing the final frame-intent assertion.
+The disk control drops only the managed refresh failure diagnostic and must
+report `held=1, live=1` and `conflict=0` before failing the final disk assertion.
+Each preserves every earlier authority, held-retry and source/model/history
+check; unrelated early failures do not count as either negative proof.
+
+When `CHIBI_STUDIO_CONTROLS_CAPTURE` names a fresh PNG, the same authority
+invocation also presents the real retained-draft notice in the host workspace.
+After frame one's original fixture has cleaned up, it creates one 53-byte public
+prototype source in the disposable project, submits one local proposal as an
+editor guest and rejects it through the in-process transport. Two finite
+nonrendering compositions call the actual `studio_emit` under its real workspace,
+area and document keys. Code takes focus before rejection; adding the notice
+must leave that exact element focused. One queued Enter is consumed by Code in
+the existing second frame, adding only a local newline while canonical bytes,
+history and disk stay unchanged. Neither Retry Draft nor Use Shared is activated.
+The same notice/conflict identity remains after the real host's final framebuffer
+readback; its file and transport allocations are removed after host shutdown.
+This adds one prototype, two incoming messages and two outgoing messages, zero
+actors, zero checkpoints, zero host/GPU frames, sleeps or child processes. The
+whole selector with capture is 70 incoming messages and 98 sends; without capture
+it remains 68 and 96. The screenshot uses the existing `--screenshot` path and
+its inner readback limit under the unchanged 60-second production supervisor.
+The screenshot contains only the disposable Studio fixture. Independently inspect
+its actual Retry Draft primary/Use Shared secondary layout, text baselines,
+spacing and readable surrounding kit controls; capture success alone is not
+visual approval or browser verification.
 
 The one authority counterfactual optimistically commits a guest's prepared source
 inside the common pending boundary while retaining normal transport sequencing.

@@ -517,6 +517,7 @@ static bool prototype_source_contract(studio *s)
     const void *missing_invalid_step = asset_code_step(deleted_source);
     /* One checkpoint covers both a rejected identity draft and the populated
        scene source-before/source-after payload, including rebase-only replay. */
+    REQUIRE(!app_scene_authoring_open_prototype(scene, names[1]));
     asset = find_prototype(scene, names[1]);
     code = asset->source;
     accepted = xstrdup(asset_code_text(code));

@@ -17,6 +17,7 @@ typedef struct
     int compositions;
     bool valid, source_guard, code_authority, property_authority;
     int retry_held; /* -1 means this phase was not reached. */
+    int frame_held, frame_live, disk_conflict;
 } authority_fixture;
 
 static char *authority_keep(authority_fixture *test, char *text)
@@ -169,7 +170,8 @@ static char *authority_action(
     const char *before,
     const char *after,
     uint64_t revision,
-    int history
+    int history,
+    bool live
 )
 {
     yyjson_mut_doc *doc;
@@ -185,15 +187,15 @@ static char *authority_action(
     snprintf(group, sizeof group, "peer-%llu", (unsigned long long)++test->peer);
     yyjson_mut_obj_add_strcpy(doc, root, "input_group", group);
     yyjson_mut_obj_add_int(doc, root, "history", history);
-    yyjson_mut_obj_add_bool(doc, root, "live", true);
+    yyjson_mut_obj_add_bool(doc, root, "live", live);
     yyjson_mut_obj_add_bool(doc, root, "coalesce", false);
     return authority_keep(test, scene_action_write(doc));
 }
 
-static bool authority_peer(authority_fixture *test, const char *text, int history)
+static bool authority_peer(authority_fixture *test, const char *text, int history, bool live)
 {
     const char *before = asset_code_text(authority_asset(test)->source);
-    char *action = authority_action(test, before, text, collab_revision(), history);
+    char *action = authority_action(test, before, text, collab_revision(), history, live);
     REQUIRE(authority_queue(test, "peer", test->peer, collab_revision() + 1, "accepted", action));
     return authority_pump(test);
 }
@@ -256,7 +258,8 @@ static bool authority_unopened_rejection(authority_fixture *test)
         AUTHORITY_SOURCE(1, 2),
         "AuthoritySource :: prototype {",
         collab_revision(),
-        0
+        0,
+        true
     );
     const char *kind = strstr(raw, "\"input_kind\":\"raw");
     REQUIRE(kind);
@@ -332,7 +335,8 @@ static bool authority_decoder_rejections(authority_fixture *test)
         AUTHORITY_SOURCE(2, 2),
         AUTHORITY_SOURCE(9, 9),
         collab_revision(),
-        0
+        0,
+        true
     );
     size_t length = strlen(valid);
     char *oversize = authority_keep(test, xmalloc(COLLAB_MAX_ACTION + length + 2));
@@ -420,7 +424,14 @@ static bool authority_pending_and_history(authority_fixture *test)
     REQUIRE(collab_pending_action(&pending));
     uint64_t revision = collab_revision();
     REQUIRE(authority_queue(test, "local", pending.seq, revision + 1, "accepted", test->action));
-    char *remote = authority_action(test, AUTHORITY_SOURCE(4, 2), AUTHORITY_SOURCE(4, 9), revision + 1, 0);
+    char *remote = authority_action(
+        test,
+        AUTHORITY_SOURCE(4, 2),
+        AUTHORITY_SOURCE(4, 9),
+        revision + 1,
+        0,
+        true
+    );
     REQUIRE(authority_queue(test, "peer", test->peer, revision + 2, "accepted", remote));
     REQUIRE(authority_pump(test));
     REQUIRE(authority_text(test, AUTHORITY_SOURCE(4, 9), AUTHORITY_SOURCE(5, 9)));
@@ -434,7 +445,7 @@ static bool authority_pending_and_history(authority_fixture *test)
     test->s->prefs.code_apply_live = true;
     REQUIRE(authority_history(test, true, AUTHORITY_SOURCE(5, 9)));
     REQUIRE(!asset_code_runtime_held(authority_asset(test)->source));
-    REQUIRE(authority_peer(test, AUTHORITY_SOURCE(4, 9), -1));
+    REQUIRE(authority_peer(test, AUTHORITY_SOURCE(4, 9), -1, true));
     char *target = authority_keep(
         test,
         asset_code_history_target(authority_asset(test)->source, false)
@@ -485,14 +496,14 @@ static bool authority_conflicts(authority_fixture *test)
      * is rejected, never passed to the production action decoder. */
     REQUIRE(collab_propose("{}"));
     REQUIRE(!authority_raw(test, AUTHORITY_SOURCE(8, 9)));
-    REQUIRE(authority_peer(test, AUTHORITY_SOURCE(7, 10), 0));
+    REQUIRE(authority_peer(test, AUTHORITY_SOURCE(7, 10), 0, true));
     REQUIRE(authority_text(test, AUTHORITY_SOURCE(7, 10), AUTHORITY_SOURCE(8, 10)));
     REQUIRE(authority_reject(test));
     REQUIRE(authority_echo(test));
     REQUIRE(authority_text(test, AUTHORITY_SOURCE(8, 10), NULL));
     REQUIRE(collab_propose("{}"));
     REQUIRE(!authority_raw(test, AUTHORITY_SOURCE(9, 10)));
-    REQUIRE(authority_peer(test, AUTHORITY_SOURCE(10, 10), 0));
+    REQUIRE(authority_peer(test, AUTHORITY_SOURCE(10, 10), 0, true));
     REQUIRE(authority_text(test, AUTHORITY_SOURCE(10, 10), AUTHORITY_SOURCE(9, 10)));
     REQUIRE(scene_source_input_conflict(scene, message, sizeof message));
     REQUIRE(authority_reject(test));
@@ -699,6 +710,66 @@ static bool authority_checkpoint_and_limits(authority_fixture *test)
     return true;
 }
 
+static bool authority_frame_and_disk(authority_fixture *test)
+{
+    studio *s = test->s;
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(authority_start(test, "editor"));
+    REQUIRE(!app_scene_authoring_open_prototype(scene, "AuthoritySource"));
+    s->prefs.code_apply_live = true;
+    REQUIRE(authority_peer(test, AUTHORITY_SOURCE(20, 10), 0, false));
+    asset_code *code = authority_asset(test)->source;
+    REQUIRE(asset_code_runtime_held(code));
+    const void *step = asset_code_step(code);
+    studio_code_frame(s);
+    test->frame_held = asset_code_runtime_held(code);
+    REQUIRE(asset_code_step(code) == step);
+    REQUIRE(authority_text(test, AUTHORITY_SOURCE(20, 10), NULL));
+
+    s->prefs.code_apply_live = false;
+    REQUIRE(authority_peer(test, AUTHORITY_SOURCE(21, 10), 0, true));
+    REQUIRE(!asset_code_runtime_held(code));
+    step = asset_code_step(code);
+    studio_code_frame(s);
+    test->frame_live = !asset_code_runtime_held(code);
+    REQUIRE(asset_code_step(code) == step);
+    REQUIRE(authority_text(test, AUTHORITY_SOURCE(21, 10), NULL));
+    REQUIRE(!asset_code_error(code)[0] && asset_code_canonical_dirty(code));
+
+    /* Overlap the unsaved canonical edit. Managed polling must keep its
+     * text/model/history and expose the disk diagnostic until explicit Reload. */
+    REQUIRE(!write_file_atomic(test->path, AUTHORITY_SOURCE(30, 2)));
+    s->time += 1;
+    studio_code_frame(s);
+    test->disk_conflict = strstr(asset_code_error(code), "conflicts with a disk edit") !=
+                          NULL;
+    REQUIRE(authority_text(test, AUTHORITY_SOURCE(21, 10), NULL));
+    REQUIRE(asset_code_step(code) == step && asset_code_canonical_dirty(code));
+    REQUIRE(bridge_field(scene, "AuthoritySource", "x", 21));
+    REQUIRE(!scene_source_input_any(scene));
+    s->time += 1;
+    studio_code_frame(s);
+    test->disk_conflict &= strstr(asset_code_error(code), "conflicts with a disk edit") !=
+                           NULL;
+    REQUIRE(authority_text(test, AUTHORITY_SOURCE(21, 10), NULL));
+    REQUIRE(asset_code_step(code) == step && asset_code_canonical_dirty(code));
+    REQUIRE(scene_source_input_reload(scene, authority_asset(test)) == APP_PROTOTYPE_EDIT_PENDING);
+    REQUIRE(authority_echo(test));
+    REQUIRE(authority_text(test, AUTHORITY_SOURCE(30, 2), NULL));
+    REQUIRE(!asset_code_error(code)[0] && !asset_code_dirty(code));
+    REQUIRE(bridge_field(scene, "AuthoritySource", "x", 30));
+    REQUIRE(!scene_source_input_any(scene));
+    REQUIRE(test->received == 40 && test->sent == 64);
+    REQUIRE(
+        test->proposals == 28 && test->accepted == 1 && test->acks == 27 &&
+        test->snapshots == 8
+    );
+    REQUIRE(test->applies == 26 && test->restores == 8 && test->restored == 1);
+    REQUIRE(test->compositions == 5);
+    REQUIRE(acount(scene->actors) == 0 && acount(scene->prototypes) == 1);
+    return true;
+}
+
 static bool prototype_source_authority_contract(studio *host)
 {
     REQUIRE(host && host->kit && !collab_active());
@@ -731,14 +802,18 @@ static bool prototype_source_authority_contract(studio *host)
                                .path = path,
                                .valid = true,
                                .source_guard = true,
-                               .retry_held = -1 };
+                               .retry_held = -1,
+                               .frame_held = -1,
+                               .frame_live = -1,
+                               .disk_conflict = -1 };
     bool ok = !app_scene_authoring_register_prototype(fixture.scene, AUTHORITY_SOURCE(1, 2), path) &&
               authority_unopened_rejection(&test) &&
               !app_scene_authoring_open_prototype(fixture.scene, "AuthoritySource");
     if (ok) {
-        ok = authority_entry_probes(&test) &&
-             authority_pending_and_history(&test) && authority_conflicts(&test) &&
-             authority_properties(&test) && authority_checkpoint_and_limits(&test);
+        ok = authority_entry_probes(&test) && authority_pending_and_history(&test) &&
+             authority_conflicts(&test) && authority_properties(&test) &&
+             authority_checkpoint_and_limits(&test) &&
+             authority_frame_and_disk(&test);
     }
     collab_shutdown();
     studio_code_free(s);
@@ -755,10 +830,14 @@ static bool prototype_source_authority_contract(studio *host)
     clean &= !rmdir(root);
     printf("Prototype source authority: Code unchanged=%d, Properties unchanged=%d\n", test.code_authority, test.property_authority);
     printf("Prototype source intent: retry_held=%d\n", test.retry_held);
+    printf("Prototype source frame: held=%d, live=%d\n", test.frame_held, test.frame_live);
+    printf("Prototype source disk: conflict=%d\n", test.disk_conflict);
     REQUIRE(clean);
     REQUIRE(test.code_authority && test.property_authority);
     REQUIRE(test.source_guard);
     REQUIRE(test.retry_held == 1);
+    REQUIRE(test.frame_held == 1 && test.frame_live == 1);
+    REQUIRE(test.disk_conflict == 1);
     REQUIRE(ok);
     return true;
 }

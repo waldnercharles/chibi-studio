@@ -818,8 +818,9 @@ void scene_source_input_tick(app_scene_authoring *scene)
         }
         asset_code_stage disk = { 0 };
         char error[256] = "";
-        if (asset_code_prepare_refresh(asset->source, &disk, error, sizeof error) &&
-            disk.text) {
+        if (!asset_code_prepare_refresh(asset->source, &disk, error, sizeof error)) {
+            asset_code_reject_static(asset->source, error);
+        } else if (disk.text) {
             (void)enqueue(
                 scene,
                 asset,
