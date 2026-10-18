@@ -65,6 +65,9 @@ add_library(studio STATIC ${STUDIO_SOURCES})
 target_include_directories(studio PRIVATE src include)
 # Help ▸ About names the engine release Studio was built against.
 target_compile_definitions(studio PRIVATE CHIBI_STUDIO_ENGINE_VERSION="${Chibi_VERSION}")
+# SDK installation preserves archive/header timestamps. Make its content identity
+# invalidate consumer objects even when a replacement package has older mtimes.
+target_compile_definitions(studio PRIVATE CHIBI_STUDIO_SDK_BUILD_ID="${sdk_id}")
 option(CHIBI_STUDIO_TRACY "Profile Studio zones with an installed Tracy client" OFF)
 option(CHIBI_STUDIO_WEB_TRACE "Profile Studio zones with browser User Timing" OFF)
 if(CHIBI_STUDIO_TRACY AND CHIBI_STUDIO_WEB_TRACE)
@@ -88,6 +91,7 @@ target_link_libraries(studio PRIVATE zep)
 
 add_executable(chibi-studio src/host/main.c src/host/state_file.c src/host/stacktrace.c src/studio_registry.c)
 target_include_directories(chibi-studio PRIVATE src include)
+target_compile_definitions(chibi-studio PRIVATE CHIBI_STUDIO_SDK_BUILD_ID="${sdk_id}")
 target_link_libraries(chibi-studio PRIVATE studio Chibi::graph_model Chibi::native_types Chibi::support
     Chibi::platform Chibi::render Chibi::project_preparation Chibi::graph_catalog Chibi::studio_graph)
 set_target_properties(chibi-studio PROPERTIES LINKER_LANGUAGE CXX
@@ -137,8 +141,9 @@ if(CHIBI_STUDIO_BUILD_ACCEPTANCE)
         tests/acceptance/debugger.c
         src/host/state_file.c src/host/stacktrace.c src/studio_registry.c)
     target_include_directories(studio-acceptance PRIVATE src include)
+    target_compile_definitions(studio-acceptance PRIVATE CHIBI_STUDIO_SDK_BUILD_ID="${sdk_id}")
     target_link_libraries(studio-acceptance PRIVATE studio
-        Chibi::array_capabilities Chibi::text_capabilities)
+        Chibi::array_capabilities Chibi::text_capabilities Chibi::host_native_catalog)
     foreach(package IN LISTS STUDIO_PACKAGES)
         target_link_libraries(studio-acceptance PRIVATE Chibi::${package})
     endforeach()

@@ -4079,7 +4079,13 @@ static bool code_glyphs_frame(void *state)
 }
 
 #include "outliner_move.h"
+#include "outliner_projection.h"
+#include "outliner_scale.h"
+#include "outliner_live.h"
+#include "outliner_live_guards.h"
+#include "outliner_live_fuel.h"
 #include "outliner_row_policies.h"
+#include "outliner_work.h"
 #include "outliner_rows.h"
 #include "panel_idle.h"
 #include "project_open.h"
@@ -4492,6 +4498,9 @@ TEST_CASE(debugger_source_history)
 
 int main(int argc, char **argv)
 {
+    if (argc == 2 && !strcmp(argv[1], "--outliner-work")) {
+        return outliner_work_main();
+    }
     if (argc == 2 && !strcmp(argv[1], "--scene-read")) {
         studio_scene_read_tests();
         pu_print_stats();
@@ -4500,6 +4509,26 @@ int main(int argc, char **argv)
     if (argc == 4 && !strcmp(argv[1], "--outliner-row-policies") &&
         !strcmp(argv[2], "--source")) {
         return outliner_row_policy_main(argv[3]);
+    }
+    if (argc == 4 && !strcmp(argv[1], "--outliner-projection") &&
+        !strcmp(argv[2], "--source")) {
+        return outliner_projection_main(argv[3]);
+    }
+    if (argc == 4 && !strcmp(argv[1], "--outliner-scale") &&
+        !strcmp(argv[2], "--source")) {
+        return outliner_scale_main(argv[3]);
+    }
+    if (argc == 4 && !strcmp(argv[1], "--outliner-live") &&
+        !strcmp(argv[2], "--content-root")) {
+        return outliner_live_main(argv[3]);
+    }
+    if (argc == 4 && !strcmp(argv[1], "--outliner-live-guards") &&
+        !strcmp(argv[2], "--content-root")) {
+        return outliner_live_guards_main(argv[3]);
+    }
+    if (argc == 4 && !strcmp(argv[1], "--outliner-live-fuel") &&
+        !strcmp(argv[2], "--content-root")) {
+        return outliner_live_fuel_main(argv[3]);
     }
     if (argc == 2 && !strcmp(argv[1], "--project-open")) {
         pu_setup(NULL, project_open_cleanup);
@@ -4560,8 +4589,13 @@ int main(int argc, char **argv)
             "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
             "history "
             "--project-root PATH | --scene-cursors | --scene-read | "
-            "--project-open | "
-            "--outliner-row-policies --source PATH\n"
+            "--project-open | --outliner-work | "
+            "--outliner-row-policies --source PATH | --outliner-projection "
+            "--source PATH\n"
+            "--outliner-scale --source PATH\n"
+            "--outliner-live --content-root PATH\n"
+            "--outliner-live-guards --content-root PATH\n"
+            "--outliner-live-fuel --content-root PATH\n"
         );
         return 2;
     }

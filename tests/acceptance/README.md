@@ -565,3 +565,86 @@ PY
 Configuration and compilation happen before this invocation. Fixture setup,
 both constructor calls and normal teardown stay inside its unchanged 60-second
 deadline. This focused selector does not run the rendering or interaction routes.
+
+`studio-acceptance --outliner-projection --source PATH` checks the complete
+production `OutlinerRowPolicies.chibi` library on bytecode and SLJIT. Two source
+preparations feed 80 direct calls, 46 literal rows and 40 projection headers. The
+fixture checks every field, input immutability, full-width entity keys, filtering,
+paging edges, byte semantics and output ownership after source/module retirement.
+Inputs have at most four actors, eleven field kinds and 134 text bytes. Each
+runtime frame has a 20,000-instruction budget; the fixed cases invoke fewer than
+1,000 authored functions per backend. The two preparations evaluate 44 named
+constants under the existing compile-time limit. It renders no frames, launches
+no children and writes no files. The existing helper route retains its 82 direct
+calls and 2,000-instruction frame budget against this same library.
+
+`studio-acceptance --outliner-live --content-root PATH` exercises the production
+controller, publisher and adapter using two real UI mounts and two one-actor
+edited worlds. Its twelve sequential scenarios include current publication,
+unchanged/reverted working sources, atomic reload, stale mount/controller/scene
+origins, owned model data, internal-refresh cancellation, queued controls and a
+hidden native Reveal. The actual `preview_sources_*` publisher verifies no-op and
+revert behavior. Five bounded collections prepare six new modules and evaluate
+66 named constants; the runtime executes 27 adapter sends, one deferred replay,
+two Begin roots, two pumps and one debugger resume. Ordinary controls retain the
+production 10,000-instruction per-frame budget. Refresh and RevealObject use
+the finite request allowance derived from their exact captured facts, shared
+across synchronous helpers. One 320×200 RmlUi context loads sixteen
+embedded font faces (7,293,604 bytes), shows one document and performs one layout
+refresh. There are no rendered frames, context update loops, child processes,
+network operations or file writes. This route is bytecode-only; the pure route
+separately compares bytecode and SLJIT.
+
+These are standalone admissions, with configuration/build excluded and each
+whole invocation supervised by the engine's unchanged 60-second deadline. Set
+`CHIBI_STUDIO_BUILD`, `CHIBI_OUTLINER_SOURCE` or `CHIBI_OUTLINER_CONTENT` and use
+`tools/test_policy.py tool studio-outliner-projection`,
+`studio-outliner-row-policies` or `studio-outliner-live` from the engine checkout.
+Source admission is not an execution result, a rendered parity check or browser
+coverage. The full Studio suite remains quarantined.
+
+## Live Outliner guard regressions
+
+`studio-acceptance --outliner-live-guards --content-root <studio-content>` is a
+separate bounded route for scene epoch changes, deferred Capture errors followed
+by FIFO controls, and duplicate Publish. From the engine checkout, run it through
+`python3 tools/test_policy.py tool studio-outliner-live-guards`, setting
+`CHIBI_STUDIO_BUILD` and `CHIBI_OUTLINER_CONTENT` to the installed-SDK build and
+Studio content directory. Its four preparations create four modules and evaluate
+22 library constants; two mounts/worlds receive eight sends, one deferred replay
+and two empty Begin handlers. It performs no pumps, layout, updates, rendering,
+frames, subprocesses or file writes. The production backend initializes its
+sixteen embedded font faces. It retains the whole-invocation 60-second limit.
+Scene generations are controlled test inputs; actual scene loading is not covered.
+
+## Outliner workload arithmetic
+
+`studio-acceptance --outliner-work` runs four pure C cases: 38 workload
+measurements and 43 allowance calculations, with at most eight actors and a
+128-byte path. It checks text and hierarchy bounds, paging extrema, captured
+spans, invalid inputs and arithmetic overflow. It creates no sources, runtime,
+UI context, frames, files or subprocesses. Use the engine's standalone
+`python3 tools/test_policy.py tool studio-outliner-work` route with
+`CHIBI_STUDIO_BUILD` set to the installed-SDK consumer. Its whole invocation
+retains the production 60-second deadline and is outside aggregates.
+
+## Live Outliner request allowance
+
+`studio-acceptance --outliner-live-fuel --content-root <studio-content>` runs one
+case on bytecode and actual SLJIT. Each backend publishes 32 rows from the exact
+shipped source and 4,096 flat actors, then uses a one-actor scene to verify budget
+exhaustion before Project and after accepted Publish. Literal row/header and
+revision checks require the previous valid model to survive the first failure
+and the newly committed model to survive the second. The finite fault loops
+have at most 32,767 iterations; no retry increases an allowance.
+
+The complete route prepares eight collections/eight modules, evaluates 44
+constants, sends ten adapter events and runs four empty Begin handlers. It
+uses at most 4,097 actors and 8,615 scoped entries per backend, with the existing
+320x200 RmlUi fixture and embedded fonts. There are no shown documents, layout
+updates, pumps, debugger resumes, rendering, files or subprocesses. Run the
+engine's standalone `studio-outliner-live-fuel` supervisor route with
+`CHIBI_STUDIO_BUILD` and `CHIBI_OUTLINER_CONTENT`; its shared 60-second deadline
+and aggregate exclusions are unchanged. Exact token spend is covered separately
+by engine tests. The coefficient and source identities are recorded in
+[the census evidence](../../docs/evidence/outliner-request-work/census.md).

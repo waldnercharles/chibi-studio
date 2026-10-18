@@ -2,6 +2,7 @@
 #include "diagnostics/tracy.h"
 #include "editor/studio/studio_internal.h"
 #include "editor/studio/studio_nodes.h"
+#include "editor/studio/studio_outliner_projection.h"
 #include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/editor.h"
 #include "editor/workspace/editor_internal.h"
@@ -1100,6 +1101,7 @@ void studio_free(studio *s)
     if (!s) {
         return;
     }
+    studio_ui_outliner_invalidate(s);
 #ifdef __EMSCRIPTEN__
     if (web_studio == s) {
         web_studio = NULL;

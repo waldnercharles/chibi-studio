@@ -5,6 +5,7 @@
 #include "authoring/preview_source.h"
 #include "authoring/source_asset.h"
 #include "editor/collab/actions_scene.h"
+#include "editor/studio/studio_outliner_projection.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
 #include "runtime/declared_components.h"
@@ -403,7 +404,13 @@ static int load_content_prototype(app_scene_authoring *scene, const char *path)
 
 int scene_attach_studio_nodes(app_scene_authoring *scene, preview_world *world, char *error, size_t size)
 {
-    if (!scene->studio_project || preview_sources_working(world)) {
+    if (!scene->studio_project) {
+        return 0;
+    }
+    if (!studio_outliner_guard_install(world->runtime->sources, error, size)) {
+        return -1;
+    }
+    if (preview_sources_working(world)) {
         return 0;
     }
     int bound = source_bind_service(world->runtime->sources, "studio", &scene->studio_nodes);

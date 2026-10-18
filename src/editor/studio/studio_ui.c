@@ -16,6 +16,7 @@
 #include "editor/collab/collab.h"
 #include "editor/studio/studio_internal.h"
 #include "editor/studio/studio_nodes.h"
+#include "editor/studio/studio_outliner_projection.h"
 #include "editor/workspace/tree_watch.h"
 #include "graph/document/serialize.h"
 #include "render/ui.h"
@@ -64,6 +65,7 @@ struct studio_ui
     ui_mount *headers[STUDIO_AREA_COUNT];  /* each area's header */
     ui_mount *controls[STUDIO_AREA_COUNT]; /* an authored panel in each header */
     studio_node_service nodes; /* the "studio" service its behaviors call */
+    studio_outliner_projection *outliner;
     bool wake; /* authored activations waiting for a host emission */
     /* What the panels' behaviors read (studio_nodes_stamp) as of the last
        tick; `revision` counts its changes, and the panels refresh when it
@@ -264,6 +266,7 @@ static void reload_sources(studio *s, const source_catalog_edit *edits, int coun
 
 static void free_world(studio_ui *studio_ui_state)
 {
+    studio_outliner_projection_retire(studio_ui_state->outliner);
     forget_errors(studio_ui_state);
     for (int i = 0; i < acount(studio_ui_state->panels); i++) {
         free(studio_ui_state->panels[i].name);
@@ -278,6 +281,8 @@ static void free_world(studio_ui *studio_ui_state)
     }
     afree(studio_ui_state->panels);
     prototype_preview_free(studio_ui_state->world);
+    studio_outliner_projection_free(studio_ui_state->outliner);
+    studio_ui_state->outliner = NULL;
     for (int i = 0; i < acount(studio_ui_state->prototypes); i++) {
         prototype_free(studio_ui_state->prototypes[i]);
     }
@@ -304,6 +309,16 @@ static bool open_world(studio *s, studio_ui *studio_ui_state, char *error, size_
     );
     assert(!bound);
     (void)bound;
+    studio_ui_state->outliner = studio_outliner_projection_new(
+        s,
+        live->runtime->sources,
+        engine_ui(prototype_preview_runtime(studio_ui_state->world)),
+        error,
+        size
+    );
+    if (!studio_ui_state->outliner) {
+        return false;
+    }
     if (prepare_sources(live, studio_ui_state->content_root, error, size)) {
         return false;
     }
@@ -494,8 +509,10 @@ bool studio_ui_tick(studio *s)
         return false;
     }
     studio_ui *studio_ui_state = s->ui;
+    studio_outliner_projection_boundary(studio_ui_state->outliner);
     follow_disk(s);
     prototype_preview_tick(studio_ui_state->world, s->time);
+    studio_outliner_projection_boundary(studio_ui_state->outliner);
     uint64_t stamp = studio_nodes_stamp(s);
     if (stamp != studio_ui_state->stamp) {
         studio_ui_state->stamp = stamp;
@@ -547,11 +564,28 @@ static panel *find_panel(studio_ui *studio_ui_state, const char *name)
 
 /* Runs `a` on `entity`'s behaviors now, or on every panel's when `entity`
  * is none, so what they set shows in the frame that sent it. */
-static void dispatch(studio *s, ecs_entity entity, const ui_activation *a)
+static void dispatch(studio *s, ecs_entity entity, const ui_activation *a, ui_mount *mount, bool internal)
 {
     preview_world *live = prototype_preview_live(s->ui->world);
     render_ui_host host = authoring_ui_events(live);
-    if (!ui_activation_send(&host, entity, a, s->mac ? RML_KM_META : RML_KM_CTRL)) {
+    bool carried = studio_outliner_projection_send(
+        s->ui->outliner,
+        &host,
+        entity,
+        a,
+        mount,
+        internal,
+        s->mac ? RML_KM_META : RML_KM_CTRL,
+        live->runtime->now,
+        live->runtime->delta
+    );
+    const char *replay_error = studio_outliner_projection_replay_error(s->ui->outliner);
+    if (replay_error[0]) {
+        char message[512];
+        snprintf(message, sizeof message, "failed: %s", replay_error);
+        report_error(s, "RevealObject", message);
+    }
+    if (!carried) {
         report_error(s, a->event, "declares a payload a UI event cannot carry");
         return;
     }
@@ -567,9 +601,11 @@ static void dispatch(studio *s, ecs_entity entity, const ui_activation *a)
  * chain settles before the panel shows. */
 static void settle(studio_ui *studio_ui_state)
 {
+    studio_outliner_projection_boundary(studio_ui_state->outliner);
     entities *entities = prototype_preview_entities(studio_ui_state->world);
     for (int round = 0; round < 8 && entities_pending_events(entities); round++) {
         entities_dispatch_events(entities);
+        studio_outliner_projection_boundary(studio_ui_state->outliner);
     }
 }
 
@@ -620,7 +656,7 @@ static bool send_activations(studio *s, ui_mount *mount, ecs_entity entity)
                 a.value
             );
         }
-        dispatch(s, entity, &a);
+        dispatch(s, entity, &a, mount, false);
     }
     return sent;
 }
@@ -633,7 +669,7 @@ void studio_ui_send(studio *s, const char *name, const char *argument)
     ui_activation a = { .argc = 1 };
     snprintf(a.event, sizeof a.event, "%s", name);
     snprintf(a.args[0], sizeof a.args[0], "%s", argument);
-    dispatch(s, (ecs_entity){ 0 }, &a);
+    dispatch(s, (ecs_entity){ 0 }, &a, NULL, false);
     settle(s->ui);
     refresh_all(s->ui);
 }
@@ -743,6 +779,14 @@ source_registry *studio_ui_sources(studio *s)
     return prototype_preview_live(s->ui->world)->runtime->sources;
 }
 
+void studio_ui_outliner_invalidate(studio *s)
+{
+    if (s->ui) {
+        studio_outliner_projection_invalidate(s->ui->outliner);
+        refresh_all(s->ui);
+    }
+}
+
 rml_data_reads studio_ui_data_reads(const studio *s)
 {
     return s->ui ? rml_data_model_reads(s->ui->data.model) : (rml_data_reads){ 0 };
@@ -804,6 +848,7 @@ static void show_panel(studio *s, panel *p, ui_mount **mount, rml_element *host,
     studio_ui *studio_ui_state = s->ui;
     ecs_entity entity = prototype_preview_entity_at(studio_ui_state->world, p->index);
     if (*mount && strcmp(ui_mount_name(*mount), document) != 0) {
+        studio_outliner_projection_unmount(studio_ui_state->outliner, *mount);
         ui_mount_free(*mount);
         *mount = NULL;
     }
@@ -815,6 +860,7 @@ static void show_panel(studio *s, panel *p, ui_mount **mount, rml_element *host,
     }
     studio_sources_mounted(s, &studio_ui_state->sources, &studio_ui_state->data, p->name);
     uint64_t id = ecs_entity_to_u64(entity);
+    studio_outliner_projection_bind(studio_ui_state->outliner, *mount, id);
     ui_data_bind_self(&studio_ui_state->data, host, id);
     if (ui_mount_sync(*mount, host, studio_ui_state->listener, s->time)) {
         kit_style_sheet(s->kit, document, ui_mount_style(*mount));
@@ -834,7 +880,7 @@ static void show_panel(studio *s, panel *p, ui_mount **mount, rml_element *host,
          round++) {
         due |= send_activations(s, *mount, entity);
         if (due) {
-            dispatch(s, entity, &(ui_activation){ .event = "Refresh" });
+            dispatch(s, entity, &(ui_activation){ .event = "Refresh" }, *mount, true);
             due = false;
         }
         settle(studio_ui_state);
@@ -886,6 +932,7 @@ void studio_ui_panel_detach(studio *s, const char *name)
 {
     panel *p = s->ui ? find_panel(s->ui, name) : NULL;
     if (p) {
+        studio_outliner_projection_unmount(s->ui->outliner, p->mount);
         ui_mount_detach(p->mount);
     }
 }
@@ -931,8 +978,11 @@ void studio_ui_area_detach(studio *s, int area)
     if (!s->ui) {
         return;
     }
+    studio_outliner_projection_unmount(s->ui->outliner, s->ui->headers[area]);
     ui_mount_detach(s->ui->headers[area]);
+    studio_outliner_projection_unmount(s->ui->outliner, s->ui->areas[area]);
     ui_mount_detach(s->ui->areas[area]);
+    studio_outliner_projection_unmount(s->ui->outliner, s->ui->controls[area]);
     ui_mount_detach(s->ui->controls[area]);
 }
 
@@ -1031,6 +1081,7 @@ static void show_modal(studio *s, const char *name)
         return;
     }
     if (p) {
+        studio_outliner_projection_unmount(s->ui->outliner, p->mount);
         ui_mount_detach(p->mount);
     }
     if (!strcmp(name, "Settings")) {
@@ -1072,6 +1123,7 @@ void studio_ui_new_project(studio *s)
         return;
     }
     if (!s->new_project.open) {
+        studio_outliner_projection_unmount(s->ui->outliner, p->mount);
         ui_mount_detach(p->mount);
         return;
     }

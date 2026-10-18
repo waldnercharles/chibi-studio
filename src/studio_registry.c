@@ -2,6 +2,7 @@
 
 #include "authoring/application_catalog.h"
 #include "authoring/graph_catalog.h"
+#include "authoring/studio_outliner_schema.h"
 #include "authoring/studio_schema.h"
 #include "runtime/component_catalog.h"
 
@@ -32,11 +33,12 @@ static bool same_types(type_catalog_pack a, type_catalog_pack b)
 static bool graph_types(type_catalog_pack pack)
 {
     return (pack.type_count || pack.enum_count) &&
-           !same_types(pack, TYPE_PACK) && !same_types(pack, STUDIO_TYPE_PACK);
+           !same_types(pack, TYPE_PACK) && !same_types(pack, STUDIO_TYPE_PACK) &&
+           !same_types(pack, STUDIO_OUTLINER_TYPE_PACK);
 }
 int type_catalog_pack_count()
 {
-    int count = 2;
+    int count = 3;
     for (int i = 0; catalog && i < authoring_graph_catalog_type_pack_count(catalog); i++) {
         count += graph_types(authoring_graph_catalog_type_pack_at(catalog, i));
     }
@@ -52,7 +54,10 @@ type_catalog_pack type_catalog_pack_at(int index)
     if (index == 1) {
         return STUDIO_TYPE_PACK;
     }
-    index -= 2;
+    if (index == 2) {
+        return STUDIO_OUTLINER_TYPE_PACK;
+    }
+    index -= 3;
     for (int i = 0; catalog && i < authoring_graph_catalog_type_pack_count(catalog); i++) {
         type_catalog_pack pack = authoring_graph_catalog_type_pack_at(catalog, i);
         if (graph_types(pack) && index-- == 0) {

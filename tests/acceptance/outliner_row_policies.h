@@ -3,6 +3,7 @@
 #include "authoring/reference_index.h"
 #include "authoring/source_format.h"
 #include "authoring/source_prepare.h"
+#include "authoring/studio_outliner_definition.h"
 #include "execution/function_builder.h"
 #include "execution/module.h"
 #include "execution/status.h"
@@ -106,8 +107,8 @@ static bool outliner_policy_prepare(behavior_backend backend)
         );
     }
     REQUIRE(outliner_policy.source->valid);
-    REQUIRE(outliner_policy.source->analysis->function_count == 4);
-    REQUIRE(execution_module_function_count(outliner_policy.source->module) == 4);
+    REQUIRE(outliner_policy.source->analysis->function_count == 12);
+    REQUIRE(execution_module_function_count(outliner_policy.source->module) == 12);
     REQUIRE(execution_module_backend(outliner_policy.source->module) == backend);
     outliner_policy.invocations = 0;
     return true;
@@ -451,8 +452,20 @@ TEST_CASE(outliner_row_policy_contract)
     native_definition_pack packs[] = { NATIVE_ARRAY_DEFINITION_PACK,
                                        NATIVE_TEXT_DEFINITION_PACK };
     char error[256];
+    native_type_catalog *
+        types = native_type_catalog_new(STUDIO_OUTLINER_TYPE_DEFINITIONS, 3, error, sizeof error);
+    REQUIRE(types);
+    uint64_t entity_id = script_catalog_id("type", "ecs.entity");
+    script_catalog_type entity = { .id = entity_id,
+                                   .name = "ecs.entity",
+                                   .type = { .storage = PIN_HANDLE, .nominal = entity_id },
+                                   .size = sizeof(uint64_t) };
+    script_catalog base = { .types = &entity, .type_count = 1, .entity_type = entity_id };
+    native_capability_pack extra[] = { native_type_catalog_pack(types),
+                                       { .catalog = &base } };
     outliner_policy
-        .native = native_capabilities_from_definition_packs(NULL, 0, packs, 2, error, sizeof error);
+        .native = native_capabilities_from_definition_packs(extra, 2, packs, 2, error, sizeof error);
+    native_type_catalog_free(types);
     if (!outliner_policy.native) {
         fprintf(stderr, "Outliner row policy catalog: %s\n", error);
     }

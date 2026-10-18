@@ -1,82 +1,57 @@
 OutlinerRows :: behavior {
     First: int = 0
     Count: int = 0
-    Collapsed := false
-    ShownOpen := true
-    action scene_objects_action = scene_objects(convert<To_Integer>(max_First_1_0(First)), convert<To_Integer>(Count_1_step_1_First(Count, First)))
-    action branch_3 = branch_if(convert<To_Real>(scene_objects_action.Shown) > 0)
+    Collapsed: bool = false
+    ShownOpen: bool = true
+
     on Begin {
-        await set_ui_data(0, "root.icon", string(""))
-        await set_ui_data(0, "root.parent", bool(true))
-        set_ui_data(0, "root.depth", integer(0))
     }
+
     on ShowRows {
         state.First = event.First
         state.Count = event.Count
     }
+
     on Refresh {
-        scene_objects_action()
-    }
-    after scene_objects_action {
-        await set_ui_data(0, "rootShown", cast<double>(First) == 0)
-        Shown := scene_objects_action.Shown
-        await set_ui_data(0, "count", Shown)
-        await set_ui_data(0, "root.label", scene_info().Title)
-        await set_ui_data(0, "root.open", !Collapsed)
-        ShownOpen = !Collapsed
-        if Collapsed {
-            await set_ui_data(0, "rows", clear(scene_objects_action.Rows))
-            await set_ui_data(0, "total", integer(1))
-            branch_3()
-        } else {
-            await set_ui_data(0, "rows", scene_objects_action.Rows)
-            await set_ui_data(0, "total", _1_Shown(Shown))
-            branch_3()
+        captured := capture_outliner()
+        projected := OutlinerRowPolicies.Project(
+            captured.Actors, captured.Prototypes, captured.ComponentIcons,
+            captured.FieldKinds, captured.AttachmentEntities, captured.Scene,
+            First, Count, Collapsed, ""
+        )
+        if publish_outliner(projected.Projection, projected.Rows) {
+            ShownOpen = !Collapsed
         }
     }
-    after branch_3.True {
-        await set_ui_data(0, "filtered", bool(false))
-        set_ui_data(0, "notice", string(""))
-    }
-    after branch_3.False {
-        if text_equal(scene_info().Filter, "") {
-            await set_ui_data(0, "filtered", bool(false))
-            set_ui_data(0, "notice", string("No objects. Add a prototype to start."))
-        } else {
-            await set_ui_data(0, "filtered", bool(true))
-            set_ui_data(0, "notice", format_text("No objects match “{}”", scene_info().Filter))
-        }
-    }
+
     on FoldRoot {
         Collapsed = true
     }
+
     on UnfoldRoot {
         Collapsed = false
     }
+
     on ToggleRoot {
         Collapsed = !Collapsed
     }
+
     on RootClicked {
         if (event.Open && !ShownOpen) || (!event.Open && ShownOpen) {
             Collapsed = !event.Open
         }
     }
+
     on RevealObject {
         Collapsed = false
-        if convert<To_Real>(object_row(event.Object)) >= 0 {
-            reveal_ui_list_row(0, "#outliner-list", convert<To_Integer>(Row_1(object_row(event.Object))))
+        captured := capture_outliner()
+        projected := OutlinerRowPolicies.Project(
+            captured.Actors, captured.Prototypes, captured.ComponentIcons,
+            captured.FieldKinds, captured.AttachmentEntities, captured.Scene,
+            First, Count, Collapsed, event.Object
+        )
+        if publish_outliner(projected.Projection, projected.Rows) {
+            ShownOpen = !Collapsed
         }
-    }
-    max_First_1_0 :: (First: int = 0) -> (Result: double = 0.0) {
-        return max(convert<To_Real>(entry) - real(1.0), real(0.0))
-    }
-    Count_1_step_1_First :: (Count: int = 0, First: int = 0) -> (Result: double = 0.0) {
-        return convert<To_Real>(entry.Count) - real(1.0) + step(convert<To_Real>(entry.First), real(1.0))
-    }
-    _1_Shown :: (Shown: int = 0) -> (Result: double = 0.0) {
-        return real(1.0) + convert<To_Real>(entry)
-    }
-    Row_1 :: (Row: int = 0) -> (Result: double = 0.0) {
-        return convert<To_Real>(entry) + real(1.0)
     }
 }

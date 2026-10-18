@@ -1,4 +1,33 @@
 OutlinerRowPolicies :: library {
+    Row :: struct {
+        key: string
+        label: string
+        icon: string
+        prototype: string
+        drop: string
+        depth: int
+        behaviors: int
+        active: bool
+        marked: bool
+        hidden: bool
+        locked: bool
+        renaming: bool
+    }
+
+    Projection :: struct {
+        rootLabel: string
+        rootIcon: string
+        rootParent: bool
+        rootDepth: int
+        rootOpen: bool
+        rootShown: bool
+        count: int
+        total: int
+        filtered: bool
+        notice: string
+        revealRow: int
+    }
+
     Flags :: struct {
         active: bool
         marked: bool
@@ -36,10 +65,10 @@ OutlinerRowPolicies :: library {
     // outside the filtered row window. Roots use -1; index names a valid node.
     Depth :: (parents: int[], index: int) -> int {
         depth: int = 1
-        parent := parents[index]
+        parent := get(parents, index)
         while parent >= 0 {
             depth = depth + 1
-            parent = parents[parent]
+            parent = get(parents, parent)
         }
         return depth
     }
@@ -51,7 +80,7 @@ OutlinerRowPolicies :: library {
         index: int = 0
         count := length(componentIcons)
         while index < count {
-            icon := componentIcons[index]
+            icon := get(componentIcons, index)
             if icon != NoIcon && icon < first {
                 first = icon
             }
@@ -63,7 +92,7 @@ OutlinerRowPolicies :: library {
             "󰳚", "󰋕", "󰮋", "󰠲"
         ]
         if first >= 0 && first < IconCount {
-            return glyphs[first]
+            return get(glyphs, first)
         }
         return "󰆧"
     }
@@ -82,7 +111,7 @@ OutlinerRowPolicies :: library {
         index: int = 0
         count := length(assignableKinds)
         while index < count {
-            kind := assignableKinds[index]
+            kind := get(assignableKinds, index)
             if kind == MaterialAsset {
                 hasMaterial = true
             }
@@ -133,5 +162,211 @@ OutlinerRowPolicies :: library {
             locked: (viewFlags & LockedView) != 0,
             renaming: renameOutliner && rename == actor
         }
+    }
+
+    // Match the native C-locale policy: only unsigned ASCII A-Z fold.
+    FoldByte :: (value: int) -> int {
+        if value >= 65 && value <= 90 {
+            return value + 32
+        }
+        return value
+    }
+
+    // Query comes first. Empty queries match, including an empty text value.
+    ContainsFolded :: (queryText: string, text: string) -> bool {
+        querySize := text_byte_length(queryText)
+        if querySize == 0 {
+            return true
+        }
+        last := text_byte_length(text) - querySize
+        start: int = 0
+        while start <= last {
+            offset: int = 0
+            while offset < querySize &&
+            FoldByte(text_byte_at(queryText, offset)) ==
+            FoldByte(text_byte_at(text, start + offset)) {
+                offset = offset + 1
+            }
+            if offset == querySize {
+                return true
+            }
+            start = start + 1
+        }
+        return false
+    }
+
+    // Byte offsets; an empty needle matches the end, absence returns -1.
+    LastIndex :: (text: string, needle: string) -> int {
+        textSize := text_byte_length(text)
+        needleSize := text_byte_length(needle)
+        if needleSize == 0 {
+            return textSize
+        }
+        start := textSize - needleSize
+        while start >= 0 {
+            offset: int = 0
+            while offset < needleSize &&
+            text_byte_at(needle, offset) == text_byte_at(text, start + offset) {
+                offset = offset + 1
+            }
+            if offset == needleSize {
+                return start
+            }
+            start = start - 1
+        }
+        return -1
+    }
+
+    // The native title buffer holds 127 bytes. Truncate before stripping the
+    // last nonleading dot, and use the fallback only for an empty original path.
+    Title :: (path: string) -> string {
+        if text_byte_length(path) == 0 {
+            return "Scene"
+        }
+        title := text_slice(path, LastIndex(path, "/") + 1, 127)
+        dot := LastIndex(title, ".")
+        if dot > 0 {
+            return text_slice(title, 0, dot)
+        }
+        return title
+    }
+
+    // Spans are raw validated Capture facts, before icon/drop policy runs.
+    IntRange :: (values: int[], first: int, count: int) -> int[] {
+        items: int[] = []
+        index: int = 0
+        while index < count {
+            items = array_add(items, get(values, first + index))
+            index = index + 1
+        }
+        return items
+    }
+
+    // Duplicate attachment entities are distinct behaviors, in registry order.
+    BehaviorCount :: (attachments: entity[], actor: entity) -> int {
+        count: int = 0
+        index: int = 0
+        size := length(attachments)
+        while index < size {
+            if get(attachments, index) == actor {
+                count = count + 1
+            }
+            index = index + 1
+        }
+        return count
+    }
+
+    // Preserve Count - 1 + step(First, 1), whose native inputs are Value, Edge:
+    // First 0 takes Count - 1 actors from 0; First 1 takes Count from 0;
+    // First 2 takes Count from 1. Clamp before subtraction for INT_MIN safety.
+    Page :: (First: int, Count: int, shown: int) -> (Start: int, Amount: int) {
+        start: int = 0
+        if First > 0 {
+            start = First - 1
+        }
+        if start > shown {
+            start = shown
+        }
+        amount: int = 0
+        if Count > 0 {
+            amount = Count
+            if First < 1 {
+                amount = amount - 1
+            }
+        }
+        if amount > shown - start {
+            amount = shown - start
+        }
+        return (start, amount)
+    }
+
+    Project :: (
+        Actors: StudioOutlinerActor[], Prototypes: StudioOutlinerPrototype[],
+        ComponentIcons: int[], FieldKinds: int[], AttachmentEntities: entity[],
+        Scene: StudioOutlinerScene, First: int, Count: int, Collapsed: bool,
+        revealObject: string
+    ) -> (Projection: Projection, Rows: Row[]) {
+        parents: int[] = []
+        matches: int[] = []
+        revealRow: int = -1
+        index: int = 0
+        actorCount := length(Actors)
+        while index < actorCount {
+            actor := get(Actors, index)
+            parents = array_add(parents, actor.parent)
+            if ContainsFolded(Scene.filter, actor.name) ||
+            ContainsFolded(Scene.filter, actor.prototype) {
+                matches = array_add(matches, index)
+                if revealRow < 0 && !text_equal(revealObject, "") &&
+                text_equal(revealObject, entity_decimal(actor.actor)) {
+                    revealRow = length(matches)
+                }
+            }
+            index = index + 1
+        }
+
+        shown := length(matches)
+        page := Page(First, Count, shown)
+        rows: Row[] = []
+        offset: int = 0
+        while !Collapsed && offset < page.Amount {
+            at := get(matches, page.Start + offset)
+            actor := get(Actors, at)
+            hints: int[] = []
+            if actor.prototypeIndex >= 0 {
+                prototypeFacts := get(Prototypes, actor.prototypeIndex)
+                hints = IntRange(ComponentIcons, prototypeFacts.componentFirst, prototypeFacts.componentCount)
+            }
+            kinds := IntRange(FieldKinds, actor.fieldFirst, actor.fieldCount)
+            flags := SelectState(
+                at, Scene.activeIndex, actor.selected, actor.viewFlags,
+                actor.actor, Scene.rename, Scene.renameOutliner
+            )
+            row: Row = {
+                key: entity_decimal(actor.actor),
+                label: actor.name,
+                icon: Icon(hints),
+                prototype: actor.prototype,
+                drop: Drop(kinds, Scene.editable),
+                depth: Depth(parents, at),
+                behaviors: BehaviorCount(AttachmentEntities, actor.actor),
+                active: flags.active,
+                marked: flags.marked,
+                hidden: flags.hidden,
+                locked: flags.locked,
+                renaming: flags.renaming
+            }
+            rows = array_add(rows, row)
+            offset = offset + 1
+        }
+
+        total: int = 1
+        if !Collapsed {
+            total = shown + 1
+        }
+        filtered := false
+        notice: string = ""
+        if shown == 0 {
+            if text_equal(Scene.filter, "") {
+                notice = "No objects. Add a prototype to start."
+            } else {
+                filtered = true
+                notice = format_text("No objects match “{}”", Scene.filter)
+            }
+        }
+        projection: Projection = {
+            rootLabel: Title(Scene.scenePath),
+            rootIcon: "",
+            rootParent: true,
+            rootDepth: 0,
+            rootOpen: !Collapsed,
+            rootShown: First == 0,
+            count: shown,
+            total: total,
+            filtered: filtered,
+            notice: notice,
+            revealRow: revealRow
+        }
+        return (projection, rows)
     }
 }

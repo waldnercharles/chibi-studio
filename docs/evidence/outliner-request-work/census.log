@@ -1,0 +1,28 @@
+TEMPORARY TEST QUARANTINE: full native/render and unadmitted checks DISABLED, NOT PASSED. See docs/testing.md#temporary-60-second-policy.
+Running: outliner_work_counts_frozen_canonical_request_closure outliner-work source=behaviors/OutlinerRows.chibi bytes=1441 fnv1a64=8c5ca50476106b0b reviewed_sha256=510f2155a49ff77724efd38be5d1098f5ac5957c62acb0c06eb755de22e8a450
+outliner-work source=libraries/OutlinerRowPolicies.chibi bytes=11668 fnv1a64=14e0b3fe818523ed reviewed_sha256=e2c727396b2a5004327fcf17cd3e1a8194629c928db75c4927ef6f4cae9c28a5
+outliner-work body=OutlinerRows.Begin id=69a796a95e444db4 reachable=0 canonical_instructions=6 checks=1 calls=0 appends=0
+outliner-work body=OutlinerRows.ShowRows id=a57e4476c5756ec4 reachable=0 canonical_instructions=20 checks=3 calls=0 appends=0
+outliner-work body=OutlinerRows.Refresh id=7989efeab69b18c0 reachable=1 canonical_instructions=346 checks=6 calls=1 appends=0
+outliner-work body=OutlinerRows.FoldRoot id=eee0ba957ce40dd1 reachable=0 canonical_instructions=13 checks=2 calls=0 appends=0
+outliner-work body=OutlinerRows.UnfoldRoot id=21088b4063c465d9 reachable=0 canonical_instructions=13 checks=2 calls=0 appends=0
+outliner-work body=OutlinerRows.ToggleRoot id=89d4860de4e45e36 reachable=0 canonical_instructions=18 checks=2 calls=0 appends=0
+outliner-work body=OutlinerRows.RootClicked id=c544fe4b61e4c489 reachable=0 canonical_instructions=65 checks=4 calls=0 appends=0
+outliner-work body=OutlinerRows.RevealObject id=f102a425a381658a reachable=1 canonical_instructions=353 checks=7 calls=1 appends=0
+outliner-work body=OutlinerRowPolicies.Depth id=3505c1f82525805c reachable=1 canonical_instructions=120 checks=9 calls=0 appends=0
+outliner-work body=OutlinerRowPolicies.Icon id=8dfe98bd137af6ba reachable=1 canonical_instructions=254 checks=17 calls=0 appends=0
+outliner-work body=OutlinerRowPolicies.Drop id=d5f94cd4333b938e reachable=1 canonical_instructions=545 checks=49 calls=0 appends=0
+outliner-work body=OutlinerRowPolicies.SelectState id=648ed4806514e618 reachable=1 canonical_instructions=225 checks=4 calls=0 appends=0
+outliner-work body=OutlinerRowPolicies.FoldByte id=3e20070b4593264a reachable=1 canonical_instructions=86 checks=7 calls=0 appends=0
+outliner-work body=OutlinerRowPolicies.ContainsFolded id=0fe1c2c6d7c2e610 reachable=1 canonical_instructions=303 checks=21 calls=2 appends=0
+outliner-work body=OutlinerRowPolicies.LastIndex id=0b0d2dc00ad842cf reachable=1 canonical_instructions=291 checks=21 calls=0 appends=0
+outliner-work body=OutlinerRowPolicies.Title id=8015de80cc9ac4d9 reachable=1 canonical_instructions=224 checks=13 calls=2 appends=0
+outliner-work body=OutlinerRowPolicies.IntRange id=1a8e101285abe29b reachable=1 canonical_instructions=219 checks=9 calls=0 appends=1
+outliner-work body=OutlinerRowPolicies.BehaviorCount id=485e836c66150a58 reachable=1 canonical_instructions=147 checks=12 calls=0 appends=0
+outliner-work body=OutlinerRowPolicies.Page id=7bee66140b3a2a50 reachable=1 canonical_instructions=219 checks=21 calls=0 appends=0
+outliner-work body=OutlinerRowPolicies.Project id=e09d667c25e93368 reachable=1 canonical_instructions=1703 checks=53 calls=11 appends=2
+outliner-work total sources=2 modules=2 declarations=20 reachable=14 constants=22 runtime_calls=0 K=249
+(OK) (0.348323 secs)
+===============================================================
+Summary: Passed: 1 Failed: 0 Total: 1 Suites: 0 Asserts: 393
+Test command wall time: 0.475s; ceiling 60s; includes in-test fixture setup; external configuration/build excluded.
