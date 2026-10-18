@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      CANDIDATE_SHA: f2624cb2963c7327487a3c499f7a725d0ed3252f
+      CANDIDATE_SHA: 587c3d2dc3985fec4226ec15fc7ff141e3b309d9
       CONTROL_SHA: ${{ github.event.pull_request.head.sha }}
       PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
       PR_BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
