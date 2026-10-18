@@ -304,21 +304,29 @@ def studio_failure_locations(source, output):
         if path.is_file() and not path.is_symlink() and path.suffix in ('.c', '.h'):
             headers.add(path.relative_to(source).as_posix())
             cases.update(re.findall(r'\bTEST_CASE\(([A-Za-z0-9_]+)\)', path.read_text()))
-    active, failures = None, []
     plain = re.sub(r'\x1b\[[0-9;]*m', '', output)
+    # pico prints case banners to buffered stdout and failures to stderr.
+    # Merged non-TTY output can put failures before their banner. Only a
+    # single reviewed case is attributable without guessing stream ordering.
+    running = re.findall(r'Running: ([A-Za-z0-9_]+)', plain)
+    case = running[0] if len(running) == 1 and running[0] in cases else None
+    failures, failure_markers = [], 0
     for line in plain.splitlines():
-        running = re.search(r'Running: ([A-Za-z0-9_]+)', line)
-        if running:
-            active = running[1] if running[1] in cases else None
+        failure_markers += '(FAILED:' in line
         failed = re.search(r'\(FAILED: ([^\r\n]+?) \((\d+)\):', line)
-        if not failed or active is None:
+        if not failed:
             continue
         file = failed[1].replace('\\', '/')
         eligible = [name for name in headers if file == name or file.endswith('/' + name) or
                     ('/' not in file and file == Path(name).name)]
         if len(eligible) == 1 and 0 < int(failed[2]) <= 1000000:
-            failures.append({'case': active, 'file': eligible[0], 'line': int(failed[2])})
-    return {'failures': failures[:16], 'additional_failures': max(0, len(failures) - 16)}
+            failures.append({'case': case, 'file': eligible[0], 'line': int(failed[2])})
+    summaries = re.findall(r'Summary: Passed: (\d+) Failed: (\d+) Total: (\d+) Suites: (\d+) Asserts: (\d+)', plain)
+    return {'failures': failures[:16], 'additional_failures': max(0, len(failures) - 16),
+            'failure_markers': failure_markers, 'unmapped_failures': failure_markers - len(failures),
+            'summary_count': len(summaries),
+            'summary': dict(zip(('passed', 'failed', 'total', 'suites', 'assertions'), map(int, summaries[0])))
+                       if len(summaries) == 1 else None}
 
 
 def git(root, *arguments):
