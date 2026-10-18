@@ -13,7 +13,7 @@ import sys
 
 sys.dont_write_bytecode = True
 # Deliberately fail closed until coordinator supplies the reviewed published pair.
-FINAL = '613ecd0bdfda72a5dd33a68228bceb6bb854b332'
+FINAL = 'be6144abb73acd243a094e75cfa72f953d2899f7'
 ENGINE = '7bc6aa3cd69b29cfb006aab94d50d695007d9abe'
 PRIOR_ENGINE_EVIDENCE = {'run_id': 39102355375,
  'validation_revision': 'aba0cc5e0fd6745f6e1dbd100b50c0073051df2b',
@@ -56,7 +56,7 @@ REVIEWED_FILES = {'.github/engine-ref': '0aa450a62d7457af7dab66b47d1555806707bbd
  'src/editor/workspace/scene_tabs.c': '50db79500f0ee4ec32835da2a9b61592c63da0b056ce8e6fdf766abacbdecf80',
  'tests/acceptance/README.md': 'bcb64567844980b9263248513f37428ccbcc7a17bc7e0fa07a6edb3f01038a48',
  'tests/acceptance/main.c': '6385e9bc9cd9d43cd96c3ca6a2299eb82722d8ba1051489507d528726f0db4ab',
- 'tests/acceptance/prototype_source.h': 'cfdf9387c01484c89fc8af1d483248d7422020f8e6fad98d4b5d7a8f54099049',
+ 'tests/acceptance/prototype_source.h': 'd6d496275fc50f2157d63bd05d80daa8b91f841c339d8238873fbe8ce2f47734',
  'tests/acceptance/scene_move.h': '9a84ba7af42c74f384f0bd4db432b4d29aad66a580317c22a3f35bcdb29e07f2',
  'tests/acceptance/source_discard.h': '38eb2fb91b2385b8e98e0694e78fda83ee68e7ab62979712169663c5af55187b',
  'src/editor/collab/actions_scene.c': '08ac118bcd628864a736e991a5c60607a2ede32bc367af3544e353c4c751e8ed',
@@ -228,7 +228,7 @@ EDGE_CONTROL = {'files': {'src/editor/documents/asset_code.c': {'replacements': 
                                                                        'after': '    if (result > 0) {'}],
                                                      'sha256': '1d9f1bacedd2e8e5a1efb4c76fefb4158720afc3b511213c956fd4415e4fefa2',
                                                      'git_blob': 'f22f83217e288a875d9bdf3a05937170a3298de1'}},
- 'assertion': 'prototype_source\\.h \\(693\\): deleted_source_retained && queued_commands_quiet\\)',
+ 'assertion': 'prototype_source\\.h \\(698\\): deleted_source_retained && queued_commands_quiet\\)',
  'required_markers': ['Prototype source edge controls: deleted_source_retained=0 queued_commands_quiet=0']}
 CONTROLS = {
     'ownership-red': {'files': {STUDIO_CONTROL['product']: STUDIO_CONTROL}, 'assertion': STUDIO_CONTROL['assertion']},
