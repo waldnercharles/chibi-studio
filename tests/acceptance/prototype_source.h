@@ -405,6 +405,11 @@ static bool prototype_source_contract(studio *s)
     ));
     reverse->dirty = 1;
     REQUIRE(!app_scene_authoring_open_asset(scene, indexed));
+    /* Assets selects the tab; Code composition acquires its shared session. */
+    kit_begin(s->kit, &s->in);
+    kit_root(s->kit, "app");
+    studio_code_body(s, STUDIO_AREA_TOP);
+    kit_end(s->kit);
     asset_code *reverse_source = reverse->source;
     REQUIRE(reverse_source && asset_code_dirty(reverse_source));
     REQUIRE(!app_scene_authoring_open_prototype(scene, names[3]));
