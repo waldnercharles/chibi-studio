@@ -1,6 +1,7 @@
-name: Semantic components validation (review-gated draft)
+name: Integrated compiler transport and semantic validation (review-gated draft)
 
-# Temporary test-only control. Publish only after exact source/control review.
+# Replace the existing PR81 workflow only after coordinator release and exact review.
+# Retain the branch; do not merge this temporary test-only control or deploy from it.
 # Raw logs and private source stay on the ephemeral runner.
 on:
   pull_request:
@@ -11,23 +12,25 @@ permissions:
   contents: read
 
 concurrency:
-  group: host-m5-semantic-components-${{ github.event.pull_request.number }}
+  group: host-m5-compiler-transport-${{ github.event.pull_request.number }}
   # Preserve every admitted baseline/candidate run; do not silently cancel it.
   cancel-in-progress: false
 
 jobs:
-  semantic-components:
+  compiler-transport:
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'codex/host-m5-unit-validation-20261018'
+      github.event.pull_request.head.ref == 'codex/host-m5-unit-validation-20261018' &&
+      github.run_attempt == 1
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      CANDIDATE_SHA: b57ac78c53c170139d8f807158c076f971a2202b
-      CANDIDATE_TREE: 09d520fe2a5723226126b0879faaee390e87b7b9
+      CANDIDATE_SHA: e165059d1c17ec7605d909ae3bbf727d9e267a80
+      CANDIDATE_TREE: 8e5ea89dfe428ca7804b68af0c85ba35e5e74b5e
+      TRANSPORT_REVIEWED: 'true'
       SEMANTIC_COMPONENTS_REVIEWED: 'true'
       EXPECTED_BASE_SHA: bee5b54e159cce44ee52ca9439be587d9a95f5d2
-      SOURCE_BRANCH: refs/heads/codex/m5-semantic-components-20261018
+      SOURCE_BRANCH: refs/heads/codex/m5-compiler-transport-20261018
       CONTROL_SHA: ${{ github.event.pull_request.head.sha }}
       PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
       PR_BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
@@ -38,7 +41,15 @@ jobs:
         env:
           RUNNER_DEBUG_ENABLED: ${{ runner.debug }}
         run: |
-          if [[ "$SEMANTIC_COMPONENTS_REVIEWED" != true || ! "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ || ! "$CANDIDATE_TREE" =~ ^[0-9a-f]{40}$ ]]; then
+          if [[ "${GITHUB_RUN_ATTEMPT:-}" != 1 || "$TRANSPORT_REVIEWED" != true || "$SEMANTIC_COMPONENTS_REVIEWED" != true || ! "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ || ! "$CANDIDATE_TREE" =~ ^[0-9a-f]{40}$ ]]; then
+            printf 'phase=source-admission exit=1\n'
+            exit 1
+          fi
+          if [[ "$GITHUB_REPOSITORY" != waldnercharles/chibi-studio ||
+                "$PR_BASE_SHA" != "$EXPECTED_BASE_SHA" || ! "$EXPECTED_BASE_SHA" =~ ^[0-9a-f]{40}$ ||
+                "$PR_BASE_BRANCH" != main || "$PR_HEAD_BRANCH" != codex/host-m5-unit-validation-20261018 ||
+                "$SOURCE_BRANCH" != refs/heads/codex/m5-compiler-transport-20261018 ||
+                ! "$CONTROL_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             printf 'phase=source-admission exit=1\n'
             exit 1
           fi
@@ -92,56 +103,72 @@ jobs:
           printf 'phase=source-identity-guard exit=0\n'
 
       - name: Verify reviewed source and control identities
-        run: bash chibi/.github/scripts/semantic-components-validation.sh prepare
+        run: bash chibi/.github/scripts/transport-validation.sh prepare
       - name: Acquire pinned compiler build inputs privately
-        run: bash chibi/.github/scripts/semantic-components-validation.sh dependencies
-      - name: Configure the standalone compiler-enabled language dispatcher
-        run: bash chibi/.github/scripts/semantic-components-validation.sh configure
-      - name: Build test_language separately from execution
-        run: bash chibi/.github/scripts/semantic-components-validation.sh build
+        run: bash chibi/.github/scripts/transport-validation.sh dependencies
+      - name: Configure ordinary compiler-only language and tooling builds
+        run: bash chibi/.github/scripts/transport-validation.sh configure
+      - name: Build the real language, tooling and compiler-host targets separately from execution
+        run: bash chibi/.github/scripts/transport-validation.sh build
 
-      - name: Union members full selector under its production 60-second ceiling
+      - name: Audit the normal unstripped product and positive producer writer boundary
+        run: bash chibi/.github/scripts/transport-validation.sh audit
+
+      - name: Full source snapshot selector under its production 60-second ceiling
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          SELECTOR: language-package-snapshot-chibi
+        run: bash chibi/.github/scripts/transport-validation.sh execute
+      - name: Full compiler artifact selector under its separate production 60-second ceiling
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          SELECTOR: compiler-artifact
+        run: bash chibi/.github/scripts/transport-validation.sh execute
+
+      - name: Full union members regression under its separate production 60-second ceiling
         continue-on-error: true
         timeout-minutes: 2
         env:
           SELECTOR: language-union-members-chibi
-        run: bash chibi/.github/scripts/semantic-components-validation.sh execute
-      - name: Effect analysis full selector under its production 60-second ceiling
+        run: bash chibi/.github/scripts/transport-validation.sh execute
+      - name: Full effect analysis regression under its separate production 60-second ceiling
         continue-on-error: true
         timeout-minutes: 2
         env:
           SELECTOR: language-effect-analysis-chibi
-        run: bash chibi/.github/scripts/semantic-components-validation.sh execute
-      - name: Record members full selector under its production 60-second ceiling
+        run: bash chibi/.github/scripts/transport-validation.sh execute
+      - name: Full record members regression under its separate production 60-second ceiling
         continue-on-error: true
         timeout-minutes: 2
         env:
           SELECTOR: language-record-members-chibi
-        run: bash chibi/.github/scripts/semantic-components-validation.sh execute
-      - name: Unit analysis full selector under its production 60-second ceiling
+        run: bash chibi/.github/scripts/transport-validation.sh execute
+      - name: Full unit analysis regression under its separate production 60-second ceiling
         continue-on-error: true
         timeout-minutes: 2
         env:
           SELECTOR: language-unit-analysis-chibi
-        run: bash chibi/.github/scripts/semantic-components-validation.sh execute
-      - name: Type relations full selector under its production 60-second ceiling
+        run: bash chibi/.github/scripts/transport-validation.sh execute
+      - name: Full type relations regression under its separate production 60-second ceiling
         continue-on-error: true
         timeout-minutes: 2
         env:
           SELECTOR: language-type-relations-chibi
-        run: bash chibi/.github/scripts/semantic-components-validation.sh execute
+        run: bash chibi/.github/scripts/transport-validation.sh execute
 
       - name: Project raw runner-local logs into minimal statuses
         if: always() && steps.source_identity.outcome == 'success'
-        run: bash chibi/.github/scripts/semantic-components-validation.sh collect
+        run: bash chibi/.github/scripts/transport-validation.sh collect
       - name: Upload status timing and SHA identities only
         if: always() && steps.source_identity.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: semantic-components-status-${{ env.CANDIDATE_SHA }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/chibi-m5-semantic-status/status.json
+          name: compiler-transport-status-${{ env.CANDIDATE_SHA }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/chibi-m5-transport-status/status.json
           if-no-files-found: error
           retention-days: 7
-      - name: Require all five exact semantic selectors to pass
+      - name: Require the boundary audit and all seven complete selectors to pass
         if: always() && steps.source_identity.outcome == 'success'
-        run: bash chibi/.github/scripts/semantic-components-validation.sh verdict
+        run: bash chibi/.github/scripts/transport-validation.sh verdict
