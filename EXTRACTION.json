@@ -1535,7 +1535,7 @@
       "current_source_sha256": "19ddcb8ed8f796c0dcc5a972e5c4ddc02aedc001de5c4d1d76769cafe1d9d34a",
       "sha256": "19ddcb8ed8f796c0dcc5a972e5c4ddc02aedc001de5c4d1d76769cafe1d9d34a",
       "source_path": "src/editor/collab/actions_scene.c",
-      "consumer_sha256": "a512fb89b74b300d6bec7aae9b50aaefc9021460e15610f9c39feb49bf4caf88"
+      "consumer_sha256": "08ac118bcd628864a736e991a5c60607a2ede32bc367af3544e353c4c751e8ed"
     },
     "src/editor/collab/actions_scene.h": {
       "current_source_sha256": "0750590697691399d5b65bca467f6caa0f535a232a590fc17925455697ad98e2",
@@ -1576,13 +1576,13 @@
       "current_source_sha256": "91f77c6e1b3d60ddab4c59fa395ba78c9122e54cb6707f866eb2fb9730d2615c",
       "sha256": "5bcaf149c81eb750ce0da5b74954c40758aedfa32e6cb590849d723050c3ce64",
       "source_path": "src/editor/documents/asset_code.c",
-      "consumer_sha256": "86e1f934ed78deb92de5068f878ddb588750be5431cbfaa70b566d3ced6fff3d"
+      "consumer_sha256": "88d4fc52daae2127fc78b212c8999b3adbc65ea88c8ec8899809093f6d700909"
     },
     "src/editor/documents/asset_code.h": {
       "current_source_sha256": "15d34e8aae5a3df6a5ef4a2632b6c6784714b03b3c0cb6c74be401afbb35d2e1",
       "sha256": "1199a5f51fd1b59918263a77197311471897d051d8833304e5c6dfa11a9633e1",
       "source_path": "src/editor/documents/asset_code.h",
-      "consumer_sha256": "8975c91971a28c493894c63a16fcf156972f3523bc6c8398e5e75577b612ab78"
+      "consumer_sha256": "4b616b73004ef470c3337bbf67ee2605aa2df210225398e227e8c6636395b619"
     },
     "src/editor/documents/commands.c": {
       "current_source_sha256": "055ac0716c23f7d2078177827b141486c080318eea4bd8288e4c16c707d8a9b4",
@@ -1628,7 +1628,7 @@
       "current_source_sha256": "cebdb7244e864964e2326578bf167aaf294aa2f2d5cd610f5edfa39c2615a483",
       "sha256": "c615608c34b9b6fc0396a626ffaff93a5c76a8f95abc1856abb585cc3f6ae0aa",
       "source_path": "src/editor/documents/scene_disk.c",
-      "consumer_sha256": "9dc8c4f9ff44e1d2779fe38a78032902a8f94669a8580993bfa524cab19fd72f"
+      "consumer_sha256": "61df3e4276a2d24f311727aea2056a5e314a15f6f3ea9eb0366f320e78db5e65"
     },
     "src/editor/documents/scene_document.c": {
       "current_source_sha256": "98dcf951fd9aa56b582ff9de36ddfe2bf0ae0ea22b64f16179bbc1d9bb2762de",
@@ -1664,7 +1664,7 @@
       "current_source_sha256": "a724d0af657b5ab587528c2d1f475b7d303938d5a5e2c8e897122829748fa68d",
       "sha256": "3ac2e12fa9e512325a07c336a9ea0c908bbd8447098aa6ec4b52d6b80366041b",
       "source_path": "src/editor/documents/scene_prototypes.c",
-      "consumer_sha256": "bd49aaf057e0f27435c512c4b068873888c9d8c0816de6b42c835345d51f09e7"
+      "consumer_sha256": "26c08d26cde9b9449accdfaf8b756778d317db3006ab08c9f22b10b15cca41bb"
     },
     "src/editor/documents/scene_retention.c": {
       "current_source_sha256": "0b6d547334a3b7ccf89d76e832172e1a8ae997755d1d1e37ffe4d33887cf6941",
@@ -2206,7 +2206,7 @@
       "current_source_sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
       "sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
       "source_path": "src/editor/studio/studio_properties.c",
-      "consumer_sha256": "1d9f1bacedd2e8e5a1efb4c76fefb4158720afc3b511213c956fd4415e4fefa2"
+      "consumer_sha256": "c669abd6d4e6e8af5320f1777e77a58c2d0bb1930ee4563d5758a7754e9b4135"
     },
     "src/editor/studio/studio_properties_internal.h": {
       "current_source_sha256": "14c5ed4a4d38c1ca484be50e70be0cb1d3ec85d62a70185612d365659bcbd236",
@@ -2502,7 +2502,7 @@
       "current_source_sha256": "8b5270dfd0df43786a42529669ece1f70460727a5fb805aefabab953e5139a1f",
       "sha256": "9afa2c3ec87823c00dba8784a603989decd5078097704a2fba076d5d8c16028c",
       "source_path": "src/editor/workspace/scene_authoring.h",
-      "consumer_sha256": "a4ab251e9f68559bf1b8d571334e6bc6ae13c6c06e31d3536a32389e6a784ba0"
+      "consumer_sha256": "73d7890233f253eca58066ce9aa1b44b4ac2c47f9a30a4ec42ff457dd89e3c47"
     },
     "src/editor/workspace/scene_checkpoint.c": {
       "current_source_sha256": "522d8bca7bdbc2d4229fdeacb30168ef853fc55e2689ded5ecb7c123d26e9ab1",

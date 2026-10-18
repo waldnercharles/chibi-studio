@@ -49,7 +49,8 @@ struct asset_code
     const behavior_asset *shared_asset;
     unsigned shared_revision;
     bool source_pending, replaying, runtime_held, graph_draft, native_view,
-        source_gesture, typing, static_source, relationship_source, prototype_owned;
+        source_gesture, typing, static_source, relationship_source,
+        prototype_owned, file_missing;
     uint64_t execution_graph, execution_node;
     double time, apply_due, typed_at, refresh_due;
     kit_code_editor *editor;
@@ -466,6 +467,7 @@ av_value *asset_code_capture(asset_code *c)
     }
     av_obj_add_bool(doc, root, "overlay", text_overlay_text(c->path) != NULL);
     av_obj_add_bool(doc, root, "prototype_owned", c->prototype_owned);
+    av_obj_add_bool(doc, root, "file_missing", c->file_missing);
     av_obj_add_int(doc, root, "step", c->step);
     if (c->runtime_held) {
         av_obj_add_bool(doc, root, "runtime_hold", true);
@@ -506,6 +508,9 @@ const char *asset_code_path(const asset_code *c)
 
 bool asset_code_dirty(const asset_code *c)
 {
+    if (c->file_missing) {
+        return true;
+    }
     return strcmp(c->disk, c->text) != 0 ||
            strcmp(c->metadata ? c->metadata : "", c->disk_metadata ? c->disk_metadata : "") !=
                0;
@@ -852,6 +857,17 @@ void asset_code_own_prototype(asset_code *c)
     c->prototype_owned = true;
 }
 
+void asset_code_file_removed(asset_code *c)
+{
+    assert(c->prototype_owned);
+    c->file_missing = true;
+}
+
+bool asset_code_file_missing(const asset_code *c)
+{
+    return c->file_missing;
+}
+
 void asset_code_reject_static(asset_code *c, const char *error)
 {
     assert(c->static_source);
@@ -921,6 +937,7 @@ asset_code *asset_code_restore(const av_value *state, const prototype_registry *
     c->registry = registry;
     c->runtime_held = av_get_bool(av_obj_get(state, "runtime_hold"));
     c->prototype_owned = av_get_bool(av_obj_get(state, "prototype_owned"));
+    c->file_missing = av_get_bool(av_obj_get(state, "file_missing"));
     c->state_identity = (uintptr_t)state;
     const char *valid = av_get_str(av_obj_get(state, "valid"));
     c->valid = valid ? xstrdup(valid) : NULL;
@@ -1450,6 +1467,11 @@ static char *merge_source(const char *base, const char *current, const char *inc
 }
 void asset_code_refresh(asset_code *c)
 {
+    /* A returning file cannot replace a retained deleted source's draft or
+       history. Explicit Save or Reload resolves this ownership conflict. */
+    if (c->file_missing) {
+        return;
+    }
     char *disk = file_read_text(c->path);
     if (!disk) {
         return;
@@ -1533,7 +1555,7 @@ bool asset_code_save(asset_code *c, char *error, size_t size)
     bool changed = !disk || strcmp(disk, c->disk);
     free(disk);
     if (changed) {
-        snprintf(error, size, "Asset changed on disk; reopen it before saving");
+        snprintf(error, size, "%s", c->file_missing ? "Prototype source was deleted; restore the file, then save or reload it" : "Asset changed on disk; reopen it before saving");
         return false;
     }
     char *observed = read_metadata(c);
@@ -1570,6 +1592,7 @@ bool asset_code_save(asset_code *c, char *error, size_t size)
     }
     free(c->disk);
     c->disk = xstrdup(c->text);
+    c->file_missing = false;
     if (c->native_view && c->metadata) {
         char *path = metadata_path(c);
         int status = write_file_atomic(path, c->metadata);

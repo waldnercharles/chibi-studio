@@ -618,6 +618,20 @@ draft. Scene Undo followed by source Undo must recover a later invalid draft.
 A missing behavior exercises accepted-but-not-applied status, no-op Apply status,
 and reversal of touched behavior attachments. Stale and invalid acceptance
 proposals must retain source bytes, typed model, and history.
+
+The same first frame also exercises one notified delete/return of the existing
+Apply file. A retained source stays dirty through Close, failed Save All and
+Discard, the same checkpoint (now including an invalid missing-file draft),
+source Undo, and file return. Only an explicit successful Save resolves the
+missing state; no automatic file recreation is tested or allowed. The fixture
+then feeds five fixed snapshot/proposal pairs through the existing in-process
+collaboration protocol with a counting no-op transport, covering queued palette
+add, queued panel removal, and field/behavior command results. One direct and
+one replayed no-op field edit check the distinct accepted-but-not-applied result.
+There are no sockets, new production hooks, additional frames, worlds, files,
+or checkpoint restores. Ordinary missing-path polling and clean unused-asset
+deletion are outside this notified-deletion regression.
+
 A failure is not UI interaction proof beyond the explicit command/control paths
 listed here. Existing partial runtime refresh and independent scene/prototype
 history ordering are not claimed repaired.
@@ -630,3 +644,11 @@ This isolates the demonstrated hidden-model Properties regression, rather than
 failing because an SDK symbol is absent. Do not run the historical Save/Discard
 negative controls again for this bridge. Retain their green four-frame case and
 the existing three admitted CPU selectors as adjacent coverage.
+
+One additional edge-only counterfactual restores the prior missing-file dirty
+predicate and the two Properties stale-status result branches. It keeps the
+retained owner/path and final API declarations, allowing safe continuation.
+After normal cleanup the fixture prints both `deleted_source_retained` and
+`queued_commands_quiet`, then requires both. The control must report both as 0
+and fail that exact final assertion; the clean case reports both as 1. This is
+one additional fixed selector run/build, not a replay of historical controls.

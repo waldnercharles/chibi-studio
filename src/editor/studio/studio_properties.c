@@ -1124,8 +1124,7 @@ static int add_to_target(studio *s, const ecs_component_desc *desc, char target[
         if (added < 0) {
             studio_error(s, "Could not add component", scene->prototype_message);
         }
-        scene_prototype_asset *asset = find_prototype(scene, target);
-        if (added > 0 && asset && asset->source_not_applied) {
+        if (added == APP_PROTOTYPE_EDIT_NOT_APPLIED) {
             studio_error(s, "Edited, but not applied", scene->prototype_message);
             return 0;
         }
@@ -1289,7 +1288,10 @@ static void remove_component(studio *s, scene_prototype_asset *asset)
         asset->prototype->name,
         name
     );
-    if (result < 0 || (result > 0 && !asset->source_not_applied)) {
+    if (result == APP_PROTOTYPE_EDIT_PENDING) {
+        return;
+    }
+    if (result < 0) {
         studio_error(s, "Could not remove component", s->scene->prototype_message);
         return;
     }
@@ -1298,7 +1300,7 @@ static void remove_component(studio *s, scene_prototype_asset *asset)
         strstr(s->scene->prototype_message, "Inherited composition is now local")) {
         studio_report(s, s->scene->prototype_message);
     }
-    if (result > 0) {
+    if (result == APP_PROTOTYPE_EDIT_NOT_APPLIED) {
         studio_error(s, "Edited, but not applied", s->scene->prototype_message);
     }
     s->components.step = asset->source ? asset_code_step(asset->source)

@@ -746,6 +746,12 @@ static void forget_prototype(app_scene_authoring *scene, scene_prototype_asset *
     const char *name = asset->prototype->name;
     for (int i = 0; i < acount(scene->actors); i++) {
         if (!strcmp(scene->actors[i].prototype_name, name)) {
+            if (asset->source && scene_prototype_source_owned(asset)) {
+                asset_code_file_removed(asset->source);
+                scene_prototype_source_capture(scene, asset);
+                snprintf(scene->message, sizeof scene->message, "Prototype source was deleted; its draft is retained. Restore the file, then save or reload it.");
+                return;
+            }
             free(asset->path);
             asset->path = NULL;
             asset->dirty = 1;
@@ -859,6 +865,15 @@ void scene_disk_follow(app_scene_authoring *scene, const scene_move *moves, int 
                                                  : NULL;
         preview_definition *definition = moved ? definition_file(scene, move->from)
                                                : NULL;
+        scene_prototype_asset *returning = move->to ? prototype_file(scene, move->to)
+                                                    : NULL;
+        if ((prototype && prototype->source &&
+             asset_code_file_missing(prototype->source)) ||
+            (returning && returning->source &&
+             asset_code_file_missing(returning->source))) {
+            snprintf(scene->message, sizeof scene->message, "Prototype source returned; its retained draft is unchanged. Save or reload to resolve it.");
+            continue;
+        }
         if (prototype) {
             move_prototype(scene, prototype, move->to);
         } else if (definition) {
@@ -869,7 +884,10 @@ void scene_disk_follow(app_scene_authoring *scene, const scene_move *moves, int 
     }
     for (int i = 0; i < count; i++) {
         if (moves[i].from && moves[i].to && !strcmp(moves[i].from, moves[i].to)) {
-            sync_path(scene, moves[i].to, true);
+            scene_prototype_asset *asset = prototype_file(scene, moves[i].to);
+            if (!asset || !asset->source || !asset_code_file_missing(asset->source)) {
+                sync_path(scene, moves[i].to, true);
+            }
         }
     }
     for (int i = 0; i < count; i++) {

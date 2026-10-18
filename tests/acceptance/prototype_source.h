@@ -1,4 +1,5 @@
 #include "authoring/native_prototype.h"
+#include "editor/collab/protocol.h"
 
 /* A separate two-frame selector: four tiny prototype sources, three actors,
  * one workspace checkpoint restore. It does not enlarge --source-edit. */
@@ -29,6 +30,115 @@ static bool bridge_property(
     snprintf(edit.args[1], sizeof edit.args[1], "%s", text);
     snprintf(edit.args[active ? 2 : 3], sizeof edit.args[0], "%s", axis);
     studio_properties_action(s, active ? "input" : "change", &edit);
+    return true;
+}
+
+/* Drive the existing collaboration gate entirely in process. The transport
+ * callback counts messages and never opens a socket or changes the workspace. */
+static void bridge_collab_send(void *context, const char *json)
+{
+    (void)json;
+    (*(int *)context)++;
+}
+
+static bool bridge_collab_restore(void *context, const char *payload, char *error, size_t size)
+{
+    (void)context;
+    (void)payload;
+    (void)error;
+    (void)size;
+    return true;
+}
+
+static bool bridge_collab_ready(int *sent)
+{
+    collab_shutdown();
+    *sent = 0;
+    collab_init((collab_config){ .context = sent,
+                                 .send = bridge_collab_send,
+                                 .restore = bridge_collab_restore });
+    collab_start("source-bridge", "peer", "editor");
+    char *snapshot = collab_message_write("source-bridge", "host", 0, 0, "snapshot", "{\"checkpoint_version\":1,\"workspace\":\"\"}");
+    REQUIRE(snapshot);
+    collab_receive(snapshot);
+    free(snapshot);
+    collab_tick();
+    REQUIRE(collab_can_edit() && collab_state_current() == COLLAB_READY && *sent == 1);
+    return true;
+}
+
+/* The caller owns the counter and always shuts collaboration down before
+ * checking this helper's result, including every REQUIRE failure path. */
+static bool bridge_queued_commands(
+    studio *s,
+    scene_prototype_asset *applied,
+    const ecs_component_desc *visual,
+    const ecs_component_desc *transform,
+    const char *unapplied,
+    int *sent,
+    bool *quiet
+)
+{
+    app_scene_authoring *scene = s->scene;
+    const char *name = applied->prototype->name;
+    const void *pending_step = asset_code_step(applied->source);
+    int records = acount(s->records), component_toast = s->components.toast;
+    const void *component_step = s->components.step;
+    s->components.object = 0;
+    snprintf(s->components.prototype, sizeof s->components.prototype, "%s", name);
+    s->components.added[0] = 0;
+    int visual_index = -1;
+    for (int i = 0; i < scene->registry.component_count; i++) {
+        if (scene->registry.components[i] == visual) {
+            visual_index = i;
+        }
+    }
+    REQUIRE(visual_index >= 0);
+    REQUIRE(bridge_collab_ready(sent));
+    studio_component_choose(s, &(studio_palette_entry){ .index = visual_index });
+    bool queued_add_quiet = *sent == 2 && acount(s->records) == records &&
+                            !s->components.added[0] &&
+                            !prototype_has_component_id(
+                                applied->prototype,
+                                visual->id
+                            );
+    REQUIRE(bridge_collab_ready(sent));
+    snprintf(s->components.menu, sizeof s->components.menu, "Transform");
+    studio_properties_action(s, "componentAction", &(ui_activation){ 0 });
+    bool queued_remove_quiet = *sent == 2 && acount(s->records) == records &&
+                               s->components.toast == component_toast &&
+                               s->components.step == component_step &&
+                               prototype_has_component_id(
+                                   applied->prototype,
+                                   transform->id
+                               );
+    REQUIRE(bridge_collab_ready(sent));
+    REQUIRE(
+        app_scene_authoring_set_prototype_field(
+            scene,
+            name,
+            "Transform",
+            "x",
+            (pin_value){ .type = PIN_F32, .f = 21 }
+        ) == APP_PROTOTYPE_EDIT_PENDING &&
+        *sent == 2
+    );
+    REQUIRE(bridge_collab_ready(sent));
+    REQUIRE(
+        app_scene_authoring_attach_prototype_behavior(scene, name, "Counter") ==
+            APP_PROTOTYPE_EDIT_PENDING &&
+        *sent == 2
+    );
+    REQUIRE(bridge_collab_ready(sent));
+    REQUIRE(
+        app_scene_authoring_detach_prototype_behavior(scene, name, "Counter") ==
+            APP_PROTOTYPE_EDIT_PENDING &&
+        *sent == 2
+    );
+    bool queued_source_unchanged = asset_code_step(applied->source) == pending_step &&
+                                   !strcmp(asset_code_text(applied->source), unapplied) &&
+                                   applied->source_not_applied;
+    *quiet = queued_add_quiet && queued_remove_quiet && queued_source_unchanged;
     return true;
 }
 
@@ -329,6 +439,76 @@ static bool prototype_source_contract(studio *s)
     REQUIRE(Transform_get_const(scene->world, scene->actors[1].entity)->x == 20);
     REQUIRE(Transform_get_const(scene->world, scene->actors[2].entity)->x == 30);
     char *apply_text = xstrdup(asset_code_text(applied->source));
+    /* A notified deletion retains the canonical owner, including a clean
+       source's history. Close and Save All must see the missing-file dirty
+       state; failed Discard cannot replace it with a pathless model draft. */
+    REQUIRE(!scene_prototype_source_save(scene, applied));
+    char *deleted_text = file_read_text(paths[2]);
+    REQUIRE(deleted_text && !asset_code_dirty(applied->source));
+    asset_code *deleted_source = applied->source;
+    const void *deleted_step = asset_code_step(deleted_source);
+    int deleted_tab = -1;
+    for (int i = 0; i < acount(scene->tabs); i++) {
+        if (scene->tabs[i].path && !strcmp(scene->tabs[i].path, paths[2])) {
+            deleted_tab = i;
+        }
+    }
+    REQUIRE(deleted_tab >= 0);
+    REQUIRE(!unlink(paths[2]));
+    scene_disk_follow(scene, &(scene_move){ .from = paths[2] }, 1);
+    bool missing_source_dirty = applied->source == deleted_source &&
+                                applied->path && !strcmp(applied->path, paths[2]) &&
+                                asset_code_file_missing(deleted_source) &&
+                                scene_prototype_dirty(applied) &&
+                                scene_tabs_dirty(scene, &scene->tabs[deleted_tab]);
+    REQUIRE(
+        applied->source == deleted_source && applied->path &&
+        !strcmp(applied->path, paths[2]) && asset_code_file_missing(deleted_source)
+    );
+    REQUIRE(asset_code_step(deleted_source) == deleted_step);
+    REQUIRE(!strcmp(asset_code_text(deleted_source), deleted_text));
+    int tab_count = acount(scene->tabs);
+    studio_close_tab(s, deleted_tab);
+    bool missing_close_prompt = acount(scene->tabs) == tab_count &&
+                                s->unsaved_prompt.action == STUDIO_UNSAVED_CLOSE_TAB &&
+                                !strcmp(
+                                    s->unsaved_prompt.tab,
+                                    scene->tabs[deleted_tab].key
+                                );
+    REQUIRE(acount(scene->tabs) == tab_count);
+    kit_toast_dismiss(s->kit, s->unsaved_prompt.toast);
+    s->unsaved_prompt = (studio_unsaved_prompt){ 0 };
+    bool missing_save_all = !studio_save_all(s);
+    REQUIRE(access(paths[2], F_OK) != 0 && errno == ENOENT);
+    REQUIRE(
+        asset_code_file_missing(deleted_source) && asset_code_step(deleted_source) == deleted_step
+    );
+    /* Match Code's retained cache reference; failed Discard releases only
+       that reference, never the workspace owner or its recoverable history. */
+    bool cached_deleted_source = false;
+    for (int i = 0; i < acount(s->code.assets); i++) {
+        cached_deleted_source |= s->code.assets[i] == deleted_source;
+    }
+    if (!cached_deleted_source) {
+        apush(s->code.assets, asset_code_retain(deleted_source));
+    }
+    studio_discard_tab(s, deleted_tab);
+    for (int i = 0; i < acount(s->code.assets); i++) {
+        REQUIRE(s->code.assets[i] != deleted_source);
+    }
+    REQUIRE(
+        acount(scene->tabs) == tab_count && applied->source == deleted_source &&
+        asset_code_step(deleted_source) == deleted_step &&
+        !strcmp(asset_code_text(deleted_source), deleted_text)
+    );
+    bool missing_discard_dirty = scene_tabs_dirty(scene, &scene->tabs[deleted_tab]);
+    REQUIRE(
+        text_overlay_text(paths[2]) &&
+        !strcmp(text_overlay_text(paths[2]), applied->source_accepted)
+    );
+    const char *invalid_apply = "SourceBridgeApply :: prototype {";
+    REQUIRE(studio_code_replace(s, paths[2], deleted_text, invalid_apply, NULL));
+    const void *missing_invalid_step = asset_code_step(deleted_source);
     /* One checkpoint covers both a rejected identity draft and the populated
        scene source-before/source-after payload, including rebase-only replay. */
     asset = find_prototype(scene, names[1]);
@@ -352,6 +532,11 @@ static bool prototype_source_contract(studio *s)
     REQUIRE(!strcmp(restored_asset->source_accepted, accepted));
     scene_prototype_asset *restored_apply = find_prototype(restored.scene, names[2]);
     REQUIRE(restored_apply && restored_apply->source);
+    REQUIRE(
+        asset_code_file_missing(restored_apply->source) &&
+        asset_code_dirty(restored_apply->source) &&
+        !strcmp(asset_code_text(restored_apply->source), invalid_apply)
+    );
     REQUIRE(!replay_scene_edit(restored.scene, false));
     REQUIRE(!strcmp(asset_code_text(restored_apply->source), sources[2]));
     REQUIRE(
@@ -364,15 +549,48 @@ static bool prototype_source_contract(studio *s)
     );
     REQUIRE(!replay_scene_edit(restored.scene, true));
     REQUIRE(!strcmp(asset_code_text(restored_apply->source), apply_text));
+    REQUIRE(asset_code_file_missing(restored_apply->source));
     move_fixture_free(&restored);
     free(checkpoint);
     REQUIRE(asset_code_replay(code, false, false));
     REQUIRE(!scene_prototype_source_sync(scene, asset, true));
     free(accepted);
 
+    /* The returning file and ordinary code refresh must not consume a raw
+       draft or its history. Source Undo recovers the saved bytes; explicit
+       Save then resolves the existing disk-conflict policy without Save As. */
+    REQUIRE(!write_file_atomic(paths[2], deleted_text));
+    scene_disk_follow(scene, &(scene_move){ .to = paths[2] }, 1);
+    asset_code_refresh(deleted_source);
+    REQUIRE(
+        asset_code_file_missing(deleted_source) &&
+        asset_code_step(deleted_source) == missing_invalid_step &&
+        !strcmp(asset_code_text(deleted_source), invalid_apply)
+    );
+    REQUIRE(asset_code_replay(deleted_source, false, false));
+    REQUIRE(!scene_prototype_source_sync(scene, applied, true));
+    REQUIRE(
+        !strcmp(asset_code_text(deleted_source), deleted_text) &&
+        asset_code_file_missing(deleted_source)
+    );
+    bool missing_undo_dirty = asset_code_dirty(deleted_source);
+    REQUIRE(!scene_prototype_source_save(scene, applied));
+    REQUIRE(!asset_code_file_missing(deleted_source) && !asset_code_dirty(deleted_source));
+    REQUIRE(asset_code_can_replay(deleted_source, true));
+    REQUIRE(!scene_prototype_source_accept(
+        scene,
+        applied,
+        asset_code_text(deleted_source),
+        apply_text,
+        false,
+        true,
+        error,
+        sizeof error
+    ));
+    free(deleted_text);
+
     /* Scene Undo may replace a later invalid draft, but source Undo recovers
        its exact bytes rather than discarding that independent history. */
-    const char *invalid_apply = "SourceBridgeApply :: prototype {";
     REQUIRE(studio_code_replace(s, paths[2], apply_text, invalid_apply, NULL));
     REQUIRE(!replay_scene_edit(scene, false));
     REQUIRE(!strcmp(asset_code_text(applied->source), sources[2]));
@@ -420,6 +638,37 @@ static bool prototype_source_contract(studio *s)
     REQUIRE(prototype_has_graph(applied->prototype, "Counter"));
     REQUIRE(prototype_has_graph(applied->prototype, "UnavailableBridgeBehavior"));
     REQUIRE(scene_apply_overrides(scene, &scene->actors[0], &field, 1) > 0);
+    /* Queued collaboration proposals are not accepted edits even when this
+       asset already has a pending runtime failure. Exercise the real palette
+       and removal action, then the public field/behavior command gates. */
+    REQUIRE(!app_scene_authoring_open_prototype(scene, names[2]));
+    const void *pending_step = asset_code_step(applied->source);
+    int sent = 0;
+    bool queued_commands_quiet = false;
+    bool queued_valid = bridge_queued_commands(s, applied, visual, transform, unapplied, &sent, &queued_commands_quiet);
+    collab_shutdown();
+    REQUIRE(queued_valid);
+    /* An actual accepted command has a distinct result, and replay accepts
+       that result without rejecting a source edit the editor already owns. */
+    REQUIRE(
+        app_scene_authoring_set_prototype_field(
+            scene,
+            names[2],
+            "Transform",
+            "x",
+            (pin_value){ .type = PIN_F32, .f = 20 }
+        ) == APP_PROTOTYPE_EDIT_NOT_APPLIED
+    );
+    yyjson_mut_doc *action_doc = NULL;
+    yyjson_mut_val *action = scene_action_root(scene, "prototype.field", &action_doc);
+    yyjson_mut_obj_add_str(action_doc, action, "prototype", names[2]);
+    yyjson_mut_obj_add_str(action_doc, action, "component", "Transform");
+    yyjson_mut_obj_add_str(action_doc, action, "field", "x");
+    yyjson_mut_obj_add_real(action_doc, action, "value", 20.0);
+    char *action_json = scene_action_write(action_doc);
+    REQUIRE(action_json && scene_collab_apply_action(scene, action_json, error, sizeof error));
+    free(action_json);
+    REQUIRE(asset_code_step(applied->source) == pending_step);
     REQUIRE(asset_code_replay(applied->source, false, false));
     REQUIRE(!scene_prototype_source_sync(scene, applied, true));
     REQUIRE(!applied->source_not_applied);
@@ -437,6 +686,11 @@ static bool prototype_source_contract(studio *s)
     if (created_directory) {
         REQUIRE(!rmdir(directory));
     }
+    bool deleted_source_retained = missing_source_dirty &&
+                                   missing_close_prompt && missing_save_all &&
+                                   missing_discard_dirty && missing_undo_dirty;
+    fprintf(stderr, "Prototype source edge controls: deleted_source_retained=%d queued_commands_quiet=%d\n", deleted_source_retained, queued_commands_quiet);
+    REQUIRE(deleted_source_retained && queued_commands_quiet); /* Both controls fail only after cleanup. */
     return true;
 }
 

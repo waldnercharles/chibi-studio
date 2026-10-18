@@ -668,12 +668,12 @@ int app_scene_authoring_detach_prototype_behavior(
                                      : COLLAB_ACTION_REJECT;
     if (gate != COLLAB_ACTION_APPLY) {
         free(action);
-        return gate == COLLAB_ACTION_PENDING ? 1 : -1;
+        return gate == COLLAB_ACTION_PENDING ? APP_PROTOTYPE_EDIT_PENDING : -1;
     }
     int result = detach_prototype_behavior(scene, prototype_name, asset_name);
     scene_action_finish(scene, action, result >= 0);
     free(action);
-    return result;
+    return result > 0 ? APP_PROTOTYPE_EDIT_NOT_APPLIED : result;
 }
 
 bool prototype_has_component_id(const prototype *native_prototype, ecs_component_id id)
@@ -931,12 +931,12 @@ int app_scene_authoring_set_prototype_field(
                                      : COLLAB_ACTION_REJECT;
     if (gate != COLLAB_ACTION_APPLY) {
         free(action);
-        return gate == COLLAB_ACTION_PENDING ? 1 : -1;
+        return gate == COLLAB_ACTION_PENDING ? APP_PROTOTYPE_EDIT_PENDING : -1;
     }
     int result = set_prototype_field(scene, prototype_name, component_name, field_name, value);
     scene_action_finish(scene, action, result >= 0);
     free(action);
-    return result;
+    return result > 0 ? APP_PROTOTYPE_EDIT_NOT_APPLIED : result;
 }
 
 const ecs_component_desc *component_descriptor(const app_scene_authoring *scene, const char *name)
@@ -1082,13 +1082,13 @@ static int collab_component_edit(
                                      : COLLAB_ACTION_REJECT;
     if (gate != COLLAB_ACTION_APPLY) {
         free(action);
-        return gate == COLLAB_ACTION_PENDING ? 1 : -1;
+        return gate == COLLAB_ACTION_PENDING ? APP_PROTOTYPE_EDIT_PENDING : -1;
     }
     int result = add ? add_prototype_component(scene, prototype_name, component_name)
                      : remove_prototype_component(scene, prototype_name, component_name);
     scene_action_finish(scene, action, result >= 0);
     free(action);
-    return result;
+    return result > 0 ? APP_PROTOTYPE_EDIT_NOT_APPLIED : result;
 }
 
 int app_scene_authoring_add_prototype_component(
@@ -1405,10 +1405,10 @@ int app_scene_authoring_attach_prototype_behavior(
                                      : COLLAB_ACTION_REJECT;
     if (gate != COLLAB_ACTION_APPLY) {
         free(action);
-        return gate == COLLAB_ACTION_PENDING ? 1 : -1;
+        return gate == COLLAB_ACTION_PENDING ? APP_PROTOTYPE_EDIT_PENDING : -1;
     }
     int result = prototype_attach_behavior(scene, prototype_name, asset_name);
     scene_action_finish(scene, action, result >= 0);
     free(action);
-    return result;
+    return result > 0 ? APP_PROTOTYPE_EDIT_NOT_APPLIED : result;
 }

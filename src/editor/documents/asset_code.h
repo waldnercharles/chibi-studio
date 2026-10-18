@@ -37,6 +37,10 @@ bool asset_code_static(const asset_code *code);
 void asset_code_publish_static(asset_code *code);
 /* Canonical prototype overlays publish only with workspace model acceptance. */
 void asset_code_own_prototype(asset_code *code);
+/* Retain a deleted canonical document as dirty; automatic disk refresh waits
+ * for explicit Save/Reload and the source history remains available. */
+void asset_code_file_removed(asset_code *code);
+bool asset_code_file_missing(const asset_code *code);
 void asset_code_reject_static(asset_code *code, const char *error);
 /* The editable view exposes the complete executable source. */
 kit_code_editor *asset_code_editor(asset_code *code);
