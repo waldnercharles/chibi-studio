@@ -287,7 +287,6 @@ void scene_prototype_source_adopt_session(
     asset->source = code;
     asset_code_adopt_overlay(code);
     clear_prototype_history(asset);
-    scene_tabs_ensure_prototype(scene, asset);
     scene_prototype_source_capture(scene, asset);
 }
 
@@ -399,8 +398,9 @@ int scene_prototype_source_accept(
         return -1;
     }
     /* Preparation is synchronous against this borrowed dependency snapshot. */
+    bool source_changed = strcmp(before, after) != 0;
     if (strcmp(before, asset_code_text(code)) ||
-        (strcmp(before, after) &&
+        (source_changed &&
          !asset_code_edit_source(code, before, after, NULL, coalesce))) {
         snprintf(error, size, "Prototype source changed before the edit was accepted");
         authoring_prototype_edit_result_free(&candidate);
@@ -408,6 +408,10 @@ int scene_prototype_source_accept(
     }
     asset_code_validate(code, NULL);
     int result = source_adopt(scene, asset, &candidate, refresh);
+    if (source_changed) {
+        scene_tabs_ensure_prototype(scene, asset);
+        scene_prototype_source_capture(scene, asset);
+    }
     authoring_prototype_edit_result_free(&candidate);
     return result;
 }

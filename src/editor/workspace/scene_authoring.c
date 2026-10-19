@@ -1055,7 +1055,9 @@ int app_scene_authoring_open_prototype(app_scene_authoring *scene, const char *n
             free(action);
             return -1;
         }
+        scene_tabs_ensure_prototype(scene, asset);
         scene_prototype_source_sync(scene, asset, !asset_code_runtime_held(asset->source));
+        scene_prototype_source_capture(scene, asset);
     }
     open_prototype(scene, (int)(asset - scene->prototypes));
     scene_action_finish(scene, action, true);

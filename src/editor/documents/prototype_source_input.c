@@ -367,6 +367,14 @@ bool scene_source_input_apply(app_scene_authoring *scene, yyjson_val *root, char
         asset_code_hold_runtime(code, true);
     }
     asset_code_validate(code, NULL);
+    /* Reload must re-resolve saved dependencies even when this text is unchanged.
+     * Failed preparation leaves the prior accepted model and overlay intact. */
+    if (!strcmp(kind, "reload") && !asset_code_error(code)[0]) {
+        if (scene_prototype_source_accept(scene, asset, after, after, false, live, error, size) <
+            0) {
+            asset_code_reject_static(code, error);
+        }
+    }
     (void)scene_prototype_source_sync(scene, asset, live);
     scene_source_input *input = find_input(scene, asset->path);
     if (own && input && acount(input->groups)) {
@@ -380,6 +388,11 @@ bool scene_source_input_apply(app_scene_authoring *scene, yyjson_val *root, char
             }
             pending->disk_stage = false;
         }
+    }
+    /* Accepted editing creates a saveable view without stealing focus. Passive
+     * disk synchronization and Reload retain workspace ownership without tabs. */
+    if (strcmp(before, after) && strcmp(kind, "disk") && strcmp(kind, "reload")) {
+        scene_tabs_ensure_prototype(scene, asset);
     }
     /* Invalid raw text is an accepted draft; the previous model/overlay stays. */
     scene_prototype_source_capture(scene, asset);

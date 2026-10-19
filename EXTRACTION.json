@@ -1667,7 +1667,7 @@
       "current_source_sha256": "a724d0af657b5ab587528c2d1f475b7d303938d5a5e2c8e897122829748fa68d",
       "sha256": "3ac2e12fa9e512325a07c336a9ea0c908bbd8447098aa6ec4b52d6b80366041b",
       "source_path": "src/editor/documents/scene_prototypes.c",
-      "consumer_sha256": "4374bdeffcb95e4cdab94434af50123a811781cd4b08044c814a5c01f936b492"
+      "consumer_sha256": "1207d742b108ed245272481b29ed3e2a06757e8234f8eec098f4b8300b92f92e"
     },
     "src/editor/documents/scene_retention.c": {
       "current_source_sha256": "0b6d547334a3b7ccf89d76e832172e1a8ae997755d1d1e37ffe4d33887cf6941",
@@ -2499,7 +2499,7 @@
       "current_source_sha256": "b60c6ff2f94a8a5733efdb4ec8fe811f89d0d02e8d1635b0ec68dc73588f9612",
       "sha256": "0e6389b4bfcaf9c1f64637bf80918284091122a81e90e2efa2c77e99f36c1421",
       "source_path": "src/editor/workspace/scene_authoring.c",
-      "consumer_sha256": "01af66a689b2141df3bdad469360f92da3b4c9d4acc8751b21590e900c2a7a37"
+      "consumer_sha256": "d7fad2e23281b7612c7bb43780f4823b0bc8edc6f0a2e47cf364bebc6f45977e"
     },
     "src/editor/workspace/scene_authoring.h": {
       "current_source_sha256": "8b5270dfd0df43786a42529669ece1f70460727a5fb805aefabab953e5139a1f",
