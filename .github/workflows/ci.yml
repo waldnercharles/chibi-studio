@@ -185,7 +185,7 @@ jobs:
             ~/.cache/chibi-fetchcontent
             ~/.cache/chibi-dependency-packages
           key: ${{ steps.cache-deps.outputs.cache-primary-key }}
-      - name: Build and validate the reviewed five-invocation workload
+      - name: Build and validate the two remaining wrap invocations
         working-directory: chibi
         run: |
           python3 "$GITHUB_WORKSPACE/validation/tools/validate_studio_refresh.py" \

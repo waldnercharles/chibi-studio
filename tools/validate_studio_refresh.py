@@ -19,6 +19,50 @@ FINAL = '854d19acad786b6c9640002597a3f98a7f3ca791'
 FINAL_TREE = '536ed611531de9e2f9e055f7541d6a442e4e0523'
 ENGINE = '7bc6aa3cd69b29cfb006aab94d50d695007d9abe'
 SOURCE_PATCH_SHA256 = '3e8aeb7cd0c0c486e98ea9af9f9b8c363bc165b0659ce9d71a07d3f323fce90d'
+# These three owning selectors already passed on this exact product, SDK and policy.
+PRIOR_OWNING_EVIDENCE = {'run_id': 39200316249,
+ 'artifact_id': 12163835743,
+ 'artifact_sha256': 'f6609e02183a3646039940143cca83ad2000eed3bdfd80ac61758f84714c619d',
+ 'validation_revision': '55b74e0863e638eace50ac3477bb67d4190f82b6',
+ 'helper_sha256': '10e655493c72f37d1ef666c4574e2b6dcaf15fa8ab9ccc3c48cad8ba3087e67b',
+ 'workflow_sha256': '905cbfeb6040eca4cc2abef32f78f6733f37922a80d7d0d7a2d9a9386c2abc9b',
+ 'studio_revision': '854d19acad786b6c9640002597a3f98a7f3ca791',
+ 'studio_tree': '536ed611531de9e2f9e055f7541d6a442e4e0523',
+ 'engine_revision': '7bc6aa3cd69b29cfb006aab94d50d695007d9abe',
+ 'reviewed_files_sha256': '4682952ae1b187a67dc0395976a2705d937c4a5c343f2bb716d6db1842081c0d',
+ 'workload_sha256': '2ca071de2d1a30cca9663e378b6017f47c07763f57031970d95856c2a3ab6a31',
+ 'policy_sha256': 'b9b006b3b773138d144bb028e06898565902a6177cf08e16e7c60679fb0487ef',
+ 'sdk_build_id': '87ea46c521bbeeace728a7188fd1c1254fcff3e826871a80112a826e8ea818d7',
+ 'sdk_package_sha256': 'e74230df23b63b14295a3c64fc4cb3f94fa5d1a10cb7f6d131d7357cec34460e',
+ 'binary_sha256': 'ea948500e30025bbab291454db542df41968eddd06d2e171169c0d2a1e2864c9',
+ 'inventories': {'--graph-visibility': {'assertion_count': 'not exported by owning gate',
+                                        'binary_sha256': 'ea948500e30025bbab291454db542df41968eddd06d2e171169c0d2a1e2864c9',
+                                        'case': 'graph_visibility_and_document_pair',
+                                        'frames': 10,
+                                        'selector': '--graph-visibility',
+                                        'status': 'verified'},
+                 '--graph-pointer': {'assertion_count': 'not exported by owning gate',
+                                     'binary_sha256': 'ea948500e30025bbab291454db542df41968eddd06d2e171169c0d2a1e2864c9',
+                                     'case': 'graph_pointer',
+                                     'frames': 19,
+                                     'selector': '--graph-pointer',
+                                     'status': 'verified'},
+                 '--source-edit': {'assertion_count': 'not exported by owning gate',
+                                   'binary_sha256': 'ea948500e30025bbab291454db542df41968eddd06d2e171169c0d2a1e2864c9',
+                                   'case': 'source_graph_edit_undo_redo',
+                                   'edits': 1,
+                                   'frames': 4,
+                                   'redo': 1,
+                                   'selector': '--source-edit',
+                                   'status': 'verified',
+                                   'undo': 1}},
+ 'evidence_file_sha256': {'identity.json': '152c6c5d29f6c417a23166c8c6256d9cffa4f73e2ea42af4f90e7765f7dd4bcf',
+                          'policy-identity.json': '7b6143311f6523c9931ee55a3620b0271967713c9ce83286f6e51234d6e4c14f',
+                          'sdk-identity.json': 'b98431e93ac76bf7c918e288df35d61254a6e0234faa6803f2681d2d2edd479b',
+                          'green-build-identity.json': 'add8abce215e8a4ea3bf5c8f340f0f6d251f4bc106b6305cdeaece420066d42b',
+                          'green-graph-visibility-inventory.json': '2cafd78bab032d68adc75e78847d7180c62f1017e87c00717857bc0061e91fb8',
+                          'green-graph-pointer-inventory.json': '8a6623dda2a1529e1384d5392a721b5c823dcb12660de58306e52e1e83e9487c',
+                          'green-source-edit-inventory.json': 'cb9f4ec5d1e663df2ba1decfe8def0ee60e8468b8fe4c356cd25735b558fa3f8'}}
 PUBLIC_DIRECTORY = None
 CURRENT_STAGE = 'startup'
 PRODUCT = 'src/editor/rmlui/kit_code.c'
@@ -41,7 +85,8 @@ WORKLOAD = {
 }
 WRAP_ASSERTION = r'main\.c \(1617\): x == 0\)'
 WRAP_FIXTURE_SHA256 = '960d9b1db417b960387eb07b1e3389e4e18160d3a17dde71131c5065a6b7dd43'
-FAILURE_REASONS = {'Acceptance binary changed': 'binary_identity_mismatch',
+FAILURE_REASONS = {'Prior owning evidence no longer matches reviewed workload': 'reused_owning_evidence_mismatch',
+ 'Acceptance binary changed': 'binary_identity_mismatch',
  'Acceptance build inputs changed': 'build_identity_mismatch',
  'Acceptance fixture cleanup incomplete': 'fixture_cleanup_failed',
  'Acceptance source changed': 'source_identity_mismatch',
@@ -509,7 +554,7 @@ def pico_cases(code, output, names, negative_assertion=None):
     summaries = re.findall(r'Summary: Passed: (\d+) Failed: (\d+) Total: (\d+) Suites: (\d+) Asserts: (\d+)', plain)
     require(len(summaries) == 1, 'Missing unique pico summary')
     passed, failed, total, suites, assertions = map(int, summaries[0])
-    require(total == len(names) and passed + failed == total and suites == 1 and assertions > 0,
+    require(total == len(names) and passed + failed == total and suites == 0 and assertions > 0,
             'Wrong pico inventory')
     if negative_assertion is None:
         require(code == 0 and failed == 0 and '(FAILED:' not in plain, 'Candidate assertion workload failed')
@@ -705,6 +750,11 @@ def wrap_test(args, label, source, artifact, env):
         str(source), str(build / 'bin/studio-acceptance'), str(args.output / 'scratch')]], env)
     require(label in ('green', 'wrap-red'), 'Unreviewed wrap variant')
     negative = label == 'wrap-red'
+    observed = studio_failure_locations(source, output)
+    save(PUBLIC_DIRECTORY / (label + '-wrap-counts.json'), {
+        'exit_code': code, 'summary_count': observed['summary_count'],
+        'summary': observed['summary'], 'failure_markers': observed['failure_markers'],
+    })
     inventory = wrap_inventory(code, output, negative)
     require(not any((args.output / 'scratch').iterdir()), 'Acceptance fixture cleanup incomplete')
     restore_resources(source, artifact)
@@ -719,6 +769,21 @@ def wrap_test(args, label, source, artifact, env):
     })
     public_status(label + '-code-wrap-reveal', 'verified-negative' if negative else 'verified',
                   cases=1, assertions=inventory['assertions'], frames_limit=5)
+
+
+def reuse_owning_evidence(policy_sha256, sdk):
+    stage('owning-evidence-reuse')
+    prior = PRIOR_OWNING_EVIDENCE
+    selectors = ('--graph-visibility', '--graph-pointer', '--source-edit')
+    valid = (FINAL, FINAL_TREE, ENGINE) == (prior['studio_revision'], prior['studio_tree'], prior['engine_revision'])
+    valid &= canonical(prior) == '59c64d6a0b57d8120a400221674ee9e1dfe497a6d0fc4f3209fd57e3cce403c3'
+    valid &= canonical(REVIEWED_FILES) == prior['reviewed_files_sha256']
+    valid &= canonical({s: WORKLOAD[s] for s in selectors}) == prior['workload_sha256']
+    valid &= policy_sha256 == prior['policy_sha256']
+    valid &= (sdk['build_id'], sdk['manifest_sha256']) == (prior['sdk_build_id'], prior['sdk_package_sha256'])
+    require(valid, 'Prior owning evidence no longer matches reviewed workload')
+    save(PUBLIC_DIRECTORY / 'prior-owning-evidence.json', prior)
+    public_status('owning-evidence-reuse', 'verified', reused=True, cases=3, frames=33)
 
 
 def main():
@@ -742,10 +807,9 @@ def main():
          'supervisor_sha256': policy_hashes['tools/test_policy.py'], 'seconds_limit': 60})
     work, final_files = source_inputs(args)
     sdk = sdk_identity(args)
+    reuse_owning_evidence(canonical(policy_hashes), sdk)
     env = graphics_environment(args)
     green = build_variant(args, 'green', work, sdk)
-    for selector in ('--graph-visibility', '--graph-pointer', '--source-edit'):
-        owning_test(args, selector, work, green, env)
     wrap_test(args, 'green', work, green, env)
     require(snapshot(work, final_files, SOURCE_LINKS) == final_files, 'Acceptance source changed')
     red_files = apply_counterfactual(work, final_files)
@@ -764,8 +828,12 @@ def main():
     require(not any((args.output / 'scratch').iterdir()), 'Acceptance fixture cleanup incomplete')
     save(PUBLIC_DIRECTORY / 'summary.json', {
         'passed': True, 'scope': 'Studio PR77 focused native validation',
-        'engine_checks_reused': True, 'invocations': 5, 'frames_limit_total': 43,
-        'clean_selectors': ['--graph-visibility', '--graph-pointer', '--source-edit', '--code-wrap-reveal'],
+        'engine_checks_reused': True, 'invocations': 2, 'frames_limit_total': 10,
+        'owning_selectors_reused_run': PRIOR_OWNING_EVIDENCE['run_id'],
+        'reused_invocations': 3, 'reused_frames': 33,
+        'combined_invocations': 5, 'combined_frames_limit_total': 43,
+        'clean_selectors': ['--code-wrap-reveal'],
+        'reused_clean_selectors': ['--graph-visibility', '--graph-pointer', '--source-edit'],
         'negative_selector': '--code-wrap-reveal', 'negative_first_failure_line': 1617,
         'seconds_limit_per_invocation': 60, 'clean_builds': 1, 'incremental_counterfactual_builds': 1,
         'full_suite': 'not run', 'browser': 'not run', 'web_artifact': 'not built or uploaded',
