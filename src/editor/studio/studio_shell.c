@@ -1,7 +1,8 @@
-#include "editor/workspace/viewport.h"
+#include "editor/documents/prototype_source_input.h"
 #include "editor/studio/studio_internal.h"
 #include "editor/workspace/asset_index.h"
 #include "editor/workspace/model_preview.h"
+#include "editor/workspace/viewport.h"
 #include "support/array.h"
 #include "support/text_file.h"
 #include "support/xalloc.h"
@@ -124,8 +125,16 @@ static bool graph_focused(const studio *s)
             (s->tab == STUDIO_TAB_NODE || s->tab == STUDIO_TAB_MEMBER));
 }
 
-static bool behavior_history_focused(const studio *s)
+static bool source_history_focused(const studio *s)
 {
+    const app_scene_authoring *scene = s->scene;
+    int active = scene->active_tab;
+    bool source_only = active >= 0 && active < acount(scene->tabs) &&
+                       scene->tabs[active].source_only;
+    if (scene->document.kind != APP_EDITOR_DOCUMENT_BEHAVIOR &&
+        scene->document.kind != APP_EDITOR_DOCUMENT_SYSTEM && !source_only) {
+        return false;
+    }
     if (graph_focused(s)) {
         return true;
     }
@@ -204,7 +213,8 @@ static void save_document(studio *s, bool graph)
         return;
     }
     if (scene->active_tab >= 0 && scene->active_tab < acount(scene->tabs) &&
-        scene->tabs[scene->active_tab].source_dirty) {
+        (scene->tabs[scene->active_tab].source_only ||
+         scene->tabs[scene->active_tab].source_dirty)) {
         studio_code_save(s);
         return;
     }
@@ -364,9 +374,7 @@ bool studio_save_all(studio *s)
 bool studio_can_replay(studio *s, bool redo)
 {
     app_scene_authoring *scene = s->scene;
-    if ((scene->document.kind == APP_EDITOR_DOCUMENT_BEHAVIOR ||
-         scene->document.kind == APP_EDITOR_DOCUMENT_SYSTEM) &&
-        behavior_history_focused(s)) {
+    if (source_history_focused(s)) {
         return studio_code_history(s, redo, false);
     }
     if (graph_focused(s)) {
@@ -378,7 +386,9 @@ bool studio_can_replay(studio *s, bool redo)
     }
     if (scene->document.kind == APP_EDITOR_DOCUMENT_PROTOTYPE) {
         scene_prototype_asset *asset = selected_prototype(scene);
-        return asset && acount(redo ? asset->redo : asset->undo) > 0;
+        return asset &&
+               (asset->source ? asset_code_can_replay(asset->source, redo)
+                              : acount(redo ? asset->redo : asset->undo) > 0);
     }
     return redo ? scene_history_can_redo(scene->history)
                 : scene_history_can_undo(scene->history);
@@ -409,6 +419,9 @@ bool studio_active_dirty(studio *s)
 bool studio_unsaved(studio *s)
 {
     app_scene_authoring *scene = s->scene;
+    if (scene_source_input_any(scene)) {
+        return true;
+    }
     for (int i = 0; i < acount(scene->tabs); i++) {
         if (scene_tabs_dirty(scene, &scene->tabs[i])) {
             return true;
@@ -426,14 +439,16 @@ static void document_history(studio *s, bool redo)
                    : replay_scene_edit(s->scene, redo);
     if (result == 0) {
         studio_report(s, redo ? "Redo" : "Undo");
+    } else if (result == APP_PROTOTYPE_EDIT_PENDING && s->scene->document.kind == APP_EDITOR_DOCUMENT_PROTOTYPE) {
+        studio_error(s, "Waiting for shared edit", s->scene->prototype_message);
+    } else if (result > 0) {
+        studio_error(s, "Edited, but not applied", s->scene->prototype_message);
     }
 }
 
 void studio_history(studio *s, bool redo)
 {
-    if ((s->scene->document.kind == APP_EDITOR_DOCUMENT_BEHAVIOR ||
-         s->scene->document.kind == APP_EDITOR_DOCUMENT_SYSTEM) &&
-        behavior_history_focused(s)) {
+    if (source_history_focused(s)) {
         if (studio_code_history(s, redo, true)) {
             studio_report(s, redo ? "Redo" : "Undo");
         }

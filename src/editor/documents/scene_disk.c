@@ -168,6 +168,67 @@ static app_disk_result sync_system(app_scene_authoring *scene, const char *path,
     return APP_DISK_FAILED;
 }
 
+static bool prototype_uses(const prototype *asset, const char *name)
+{
+    for (int i = 0; i < acount(asset->includes); i++) {
+        if (!strcmp(asset->includes[i], name)) {
+            return true;
+        }
+    }
+    for (int i = 0; asset->children && i < acount(asset->children->entities); i++) {
+        const char *child = asset->children->entities[i].prototype;
+        if (child && !strcmp(child, name)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* The resolver's new text also changes flattened includes and child prototypes.
+ * Collect the transitive users before replacing any borrowed prototype names. */
+static app_disk_result reload_prototype_users(app_scene_authoring *scene, int changed)
+{
+    int *affected = NULL;
+    bool *seen = xcalloc((size_t)acount(scene->prototypes), sizeof *seen);
+    seen[changed] = true;
+    apush(affected, changed);
+    for (int next = 0; next < acount(affected); next++) {
+        const char *name = scene->prototypes[affected[next]].prototype->name;
+        for (int i = 0; i < acount(scene->prototypes); i++) {
+            if (!seen[i] && prototype_uses(scene->prototypes[i].prototype, name)) {
+                seen[i] = true;
+                apush(affected, i);
+            }
+        }
+    }
+    free(seen);
+    app_disk_result result = APP_DISK_RELOADED;
+    char message[256] = "";
+    for (int i = 1; i < acount(affected); i++) {
+        scene_prototype_asset *asset = &scene->prototypes[affected[i]];
+        if (!asset->path || scene_prototype_dirty(asset)) {
+            if (result != APP_DISK_FAILED) {
+                result = APP_DISK_UNSAVED;
+                snprintf(
+                    message,
+                    sizeof message,
+                    "%s has unsaved edits; reload it to apply changed "
+                    "prototype dependencies.",
+                    asset->prototype->name
+                );
+            }
+        } else if (reload_prototype_asset(scene, asset) < 0) {
+            result = APP_DISK_FAILED;
+            snprintf(message, sizeof message, "%s", scene->message);
+        }
+    }
+    afree(affected);
+    if (message[0]) {
+        snprintf(scene->message, sizeof scene->message, "%s", message);
+    }
+    return result;
+}
+
 static app_disk_result sync_prototype(app_scene_authoring *scene, const char *path, bool force)
 {
     for (int i = 0; i < acount(scene->prototypes); i++) {
@@ -175,11 +236,12 @@ static app_disk_result sync_prototype(app_scene_authoring *scene, const char *pa
         if (!asset->path || strcmp(asset->path, path)) {
             continue;
         }
-        if (asset->dirty && !force) {
+        if (scene_prototype_dirty(asset) && !force) {
             return APP_DISK_UNSAVED;
         }
-        return reload_prototype_asset(scene, asset) == 0 ? APP_DISK_RELOADED
-                                                         : APP_DISK_FAILED;
+        return reload_prototype_asset(scene, asset) >= 0
+                 ? reload_prototype_users(scene, i)
+                 : APP_DISK_FAILED;
     }
     char *json = read_scene_file(path);
     bool added = json &&
@@ -396,8 +458,8 @@ app_disk_change *app_scene_authoring_sync_disk(app_scene_authoring *scene, doubl
     if (!changed && (!acount(scene->disk_pending) || runtime_session(scene))) {
         return changes;
     }
-    if (changed) {
-        content_refresh(scene);
+    if (changed && !content_refresh(scene)) {
+        add_change(&changes, APP_DISK_FAILED, scene->content_root, scene->message);
     }
     char **paths = scene->disk_pending;
     scene->disk_pending = NULL;
@@ -432,6 +494,9 @@ app_disk_result app_scene_authoring_reload_path(app_scene_authoring *scene, cons
     scene_document_tab *ui = tab_at(scene, APP_EDITOR_DOCUMENT_UI, path);
     if (ui) {
         return reload_ui_document(scene, ui) == 0 ? APP_DISK_RELOADED : APP_DISK_FAILED;
+    }
+    if (!content_refresh(scene)) {
+        return APP_DISK_FAILED;
     }
     return sync_path(scene, path, true);
 }
@@ -681,6 +746,12 @@ static void forget_prototype(app_scene_authoring *scene, scene_prototype_asset *
     const char *name = asset->prototype->name;
     for (int i = 0; i < acount(scene->actors); i++) {
         if (!strcmp(scene->actors[i].prototype_name, name)) {
+            if (asset->source && scene_prototype_source_owned(asset)) {
+                asset_code_file_removed(asset->source);
+                scene_prototype_source_capture(scene, asset);
+                snprintf(scene->message, sizeof scene->message, "Prototype source was deleted; its draft is retained. Restore the file, then save or reload it.");
+                return;
+            }
             free(asset->path);
             asset->path = NULL;
             asset->dirty = 1;
@@ -697,6 +768,7 @@ static void forget_prototype(app_scene_authoring *scene, scene_prototype_asset *
     for (int i = 0; i < acount(scene->tabs); i++) {
         forget_index(&scene->tabs[i].selected_prototype, removed);
     }
+    scene_prototype_source_free(asset);
     prototype_free(asset->prototype);
     free(asset->path);
     clear_prototype_history(asset);
@@ -793,6 +865,15 @@ void scene_disk_follow(app_scene_authoring *scene, const scene_move *moves, int 
                                                  : NULL;
         preview_definition *definition = moved ? definition_file(scene, move->from)
                                                : NULL;
+        scene_prototype_asset *returning = move->to ? prototype_file(scene, move->to)
+                                                    : NULL;
+        if ((prototype && prototype->source &&
+             asset_code_file_missing(prototype->source)) ||
+            (returning && returning->source &&
+             asset_code_file_missing(returning->source))) {
+            snprintf(scene->message, sizeof scene->message, "Prototype source returned; its retained draft is unchanged. Save or reload to resolve it.");
+            continue;
+        }
         if (prototype) {
             move_prototype(scene, prototype, move->to);
         } else if (definition) {
@@ -803,7 +884,10 @@ void scene_disk_follow(app_scene_authoring *scene, const scene_move *moves, int 
     }
     for (int i = 0; i < count; i++) {
         if (moves[i].from && moves[i].to && !strcmp(moves[i].from, moves[i].to)) {
-            sync_path(scene, moves[i].to, true);
+            scene_prototype_asset *asset = prototype_file(scene, moves[i].to);
+            if (!asset || !asset->source || !asset_code_file_missing(asset->source)) {
+                sync_path(scene, moves[i].to, true);
+            }
         }
     }
     for (int i = 0; i < count; i++) {

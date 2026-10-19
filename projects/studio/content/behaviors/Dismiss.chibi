@@ -1,4 +1,4 @@
-behavior "Dismiss" {
+Dismiss :: behavior {
     on Close {
         self.Ui.hidden = true
     }

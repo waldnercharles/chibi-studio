@@ -1,18 +1,18 @@
-behavior "OutlinerMenu" {
-    action set_ui_data_8 = set_ui_data(0, "menu.actor", convert<"To Real">(selection().Count) > 0)
+OutlinerMenu :: behavior {
+    action set_ui_data_8 = set_ui_data(0, "menu.actor", convert<To_Real>(selection().Count) > 0)
     on Begin {
-        await set_ui_data(0, "menu.spawnBreak.label", engine["String"]("Break When Spawned"))
-        await set_ui_data(0, "menu.spawnBreak.icon", engine["String"](""))
-        await set_ui_data(0, "menu.spawnBreak.shortcut", engine["String"](""))
+        await set_ui_data(0, "menu.spawnBreak.label", string("Break When Spawned"))
+        await set_ui_data(0, "menu.spawnBreak.icon", string(""))
+        await set_ui_data(0, "menu.spawnBreak.shortcut", string(""))
         if editor_state().Mac {
-            set_ui_data(0, "isolateTip", engine["String"]("⌥-click shows only this object"))
+            set_ui_data(0, "isolateTip", string("⌥-click shows only this object"))
         } else {
-            set_ui_data(0, "isolateTip", engine["String"]("Alt+click shows only this object"))
+            set_ui_data(0, "isolateTip", string("Alt+click shows only this object"))
         }
     }
     on Refresh {
         Count := selection().Count
-        if convert<"To Real">(Count) == 1 {
+        if convert<To_Real>(Count) == 1 {
             await set_ui_data(0, "menu.label", selection().Name)
             set_ui_data_8()
         } else {

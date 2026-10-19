@@ -1,3 +1,4 @@
+#include "editor/documents/prototype_source_input.h"
 /* The projects Studio opens: those opened recently, most recent first, then
  * the workspace's own and those in its projects directory, and any folder
  * File ▸ Open Project… picks. Opening one rebuilds the editor, so the
@@ -98,7 +99,7 @@ static void add_project(studio *s, const char *manifest)
 {
     chibi_project project = { 0 };
     char error[256];
-    if (chibi_project_open(&project, manifest, error, sizeof error) == 0 &&
+    if (chibi_project_inspect(&project, manifest, error, sizeof error) == 0 &&
         project_index(s, project.root) < 0) {
         apush(
             s->projects,
@@ -364,6 +365,11 @@ static void answer_unsaved(studio *s)
         ask_again(s, tab);
         return;
     }
+    if (discard && scene_source_input_any(s->scene)) {
+        studio_error(s, "Source draft retained", "Resolve the source draft with Retry Draft or Use Shared before closing.");
+        ask_again(s, tab);
+        return;
+    }
     if (save || discard) {
         proceed(s, tab);
     }
@@ -425,7 +431,7 @@ static bool open_folder(chibi_project *project, const char *folder, char *error,
         );
         return false;
     }
-    return chibi_project_open(project, manifest, error, size) == 0;
+    return chibi_project_inspect(project, manifest, error, size) == 0;
 }
 
 void studio_open_project_folder(studio *s, const char *folder)

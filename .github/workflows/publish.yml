@@ -12,6 +12,7 @@ on:
       - "cmake/**"
       - "CMakeLists.txt"
       - ".github/workflows/publish.yml"
+      - ".github/engine-ref"
   pull_request:
     branches: [main]
     paths:
@@ -22,6 +23,7 @@ on:
       - "cmake/**"
       - "CMakeLists.txt"
       - ".github/workflows/publish.yml"
+      - ".github/engine-ref"
   schedule:
     - cron: "23 6 * * *"
 
@@ -43,17 +45,31 @@ jobs:
       engine: ${{ steps.version.outputs.engine }}
       published: ${{ steps.version.outputs.published }}
       build: ${{ steps.version.outputs.build }}
+      paired: ${{ steps.version.outputs.paired }}
     steps:
+      - uses: actions/checkout@v4
       - name: Select the exact engine SDK
         id: version
         env:
           GH_TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
           STUDIO: ${{ github.sha }}
+          ALLOW_PIN: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         shell: bash
         run: |
           test -n "$GH_TOKEN"
-          # Match native CI's engine main, resolved once for this whole workflow.
-          ENGINE=$(gh api repos/waldnercharles/chibi/commits/main --jq .sha)
+          # Match native CI's selected engine, resolved once for this workflow.
+          paired=false
+          if [ "$ALLOW_PIN" = true ] && [ -f .github/engine-ref ]; then
+            ENGINE=$(<.github/engine-ref)
+            if [[ ! "$ENGINE" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::.github/engine-ref must contain one full lowercase engine commit SHA."
+              exit 1
+            fi
+            paired=true
+          else
+            ENGINE=$(gh api repos/waldnercharles/chibi/commits/main --jq .sha)
+          fi
+          echo "paired=$paired" >> "$GITHUB_OUTPUT"
           export ENGINE
           gh api --paginate --slurp 'repos/waldnercharles/chibi/releases?per_page=100' > "$RUNNER_TEMP/engine-releases.json"
           python3 - <<'PY'
@@ -174,6 +190,7 @@ jobs:
           cmake --build build-web --target chibi-studio --parallel 2
           cmake --install build-web --prefix "$GITHUB_WORKSPACE/site"
       - name: Package the reusable editor and its version
+        if: needs.version.outputs.paired != 'true'
         env:
           ENGINE: ${{ needs.version.outputs.engine }}
           STUDIO: ${{ github.sha }}
@@ -192,6 +209,7 @@ jobs:
           (root / ".nojekyll").touch()
           PY
       - uses: actions/upload-pages-artifact@v3
+        if: needs.version.outputs.paired != 'true'
         with:
           path: site
           retention-days: 1

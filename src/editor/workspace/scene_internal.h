@@ -5,7 +5,9 @@
 #include "assets/scene_document.h"
 #include "authoring/prototype_preview.h"
 #include "authoring/source_catalog.h"
+#include "authoring/source_prototype_edit.h"
 #include "authoring/studio_schema.h"
+#include "editor/documents/asset_code.h"
 #include "editor/documents/scene_history.h"
 #include "editor/documents/scene_retention.h"
 #include "editor/documents/ui_buffer.h"
@@ -14,11 +16,15 @@
 #include "editor/workspace/scene_authoring.h"
 #include "editor/workspace/scene_debug.h"
 #include "editor/workspace/scene_gizmo.h"
+#include "editor/workspace/tree_watch.h"
 #include "editor/workspace/viewport.h"
 #include "render/scene_renderer.h"
-#include "editor/workspace/tree_watch.h"
 
 typedef struct scene_model_preview scene_model_preview;
+typedef struct
+{
+    char *name, *text, *path;
+} scene_prototype_source;
 
 typedef struct
 {
@@ -134,6 +140,11 @@ typedef struct
 {
     char *path;
     prototype *prototype;
+    /* Canonical prototypes own one exact source session; Code borrows it. */
+    asset_code *source;
+    char *source_accepted;
+    char **source_pending_behaviors; /* touched identities until a complete apply */
+    bool source_not_applied;
     int dirty;
     scene_camera camera;
     av_value **undo;
@@ -197,6 +208,13 @@ struct app_scene_authoring
     app_scene_prototype_resolve_fn resolve_prototype;
     void *resolve_user;
     prototype_registry registry;
+    ecs_relationship_desc **relationships;
+    /* Loaded prototype registries borrow prior pointer arrays; descriptors
+     * are shared with the newest append-only generation. */
+    ecs_relationship_desc ***relationship_generations;
+    scene_prototype_source *prototype_sources;
+    struct scene_source_input *source_inputs; /* client-local, never checkpointed */
+    uint64_t source_input_generation;
     editor_choices component_choices;
     editor_choices type_choices;
     editor_choices image_choices; /* Labels and names borrow content paths. */
@@ -393,7 +411,8 @@ void begin_transform_edit(app_scene_authoring *scene, ecs_entity entity);
 
 const char *content_basename(const char *path);
 bool content_path_in_folder(const app_scene_authoring *scene, const char *path, const char *folder);
-void content_refresh(app_scene_authoring *scene);
+bool content_refresh(app_scene_authoring *scene);
+bool scene_prototype_sources_refresh(app_scene_authoring *scene);
 void asset_index_invalidate(app_scene_authoring *scene);
 bool editable_scalar(const pin_value *value);
 bool scene_property_value_copy(pin_value *out, pin_value value);
@@ -463,6 +482,7 @@ int scene_apply_overrides(
 /* Replaces prototype `name` with its definition `value`, as its scene Undo
    step replays it; every instance keeps its values. */
 int scene_restore_prototype(app_scene_authoring *scene, const char *name, av_value *value);
+int scene_restore_prototype_edit(app_scene_authoring *, const scene_prototype_edit *, bool redo);
 /* Whether a new prototype can be named `name`: a valid asset name no asset
    or file has; false with why in `error`. */
 bool scene_prototype_name_free(app_scene_authoring *scene, const char *name, char *error, size_t size);
@@ -536,6 +556,42 @@ int scene_paste(app_scene_authoring *scene, const char *text, scene_paste_place 
 scene_actor *selected_actor(app_scene_authoring *scene);
 scene_prototype_asset *selected_prototype(app_scene_authoring *scene);
 ecs_entity selected_scene_entity(const app_scene_authoring *scene);
+bool scene_prototype_source_owned(const scene_prototype_asset *asset);
+scene_prototype_asset *scene_prototype_for_path(app_scene_authoring *, const char *path);
+asset_code *scene_prototype_source_prepare(app_scene_authoring *, scene_prototype_asset *, char *, size_t);
+void scene_prototype_source_adopt_session(app_scene_authoring *, scene_prototype_asset *, asset_code *);
+asset_code *scene_prototype_source_session(
+    app_scene_authoring *,
+    scene_prototype_asset *,
+    char *error,
+    size_t
+);
+void scene_prototype_source_capture(app_scene_authoring *, scene_prototype_asset *);
+void scene_prototype_source_free(scene_prototype_asset *);
+bool scene_prototype_dirty(const scene_prototype_asset *);
+/* -1 rejects authoring; 0 accepts; 1 accepts but existing live apply failed. */
+int scene_prototype_source_accept(
+    app_scene_authoring *,
+    scene_prototype_asset *,
+    const char *before,
+    const char *after,
+    bool coalesce,
+    bool refresh_instances,
+    char *error,
+    size_t
+);
+int scene_prototype_source_sync(app_scene_authoring *, scene_prototype_asset *, bool refresh_instances);
+int scene_prototype_source_edit(
+    app_scene_authoring *,
+    scene_prototype_asset *,
+    const authoring_prototype_edit *,
+    int count,
+    bool coalesce
+);
+int scene_prototype_source_save(app_scene_authoring *, scene_prototype_asset *);
+int scene_prototype_source_reload(app_scene_authoring *, scene_prototype_asset *);
+/* Ensure a background source edit participates in Save All/close without selection changes. */
+void scene_tabs_ensure_prototype(app_scene_authoring *, scene_prototype_asset *);
 int write_prototype_field(
     app_scene_authoring *scene,
     scene_prototype_asset *asset,

@@ -1,6 +1,6 @@
-behavior "OutlinerRename" {
+OutlinerRename :: behavior {
     Left: string = ""
-    action left_3 = set_variable<"Left">("")
+    action left_3 = set_variable<Left>("")
     on RenameCommitted {
         if text_equal(renaming_object(), event.Key) {
             await rename_object(event.Key, event.Name)
@@ -15,10 +15,10 @@ behavior "OutlinerRename" {
         focus_ui_element(0, "#outliner-list")
     }
     on RenameLeft {
-        state."Left" = event.Key
+        Left = event.Key
     }
     on Refresh {
-        if text_equal(state."Left", renaming_object()) {
+        if text_equal(Left, renaming_object()) {
             await end_rename()
             left_3()
         } else {

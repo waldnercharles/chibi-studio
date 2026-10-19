@@ -10,7 +10,10 @@ Preserved test oracles live in `tests/held/engine_oracles`; they are held covera
 not passing tests. Agent and contributor rules are in `AGENTS.md`.
 The engine's [current status](https://github.com/waldnercharles/chibi/blob/main/docs/status.md)
 tracks implemented capabilities, remaining work, ownership and evidence limits
-across repositories.
+across repositories. There are no separate example projects: the engine's
+[examples](https://github.com/waldnercharles/chibi/blob/main/docs/examples.md)
+page lists the checked-in projects to open here, and Studio's own
+`projects/studio` is the largest authored one.
 
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
@@ -121,6 +124,15 @@ The shared distribution updates only after a successful build on `main` with a
 complete matching engine release, including its export package. Source-fallback
 builds validate the editor without replacing the public distribution; a later
 daily check can publish once the matching release is available.
+
+A same-repository PR that depends on an unmerged engine change can put its full
+lowercase 40-character commit SHA in `.github/engine-ref`. Desktop CI then
+packages that exact engine revision, and web CI builds and consumes its serial
+web SDK. These paired web builds do not create or upload distribution archives.
+The pin is ignored on main, scheduled runs and manual runs, which retain the
+normal main/released-SDK checks. Remove it after the engine dependency lands and
+the ordinary checks pass; a paired check is not evidence of compatibility with
+engine main or the latest released SDK.
 
 The public distribution is at
 <https://waldnercharles.github.io/chibi-studio/>. Its `studio.json` identifies

@@ -1,6 +1,7 @@
 #define PICO_UNIT_IMPLEMENTATION
 #include "assets/input_map.h"
 #include "authoring/preview_source.h"
+#include "authoring/source_asset.h"
 #include "authoring/source_presentation.h"
 #include "debugger.h"
 #include "editor/collab/collab.h"
@@ -22,6 +23,7 @@
 #include "runtime/scenes/physics3d.h"
 #include "support/array.h"
 #include "support/file_io.h"
+#include "support/text_overlay.h"
 #include "support/xalloc.h"
 #include "vendor/pico_unit.h"
 
@@ -36,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "scene_read.h"
 
@@ -52,6 +55,7 @@ static enum {
     KDL_KEYS,
     EXPORT_GAME,
     GRAPH_VISIBILITY,
+    CODE_WRAP_REVEAL,
     GRAPH_KEYS,
     GRAPH_POINTER,
     DEBUGGER_SOURCE_HISTORY,
@@ -60,6 +64,8 @@ static enum {
     UNIT_WARNINGS,
     SCENE_HIERARCHY,
     SCENE_MOVE,
+    PROTOTYPE_SOURCE,
+    PROTOTYPE_SOURCE_AUTHORITY,
     OUTLINER_MOVE,
     OUTLINER_ROWS,
     SCENE_PHYSICS,
@@ -75,13 +81,12 @@ static enum {
     PANEL_IDLE
 } mode;
 static char exported[1024]; /* the export Studio reported */
-static const char counter_bytes[] =
-    "behavior Counter {\n"
-    "    state count: int = 1\n"
-    "    on Tick {\n"
-    "        count = count + 1\n"
-    "    }\n"
-    "}\n";
+static const char counter_bytes[] = "Counter :: behavior {\n"
+                                    "    count: retain int = 1\n"
+                                    "    on Tick {\n"
+                                    "        count = count + 1\n"
+                                    "    }\n"
+                                    "}\n";
 
 static bool unchanged_source()
 {
@@ -427,7 +432,7 @@ static bool source_member_edits(studio *s, const char *probe)
     studio_members_action(s, "rename", &member);
     snprintf(member.args[0], sizeof member.args[0], "total");
     studio_members_action(s, "renamed", &member);
-    REQUIRE(strstr(asset_code_text(code), "state total: int = 1"));
+    REQUIRE(strstr(asset_code_text(code), "total: retain int = 1"));
     REQUIRE(!strstr(asset_code_text(code), "count"));
     REQUIRE(asset_code_replay(code, false, false));
     REQUIRE(asset_code_sync_graph(code, e, false));
@@ -562,19 +567,18 @@ static bool fused_call_flow_edits(studio *s)
     asset_code *code = counter_source(s);
     editor *e = s->scene->graph_editor;
     REQUIRE(code);
-    const char
-        probe[] = "// Authored behavior with a leading comment.\n"
-                  "behavior Counter {\n"
-                  "    state count: int = 1\n"
-                  "    function Add(amount:int)->() { count += amount }\n"
-                  "    function Double(amount:int)->(total:int) { return "
-                  "amount * 2 }\n"
-                  "    on Tick {\n"
-                  "        Add(1)\n"
-                  "        Add(2)\n"
-                  "        if true { count = Double(3) }\n"
-                  "    }\n"
-                  "}\n";
+    const char probe[] = "// Authored behavior with a leading comment.\n"
+                         "Counter :: behavior {\n"
+                         "    count: retain int = 1\n"
+                         "    Add :: (amount:int) { count += amount }\n"
+                         "    Double :: (amount:int)->(total:int) { return "
+                         "amount * 2 }\n"
+                         "    on Tick {\n"
+                         "        Add(1)\n"
+                         "        Add(2)\n"
+                         "        if true { count = Double(3) }\n"
+                         "    }\n"
+                         "}\n";
     bool live = s->prefs.code_apply_live;
     s->prefs.code_apply_live = false;
     REQUIRE(studio_code_replace(s, asset_code_path(code), asset_code_text(code), probe, NULL));
@@ -653,8 +657,6 @@ static bool fused_call_flow_edits(studio *s)
     REQUIRE(acount(e->asset->variables) == 0);
     REQUIRE(source_catalog_current(s));
     const char *accesses[] = { "Get count", "Set count" };
-    const char *statements[] = { "countValue := state.\"count\";",
-                                 "state.\"count\" = 0;" };
     for (int access = 0; access < 2; access++) {
         ed_search_match *matches = ed_search_matches(e, accesses[access]);
         const ed_search_match *match = NULL;
@@ -667,7 +669,50 @@ static bool fused_call_flow_edits(studio *s)
         }
         REQUIRE(match && ed_source_spawn_match(e, match));
         afree(matches);
-        REQUIRE(strstr(asset_code_text(code), statements[access]));
+        const authoring_source *spawned = asset_code_source(code);
+        REQUIRE(spawned && spawned->valid);
+        const script_analysis *analysis = spawned->analysis;
+        int retained = -1;
+        for (int i = 0; i < analysis->symbol_count; i++) {
+            if (analysis->symbols[i].kind == SCRIPT_STATE &&
+                !strcmp(analysis->symbols[i].name, "count")) {
+                retained = i;
+            }
+        }
+        REQUIRE(retained >= 0);
+        bool resolved_access = false;
+        if (!access) {
+            for (int i = 0; i < analysis->symbol_count; i++) {
+                const script_symbol *local = &analysis->symbols[i];
+                if (local->kind != SCRIPT_LOCAL || local->initializer < 0) {
+                    continue;
+                }
+                const script_expression *read = &analysis->expressions[local->initializer];
+                resolved_access |= read->kind == SCRIPT_EXPR_SYMBOL &&
+                                   read->symbol == retained;
+            }
+        } else {
+            for (int i = 0; i < analysis->statement_count; i++) {
+                const script_statement *statement = &analysis->statements[i];
+                if (statement->kind != SCRIPT_STMT_ASSIGN ||
+                    statement->expression < 0 || statement->second < 0) {
+                    continue;
+                }
+                const script_expression
+                    *target = &analysis->expressions[statement->expression];
+                const script_expression *value = &analysis
+                                                      ->expressions[statement->second];
+                resolved_access |= target->kind == SCRIPT_EXPR_SYMBOL &&
+                                   target->symbol == retained &&
+                                   value->kind == SCRIPT_EXPR_CONSTANT &&
+                                   value->constant.type == PIN_I32 &&
+                                   value->constant.i == 0;
+            }
+        }
+        if (!resolved_access) {
+            fprintf(stderr, "Studio variable %s source:\n%s\n", accesses[access], asset_code_text(code));
+        }
+        REQUIRE(resolved_access);
         REQUIRE(acount(e->asset->variables) == 0);
         REQUIRE(asset_code_replay(code, false, false));
         REQUIRE(asset_code_sync_graph(code, e, false));
@@ -731,6 +776,114 @@ static bool frame_probe_drawn(studio *s, bool expected)
     return true;
 }
 
+/* Two tiny static buffers exercise model history/save in the existing first
+ * frame, without loading executable source or adding rendered frames. */
+static bool static_relationship_refresh(studio *);
+static bool cached_editor_registry(void);
+static bool static_prototype_refresh(void);
+static bool large_source_read_limits(void);
+static bool static_source_dispatch_history(studio *);
+
+static bool static_source_history(studio *s)
+{
+    REQUIRE(large_source_read_limits());
+    REQUIRE(static_source_dispatch_history(s));
+    static const type_field current = { .name = "current",
+                                        .type = PIN_I32,
+                                        .size = sizeof(int32_t) };
+    static const type_desc health = { .name = "StaticHealth",
+                                      .size = sizeof(int32_t),
+                                      .fields = &current,
+                                      .field_count = 1 };
+    static const ecs_component_desc component = { .id = 99001,
+                                                  .key = "test.static_health",
+                                                  .name = "StaticHealth",
+                                                  .element_size = sizeof(int32_t),
+                                                  .type = &health };
+    const ecs_component_desc *components[] = { &component };
+    const prototype_registry typed_registry = { .components = components,
+                                                .component_count = 1 };
+    char root[] = "/tmp/chibi-studio-static-XXXXXX", path[256], directory[256],
+         error[256];
+    REQUIRE(mkdtemp(root));
+    const char *folders[] = { "relationships", "prototypes" };
+    const char *names[] = { "Targets", "Enemy" };
+    const char *original[] = { "Targets :: relationship { exclusive:true }",
+                               "Enemy :: prototype {}" };
+    const char *changed[] = {
+        "Targets :: relationship { exclusive:false }",
+        "Enemy :: prototype { StaticHealth {current:2} }"
+    };
+    const char *invalid[] = {
+        "Targets :: relationship { exclusive:1 }",
+        "Enemy :: prototype { StaticHealth {current:\"bad\"} }"
+    };
+    for (int i = 0; i < 2; i++) {
+        snprintf(directory, sizeof directory, "%s/%s", root, folders[i]);
+        REQUIRE(!mkdir(directory, 0700));
+        snprintf(path, sizeof path, "%s/%s.chibi", directory, names[i]);
+        REQUIRE(!write_file_atomic(path, original[i]));
+        asset_code *code = asset_code_open(path, error, sizeof error);
+        REQUIRE(code && asset_code_static(code));
+        asset_code_set_registry(code, i ? &typed_registry : &s->scene->registry);
+        REQUIRE(!asset_code_error(code)[0] && !asset_code_pending(code));
+        REQUIRE(!asset_code_source(code) && !asset_code_presentation(code));
+        int highlight_count = 0;
+        authoring_highlight *highlights = authoring_source_syntax_highlights(
+            asset_code_syntax(code),
+            &highlight_count
+        );
+        REQUIRE(highlights && highlight_count > 0);
+        free(highlights);
+        authoring_completions suggestions;
+        int offset = i ? (int)(strchr(original[i], '}') - original[i])
+                       : (int)(strstr(original[i], "exclusive") - original[i]) + 2;
+        authoring_asset_source_complete(asset_code_syntax(code), NULL, offset, &suggestions);
+        bool offered = false;
+        for (int j = 0; j < suggestions.count; j++) {
+            offered |= !strcmp(suggestions.items[j].label, i ? "children" : "exclusive");
+        }
+        REQUIRE(offered);
+        authoring_completions_free(&suggestions);
+        REQUIRE(asset_code_replace(code, original[i], changed[i]));
+        REQUIRE(asset_code_validate(code, s->scene->graph_editor));
+        REQUIRE(asset_code_replay(code, false, true));
+        REQUIRE(!strcmp(asset_code_text(code), original[i]));
+        REQUIRE(asset_code_replay(code, true, true));
+        REQUIRE(!strcmp(text_overlay_text(path), changed[i]));
+        REQUIRE(asset_code_replace(code, changed[i], invalid[i]));
+        REQUIRE(!asset_code_syntax(code)->diagnostic_count);
+        REQUIRE(!asset_code_validate(code, s->scene->graph_editor));
+        REQUIRE(asset_code_error(code)[0] && !strcmp(text_overlay_text(path), changed[i]));
+        REQUIRE(!asset_code_save(code, error, sizeof error));
+        char *disk = file_read_text(path);
+        REQUIRE(disk && !strcmp(disk, original[i]));
+        free(disk);
+        REQUIRE(asset_code_replay(code, false, false));
+        REQUIRE(asset_code_save(code, error, sizeof error));
+        disk = file_read_text(path);
+        REQUIRE(disk && !strcmp(disk, asset_code_text(code)));
+        free(disk);
+        av_value *checkpoint = asset_code_capture(code);
+        asset_code *restored = asset_code_restore(
+            checkpoint,
+            i ? &typed_registry : &s->scene->registry
+        );
+        REQUIRE(restored && asset_code_static(restored));
+        REQUIRE(!strcmp(asset_code_text(restored), asset_code_text(code)));
+        REQUIRE(!asset_code_source(restored) && !asset_code_presentation(restored));
+        asset_code_free(restored);
+        av_value_free(checkpoint);
+        asset_code_free(code);
+        REQUIRE(!unlink(path));
+        REQUIRE(!rmdir(directory));
+    }
+    REQUIRE(!rmdir(root));
+    REQUIRE(static_prototype_refresh());
+    return true;
+}
+#include "source_discard.h"
+
 static bool source_edit_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -742,10 +895,12 @@ static bool source_edit_frame(void *state)
         REQUIRE(counter_applied(s));
     }
     if (frames == 1) {
+        REQUIRE(static_source_history(s));
         REQUIRE(projects_open(s));
         REQUIRE(reports_warn(s));
         REQUIRE(opens_on_handler(s));
         REQUIRE(fused_call_flow_edits(s));
+        REQUIRE(executable_source_discard(s));
         const node *literal = NULL;
         REQUIRE(check_counter(s, 1, false, &literal));
         s->prefs.code_apply_live = true;
@@ -810,6 +965,8 @@ static bool source_edit_frame(void *state)
         REQUIRE(studio_editor_shown(s, STUDIO_EDITOR_CODE));
         REQUIRE(input_map_reloads(s));
         REQUIRE(quit_asks(s));
+        REQUIRE(static_relationship_refresh(s));
+        REQUIRE(cached_editor_registry());
     }
     return true;
 }
@@ -897,8 +1054,8 @@ static bool same_without_space(const char *a, const char *b)
     }
 }
 
-static const char commented_bytes[] = "behavior Counter {\n"
-                                      "    // state count: int = 1\n"
+static const char commented_bytes[] = "Counter :: behavior {\n"
+                                      "    // count: retain int = 1\n"
                                       "    on Tick {\n"
                                       "        count = count + 1\n"
                                       "    }\n"
@@ -1104,8 +1261,8 @@ static bool kdl_keys_frame(void *state)
 }
 
 #define UNIT_FRAMES 4
-static const char unit_mismatch[] = "behavior Counter {\n"
-                                    "    state count: int = 1\n"
+static const char unit_mismatch[] = "Counter :: behavior {\n"
+                                    "    count: retain int = 1\n"
                                     "    on Tick {\n"
                                     "        count = count + 1\n"
                                     "        self.Collider.radius = "
@@ -1373,8 +1530,8 @@ static bool behavior_empty_variables(studio *s)
     asset_code *code = counter_source(s);
     REQUIRE(code);
     editor *e = s->scene->graph_editor;
-    const char empty[] = "behavior Counter {\n"
-                         "    function Helper() { return 1 }\n"
+    const char empty[] = "Counter :: behavior {\n"
+                         "    Helper :: () -> int { return 1 }\n"
                          "    on Tick {}\n"
                          "}\n";
     REQUIRE(studio_code_replace(s, asset_code_path(code), asset_code_text(code), empty, NULL));
@@ -1399,6 +1556,68 @@ static bool behavior_empty_variables(studio *s)
 }
 
 static rml_element *find_element(studio *s, const char *selector);
+
+#define CODE_WRAP_FRAMES 5
+static const char code_wrap_comment
+    [] = "// aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+         "\n";
+static char code_wrap_source[sizeof code_wrap_comment + sizeof counter_bytes - 1];
+
+/* A wrap change must reflow an in-flight reveal without restoring its old
+   horizontal spring. No second reveal or code input follows the change. */
+static bool code_wrap_reveal_frame(void *state)
+{
+    static float first_x;
+    static rml_element *focus;
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= CODE_WRAP_FRAMES);
+    asset_code *code = counter_source(s);
+    REQUIRE(code);
+    kit_code_editor *text = asset_code_editor(code);
+    REQUIRE(text);
+    if (frames == 1) {
+        studio_behavior_show(s, 1);
+        s->prefs.reduced_motion = false;
+        s->prefs.code_wrap = false;
+        s->code.find.refocus = true;
+        kit_code_reveal(text, (int)sizeof code_wrap_comment - 3);
+    }
+    REQUIRE(!strcmp(asset_code_text(code), code_wrap_source));
+    REQUIRE(!strcmp(kit_code_text(text, NULL), code_wrap_source));
+    REQUIRE(kit_code_cursor(text) == (int)sizeof code_wrap_comment - 3);
+    REQUIRE(!asset_code_dirty(code));
+    if (frames == 1) {
+        return true;
+    }
+    rml_context *context = rml_backend_context(s->backend);
+    if (frames == 2) {
+        focus = find_element(s, "kit-code");
+        REQUIRE(focus);
+    }
+    REQUIRE(rml_context_focus_element(context) == focus);
+    float x, y;
+    kit_code_scroll(text, &x, &y);
+    if (frames == 2) {
+        first_x = x;
+    } else if (frames == 3) {
+        REQUIRE(x > 0 && x > first_x);
+        s->prefs.code_wrap = true;
+        s->ui_schedule.wake = true;
+    } else {
+        REQUIRE(s->prefs.code_wrap);
+        REQUIRE(x == 0);
+    }
+    return true;
+}
 
 /* Hidden graphs do no UI work. Both views follow one document, without
    losing the scene source draft selected between visits to the graph. */
@@ -1635,11 +1854,11 @@ static bool graph_visibility_frame(void *state)
 /* A behavior whose first handler graph is an unnamed completion handler,
    whose entry is an Event node without a name, ahead of its Tick. */
 static const char
-    late_bytes[] = "behavior Late {\n"
+    late_bytes[] = "Late :: behavior {\n"
                    "    macro Advance(elapsed: ref float, dt: double) {\n"
                    "        elapsed = cast<float>(cast<double>(elapsed) + dt)\n"
                    "    }\n"
-                   "    state elapsed: float = 0.125\n"
+                   "    elapsed: retain float = 0.125\n"
                    "    action advance = Advance(elapsed, delta)\n"
                    "    after advance {\n"
                    "        elapsed = min(elapsed, 1.0)\n"
@@ -2245,7 +2464,7 @@ static bool prompts_frame(void *state)
         case 9:
             REQUIRE(!s->unsaved_prompt.toast);
             REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_NONE);
-            REQUIRE(counter_tab(s) >= 0 && counter_says("count: int = 5"));
+            REQUIRE(counter_tab(s) >= 0 && counter_says("count: retain int = 5"));
             REQUIRE(add_probe(s));
             studio_command_run(s, STUDIO_COMMAND_PLAY);
             break;
@@ -2273,7 +2492,7 @@ static bool prompts_frame(void *state)
         case 14:
             /* Counter saved while the scene runs; the scene could not, so
                the prompt asks again about it instead of quitting. */
-            REQUIRE(counter_says("count: int = 4"));
+            REQUIRE(counter_says("count: retain int = 4"));
             REQUIRE(studio_session(s) && studio_unsaved(s));
             REQUIRE(s->unsaved_prompt.toast);
             REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
@@ -2340,7 +2559,7 @@ static bool write_content(const char *folder, const char *file, const char *text
 
 /* A component naming another object, which the game sets as it runs. */
 static const char
-    link_component[] = "component Link {\n    target: entity\n}\n";
+    link_component[] = "Link :: component {\n    target: entity\n}\n";
 static const char
     linked_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
                      "    - name=\"A\" prototype=\"Linker\"\n"
@@ -3717,8 +3936,8 @@ static bool scene_viewport_frame(void *state)
    not ASCII, and the Mod+hover link of a UI symbol. */
 #define GLYPH_FRAMES 30
 /* Two problems on one byte: the name is unknown, and so not writable. */
-static const char shared_problem[] = "behavior Counter {\n"
-                                     "    state count: int = 1\n"
+static const char shared_problem[] = "Counter :: behavior {\n"
+                                     "    count: retain int = 1\n"
                                      "    on Tick {\n"
                                      "        missing = 1\n"
                                      "    }\n"
@@ -4028,6 +4247,59 @@ static bool code_glyphs_frame(void *state)
 #include "scene_gizmo3d.h"
 #include "scene_move.h"
 
+/* Uses the fixture defined by scene_move.h. */
+#include "prototype_source.h"
+#include "prototype_source_authority.h"
+#include "prototype_source_capture.h"
+#include "source_action_outcomes.h"
+
+static bool prototype_source_authority_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s);
+    frames++;
+    REQUIRE(frames <= 2);
+    if (frames == 1) {
+        REQUIRE(source_action_outcomes_contract());
+        REQUIRE(prototype_source_authority_contract(s));
+        if (getenv("CHIBI_STUDIO_CONTROLS_CAPTURE")) {
+            REQUIRE(prototype_source_capture_begin(s));
+        }
+    } else if (getenv("CHIBI_STUDIO_CONTROLS_CAPTURE")) {
+        REQUIRE(prototype_source_capture_verify(s));
+    }
+    return true;
+}
+
+TEST_CASE(prototype_source_authority)
+{
+    const char *capture = getenv("CHIBI_STUDIO_CONTROLS_CAPTURE");
+    char *args[] = { (char *)executable,
+                     "--headless",
+                     "--frames",
+                     "2",
+                     "--fixed-dt",
+                     "0.016666666666666666",
+                     "--project-root",
+                     (char *)project,
+                     capture ? "--screenshot" : "--open",
+                     capture ? (char *)capture : "Counter" };
+    int status = studio_acceptance_host_main(sizeof args / sizeof *args, args);
+    bool clean = prototype_source_capture_cleanup();
+    REQUIRE(status == 0 && clean);
+    REQUIRE(callback_ok && frames == 2);
+    printf(
+        "\nStudio prototype source authority accepted: frames=2 prototypes=%d "
+        "actors=0 checkpoints=1 incoming=%d outgoing=%d\n",
+        capture ? 2 : 1,
+        capture ? 70 : 68,
+        capture ? 98 : 96
+    );
+    return true;
+}
+
+#include "scene_registry_context.h"
+
 bool studio_acceptance_frame(void *state)
 {
     switch (mode) {
@@ -4037,6 +4309,9 @@ bool studio_acceptance_frame(void *state)
         case EXPORT_GAME: callback_ok = export_frame(state); break;
         case GRAPH_VISIBILITY:
             callback_ok = graph_visibility_frame(state);
+            break;
+        case CODE_WRAP_REVEAL:
+            callback_ok = code_wrap_reveal_frame(state);
             break;
         case GRAPH_KEYS: callback_ok = graph_keys_frame(state); break;
         case GRAPH_POINTER: callback_ok = graph_pointer_frame(state); break;
@@ -4048,6 +4323,12 @@ bool studio_acceptance_frame(void *state)
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
         case SCENE_MOVE: callback_ok = scene_move_frame(state); break;
+        case PROTOTYPE_SOURCE:
+            callback_ok = prototype_source_frame(state);
+            break;
+        case PROTOTYPE_SOURCE_AUTHORITY:
+            callback_ok = prototype_source_authority_frame(state);
+            break;
         case OUTLINER_MOVE: callback_ok = outliner_move_frame(state); break;
         case OUTLINER_ROWS: callback_ok = outliner_rows_frame(state); break;
         case SCENE_PHYSICS: callback_ok = scene_physics_frame(state); break;
@@ -4141,13 +4422,33 @@ static bool write_graph_counter(const char *bytes)
     return true;
 }
 
+TEST_CASE(code_wrap_retargets_reveal)
+{
+    REQUIRE(unchanged_source());
+    REQUIRE(sizeof code_wrap_comment == 514);
+    int length = snprintf(code_wrap_source, sizeof code_wrap_source, "%s%s", code_wrap_comment, counter_bytes);
+    REQUIRE(length > 0 && (size_t)length + 1 == sizeof code_wrap_source);
+    REQUIRE(write_graph_counter(code_wrap_source));
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(CODE_WRAP_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project,
+                     "--open",           "Counter" };
+    int result = studio_acceptance_host_main(sizeof args / sizeof *args, args);
+    REQUIRE(write_graph_counter(counter_bytes));
+    REQUIRE(unchanged_source());
+    REQUIRE(result == 0 && callback_ok && frames == CODE_WRAP_FRAMES);
+    printf("\nStudio code wrap reveal accepted: frames=%d\n", frames);
+    return true;
+}
+
 TEST_CASE(graph_visibility_and_document_pair)
 {
     REQUIRE(unchanged_source());
     REQUIRE(write_graph_counter(
-        "behavior Counter {\n"
-        "    state count: int = 1\n"
-        "    function Increment() {\n"
+        "Counter :: behavior {\n"
+        "    count: retain int = 1\n"
+        "    Increment :: () -> int {\n"
         "        return count + 1\n"
         "    }\n"
         "    on Tick {\n"
@@ -4352,7 +4653,7 @@ TEST_CASE(unsaved_prompts)
                      "--open",           "Counter" };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
     REQUIRE(callback_ok && quit_answered);
-    bool saved = counter_says("count: int = 4");
+    bool saved = counter_says("count: retain int = 4");
     bool kept = start_unchanged();
     REQUIRE(restore_counter() && saved && kept);
     printf("\nStudio unsaved prompts accepted: frames=%d\n", frames);
@@ -4461,6 +4762,7 @@ int main(int argc, char **argv)
     bool kdl_keys = argc == 4 && !strcmp(argv[1], "--kdl-keys");
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
+    bool wrap_reveal = argc == 4 && !strcmp(argv[1], "--code-wrap-reveal");
     bool keys_mode = argc == 4 && !strcmp(argv[1], "--graph-keys");
     bool graph_pointer_mode = argc == 4 && !strcmp(argv[1], "--graph-pointer");
     bool asset_pointer_mode = argc == 4 && !strcmp(argv[1], "--asset-pointer");
@@ -4468,6 +4770,9 @@ int main(int argc, char **argv)
     bool labels = argc == 4 && !strcmp(argv[1], "--graph-labels");
     bool units = argc == 4 && !strcmp(argv[1], "--unit-warnings");
     bool hierarchy = argc == 4 && !strcmp(argv[1], "--scene-hierarchy");
+    bool prototype_source_mode = argc == 4 && !strcmp(argv[1], "--prototype-source");
+    bool prototype_source_authority_mode = argc == 4 &&
+                                           !strcmp(argv[1], "--prototype-source-authority");
     bool scene_move_mode = argc == 4 && !strcmp(argv[1], "--scene-move");
     bool outliner_move_mode = argc == 4 && !strcmp(argv[1], "--outliner-move");
     bool outliner_rows_mode = argc == 4 && !strcmp(argv[1], "--outliner-rows");
@@ -4484,18 +4789,22 @@ int main(int argc, char **argv)
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
          !keys_mode && !labels && !units && !hierarchy && !scene_move_mode &&
+         !prototype_source_mode && !prototype_source_authority_mode &&
          !outliner_move_mode && !outliner_rows_mode && !physics && !assets &&
          !viewport && !camera && !playing && !prompting && !followups &&
          !glyphs && !idle && !graph_pointer_mode && !asset_pointer_mode &&
-         !debugging && !gizmo && !colliders) ||
+         !debugging && !gizmo && !colliders && !wrap_reveal) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
             "--source-edit|--code-keys|--kdl-keys|--export-game|"
-            "--graph-visibility|--graph-keys|--graph-pointer|--asset-pointer|--"
+            "--graph-visibility|--code-wrap-reveal|--graph-keys|--graph-"
+            "pointer|--asset-pointer|--"
             "graph-labels|--unit-warnings|"
-            "--scene-hierarchy|--scene-move|--outliner-move|--outliner-rows|--"
+            "--scene-hierarchy|--scene-move|--prototype-source|--prototype-"
+            "source-authority|--outliner-move|"
+            "--outliner-rows|--"
             "scene-physics|"
             "--asset-selection|--scene-viewport|--scene-camera|--scene-gizmo3d|"
             "--scene-collider3d|"
@@ -4520,32 +4829,35 @@ int main(int argc, char **argv)
         return 2;
     }
     pu_display_time(true);
-    mode = source_edit        ? SOURCE_EDIT
-         : code_keys          ? CODE_KEYS
-         : kdl_keys           ? KDL_KEYS
-         : exporting          ? EXPORT_GAME
-         : visibility         ? GRAPH_VISIBILITY
-         : keys_mode          ? GRAPH_KEYS
-         : debugging          ? DEBUGGER_SOURCE_HISTORY
-         : graph_pointer_mode ? GRAPH_POINTER
-         : asset_pointer_mode ? ASSET_POINTER
-         : labels             ? GRAPH_LABELS
-         : units              ? UNIT_WARNINGS
-         : scene_move_mode    ? SCENE_MOVE
-         : outliner_move_mode ? OUTLINER_MOVE
-         : outliner_rows_mode ? OUTLINER_ROWS
-         : hierarchy          ? SCENE_HIERARCHY
-         : physics            ? SCENE_PHYSICS
-         : assets             ? ASSET_SELECTION
-         : viewport           ? SCENE_VIEWPORT
-         : camera             ? SCENE_CAMERA
-         : gizmo              ? SCENE_GIZMO3D
-         : colliders          ? SCENE_COLLIDER3D
-         : playing            ? PLAY_KEYS
-         : prompting          ? PROMPTS
-         : followups          ? CODE_FOLLOWUPS
-         : idle               ? PANEL_IDLE
-                              : CODE_GLYPHS;
+    mode = source_edit                     ? SOURCE_EDIT
+         : code_keys                       ? CODE_KEYS
+         : kdl_keys                        ? KDL_KEYS
+         : exporting                       ? EXPORT_GAME
+         : visibility                      ? GRAPH_VISIBILITY
+         : wrap_reveal                     ? CODE_WRAP_REVEAL
+         : keys_mode                       ? GRAPH_KEYS
+         : debugging                       ? DEBUGGER_SOURCE_HISTORY
+         : graph_pointer_mode              ? GRAPH_POINTER
+         : asset_pointer_mode              ? ASSET_POINTER
+         : labels                          ? GRAPH_LABELS
+         : units                           ? UNIT_WARNINGS
+         : prototype_source_authority_mode ? PROTOTYPE_SOURCE_AUTHORITY
+         : prototype_source_mode           ? PROTOTYPE_SOURCE
+         : scene_move_mode                 ? SCENE_MOVE
+         : outliner_move_mode              ? OUTLINER_MOVE
+         : outliner_rows_mode              ? OUTLINER_ROWS
+         : hierarchy                       ? SCENE_HIERARCHY
+         : physics                         ? SCENE_PHYSICS
+         : assets                          ? ASSET_SELECTION
+         : viewport                        ? SCENE_VIEWPORT
+         : camera                          ? SCENE_CAMERA
+         : gizmo                           ? SCENE_GIZMO3D
+         : colliders                       ? SCENE_COLLIDER3D
+         : playing                         ? PLAY_KEYS
+         : prompting                       ? PROMPTS
+         : followups                       ? CODE_FOLLOWUPS
+         : idle                            ? PANEL_IDLE
+                                           : CODE_GLYPHS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
@@ -4554,6 +4866,7 @@ int main(int argc, char **argv)
         case GRAPH_VISIBILITY:
             RUN_TEST_CASE(graph_visibility_and_document_pair);
             break;
+        case CODE_WRAP_REVEAL: RUN_TEST_CASE(code_wrap_retargets_reveal); break;
         case GRAPH_KEYS: RUN_TEST_CASE(graph_keys); break;
         case GRAPH_POINTER: RUN_TEST_CASE(graph_pointer); break;
         case DEBUGGER_SOURCE_HISTORY:
@@ -4564,6 +4877,10 @@ int main(int argc, char **argv)
         case UNIT_WARNINGS: RUN_TEST_CASE(code_underlines_unit_mismatch); break;
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
         case SCENE_MOVE: RUN_TEST_CASE(scene_move_contracts); break;
+        case PROTOTYPE_SOURCE: RUN_TEST_CASE(prototype_source_ownership); break;
+        case PROTOTYPE_SOURCE_AUTHORITY:
+            RUN_TEST_CASE(prototype_source_authority);
+            break;
         case OUTLINER_MOVE: RUN_TEST_CASE(outliner_move); break;
         case OUTLINER_ROWS: RUN_TEST_CASE(outliner_rows); break;
         case SCENE_PHYSICS: RUN_TEST_CASE(scene_physics_settings); break;

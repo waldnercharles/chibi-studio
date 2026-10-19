@@ -16,7 +16,80 @@ nothing unsaved, quitting needs no confirmation; with Counter unsaved, the windo
 title marks it and a quit request asks once, in a toast a repeated request updates.
 The final frame renders both graph and code views before normal host shutdown. This proves
 consumer edit-handler integration and UI rendering; it does not hit-test pointer
-input. No source save, scenario, playback or screenshot occurs.
+input. Counter is not saved; no scenario, playback or screenshot occurs.
+
+At the end of the fourth frame, a retained-editor check opens one tiny prototype
+through Studio's normal history-query dispatch before its relationship exists.
+Adding one relationship and refreshing content must clear the same editor's
+diagnostic without editing or reopening the source. Text, clean/history state
+and the tab checkpoint stay unchanged; another query preserves its syntax cache.
+An unchanged executable-source generation ensures source-world rebinding cannot
+mask the registry refresh. This adds two files (at most 128 bytes total), one
+fixture with two worlds, four history queries, one content refresh and one
+validation. It adds no host frames, sleeps or child processes. Files and models
+are freed before the final regression assertion.
+
+The first frame also checks prototype and relationship source tabs through
+Studio's focused Undo/Redo dispatch, including dirty state and typed values
+reopened from the tab's checkpoint. The same two fixtures now use the public
+Save dispatch on clean, formatter-canonical prototype and relationship sources:
+their exact bytes, history and cleanliness must survive, and a tiny unrelated
+scene sentinel must stay unchanged. Dirty Save retains undo and reports an
+incompatible relationship as saved but not applied. Undo followed by Save All
+saves the restored source, keeps redo and the active tab, and a clean Save All
+reports nothing. Invalid drafts reject Save without changing disk and can be
+discarded; invalid clean files reject Save with diagnostics and can be closed.
+This reuses both fixtures and adds one 36-byte sentinel file
+(the two source files are each bounded by 128 bytes), four fixture formatting calls,
+eight Save calls and four Save All calls, with six save-triggered content refreshes.
+Before reopening the malformed prototype, one explicit Reload adopts its disk
+text into the retained workspace source, adding one content refresh and one
+CPU-only prerequisite assertion without another file, fixture or rendered frame.
+All files and models are freed before the aggregate regression assertion,
+including on the old-product control's expected clean-save failures.
+One temporary file just above the 64 MiB
+prototype collection budget (bounded by 65 MiB) checks that the common asset
+reader still reads it while prototype collection rejects it before parsing.
+These model checks add no rendered frames; temporary files and models are
+released before their final assertions.
+
+The existing first-frame prototype-refresh fixture also opens its registered
+sources through the real Assets route and checks the Properties subject with no
+previous selection, a different prototype selected, tab reactivation and repeated
+opening. One additional malformed source (23 bytes, bounded by 64 bytes) remains
+openable with no prototype inspector; opening and reactivating it preserve both
+diagnostics. Tab identity/count, source cleanliness, existing prototype history
+and the relationship schema in both worlds are retained. This adds two asset-index
+rebuilds, one content refresh, four asset opens, two ordinary prototype opens and
+four tab activations (one a no-op), with no extra fixtures, worlds or host frames.
+Three CPU-only assertions check that passive reads/reloads preserve tab count and
+focus, while the deliberate middle-prototype edit adds one background document.
+One normal close retains that dirty source before the unchanged exact Assets
+reopen-count checks.
+All files and models are freed before the separate selection assertion.
+
+After the fourth frame's existing interactions, a relationship source check
+saves one tiny temporary declaration through the normal editor path. An
+incompatible edit must leave its saved buffer and tab clean while reporting
+"Saved, but not applied" and retaining the old schema in both authoring worlds.
+An invalid external edit shares a watcher batch with a successful prototype
+reload: the owned error record must survive that reload's status message.
+Deletion reports the reopen diagnostic, direct reload returns failure, and an
+unchanged poll adds no duplicate notice. This uses two files (at most 256 bytes),
+one fixture with two worlds, four synthetic watcher times and the same four host
+frames. Files and models are freed before the final assertion; copied notices
+remain owned by the host kit until ordinary shutdown. This checks notice dispatch
+and Output records, not toast pixels or pointer hit testing.
+
+The existing prototype dependency fixture also batches an invalid relationship
+edit with a saved Base change. Base, Middle, Leaf and a nested child must all
+observe the new value while the live relationship schema stays unchanged and
+the owned watcher error survives subsequent refreshes. Duplicate prototype
+names cover both-failed and prototype-only failure reporting before restoring
+the valid sources. This reuses the four prototype files and adds one relationship
+file under 64 bytes, two synthetic watcher times and no host frames. Existing
+direct-reload and unsaved-dependent checks remain unchanged; expected negative
+results are asserted only after the fixture is cleaned up.
 
 Within the first frame it also opens a tiny temporary draft with two calls and a
 branch. It checks that named calls have no duplicate code body and that a small
@@ -48,6 +121,35 @@ first two frames in Both, then deselected and undone in the third frame. The
 fourth frame checks that its graph card disappeared and the graph texture
 revision changed. This uses the
 same four host frames and adds one source edit and undo.
+
+The first frame also checks Discard on malformed behavior, library and system source
+tabs, both active and in the background, through `studio_discard_tab`. Their
+editors bind the host's real source world. Discard restores invalid disk text
+and diagnostics to the working catalog, releases the buffer and tab, preserves
+disk bytes and the applied generation, and leaves an unrelated dirty Counter
+draft and its overlay intact. An unreadable disk file keeps its draft; an
+ordinary Counter Discard still reloads the saved model. This uses three temporary
+sources (at most 128 bytes total), six source-only opens/edits/closes, one failed
+read attempt and one Counter edit/discard/reopen. It adds no fixtures, worlds,
+frames, sleeps or watcher times. Files and buffers are removed before the final
+regression assertion; the expected read-error notice remains host-owned until
+normal shutdown. The four-frame invocation and its supervisor deadline are
+unchanged. This exercises the production handlers, not pointer hit testing.
+
+`studio-acceptance --code-wrap-reveal --project-root PATH` takes another
+fresh disposable copy and runs five hidden fixed-1/60 frames. It prepends one
+fixed 512-byte comment line to Counter, shows code only with wrapping and reduced
+motion off, and reveals the last comment byte. After checking a positive, advancing
+horizontal animation step, it enables Word Wrap without another reveal or code
+input. The next two frames require zero horizontal offset, unchanged source and
+caret, retained code focus, and a clean document. Counter's original file is
+restored even when the host reports failure. This is one pico_unit case in the
+existing acceptance binary, with the same three-file project, isolated preferences
+and thumbnail cache; it adds no playback, screenshots or helper executable.
+Before first execution, independently admit the exact source, fixture and workload
+under the unchanged production 60-second supervisor. A fixture-only old-product
+control must fail the first post-wrap zero-offset assertion, not setup. This
+registration records no runtime pass or new aggregate membership.
 
 `studio-acceptance --code-keys --project-root PATH` takes another disposable copy.
 It shows Counter in the Text Editor, focuses it and places the cursor after the
@@ -515,3 +617,159 @@ PY
 Configuration and compilation happen before this invocation. Fixture setup,
 both constructor calls and normal teardown stay inside its unchanged 60-second
 deadline. This focused selector does not run the rendering or interaction routes.
+
+## Canonical prototype source ownership
+
+`studio-acceptance --prototype-source --project-root PATH` is a separate,
+independently admitted workload. Run only against an isolated copy of the
+checked-in acceptance project, with the exact installed SDK that exports
+`authoring/source_prototype_edit.h`, under the unchanged 60-second production
+supervisor. It runs two hidden frames. Its first frame uses four tiny prototype
+files, three scene actors, and one additional workspace fixture/checkpoint
+restore. That fixture prepares its source catalog once from the same fixed
+acceptance-project root before restoring the host checkpoint. It creates the
+fixture root's `prototypes` directory if absent and
+removes only that newly created directory after its four files, including before
+the intended negative-control assertion. An existing directory is preserved. No large files, sleeps, new linked probes, or extra rendering passes
+are included. It does not expand the existing four-frame `--source-edit` case.
+
+The C/pico case `prototype_source_ownership` exercises ordinary Properties then
+Assets open, Assets-first dirty-model conversion, scalar gesture grouping,
+omitted/inherited fields and saved-base cache refresh, native component defaults
+and a vector axis, structural removal and exact-source Undo, public behavior
+attach/detach, raw invalid and identity-changing drafts, a held draft and Save,
+source history/checkpoint restoration, Save/Undo/Discard, and background Apply
+with inheriting and overridden peers plus source-backed scene Undo/Redo. The one
+checkpoint includes populated scene source payloads and a rejected identity
+draft. Scene Undo followed by source Undo must recover a later invalid draft.
+A missing behavior exercises accepted-but-not-applied status, no-op Apply status,
+and reversal of touched behavior attachments. Stale and invalid acceptance
+proposals must retain source bytes, typed model, and history.
+
+The same first frame also exercises one notified delete/return of the existing
+Apply file. A retained source stays dirty through Close, failed Save All and
+Discard, the same checkpoint (now including an invalid missing-file draft),
+source Undo, and file return. Only an explicit successful Save resolves the
+missing state; no automatic file recreation is tested or allowed. The fixture
+then feeds five fixed snapshot/proposal pairs through the existing in-process
+collaboration protocol with a counting no-op transport, covering queued palette
+add, queued panel removal, and field/behavior command results. One direct and
+one replayed no-op field edit check the distinct accepted-but-not-applied result.
+There are no sockets, new production hooks, additional frames, worlds, files,
+or checkpoint restores. Ordinary missing-path polling and clean unused-asset
+deletion are outside this notified-deletion regression.
+
+A failure is not UI interaction proof beyond the explicit command/control paths
+listed here. Existing partial runtime refresh and independent scene/prototype
+history ordering are not claimed repaired.
+
+The focused negative control keeps the exact engine API/SDK and candidate tests,
+but replaces only `edit_prototype`'s canonical field bridge call with the prior
+model-only `prototype_write_field` plus `asset->dirty = 1`. The case must fail at
+`REQUIRE(source_owned_gesture)` after unlinking its four fixture source files.
+This isolates the demonstrated hidden-model Properties regression, rather than
+failing because an SDK symbol is absent. Do not run the historical Save/Discard
+negative controls again for this bridge. Retain their green four-frame case and
+the existing three admitted CPU selectors as adjacent coverage.
+
+One additional edge-only counterfactual restores the prior missing-file dirty
+predicate and the two Properties stale-status result branches. It keeps the
+retained owner/path and final API declarations, allowing safe continuation.
+After normal cleanup the fixture prints both `deleted_source_retained` and
+`queued_commands_quiet`, then requires both. The control must report both as 0
+and fail that exact final assertion; the clean case reports both as 1. This is
+one additional fixed selector run/build, not a replay of historical controls.
+
+## Prototype source host authority
+
+`studio-acceptance --prototype-source-authority --project-root PATH` is a
+separate fixed two-frame selector, under the same unchanged 60-second production
+supervisor and isolated checked-in acceptance project. It does not add work to
+`--source-edit` or `--prototype-source`. The source fixture uses one temporary
+prototype file, one workspace fixture, zero actors, five nonrendering Code
+compositions and one real same-workspace checkpoint restoration. Its in-process
+transport has no sockets or production test hooks. Including the focused
+transport-outcome helper, the fixed workload is 68 incoming envelopes, 96 sends,
+30 apply callbacks, 16 restore callbacks (one real workspace restore), two close
+callbacks, four direct decoder rejection checks, two offline probe Reloads and
+33 tiny retained inputs for the bounded-queue limit.
+
+It checks Code and Properties canonical text/model/history remain unchanged
+before guest acceptance; host-own echo applies only once; rapid typing and
+successive scalar/vector gestures retain their local values and grouping; exact
+accepted outcomes release the tail; stale rejection, disjoint merge, overlap,
+explicit Retry Draft and Use Shared preserve recoverable input and the latest
+Apply Live intent, including unreported widget input; raw invalid and
+identity-changing drafts retain the last-good model; own Undo/Redo validates its
+local destination and current Code Apply Live preference while peer history
+changes append ordinary local steps; and
+pending Save/Undo/Reload, canonical-only snapshots, rebind, interruption and role
+loss respect the existing authority boundary. Retry Draft is an explicit primary
+control and does not take editor focus or consume a newline.
+
+After the original message-count guards, the same fixture accepts two peer
+actions with opposite local Apply Live preferences and calls the production
+`studio_code_frame` update after each. Accepted `live=false` remains held with
+the local preference enabled; accepted `live=true` remains live with it disabled.
+Two further nonrendering Code updates poll one overlapping external edit of the
+same file. Its diagnostic remains visible without changing canonical text,
+model or history; one explicitly accepted Reload then clears the conflict and
+adopts the disk bytes. These four Code updates add no rendered frames, actors,
+files or checkpoint restores. The final diagnostics report `held=1, live=1`
+and `conflict=1` only after cleanup.
+
+Two separate counterfactuals use this unchanged authority selector. The frame
+control restores only the prior per-frame local-preference interpretation and
+must report `held=0, live=0` before failing the final frame-intent assertion.
+The disk control drops only the managed refresh failure diagnostic and must
+report `held=1, live=1` and `conflict=0` before failing the final disk assertion.
+Each preserves every earlier authority, held-retry and source/model/history
+check; unrelated early failures do not count as either negative proof.
+
+When `CHIBI_STUDIO_CONTROLS_CAPTURE` names a fresh PNG, the same authority
+invocation also presents the real retained-draft notice in the host workspace.
+After frame one's original fixture has cleaned up, it creates one 53-byte public
+prototype source in the disposable project, submits one local proposal as an
+editor guest and rejects it through the in-process transport. Two finite
+nonrendering compositions call the actual `studio_emit` under its real workspace,
+area and document keys. Each existing composition resolves styles/layout once
+without adding a host/GPU frame or sleep, so the next emission reads styled Code
+swatches. The fixture applies its reduced-motion choice through the normal kit
+theme API before composition; the host normally applies preferences afterward.
+A fixed public status label replaces the temporary fixture path in the image.
+Code takes focus before rejection; adding the notice
+must leave that exact element focused. One queued Enter is consumed by Code in
+the existing second frame, adding only a local newline while canonical bytes,
+history and disk stay unchanged. Neither Retry Draft nor Use Shared is activated.
+The same notice/conflict identity remains after the real host's final framebuffer
+readback; its file and transport allocations are removed after host shutdown.
+This adds one prototype, two incoming messages and two outgoing messages, zero
+actors, zero checkpoints, zero host/GPU frames, sleeps or child processes. The
+whole selector with capture is 70 incoming messages and 98 sends; without capture
+it remains 68 and 96. The screenshot uses the existing `--screenshot` path and
+its inner readback limit under the unchanged 60-second production supervisor.
+The screenshot contains only the disposable Studio fixture. Independently inspect
+its actual Retry Draft primary/Use Shared secondary layout, text baselines,
+spacing and readable surrounding kit controls; capture success alone is not
+visual approval or browser verification.
+
+The one authority counterfactual optimistically commits a guest's prepared source
+inside the common pending boundary while retaining normal transport sequencing.
+The dedicated case must print `Code unchanged=0, Properties unchanged=0` and fail
+at `REQUIRE(test.code_authority && test.property_authority)` after complete
+fixture and collaboration cleanup. This independently demonstrates both reported
+entry gaps without bypassing the SDK, dropping later positive assertions or
+changing the frame/message limits. Candidate success requires both booleans 1
+and all remaining source/model/history assertions. Source review and workload
+admission do not establish runtime success; native and web builds and the hosted
+selector results are reported separately.
+
+The separate held-intent counterfactual reverses only Retry's apply-policy lookup
+from the retained draft to the accepted source's runtime hold. It keeps the
+compiler helper rename, managed-widget capture, Code history fix and all final
+fixtures. The same authority selector must reach its held rejection/Retry phase,
+then print `Code unchanged=1, Properties unchanged=1` and `retry_held=0` after
+cleanup before failing at `REQUIRE(test.retry_held == 1)`. This is separate from the
+original authority control, whose early exit prints `retry_held=-1` (not run);
+candidate requires `retry_held=1`. It adds no frames,
+transport envelopes or actors to either invocation.

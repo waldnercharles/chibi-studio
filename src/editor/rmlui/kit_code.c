@@ -2391,6 +2391,9 @@ static void set_wrap(kit_code_editor *e, bool no_wrap)
     if (no_wrap == e->no_wrap) {
         return;
     }
+    bool reveal = e->reveal_pending || e->revealing;
+    cancel_reveal(e);
+    e->reveal_pending = reveal;
     e->no_wrap = no_wrap;
     e->scroll_x = 0;
     e->followed = -1;

@@ -1,4 +1,4 @@
-behavior "NavKeys" {
+NavKeys :: behavior {
     on NavNext {
         await move_ui_focus(Element: ".nav-item input", Step: 1)
         click_ui_element(Element: ".nav-item input:focus")

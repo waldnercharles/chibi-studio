@@ -4,12 +4,14 @@
 #include "authoring/behavior_loader.h"
 #include "authoring/preview_source.h"
 #include "authoring/prototype_preview.h"
+#include "authoring/source_asset.h"
 #include "authoring/source_format.h"
 #include "authoring/source_metadata.h"
 #include "authoring/source_presentation.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/collab/collab.h"
 #include "editor/documents/component_properties.h"
+#include "editor/documents/prototype_source_input.h"
 #include "editor/documents/scene_history.h"
 #include "editor/documents/scene_retention.h"
 #include "editor/ui/choices.h"
@@ -372,7 +374,9 @@ int save_content_file(app_scene_authoring *scene, const char *path, const char *
 prototype_registry app_component_registry(void)
 {
     ecs_component_catalog project = project_components();
-    return (prototype_registry){ project.components, project.component_count };
+    return (prototype_registry){ .components = project.components,
+                                 .component_count = project.component_count,
+                                 .decode = authoring_prototype_document_read };
 }
 
 int restore_retained_components(app_scene_authoring *scene, scene_actor *actor, const prototype *prototype);
@@ -614,7 +618,107 @@ static int content_entry_compare(const void *left, const void *right)
     return strcmp(a->path, b->path);
 }
 
-void content_refresh(app_scene_authoring *scene)
+static bool same_relationship(const ecs_relationship_desc *a, const ecs_relationship_desc *b)
+{
+    return a->id == b->id && a->traits == b->traits &&
+           a->on_delete_target == b->on_delete_target &&
+           !strcmp(a->name, b->name) && !strcmp(a->key, b->key);
+}
+static bool refresh_relationships(app_scene_authoring *scene)
+{
+    ecs_relationship_desc **next = NULL;
+    if (!authoring_relationship_declarations_load(
+            scene->content_root,
+            &next,
+            scene->message,
+            sizeof scene->message
+        )) {
+        goto failed;
+    }
+    for (int i = 0; i < acount(scene->relationships); i++) {
+        int found = -1;
+        for (int j = 0; j < acount(next); j++) {
+            if (next[j]->id == scene->relationships[i]->id) {
+                found = j;
+                break;
+            }
+        }
+        if (found < 0 || !same_relationship(next[found], scene->relationships[i])) {
+            snprintf(
+                scene->message,
+                sizeof scene->message,
+                "Relationship %s changed or was removed. Reopen the project to "
+                "apply its schema.",
+                scene->relationships[i]->name
+            );
+            goto failed;
+        }
+    }
+    ecs_world *worlds[] = { scene->world,
+                            prototype_preview_world(scene->prototype_preview) };
+    for (int w = 0; w < 2; w++) {
+        for (int i = 0; i < acount(next); i++) {
+            const ecs_relationship_desc
+                *prior = ecs_world_relationship(worlds[w], next[i]->id);
+            if ((prior && !same_relationship(prior, next[i])) ||
+                (!prior && ecs_world_component(worlds[w], next[i]->id))) {
+                snprintf(
+                    scene->message,
+                    sizeof scene->message,
+                    "Relationship %s conflicts with the live schema. Reopen "
+                    "the project to apply it.",
+                    next[i]->name
+                );
+                goto failed;
+            }
+        }
+    }
+    for (int w = 0; w < 2; w++) {
+        for (int i = 0; i < acount(next); i++) {
+            if (!ecs_world_relationship(worlds[w], next[i]->id) &&
+                ecs_world_register_relationship(worlds[w], next[i], NULL)) {
+                snprintf(
+                    scene->message,
+                    sizeof scene->message,
+                    "Could not register relationship %s in the preview.",
+                    next[i]->name
+                );
+                goto failed;
+            }
+        }
+    }
+    if (acount(next) == acount(scene->relationships)) {
+        for (int i = 0; i < acount(next); i++) {
+            authoring_relationship_source_free(next[i]);
+        }
+        afree(next);
+        return true;
+    }
+    for (int i = 0; i < acount(next); i++) {
+        for (int j = 0; j < acount(scene->relationships); j++) {
+            if (next[i]->id == scene->relationships[j]->id) {
+                authoring_relationship_source_free(next[i]);
+                next[i] = scene->relationships[j];
+                break;
+            }
+        }
+    }
+    if (scene->relationships) {
+        apush(scene->relationship_generations, scene->relationships);
+    }
+    scene->relationships = next;
+    scene->registry.relationships = (const ecs_relationship_desc *const *)next;
+    scene->registry.relationship_count = acount(next);
+    return true;
+failed:
+    for (int i = 0; i < acount(next); i++) {
+        authoring_relationship_source_free(next[i]);
+    }
+    afree(next);
+    return false;
+}
+
+bool content_refresh(app_scene_authoring *scene)
 {
     asset_index_invalidate(scene);
     free((void *)scene->image_choices.items);
@@ -625,8 +729,21 @@ void content_refresh(app_scene_authoring *scene)
     asetlen(scene->content, 0);
     content_scan_directory(scene, scene->content_root);
     qsort(scene->content, (size_t)acount(scene->content), sizeof *scene->content, content_entry_compare);
+    bool refreshed = true;
+    if (scene->prototype_preview) {
+        bool relationships = refresh_relationships(scene);
+        char error[sizeof scene->message];
+        if (!relationships) {
+            snprintf(error, sizeof error, "%s", scene->message);
+        }
+        bool prototypes = scene_prototype_sources_refresh(scene);
+        if (!relationships) {
+            snprintf(scene->message, sizeof scene->message, "%s", error);
+        }
+        refreshed = relationships && prototypes;
+    }
     if (!acount(scene->content)) {
-        return;
+        return refreshed;
     }
     editor_choice *images = xmalloc((size_t)acount(scene->content) * sizeof *images);
     for (int i = 0; i < acount(scene->content); i++) {
@@ -639,6 +756,7 @@ void content_refresh(app_scene_authoring *scene)
         }
     }
     scene->image_choices.items = images;
+    return refreshed;
 }
 
 void asset_index_invalidate(app_scene_authoring *scene)
@@ -802,6 +920,9 @@ void scene_authoring_select_document(
     free(scene->document_id);
     scene->document_id = copy;
     scene->document = (app_editor_document_context){ kind, copy };
+    if (kind == APP_EDITOR_DOCUMENT_PROTOTYPE) {
+        scene->selected_prototype = prototype_index(scene, copy);
+    }
     scene_tabs_document_selected(scene, kind, id);
     if (kind != APP_EDITOR_DOCUMENT_BEHAVIOR && kind != APP_EDITOR_DOCUMENT_SYSTEM) {
         return;
@@ -925,6 +1046,18 @@ int app_scene_authoring_open_prototype(app_scene_authoring *scene, const char *n
     if (gate != COLLAB_ACTION_APPLY) {
         free(action);
         return gate == COLLAB_ACTION_PENDING ? 1 : -1;
+    }
+    if (scene_prototype_source_owned(asset)) {
+        char error[256];
+        if (!scene_prototype_source_session(scene, asset, error, sizeof error)) {
+            snprintf(scene->prototype_message, sizeof scene->prototype_message, "%s", error);
+            scene_action_finish(scene, action, false);
+            free(action);
+            return -1;
+        }
+        scene_tabs_ensure_prototype(scene, asset);
+        scene_prototype_source_sync(scene, asset, !asset_code_runtime_held(asset->source));
+        scene_prototype_source_capture(scene, asset);
     }
     open_prototype(scene, (int)(asset - scene->prototypes));
     scene_action_finish(scene, action, true);
@@ -1889,9 +2022,32 @@ app_scene_authoring *app_scene_authoring_new_with_content_root(
     scene->resolve_prototype = resolve_prototype;
     scene->resolve_user = resolve_user;
     scene->registry = app_component_registry();
+    char relationship_error[256];
+    if (!authoring_relationship_declarations_load(
+            content_root,
+            &scene->relationships,
+            relationship_error,
+            sizeof relationship_error
+        )) {
+        fprintf(stderr, "Studio relationships: %s\n", relationship_error);
+        for (int i = 0; i < acount(scene->relationships); i++) {
+            authoring_relationship_source_free(scene->relationships[i]);
+        }
+        afree(scene->relationships);
+        app_scene_renderer_free(scene->renderer);
+        scene_history_free(scene->history);
+        free(scene);
+        return NULL;
+    }
+    scene->registry.relationships = (const ecs_relationship_desc *const *)scene->relationships;
+    scene->registry.relationship_count = acount(scene->relationships);
     scene->runtime = runtime;
     scene->prototype_preview = prototype_preview_new(&scene->registry);
     if (!scene->prototype_preview) {
+        for (int i = 0; i < acount(scene->relationships); i++) {
+            authoring_relationship_source_free(scene->relationships[i]);
+        }
+        afree(scene->relationships);
         app_scene_renderer_free(scene->renderer);
         scene_history_free(scene->history);
         free(scene);
@@ -2245,11 +2401,9 @@ int app_scene_authoring_set_content_root(app_scene_authoring *scene, const char 
     return 0;
 }
 
-void app_scene_authoring_refresh_content(app_scene_authoring *scene)
+bool app_scene_authoring_refresh_content(app_scene_authoring *scene)
 {
-    if (scene) {
-        content_refresh(scene);
-    }
+    return scene && content_refresh(scene);
 }
 
 void app_scene_authoring_free(app_scene_authoring *scene)
@@ -2257,6 +2411,7 @@ void app_scene_authoring_free(app_scene_authoring *scene)
     if (!scene) {
         return;
     }
+    scene_source_input_free(scene);
     scene_kept_clear(scene);
     scene_field_previews_clear(scene);
     scene_selection_free(scene);
@@ -2293,6 +2448,7 @@ void app_scene_authoring_free(app_scene_authoring *scene)
     scene_tabs_free(scene);
     scene_history_free(scene->history);
     for (int i = 0; i < acount(scene->prototypes); i++) {
+        scene_prototype_source_free(&scene->prototypes[i]);
         clear_prototype_history(&scene->prototypes[i]);
         free(scene->prototypes[i].path);
         prototype_free(scene->prototypes[i].prototype);
@@ -2300,6 +2456,20 @@ void app_scene_authoring_free(app_scene_authoring *scene)
     afree(scene->prototypes);
     prototype_preview_free(scene->prototype_preview);
     scene_model_preview_free(scene);
+    for (int i = 0; i < acount(scene->relationships); i++) {
+        authoring_relationship_source_free(scene->relationships[i]);
+    }
+    afree(scene->relationships);
+    for (int i = 0; i < acount(scene->relationship_generations); i++) {
+        afree(scene->relationship_generations[i]);
+    }
+    afree(scene->relationship_generations);
+    for (int i = 0; i < acount(scene->prototype_sources); i++) {
+        free(scene->prototype_sources[i].name);
+        free(scene->prototype_sources[i].text);
+        free(scene->prototype_sources[i].path);
+    }
+    afree(scene->prototype_sources);
     free(scene->preview_prototype_id);
     free((void *)scene->image_choices.items);
     for (int i = 0; i < acount(scene->content); i++) {

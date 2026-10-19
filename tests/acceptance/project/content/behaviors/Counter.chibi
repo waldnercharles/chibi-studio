@@ -1,5 +1,5 @@
-behavior Counter {
-    state count: int = 1
+Counter :: behavior {
+    count: retain int = 1
     on Tick {
         count = count + 1
     }

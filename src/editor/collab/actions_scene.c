@@ -1,6 +1,8 @@
 #include "editor/collab/actions_scene.h"
 
 #include "editor/collab/collab.h"
+#include "editor/collab/protocol.h"
+#include "editor/documents/prototype_source_input.h"
 #include "graph/model/registry.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
@@ -157,7 +159,8 @@ static bool fail(char *error, size_t size, const char *message)
 static const char *text(yyjson_val *object, const char *name)
 {
     yyjson_val *value = yyjson_obj_get(object, name);
-    return yyjson_is_str(value) ? yyjson_get_str(value) : NULL;
+    const char *result = yyjson_is_str(value) ? yyjson_get_str(value) : NULL;
+    return result && yyjson_get_len(value) == strlen(result) ? result : NULL;
 }
 
 static int tab_index(const app_scene_authoring *scene, const char *key)
@@ -320,6 +323,11 @@ static bool apply_property(app_scene_authoring *scene, yyjson_val *root, char *e
     return true;
 }
 
+static bool prototype_edit_accepted(int result)
+{
+    return result == 0 || result == APP_PROTOTYPE_EDIT_NOT_APPLIED;
+}
+
 static bool apply_prototype_field(app_scene_authoring *scene, yyjson_val *root, char *error, size_t size)
 {
     const char *prototype = text(root, "prototype");
@@ -340,8 +348,9 @@ static bool apply_prototype_field(app_scene_authoring *scene, yyjson_val *root, 
     bool read = component &&
                 read_field_value(component->desc, field_name, yyjson_obj_get(root, "value"), &field, &value);
     bool applied = read &&
-                   app_scene_authoring_set_prototype_field(scene, prototype, component_name, field_name, value) ==
-                       0;
+                   prototype_edit_accepted(
+                       app_scene_authoring_set_prototype_field(scene, prototype, component_name, field_name, value)
+                   );
     free_action_value(&value);
     if (!applied) {
         return fail(error, size, "Prototype field action failed validation or application");
@@ -432,7 +441,8 @@ static bool apply_tab_action(
     if (!strcmp(operation, "tab.close")) {
         const char *id = text(root, "target_id");
         int kind = yyjson_get_int(yyjson_obj_get(root, "target_kind"));
-        if (id && kind >= APP_EDITOR_DOCUMENT_SCENE && kind <= APP_EDITOR_DOCUMENT_UI) {
+        if (id && kind >= APP_EDITOR_DOCUMENT_SCENE &&
+            kind <= APP_EDITOR_DOCUMENT_RELATIONSHIP) {
             scene_tabs_close(scene, (app_editor_document_kind)kind, id);
             return true;
         }
@@ -452,6 +462,14 @@ bool scene_collab_apply_action(app_scene_authoring *scene, const char *json, cha
         yyjson_get_int(yyjson_obj_get(root, "version")) != 1 || !family ||
         strcmp(family, "scene") || !operation) {
         fail(error, error_size, "Invalid scene action");
+        goto done;
+    }
+    if (!strcmp(operation, "prototype.source")) {
+        if (strlen(json) > COLLAB_MAX_ACTION) {
+            fail(error, error_size, "Prototype source action exceeds the room action limit");
+            goto done;
+        }
+        ok = scene_source_input_apply(scene, root, error, error_size);
         goto done;
     }
     if (!strncmp(operation, "tab.", 4)) {
@@ -574,7 +592,9 @@ bool scene_collab_apply_action(app_scene_authoring *scene, const char *json, cha
         const char *prototype = text(root, "prototype"),
                    *component = text(root, "component");
         ok = prototype && component &&
-             app_scene_authoring_add_prototype_component(scene, prototype, component) == 0;
+             prototype_edit_accepted(
+                 app_scene_authoring_add_prototype_component(scene, prototype, component)
+             );
         if (!ok) {
             fail(error, error_size, "Could not add the requested prototype component");
         }
@@ -582,8 +602,9 @@ bool scene_collab_apply_action(app_scene_authoring *scene, const char *json, cha
         const char *prototype = text(root, "prototype"),
                    *component = text(root, "component");
         ok = prototype && component &&
-             app_scene_authoring_remove_prototype_component(scene, prototype, component) ==
-                 0;
+             prototype_edit_accepted(
+                 app_scene_authoring_remove_prototype_component(scene, prototype, component)
+             );
         if (!ok) {
             fail(error, error_size, "Could not remove the requested prototype component");
         }
@@ -592,10 +613,11 @@ bool scene_collab_apply_action(app_scene_authoring *scene, const char *json, cha
                    *behavior = text(root, "behavior");
         bool attach = !strcmp(operation, "prototype.behavior_attach");
         ok = prototype && behavior &&
-             (attach
-                  ? app_scene_authoring_attach_prototype_behavior(scene, prototype, behavior)
-                  : app_scene_authoring_detach_prototype_behavior(scene, prototype, behavior)) ==
-                 0;
+             prototype_edit_accepted(
+                 attach
+                     ? app_scene_authoring_attach_prototype_behavior(scene, prototype, behavior)
+                     : app_scene_authoring_detach_prototype_behavior(scene, prototype, behavior)
+             );
         if (!ok) {
             fail(error, error_size, "Could not update prototype behavior");
         }

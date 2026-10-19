@@ -1341,15 +1341,12 @@ static int replay_scene_edit_one(app_scene_authoring *scene, bool redo)
     }
     const scene_prototype_edit *prototype = scene_history_peek_prototype(scene->history, redo);
     if (prototype) {
-        if (scene_restore_prototype(
-                scene,
-                prototype->name,
-                redo ? prototype->after : prototype->before
-            ) != 0) {
+        int result = scene_restore_prototype_edit(scene, prototype, redo);
+        if (result < 0) {
             return -1;
         }
         scene_history_complete_prototype(scene->history, redo);
-        return 0;
+        return result;
     }
     ecs_entity entity;
     const char *name = scene_history_peek_rename(scene->history, redo, &entity);
@@ -1456,16 +1453,19 @@ int replay_scene_edit(app_scene_authoring *scene, bool redo)
         *recorded = step_selection(scene, scene_history_step_id(scene->history, redo));
     uint64_t *touched = NULL; /* the objects the steps edited or restored */
     int applied = 0;
+    bool not_applied = false;
     do {
         int count = acount(scene->actors);
-        if (replay_scene_edit_one(scene, redo) != 0) {
+        int result = replay_scene_edit_one(scene, redo);
+        if (result < 0) {
             while (applied-- > 0) {
                 int restored = replay_scene_edit_one(scene, !redo);
-                assert(restored == 0);
+                assert(restored >= 0);
             }
             afree(touched);
             return -1;
         }
+        not_applied |= result > 0;
         if (acount(scene->actors) >= count && selected_actor(scene)) {
             apush(touched, selected_actor(scene)->identity);
         }
@@ -1477,7 +1477,7 @@ int replay_scene_edit(app_scene_authoring *scene, bool redo)
         const scene_selection_set *set = redo ? &recorded->after : &recorded->before;
         select_identities(scene, set->ids, set->active);
         afree(touched);
-        return 0;
+        return not_applied ? 1 : 0;
     }
     /* A step of several objects leaves those it kept selected, as it found
        them. */
@@ -1489,5 +1489,5 @@ int replay_scene_edit(app_scene_authoring *scene, bool redo)
         select_identities(scene, touched, alast(touched));
     }
     afree(touched);
-    return 0;
+    return not_applied ? 1 : 0;
 }

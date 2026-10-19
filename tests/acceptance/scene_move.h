@@ -1,4 +1,5 @@
 #include "authoring/engine_preview.h"
+#include "authoring/source_format.h"
 #include "editor/collab/actions_scene.h"
 #include "runtime/component_catalog.h"
 #include "runtime/transform_propagation.h"
@@ -14,7 +15,7 @@ typedef struct
     app_scene_authoring *scene;
 } move_fixture;
 
-static move_fixture move_fixture_new()
+static move_fixture move_fixture_new_with_root(const char *content_root)
 {
     move_fixture fixture = { .world = ecs_world_new() };
     fixture.live = preview_world_new(fixture.world);
@@ -25,7 +26,7 @@ static move_fixture move_fixture_new()
     authoring_source *source = authoring_source_prepare_document(
         "MoveFixture.chibi",
         "behaviors/MoveFixture.chibi",
-        "behavior MoveFixture {}",
+        "MoveFixture :: behavior {}",
         &catalog,
         &bindings,
         BEHAVIOR_BYTECODE
@@ -52,10 +53,15 @@ static move_fixture move_fixture_new()
         NULL,
         NULL,
         fixture.runtime,
-        project
+        content_root
     );
     assert(fixture.scene);
     return fixture;
+}
+
+static move_fixture move_fixture_new()
+{
+    return move_fixture_new_with_root(project);
 }
 
 static void move_fixture_free(move_fixture *fixture)
@@ -66,6 +72,732 @@ static void move_fixture_free(move_fixture *fixture)
     editor_free(fixture->graph);
     preview_definition_free(fixture->placeholder);
     ecs_world_free(fixture->world);
+}
+
+/* The prototype collection budget must not become every asset reader's budget.
+ * One file, at most 65 MiB, and one owned read; no large document is parsed. */
+static bool large_source_read_limits(void)
+{
+    char root[] = "/tmp/chibi-studio-large-read-XXXXXX", directory[256], path[256];
+    REQUIRE(mkdtemp(root));
+    snprintf(directory, sizeof directory, "%s/prototypes", root);
+    REQUIRE(!mkdir(directory, 0700));
+    snprintf(path, sizeof path, "%s/Large.chibi", directory);
+    FILE *file = fopen(path, "wb");
+    REQUIRE(file);
+    char chunk[8192];
+    memset(chunk, ' ', sizeof chunk);
+    size_t padding = (size_t)PROTOTYPE_READ_MAX + 1;
+    for (size_t written = 0; written < padding;) {
+        size_t bytes = padding - written;
+        if (bytes > sizeof chunk) {
+            bytes = sizeof chunk;
+        }
+        REQUIRE(fwrite(chunk, 1, bytes, file) == bytes);
+        written += bytes;
+    }
+    const char *suffix = "Large :: prototype {}";
+    REQUIRE(fputs(suffix, file) >= 0);
+    REQUIRE(!fclose(file));
+    char *text = read_scene_file(path);
+    bool read = text && strlen(text) == padding + strlen(suffix) &&
+                !strcmp(text + padding, suffix);
+    free(text);
+    move_fixture fixture = move_fixture_new_with_root(root);
+    app_scene_authoring_refresh_content(fixture.scene);
+    bool bounded = !scene_prototype_sources_refresh(fixture.scene) &&
+                   strstr(fixture.scene->message, "read limits");
+    move_fixture_free(&fixture);
+    REQUIRE(!unlink(path));
+    REQUIRE(!rmdir(directory));
+    REQUIRE(!rmdir(root));
+    REQUIRE(read);
+    REQUIRE(bounded);
+    return true;
+}
+
+/* Reach the same document/focus dispatch as the Undo command, not the buffer's
+ * replay API. Static source tabs must not consume scene/prototype history. */
+static bool source_history_reopens(
+    asset_code *code,
+    const av_value *checkpoint,
+    const prototype_registry *registry,
+    editor *graph,
+    bool relationship,
+    bool changed
+)
+{
+    asset_code *restored = checkpoint ? asset_code_restore(checkpoint, registry) : NULL;
+    bool valid = restored && asset_code_static(restored) &&
+                 asset_code_validate(restored, graph) &&
+                 !strcmp(asset_code_text(restored), asset_code_text(code));
+    char error[256];
+    if (valid && relationship) {
+        ecs_relationship_desc *value = authoring_relationship_source_read(
+            asset_code_text(restored),
+            error,
+            sizeof error
+        );
+        valid = value && ((value->traits & ECS_REL_EXCLUSIVE) != 0) == !changed;
+        authoring_relationship_source_free(value);
+    } else if (valid) {
+        av_doc *document = authoring_prototype_document_read(
+            asset_code_text(restored),
+            registry,
+            error,
+            sizeof error
+        );
+        prototype *value = document
+                             ? prototype_load_value(av_doc_root(document), registry, error, sizeof error)
+                             : NULL;
+        pin_value field;
+        valid = value && !prototype_read_field(value, "Transform", "x", &field) &&
+                field.type == PIN_F32 && field.f == (changed ? 2 : 1);
+        prototype_free(value);
+        av_doc_free(document);
+    }
+    asset_code_free(restored);
+    return valid;
+}
+
+static bool static_source_dispatch_history(studio *host)
+{
+    char root[] = "/tmp/chibi-studio-source-undo-XXXXXX", directory[256],
+         path[256], scene_path[256], error[256];
+    REQUIRE(host && host->kit);
+    REQUIRE(mkdtemp(root));
+    const char *scene_text = "// Unrelated scene stays unchanged.\n";
+    snprintf(scene_path, sizeof scene_path, "%s/Unrelated.chibi", root);
+    const char *folders[] = { "relationships", "prototypes" };
+    const char *names[] = { "UndoTargets", "UndoEnemy" };
+    const char *before[] = { "UndoTargets :: relationship {exclusive:true}",
+                             "UndoEnemy :: prototype {Transform {x:1,y:0}}" };
+    const char *after[] = { "UndoTargets :: relationship {exclusive:false}",
+                            "UndoEnemy :: prototype {Transform {x:2,y:0}}" };
+    const char *invalid[] = {
+        "UndoTargets :: relationship {exclusive:1}",
+        "UndoEnemy :: prototype {Transform {x:\"bad\",y:0}}"
+    };
+    const app_editor_document_kind kinds[] = { APP_EDITOR_DOCUMENT_RELATIONSHIP,
+                                               APP_EDITOR_DOCUMENT_PROTOTYPE };
+    bool all_valid = true, clean_saves = true;
+    for (int i = 0; i < 2; i++) {
+        const char *unformatted[] = { before[i], after[i] };
+        char *text[2];
+        for (int j = 0; j < 2; j++) {
+            script_syntax *syntax = script_parse(unformatted[j]);
+            text[j] = authoring_source_format(syntax, error, sizeof error);
+            script_syntax_free(syntax);
+            REQUIRE(text[j] && strlen(text[j]) <= 128);
+        }
+        snprintf(directory, sizeof directory, "%s/%s", root, folders[i]);
+        REQUIRE(!mkdir(directory, 0700));
+        snprintf(path, sizeof path, "%s/%s.chibi", directory, names[i]);
+        REQUIRE(!write_file_atomic(path, text[0]));
+        REQUIRE(!write_file_atomic(scene_path, scene_text));
+        move_fixture fixture = move_fixture_new_with_root(root);
+        fixture.scene->scene_path = xstrdup(scene_path);
+        if (i) {
+            REQUIRE(!app_scene_authoring_register_prototype(fixture.scene, text[0], path));
+        }
+        studio *s = xcalloc(1, sizeof *s);
+        s->scene = fixture.scene;
+        s->kit = host->kit;
+        s->key_area = -1;
+        s->focus_area = STUDIO_AREA_TOP;
+        s->graph.area = -1;
+        s->prefs.layouts[0].editors[STUDIO_AREA_TOP] = STUDIO_EDITOR_CODE;
+        s->prefs.code_apply_live = true;
+        REQUIRE(!scene_tabs_open_source(fixture.scene, kinds[i], names[i], path));
+        asset_code *code = asset_code_open(path, error, sizeof error);
+        REQUIRE(code && asset_code_static(code));
+        asset_code_set_registry(code, &fixture.scene->registry);
+        apush(s->code.assets, code);
+
+        /* A clean canonical source owns Save before it has any edits. The
+         * background scene's sentinel also catches the relationship fallback. */
+        int source_tab = fixture.scene->active_tab;
+        studio_save(s);
+        code = s->code.assets[0];
+        char *disk = file_read_text(path), *background = file_read_text(scene_path);
+        bool clean_saved = disk && !strcmp(disk, text[0]) && background &&
+                           !strcmp(background, scene_text) &&
+                           !strcmp(asset_code_text(code), text[0]) &&
+                           !asset_code_dirty(code) &&
+                           !scene_tabs_dirty(fixture.scene, &fixture.scene->tabs[source_tab]) &&
+                           fixture.scene->active_tab == source_tab &&
+                           fixture.scene->document.kind == kinds[i] &&
+                           !fixture.scene->scene_dirty && !acount(s->records) &&
+                           !studio_can_replay(s, false) &&
+                           !studio_can_replay(s, true);
+        free(disk);
+        free(background);
+        /* Keep the old-product control running through cleanup after a bad
+         * clean Save, with the same source bytes as the fixed product. */
+        REQUIRE(!write_file_atomic(path, text[0]));
+        REQUIRE(!write_file_atomic(scene_path, scene_text));
+        REQUIRE(!scene_tabs_open_source(fixture.scene, kinds[i], names[i], path));
+        REQUIRE(studio_code_replace(s, path, text[0], text[1], NULL));
+        REQUIRE(asset_code_validate(code, fixture.graph));
+        bool undo_enabled = studio_can_replay(s, false);
+        studio_history(s, false);
+        bool undone = !strcmp(asset_code_text(code), text[0]) &&
+                      !asset_code_dirty(code);
+        undone &= source_history_reopens(
+            code,
+            fixture.scene->tabs[fixture.scene->active_tab].source_state,
+            &fixture.scene->registry,
+            fixture.graph,
+            i == 0,
+            false
+        );
+        bool redo_enabled = studio_can_replay(s, true);
+        studio_history(s, true);
+        bool redone = !strcmp(asset_code_text(code), text[1]) &&
+                      asset_code_dirty(code);
+        redone &= source_history_reopens(
+            code,
+            fixture.scene->tabs[fixture.scene->active_tab].source_state,
+            &fixture.scene->registry,
+            fixture.graph,
+            i == 0,
+            true
+        );
+        int records = acount(s->records);
+        studio_save(s);
+        code = s->code.assets[0];
+        disk = file_read_text(path);
+        bool dirty_saved = disk && !strcmp(disk, text[1]) &&
+                           !asset_code_dirty(code) &&
+                           !scene_tabs_dirty(fixture.scene, &fixture.scene->tabs[source_tab]) &&
+                           studio_can_replay(s, false) &&
+                           !studio_can_replay(s, true);
+        free(disk);
+        bool notice = i ? acount(s->records) == records
+                        : acount(s->records) == records + 1 &&
+                              s->records[records].kind == KIT_TOAST_ERROR &&
+                              strstr(s->records[records].text, "Saved, but not applied") &&
+                              strstr(s->records[records].text, "Reopen the project");
+        studio_history(s, false);
+        bool saved_history = !strcmp(asset_code_text(code), text[0]) &&
+                             asset_code_dirty(code) && studio_can_replay(s, true);
+        bool saved_all = studio_save_all(s);
+        code = s->code.assets[0];
+        disk = file_read_text(path);
+        background = file_read_text(scene_path);
+        saved_all &= disk && !strcmp(disk, text[0]) && background &&
+                     !strcmp(background, scene_text) &&
+                     !asset_code_dirty(code) && !studio_active_dirty(s) &&
+                     fixture.scene->active_tab == source_tab &&
+                     studio_can_replay(s, true);
+        free(disk);
+        free(background);
+        records = acount(s->records);
+        bool clean_all = studio_save_all(s) && acount(s->records) == records;
+        REQUIRE(studio_code_replace(s, path, text[0], invalid[i], NULL));
+        studio_save(s);
+        code = s->code.assets[0];
+        disk = file_read_text(path);
+        bool invalid_dirty = disk && !strcmp(disk, text[0]) &&
+                             !strcmp(asset_code_text(code), invalid[i]) &&
+                             asset_code_error(code)[0] &&
+                             asset_code_dirty(code) && studio_active_dirty(s) &&
+                             acount(s->records) == records + 1 &&
+                             s->records[records].kind == KIT_TOAST_ERROR &&
+                             strstr(s->records[records].text, "Could not save");
+        free(disk);
+        studio_discard_tab(s, source_tab);
+        disk = file_read_text(path);
+        bool discarded = disk && !strcmp(disk, text[0]) &&
+                         !text_overlay_text(path) && !acount(s->code.assets) &&
+                         acount(fixture.scene->tabs) == 1;
+        free(disk);
+
+        /* A malformed file opens clean and can be closed without repairing it.
+         * Saving it must report its diagnostic, never serialize a stale model. */
+        REQUIRE(!write_file_atomic(path, invalid[i]));
+        /* Closing a prototype tab retains its workspace-owned source. Reload
+         * the external edit before checking a clean malformed document. */
+        if (i) {
+            REQUIRE(studio_code_reload_path(s, path) == APP_DISK_RELOADED);
+        }
+        REQUIRE(!scene_tabs_open_source(fixture.scene, kinds[i], names[i], path));
+        records = acount(s->records);
+        studio_save(s);
+        code = acount(s->code.assets) ? s->code.assets[0] : NULL;
+        disk = file_read_text(path);
+        background = file_read_text(scene_path);
+        bool invalid_clean = code && disk && !strcmp(disk, invalid[i]) &&
+                             background && !strcmp(background, scene_text) &&
+                             asset_code_error(code)[0] &&
+                             !asset_code_dirty(code) && !studio_active_dirty(s) &&
+                             acount(s->records) == records + 1 &&
+                             s->records[records].kind == KIT_TOAST_ERROR &&
+                             strstr(s->records[records].text, "Could not save");
+        free(disk);
+        free(background);
+        studio_discard_tab(s, fixture.scene->active_tab);
+        bool closed = !acount(s->code.assets) && acount(fixture.scene->tabs) == 1 &&
+                      !text_overlay_text(path);
+        for (int j = 0; j < acount(s->code.assets); j++) {
+            asset_code_free(s->code.assets[j]);
+        }
+        afree(s->code.assets);
+        afree(s->records);
+        free(s);
+        move_fixture_free(&fixture);
+        free(text[0]);
+        free(text[1]);
+        REQUIRE(!unlink(path));
+        REQUIRE(!rmdir(directory));
+        bool valid = clean_saved && undo_enabled && undone && redo_enabled &&
+                     redone && dirty_saved && notice && saved_history &&
+                     saved_all && clean_all && invalid_dirty && discarded &&
+                     invalid_clean && closed;
+        if (!valid) {
+            fprintf(
+                stderr,
+                "Static source save %s: clean=%d undo=%d/%d redo=%d/%d "
+                "dirty=%d notice=%d history=%d all=%d clean_all=%d "
+                "invalid=%d/%d discard=%d close=%d\n",
+                names[i],
+                clean_saved,
+                undo_enabled,
+                undone,
+                redo_enabled,
+                redone,
+                dirty_saved,
+                notice,
+                saved_history,
+                saved_all,
+                clean_all,
+                invalid_dirty,
+                invalid_clean,
+                discarded,
+                closed
+            );
+        }
+        clean_saves &= clean_saved;
+        all_valid &= valid;
+    }
+    REQUIRE(!unlink(scene_path));
+    REQUIRE(!rmdir(root));
+    REQUIRE(clean_saves);
+    REQUIRE(all_valid);
+    return true;
+}
+
+static bool relationship_schema_kept(const move_fixture *fixture, const ecs_relationship_desc *schema)
+{
+    if (fixture->scene->registry.relationship_count != 1 ||
+        fixture->scene->registry.relationships[0] != schema) {
+        return false;
+    }
+    ecs_world *worlds[] = { fixture->world,
+                            prototype_preview_world(fixture->scene->prototype_preview) };
+    for (int i = 0; i < 2; i++) {
+        const ecs_relationship_desc
+            *live = ecs_world_relationship(worlds[i], schema->id);
+        if (!live || !(live->traits & ECS_REL_EXCLUSIVE) ||
+            strcmp(live->name, "AcceptanceTargets")) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool static_relationship_refresh(studio *host)
+{
+    char root[] = "/tmp/chibi-studio-relation-XXXXXX", directory[256],
+         prototypes[256], path[256], probe[256], error[256];
+    const char *before = "AcceptanceTargets :: relationship { exclusive:true }";
+    const char *after = "AcceptanceTargets :: relationship { exclusive:false }";
+    const char *prototype_source = "RegistryProbe :: prototype { "
+                                   "links:{AcceptanceTargets:[]} }";
+    REQUIRE(host && host->kit);
+    REQUIRE(mkdtemp(root));
+    move_fixture fixture = move_fixture_new_with_root(root);
+    snprintf(prototypes, sizeof prototypes, "%s/prototypes", root);
+    REQUIRE(!mkdir(prototypes, 0700));
+    snprintf(probe, sizeof probe, "%s/RegistryProbe.chibi", prototypes);
+    REQUIRE(!write_file_atomic(probe, prototype_source));
+    asset_code *code = asset_code_open(probe, error, sizeof error);
+    REQUIRE(code && asset_code_static(code));
+    asset_code_set_registry(code, &fixture.scene->registry);
+    REQUIRE(asset_code_error(code)[0]);
+    snprintf(directory, sizeof directory, "%s/relationships", root);
+    REQUIRE(!mkdir(directory, 0700));
+    snprintf(path, sizeof path, "%s/AcceptanceTargets.chibi", directory);
+    REQUIRE(!write_file_atomic(path, before));
+    app_scene_authoring_refresh_content(fixture.scene);
+    REQUIRE(fixture.scene->registry.relationship_count == 1);
+    asset_code_set_registry(code, &fixture.scene->registry);
+    REQUIRE(!asset_code_error(code)[0]);
+    REQUIRE(asset_code_validate(code, fixture.graph));
+    const ecs_relationship_desc *schema = fixture.scene->registry.relationships[0];
+    REQUIRE(relationship_schema_kept(&fixture, schema));
+    asset_code_free(code);
+
+    /* Use the real save/report path, borrowing only the existing host's kit.
+     * The private studio owns its source buffer, tab state and Output records. */
+    studio *s = xcalloc(1, sizeof *s);
+    s->scene = fixture.scene;
+    s->kit = host->kit;
+    s->key_area = -1;
+    s->focus_area = STUDIO_AREA_TOP;
+    s->graph.area = -1;
+    s->prefs.layouts[0].editors[STUDIO_AREA_TOP] = STUDIO_EDITOR_CODE;
+    s->prefs.code_apply_live = true;
+    REQUIRE(
+        !scene_tabs_open_source(fixture.scene, APP_EDITOR_DOCUMENT_RELATIONSHIP, "AcceptanceTargets", path)
+    );
+    code = asset_code_open(path, error, sizeof error);
+    REQUIRE(code && asset_code_static(code));
+    asset_code_set_registry(code, &fixture.scene->registry);
+    apush(s->code.assets, code);
+    REQUIRE(asset_code_replace(code, before, after));
+    REQUIRE(asset_code_validate(code, fixture.graph));
+    studio_save(s);
+    /* asset_editor may restore a tab checkpoint, so retrieve its owned buffer. */
+    code = s->code.assets[0];
+    char *disk = file_read_text(path);
+    bool saved = disk && !strcmp(disk, asset_code_text(code)) &&
+                 strstr(disk, "false") && strlen(disk) <= 128 &&
+                 !asset_code_dirty(code) &&
+                 !fixture.scene->tabs[fixture.scene->active_tab].source_dirty;
+    free(disk);
+    bool saved_notice = acount(s->records) == 1 &&
+                        s->records[0].kind == KIT_TOAST_ERROR &&
+                        strstr(s->records[0].text, "Saved, but not applied") &&
+                        strstr(s->records[0].text, "AcceptanceTargets") &&
+                        strstr(s->records[0].text, "Reopen the project");
+    bool kept = relationship_schema_kept(&fixture, schema);
+    asset_code_free(code);
+    afree(s->code.assets);
+    s->code.assets = NULL;
+    REQUIRE(!text_overlay_text(path) && !text_overlay_text(probe));
+
+    /* Start watching after the save. File sizes change, so no sleep or mtime
+     * assumption is needed. The second edit is a successful prototype load
+     * that overwrites scene->message after relationship refresh fails. */
+    s->time = 0;
+    studio_disk_frame(s);
+    bool baseline = acount(s->records) == (saved_notice ? 1 : 0) &&
+                    acount(fixture.scene->prototypes) == 0;
+    REQUIRE(!write_file_atomic(path, "AcceptanceTargets :: relationship { exclusive:1 }"));
+    REQUIRE(!write_file_atomic(probe, "RegistryProbe :: prototype { links:{AcceptanceTargets:[]} }\n"));
+    s->time = 1;
+    studio_disk_frame(s);
+    bool invalid_notice = acount(s->records) == 2 &&
+                          s->records[1].kind == KIT_TOAST_ERROR &&
+                          strstr(s->records[1].text, "Invalid relationship property or value type");
+    bool overwritten = acount(fixture.scene->prototypes) == 1 &&
+                       !strcmp(app_scene_authoring_message(fixture.scene), "Added RegistryProbe.chibi.");
+    kept &= relationship_schema_kept(&fixture, schema);
+
+    REQUIRE(!unlink(path));
+    s->time = 2;
+    studio_disk_frame(s);
+    bool removed_notice = acount(s->records) == 3 &&
+                          s->records[2].kind == KIT_TOAST_ERROR &&
+                          strstr(s->records[2].text, "AcceptanceTargets") &&
+                          strstr(s->records[2].text, "Reopen the project");
+    kept &= relationship_schema_kept(&fixture, schema);
+    bool reload_failed = app_scene_authoring_reload_path(fixture.scene, path) ==
+                         APP_DISK_FAILED;
+    kept &= relationship_schema_kept(&fixture, schema);
+    int records = acount(s->records);
+    s->time = 3;
+    studio_disk_frame(s);
+    bool quiet = acount(s->records) == records;
+
+    /* Expected failures on the old product are asserted only after cleanup.
+     * Error notices copied into the borrowed kit remain host-owned and are
+     * released at its ordinary shutdown; no extra frame or kit is created. */
+    studio_disk_free(s);
+    afree(s->records);
+    free(s);
+    move_fixture_free(&fixture);
+    REQUIRE(!unlink(probe));
+    REQUIRE(!rmdir(prototypes));
+    REQUIRE(!rmdir(directory));
+    REQUIRE(!rmdir(root));
+    bool ok = saved && saved_notice && baseline && invalid_notice &&
+              overwritten && removed_notice && reload_failed && kept && quiet;
+    if (!ok) {
+        fprintf(
+            stderr,
+            "Relationship notices: saved=%d notice=%d baseline=%d invalid=%d "
+            "overwritten=%d removed=%d reload=%d kept=%d quiet=%d\n",
+            saved,
+            saved_notice,
+            baseline,
+            invalid_notice,
+            overwritten,
+            removed_notice,
+            reload_failed,
+            kept,
+            quiet
+        );
+    }
+    REQUIRE(ok);
+    return true;
+}
+
+/* Match the actual inspector subject, not only the active tab's label. */
+static bool source_prototype_subject(studio *s, const char *name)
+{
+    app_scene_authoring *scene = s->scene;
+    properties_subject subject;
+    properties_subject_of(s, &subject);
+    app_editor_document_context document = app_scene_authoring_document(scene);
+    return document.kind == APP_EDITOR_DOCUMENT_PROTOTYPE &&
+           !strcmp(document.id, name) && scene->tabs[scene->active_tab].source_only &&
+           subject.asset == find_prototype(scene, name) && !subject.actor;
+}
+
+static bool static_prototype_refresh(void)
+{
+    char root[] = "/tmp/chibi-studio-prototype-XXXXXX", directory[256],
+         paths[4][256], relationships[256], relationship[256];
+    const char
+        *relation = "AcceptanceTargets :: relationship { exclusive:true }";
+    REQUIRE(mkdtemp(root));
+    move_fixture fixture = move_fixture_new_with_root(root);
+    app_scene_authoring *scene = fixture.scene;
+    snprintf(directory, sizeof directory, "%s/prototypes", root);
+    REQUIRE(!mkdir(directory, 0700));
+    const char *names[] = { "AcceptanceBase",
+                            "AcceptanceMiddle",
+                            "AcceptanceLeaf",
+                            "AcceptanceNest" };
+    const char *sources[] = {
+        "AcceptanceBase :: prototype { Transform {x:1, y:0} }",
+        "AcceptanceMiddle :: prototype(AcceptanceBase) {}",
+        "AcceptanceLeaf :: prototype(AcceptanceMiddle) {}",
+        "AcceptanceNest :: prototype { children:[{name:\"child\", "
+        "prototype:AcceptanceBase}] }"
+    };
+    for (int i = 0; i < 4; i++) {
+        snprintf(paths[i], sizeof paths[i], "%s/%s.chibi", directory, names[i]);
+        REQUIRE(!write_file_atomic(paths[i], sources[i]));
+    }
+    snprintf(relationships, sizeof relationships, "%s/relationships", root);
+    REQUIRE(!mkdir(relationships, 0700));
+    snprintf(relationship, sizeof relationship, "%s/AcceptanceTargets.chibi", relationships);
+    REQUIRE(!write_file_atomic(relationship, relation));
+    REQUIRE(app_scene_authoring_refresh_content(scene));
+    REQUIRE(scene->registry.relationship_count == 1);
+    const ecs_relationship_desc *schema = scene->registry.relationships[0];
+    REQUIRE(relationship_schema_kept(&fixture, schema));
+    for (int i = 0; i < 4; i++) {
+        REQUIRE(!app_scene_authoring_register_prototype(scene, sources[i], paths[i]));
+    }
+    int passive_tabs = acount(scene->tabs), passive_active = scene->active_tab;
+    pin_value value;
+    REQUIRE(
+        !app_scene_authoring_read_prototype_field(scene, names[2], "Transform", "x", &value)
+    );
+    REQUIRE(value.type == PIN_F32 && value.f == 1);
+    REQUIRE(!write_file_atomic(paths[0], "AcceptanceBase :: prototype { Transform {x:2, y:0} }"));
+    REQUIRE(app_scene_authoring_reload_path(scene, paths[0]) == APP_DISK_RELOADED);
+    for (int i = 0; i < 3; i++) {
+        REQUIRE(
+            !app_scene_authoring_read_prototype_field(scene, names[i], "Transform", "x", &value)
+        );
+        REQUIRE(value.type == PIN_F32 && value.f == 2);
+    }
+    scene_prototype_asset *nest = find_prototype(scene, names[3]);
+    REQUIRE(nest && acount(nest->prototype->child_prototypes) == 1);
+    REQUIRE(
+        !prototype_read_field(nest->prototype->child_prototypes[0], "Transform", "x", &value)
+    );
+    REQUIRE(value.type == PIN_F32 && value.f == 2);
+    REQUIRE(acount(scene->tabs) == passive_tabs && scene->active_tab == passive_active);
+
+    /* A relationship error must not leave include sources stale when the
+     * same watcher batch reloads a prototype and its transitive users. */
+    app_disk_change *changes = app_scene_authoring_sync_disk(scene, 0);
+    bool baseline = !acount(changes);
+    app_disk_changes_free(changes);
+    REQUIRE(!write_file_atomic(relationship, "AcceptanceTargets :: relationship { exclusive:1 }"));
+    REQUIRE(!write_file_atomic(paths[0], "AcceptanceBase :: prototype { Transform {x:20, y:0} }"));
+    changes = app_scene_authoring_sync_disk(scene, 1);
+    float refreshed[4] = { 0 };
+    bool propagated = true, reloaded = false;
+    for (int i = 0; i < 3; i++) {
+        bool read = !app_scene_authoring_read_prototype_field(scene, names[i], "Transform", "x", &value) &&
+                    value.type == PIN_F32;
+        if (read) {
+            refreshed[i] = value.f;
+        }
+        propagated &= read && refreshed[i] == 20;
+    }
+    nest = find_prototype(scene, names[3]);
+    bool child = nest && acount(nest->prototype->child_prototypes) == 1 &&
+                 !prototype_read_field(nest->prototype->child_prototypes[0], "Transform", "x", &value) &&
+                 value.type == PIN_F32;
+    if (child) {
+        refreshed[3] = value.f;
+    }
+    propagated &= child && refreshed[3] == 20;
+    bool kept = relationship_schema_kept(&fixture, schema);
+
+    /* If both refreshes fail, the first relationship diagnostic wins. If
+     * only prototype refresh fails, keep its error and failure result. */
+    REQUIRE(!write_file_atomic(paths[3], "AcceptanceBase :: prototype {}"));
+    bool combined_failed = !app_scene_authoring_refresh_content(scene) &&
+                           strstr(app_scene_authoring_message(scene), "Invalid relationship property or value type");
+    REQUIRE(!write_file_atomic(relationship, relation));
+    bool prototype_failed = !app_scene_authoring_refresh_content(scene) &&
+                            strstr(app_scene_authoring_message(scene), "Duplicate prototype name: AcceptanceBase");
+    REQUIRE(!write_file_atomic(paths[3], sources[3]));
+    bool restored = app_scene_authoring_refresh_content(scene);
+    kept &= relationship_schema_kept(&fixture, schema);
+
+    /* The owned watcher diagnostic survives every later status overwrite. */
+    bool notice = false;
+    for (int i = 0; i < acount(changes); i++) {
+        if (changes[i].result == APP_DISK_FAILED && !strcmp(changes[i].path, root)) {
+            notice |= strstr(changes[i].message, "Invalid relationship property or value type") !=
+                      NULL;
+        }
+        if (changes[i].result == APP_DISK_RELOADED &&
+            !strcmp(changes[i].path, paths[0])) {
+            reloaded = true;
+        }
+    }
+    app_disk_changes_free(changes);
+
+    REQUIRE(acount(scene->tabs) == passive_tabs && scene->active_tab == passive_active);
+
+    /* Dirty dependents retain their working values. Clean transitive users
+     * still reload from the saved dependency graph. */
+    scene_prototype_asset *middle = find_prototype(scene, names[1]);
+    pin_value edited = { .type = PIN_F32, .f = 9 };
+    REQUIRE(!write_prototype_field(scene, middle, "Transform", "x", edited));
+    REQUIRE(middle->dirty);
+    REQUIRE(acount(scene->tabs) == passive_tabs + 1 && scene->active_tab == passive_active);
+    REQUIRE(!write_file_atomic(paths[0], "AcceptanceBase :: prototype { Transform {x:3, y:0} }"));
+    REQUIRE(app_scene_authoring_reload_path(scene, paths[0]) == APP_DISK_UNSAVED);
+    REQUIRE(
+        !app_scene_authoring_read_prototype_field(scene, names[1], "Transform", "x", &value)
+    );
+    REQUIRE(value.f == 9 && middle->dirty);
+    REQUIRE(
+        !app_scene_authoring_read_prototype_field(scene, names[2], "Transform", "x", &value)
+    );
+    REQUIRE(value.f == 3);
+    REQUIRE(strstr(app_scene_authoring_message(scene), "unsaved edits"));
+
+    /* Close only the intentionally edited view; its workspace draft survives. */
+    scene_tabs_close(scene, APP_EDITOR_DOCUMENT_PROTOTYPE, names[1]);
+    /* Reuse these registered sources through the real Assets open route. */
+    studio *s = xcalloc(1, sizeof *s);
+    s->scene = scene;
+    int tabs_before = acount(scene->tabs), undo_before = acount(middle->undo);
+    REQUIRE(!app_scene_authoring_refresh_asset_index(scene));
+    int base = reference_index_find_asset(scene->asset_index, REFERENCE_ASSET_PROTOTYPE, paths[0], NULL);
+    int leaf = reference_index_find_asset(scene->asset_index, REFERENCE_ASSET_PROTOTYPE, paths[2], NULL);
+    REQUIRE(base >= 0 && leaf >= 0);
+    scene->selected_prototype = -1;
+    REQUIRE(!app_scene_authoring_open_asset(scene, base));
+    bool initial = source_prototype_subject(s, names[0]);
+    REQUIRE(!app_scene_authoring_open_prototype(scene, names[1]));
+    REQUIRE(!app_scene_authoring_open_asset(scene, leaf));
+    bool opened = source_prototype_subject(s, names[2]);
+    int leaf_tab = scene->active_tab;
+    REQUIRE(!app_scene_authoring_open_prototype(scene, names[1]));
+    REQUIRE(!scene_tabs_activate(scene, leaf_tab));
+    bool activated = source_prototype_subject(s, names[2]);
+    REQUIRE(!app_scene_authoring_open_asset(scene, leaf));
+    REQUIRE(!scene_tabs_activate(scene, leaf_tab));
+    bool repeated = scene->active_tab == leaf_tab &&
+                    acount(scene->tabs) == tabs_before + 3 &&
+                    source_prototype_subject(s, names[2]);
+
+    /* Invalid source remains openable without a registered prototype. It
+     * must not inherit another asset's inspector or replace its diagnostic. */
+    char invalid_path[256], message[sizeof scene->message],
+        prototype_message[sizeof scene->prototype_message];
+    snprintf(invalid_path, sizeof invalid_path, "%s/Unloaded.chibi", directory);
+    REQUIRE(!write_file_atomic(invalid_path, "Unloaded :: prototype {"));
+    REQUIRE(!app_scene_authoring_refresh_content(scene));
+    REQUIRE(scene->message[0] && !find_prototype(scene, "Unloaded"));
+    REQUIRE(!app_scene_authoring_refresh_asset_index(scene));
+    int missing = reference_index_find_asset(scene->asset_index, REFERENCE_ASSET_PROTOTYPE, invalid_path, NULL);
+    REQUIRE(missing >= 0);
+    snprintf(message, sizeof message, "%s", scene->message);
+    snprintf(prototype_message, sizeof prototype_message, "%s", scene->prototype_message);
+    REQUIRE(!app_scene_authoring_open_asset(scene, missing));
+    bool invalid = source_prototype_subject(s, "Unloaded") &&
+                   scene->selected_prototype == -1;
+    int invalid_tab = scene->active_tab;
+    REQUIRE(!scene_tabs_activate(scene, leaf_tab));
+    REQUIRE(!scene_tabs_activate(scene, invalid_tab));
+    invalid &= source_prototype_subject(s, "Unloaded") &&
+               scene->selected_prototype == -1;
+    bool diagnostics = !strcmp(scene->message, message) &&
+                       !strcmp(scene->prototype_message, prototype_message);
+    bool preserved = acount(scene->tabs) == tabs_before + 4 &&
+                     !scene->tabs[leaf_tab].source_dirty &&
+                     !scene->tabs[invalid_tab].source_dirty && middle->dirty &&
+                     acount(middle->undo) == undo_before &&
+                     !scene_history_can_undo(scene->history) &&
+                     !scene_history_can_redo(scene->history) &&
+                     relationship_schema_kept(&fixture, schema);
+    free(s);
+    REQUIRE(!unlink(invalid_path));
+    move_fixture_free(&fixture);
+    for (int i = 0; i < 4; i++) {
+        REQUIRE(!unlink(paths[i]));
+    }
+    REQUIRE(!rmdir(directory));
+    REQUIRE(!unlink(relationship));
+    REQUIRE(!rmdir(relationships));
+    REQUIRE(!rmdir(root));
+    bool ok = baseline && propagated && reloaded && kept && combined_failed &&
+              prototype_failed && restored && notice;
+    if (!ok) {
+        fprintf(
+            stderr,
+            "Prototype refresh after relationship failure: base=%g middle=%g "
+            "leaf=%g child=%g "
+            "baseline=%d propagated=%d reloaded=%d kept=%d combined=%d "
+            "prototype=%d restored=%d notice=%d\n",
+            refreshed[0],
+            refreshed[1],
+            refreshed[2],
+            refreshed[3],
+            baseline,
+            propagated,
+            reloaded,
+            kept,
+            combined_failed,
+            prototype_failed,
+            restored,
+            notice
+        );
+    }
+    REQUIRE(ok);
+    bool source_selection = initial && opened && activated && repeated &&
+                            invalid && diagnostics && preserved;
+    if (!source_selection) {
+        fprintf(
+            stderr,
+            "Prototype source selection: initial=%d opened=%d activated=%d "
+            "repeated=%d invalid=%d diagnostics=%d preserved=%d\n",
+            initial,
+            opened,
+            activated,
+            repeated,
+            invalid,
+            diagnostics,
+            preserved
+        );
+    }
+    REQUIRE(source_selection);
+    return true;
 }
 
 static bool move_same_entity(ecs_entity a, ecs_entity b)

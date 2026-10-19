@@ -74,19 +74,18 @@ static bool action_value_valid(const pin_value *value, int depth)
         if (!array) {
             return true;
         }
-        if (array->count < 0 || (array->count && !array->items) ||
-            array->element_type != value->type ||
+        if (!pin_array_valid(array) || array->element_type != value->type ||
             ((value->type_name || array->type_name) &&
              (!value->type_name || !array->type_name ||
               strcmp(value->type_name, array->type_name)))) {
             return false;
         }
         for (int i = 0; i < array->count; i++) {
-            const pin_value *item = &array->items[i];
-            if (item->container != PIN_CONTAINER_SINGLE || item->type != value->type ||
+            pin_value item = pin_array_get(array, i);
+            if (item.container != PIN_CONTAINER_SINGLE || item.type != value->type ||
                 (value->type == PIN_STRUCT &&
-                 (!item->type_name || strcmp(item->type_name, value->type_name))) ||
-                !action_value_valid(item, depth + 1)) {
+                 (!item.type_name || strcmp(item.type_name, value->type_name))) ||
+                !action_value_valid(&item, depth + 1)) {
                 return false;
             }
         }

@@ -743,7 +743,7 @@ static void studio_scene_read_tests()
     scene_read_source = authoring_source_prepare_document(
         "SceneReadFixture.chibi",
         "behaviors/SceneReadFixture.chibi",
-        "behavior SceneReadFixture {}",
+        "SceneReadFixture :: behavior {}",
         &catalog,
         &bindings,
         BEHAVIOR_BYTECODE

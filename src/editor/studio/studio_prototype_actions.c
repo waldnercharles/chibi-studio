@@ -87,8 +87,13 @@ static void undo_toast(studio *s)
                    s->scene->document.kind == APP_EDITOR_DOCUMENT_SCENE;
     if (kit_toast_action(s->kit, a->toast)) {
         a->toast = 0;
-        if (current && studio_editable(s) && replay_scene_edit(s->scene, false) == 0) {
-            studio_report(s, "Undo");
+        if (current && studio_editable(s)) {
+            int result = replay_scene_edit(s->scene, false);
+            if (!result) {
+                studio_report(s, "Undo");
+            } else if (result > 0) {
+                studio_error(s, "Edited, but not applied", s->scene->prototype_message);
+            }
         }
         return;
     }
@@ -103,8 +108,13 @@ static void apply(studio *s, scene_actor *actor, const prototype_field *fields, 
     char prototype[256];
     snprintf(prototype, sizeof prototype, "%s", actor->prototype_name);
     int reach = scene_override_reach(s->scene, actor, fields, count);
-    if (scene_apply_overrides(s->scene, actor, fields, count) != 0) {
+    int result = scene_apply_overrides(s->scene, actor, fields, count);
+    if (result < 0) {
         studio_warn(s, "Could not apply the overrides");
+        return;
+    }
+    if (result > 0) {
+        offer_undo(s, "Edited prototype; application incomplete", s->scene->prototype_message);
         return;
     }
     char title[320], description[96];
