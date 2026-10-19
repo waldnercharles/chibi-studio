@@ -593,6 +593,7 @@ static bool static_prototype_refresh(void)
     for (int i = 0; i < 4; i++) {
         REQUIRE(!app_scene_authoring_register_prototype(scene, sources[i], paths[i]));
     }
+    int passive_tabs = acount(scene->tabs), passive_active = scene->active_tab;
     pin_value value;
     REQUIRE(
         !app_scene_authoring_read_prototype_field(scene, names[2], "Transform", "x", &value)
@@ -612,6 +613,7 @@ static bool static_prototype_refresh(void)
         !prototype_read_field(nest->prototype->child_prototypes[0], "Transform", "x", &value)
     );
     REQUIRE(value.type == PIN_F32 && value.f == 2);
+    REQUIRE(acount(scene->tabs) == passive_tabs && scene->active_tab == passive_active);
 
     /* A relationship error must not leave include sources stale when the
      * same watcher batch reloads a prototype and its transitive users. */
@@ -667,12 +669,15 @@ static bool static_prototype_refresh(void)
     }
     app_disk_changes_free(changes);
 
+    REQUIRE(acount(scene->tabs) == passive_tabs && scene->active_tab == passive_active);
+
     /* Dirty dependents retain their working values. Clean transitive users
      * still reload from the saved dependency graph. */
     scene_prototype_asset *middle = find_prototype(scene, names[1]);
     pin_value edited = { .type = PIN_F32, .f = 9 };
     REQUIRE(!write_prototype_field(scene, middle, "Transform", "x", edited));
     REQUIRE(middle->dirty);
+    REQUIRE(acount(scene->tabs) == passive_tabs + 1 && scene->active_tab == passive_active);
     REQUIRE(!write_file_atomic(paths[0], "AcceptanceBase :: prototype { Transform {x:3, y:0} }"));
     REQUIRE(app_scene_authoring_reload_path(scene, paths[0]) == APP_DISK_UNSAVED);
     REQUIRE(
@@ -685,6 +690,8 @@ static bool static_prototype_refresh(void)
     REQUIRE(value.f == 3);
     REQUIRE(strstr(app_scene_authoring_message(scene), "unsaved edits"));
 
+    /* Close only the intentionally edited view; its workspace draft survives. */
+    scene_tabs_close(scene, APP_EDITOR_DOCUMENT_PROTOTYPE, names[1]);
     /* Reuse these registered sources through the real Assets open route. */
     studio *s = xcalloc(1, sizeof *s);
     s->scene = scene;

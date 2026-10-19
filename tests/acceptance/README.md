@@ -62,6 +62,10 @@ diagnostics. Tab identity/count, source cleanliness, existing prototype history
 and the relationship schema in both worlds are retained. This adds two asset-index
 rebuilds, one content refresh, four asset opens, two ordinary prototype opens and
 four tab activations (one a no-op), with no extra fixtures, worlds or host frames.
+Three CPU-only assertions check that passive reads/reloads preserve tab count and
+focus, while the deliberate middle-prototype edit adds one background document.
+One normal close retains that dirty source before the unchanged exact Assets
+reopen-count checks.
 All files and models are freed before the separate selection assertion.
 
 After the fourth frame's existing interactions, a relationship source check
