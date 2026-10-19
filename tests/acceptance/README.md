@@ -136,6 +136,21 @@ regression assertion; the expected read-error notice remains host-owned until
 normal shutdown. The four-frame invocation and its supervisor deadline are
 unchanged. This exercises the production handlers, not pointer hit testing.
 
+`studio-acceptance --code-wrap-reveal --project-root PATH` takes another
+fresh disposable copy and runs five hidden fixed-1/60 frames. It prepends one
+fixed 512-byte comment line to Counter, shows code only with wrapping and reduced
+motion off, and reveals the last comment byte. After checking a positive, advancing
+horizontal animation step, it enables Word Wrap without another reveal or code
+input. The next two frames require zero horizontal offset, unchanged source and
+caret, retained code focus, and a clean document. Counter's original file is
+restored even when the host reports failure. This is one pico_unit case in the
+existing acceptance binary, with the same three-file project, isolated preferences
+and thumbnail cache; it adds no playback, screenshots or helper executable.
+Before first execution, independently admit the exact source, fixture and workload
+under the unchanged production 60-second supervisor. A fixture-only old-product
+control must fail the first post-wrap zero-offset assertion, not setup. This
+registration records no runtime pass or new aggregate membership.
+
 `studio-acceptance --code-keys --project-root PATH` takes another disposable copy.
 It shows Counter in the Text Editor, focuses it and places the cursor after the
 event's closing brace, then queues two Enter key presses through SDL, as the
@@ -313,8 +328,11 @@ before two handlers: the initial graph still opens on Tick, the picker groups
 Events before Variables and Functions, and the root is labeled Variables.
 Selecting Begin in Both reveals its declaration; revealing a statement selects
 its node and corresponding source while a graph field keeps keyboard focus.
-Source reveals and keyboard framing interrupt camera motion immediately; framing
-also settles immediately with reduced motion enabled.
+Source reveals preserve zoom and ease into view, including when retargeted during
+motion. Intermediate positions, velocity continuity, already-visible targets and
+manual interruption are checked. An offscreen handler also checks intermediate
+code scroll offsets, retargeting without a jump, reduced motion and manual-wheel
+cancellation. Reduced motion settles either reveal immediately.
 Moving the focused source caret to a statement selects its graph/node without
 moving the caret back to the declaration or taking focus from the text.
 A temporary distant statement tests that initial framing keeps the handler's

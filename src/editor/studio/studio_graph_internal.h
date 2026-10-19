@@ -300,6 +300,7 @@ void sg_find_panel(studio *s);
    it differs from the one last seen; the Behavior header does as it shows. */
 void sg_nav_track(studio *s);
 void sg_nav_follow_source(studio *s);
+uint64_t sg_focused_node(const studio *s);
 void sg_nav_keys(studio *s);
 
 /* Live values (studio_graph_live.c). */

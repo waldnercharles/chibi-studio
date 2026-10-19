@@ -1267,7 +1267,7 @@ void studio_behavior_show(studio *s, int view)
 static void move_caret(asset_code *code, int byte)
 {
     kit_code_editor *e = asset_code_editor(code);
-    kit_code_set_cursor(e, byte);
+    kit_code_reveal(e, byte);
     kit_code_post(e, KIT_CODE_CURSOR);
     asset_code_end_typing(code);
 }
