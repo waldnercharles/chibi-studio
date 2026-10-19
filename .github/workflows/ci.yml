@@ -1,26 +1,9 @@
-name: CI
+# Temporary validation child only. Do not merge this workflow into the product PR.
+name: PR77 Studio focused graph/code validation
 
 on:
-  workflow_dispatch:
   pull_request:
-    paths-ignore:
-      - "README.md"
-      - "AGENTS.md"
-      - "docs/**"
-      - ".claude/**"
-      - "web/**"
-      - "EXTRACTION.json"
-      - ".github/workflows/publish.yml"
-  push:
-    branches: [main]
-    paths-ignore:
-      - "README.md"
-      - "AGENTS.md"
-      - "docs/**"
-      - ".claude/**"
-      - "web/**"
-      - "EXTRACTION.json"
-      - ".github/workflows/publish.yml"
+    branches: [cwaldner/smooth-graph-code-focus]
 
 permissions:
   contents: read
@@ -37,13 +20,36 @@ env:
 
 jobs:
   studio:
-    name: Build and startup against selected engine
+    name: Bounded Studio graph and code validation
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: validation
+          persist-credentials: false
+      - name: Verify candidate is bound before any private checkout
+        run: |
+          python3 - <<'PYCODE'
+          import importlib.util, sys
+          sys.dont_write_bytecode = True
+          spec = importlib.util.spec_from_file_location('validation', 'validation/tools/validate_studio_refresh.py')
+          helper = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(helper)
+          try:
+              helper.reviewed_pins()
+          except Exception as error:
+              helper.failure_status(error)
+              sys.exit(1)
+          PYCODE
+      - name: Check out the immutable integrated Studio 77 candidate
+        uses: actions/checkout@v4
+        with:
+          ref: 854d19acad786b6c9640002597a3f98a7f3ca791
           path: chibi-studio
+          persist-credentials: false
       - name: Select the paired engine for a same-repository PR
         id: engine
         env:
@@ -58,6 +64,7 @@ jobs:
               exit 1
             fi
           fi
+          test "$ref" = 7bc6aa3cd69b29cfb006aab94d50d695007d9abe
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Require engine checkout access
         env:
@@ -153,7 +160,16 @@ jobs:
       - name: Package the engine SDK
         if: steps.sdk.outputs.cache-hit != 'true' && steps.published-sdk.outputs.available != 'true'
         working-directory: chibi
-        run: make package-sdk SDK_PREFIX=dist/sdk LIBCLANG_ROOT=/usr/lib/llvm-18
+        shell: bash
+        run: |
+          log=$(mktemp "$RUNNER_TEMP/engine-package.XXXXXX")
+          trap 'rm -f "$log"' EXIT
+          if make package-sdk SDK_PREFIX=dist/sdk LIBCLANG_ROOT=/usr/lib/llvm-18 >"$log" 2>&1; then
+            echo 'Engine SDK packaging completed.'
+          else
+            echo '::error::Engine SDK packaging failed; raw build output remains private.'
+            exit 1
+          fi
       # PRs consume main's caches without uploading another branch-scoped copy.
       - name: Save packaged engine SDK
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.sdk.outputs.cache-hit != 'true' && steps.published-sdk.outputs.available != 'true'
@@ -169,33 +185,21 @@ jobs:
             ~/.cache/chibi-fetchcontent
             ~/.cache/chibi-dependency-packages
           key: ${{ steps.cache-deps.outputs.cache-primary-key }}
-      - name: Build Studio against the packaged SDK
+      - name: Build and validate the reviewed five-invocation workload
         working-directory: chibi
-        run: make studio-build STUDIO_SOURCE="$GITHUB_WORKSPACE/chibi-studio" STUDIO_SDK_PREFIX=dist/sdk
-      - name: Two hidden Studio frames
-        working-directory: chibi
-        shell: bash
         run: |
-          timeout 60 xvfb-run -a build-studio/bin/chibi-dev \
-            --project-root ../chibi-studio/projects/starter --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee studio.log
-          ! grep -E 'Studio UI:|runtime frame failed|Could not initialize' studio.log
-      - name: Two hidden frames of Studio's own project
-        working-directory: chibi
-        shell: bash
-        run: |
-          timeout 60 xvfb-run -a build-studio/bin/chibi-dev \
-            --project-root build-studio/share/chibi/studio --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee own.log
-          ! grep -E 'Studio UI:|runtime frame failed|Could not initialize|Could not load graph asset' own.log
-      - name: Installed Studio opens the project it starts in
-        shell: bash
-        run: |
-          prefix="$RUNNER_TEMP/chibi"
-          # SDK packages are relocatable; reuse the verified package without rebuilding.
-          mkdir -p "$prefix"
-          cp -a chibi/dist/sdk/. "$prefix/"
-          make -C chibi-studio install PREFIX="$prefix"
-          export PATH="$prefix/bin:$PATH"
-          cd chibi-studio/projects/starter
-          timeout 60 xvfb-run -a chibi-dev --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee "$RUNNER_TEMP/installed.log"
-          chibi export . --output "$RUNNER_TEMP/export"
-          ! grep -E 'Studio UI:|runtime frame failed|Could not initialize' "$RUNNER_TEMP/installed.log"
+          python3 "$GITHUB_WORKSPACE/validation/tools/validate_studio_refresh.py" \
+            --source "$GITHUB_WORKSPACE/chibi-studio" \
+            --engine "$GITHUB_WORKSPACE/chibi" \
+            --sdk "$GITHUB_WORKSPACE/chibi/dist/sdk" \
+            --validation "$GITHUB_WORKSPACE/validation" \
+            --output "$RUNNER_TEMP/studio-focus-validation"
+      - name: Retain only verified public statuses and counts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio77-focus-evidence
+          path: ${{ runner.temp }}/studio-focus-validation/public
+          if-no-files-found: warn
+          retention-days: 3
+
