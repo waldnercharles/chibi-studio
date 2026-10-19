@@ -1,12 +1,12 @@
-behavior "OutlinerHeaderInput" {
-    action prototype_choices = engine["Prototype Choices"]()
+OutlinerHeaderInput :: behavior {
+    action prototype_choices_action = prototype_choices()
     on Refresh {
-        prototype_choices()
+        prototype_choices_action()
     }
-    after prototype_choices {
+    after prototype_choices_action {
         await set_ui_data(0, "editable", editor_state().Editable)
         await set_ui_data(0, "filter", scene_info().Filter)
-        set_ui_data(0, "prototypes", prototype_choices.Options)
+        set_ui_data(0, "prototypes", prototype_choices_action.Options)
     }
     on FilterTyped {
         set_object_filter(event.Filter)

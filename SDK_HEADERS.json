@@ -11,6 +11,9 @@
   "assets/field_parameters.h": [
     "src/editor/studio/studio_thumbnail_kinds.c"
   ],
+  "assets/input_map.h": [
+    "src/editor/documents/scene_disk.c"
+  ],
   "assets/model_export.h": [
     "src/editor/workspace/model_preview.h"
   ],
@@ -94,6 +97,7 @@
     "src/editor/studio/studio_internal.h"
   ],
   "authoring/application_catalog.h": [
+    "src/editor/documents/scene_document.c",
     "src/editor/studio/studio_ui.c",
     "src/editor/workspace/application.c",
     "src/studio_registry.c"
@@ -132,11 +136,13 @@
   ],
   "authoring/native_prototype.h": [
     "src/editor/documents/scene_prototypes.c",
-    "src/editor/workspace/model_preview.c"
+    "src/editor/workspace/model_preview.c",
+    "src/editor/workspace/scene_actors.c"
   ],
   "authoring/preview.h": [
     "src/editor/studio/studio_ui.c",
     "src/editor/workspace/application.c",
+    "src/editor/workspace/editor.c",
     "src/editor/workspace/scene_authoring.h"
   ],
   "authoring/preview_runtime.h": [
@@ -161,6 +167,10 @@
     "src/editor/workspace/scene_checkpoint.c",
     "src/editor/workspace/scene_debug.h",
     "src/editor/workspace/scene_tabs.c"
+  ],
+  "authoring/project_open.h": [
+    "src/editor/studio/studio_ui.c",
+    "src/editor/workspace/application.c"
   ],
   "authoring/prototype_prepare.h": [
     "src/editor/documents/scene_prototypes.c",
@@ -192,6 +202,11 @@
   "authoring/shader_prepare.h": [
     "src/editor/workspace/application.c"
   ],
+  "authoring/source_asset.h": [
+    "src/editor/documents/asset_code.c",
+    "src/editor/documents/scene_document.c",
+    "src/editor/workspace/scene_authoring.c"
+  ],
   "authoring/source_catalog.h": [
     "src/editor/workspace/scene_internal.h"
   ],
@@ -199,6 +214,7 @@
     "src/editor/workspace/editor.h"
   ],
   "authoring/source_format.h": [
+    "src/editor/documents/asset_code.c",
     "src/editor/documents/scene_documents.c",
     "src/editor/workspace/scene_authoring.c"
   ],
@@ -232,6 +248,10 @@
     "src/editor/workspace/scene_authoring.c",
     "src/editor/workspace/scene_checkpoint.c"
   ],
+  "authoring/source_prototype_edit.h": [
+    "src/editor/documents/scene_prototype_actions.c",
+    "src/editor/workspace/scene_internal.h"
+  ],
   "authoring/source_references.h": [
     "src/editor/workspace/asset_index.c"
   ],
@@ -247,6 +267,7 @@
     "src/editor/graph/search.c",
     "src/editor/studio/studio_nodes.h",
     "src/editor/workspace/application.c",
+    "src/editor/workspace/scene_internal.h",
     "src/studio_registry.c"
   ],
   "authoring/ui_check.h": [
@@ -324,6 +345,7 @@
     "src/editor/graph/input_bindings.c",
     "src/editor/graph/pins.c",
     "src/editor/graph/search.c",
+    "src/editor/studio/studio_code.c",
     "src/editor/studio/studio_debug.c",
     "src/editor/studio/studio_graph.c",
     "src/editor/studio/studio_graph_draw.c",
@@ -437,6 +459,7 @@
     "src/editor/graph/search.c",
     "src/editor/studio/studio_graph_draw.c",
     "src/editor/studio/studio_graph_edit.c",
+    "src/editor/studio/studio_graph_input.c",
     "src/editor/studio/studio_graph_layout.c",
     "src/editor/studio/studio_graph_literals.c",
     "src/editor/studio/studio_graph_pins.c",
@@ -513,6 +536,7 @@
   "graph/nodes/conv_nodes.h": [
     "src/editor/documents/mutations.c",
     "src/editor/graph/search.c",
+    "src/editor/studio/studio_graph_draw.c",
     "src/editor/studio/studio_graph_edit.c",
     "src/editor/studio/studio_graph_values.c"
   ],
@@ -531,7 +555,8 @@
     "src/editor/studio/studio_graph_layout.c",
     "src/editor/studio/studio_graph_pins.c",
     "src/editor/studio/studio_graph_properties.c",
-    "src/editor/studio/studio_graph_values.c"
+    "src/editor/studio/studio_graph_values.c",
+    "src/editor/studio/studio_members.c"
   ],
   "graph/nodes/fmt_nodes.h": [
     "src/editor/studio/studio_graph_layout.c"
@@ -558,12 +583,16 @@
     "src/editor/studio/studio_graph_layout.c",
     "src/editor/studio/studio_host.c",
     "src/editor/studio/studio_prefs.c",
+    "src/editor/studio/studio_projects.c",
     "src/editor/studio/studio_thumbnail_graph.c",
     "src/editor/studio/studio_thumbnails.h",
     "src/editor/workspace/application.c",
     "src/editor/workspace/game_presentation.c",
     "src/editor/workspace/scene_gizmo.c",
+    "src/editor/workspace/scene_gizmo.h",
+    "src/editor/workspace/scene_gizmo3d_view.c",
     "src/editor/workspace/scene_overlays.c",
+    "src/editor/workspace/scene_view3d.h",
     "src/editor/workspace/scene_viewport.c",
     "src/editor/workspace/scene_world_preview.c",
     "src/editor/workspace/viewport.c",
@@ -573,11 +602,11 @@
     "src/editor/workspace/scene_authoring.c",
     "src/editor/workspace/scene_viewport.c"
   ],
-  "render/scene3d.h": [
-    "src/editor/workspace/scene_viewport.c"
-  ],
   "render/audio.h": [
     "src/editor/workspace/game_presentation.c"
+  ],
+  "render/device_controls.h": [
+    "src/editor/workspace/input.c"
   ],
   "render/field_image.h": [
     "src/editor/studio/studio_thumbnail_kinds.c"
@@ -591,6 +620,14 @@
     "src/editor/workspace/scene_viewport.c"
   ],
   "render/mesh_surface.h": [
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "render/scene3d.h": [
+    "src/editor/workspace/editor_camera.c",
+    "src/editor/workspace/scene_view3d.h",
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "render/scene3d_visual.h": [
     "src/editor/workspace/scene_viewport.c"
   ],
   "render/scene_renderer.h": [
@@ -620,6 +657,9 @@
   "render/shader_preview.h": [
     "src/editor/studio/studio_thumbnail_kinds.c"
   ],
+  "render/skip.h": [
+    "src/editor/workspace/scene_collider3d.h"
+  ],
   "render/ui.h": [
     "src/editor/studio/studio_internal.h",
     "src/editor/studio/studio_thumbnail_kinds.c",
@@ -628,6 +668,7 @@
     "src/editor/workspace/scene_viewport.c"
   ],
   "render/viewport.h": [
+    "src/editor/workspace/editor_camera.h",
     "src/editor/workspace/viewport.h"
   ],
   "runtime/behaviors/entities.h": [
@@ -656,7 +697,10 @@
     "src/editor/workspace/model_preview.c",
     "src/editor/workspace/scene_actors.c",
     "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_collider3d.c",
     "src/editor/workspace/scene_gizmo.c",
+    "src/editor/workspace/scene_gizmo3d_internal.h",
+    "src/editor/workspace/scene_gizmo3d_targets.c",
     "src/editor/workspace/scene_overlays.c",
     "src/editor/workspace/scene_runtime.c",
     "src/editor/workspace/scene_viewport.c",
@@ -707,8 +751,17 @@
     "src/editor/documents/scene_history.h",
     "src/editor/workspace/scene_authoring.h"
   ],
+  "runtime/tilemap.h": [
+    "src/editor/workspace/scene_viewport.c"
+  ],
   "runtime/transform_propagation.h": [
-    "src/editor/workspace/scene_hierarchy.c"
+    "src/editor/workspace/scene_actors.c",
+    "src/editor/workspace/scene_collider3d.c",
+    "src/editor/workspace/scene_gizmo.c",
+    "src/editor/workspace/scene_gizmo3d_targets.c",
+    "src/editor/workspace/scene_hierarchy.c",
+    "src/editor/workspace/scene_overlays.c",
+    "src/editor/workspace/scene_viewport.c"
   ],
   "runtime/visual_transform.h": [
     "src/editor/workspace/model_preview.c"
@@ -773,6 +826,7 @@
     "src/editor/studio/studio_palette_view.c",
     "src/editor/studio/studio_performance.c",
     "src/editor/studio/studio_pick.c",
+    "src/editor/studio/studio_prefs.c",
     "src/editor/studio/studio_projects.c",
     "src/editor/studio/studio_properties.c",
     "src/editor/studio/studio_properties_view.c",
@@ -788,6 +842,7 @@
     "src/editor/studio/studio_thumbnails.c",
     "src/editor/studio/studio_ui.c",
     "src/editor/ui/kit_wire_shape.c",
+    "src/editor/workspace/application.c",
     "src/editor/workspace/asset_index.c",
     "src/editor/workspace/asset_refactor.c",
     "src/editor/workspace/asset_refactor_source.c",
@@ -797,6 +852,9 @@
     "src/editor/workspace/scene_asset_drop.c",
     "src/editor/workspace/scene_authoring.c",
     "src/editor/workspace/scene_gizmo.c",
+    "src/editor/workspace/scene_gizmo3d.c",
+    "src/editor/workspace/scene_gizmo3d_targets.c",
+    "src/editor/workspace/scene_gizmo3d_view.c",
     "src/editor/workspace/scene_tabs.c",
     "src/editor/workspace/scene_view.c",
     "src/editor/workspace/tree_watch.c",
@@ -818,6 +876,7 @@
     "src/editor/documents/scene_document.c",
     "src/editor/documents/scene_documents.c",
     "src/editor/documents/scene_prototype_actions.c",
+    "src/editor/documents/scene_prototypes.c",
     "src/editor/studio/studio_assets.c",
     "src/editor/studio/studio_canvas.c",
     "src/editor/studio/studio_code.c",
@@ -889,11 +948,13 @@
   ],
   "support/text_overlay.h": [
     "src/editor/documents/asset_code.c",
+    "src/editor/documents/scene_prototypes.c",
     "src/editor/documents/ui_buffer.c",
     "src/editor/studio/studio_code.c",
     "src/editor/studio/studio_designer.c",
     "src/editor/studio/studio_thumbnails.c",
-    "src/editor/workspace/scene_checkpoint.c"
+    "src/editor/workspace/scene_checkpoint.c",
+    "src/editor/workspace/scene_tabs.c"
   ],
   "support/text_rank.h": [
     "src/editor/rmlui/kit_command.c",
@@ -916,6 +977,7 @@
     "src/editor/documents/asset_code.c",
     "src/editor/documents/document.c",
     "src/editor/documents/scene_disk.c",
+    "src/editor/documents/scene_document.c",
     "src/editor/documents/scene_history.c",
     "src/editor/documents/scene_prototype_actions.c",
     "src/editor/documents/scene_retention.c",
@@ -944,8 +1006,11 @@
     "src/editor/studio/studio_graph_properties.c",
     "src/editor/studio/studio_host.c",
     "src/editor/studio/studio_inspect.c",
+    "src/editor/studio/studio_member_properties.c",
+    "src/editor/studio/studio_members.c",
     "src/editor/studio/studio_model.c",
     "src/editor/studio/studio_performance.c",
+    "src/editor/studio/studio_prefs.c",
     "src/editor/studio/studio_projects.c",
     "src/editor/studio/studio_properties.c",
     "src/editor/studio/studio_refactor.c",
@@ -977,6 +1042,7 @@
     "src/editor/documents/scene_prototype_actions.c",
     "src/editor/studio/studio_graph_literals.c",
     "src/editor/studio/studio_graph_pins.c",
+    "src/editor/studio/studio_graph_properties.c",
     "src/editor/studio/studio_node_calls.c",
     "src/editor/workspace/scene_authoring.c",
     "src/editor/workspace/scene_runtime.c"
@@ -987,6 +1053,7 @@
     "src/editor/documents/scene_history.c",
     "src/editor/studio/studio_graph_literals.c",
     "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_gizmo3d_targets.c",
     "src/editor/workspace/scene_runtime.c"
   ],
   "types/value_document.h": [
@@ -1013,6 +1080,7 @@
   "ui/drag.h": [
     "src/editor/rmlui/kit_internal.h",
     "src/editor/studio/studio_designer_hierarchy.c",
+    "src/editor/studio/studio_outliner.c",
     "src/editor/studio/studio_properties_view.c",
     "src/editor/studio/studio_ui.c"
   ],
@@ -1021,9 +1089,11 @@
   ],
   "ui/input_feel.h": [
     "src/editor/rmlui/kit_internal.h",
+    "src/editor/studio/studio_graph_draw.c",
     "src/editor/studio/studio_graph_input.c",
     "src/editor/studio/studio_host.c",
-    "src/editor/studio/studio_scene.c"
+    "src/editor/studio/studio_scene.c",
+    "src/editor/studio/studio_scene_camera.c"
   ],
   "ui/list.h": [
     "src/editor/rmlui/kit_internal.h",
@@ -1043,14 +1113,17 @@
     "src/editor/rmlui/kit.c",
     "src/editor/rmlui/kit_popup.c",
     "src/editor/studio/studio_assets.c",
+    "src/editor/studio/studio_code.c",
     "src/editor/studio/studio_designer_details.c",
     "src/editor/studio/studio_designer_hierarchy.c",
     "src/editor/studio/studio_graph_details.c",
+    "src/editor/studio/studio_graph_header.c",
     "src/editor/studio/studio_graph_menu.c",
     "src/editor/studio/studio_graph_properties.c",
     "src/editor/studio/studio_members.c",
     "src/editor/studio/studio_palette_view.c",
     "src/editor/studio/studio_properties.c",
+    "src/editor/studio/studio_properties_view.c",
     "src/editor/studio/studio_refactor.c",
     "src/editor/studio/studio_shell.c"
   ],

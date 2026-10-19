@@ -107,13 +107,17 @@ void scene_history_complete_behaviors(scene_history *history, bool redo);
 /* A prototype's definition before and after a step that changed it from the
  * scene, as Apply Overrides to Prototype does, so one Undo covers the
  * prototype and the instances that follow it. History owns copies. The app
- * replays it: peek returns the definition the head restores (before on Undo,
- * after on Redo), or NULL unless the head is one; complete after success. */
+ * replays it: peek returns the head's edit, or NULL unless the head is one;
+ * complete after success. Canonical source edits also retain both exact texts.
+ * Replay records their replacement in source history rather than replacing a
+ * source checkpoint, so any intervening draft remains recoverable. */
 typedef struct
 {
     const char *name;
     av_value *before;
     av_value *after;
+    const char *source_before;
+    const char *source_after;
 } scene_prototype_edit;
 bool scene_history_push_prototype(scene_history *history, const scene_prototype_edit *edit);
 const scene_prototype_edit *scene_history_peek_prototype(const scene_history *history, bool redo);

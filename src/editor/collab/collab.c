@@ -50,6 +50,7 @@ static struct
     uint64_t revision, seq, pending_seq, checkpoint_revision, presence_seq;
     uint64_t recovery_revision;
     char pending_client[COLLAB_MAX_ID + 1];
+    collab_action_identity pending_action;
     const char *apply_client;
     char *seed_payload;
     bool seed_ready;
@@ -62,6 +63,34 @@ static struct
 
 /* Monotonic across session resets so browser feedback can compare freshness. */
 static uint64_t status_revision;
+static uint64_t action_identity, outcome_serial;
+static collab_action_outcome latest_outcome;
+
+static void action_outcome(
+    collab_action_kind kind,
+    collab_action_interruption interruption,
+    uint64_t revision,
+    const char *message
+)
+{
+    if (!session.pending_action.id) {
+        return;
+    }
+    assert(outcome_serial < UINT64_MAX);
+    latest_outcome = (collab_action_outcome){
+        .serial = ++outcome_serial,
+        .action = session.pending_action,
+        .kind = kind,
+        .interruption = interruption,
+        .revision = revision,
+    };
+    snprintf(latest_outcome.message, sizeof latest_outcome.message, "%s", message);
+}
+
+static void interrupt_pending(collab_action_interruption reason, const char *message)
+{
+    action_outcome(COLLAB_ACTION_INTERRUPTED, reason, 0, message);
+}
 
 static void status(collab_state state, const char *text)
 {
@@ -106,10 +135,12 @@ static void clear_pending()
     session.pending_seq = 0;
     session.pending_client[0] = 0;
     session.pending_applied = false;
+    session.pending_action = (collab_action_identity){ 0 };
 }
 
 static void request_resync(const char *reason)
 {
+    interrupt_pending(COLLAB_ACTION_RESYNC, reason);
     bool first = session.state != COLLAB_RESYNCING;
     status_error(COLLAB_RESYNCING, reason);
     if (first) {
@@ -139,6 +170,7 @@ void collab_init(collab_config config)
 
 void collab_shutdown()
 {
+    interrupt_pending(COLLAB_ACTION_RESET, "Collaboration reset before action confirmation");
     web_close();
     free(session.seed_payload);
     for (int i = 0; i < acount(session.inbound); i++) {
@@ -152,6 +184,7 @@ void collab_shutdown()
 COLLAB_EXPORT void collab_start(const char *room, const char *client, const char *role)
 {
     if (!collab_identifier(room) || !collab_identifier(client) || !role) {
+        interrupt_pending(COLLAB_ACTION_RESET, "Invalid room identity interrupted action confirmation");
         status_error(COLLAB_OFFLINE, "Invalid room identity");
         return;
     }
@@ -160,10 +193,12 @@ COLLAB_EXPORT void collab_start(const char *room, const char *client, const char
                           : !strcmp(role, "viewer") ? COLLAB_ROLE_VIEWER
                                                     : COLLAB_ROLE_NONE;
     if (next_role == COLLAB_ROLE_NONE) {
+        interrupt_pending(COLLAB_ACTION_RESET, "Invalid room role interrupted action confirmation");
         status_error(COLLAB_OFFLINE, "Invalid room role");
         return;
     }
     bool same = !strcmp(session.room, room) && !strcmp(session.client, client);
+    interrupt_pending(COLLAB_ACTION_RESET, "Room session restarted before action confirmation");
     if (!same) {
         session.revision = session.seq = session.checkpoint_revision = 0;
         session.recovery_revision = 0;
@@ -211,12 +246,14 @@ COLLAB_EXPORT void collab_receive(const char *envelope)
 COLLAB_EXPORT void collab_disconnect(const char *reason)
 {
     if (collab_active()) {
+        interrupt_pending(COLLAB_ACTION_DISCONNECTED, reason ? reason : "Room connection lost; reconnecting");
         status_error(COLLAB_CONNECTING, reason ? reason : "Room connection lost; reconnecting");
     }
 }
 
 COLLAB_EXPORT void collab_leave()
 {
+    interrupt_pending(COLLAB_ACTION_CLOSED, "Left room before action confirmation");
     free(session.seed_payload);
     session.seed_payload = NULL;
     if (session.role != COLLAB_ROLE_NONE) {
@@ -362,6 +399,23 @@ static bool action_send(const char *action, bool applied)
         session.client
     );
     session.pending_applied = applied;
+    assert(action_identity < UINT64_MAX);
+    session.pending_action = (collab_action_identity){
+        .id = ++action_identity,
+        .seq = session.pending_seq,
+    };
+    snprintf(
+        session.pending_action.room,
+        sizeof session.pending_action.room,
+        "%s",
+        session.room
+    );
+    snprintf(
+        session.pending_action.client,
+        sizeof session.pending_action.client,
+        "%s",
+        session.client
+    );
     send_as(applied ? "accepted" : "proposal", session.client, session.seq, action);
     return true;
 }
@@ -373,6 +427,18 @@ bool collab_publish(const char *action)
 bool collab_propose(const char *action)
 {
     return action_send(action, false);
+}
+
+bool collab_pending_action(collab_action_identity *out)
+{
+    *out = session.pending_action;
+    return out->id != 0;
+}
+
+bool collab_latest_outcome(collab_action_outcome *out)
+{
+    *out = latest_outcome;
+    return out->serial != 0;
 }
 
 void collab_presence(const char *presentation)
@@ -494,6 +560,12 @@ static void accepted(const collab_message *message)
     }
     session.revision = message->revision;
     if (pending) {
+        action_outcome(
+            COLLAB_ACTION_ACCEPTED,
+            COLLAB_ACTION_UNINTERRUPTED,
+            message->revision,
+            ""
+        );
         clear_pending();
     }
     send_control("ack", "{}");
@@ -527,6 +599,7 @@ static void snapshot(const collab_message *message)
     }
     char error[256] = "Room checkpoint could not be restored";
     char *json = value_json(message->payload);
+    interrupt_pending(COLLAB_ACTION_RESYNC, "Room checkpoint interrupted action confirmation");
     collab_begin_replay();
     bool ok = session.config.restore(session.config.context, json, error, sizeof error);
     collab_end_replay();
@@ -565,6 +638,7 @@ static void joined(const collab_message *message)
                          : !strcmp(role, "editor") ? COLLAB_ROLE_EDITOR
                                                    : COLLAB_ROLE_VIEWER;
     if (assigned != session.role || strcmp(message->client, session.client)) {
+        interrupt_pending(COLLAB_ACTION_CLOSED, "Room membership does not match the invitation");
         status_error(COLLAB_CLOSED, "Room membership does not match the invitation");
         web_close();
         session.closing = true;
@@ -615,8 +689,9 @@ static void dispatch(const collab_message *message)
         if (message->seq == session.pending_seq &&
             !strcmp(message->client, session.pending_client)) {
             bool applied = session.pending_applied;
-            clear_pending();
             const char *reason = yyjson_get_str(yyjson_obj_get(message->payload, "reason"));
+            action_outcome(COLLAB_ACTION_REJECTED, COLLAB_ACTION_UNINTERRUPTED, 0, reason ? reason : "Edit rejected");
+            clear_pending();
             if (applied) {
                 request_resync(reason ? reason : "Host action rejected; recovering");
             } else {
@@ -639,6 +714,7 @@ static void dispatch(const collab_message *message)
     } else if (!strcmp(kind, "leave") && session.config.presence) {
         session.config.presence(session.config.context, message->client, message->client, 0, NULL);
     } else if (!strcmp(kind, "room_closed")) {
+        interrupt_pending(COLLAB_ACTION_CLOSED, "Room closed: host departed");
         status_error(COLLAB_CLOSED, "Room closed: host departed");
         web_close();
         session.closing = true;

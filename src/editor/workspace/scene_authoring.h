@@ -85,6 +85,7 @@ typedef enum
     APP_EDITOR_DOCUMENT_BEHAVIOR,
     APP_EDITOR_DOCUMENT_SYSTEM,
     APP_EDITOR_DOCUMENT_UI, /* a ui asset or stylesheet, identified by its absolute path */
+    APP_EDITOR_DOCUMENT_RELATIONSHIP, /* static .chibi source, identified by absolute path */
 } app_editor_document_kind;
 
 typedef struct
@@ -117,7 +118,7 @@ app_scene_authoring *app_scene_authoring_new_with_content_root(
 void app_scene_authoring_set_editor_working(app_scene_authoring *scene, const behavior_asset *editor_working);
 int app_scene_authoring_apply_pending(app_scene_authoring *scene);
 int app_scene_authoring_set_content_root(app_scene_authoring *scene, const char *path);
-void app_scene_authoring_refresh_content(app_scene_authoring *scene);
+bool app_scene_authoring_refresh_content(app_scene_authoring *scene);
 int app_scene_authoring_load_content(app_scene_authoring *scene);
 int app_scene_authoring_register_prototype(
     app_scene_authoring *scene,
@@ -138,6 +139,14 @@ int app_scene_authoring_read_prototype_field(
     const char *field,
     pin_value *value
 );
+/* Prototype mutation commands return 0 when applied/no-op, 1 when queued
+ * with the collaboration host, 2 when accepted but runtime application failed,
+ * and -1 when rejected. Accepted edits retain their source and history. */
+enum
+{
+    APP_PROTOTYPE_EDIT_PENDING = 1,
+    APP_PROTOTYPE_EDIT_NOT_APPLIED = 2
+};
 int app_scene_authoring_set_prototype_field(
     app_scene_authoring *scene,
     const char *prototype_name,

@@ -693,6 +693,9 @@ static int reload_behavior_document(app_scene_authoring *scene)
 
 int reload_prototype_asset(app_scene_authoring *scene, scene_prototype_asset *asset)
 {
+    if (scene_prototype_source_owned(asset)) {
+        return scene_prototype_source_reload(scene, asset);
+    }
     char *json = read_scene_file(asset->path);
     char error[256];
     prototype *loaded = json ? prototype_load(json, &scene->registry, error, sizeof error)

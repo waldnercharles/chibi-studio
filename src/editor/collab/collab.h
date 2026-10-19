@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #define COLLAB_MAX_ACTION (60 * 1024)
+#define COLLAB_MAX_ID 96
 
 typedef enum
 {
@@ -24,6 +25,38 @@ typedef enum
     COLLAB_RESYNCING,
     COLLAB_CLOSED,
 } collab_state;
+
+typedef struct
+{
+    uint64_t id, seq;
+    char room[COLLAB_MAX_ID + 1], client[COLLAB_MAX_ID + 1];
+} collab_action_identity;
+
+typedef enum
+{
+    COLLAB_ACTION_ACCEPTED,
+    COLLAB_ACTION_REJECTED,
+    COLLAB_ACTION_INTERRUPTED,
+} collab_action_kind;
+
+typedef enum
+{
+    COLLAB_ACTION_UNINTERRUPTED,
+    COLLAB_ACTION_DISCONNECTED,
+    COLLAB_ACTION_RESYNC,
+    COLLAB_ACTION_RESET,
+    COLLAB_ACTION_CLOSED,
+} collab_action_interruption;
+
+typedef struct
+{
+    uint64_t serial;
+    collab_action_identity action;
+    collab_action_kind kind;
+    collab_action_interruption interruption;
+    uint64_t revision;
+    char message[256];
+} collab_action_outcome;
 
 /* One room belongs to the application, not a document or a transport. All
  * callbacks run on the frame thread. JSON strings are borrowed except for
@@ -77,6 +110,16 @@ void collab_end_replay();
  * before mutation; the accepted echo is their only application. */
 bool collab_publish(const char *action);
 bool collab_propose(const char *action);
+/* Copies, never borrowed pointers. IDs and outcome serials survive resets.
+ * Only locally submitted actions are observed, not peers' host-forwarded work.
+ * An interrupted action may remain transport-pending and later be accepted.
+ * A snapshot or duplicate echo never proves that the local action succeeded.
+ * Read outcomes after collab_tick and before another local input. Only the
+ * latest outcome is retained: a missing/nonmatching outcome must preserve an
+ * interrupted draft, never imply acceptance. revision is nonzero only for an
+ * accepted outcome. False returns an empty copy. */
+bool collab_pending_action(collab_action_identity *out);
+bool collab_latest_outcome(collab_action_outcome *out);
 void collab_presence(const char *presentation);
 void collab_request_snapshot();
 /* Owned inspection JSON for model-based browser smoke checks. */

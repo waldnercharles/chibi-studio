@@ -1,4 +1,4 @@
-library OutlinerRowPolicies {
+OutlinerRowPolicies :: library {
     Flags :: struct {
         active: bool
         marked: bool
@@ -57,11 +57,11 @@ library OutlinerRowPolicies {
             }
             index = index + 1
         }
-        glyphs :: cast<string[]>([
+        glyphs :: [
             "󰵝", "", "󰌶", "󰙴",
             "󰸊", "󰖊", "󰊗", "󰥻",
             "󰳚", "󰋕", "󰮋", "󰠲"
-        ])
+        ]
         if first >= 0 && first < IconCount {
             return glyphs[first]
         }

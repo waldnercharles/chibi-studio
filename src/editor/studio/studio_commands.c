@@ -66,7 +66,7 @@ enum
       .icon = glyph,                                                           \
       .phase = SHORTCUT_EDITOR }
 _Static_assert(
-    STUDIO_COMMAND_NEW_STYLESHEET - STUDIO_COMMAND_NEW_SCENE + 1 == STUDIO_NEW_KIND_COUNT,
+    STUDIO_COMMAND_NEW_STYLESHEET - STUDIO_COMMAND_NEW_SCENE + 2 == STUDIO_NEW_KIND_COUNT,
     "a New command per kind"
 );
 
@@ -360,6 +360,7 @@ static const command_entry COMMANDS[STUDIO_COMMAND_COUNT] = {
     /* Assets ▸ New lists each kind, and the palette exposes each command. */
     [STUDIO_COMMAND_NEW_SCENE] = NEW_ASSET("Scene", "Scene", "level world", KIT_ICON_SCENE),
     [STUDIO_COMMAND_NEW_PROTOTYPE] = NEW_ASSET("Prototype", "Prototype", "prefab template entity", KIT_ICON_PROTOTYPE),
+    [STUDIO_COMMAND_NEW_RELATIONSHIP] = NEW_ASSET("Relationship", "Relationship", "ecs relation pair link", KIT_ICON_EVENT),
     [STUDIO_COMMAND_NEW_BEHAVIOR] = NEW_ASSET("Behavior", "Behavior", "graph script blueprint", KIT_ICON_GRAPH),
     [STUDIO_COMMAND_NEW_EVENT] = NEW_ASSET("Event", "Event", "signal message definition", KIT_ICON_EVENT),
     [STUDIO_COMMAND_NEW_SYSTEM] = NEW_ASSET("System", "System", "ecs query graph", KIT_ICON_SYSTEM),
@@ -1688,8 +1689,14 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
         case STUDIO_COMMAND_NEW_MODEL:
         case STUDIO_COMMAND_NEW_UI_WIDGET:
         case STUDIO_COMMAND_NEW_UI_DOCUMENT:
-        case STUDIO_COMMAND_NEW_STYLESHEET:
-            studio_new_asset_start(s, command - STUDIO_COMMAND_NEW_SCENE);
+        case STUDIO_COMMAND_NEW_STYLESHEET: {
+            int kind = command - STUDIO_COMMAND_NEW_SCENE;
+            /* Relationship's command is appended to keep persisted IDs stable. */
+            studio_new_asset_start(s, kind + (kind >= NEW_ASSET_RELATIONSHIP));
+            break;
+        }
+        case STUDIO_COMMAND_NEW_RELATIONSHIP:
+            studio_new_asset_start(s, NEW_ASSET_RELATIONSHIP);
             break;
         case STUDIO_COMMAND_SELECT_TAB:
             finish_transform_edit(s->scene, false);

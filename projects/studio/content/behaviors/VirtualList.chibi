@@ -1,21 +1,21 @@
-behavior "VirtualList" {
+VirtualList :: behavior {
     RowHeight: float = 24.0
     Overscan: int = 6
     ShownFirst: int = -1
     ShownCount: int = -1
     on Tick {
-        if "max(0, floor(Top / RowHeight) - Overscan)"(get_ui_scroll(Element: "#list")."Scroll Top", state."RowHeight", state."Overscan") != convert<"To Real">(state."ShownFirst") || "ceil(max(View, 400) / RowHeight) + 2 * Overscan"(get_ui_scroll(Element: "#list")."View Height", state."RowHeight", state."Overscan") != convert<"To Real">(state."ShownCount") {
-            state."ShownFirst" = convert<"To Integer">("max(0, floor(Top / RowHeight) - Overscan)"(get_ui_scroll(Element: "#list")."Scroll Top", state."RowHeight", state."Overscan"))
-            state."ShownCount" = convert<"To Integer">("ceil(max(View, 400) / RowHeight) + 2 * Overscan"(get_ui_scroll(Element: "#list")."View Height", state."RowHeight", state."Overscan"))
-            await set_ui_data(Name: "first", Value: "max(0, floor(Top / RowHeight) - Overscan)"(get_ui_scroll(Element: "#list")."Scroll Top", state."RowHeight", state."Overscan"))
-            await set_ui_data(Name: "row", Value: state."RowHeight")
-            send_event<"ShowRows">(self, convert<"To Integer">("max(0, floor(Top / RowHeight) - Overscan)"(get_ui_scroll(Element: "#list")."Scroll Top", state."RowHeight", state."Overscan")), convert<"To Integer">("ceil(max(View, 400) / RowHeight) + 2 * Overscan"(get_ui_scroll(Element: "#list")."View Height", state."RowHeight", state."Overscan")))
+        if max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan) != convert<To_Real>(ShownFirst) || ceil_max_View_400_RowHeight_2_Overscan(get_ui_scroll(Element: "#list").View_Height, RowHeight, Overscan) != convert<To_Real>(ShownCount) {
+            ShownFirst = convert<To_Integer>(max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan))
+            ShownCount = convert<To_Integer>(ceil_max_View_400_RowHeight_2_Overscan(get_ui_scroll(Element: "#list").View_Height, RowHeight, Overscan))
+            await set_ui_data(Name: "first", Value: max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan))
+            await set_ui_data(Name: "row", Value: RowHeight)
+            send_event<ShowRows>(self, convert<To_Integer>(max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan)), convert<To_Integer>(ceil_max_View_400_RowHeight_2_Overscan(get_ui_scroll(Element: "#list").View_Height, RowHeight, Overscan)))
         }
     }
-    "max(0, floor(Top / RowHeight) - Overscan)" :: pure fn<T0: float, T1: float, T2: int, T3: double>(Top: T0 = 0.0, RowHeight: T1 = 0.0, Overscan: T2 = 0) -> (Result: T3 = 0.0) {
-        return max(real(0.0), floor(entry.Top / entry.RowHeight) - convert<"To Real">(entry.Overscan))
+    max_0_floor_Top_RowHeight_Overscan :: (Top: float = 0.0, RowHeight: float = 0.0, Overscan: int = 0) -> (Result: double = 0.0) {
+        return max(real(0.0), floor(entry.Top / entry.RowHeight) - convert<To_Real>(entry.Overscan))
     }
-    "ceil(max(View, 400) / RowHeight) + 2 * Overscan" :: pure fn<T0: float, T1: float, T2: int, T3: double>(View: T0 = 0.0, RowHeight: T1 = 0.0, Overscan: T2 = 0) -> (Result: T3 = 0.0) {
-        return ceiling(max(entry.View, real(400.0)) / entry.RowHeight) + real(2.0) * convert<"To Real">(entry.Overscan)
+    ceil_max_View_400_RowHeight_2_Overscan :: (View: float = 0.0, RowHeight: float = 0.0, Overscan: int = 0) -> (Result: double = 0.0) {
+        return ceiling(max(entry.View, real(400.0)) / entry.RowHeight) + real(2.0) * convert<To_Real>(entry.Overscan)
     }
 }

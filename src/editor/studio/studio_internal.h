@@ -227,6 +227,7 @@ typedef enum
     STUDIO_COMMAND_OBJECT_INDENT,
     STUDIO_COMMAND_OBJECT_OUTDENT,
     STUDIO_COMMAND_OBJECT_ROOT,
+    STUDIO_COMMAND_NEW_RELATIONSHIP,
     STUDIO_COMMAND_COUNT,
 } studio_command;
 
@@ -1261,6 +1262,9 @@ struct studio
         ecs_component_id component;
         int field;
     } context;                /* property under the field context menu */
+    int source_input_toast;
+    uint64_t source_input_identity;
+    char source_input_path[1024];
     char prototype_edit[192]; /* component.field of the prototype gesture in progress */
     SDL_Event *events; /* queued by the SDL event watch, replayed in order */
     studio_key *keys;  /* keys pressed this frame */
@@ -1349,7 +1353,7 @@ struct studio
         char added[128];     /* the component added last, whose panel opens */
         char menu[128];      /* the component whose panel menu is open */
         int toast;           /* offers Undo after Remove Component */
-        const av_value *step; /* the removal's undo snapshot; never dereferenced */
+        const void *step; /* model snapshot or source-step identity; never dereferenced */
         uint64_t scene_step;  /* else an object's removal's scene step */
     } components;
     struct

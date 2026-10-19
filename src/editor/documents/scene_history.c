@@ -86,6 +86,8 @@ static void clear_edits(scene_edit **edits)
             free((void *)prototype->name);
             av_value_free(prototype->before);
             av_value_free(prototype->after);
+            free((void *)prototype->source_before);
+            free((void *)prototype->source_after);
             free(prototype);
         }
         scene_behavior_edit *behaviors = (*edits)[i].behaviors;
@@ -488,24 +490,32 @@ void scene_history_complete_behaviors(scene_history *history, bool redo)
     apush(*destination, edit);
 }
 
-static scene_prototype_edit *copy_prototype_edit(const char *name, av_value *before, av_value *after)
+static scene_prototype_edit *copy_prototype_edit(const scene_prototype_edit *edit)
 {
     scene_prototype_edit *copy = xmalloc(sizeof *copy);
-    *copy = (scene_prototype_edit){ .name = xstrdup(name),
-                                    .before = av_value_copy(before),
-                                    .after = av_value_copy(after) };
+    *copy = (scene_prototype_edit){
+        .name = xstrdup(edit->name),
+        .before = av_value_copy(edit->before),
+        .after = av_value_copy(edit->after),
+        .source_before = edit->source_before ? xstrdup(edit->source_before) : NULL,
+        .source_after = edit->source_after ? xstrdup(edit->source_after) : NULL
+    };
     return copy;
 }
 
 bool scene_history_push_prototype(scene_history *history, const scene_prototype_edit *edit)
 {
     assert(history && edit->name && edit->before && edit->after);
+    if (!!edit->source_before != !!edit->source_after ||
+        (edit->source_before && !strcmp(edit->source_before, edit->source_after) &&
+         av_equals(edit->before, edit->after))) {
+        return false;
+    }
     apush(
         history->undo,
-        ((scene_edit){
-            .group = history->group,
-            .step = next_step(history),
-            .prototype = copy_prototype_edit(edit->name, edit->before, edit->after) })
+        ((scene_edit){ .group = history->group,
+                       .step = next_step(history),
+                       .prototype = copy_prototype_edit(edit) })
     );
     clear_edits(&history->redo);
     return true;
@@ -1102,6 +1112,8 @@ static av_value *history_edits(av_doc *doc, const scene_edit *edits)
             history_text(doc, item, "name", edit->prototype->name);
             av_obj_add_val(doc, item, "before", av_clone(doc, edit->prototype->before));
             av_obj_add_val(doc, item, "after", av_clone(doc, edit->prototype->after));
+            history_text(doc, item, "source_before", edit->prototype->source_before);
+            history_text(doc, item, "source_after", edit->prototype->source_after);
         }
         if (edit->name_after) {
             av_value *item = av_obj_add_obj(doc, object, "rename");
@@ -1280,9 +1292,18 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
             char *name = history_copy_text(item, "name");
             av_value *before = av_obj_get(item, "before");
             av_value *after = av_obj_get(item, "after");
-            bool valid = name && av_is_obj(before) && av_is_obj(after);
+            av_value *source_before = av_obj_get(item, "source_before");
+            av_value *source_after = av_obj_get(item, "source_after");
+            bool valid = name && av_is_obj(before) && av_is_obj(after) &&
+                         ((!source_before && !source_after) ||
+                          (av_is_str(source_before) && av_is_str(source_after)));
+            scene_prototype_edit edit = { .name = name,
+                                          .before = before,
+                                          .after = after,
+                                          .source_before = av_get_str(source_before),
+                                          .source_after = av_get_str(source_after) };
             out->entity = (ecs_entity){ 0 };
-            out->prototype = valid ? copy_prototype_edit(name, before, after) : NULL;
+            out->prototype = valid ? copy_prototype_edit(&edit) : NULL;
             free(name);
             if (!valid) {
                 return false;

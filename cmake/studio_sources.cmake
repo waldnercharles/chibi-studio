@@ -18,6 +18,7 @@ set(STUDIO_SOURCES
     src/editor/documents/scene_documents.c
     src/editor/documents/scene_history.c
     src/editor/documents/scene_prototype_actions.c
+    src/editor/documents/prototype_source_input.c
     src/editor/documents/scene_prototypes.c
     src/editor/documents/scene_retention.c
     src/editor/documents/ui_buffer.c

@@ -3,6 +3,7 @@
 #include "authoring/prototype_prepare.h"
 #include "authoring/source_presentation.h"
 #include "editor/collab/actions_scene.h"
+#include "editor/documents/prototype_source_input.h"
 #include "editor/workspace/checkpoint.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
@@ -209,7 +210,17 @@ static void checkpoint_tabs(yyjson_mut_doc *doc, yyjson_mut_val *root, app_scene
         }
         yyjson_mut_obj_add_val(doc, item, "asset_saved", av_to_json(doc, tab->asset_saved));
         yyjson_mut_obj_add_val(doc, item, "source", av_to_json(doc, tab->source_state));
-        yyjson_mut_obj_add_bool(doc, item, "source_dirty", tab->source_dirty);
+        scene_prototype_asset *source_owner = tab->path
+                                                ? scene_prototype_for_path(scene, tab->path)
+                                                : NULL;
+        yyjson_mut_obj_add_bool(
+            doc,
+            item,
+            "source_dirty",
+            source_owner && source_owner->source
+                ? asset_code_canonical_dirty(source_owner->source)
+                : tab->source_dirty
+        );
         yyjson_mut_obj_add_bool(doc, item, "source_only", tab->source_only);
         if (tab->ui) {
             yyjson_mut_obj_add_val(doc, item, "ui", ui_buffer_checkpoint(tab->ui, doc));
@@ -301,8 +312,8 @@ static bool restore_tabs(app_scene_authoring *scene, yyjson_val *root)
         int kind = yyjson_get_int(yyjson_obj_get(item, "kind"));
         const char *key = yyjson_get_str(yyjson_obj_get(item, "key"));
         const char *label = yyjson_get_str(yyjson_obj_get(item, "label"));
-        if (!yyjson_is_obj(item) || !key || !label ||
-            kind < APP_EDITOR_DOCUMENT_SCENE || kind > APP_EDITOR_DOCUMENT_UI) {
+        if (!yyjson_is_obj(item) || !key || !label || kind < APP_EDITOR_DOCUMENT_SCENE ||
+            kind > APP_EDITOR_DOCUMENT_RELATIONSHIP) {
             goto fail;
         }
         for (int j = 0; j < acount(candidate); j++) {
@@ -517,7 +528,23 @@ char *app_scene_authoring_checkpoint(app_scene_authoring *scene)
         yyjson_mut_val *item = yyjson_mut_arr_add_obj(doc, prototypes);
         checkpoint_text(doc, item, "path", asset->path);
         owned_text(doc, item, "json", prototype_save(asset->prototype));
-        yyjson_mut_obj_add_bool(doc, item, "dirty", asset->dirty);
+        yyjson_mut_obj_add_bool(
+            doc,
+            item,
+            "dirty",
+            asset->source ? asset_code_canonical_dirty(asset->source) : asset->dirty
+        );
+        if (asset->source) {
+            av_value *source = asset_code_capture(asset->source);
+            yyjson_mut_obj_add_val(doc, item, "source", av_to_json(doc, source));
+            av_value_free(source);
+            checkpoint_text(doc, item, "source_accepted", asset->source_accepted);
+            yyjson_mut_obj_add_bool(doc, item, "source_not_applied", asset->source_not_applied);
+            yyjson_mut_val *applied = yyjson_mut_obj_add_arr(doc, item, "source_pending_behaviors");
+            for (int j = 0; j < acount(asset->source_pending_behaviors); j++) {
+                yyjson_mut_arr_add_strcpy(doc, applied, asset->source_pending_behaviors[j]);
+            }
+        }
         yyjson_mut_obj_add_val(doc, item, "undo", checkpoint_values(doc, asset->undo));
         yyjson_mut_obj_add_val(doc, item, "redo", checkpoint_values(doc, asset->redo));
         yyjson_mut_obj_add_val(
@@ -759,6 +786,7 @@ static bool restore_prototypes(app_scene_authoring *scene, yyjson_val *prototype
 {
     for (int i = 0; i < acount(scene->prototypes); i++) {
         scene_prototype_asset *asset = &scene->prototypes[i];
+        scene_prototype_source_free(asset);
         free(asset->path);
         prototype_free(asset->prototype);
         clear_prototype_history(asset);
@@ -779,6 +807,81 @@ static bool restore_prototypes(app_scene_authoring *scene, yyjson_val *prototype
         }
         scene_prototype_asset *asset = &alast(scene->prototypes);
         asset->dirty = yyjson_get_bool(yyjson_obj_get(item, "dirty"));
+        av_value *source = checkpoint_native_value(item, "source");
+        if (source) {
+            if (!scene_prototype_source_owned(asset)) {
+                av_value_free(source);
+                return false;
+            }
+            bool source_overlay = av_get_bool(av_obj_get(source, "overlay"));
+            asset->source = asset_code_restore(source, &scene->registry);
+            av_value_free(source);
+            if (!asset->source || strcmp(asset_code_path(asset->source), asset->path)) {
+                return false;
+            }
+            asset_code_own_prototype(asset->source);
+            asset_code_set_source_world(asset->source, scene->live, scene->content_root);
+            asset->source_accepted = checkpoint_copy_text(item, "source_accepted");
+            asset->source_not_applied = yyjson_get_bool(
+                yyjson_obj_get(item, "source_not_applied")
+            );
+            yyjson_val *applied = yyjson_obj_get(item, "source_pending_behaviors");
+            if (!yyjson_is_arr(applied)) {
+                return false;
+            }
+            size_t j, behavior_count;
+            yyjson_val *behavior;
+            yyjson_arr_foreach(applied, j, behavior_count, behavior)
+            {
+                const char *name = yyjson_get_str(behavior);
+                if (!name) {
+                    return false;
+                }
+                apush(asset->source_pending_behaviors, xstrdup(name));
+            }
+            if (asset->source_accepted) {
+                authoring_prototype_edit_result accepted = { 0 };
+                char error[256];
+                if (!authoring_prototype_source_edit(
+                        asset->source_accepted,
+                        &scene->registry,
+                        asset_code_catalog(asset->source),
+                        NULL,
+                        0,
+                        &accepted,
+                        error,
+                        sizeof error
+                    )) {
+                    return false;
+                }
+                av_value *expected = prototype_to_value(asset->prototype);
+                av_value *actual = prototype_to_value(accepted.value);
+                bool same = expected && actual && av_equals(expected, actual);
+                av_value_free(expected);
+                av_value_free(actual);
+                if (same) {
+                    prototype_free(asset->prototype);
+                    asset->prototype = accepted.value;
+                    accepted.value = NULL;
+                    if (source_overlay) {
+                        text_overlay_set(asset->path, asset->source_accepted);
+                        asset_code_adopt_overlay(asset->source);
+                    }
+                }
+                authoring_prototype_edit_result_free(&accepted);
+                if (!same) {
+                    return false;
+                }
+            }
+            if (asset->source_accepted &&
+                strcmp(asset_code_text(asset->source), asset->source_accepted) &&
+                !asset_code_error(asset->source)[0]) {
+                /* A valid-looking rejected draft (for example an identity
+                 * change) is not the accepted Properties subject. */
+                asset_code_reject_static(asset->source, "Source draft is not the accepted prototype; undo or repair it");
+            }
+            asset->dirty = asset_code_dirty(asset->source);
+        }
         asset->camera.saved = yyjson_get_bool(yyjson_obj_get(item, "camera_saved"));
         if (!checkpoint_read_values(yyjson_obj_get(item, "undo"), &asset->undo) ||
             !checkpoint_read_values(yyjson_obj_get(item, "redo"), &asset->redo) ||
@@ -965,11 +1068,12 @@ int app_scene_authoring_restore_checkpoint(app_scene_authoring *scene, const cha
     int result = -1;
     if (yyjson_get_int(yyjson_obj_get(root, "version")) != 2 ||
         !yyjson_is_obj(scene_value) || !document || !content ||
-        kind < APP_EDITOR_DOCUMENT_SCENE || kind > APP_EDITOR_DOCUMENT_UI ||
-        !yyjson_is_arr(prototypes) || !yyjson_is_arr(behaviors) ||
-        !yyjson_is_arr(actors)) {
+        kind < APP_EDITOR_DOCUMENT_SCENE ||
+        kind > APP_EDITOR_DOCUMENT_RELATIONSHIP || !yyjson_is_arr(prototypes) ||
+        !yyjson_is_arr(behaviors) || !yyjson_is_arr(actors)) {
         goto done;
     }
+    scene_source_input_harvest(scene);
     if (scene_authoring_load_text(scene, "version 1\nname Checkpoint\n(array)entities\n", NULL) !=
             0 ||
         !clear_behavior_models(scene) || !restore_sources(scene, root) ||
@@ -1052,12 +1156,16 @@ int app_scene_authoring_restore_checkpoint(app_scene_authoring *scene, const cha
     if (!restore_tabs(scene, root) || !restore_next_actor_id(scene, root)) {
         goto done;
     }
+    for (int i = 0; i < acount(scene->prototypes); i++) {
+        scene_prototype_source_capture(scene, &scene->prototypes[i]);
+    }
     if (scene->active_tab >= 0 && scene->tabs[scene->active_tab].source_only) {
         free(scene->graph_document_id);
         scene->graph_document_id = NULL;
         scene->definition = NULL;
         scene->behavior_apply_pending = false;
     }
+    scene_source_input_rebind(scene);
     result = 0;
 done:
     afree(before);
