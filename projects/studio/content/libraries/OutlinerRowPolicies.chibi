@@ -29,8 +29,8 @@ OutlinerRowPolicies :: library {
     FieldAsset :: 6
     SystemAsset :: 8
     UiAsset :: 9
-    HiddenView :: cast<int>(1)
-    LockedView :: cast<int>(2)
+    HiddenView: int : 1
+    LockedView: int : 2
 
     // The input contains the complete validated hierarchy, including ancestors
     // outside the filtered row window. Roots use -1; index names a valid node.

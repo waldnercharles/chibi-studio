@@ -13,9 +13,9 @@ VirtualList :: behavior {
         }
     }
     max_0_floor_Top_RowHeight_Overscan :: (Top: float = 0.0, RowHeight: float = 0.0, Overscan: int = 0) -> (Result: double = 0.0) {
-        return max(real(0.0), floor(entry.Top / entry.RowHeight) - convert<To_Real>(entry.Overscan))
+        return max(real(0.0), floor(Top / RowHeight) - convert<To_Real>(Overscan))
     }
     ceil_max_View_400_RowHeight_2_Overscan :: (View: float = 0.0, RowHeight: float = 0.0, Overscan: int = 0) -> (Result: double = 0.0) {
-        return ceiling(max(entry.View, real(400.0)) / entry.RowHeight) + real(2.0) * convert<To_Real>(entry.Overscan)
+        return ceiling(max(View, real(400.0)) / RowHeight) + real(2.0) * convert<To_Real>(Overscan)
     }
 }
