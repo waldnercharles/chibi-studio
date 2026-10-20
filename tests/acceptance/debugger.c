@@ -14,13 +14,13 @@
 #include <string.h>
 
 static const char counter[] = "Counter :: behavior {\n"
-                              "    count: retain int = 1\n"
+                              "    count: int = 1\n"
                               "    on Tick {\n"
                               "        count = count + 1\n"
                               "    }\n"
                               "}\n";
 static const char invalid_counter[] = "Counter :: behavior {\n"
-                                      "    count: retain int = 1\n"
+                                      "    count: int = 1\n"
                                       "    on Tick {\n"
                                       "        count = count + @\n"
                                       "    }\n"

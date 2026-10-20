@@ -81,7 +81,7 @@ static enum {
 } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] = "Counter :: behavior {\n"
-                                    "    count: retain int = 1\n"
+                                    "    count: int = 1\n"
                                     "    on Tick {\n"
                                     "        count = count + 1\n"
                                     "    }\n"
@@ -1054,7 +1054,7 @@ static bool same_without_space(const char *a, const char *b)
 }
 
 static const char commented_bytes[] = "Counter :: behavior {\n"
-                                      "    // count: retain int = 1\n"
+                                      "    // count: int = 1\n"
                                       "    on Tick {\n"
                                       "        count = count + 1\n"
                                       "    }\n"
@@ -1713,7 +1713,7 @@ static bool graph_visibility_frame(void *state)
 static const char
     late_bytes[] = "Late :: behavior {\n"
                    "    macro Advance(elapsed: ref float, dt: double) {\n"
-                   "        elapsed = cast<float>(cast<double>(elapsed) + dt)\n"
+                   "        elapsed = float(double(elapsed) + dt)\n"
                    "    }\n"
                    "    elapsed: retain float = 0.125\n"
                    "    action advance = Advance(elapsed, delta)\n"
@@ -2321,7 +2321,7 @@ static bool prompts_frame(void *state)
         case 9:
             REQUIRE(!s->unsaved_prompt.toast);
             REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_NONE);
-            REQUIRE(counter_tab(s) >= 0 && counter_says("count: retain int = 5"));
+            REQUIRE(counter_tab(s) >= 0 && counter_says("count: int = 5"));
             REQUIRE(add_probe(s));
             studio_command_run(s, STUDIO_COMMAND_PLAY);
             break;
@@ -2349,7 +2349,7 @@ static bool prompts_frame(void *state)
         case 14:
             /* Counter saved while the scene runs; the scene could not, so
                the prompt asks again about it instead of quitting. */
-            REQUIRE(counter_says("count: retain int = 4"));
+            REQUIRE(counter_says("count: int = 4"));
             REQUIRE(studio_session(s) && studio_unsaved(s));
             REQUIRE(s->unsaved_prompt.toast);
             REQUIRE(s->unsaved_prompt.action == STUDIO_UNSAVED_QUIT);
@@ -4472,7 +4472,7 @@ TEST_CASE(unsaved_prompts)
                      "--open",           "Counter" };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
     REQUIRE(callback_ok && quit_answered);
-    bool saved = counter_says("count: retain int = 4");
+    bool saved = counter_says("count: int = 4");
     bool kept = start_unchanged();
     REQUIRE(restore_counter() && saved && kept);
     printf("\nStudio unsaved prompts accepted: frames=%d\n", frames);
