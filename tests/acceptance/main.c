@@ -82,7 +82,7 @@ static enum {
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] = "Counter :: behavior {\n"
                                     "    count: retain int = 1\n"
-                                    "    on Tick {\n"
+                                    "    on Tick :: () {\n"
                                     "        count = count + 1\n"
                                     "    }\n"
                                     "}\n";
@@ -572,7 +572,7 @@ static bool fused_call_flow_edits(studio *s)
                          "    Add :: (amount:int) { count += amount }\n"
                          "    Double :: (amount:int)->(total:int) { return "
                          "amount * 2 }\n"
-                         "    on Tick {\n"
+                         "    on Tick :: () {\n"
                          "        Add(1)\n"
                          "        Add(2)\n"
                          "        if true { count = Double(3) }\n"
@@ -1067,7 +1067,7 @@ static bool same_without_space(const char *a, const char *b)
 
 static const char commented_bytes[] = "Counter :: behavior {\n"
                                       "    // count: retain int = 1\n"
-                                      "    on Tick {\n"
+                                      "    on Tick :: () {\n"
                                       "        count = count + 1\n"
                                       "    }\n"
                                       "}\n";
@@ -1274,7 +1274,7 @@ static bool kdl_keys_frame(void *state)
 #define UNIT_FRAMES 4
 static const char unit_mismatch[] = "Counter :: behavior {\n"
                                     "    count: retain int = 1\n"
-                                    "    on Tick {\n"
+                                    "    on Tick :: () {\n"
                                     "        count = count + 1\n"
                                     "        self.Collider.radius = "
                                     "self.Movement.speed\n"
@@ -1517,7 +1517,7 @@ static bool behavior_empty_variables(studio *s)
     editor *e = s->scene->graph_editor;
     const char empty[] = "Counter :: behavior {\n"
                          "    Helper :: () -> int { return 1 }\n"
-                         "    on Tick {}\n"
+                         "    on Tick :: () {}\n"
                          "}\n";
     REQUIRE(studio_code_replace(s, asset_code_path(code), asset_code_text(code), empty));
     REQUIRE(asset_code_sync_graph(code, e, false));
@@ -1604,9 +1604,9 @@ static bool graph_visibility_frame(void *state)
         asset_code *code = counter_source(s);
         REQUIRE(code);
         const char *text = asset_code_text(code);
-        const char *statement = strstr(text, "on Begin {\n        count");
+        const char *statement = strstr(text, "on Begin :: () {\n        count");
         REQUIRE(statement);
-        source_cursor = (int)(statement - text) + (int)strlen("on Begin {\n        ");
+        source_cursor = (int)(statement - text) + (int)strlen("on Begin :: () {\n        ");
         REQUIRE(asset_code_node_at(code, source_cursor, &source_graph, &source_node));
         kit_code_set_cursor(asset_code_editor(code), source_cursor);
         kit_code_post(asset_code_editor(code), KIT_CODE_CURSOR);
@@ -1732,7 +1732,7 @@ static const char
                    "    after advance {\n"
                    "        elapsed = min(elapsed, 1.0)\n"
                    "    }\n"
-                   "    on Tick {\n"
+                   "    on Tick :: () {\n"
                    "        advance()\n"
                    "    }\n"
                    "}\n";
@@ -3816,7 +3816,7 @@ static bool scene_viewport_frame(void *state)
 /* Two problems on one byte: the name is unknown, and so not writable. */
 static const char shared_problem[] = "Counter :: behavior {\n"
                                      "    count: retain int = 1\n"
-                                     "    on Tick {\n"
+                                     "    on Tick :: () {\n"
                                      "        missing = 1\n"
                                      "    }\n"
                                      "}\n";
@@ -4293,10 +4293,10 @@ TEST_CASE(graph_visibility_and_document_pair)
         "    Increment :: () -> int {\n"
         "        return count + 1\n"
         "    }\n"
-        "    on Tick {\n"
+        "    on Tick :: () {\n"
         "        count = count + 1\n"
         "    }\n"
-        "    on Begin {\n"
+        "    on Begin :: () {\n"
         "        count = 1\n"
         "    }\n"
         "}\n"
