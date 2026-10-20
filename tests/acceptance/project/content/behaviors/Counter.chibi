@@ -1,6 +1,6 @@
 Counter :: behavior {
     count: retain int = 1
-    on Tick {
+    on Tick :: () {
         count = count + 1
     }
 }
