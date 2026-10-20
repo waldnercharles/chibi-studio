@@ -141,10 +141,10 @@ It shows Counter in the Text Editor, focuses it and places the cursor after the
 event's closing brace, then queues two Enter key presses through SDL, as the
 platform does, a few frames apart. The source must gain only whitespace: Enter
 types newlines and never accepts a completion nobody asked for, and one undo
-takes back both, as typing coalesces. Control+/ on the state line then
-comments it and again uncomments it, and one undo restores the commented line,
-an undo step of its own. It runs twenty-one hidden frames; Counter stays
-unsaved.
+takes back both, as typing coalesces. Mod+/ (Command on macOS, Control
+elsewhere) on the `count` line then comments it and again uncomments it, and
+one undo restores the commented line, an undo step of its own. It runs
+twenty-one hidden frames; Counter stays unsaved.
 
 `studio-acceptance --kdl-keys --project-root PATH` takes another disposable copy.
 It shows the open scene in the Text Editor, types Enter at the end of its KDL
@@ -155,8 +155,8 @@ paste is an undo step of its own. It runs fourteen hidden frames.
 
 `studio-acceptance --code-followups --project-root PATH` takes another
 disposable copy and runs thirty-seven hidden frames on Counter. With Toggle
-Line Comment rebound to Control+C, that chord comments the state line instead
-of copying, and with Vim on, Control+/ uncomments it. A typed character, Find
+Line Comment rebound to Mod+C, that chord comments the `count` line instead
+of copying, and with Vim on, Mod+/ uncomments it. A typed character, Find
 Again (F3) and typing over the match are two undo steps, though the typing
 arrives in the frame that reports the caret's move: a command that moves the
 caret ends the typing burst at once. A right click opens the text's menu, which
@@ -171,18 +171,18 @@ copy, adds a prototype named Crêpes and a UI document, Probe, and runs
 thirty hidden frames. In the open scene's KDL, Control+Space in the
 strings "Crê" and "Cre" opens the completion list at the same left edge: the
 list starts under the word a cell a character, not a byte. In Probe's markup,
-with Control held and the pointer resting on a class its styles do not define,
-the class is no link. Once another stylesheet defines it and the project's scan
+with Mod (Command on macOS) held and the pointer resting on a class its styles
+do not define, the class is no link. Once another stylesheet defines it and the project's scan
 goes stale, it is; held still on it, the class is neither scanned nor looked up
 again, and once a same-length class takes its place, the new text is looked up
 and is no link.
 
 `studio-acceptance --unit-warnings --project-root PATH` takes another disposable
 copy. It shows Counter in the Text Editor and replaces its source with one that
-assigns a speed (u/s) to a radius (u). By the next hidden frame that line must
-carry a warning underline, "Units differ: u = u/s", starting at the assignment,
-and the editor must report no error: the source still runs. It runs four hidden
-frames and saves nothing.
+assigns a speed (u/s) to a radius (u). A proven unit mismatch is a compile
+error, so by the next hidden frame that line must carry an error underline,
+"Units differ: u = u/s", starting at the assignment, and the editor must report
+that error. It runs four hidden frames and saves nothing.
 
 `studio-acceptance --scene-hierarchy --project-root PATH` takes another
 disposable copy. Its first hidden frame loads a scene whose ship holds a turret

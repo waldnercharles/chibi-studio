@@ -1579,7 +1579,7 @@
       "current_source_sha256": "91f77c6e1b3d60ddab4c59fa395ba78c9122e54cb6707f866eb2fb9730d2615c",
       "sha256": "5bcaf149c81eb750ce0da5b74954c40758aedfa32e6cb590849d723050c3ce64",
       "source_path": "src/editor/documents/asset_code.c",
-      "consumer_sha256": "87ffc2770a876ae48da68f2f979f2470e6effc238a90df4e0e0f0f1435f4103d"
+      "consumer_sha256": "ee4f3fc8d274c453025fc5d850e86d81f3797fee4b89f08a9fd5fd302bf52774"
     },
     "src/editor/documents/asset_code.h": {
       "current_source_sha256": "15d34e8aae5a3df6a5ef4a2632b6c6784714b03b3c0cb6c74be401afbb35d2e1",
@@ -1905,7 +1905,7 @@
       "current_source_sha256": "4d8ef83a4ace1d2059f5dbffded88d7a73356d2b30b194e6ed69c371e0c185e3",
       "sha256": "4c07ef642ad0abf81b31795fe2120db257b5725456014ecf61a39bc323f6f561",
       "source_path": "src/editor/studio/studio_debug.c",
-      "consumer_sha256": "401abb83ac64cafa36b8ff3dfce2d3af219ab049c2cba2dc23a2e4747398f184"
+      "consumer_sha256": "23359822aa63a2b7b53e6c44efcdebfe9a6ed16f7d71fbff0babe0a55190a9fe"
     },
     "src/editor/studio/studio_definition.c": {
       "current_source_sha256": "ac5d51481a7852f684484641b1659c9ac2ad43abb04bd27798a08e806c3336fb",
