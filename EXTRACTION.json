@@ -1478,7 +1478,7 @@
       "current_source_sha256": "4036c43aa6c17dfbc3d383de7fd4489abd5fe666b8bd1682437d4cc724a397cc",
       "sha256": "4036c43aa6c17dfbc3d383de7fd4489abd5fe666b8bd1682437d4cc724a397cc",
       "source_path": "projects/studio/project.kdl",
-      "consumer_sha256": "306c88211ccee8145c917aaf27f1b5ce89719258a69424da4a95e15b606a7000"
+      "consumer_sha256": "0047755d46060eab09c3dda4e363204117f55775814294a5f54358f47e758273"
     },
     "src/diagnostics/frame_log.c": {
       "current_source_sha256": "d170cf8927d1fcb08bf10a0251b64fe3240c41bac7c8dbabd9374c945de0d950",
