@@ -91,7 +91,6 @@ static bool binding_equal(const pin_binding *a, const pin_binding *b)
         case PIN_BINDING_EVENT_OUTPUT:
             return a->event_node_id == b->event_node_id &&
                    a->event_pin_id == b->event_pin_id;
-        case PIN_BINDING_DELTA_TIME: return true;
     }
     return false;
 }
@@ -773,29 +772,6 @@ static void add_sources(
                         -1
                     );
                 }
-            }
-        }
-        if (target_spec->type == PIN_F32 || target_spec->type == PIN_F64) {
-            pin_spec delta = { .type = PIN_F32,
-                               .kind = PIN_DATA,
-                               .container = PIN_CONTAINER_SINGLE };
-            if (compatible(&delta, target_spec)) {
-                pin_binding binding = { .kind = PIN_BINDING_DELTA_TIME };
-                add_choice(
-                    choices,
-                    SOURCE_BINDING,
-                    "Delta Time",
-                    "Time",
-                    "delta dt frame seconds",
-                    ed_pin_type_name(&delta),
-                    "Seconds in the current simulation step",
-                    KIT_ICON_TIMER,
-                    0,
-                    current && binding_equal(&binding, current),
-                    &binding,
-                    0,
-                    -1
-                );
             }
         }
     }

@@ -283,9 +283,6 @@ static uint32_t binding_chip(const studio *s, const pin_binding *b, char *out, s
                 }
                 return KIT_ICON_EVENT;
             }
-            case PIN_BINDING_DELTA_TIME:
-                snprintf(out, size, "Delta Time");
-                return KIT_ICON_TIMER;
             default: break;
         }
     }

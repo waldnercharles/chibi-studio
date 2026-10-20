@@ -60,9 +60,6 @@ const char *ed_binding_label(const editor *e, const pin_binding *binding, char *
         const graph_local *local = graph_local_by_id(e->active_graph, binding->local_id);
         return local ? local->name : "Missing local";
     }
-    if (binding->kind == PIN_BINDING_DELTA_TIME) {
-        return "Delta Time";
-    }
     if (binding->kind == PIN_BINDING_EVENT_OUTPUT) {
         node *event = graph_node_by_id(e->active_graph, binding->event_node_id);
         int output = 0;
