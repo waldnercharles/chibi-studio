@@ -781,7 +781,6 @@ static bool write_pin_binding(yyjson_mut_doc *doc, yyjson_mut_val *root, const p
             }
             yyjson_mut_obj_add_strcpy(doc, value, "component", binding->component_key);
             return true;
-        case PIN_BINDING_DELTA_TIME: return true;
         case PIN_BINDING_LOCAL:
             if (!binding->local_id) {
                 return false;
@@ -1085,7 +1084,6 @@ static bool read_pin_binding(yyjson_val *value, pin_binding *out)
                 return false;
             }
             break;
-        case PIN_BINDING_DELTA_TIME: break;
         case PIN_BINDING_LOCAL: {
             yyjson_val *id = yyjson_obj_get(value, "local");
             if (!yyjson_is_uint(id) || !yyjson_get_uint(id)) {
