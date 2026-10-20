@@ -1,3 +1,6 @@
+// Keeps the Outliner's row menu current: its heading names the selection, Break
+// When Spawned shows whether the selection's prototype breaks, and the Live and
+// object items follow the run; sets the eye's Alt+click tip for the platform.
 OutlinerMenu :: behavior {
     action set_ui_data_8 = set_ui_data(0, "menu.actor", convert<To_Real>(selection().Count) > 0)
     on Begin {

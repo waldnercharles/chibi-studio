@@ -242,7 +242,6 @@ struct app_scene_authoring
     studio_node_service studio_nodes; /* those calls' service, run by the window's Studio */
     tree_watch disk;  /* declarative content files as last loaded or saved */
     tree_watch code_disk;
-    tree_watch code_metadata_disk;
     char **disk_pending; /* changes waiting for the runtime to stop */
     int selected;
     /* The selection each recent step began and ended with (scene_actors.c). */

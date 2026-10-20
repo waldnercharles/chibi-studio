@@ -580,7 +580,7 @@ static bool fused_call_flow_edits(studio *s)
                          "}\n";
     bool live = s->prefs.code_apply_live;
     s->prefs.code_apply_live = false;
-    REQUIRE(studio_code_replace(s, asset_code_path(code), asset_code_text(code), probe, NULL));
+    REQUIRE(studio_code_replace(s, asset_code_path(code), asset_code_text(code), probe));
     REQUIRE(asset_code_sync_graph(code, e, false));
     REQUIRE(!asset_code_error(code)[0]);
     node *first = source_node(code, e, "Add(1)");
@@ -1295,7 +1295,7 @@ static bool unit_warnings_frame(void *state)
         studio_show_editor(s, STUDIO_EDITOR_CODE);
     } else if (frames == 2) {
         const char *path = asset_code_path(code);
-        REQUIRE(studio_code_replace(s, path, asset_code_text(code), unit_mismatch, NULL));
+        REQUIRE(studio_code_replace(s, path, asset_code_text(code), unit_mismatch));
     } else {
         const char *statement = strstr(unit_mismatch, "self.Collider");
         const kit_code_marker *markers = asset_code_markers(code);
@@ -1519,7 +1519,7 @@ static bool behavior_empty_variables(studio *s)
                          "    Helper :: () -> int { return 1 }\n"
                          "    on Tick {}\n"
                          "}\n";
-    REQUIRE(studio_code_replace(s, asset_code_path(code), asset_code_text(code), empty, NULL));
+    REQUIRE(studio_code_replace(s, asset_code_path(code), asset_code_text(code), empty));
     REQUIRE(asset_code_sync_graph(code, e, false));
     REQUIRE(!asset_code_error(code)[0]);
     const graph *function = behavior_asset_find_graph_by_name(editor_behavior_asset(e), "Helper");
@@ -1647,7 +1647,7 @@ static bool graph_visibility_frame(void *state)
         const char *before = asset_code_text(code);
         draft = xmalloc(strlen(before) + 2);
         snprintf(draft, strlen(before) + 2, "%s\n", before);
-        REQUIRE(studio_code_replace(s, path, before, draft, NULL));
+        REQUIRE(studio_code_replace(s, path, before, draft));
         REQUIRE(asset_code_dirty(code));
         REQUIRE(asset_code_can_replay(code, false));
         /* The accepted collaboration echo performs document and view changes
@@ -3974,7 +3974,7 @@ static bool code_followups_frame(void *state)
             REQUIRE(!s->code.menu.open);
             rml_element *focus = rml_context_focus_element(rml_backend_context(s->backend));
             REQUIRE(focus && !strcmp(rml_element_tag_name(focus), "kit-code"));
-            return studio_code_replace(s, asset_code_path(code), asset_code_text(code), shared_problem, NULL);
+            return studio_code_replace(s, asset_code_path(code), asset_code_text(code), shared_problem);
         }
         case 27: {
             const kit_code_marker *m = asset_code_markers(code);

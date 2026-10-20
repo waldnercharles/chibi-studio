@@ -1,6 +1,12 @@
+// Keeps a VirtualList widget (#list) showing only the rows in view: it reads
+// where the list is scrolled, sets self.first and self.row, and sends ShowRows
+// when the rows in view change; the entity's own behavior answers with
+// self.rows and self.total.
 VirtualList :: behavior {
+    // List
     RowHeight: float = 24.0
     Overscan: int = 6
+    // State
     ShownFirst: int = -1
     ShownCount: int = -1
     on Tick {

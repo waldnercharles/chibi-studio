@@ -46,7 +46,7 @@ bool asset_code_local_dirty(const asset_code *code);
  * replacing a source session. Only the local view baseline advances. */
 bool asset_code_take_unreported(asset_code *, char **before, char **text, bool *live);
 const char *asset_code_error(const asset_code *code);
-/* Complete executable source; optional graph metadata is stored separately. */
+/* The complete asset: descriptions are comments and graphs lay out automatically. */
 const char *asset_code_text(const asset_code *code);
 /* Authored prototypes/relationships are data, never executable graph drafts. */
 bool asset_code_static(const asset_code *code);
@@ -60,7 +60,7 @@ bool asset_code_file_missing(const asset_code *code);
 void asset_code_reject_static(asset_code *code, const char *error);
 /* The editable view exposes the complete executable source. */
 kit_code_editor *asset_code_editor(asset_code *code);
-/* One source and metadata history serves both views, including invalid drafts. */
+/* One history of source and editor state serves both views, including invalid drafts. */
 bool asset_code_can_replay(const asset_code *code, bool redo);
 bool asset_code_replay(asset_code *code, bool redo, bool live);
 /* The caller owns the copied destination; no history storage is borrowed. */
@@ -99,12 +99,6 @@ const authoring_source *asset_code_graph_source(const asset_code *code, const ed
 bool asset_code_validate(asset_code *code, editor *editor);
 /* A validated refactor is one shared draft undo step; reject stale proposals. */
 bool asset_code_replace(asset_code *code, const char *before, const char *text);
-bool asset_code_replace_with_metadata(
-    asset_code *code,
-    const char *before,
-    const char *text,
-    const char *metadata
-);
 /* Consecutive updates in one graph gesture share an undo entry. Ordinary source
  * edits and undo/redo end that group; every update still rejects stale text. */
 bool asset_code_edit_source(
@@ -185,7 +179,7 @@ kit_code_result asset_code_draw(
     const kit_code_desc *preferences,
     bool live
 );
-/* Saves valid source and separate graph metadata. False on diagnostics or disk conflict. */
+/* Saves valid source; editor state stays in Studio. False on diagnostics or disk conflict. */
 bool asset_code_save(asset_code *code, char *error, size_t size);
 
 #endif

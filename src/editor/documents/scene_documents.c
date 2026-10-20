@@ -1,6 +1,5 @@
 #include "authoring/preview_source.h"
 #include "authoring/source_format.h"
-#include "authoring/source_metadata.h"
 #include "authoring/source_presentation.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/workspace/scene_internal.h"
@@ -174,17 +173,8 @@ static int save_source_view(
     char error[256] = "";
     script_syntax *before = script_parse(authoring_source_presentation_text(presentation));
     char *text = authoring_source_format(before, error, sizeof error);
-    script_syntax *after = text ? script_parse(text) : NULL;
-    char *metadata = authoring_source_presentation_metadata(presentation);
-    char *remapped = after && metadata
-                       ? authoring_source_metadata_remap(metadata, before, after)
-                       : NULL;
-    free(metadata);
     script_syntax_free(before);
-    script_syntax_free(after);
-    if (!text || !remapped) {
-        free(text);
-        free(remapped);
+    if (!text) {
         snprintf(scene->message, sizeof scene->message, "Could not format source: %s", error);
         return -1;
     }
@@ -201,20 +191,11 @@ static int save_source_view(
     int result = scene_stage_source_edits(scene, edits, moved ? 2 : 1, stages, NULL, error, sizeof error);
     bool staged = !result;
     if (!result) {
-        size_t size = strlen(path) + strlen(".meta") + 1;
-        char *sidecar = xmalloc(size);
-        snprintf(sidecar, size, "%s.meta", path);
         result = write_file_atomic(path, text);
-        if (!result) {
-            scene_disk_note(scene, path);
-            result = write_file_atomic(sidecar, remapped);
-            if (!result) {
-                scene_disk_note(scene, sidecar);
-            }
-        }
-        free(sidecar);
         if (result) {
-            snprintf(error, sizeof error, "Could not write source and presentation metadata");
+            snprintf(error, sizeof error, "Could not write source");
+        } else {
+            scene_disk_note(scene, path);
         }
     }
     if (staged) {
@@ -223,15 +204,13 @@ static int save_source_view(
     if (!result) {
         const authoring_source *source = preview_source_find(scene->live, path, false);
         const behavior_asset *current = editor_behavior_asset(scene->graph_editor);
+        /* Formatting keeps every origin, so the editor state carries over. */
         authoring_source_presentation *formatted = authoring_source_presentation_new(
             source->analysis,
             authoring_sources_catalog(preview_sources_working(scene->live)),
-            NULL
+            presentation
         );
         if (formatted) {
-            bool restored = authoring_source_presentation_restore(formatted, remapped);
-            assert(restored);
-            (void)restored;
             if (editor_presentation(scene->graph_editor) && current &&
                 !strcmp(current->name, source->analysis->name)) {
                 result = editor_source_presentation(scene->graph_editor, formatted);
@@ -245,7 +224,6 @@ static int save_source_view(
         snprintf(scene->message, sizeof scene->message, "Could not save %s: %s", path, error);
     }
     free(text);
-    free(remapped);
     free(identity);
     return result;
 }

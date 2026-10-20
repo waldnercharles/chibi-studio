@@ -27,7 +27,6 @@ static void close_state(studio_refactor *r)
     app_refactor_free(r->plan);
     free(r->source_before);
     free(r->source_after);
-    free(r->source_metadata);
     afree(r->uses);
     *r = (studio_refactor){ .undo = r->undo,
                             .undo_toast = r->undo_toast,
@@ -222,8 +221,6 @@ static void plan(studio *s)
     if (r->source_path[0]) {
         free(r->source_after);
         r->source_after = NULL;
-        free(r->source_metadata);
-        r->source_metadata = NULL;
         plan_source(s, code);
         return;
     }
@@ -361,7 +358,7 @@ static void apply_rename(studio *s)
     }
     if (r->source_path[0] && !r->source_project) {
         if (!r->source_after ||
-            !studio_code_replace(s, r->source_path, r->source_before, r->source_after, r->source_metadata)) {
+            !studio_code_replace(s, r->source_path, r->source_before, r->source_after)) {
             snprintf(r->error, sizeof r->error, "Source changed; reopen Rename");
             return;
         }

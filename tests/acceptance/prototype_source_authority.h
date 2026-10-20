@@ -213,7 +213,7 @@ static bool authority_peer(authority_fixture *test, const char *text, int histor
 static bool authority_raw(authority_fixture *test, const char *text)
 {
     const char *before = scene_source_input_text(test->s->scene, authority_asset(test));
-    return studio_code_replace(test->s, test->path, before, text, NULL);
+    return studio_code_replace(test->s, test->path, before, text);
 }
 
 /* These are composition passes on the existing kit, not host/GPU frames. */

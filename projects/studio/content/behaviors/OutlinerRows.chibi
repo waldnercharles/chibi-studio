@@ -1,6 +1,12 @@
+// Shows the Outliner's rows: the scene's root row, then the window of objects
+// the object filter shows that the List asks for (ShowRows), refreshed with
+// each UI refresh; folds the root, and scrolls an object Studio reveals into
+// view.
 OutlinerRows :: behavior {
+    // Window
     First: int = 0
     Count: int = 0
+    // View
     Collapsed := false
     ShownOpen := true
     action scene_objects_action = scene_objects(convert<To_Integer>(max_First_1_0(First)), convert<To_Integer>(Count_1_step_1_First(Count, First)))
@@ -10,10 +16,14 @@ OutlinerRows :: behavior {
         await set_ui_data(0, "root.parent", bool(true))
         set_ui_data(0, "root.depth", integer(0))
     }
+    // The List's window, in list rows: the scene's root is row 0, so objects
+    // start at First - 1.
     on ShowRows {
         state.First = event.First
         state.Count = event.Count
     }
+    // Each UI refresh, after the panel's events: Set UI Data changes nothing
+    // when a value is the same.
     on Refresh {
         scene_objects_action()
     }
@@ -57,10 +67,14 @@ OutlinerRows :: behavior {
         Collapsed = !Collapsed
     }
     on RootClicked {
+        // Only a click on the twisty flips the state the row sends; a click
+        // elsewhere on the root sends the one shown.
         if (event.Open && !ShownOpen) || (!event.Open && ShownOpen) {
             Collapsed = !event.Open
         }
     }
+    // Studio pings an object after Up, Down, a Find jump or F2: unfold, then
+    // scroll its row (list row + 1) into view.
     on RevealObject {
         Collapsed = false
         if convert<To_Real>(object_row(event.Object)) >= 0 {

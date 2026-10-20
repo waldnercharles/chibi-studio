@@ -237,7 +237,7 @@ static bool static_source_dispatch_history(studio *host)
         REQUIRE(!write_file_atomic(path, text[0]));
         REQUIRE(!write_file_atomic(scene_path, scene_text));
         REQUIRE(!scene_tabs_open_source(fixture.scene, kinds[i], names[i], path));
-        REQUIRE(studio_code_replace(s, path, text[0], text[1], NULL));
+        REQUIRE(studio_code_replace(s, path, text[0], text[1]));
         REQUIRE(asset_code_validate(code, fixture.graph));
         bool undo_enabled = studio_can_replay(s, false);
         studio_history(s, false);
@@ -294,7 +294,7 @@ static bool static_source_dispatch_history(studio *host)
         free(background);
         records = acount(s->records);
         bool clean_all = studio_save_all(s) && acount(s->records) == records;
-        REQUIRE(studio_code_replace(s, path, text[0], invalid[i], NULL));
+        REQUIRE(studio_code_replace(s, path, text[0], invalid[i]));
         studio_save(s);
         code = s->code.assets[0];
         disk = file_read_text(path);
@@ -746,6 +746,17 @@ static bool static_prototype_refresh(void)
                      !scene_history_can_undo(scene->history) &&
                      !scene_history_can_redo(scene->history) &&
                      relationship_schema_kept(&fixture, schema);
+    /* A file without its folder's asset extension, such as a sidecar an
+     * older Studio left, is not an asset. */
+    char stray[256];
+    snprintf(stray, sizeof stray, "%s/Unloaded.chibi.meta", directory);
+    REQUIRE(!write_file_atomic(stray, "{}"));
+    REQUIRE(!app_scene_authoring_refresh_content(scene));
+    REQUIRE(!app_scene_authoring_refresh_asset_index(scene));
+    REQUIRE(
+        reference_index_find_asset(scene->asset_index, REFERENCE_ASSET_PROTOTYPE, stray, NULL) < 0
+    );
+    REQUIRE(!unlink(stray));
     free(s);
     REQUIRE(!unlink(invalid_path));
     move_fixture_free(&fixture);

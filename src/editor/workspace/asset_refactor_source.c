@@ -91,7 +91,7 @@ static bool source_attachments(
         }
         refactor_file *file = NULL;
         for (int j = 0; j < acount(plan->files); j++) {
-            if (!plan->files[j].metadata && !strcmp(plan->files[j].from, owner->path)) {
+            if (!strcmp(plan->files[j].from, owner->path)) {
                 file = &plan->files[j];
                 break;
             }
@@ -170,7 +170,7 @@ static bool source_attachments(
 static const refactor_file *source_file(const app_refactor *plan, const char *path)
 {
     for (int i = 0; i < acount(plan->files); i++) {
-        if (!plan->files[i].metadata && !strcmp(plan->files[i].from, path)) {
+        if (!strcmp(plan->files[i].from, path)) {
             return &plan->files[i];
         }
     }
@@ -220,8 +220,7 @@ static authoring_sources *restart_sources(
     }
     for (int i = 0; i < acount(plan->files); i++) {
         const refactor_file *file = &plan->files[i];
-        if (file->metadata ||
-            source_catalog_source_path(scene->content_root, file->from)) {
+        if (source_catalog_source_path(scene->content_root, file->from)) {
             continue;
         }
         if (source_catalog_edit_path(scene->content_root, file->from)) {
@@ -235,119 +234,6 @@ static authoring_sources *restart_sources(
         result = preview_sources_candidate(scene->live, edits, acount(edits), true, error, size);
     afree(edits);
     return result;
-}
-
-static bool source_metadata(
-    app_scene_authoring *scene,
-    app_refactor *plan,
-    const authoring_navigation *navigation,
-    const authoring_rename_plan *rename,
-    const authoring_sources *working,
-    char *error,
-    size_t size
-)
-{
-    authoring_sources *restart = NULL, *original = NULL;
-    bool valid = true;
-    for (int i = 0; valid && i < authoring_navigation_document_count(navigation); i++) {
-        const authoring_document *document = authoring_navigation_document_at(navigation, i);
-        const refactor_file *found = source_file(plan, document->path);
-        if (!document->analysis || !found) {
-            continue;
-        }
-        /* Adding a companion can relocate plan->files. Keep this record local. */
-        refactor_file file = *found;
-        size_t length = strlen(file.from) + sizeof ".meta";
-        char *path = xmalloc(length);
-        snprintf(path, length, "%s.meta", file.from);
-        char *metadata = read_scene_file(path);
-        free(path);
-        char *rebased = NULL;
-        if (metadata) {
-            if (!original) {
-                original = restart_sources(scene, &(app_refactor){ 0 }, working, error, size);
-            }
-            const authoring_source *original_source = NULL;
-            for (int j = 0; original && j < authoring_sources_count(original); j++) {
-                const authoring_source *candidate = authoring_sources_at(original, j);
-                if (!strcmp(candidate->path, file.from)) {
-                    original_source = candidate;
-                    break;
-                }
-            }
-            authoring_source_presentation
-                *before = original_source && authoring_sources_valid(original)
-                            ? authoring_source_presentation_new(
-                                  original_source->analysis,
-                                  authoring_sources_catalog(original),
-                                  NULL
-                              )
-                            : NULL;
-            bool restored = before &&
-                            authoring_source_presentation_restore(before, metadata);
-            if (!restored) {
-                authoring_source_presentation_free(before);
-                before = authoring_source_presentation_new(
-                    document->analysis,
-                    authoring_navigation_catalog(navigation),
-                    NULL
-                );
-                restored = before &&
-                           authoring_source_presentation_restore(before, metadata);
-            }
-            if (restored) {
-                if (!restart) {
-                    restart = restart_sources(scene, plan, working, error, size);
-                }
-                const authoring_source *source = NULL;
-                for (int j = 0; restart && j < authoring_sources_count(restart); j++) {
-                    const authoring_source *candidate = authoring_sources_at(restart, j);
-                    if (!strcmp(candidate->path, file.to)) {
-                        source = candidate;
-                        break;
-                    }
-                }
-                authoring_source_presentation
-                    *after = restart && authoring_sources_valid(restart) && source
-                               ? authoring_source_presentation_new(
-                                     source->analysis,
-                                     authoring_sources_catalog(restart),
-                                     NULL
-                                 )
-                               : NULL;
-                text_edit *edits = NULL;
-                for (int j = 0; j < rename->count; j++) {
-                    const authoring_rename_edit *edit = &rename->edits[j];
-                    if (edit->document == i) {
-                        apush(
-                            edits,
-                            ((text_edit){ edit->range.start, edit->range.end, edit->replacement })
-                        );
-                    }
-                }
-                rebased = after
-                            ? authoring_source_presentation_rebase(before, after, metadata, edits, acount(edits))
-                            : NULL;
-                afree(edits);
-                authoring_source_presentation_free(after);
-                if (!rebased) {
-                    snprintf(error, size, "Cannot preserve source metadata for %s", file.from);
-                    valid = false;
-                }
-            }
-            authoring_source_presentation_free(before);
-        }
-        if (valid) {
-            /* Stale/malformed optional metadata is discarded. A valid sidecar
-             * must rebase successfully; its loss never silently passes. */
-            refactor_source_metadata(plan, &file, rebased, metadata);
-        }
-        free(rebased);
-        free(metadata);
-    }
-    authoring_sources_free(restart);
-    authoring_sources_free(original);
-    return valid;
 }
 
 int app_scene_authoring_plan_source_rename(
@@ -468,8 +354,7 @@ int app_scene_authoring_plan_source_rename(
     source_catalog_edit *edits = NULL;
     for (int i = 0; valid && i < acount(plan->files); i++) {
         const refactor_file *file = &plan->files[i];
-        if (!file->metadata &&
-            source_catalog_edit_path(scene->content_root, file->from)) {
+        if (source_catalog_edit_path(scene->content_root, file->from)) {
             if (strcmp(file->from, file->to)) {
                 apush(edits, ((source_catalog_edit){ .path = file->from }));
             }
@@ -485,8 +370,6 @@ int app_scene_authoring_plan_source_rename(
             (!acount(edits) ||
              !preview_sources_validate(scene->live, edits, acount(edits), error, size));
     afree(edits);
-    valid = valid &&
-            source_metadata(scene, plan, navigation, source, sources, error, size);
     authoring_rename_plan_free(source);
     if (!valid || !refactor_current(plan, error, size)) {
         app_refactor_free(plan);

@@ -6,7 +6,6 @@
 #include "authoring/prototype_preview.h"
 #include "authoring/source_asset.h"
 #include "authoring/source_format.h"
-#include "authoring/source_metadata.h"
 #include "authoring/source_presentation.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/collab/collab.h"
@@ -97,14 +96,6 @@ int write_file_atomic(const char *path, const char *text)
     return result;
 }
 
-static char *source_metadata_file(const char *path)
-{
-    struct stat info;
-    return stat(path, &info) == 0 && info.st_size >= 0 && info.st_size <= 8 * 1024 * 1024
-             ? text_file_read(path)
-             : NULL;
-}
-
 static int write_asset_file(const char *path, const char *text)
 {
     const char *extension = strrchr(path, '.');
@@ -116,28 +107,8 @@ static int write_asset_file(const char *path, const char *text)
             script_syntax_free(syntax);
             return -1;
         }
-        size_t length = strlen(path) + sizeof ".meta";
-        char *sidecar = xmalloc(length);
-        snprintf(sidecar, length, "%s.meta", path);
-        char *previous = text_file_read(path),
-             *metadata = source_metadata_file(sidecar);
-        script_syntax *before = previous ? script_parse(previous) : NULL;
-        script_syntax *after = script_parse(formatted);
-        char *remapped = before && metadata
-                           ? authoring_source_metadata_remap(metadata, before, after)
-                           : NULL;
         int result = write_file_atomic(path, formatted);
-        if (!result && remapped) {
-            result = write_file_atomic(sidecar, remapped);
-        }
-        /* Separate file replacements remain stale-safe through source_hash. */
-        free(remapped);
-        script_syntax_free(before);
-        script_syntax_free(after);
         script_syntax_free(syntax);
-        free(previous);
-        free(metadata);
-        free(sidecar);
         free(formatted);
         return result;
     }
@@ -221,79 +192,6 @@ behavior_asset *scene_graph_source_path(
     return asset;
 }
 
-/* A file move retains the runtime key for state migration. Disk metadata uses
- * the destination path key so restart can reproduce it. Translate only through
- * a complete, exact-text default-identity projection when opening live views. */
-static bool restore_source_metadata(
-    app_scene_authoring *scene,
-    const char *path,
-    authoring_source_presentation *view,
-    const char *metadata
-)
-{
-    if (authoring_source_presentation_restore(view, metadata)) {
-        return true;
-    }
-    const char *text = authoring_source_presentation_text(view);
-    if (!authoring_source_metadata_matches(metadata, text)) {
-        return false;
-    }
-    const authoring_sources *working = preview_sources_working(scene->live);
-    if (!working) {
-        return false;
-    }
-    source_catalog_edit *edits = NULL;
-    for (int i = 0; i < authoring_sources_count(working); i++) {
-        const authoring_source *source = authoring_sources_at(working, i);
-        apush(
-            edits,
-            ((source_catalog_edit){
-                .path = source->path,
-                .text = !strcmp(source->path, path) ? text : source->syntax->text })
-        );
-    }
-    for (int i = 0; i < preview_sources_overlay_count(scene->live); i++) {
-        const source_catalog_edit *edit = preview_sources_overlay_at(scene->live, i);
-        if (!source_catalog_source_path(scene->content_root, edit->path)) {
-            apush(edits, ((source_catalog_edit){ .path = edit->path, .text = edit->text }));
-        }
-    }
-    char error[256] = { 0 };
-    authoring_sources *defaults = preview_sources_candidate(
-        scene->live,
-        edits,
-        acount(edits),
-        true,
-        error,
-        sizeof error
-    );
-    afree(edits);
-    const authoring_source *source = NULL;
-    for (int j = 0; defaults && j < authoring_sources_count(defaults); j++) {
-        const authoring_source *candidate = authoring_sources_at(defaults, j);
-        if (!strcmp(candidate->path, path)) {
-            source = candidate;
-            break;
-        }
-    }
-    authoring_source_presentation *before = source && authoring_sources_valid(defaults)
-                                              ? authoring_source_presentation_new(
-                                                    source->analysis,
-                                                    authoring_sources_catalog(defaults),
-                                                    NULL
-                                                )
-                                              : NULL;
-    char *translated = before
-                         ? authoring_source_presentation_rebase(before, view, metadata, NULL, 0)
-                         : NULL;
-    bool restored = translated &&
-                    authoring_source_presentation_restore(view, translated);
-    free(translated);
-    authoring_source_presentation_free(before);
-    authoring_sources_free(defaults);
-    return restored;
-}
-
 authoring_source_presentation *scene_source_projection_path(
     app_scene_authoring *scene,
     const char *text,
@@ -331,15 +229,6 @@ authoring_source_presentation *scene_source_projection_path(
         snprintf(error, size, "Source has no named program root");
         return NULL;
     }
-    size_t length = strlen(path) + sizeof ".meta";
-    char *sidecar = xmalloc(length);
-    snprintf(sidecar, length, "%s.meta", path);
-    char *metadata = source_metadata_file(sidecar);
-    if (metadata) {
-        restore_source_metadata(scene, path, view, metadata);
-    }
-    free(metadata);
-    free(sidecar);
     return view;
 }
 
@@ -592,12 +481,6 @@ static void content_scan_directory(app_scene_authoring *scene, const char *path)
             continue;
         }
         bool is_directory = S_ISDIR(info.st_mode);
-        size_t length = strlen(child), suffix = strlen(CODE_ASSET_METADATA_EXTENSION);
-        if (!is_directory && length >= suffix &&
-            !strcmp(child + length - suffix, CODE_ASSET_METADATA_EXTENSION)) {
-            free(child);
-            continue;
-        }
         apush(
             scene->content,
             ((scene_content_entry){ .path = child,
@@ -2478,7 +2361,6 @@ void app_scene_authoring_free(app_scene_authoring *scene)
     afree(scene->content);
     tree_watch_free(&scene->disk);
     tree_watch_free(&scene->code_disk);
-    tree_watch_free(&scene->code_metadata_disk);
     tree_watch_changes_free(scene->disk_pending);
     free(scene->content_root);
     free(scene->scene_path);

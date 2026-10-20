@@ -733,7 +733,7 @@ typedef struct
     char planned[128];
     char source_path[PATH_MAX];
     int source_offset;
-    char *source_before, *source_after, *source_metadata;
+    char *source_before, *source_after;
     struct app_refactor *plan; /* renames to `planned` */
     char error[192];
     studio_refactor_use *uses; /* what a delete leaves dangling */
@@ -1929,13 +1929,7 @@ bool studio_asset_refactorable(const reference_asset *asset);
 bool studio_asset_deletable(studio *s, const reference_asset *asset);
 /* Renames an event, its definition when it has one, and what sends and
    handles it; host events keep their names. */
-bool studio_code_replace(
-    studio *s,
-    const char *path,
-    const char *before,
-    const char *text,
-    const char *metadata
-);
+bool studio_code_replace(studio *s, const char *path, const char *before, const char *text);
 void studio_refactor_source(studio *s, const char *path, int offset);
 void studio_refactor_rename_event(studio *s, const char *event);
 /* The event an Event, Call Event or Send Event node names, unless the host
