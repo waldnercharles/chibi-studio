@@ -55,33 +55,40 @@ static bool ui_listed(const char *path)
     return own;
 }
 
+/* A folder's assets are the files with its asset extension; prototypes are
+   code or declarative, and ui lists its own. Other files, such as notes or a
+   sidecar an older Studio left, are not assets. */
 static reference_asset_kind content_asset_kind(const app_scene_authoring *scene, const char *path)
 {
     static const struct
     {
-        const char *folder;
+        const char *folder, *extension;
         reference_asset_kind kind;
     } folders[] = {
-        { "scenes", REFERENCE_ASSET_SCENE },
-        { "prototypes", REFERENCE_ASSET_PROTOTYPE },
-        { "relationships", REFERENCE_ASSET_RELATIONSHIP },
-        { "behaviors", REFERENCE_ASSET_BEHAVIOR },
-        { "events", REFERENCE_ASSET_EVENT },
-        { "materials", REFERENCE_ASSET_MATERIAL },
-        { "shapes", REFERENCE_ASSET_SHAPE },
-        { "models", REFERENCE_ASSET_SHAPE },
-        { "fields", REFERENCE_ASSET_FIELD },
-        { "libraries", REFERENCE_ASSET_LIBRARY },
-        { "shader-libraries", REFERENCE_ASSET_LIBRARY },
-        { "systems", REFERENCE_ASSET_SYSTEM },
-        { "ui", REFERENCE_ASSET_UI },
+        { "scenes", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_SCENE },
+        { "prototypes", CODE_ASSET_EXTENSION, REFERENCE_ASSET_PROTOTYPE },
+        { "relationships", CODE_ASSET_EXTENSION, REFERENCE_ASSET_RELATIONSHIP },
+        { "behaviors", CODE_ASSET_EXTENSION, REFERENCE_ASSET_BEHAVIOR },
+        { "events", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_EVENT },
+        { "materials", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_MATERIAL },
+        { "shapes", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_SHAPE },
+        { "models", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_SHAPE },
+        { "fields", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_FIELD },
+        { "libraries", CODE_ASSET_EXTENSION, REFERENCE_ASSET_LIBRARY },
+        { "shader-libraries", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_LIBRARY },
+        { "systems", CODE_ASSET_EXTENSION, REFERENCE_ASSET_SYSTEM },
+        { "ui", UI_MARKUP_EXTENSION, REFERENCE_ASSET_UI },
     };
     for (int i = 0; i < (int)(sizeof folders / sizeof *folders); i++) {
-        if (content_path_in_folder(scene, path, folders[i].folder)) {
-            return folders[i].kind != REFERENCE_ASSET_UI || ui_listed(path)
-                     ? folders[i].kind
-                     : REFERENCE_ASSET_KIND_COUNT;
+        if (!content_path_in_folder(scene, path, folders[i].folder)) {
+            continue;
         }
+        bool listed = folders[i].kind == REFERENCE_ASSET_UI
+                        ? ui_listed(path)
+                        : has_extension(path, folders[i].extension) ||
+                              (folders[i].kind == REFERENCE_ASSET_PROTOTYPE &&
+                               has_extension(path, DECLARATIVE_ASSET_EXTENSION));
+        return listed ? folders[i].kind : REFERENCE_ASSET_KIND_COUNT;
     }
     return REFERENCE_ASSET_KIND_COUNT;
 }

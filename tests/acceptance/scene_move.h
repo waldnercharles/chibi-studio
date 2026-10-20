@@ -746,6 +746,17 @@ static bool static_prototype_refresh(void)
                      !scene_history_can_undo(scene->history) &&
                      !scene_history_can_redo(scene->history) &&
                      relationship_schema_kept(&fixture, schema);
+    /* A file without its folder's asset extension, such as a sidecar an
+     * older Studio left, is not an asset. */
+    char stray[256];
+    snprintf(stray, sizeof stray, "%s/Unloaded.chibi.meta", directory);
+    REQUIRE(!write_file_atomic(stray, "{}"));
+    REQUIRE(!app_scene_authoring_refresh_content(scene));
+    REQUIRE(!app_scene_authoring_refresh_asset_index(scene));
+    REQUIRE(
+        reference_index_find_asset(scene->asset_index, REFERENCE_ASSET_PROTOTYPE, stray, NULL) < 0
+    );
+    REQUIRE(!unlink(stray));
     free(s);
     REQUIRE(!unlink(invalid_path));
     move_fixture_free(&fixture);
