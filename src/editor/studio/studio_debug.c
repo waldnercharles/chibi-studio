@@ -552,15 +552,16 @@ void studio_debug_call_stack(studio *s)
         snprintf(row.label, sizeof row.label, "Line %d", frame.point.line);
         snprintf(row.graph, sizeof row.graph, "%s", source ? source->analysis->name : "External source");
         if (source) {
-            for (int j = 0; j < source->analysis->function_count; j++) {
-                const script_function *function = &source->analysis->functions[j];
-                if (source->analysis->symbols[function->symbol].id == frame.function) {
-                    snprintf(
-                        row.graph,
-                        sizeof row.graph,
-                        "%s",
-                        source->analysis->symbols[function->symbol].name
-                    );
+            const script_analysis *analysis = source->analysis;
+            for (int j = 0; j < analysis->function_count; j++) {
+                const script_function *function = &analysis->functions[j];
+                /* Handlers and continuations have no symbol. */
+                if (function->symbol < 0) {
+                    continue;
+                }
+                const script_symbol *symbol = &analysis->symbols[function->symbol];
+                if (symbol->id == frame.function) {
+                    snprintf(row.graph, sizeof row.graph, "%s", symbol->name);
                     break;
                 }
             }
