@@ -243,11 +243,6 @@ static void decorate(asset_code *c)
             for (int i = 0; i < c->facts->diagnostic_count; i++) {
                 diagnostic(c, &c->facts->diagnostics[i]);
             }
-            /* Unit mismatches warn; the source still runs. */
-            const script_analysis *analysis = c->facts->analysis;
-            for (int i = 0; i < analysis->warning_count; i++) {
-                mark(c, &analysis->warnings[i], KIT_CODE_WARNING);
-            }
             int count = 0;
             authoring_highlight *spans = authoring_source_highlights(c->navigation, c->document, &count);
             for (int i = 0; i < count; i++) {

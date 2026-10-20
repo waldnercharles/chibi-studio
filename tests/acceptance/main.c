@@ -1016,6 +1016,18 @@ static bool press_key(SDL_Keycode key)
     return press_chord(key, SDL_KMOD_NONE);
 }
 
+/* The modifier Studio's Mod chords use: Command on macOS, Control elsewhere. */
+static SDL_Keymod primary_mod(const studio *s)
+{
+    return s->mac ? SDL_KMOD_GUI : SDL_KMOD_CTRL;
+}
+
+/* The key that holds that modifier. */
+static SDL_Keycode primary_key(const studio *s)
+{
+    return s->mac ? SDLK_LGUI : SDLK_LCTRL;
+}
+
 /* Queues `text` as the platform's text input for the window. */
 static bool type_text(const char *text)
 {
@@ -1153,11 +1165,11 @@ static bool code_keys_frame(void *state)
         REQUIRE(same_without_space(text, counter_bytes));
         REQUIRE(asset_code_replay(code, false, false));
         REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
-        const char *state_line = strstr(asset_code_text(code), "state");
-        REQUIRE(state_line);
-        kit_code_set_cursor(asset_code_editor(code), (int)(state_line - asset_code_text(code)) + 2);
+        const char *count_line = strstr(asset_code_text(code), "count:");
+        REQUIRE(count_line);
+        kit_code_set_cursor(asset_code_editor(code), (int)(count_line - asset_code_text(code)) + 2);
     } else if (frames == 14 || frames == 18) {
-        REQUIRE(press_chord(SDLK_SLASH, SDL_KMOD_CTRL));
+        REQUIRE(press_chord(SDLK_SLASH, primary_mod(s)));
         keys++;
     } else if (frames == 17) {
         REQUIRE(!strcmp(asset_code_text(code), commented_bytes));
@@ -1168,7 +1180,7 @@ static bool code_keys_frame(void *state)
         /* Find seeds "  " from the first indent, where it overlaps. */
         spaces = (int)(strstr(commented_bytes, "    //") - commented_bytes);
         kit_code_select(asset_code_editor(code), spaces, spaces + 2);
-        REQUIRE(press_chord(SDLK_F, SDL_KMOD_CTRL));
+        REQUIRE(press_chord(SDLK_F, primary_mod(s)));
         keys++;
     } else if (frames == 24) {
         REQUIRE(s->code.find.open && !strcmp(s->code.find.query, "  "));
@@ -1268,9 +1280,9 @@ static const char unit_mismatch[] = "Counter :: behavior {\n"
                                     "self.Movement.speed\n"
                                     "    }\n"
                                     "}\n";
-static bool unit_warned;
+static bool unit_marked;
 
-/* A unit mismatch underlines its statement as a warning, not an error. */
+/* A proven unit mismatch underlines its statement as a compile error. */
 static bool unit_warnings_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
@@ -1289,12 +1301,12 @@ static bool unit_warnings_frame(void *state)
         const kit_code_marker *markers = asset_code_markers(code);
         for (int i = 0; i < acount(markers); i++) {
             const kit_code_marker *m = &markers[i];
-            REQUIRE(m->severity == KIT_CODE_WARNING);
+            REQUIRE(m->severity == KIT_CODE_ERROR);
             REQUIRE(!strcmp(m->message, "Units differ: u = u/s") && m->line == 5);
             REQUIRE(m->start == statement - unit_mismatch);
-            unit_warned = true;
+            unit_marked = true;
         }
-        REQUIRE(!asset_code_error(code)[0]);
+        REQUIRE(!strcmp(asset_code_error(code), unit_marked ? "Units differ: u = u/s" : ""));
     }
     return true;
 }
@@ -3376,7 +3388,7 @@ static bool asset_pointer_frame(void *state)
     REQUIRE(s && s->ui);
     frames++;
     REQUIRE(frames <= ASSET_POINTER_FRAMES);
-    SDL_Keymod toggle = s->mac ? SDL_KMOD_GUI : SDL_KMOD_CTRL;
+    SDL_Keymod toggle = primary_mod(s);
     switch (frames) {
         case 1:
             studio_show_editor(s, STUDIO_EDITOR_ASSETS);
@@ -3430,16 +3442,36 @@ static bool asset_pointer_frame(void *state)
     }
 }
 
-/* Click the visible node title, away from sockets and editable fields. */
+/* The first element `selector` finds in any of Studio's documents. */
+static rml_element *find_element(studio *s, const char *selector)
+{
+    rml_context *context = rml_backend_context(s->backend);
+    for (int i = 0; i < rml_context_document_count(context); i++) {
+        rml_element *found = rml_element_query_selector(rml_context_document(context, i), selector);
+        if (found) {
+            return found;
+        }
+    }
+    return NULL;
+}
+
+/* Click the visible node title, away from sockets and editable fields.
+   The surface's element places the canvas as this frame laid it out; the
+   graph's own rectangle follows a frame later. */
 static bool point_node(studio *s, node *n)
 {
     const node_layout *layout = sg_layout_of(s, n);
-    REQUIRE(layout && layout->w > 0);
-    kit_rect r = s->graph.surface.rect;
-    float x = r.x + (n->x + layout->w / 2 - s->graph.x) * sg_zoom(s);
-    float y = r.y + (n->y + 10 - s->graph.y) * sg_zoom(s);
-    REQUIRE(x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.h);
-    return click_at(x * s->prefs.ui_scale, y * s->prefs.ui_scale);
+    REQUIRE(layout && layout->w > 0 && layout->top > 0);
+    rml_element *surface = find_element(s, ".graph-surface");
+    REQUIRE(surface);
+    rml_vec2 at = rml_element_absolute_offset(surface, RML_BOX_BORDER);
+    rml_vec2 size = rml_element_box_size(surface, RML_BOX_BORDER);
+    float to_points = s->prefs.ui_scale / studio_pixel_ratio(s),
+          scale = sg_zoom(s) * s->prefs.ui_scale;
+    float dx = (n->x + layout->w / 2 - s->graph.x) * scale,
+          dy = (n->y + layout->top / 2 - s->graph.y) * scale;
+    REQUIRE(dx > 0 && dx < size.x * to_points && dy > 0 && dy < size.y * to_points);
+    return click_at(at.x * to_points + dx, at.y * to_points + dy);
 }
 
 static bool graph_pointer_frame(void *state)
@@ -3474,7 +3506,7 @@ static bool graph_pointer_frame(void *state)
             return press_key(SDLK_RIGHT);
         case 5:
             REQUIRE(selected_only(e, to));
-            return press_chord(SDLK_F, s->mac ? SDL_KMOD_GUI : SDL_KMOD_CTRL);
+            return press_chord(SDLK_F, primary_mod(s));
         case 7: REQUIRE(s->graph.find.open); return type_text("count");
         case 9:
             REQUIRE(
@@ -3809,19 +3841,6 @@ static bool write_glyph_content()
     return true;
 }
 
-/* The first element `selector` finds in any of Studio's documents. */
-static rml_element *find_element(studio *s, const char *selector)
-{
-    rml_context *context = rml_backend_context(s->backend);
-    for (int i = 0; i < rml_context_document_count(context); i++) {
-        rml_element *found = rml_element_query_selector(rml_context_document(context, i), selector);
-        if (found) {
-            return found;
-        }
-    }
-    return NULL;
-}
-
 /* Moves the pointer into the text, `across` its width along its first
    row; *x and *y are the point, in window points. */
 static bool point_into_text(studio *s, float across, float *x, float *y)
@@ -3898,8 +3917,8 @@ static bool code_followups_frame(void *state)
             /* Toggle Line Comment rebound to the chord that copies. */
             snprintf(s->prefs.shortcuts[STUDIO_COMMAND_TOGGLE_LINE_COMMENT], STUDIO_CHORD_SIZE, "Mod+C");
             s->code.find.refocus = true;
-            return caret_after(e, "sta");
-        case 5: keys++; return press_chord(SDLK_C, SDL_KMOD_CTRL);
+            return caret_after(e, "cou");
+        case 5: keys++; return press_chord(SDLK_C, primary_mod(s));
         case 6:
             /* The editor takes preferences as it draws, after the frame's
                keys. */
@@ -3909,7 +3928,7 @@ static bool code_followups_frame(void *state)
         case 8:
             REQUIRE(!strcmp(asset_code_text(code), commented_bytes));
             keys++;
-            return press_chord(SDLK_SLASH, SDL_KMOD_CTRL);
+            return press_chord(SDLK_SLASH, primary_mod(s));
         case 11:
             REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
             s->prefs.code_vim = false;
@@ -3929,7 +3948,7 @@ static bool code_followups_frame(void *state)
             REQUIRE(text[0] == 'x' && !strcmp(text + 1, counter_bytes));
             REQUIRE(asset_code_replay(code, false, false));
             REQUIRE(!strcmp(asset_code_text(code), counter_bytes));
-            REQUIRE(caret_after(e, "sta"));
+            REQUIRE(caret_after(e, "cou"));
             return true;
         }
         case 19:
@@ -4032,7 +4051,7 @@ static bool code_glyphs_frame(void *state)
         case 18:
             s->code.find.refocus = true;
             return point_into_text(s, 0.3f, &x, &y);
-        case 19: return push_key(SDLK_LCTRL, SDL_KMOD_LCTRL, true);
+        case 19: return push_key(primary_key(s), primary_mod(s), true);
         case 22: {
             /* The pointer rests on the class, which has no other
                definition, so it is no link. */
@@ -4078,7 +4097,7 @@ static bool code_glyphs_frame(void *state)
         case 28:
             REQUIRE(strstr(kit_code_text(s->code.editor, NULL), "nolink" LONG_CLASS));
             REQUIRE(!linked(s));
-            return push_key(SDLK_LCTRL, SDL_KMOD_NONE, false);
+            return push_key(primary_key(s), SDL_KMOD_NONE, false);
         default: return true;
     }
 }
@@ -4246,9 +4265,9 @@ TEST_CASE(code_underlines_unit_mismatch)
                      "--project-root",   (char *)project,
                      "--open",           "Counter" };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && frames == UNIT_FRAMES && unit_warned);
+    REQUIRE(callback_ok && frames == UNIT_FRAMES && unit_marked);
     REQUIRE(unchanged_source());
-    printf("Studio unit warning accepted: frames=%d\n", frames);
+    printf("Studio unit mismatch accepted: frames=%d\n", frames);
     return true;
 }
 
@@ -4635,7 +4654,14 @@ int main(int argc, char **argv)
         return 2;
     }
     executable = argv[0];
-    project = argv[3];
+    /* Studio keeps real paths, so the project's paths compare equal only
+       once a symlinked root (macOS /tmp) is resolved. */
+    char *root = realpath(argv[3], NULL);
+    if (!root) {
+        fprintf(stderr, "Could not resolve the project root %s\n", argv[3]);
+        return 2;
+    }
+    project = root;
     char prefs[1024], cache[1024];
     int p = snprintf(prefs, sizeof prefs, "%s/.acceptance-prefs.json", project);
     int c = snprintf(cache, sizeof cache, "%s/.acceptance-thumbnails", project);
@@ -4643,6 +4669,7 @@ int main(int argc, char **argv)
         setenv("CHIBI_STUDIO_PREFS_PATH", prefs, 1) ||
         setenv("CHIBI_THUMBNAIL_CACHE", cache, 1)) {
         fprintf(stderr, "Could not isolate Studio acceptance preferences/cache\n");
+        free(root);
         return 2;
     }
     pu_display_time(true);
@@ -4711,5 +4738,6 @@ int main(int argc, char **argv)
         case PANEL_IDLE: RUN_TEST_CASE(panel_idle); break;
     }
     pu_print_stats();
+    free(root);
     return pu_test_failed() ? 1 : 0;
 }
