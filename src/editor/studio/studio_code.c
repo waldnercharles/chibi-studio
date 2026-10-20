@@ -99,7 +99,7 @@ static void capture_asset(studio *s, asset_code *code)
     }
 }
 
-bool studio_code_replace(studio *s, const char *path, const char *before, const char *text, const char *metadata)
+bool studio_code_replace(studio *s, const char *path, const char *before, const char *text)
 {
     bool open = false;
     for (int i = 0; i < acount(s->scene->tabs); i++) {
@@ -112,7 +112,7 @@ bool studio_code_replace(studio *s, const char *path, const char *before, const 
     if (prototype && scene_prototype_source_owned(prototype)) {
         char error[256];
         asset_code *code = scene_prototype_source_session(s->scene, prototype, error, sizeof error);
-        if (!code || metadata) {
+        if (!code) {
             return false;
         }
         int result = scene_source_input_replace(
@@ -128,7 +128,7 @@ bool studio_code_replace(studio *s, const char *path, const char *before, const 
     for (int i = 0; i < acount(s->code.assets); i++) {
         asset_code *code = s->code.assets[i];
         if (!strcmp(asset_code_path(code), path) &&
-            asset_code_replace_with_metadata(code, before, text, metadata)) {
+            asset_code_replace(code, before, text)) {
             capture_asset(s, code);
             asset_index_invalidate(s->scene);
             return true;

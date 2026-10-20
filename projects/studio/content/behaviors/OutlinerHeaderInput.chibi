@@ -1,3 +1,6 @@
+// The Outliner's header: the filter field sets the object filter the rows and
+// Up and Down follow, and shows it when Studio clears it; Add lists the scene's
+// prototypes and places the one chosen, while the scene is editable.
 OutlinerHeaderInput :: behavior {
     action prototype_choices_action = prototype_choices()
     on Refresh {

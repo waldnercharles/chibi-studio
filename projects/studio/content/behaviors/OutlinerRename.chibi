@@ -1,6 +1,13 @@
+// Renames an object in its Outliner row: a committed name renames it as one
+// Undo step and closes the field; Escape closes it first, so nothing commits;
+// Enter and Escape return the keyboard to the list; a field left without a
+// commit closes at the refresh after its events.
 OutlinerRename :: behavior {
+    // Rename
     Left: string = ""
     action left_3 = set_variable<Left>("")
+    // Commits only while this row still renames: Escape ended the rename before
+    // its field's blur commits.
     on RenameCommitted {
         if text_equal(renaming_object(), event.Key) {
             await rename_object(event.Key, event.Name)
@@ -17,6 +24,8 @@ OutlinerRename :: behavior {
     on RenameLeft {
         Left = event.Key
     }
+    // A field left without a commit closes here, after the commit its blur may
+    // also send.
     on Refresh {
         if text_equal(Left, renaming_object()) {
             await end_rename()

@@ -34,8 +34,8 @@ typedef struct
 struct asset_code
 {
     int references;
-    char *path, *text, *disk, *valid, *valid_metadata, *metadata, *disk_metadata;
-    char *observed_metadata; /* Exact disk bytes; generated layout may form a clean baseline. */
+    char *path, *text, *disk, *valid, *valid_metadata;
+    char *metadata;  /* Editor state snapshot; never saved to the project. */
     char *view_text; /* Last displayed/reported managed widget text; never checkpointed. */
     char *content_root;
     asset_source *source; /* Declarative KDL only. */
@@ -88,22 +88,6 @@ static void position(const char *text, int offset, int *line, int *column)
             (*column)++;
         }
     }
-}
-static char *metadata_path(const asset_code *c)
-{
-    size_t size = strlen(c->path) + sizeof ".meta";
-    char *path = xmalloc(size);
-    snprintf(path, size, "%s.meta", c->path);
-    return path;
-}
-static char *read_metadata(const asset_code *c)
-{
-    if (!c->native_view) {
-        return NULL;
-    }
-    char *path = metadata_path(c), *text = file_read_text(path);
-    free(path);
-    return text;
 }
 static kit_code_editor *create_view(asset_code *c, const char *text)
 {
@@ -471,12 +455,6 @@ av_value *asset_code_capture(asset_code *c)
     av_obj_add_str(doc, root, "path", c->path);
     av_obj_add_str(doc, root, "text", c->text);
     av_obj_add_str(doc, root, "disk", c->disk);
-    if (c->disk_metadata) {
-        av_obj_add_str(doc, root, "disk_metadata", c->disk_metadata);
-    }
-    if (c->observed_metadata) {
-        av_obj_add_str(doc, root, "observed_metadata", c->observed_metadata);
-    }
     if (c->metadata) {
         av_obj_add_str(doc, root, "metadata", c->metadata);
     }
@@ -563,9 +541,7 @@ bool asset_code_canonical_dirty(const asset_code *c)
     if (c->file_missing) {
         return true;
     }
-    return strcmp(c->disk, c->text) != 0 ||
-           strcmp(c->metadata ? c->metadata : "", c->disk_metadata ? c->disk_metadata : "") !=
-               0;
+    return strcmp(c->disk, c->text) != 0;
 }
 
 void asset_code_set_local_dirty(asset_code *c, bool dirty)
@@ -657,11 +633,6 @@ static bool replace_source(asset_code *c, const char *before, const char *text, 
     return true;
 }
 
-bool asset_code_replace_with_metadata(asset_code *c, const char *before, const char *text, const char *metadata)
-{
-    return replace_source(c, before, text, metadata, false);
-}
-
 bool asset_code_edit_source(asset_code *c, const char *before, const char *text, const char *metadata, bool coalesce)
 {
     bool amend = coalesce && c->source_gesture && amendable(c);
@@ -674,7 +645,7 @@ bool asset_code_edit_source(asset_code *c, const char *before, const char *text,
 
 bool asset_code_replace(asset_code *c, const char *before, const char *text)
 {
-    return asset_code_replace_with_metadata(c, before, text, NULL);
+    return replace_source(c, before, text, NULL, false);
 }
 
 static bool same_provenance(const source_snapshot *snapshot, const asset_code_provenance *p)
@@ -1025,9 +996,7 @@ static asset_code *open_source(const char *path, char *error, size_t size, bool 
     text = text ? text : disk;
     c->editor = create_view(c, text);
     c->overlay_revision = adopt ? text_overlay_revision(path) : 0;
-    c->disk_metadata = read_metadata(c);
-    c->observed_metadata = c->disk_metadata ? xstrdup(c->disk_metadata) : NULL;
-    understand_with_metadata(c, text, c->disk_metadata);
+    understand_with_metadata(c, text, NULL);
     if (!c->native_view) {
         c->source_pending = false;
         valid_overlay(c, false);
@@ -1082,10 +1051,6 @@ static asset_code *restore_source(const av_value *state, const prototype_registr
     c->valid = valid ? xstrdup(valid) : NULL;
     const char *valid_metadata = av_get_str(av_obj_get(state, "valid_metadata"));
     c->valid_metadata = valid_metadata ? xstrdup(valid_metadata) : NULL;
-    const char *disk_metadata = av_get_str(av_obj_get(state, "disk_metadata"));
-    c->disk_metadata = disk_metadata ? xstrdup(disk_metadata) : NULL;
-    const char *observed = av_get_str(av_obj_get(state, "observed_metadata"));
-    c->observed_metadata = observed ? xstrdup(observed) : NULL;
     c->editor = create_view(c, text);
     c->view_text = c->prototype_owned ? xstrdup(text) : NULL;
     c->view_live = !c->runtime_held;
@@ -1212,8 +1177,6 @@ void asset_code_free(asset_code *c)
     free(c->valid);
     free(c->valid_metadata);
     free(c->metadata);
-    free(c->disk_metadata);
-    free(c->observed_metadata);
     free(c->view_text);
     free(c->content_root);
     free(c->hover);
@@ -1276,10 +1239,6 @@ void asset_code_set_source_world(asset_code *c, preview_world *world, const char
             c->presentation = p;
             free(c->metadata);
             c->metadata = authoring_source_presentation_metadata(p);
-            if (clean) {
-                free(c->disk_metadata);
-                c->disk_metadata = c->metadata ? xstrdup(c->metadata) : NULL;
-            }
         }
         c->source_pending = c->native_view || c->candidate;
         decorate(c);
@@ -1316,13 +1275,9 @@ void asset_code_set_source_world(asset_code *c, preview_world *world, const char
         }
     }
     understand(c, c->text);
-    if (clean) {
-        free(c->disk_metadata);
-        c->disk_metadata = c->metadata ? xstrdup(c->metadata) : NULL;
-        if (c->step < acount(c->history)) {
-            free(c->history[c->step].metadata);
-            c->history[c->step].metadata = c->metadata ? xstrdup(c->metadata) : NULL;
-        }
+    if (clean && c->step < acount(c->history)) {
+        free(c->history[c->step].metadata);
+        c->history[c->step].metadata = c->metadata ? xstrdup(c->metadata) : NULL;
     }
 }
 bool asset_code_validate(asset_code *c, editor *)
@@ -1657,22 +1612,8 @@ void asset_code_refresh(asset_code *c)
     if (!disk) {
         return;
     }
-    char *disk_metadata = read_metadata(c);
-    bool layout_changed = strcmp(
-                              disk_metadata ? disk_metadata : "",
-                              c->observed_metadata ? c->observed_metadata : ""
-                          ) != 0;
-    if (!strcmp(disk, c->disk) && !layout_changed) {
+    if (!strcmp(disk, c->disk)) {
         free(disk);
-        free(disk_metadata);
-        return;
-    }
-    if (layout_changed &&
-        strcmp(c->metadata ? c->metadata : "", c->disk_metadata ? c->disk_metadata : "") &&
-        strcmp(c->metadata ? c->metadata : "", disk_metadata ? disk_metadata : "")) {
-        snprintf(c->error, sizeof c->error, "Presentation metadata conflicts with a disk edit; the current draft is retained");
-        free(disk);
-        free(disk_metadata);
         return;
     }
     char *text = NULL;
@@ -1707,17 +1648,12 @@ void asset_code_refresh(asset_code *c)
     if (!text) {
         snprintf(c->error, sizeof c->error, "Source conflicts with a disk edit; the current text is retained");
         free(disk);
-        free(disk_metadata);
         return;
     }
     free(c->disk);
     c->disk = disk;
-    free(c->disk_metadata);
-    c->disk_metadata = disk_metadata;
-    free(c->observed_metadata);
-    c->observed_metadata = disk_metadata ? xstrdup(disk_metadata) : NULL;
     follow(c, text, false);
-    understand_with_metadata(c, text, disk_metadata);
+    understand(c, text);
     record(c, text);
     free(text);
     if (!c->native_view) {
@@ -1743,16 +1679,6 @@ static bool save_ready(asset_code *c, char *error, size_t size)
         snprintf(error, size, "%s", c->file_missing ? "Prototype source was deleted; restore the file, then save or reload it" : "Asset changed on disk; reopen it before saving");
         return false;
     }
-    char *observed = read_metadata(c);
-    bool metadata_changed = strcmp(
-                                observed ? observed : "",
-                                c->observed_metadata ? c->observed_metadata : ""
-                            ) != 0;
-    free(observed);
-    if (metadata_changed) {
-        snprintf(error, size, "Presentation metadata changed on disk; refresh it before saving");
-        return false;
-    }
     return true;
 }
 
@@ -1765,19 +1691,6 @@ static bool save_text(asset_code *c, char *error, size_t size)
     free(c->disk);
     c->disk = xstrdup(c->text);
     c->file_missing = false;
-    if (c->native_view && c->metadata) {
-        char *path = metadata_path(c);
-        int status = write_file_atomic(path, c->metadata);
-        free(path);
-        if (status) {
-            snprintf(error, size, "Could not save source presentation metadata for %s", c->path);
-            return false;
-        }
-    }
-    free(c->disk_metadata);
-    c->disk_metadata = c->metadata ? xstrdup(c->metadata) : NULL;
-    free(c->observed_metadata);
-    c->observed_metadata = c->metadata ? xstrdup(c->metadata) : NULL;
     c->runtime_held = false;
     c->typing = false;
     valid_overlay(c, true);

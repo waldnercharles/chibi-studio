@@ -336,7 +336,7 @@ static bool prototype_source_contract(studio *s)
     /* Text and Properties see the same draft. Invalid syntax and a valid
        identity-changing draft retain the last accepted model and overlay. */
     char *accepted = xstrdup(asset_code_text(code));
-    REQUIRE(studio_code_replace(s, paths[1], accepted, "SourceBridge :: prototype {", NULL));
+    REQUIRE(studio_code_replace(s, paths[1], accepted, "SourceBridge :: prototype {"));
     const void *invalid_step = asset_code_step(code);
     REQUIRE(
         app_scene_authoring_set_prototype_field(
@@ -354,7 +354,7 @@ static bool prototype_source_contract(studio *s)
     REQUIRE(!prototype_undo(scene));
     REQUIRE(!strcmp(asset_code_text(code), accepted));
     REQUIRE(
-        studio_code_replace(s, paths[1], accepted, "WrongBridgeName :: prototype {Transform{x:99}}", NULL)
+        studio_code_replace(s, paths[1], accepted, "WrongBridgeName :: prototype {Transform{x:99}}")
     );
     REQUIRE(asset_code_error(code)[0]);
     REQUIRE(text_overlay_text(paths[1]) && !strcmp(text_overlay_text(paths[1]), accepted));
@@ -367,7 +367,7 @@ static bool prototype_source_contract(studio *s)
     char *before_held = xstrdup(asset_code_text(code));
     const char *held_text = "SourceBridge :: prototype(SourceBridgeBase) { "
                             "Transform {x:18,y:9} }";
-    REQUIRE(studio_code_replace(s, paths[1], before_held, held_text, NULL));
+    REQUIRE(studio_code_replace(s, paths[1], before_held, held_text));
     REQUIRE(asset_code_runtime_held(code));
     REQUIRE(!app_scene_authoring_open_prototype(scene, names[1]));
     REQUIRE(asset_code_runtime_held(code));
@@ -513,7 +513,7 @@ static bool prototype_source_contract(studio *s)
         !strcmp(text_overlay_text(paths[2]), applied->source_accepted)
     );
     const char *invalid_apply = "SourceBridgeApply :: prototype {";
-    REQUIRE(studio_code_replace(s, paths[2], deleted_text, invalid_apply, NULL));
+    REQUIRE(studio_code_replace(s, paths[2], deleted_text, invalid_apply));
     const void *missing_invalid_step = asset_code_step(deleted_source);
     /* One checkpoint covers both a rejected identity draft and the populated
        scene source-before/source-after payload, including rebase-only replay. */
@@ -522,7 +522,7 @@ static bool prototype_source_contract(studio *s)
     code = asset->source;
     accepted = xstrdup(asset_code_text(code));
     REQUIRE(
-        studio_code_replace(s, paths[1], accepted, "WrongBridgeName :: prototype {Transform{x:99}}", NULL)
+        studio_code_replace(s, paths[1], accepted, "WrongBridgeName :: prototype {Transform{x:99}}")
     );
     char *checkpoint = app_scene_authoring_checkpoint(scene);
     REQUIRE(checkpoint);
@@ -601,7 +601,7 @@ static bool prototype_source_contract(studio *s)
 
     /* Scene Undo may replace a later invalid draft, but source Undo recovers
        its exact bytes rather than discarding that independent history. */
-    REQUIRE(studio_code_replace(s, paths[2], apply_text, invalid_apply, NULL));
+    REQUIRE(studio_code_replace(s, paths[2], apply_text, invalid_apply));
     REQUIRE(!replay_scene_edit(scene, false));
     REQUIRE(!strcmp(asset_code_text(applied->source), sources[2]));
     REQUIRE(asset_code_replay(applied->source, false, false));

@@ -55,8 +55,7 @@ struct studio_ui
     prototype_preview *world;
     prototype **prototypes;
     panel *panels;
-    tree_watch files, code_files,
-        metadata_files; /* declarative and executable project assets */
+    tree_watch files, code_files; /* declarative and executable project assets */
     rml_listener *listener;
     ui_data data; /* what the kit's hosted panels bind */
     studio_sources sources;
@@ -341,28 +340,6 @@ static void follow_disk(studio *s)
         apush(changed, code[i]);
     }
     afree(code);
-    char **metadata = tree_watch_poll(
-        &studio_ui_state->metadata_files,
-        studio_ui_state->content_root,
-        CODE_ASSET_METADATA_EXTENSION,
-        s->time
-    );
-    for (int i = 0; i < acount(metadata); i++) {
-        char *path = metadata[i];
-        path[strlen(path) - strlen(".meta")] = '\0';
-        struct stat info;
-        if (stat(path, &info) != 0 || !S_ISREG(info.st_mode)) {
-            continue;
-        }
-        bool known = false;
-        for (int j = 0; j < acount(changed); j++) {
-            known |= !strcmp(changed[j], path);
-        }
-        if (!known) {
-            apush(changed, xstrdup(path));
-        }
-    }
-    tree_watch_changes_free(metadata);
     bool relaunch = false, readable = true;
     source_catalog_edit *edits = NULL;
     studio_ui_state->wake |= acount(changed) != 0;
@@ -434,7 +411,6 @@ studio_ui *studio_ui_new(studio *s, const char *project_root, char *error, size_
     }
     tree_watch_poll(&studio_ui_state->files, studio_ui_state->content_root, DECLARATIVE_ASSET_EXTENSION, 0);
     tree_watch_poll(&studio_ui_state->code_files, studio_ui_state->content_root, CODE_ASSET_EXTENSION, 0);
-    tree_watch_poll(&studio_ui_state->metadata_files, studio_ui_state->content_root, CODE_ASSET_METADATA_EXTENSION, 0);
     return studio_ui_state;
 }
 
@@ -452,7 +428,6 @@ void studio_ui_free(studio_ui *studio_ui_state)
     ui_data_free(&studio_ui_state->data);
     tree_watch_free(&studio_ui_state->files);
     tree_watch_free(&studio_ui_state->code_files);
-    tree_watch_free(&studio_ui_state->metadata_files);
     rml_listener_destroy(studio_ui_state->listener);
     free(studio_ui_state->content_root);
     free(studio_ui_state);

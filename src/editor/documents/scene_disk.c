@@ -440,21 +440,6 @@ app_disk_change *app_scene_authoring_sync_disk(app_scene_authoring *scene, doubl
         apush(changed, code_changed[i]);
     }
     afree(code_changed);
-    char **metadata_changed = tree_watch_poll(
-        &scene->code_metadata_disk,
-        scene->content_root,
-        CODE_ASSET_METADATA_EXTENSION,
-        now
-    );
-    for (int i = 0; i < acount(metadata_changed); i++) {
-        char *path = metadata_changed[i];
-        path[strlen(path) - strlen(".meta")] = '\0';
-        struct stat info;
-        if (stat(path, &info) == 0 && S_ISREG(info.st_mode)) {
-            push_unique(&changed, path);
-        }
-    }
-    tree_watch_changes_free(metadata_changed);
     if (!changed && (!acount(scene->disk_pending) || runtime_session(scene))) {
         return changes;
     }
@@ -827,20 +812,9 @@ static void forget_file(app_scene_authoring *scene, const char *from)
 
 void scene_disk_note(app_scene_authoring *scene, const char *path)
 {
-    size_t length = strlen(path);
-    size_t metadata_length = strlen(CODE_ASSET_METADATA_EXTENSION);
-    if (length > metadata_length &&
-        !strcmp(path + length - metadata_length, CODE_ASSET_METADATA_EXTENSION)) {
-        tree_watch_note(&scene->code_metadata_disk, path);
-        return;
-    }
     const char *extension = strrchr(path, '.');
     if (extension && !strcmp(extension, CODE_ASSET_EXTENSION)) {
         tree_watch_note(&scene->code_disk, path);
-        char *metadata = xmalloc(length + sizeof ".meta");
-        snprintf(metadata, length + sizeof ".meta", "%s.meta", path);
-        tree_watch_note(&scene->code_metadata_disk, metadata);
-        free(metadata);
         return;
     }
     tree_watch_note(&scene->disk, path);

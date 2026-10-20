@@ -57,11 +57,6 @@ static bool ui_listed(const char *path)
 
 static reference_asset_kind content_asset_kind(const app_scene_authoring *scene, const char *path)
 {
-    size_t length = strlen(path), suffix = strlen(CODE_ASSET_METADATA_EXTENSION);
-    if (length >= suffix &&
-        !strcmp(path + length - suffix, CODE_ASSET_METADATA_EXTENSION)) {
-        return REFERENCE_ASSET_KIND_COUNT;
-    }
     static const struct
     {
         const char *folder;

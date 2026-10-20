@@ -71,7 +71,7 @@ static bool executable_source_discard(studio *s)
                 original && !original->valid &&
                 !strcmp(original->syntax->text, disk[kind])
             );
-            REQUIRE(studio_code_replace(s, path, disk[kind], edited[kind], NULL));
+            REQUIRE(studio_code_replace(s, path, disk[kind], edited[kind]));
             scene_document_tab *tab = &scene->tabs[tab_count];
             REQUIRE(tab->source_only && tab->source_state && tab->source_dirty && !tab->asset_saved);
             const authoring_source *draft = preview_source_find(scene->live, path, false);

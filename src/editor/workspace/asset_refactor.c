@@ -1,6 +1,5 @@
 #include "assets/refactor.h"
 #include "authoring/preview_source.h"
-#include "authoring/source_metadata.h"
 #include "editor/documents/ui_buffer.h"
 #include "editor/workspace/asset_refactor_internal.h"
 #include "editor/workspace/scene_internal.h"
@@ -59,23 +58,13 @@ void app_refactor_join(app_refactor *into, app_refactor *from)
 
 int app_refactor_count(const app_refactor *plan)
 {
-    int count = 0;
-    for (int i = 0; i < acount(plan->files); i++) {
-        count += !plan->files[i].metadata;
-    }
-    return count;
+    return acount(plan->files);
 }
 
 app_refactor_asset app_refactor_at(const app_refactor *plan, int index)
 {
-    const refactor_file *file = NULL;
-    for (int i = 0; i < acount(plan->files); i++) {
-        if (!plan->files[i].metadata && index-- == 0) {
-            file = &plan->files[i];
-            break;
-        }
-    }
-    assert(file);
+    assert(index >= 0 && index < acount(plan->files));
+    const refactor_file *file = &plan->files[index];
     return (app_refactor_asset){ .kind = file->kind,
                                  .name = file->name,
                                  .renamed = file->renamed,
@@ -152,49 +141,6 @@ static char **saved_texts(app_scene_authoring *scene)
     return texts;
 }
 
-static char *metadata_path(const char *path)
-{
-    size_t size = strlen(path) + sizeof ".meta";
-    char *out = xmalloc(size);
-    snprintf(out, size, "%s.meta", path);
-    return out;
-}
-
-static char **saved_metadata(app_scene_authoring *scene, char *const *texts)
-{
-    int count = reference_index_asset_count(scene->asset_index);
-    char **metadata = xcalloc((size_t)count + 1, sizeof *metadata);
-    for (int i = 0; i < count; i++) {
-        const reference_asset *asset = reference_index_asset_at(scene->asset_index, i);
-        if (!texts[i] || !asset->path ||
-            !source_catalog_source_path(scene->content_root, asset->path)) {
-            continue;
-        }
-        for (int j = 0; j < acount(scene->tabs); j++) {
-            const scene_document_tab *tab = &scene->tabs[j];
-            if (!tab->source_state || !scene_same_file(tab->path, asset->path)) {
-                continue;
-            }
-            const char *text = av_get_str(av_obj_get(tab->source_state, "text"));
-            if (text && !strcmp(text, texts[i])) {
-                metadata[i] = copy(av_get_str(av_obj_get(tab->source_state, "metadata")));
-                break;
-            }
-        }
-        if (!metadata[i]) {
-            char *path = metadata_path(asset->path);
-            char *json = read_scene_file(path);
-            free(path);
-            if (json && authoring_source_metadata_matches(json, texts[i])) {
-                metadata[i] = json;
-            } else {
-                free(json);
-            }
-        }
-    }
-    return metadata;
-}
-
 /* A sibling of `path` named `name`, with its extension. */
 char *refactor_renamed_path(const char *path, const char *name)
 {
@@ -238,68 +184,6 @@ static void add_styles(app_refactor *out, const reference_asset *asset, const re
     apush(out->files, file);
 }
 
-/* Metadata is a transaction companion, not an additional authored asset. */
-static void add_metadata(
-    app_refactor *out,
-    const refactor_file *source,
-    const char *source_text,
-    const char *metadata
-)
-{
-    const char *extension = strrchr(source->from, '.');
-    if (!extension || strcmp(extension, ".chibi")) {
-        return;
-    }
-    char *from = metadata_path(source->from);
-    char *before = read_scene_file(from);
-    char *text = source_text && metadata
-                   ? authoring_source_metadata_bind(metadata, source_text)
-                   : NULL;
-    if (!before && !text) {
-        free(from);
-        return;
-    }
-    refactor_file file = {
-        .kind = source->kind,
-        .name = xstrdup(source->name),
-        .renamed = copy(source->renamed),
-        .from = before ? from : NULL,
-        .to = text ? metadata_path(source->to) : NULL,
-        .text = text,
-        .before = before,
-        .metadata = true,
-    };
-    if (!before) {
-        free(from);
-    }
-    apush(out->files, file);
-}
-
-void refactor_source_metadata(
-    app_refactor *plan,
-    const refactor_file *source,
-    const char *metadata,
-    const char *before_metadata
-)
-{
-    if (!metadata && !before_metadata) {
-        return;
-    }
-    apush(
-        plan->files,
-        ((refactor_file){
-            .kind = source->kind,
-            .name = xstrdup(source->name),
-            .renamed = copy(source->renamed),
-            .from = before_metadata ? metadata_path(source->from) : NULL,
-            .to = metadata ? metadata_path(source->to) : NULL,
-            .text = copy(metadata),
-            .before = copy(before_metadata),
-            .metadata = true,
-        })
-    );
-}
-
 static app_refactor *files_of(const reference_index *index, char *const *texts, const refactor_plan *plan)
 {
     app_refactor *out = xcalloc(1, sizeof *out);
@@ -320,7 +204,6 @@ static app_refactor *files_of(const reference_index *index, char *const *texts, 
             .changes = changes_in(edit),
         };
         apush(out->files, file);
-        add_metadata(out, &file, edit->text, edit->metadata);
         if (asset->kind == REFERENCE_ASSET_UI && (edit->name || !edit->text)) {
             add_styles(out, asset, edit);
         }
@@ -420,7 +303,6 @@ static int plan_symbol(
         free(texts);
         return result;
     }
-    char **metadata = saved_metadata(scene, texts);
     const char **native_texts = xcalloc((size_t)reference_index_asset_count(index), sizeof *native_texts);
     for (int i = 0; i < reference_index_asset_count(index); i++) {
         const reference_asset *asset = reference_index_asset_at(index, i);
@@ -431,7 +313,6 @@ static int plan_symbol(
     }
     refactor_project project = { .index = index,
                                  .texts = native_texts,
-                                 .metadata = (const char *const *)metadata,
                                  .registry = &scene->registry };
     refactor_plan plan;
     int result = name
@@ -449,10 +330,8 @@ static int plan_symbol(
     free(native_texts);
     for (int i = 0; i < reference_index_asset_count(index); i++) {
         free(texts[i]);
-        free(metadata[i]);
     }
     free(texts);
-    free(metadata);
     return result;
 }
 
@@ -621,7 +500,7 @@ static app_refactor *reversed(const app_refactor *plan)
         const char *path = plan->guards[i].path, *text = plan->guards[i].text;
         for (int j = 0; j < acount(plan->files); j++) {
             const refactor_file *file = &plan->files[j];
-            if (!file->metadata && file->from && !strcmp(file->from, path)) {
+            if (file->from && !strcmp(file->from, path)) {
                 path = file->to;
                 text = file->text;
                 break;
@@ -640,8 +519,7 @@ static app_refactor *reversed(const app_refactor *plan)
                                .to = copy(file->from),
                                .text = copy(file->before),
                                .before = copy(file->text),
-                               .changes = file->changes,
-                               .metadata = file->metadata };
+                               .changes = file->changes };
         back.identity = copy(file->identity);
         apush(undo->files, back);
     }
@@ -679,8 +557,7 @@ int app_scene_authoring_apply_refactor(
     source_catalog_edit *source_edits = NULL;
     for (int i = 0; i < acount(plan->files); i++) {
         const refactor_file *file = &plan->files[i];
-        if (file->metadata || !file->from ||
-            !source_catalog_edit_path(scene->content_root, file->from)) {
+        if (!file->from || !source_catalog_edit_path(scene->content_root, file->from)) {
             continue;
         }
         if (!file->to || strcmp(file->from, file->to)) {
@@ -743,9 +620,7 @@ int app_scene_authoring_apply_refactor(
     scene_finish_source_edits(scene, stages, true);
     scene_move *moves = NULL;
     for (int i = 0; i < count; i++) {
-        if (!plan->files[i].metadata) {
-            apush(moves, ((scene_move){ plan->files[i].from, plan->files[i].to }));
-        }
+        apush(moves, ((scene_move){ plan->files[i].from, plan->files[i].to }));
     }
     scene_disk_follow(scene, moves, acount(moves));
     afree(moves);
