@@ -4,13 +4,15 @@
 // lock locks, drops attach or assign on a row and place prototypes on the list,
 // and the menu's Break When Spawned toggles.
 OutlinerInput :: behavior {
-    action show_ui_popover_action = show_ui_popover(0, "#outliner-menu", rowmenu.Pointer)
+    menu_at: struct<CF_V2> = null
+    action show_ui_popover_action = show_ui_popover(0, "#outliner-menu", menu_at)
     on RowClicked {
         select_object(event.Key, event.Mod, event.Shift)
     }
     // A right click keeps a selection it lands in (Unity), then opens the row
     // menu at the pointer.
     on RowMenu as rowmenu {
+        menu_at = rowmenu.Pointer
         if object_selected(rowmenu.Key) {
             show_ui_popover_action()
         } else {
