@@ -133,8 +133,8 @@ sources (at most 128 bytes total), six source-only opens/edits/closes, one faile
 read attempt and one Counter edit/discard/reopen. It adds no fixtures, worlds,
 frames, sleeps or watcher times. Files and buffers are removed before the final
 regression assertion; the expected read-error notice remains host-owned until
-normal shutdown. The four-frame invocation and its supervisor deadline are
-unchanged. This exercises the production handlers, not pointer hit testing.
+normal shutdown. The four-frame invocation is unchanged. This exercises the
+production handlers, not pointer hit testing.
 
 `studio-acceptance --code-keys --project-root PATH` takes another disposable copy.
 It shows Counter in the Text Editor, focuses it and places the cursor after the
@@ -304,8 +304,7 @@ retirement. One fixed empty behavior is prepared with the bytecode backend;
 four source registrations and twelve deferred attachments remain pending with
 begin=0. It runs no Begin, authored dispatch, engine frame, UI publication or
 child process. This leaf check does not establish queued/paused controller or
-live-panel behavior. Keep the complete invocation under the production
-60-second supervisor after independent exact-workload admission.
+live-panel behavior.
 
 `studio-acceptance --graph-visibility --project-root PATH` takes a disposable
 copy and runs ten hidden fixed-dt frames. A tiny Counter variant puts a helper
@@ -417,8 +416,7 @@ reopen. The small Assets fixture exercises scroll handling but does not establis
 movement through a large virtualized list. These checks establish panel behavior
 and work counts, not whole-application or CUT-50 aggregate speedup.
 
-The engine supervisor admits this fixed workload separately from the older
-Studio suites. From the engine checkout, after copying `tests/acceptance/project`
+From the engine checkout, after copying `tests/acceptance/project`
 as a copy-on-write clone to a disposable directory:
 
 ```sh
@@ -428,9 +426,8 @@ python3 tools/test_policy.py tool studio-panel-idle
 ```
 
 The binary comes from this Studio checkout against the installed SDK. The
-supervisor enforces one 60-second deadline including in-process fixture
-initialization. The external project copy and build happen beforehand. It does
-not admit other projects, selectors, or a Studio suite.
+external project copy and build happen beforehand. This command runs only the
+panel-idle selector.
 
 The initial macOS comparison used the same two-actor workload against Studio
 `d10222d` and the candidate, with an installed engine SDK from `f3ff608`.
@@ -450,9 +447,8 @@ styles because there is no complete input revision for those values. Timing
 output is diagnostic; these small runs support the construction counts, not an
 elapsed-time performance claim.
 
-Execution requires explicit root coordination and independent admission under the
-60-second GPU policy. Merely building this target does not run it. A whole UI
-suite is not implied. The vendored pico_unit header preserves its upstream license
+Merely building this target does not run it. A whole UI suite is not implied.
+The vendored pico_unit header preserves its upstream license
 and original engine vendoring record; it is not installed with the Studio product.
 
 `studio-acceptance --outliner-move --project-root PATH` takes a disposable copy
@@ -485,9 +481,7 @@ This selector is a native baseline fixture, not a live authored cutover or a
 current-generation authority check. It does not exercise pointer input, root
 collapse/reveal, an authored policy library or browser parity. The precise
 workload, measured native result and migration obligations are in
-[Outliner migration parity](../../docs/outliner-migration-parity.md). Do not
-infer permission to run it from the historical offscreen result or another
-selector's admission.
+[Outliner migration parity](../../docs/outliner-migration-parity.md).
 
 `studio-acceptance --outliner-row-policies --source PATH` reads the exact
 `projects/studio/content/libraries/OutlinerRowPolicies.chibi` source without
@@ -513,11 +507,9 @@ full-width text conversion, production panel cutover or browser parity.
 
 Build with the existing optional acceptance target; its explicit public SDK
 dependencies include `Chibi::array_capabilities` and `Chibi::text_capabilities`.
-Compilation and execution of this cumulative source are separate gates. Before
-running, independently review the exact source/header, installed SDK and binary,
-then use the unchanged production supervisor with one whole-invocation
-60-second deadline. Neither the native row baseline nor successful project
-migration/formatting admits or proves this helper route.
+Compilation and execution of this cumulative source are separate checks. Use a
+matching installed SDK and binary. The native row baseline and successful
+project migration/formatting do not establish this helper route's runtime result.
 
 `studio-acceptance --scene-move --project-root PATH` runs two hidden frames on
 an isolated project. It checks moving multiple objects under a rotated parent,
@@ -559,9 +551,9 @@ are outside this selector.
 
 The engine's `--studio-graph-pointer`, `--studio-asset-pointer` and
 `--studio-debugger-source-history` agent GPU routes run these selectors
-individually with provenance checks and the shared 60-second deadline. Each uses
-a fresh copy of this directory's fixture. These checks do not admit the held
-acceptance suite or establish web input coverage.
+individually with provenance checks. Each uses a fresh copy of this directory's
+fixture. These checks do not establish full acceptance-suite or web input
+coverage.
 
 Before each independent engine GPU invocation, restore the bundled manifest:
 
@@ -586,27 +578,26 @@ This selector returns before host, SDL or renderer initialization. It creates no
 window, world or authored execution and runs no host frames. It requires a current
 installed SDK with path-qualified migration diagnostics. From the matching engine
 checkout, after building this Studio acceptance target against that SDK, run the
-single command under the production deadline supervisor:
+single command through the engine runner:
 
 ```sh
 python3 - /absolute/studio-build/bin/studio-acceptance <<'PY'
 import sys
 from tools.test_policy import run_commands
-raise SystemExit(run_commands([[sys.argv[1], '--project-open']], seconds=60))
+raise SystemExit(run_commands([[sys.argv[1], '--project-open']]))
 PY
 ```
 
-Configuration and compilation happen before this invocation. Fixture setup,
-both constructor calls and normal teardown stay inside its unchanged 60-second
-deadline. This focused selector does not run the rendering or interaction routes.
+Configuration and compilation happen before this invocation. The selector
+includes fixture setup, both constructor calls and normal teardown. It does not
+run the rendering or interaction routes.
 
 ## Canonical prototype source ownership
 
-`studio-acceptance --prototype-source --project-root PATH` is a separate,
-independently admitted workload. Run only against an isolated copy of the
-checked-in acceptance project, with the exact installed SDK that exports
-`authoring/source_prototype_edit.h`, under the unchanged 60-second production
-supervisor. It runs two hidden frames. Its first frame uses four tiny prototype
+`studio-acceptance --prototype-source --project-root PATH` is a separate
+workload. Run against an isolated copy of the checked-in acceptance project,
+with the matching installed SDK that exports `authoring/source_prototype_edit.h`.
+It runs two hidden frames. Its first frame uses four tiny prototype
 files, three scene actors, and one additional workspace fixture/checkpoint
 restore. That fixture prepares its source catalog once from the same fixed
 acceptance-project root before restoring the host checkpoint. It creates the
@@ -652,7 +643,7 @@ model-only `prototype_write_field` plus `asset->dirty = 1`. The case must fail a
 This isolates the demonstrated hidden-model Properties regression, rather than
 failing because an SDK symbol is absent. Do not run the historical Save/Discard
 negative controls again for this bridge. Retain their green four-frame case and
-the existing three admitted CPU selectors as adjacent coverage.
+the existing three CPU selectors as adjacent coverage.
 
 One additional edge-only counterfactual restores the prior missing-file dirty
 predicate and the two Properties stale-status result branches. It keeps the
@@ -665,9 +656,9 @@ one additional fixed selector run/build, not a replay of historical controls.
 ## Prototype source host authority
 
 `studio-acceptance --prototype-source-authority --project-root PATH` is a
-separate fixed two-frame selector, under the same unchanged 60-second production
-supervisor and isolated checked-in acceptance project. It does not add work to
-`--source-edit` or `--prototype-source`. The source fixture uses one temporary
+separate fixed two-frame selector, using an isolated copy of the checked-in
+acceptance project. It does not add work to `--source-edit` or `--prototype-source`.
+The source fixture uses one temporary
 prototype file, one workspace fixture, zero actors, five nonrendering Code
 compositions and one real same-workspace checkpoint restoration. Its in-process
 transport has no sockets or production test hooks. Including the focused
@@ -729,7 +720,7 @@ This adds one prototype, two incoming messages and two outgoing messages, zero
 actors, zero checkpoints, zero host/GPU frames, sleeps or child processes. The
 whole selector with capture is 70 incoming messages and 98 sends; without capture
 it remains 68 and 96. The screenshot uses the existing `--screenshot` path and
-its inner readback limit under the unchanged 60-second production supervisor.
+its existing readback limit.
 The screenshot contains only the disposable Studio fixture. Independently inspect
 its actual Retry Draft primary/Use Shared secondary layout, text baselines,
 spacing and readable surrounding kit controls; capture success alone is not
@@ -742,9 +733,9 @@ at `REQUIRE(test.code_authority && test.property_authority)` after complete
 fixture and collaboration cleanup. This independently demonstrates both reported
 entry gaps without bypassing the SDK, dropping later positive assertions or
 changing the frame/message limits. Candidate success requires both booleans 1
-and all remaining source/model/history assertions. Source review and workload
-admission do not establish runtime success; native and web builds and the hosted
-selector results are reported separately.
+and all remaining source/model/history assertions. Source review does not
+establish runtime success; native and web builds and the hosted selector results
+are reported separately.
 
 The separate held-intent counterfactual reverses only Retry's apply-policy lookup
 from the retained draft to the accepted source's runtime hold. It keeps the
