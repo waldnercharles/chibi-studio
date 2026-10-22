@@ -10,11 +10,10 @@ and shared UI backend code belong in the engine repository
   are checked out side by side). Write C, never C++; `src/editor/text/zep_bridge.cpp`
   is the one pass-through shim.
 - Studio's own projects (`projects/starter`, `projects/studio`,
-  `tests/acceptance/project`) are Chibi projects. They may lag the engine's
-  project version: Studio upgrades an older project when it opens it, and CI
-  opens the first two against engine `main`. Never open a PR that only bumps their
-  version. Migrate one with the engine's `chibi_ctl --migrate` in a PR that
-  changes it for another reason, and format it with `chibi_ctl --format`.
+  `tests/acceptance/project`) use the SDK's current project version. Opening an
+  older version fails without changing its files. Update bundled projects as
+  part of the engine feature that changes their schema; keep their authored
+  sources and version compatible with the installed SDK.
 - `EXTRACTION.json` records each file copied from the engine. After editing one
   of those files, set its `consumer_sha256` to the new file's SHA-256 in the
   same commit. New Studio-only files are not listed there.

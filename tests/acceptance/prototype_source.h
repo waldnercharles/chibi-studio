@@ -40,6 +40,7 @@ static void bridge_parameter_source(
     const char *name,
     const char *first,
     const char *second,
+    const char *constructor,
     bool reversed
 )
 {
@@ -48,8 +49,8 @@ static void bridge_parameter_source(
         size,
         "package asset\nimport data \"game:assets\"\n"
         "pub Parameters :: () -> data.Value { return data.Object(["
-        "data.Field.Named(\"%s\", data.Value.Int(%d)),"
-        "data.Field.Named(\"%s\", data.Value.Int(%d))]) }\n"
+        "data.Field.Named(\"%s\", data.Value.%s(%d)),"
+        "data.Field.Named(\"%s\", data.Value.%s(%d))]) }\n"
         "pub Overrides :: () -> data.Value { return data.Object([]) }\n"
         "pub Build :: () -> byte[] { return data.Encode(data.Object(["
         "data.Field.Named(\"name\", data.Value.Text(\"%s\")),"
@@ -59,8 +60,10 @@ static void bridge_parameter_source(
         "data.Object([data.Field.Named(\"Transform\","
         "data.Object([data.Field.Named(\"x\", data.Value.UInt(1))]))]))])) }\n",
         first,
+        constructor,
         reversed ? 7 : 1,
         second,
+        constructor,
         reversed ? 1 : 2,
         name
     );
@@ -179,13 +182,43 @@ static bool bridge_computed_source(
     free(saved);
     REQUIRE(bridge_field(scene, name, "x", 10));
 
+    /* Unsigned constructor identity survives the inspector, including values
+       beyond both the signed 32-bit and signed 64-bit ranges. */
+    char unsigned_source[2048];
+    bridge_parameter_source(unsigned_source, sizeof unsigned_source, name, "count", "other", "UInt", false);
+    before = xstrdup(asset_code_text(asset->source));
+    REQUIRE(studio_code_replace(s, path, before, unsigned_source));
+    free(before);
+    properties_parameter_row(path, "count", 0, &parameter);
+    properties_row_id(&parameter, change.args[0]);
+    const char *unsigned_values[] = { "4294967296", "18446744073709551615" };
+    for (size_t i = 0; i < sizeof unsigned_values / sizeof *unsigned_values; i++) {
+        snprintf(change.args[1], sizeof change.args[1], "%s", unsigned_values[i]);
+        studio_properties_action(s, "change", &change);
+        av_doc *unsigned_parameters = authoring_prototype_source_parameters(
+            asset_code_text(asset->source),
+            NULL,
+            0
+        );
+        av_value *count = av_obj_get(av_doc_root(unsigned_parameters), "count");
+        REQUIRE(
+            av_is_uint(count) &&
+            av_get_uint(count) == (i ? UINT64_MAX : UINT64_C(4294967296))
+        );
+        av_doc_free(unsigned_parameters);
+    }
+    REQUIRE(!prototype_undo(scene));
+    REQUIRE(strstr(asset_code_text(asset->source), "data.Value.UInt(4294967296)"));
+    REQUIRE(!prototype_redo(scene));
+    REQUIRE(strstr(asset_code_text(asset->source), "data.Value.UInt(18446744073709551615)"));
+
     /* Names may exceed a row id. Full-name identity rejects stale indices and
        queued actions after another prototype with the same key is selected. */
     char short_name[128], long_name[160], long_source[4096];
     memset(short_name, 'p', sizeof short_name - 1);
     short_name[sizeof short_name - 1] = 0;
     snprintf(long_name, sizeof long_name, "%s_tail", short_name);
-    bridge_parameter_source(long_source, sizeof long_source, "SourceBridgeBase", short_name, long_name, false);
+    bridge_parameter_source(long_source, sizeof long_source, "SourceBridgeBase", short_name, long_name, "Int", false);
     before = xstrdup(asset_code_text(asset->source));
     REQUIRE(studio_code_replace(s, path, before, long_source));
     free(before);
@@ -203,7 +236,7 @@ static bool bridge_computed_source(
         av_get_int(av_obj_get(av_doc_root(parameters), long_name)) == 7
     );
     av_doc_free(parameters);
-    bridge_parameter_source(long_source, sizeof long_source, "SourceBridgeBase", long_name, short_name, true);
+    bridge_parameter_source(long_source, sizeof long_source, "SourceBridgeBase", long_name, short_name, "Int", true);
     before = xstrdup(asset_code_text(asset->source));
     REQUIRE(studio_code_replace(s, path, before, long_source));
     free(before);
@@ -212,7 +245,7 @@ static bool bridge_computed_source(
 
     scene_prototype_asset *other = find_prototype(scene, "SourceBridge");
     REQUIRE(other && !app_scene_authoring_open_prototype(scene, "SourceBridge"));
-    bridge_parameter_source(long_source, sizeof long_source, "SourceBridge", short_name, long_name, false);
+    bridge_parameter_source(long_source, sizeof long_source, "SourceBridge", short_name, long_name, "Int", false);
     before = xstrdup(asset_code_text(other->source));
     REQUIRE(studio_code_replace(s, other->path, before, long_source));
     free(before);

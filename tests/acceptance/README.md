@@ -29,6 +29,14 @@ fixture with two worlds, four history queries, one content refresh and one
 validation. It adds no host frames, sleeps or child processes. Files and models
 are freed before the final regression assertion.
 
+The same first frame opens one additional tiny generic asset in the existing
+static-fixture root. A local comment edit and an external helper edit have
+identical evaluated output; disk refresh must retain both source changes,
+Undo/Redo and Save. A second overlapping helper edit must retain the draft,
+report a conflict and block Save without changing the incoming disk text.
+This adds one file, two disk refreshes and two Save attempts, with no additional
+worlds, frames or checkpoint payloads. The file is removed before the root.
+
 The first frame also checks prototype and relationship source tabs through
 Studio's focused Undo/Redo dispatch, including dirty state and typed values
 reopened from the tab's checkpoint. The same two fixtures now use the public
@@ -635,6 +643,8 @@ Changing the parameter retains that override. Reset override, Undo and Redo
 restore the expected evaluated values. Save and Reload preserve the helper and
 formula bytes. Long parameter keys sharing a 127-byte prefix remain distinct;
 queued parameter actions reject reordered keys and another selected prototype.
+Unsigned parameters are edited through the same inspector action at values above
+the signed 32-bit and 64-bit limits; source Undo and Redo retain UInt constructors.
 This adds no files, worlds, frames or rendering passes.
 
 The same first frame also exercises one notified delete/return of the existing
@@ -782,3 +792,40 @@ available until host shutdown and is removed on success or failure; only a
 newly created prototypes directory is removed. The PNG is retained for visual
 review of spacing, baselines and controls. This selector does not expand
 `--prototype-source` or other acceptance workloads.
+
+## Focused compiled asset editing
+
+`studio-acceptance --compiled-asset-edit --project-root PATH` uses a fresh disposable
+copy of this directory's `project` fixture. Keep the complete process under the
+unchanged 60-second supervisor; build the acceptance target separately.
+
+This independent two-frame contract creates one approximately 1 KiB prototype
+and no actors, worlds or checkpoints. Its first frame sends three production
+Properties actions: change a UInt parameter from 2 to 3, override computed X with
+12, and Reset X. It verifies evaluated X values 4, 6, 12 and 6, scalar identity,
+exact source Undo/Redo, helper/comment retention, Save and Reload. The second
+frame verifies the final value. The source and newly created prototypes directory
+are removed after host shutdown. It opens no behavior graph and captures no PNG.
+
+### CPU Properties model contract
+
+`studio-acceptance --compiled-asset-edit-model` runs the same independent edit
+contract without the host application or Studio UI bootstrap. It creates an
+empty temporary content root, one explicit ECS world and the scene fixture's
+owned prototype preview, plus one empty placeholder behavior. One real 64×64
+RmlUi context and the minimal `studio.rml` kit document support error reporting;
+there is no Begin, update, render, window, host frame or authored UI dispatch.
+The fixture asserts its scene, kit and editable state before production
+Properties actions, then rejects unexpected Output records. Cleanup retires the
+scene, kit/context, registry and source files even after an assertion failure.
+Use a fresh isolated `CHIBI_ASSET_CACHE_DIR` and the production 60-second
+supervisor. This establishes editor model coverage only. The full startup
+selector remains held: cold Debug and Release startup both reached the deadline
+before its first callback, so neither establishes rendering or edit coverage.
+
+The same CPU contract then opens one generic asset outside its content catalog.
+The new source-only regression merges a disjoint local comment and external
+helper edit, checks exact Undo/Redo and Save, then rejects an overlapping external
+helper change without overwriting disk. It adds one file, two refreshes, one
+successful Save and one rejected Save, and removes its file before teardown.
+All assertions and cleanup share the same supervisor deadline.

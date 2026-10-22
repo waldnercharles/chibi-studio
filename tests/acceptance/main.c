@@ -67,6 +67,7 @@ static enum {
     PROTOTYPE_SOURCE,
     PROTOTYPE_SOURCE_AUTHORITY,
     TYPED_PROTOTYPE_PREVIEW,
+    COMPILED_ASSET_EDIT,
     OUTLINER_MOVE,
     OUTLINER_ROWS,
     SCENE_PHYSICS,
@@ -802,6 +803,82 @@ static bool static_prototype_refresh(void);
 static bool large_source_read_limits(void);
 static bool static_source_dispatch_history(studio *);
 
+/* A generic asset's source-only edits must survive disk refresh even when
+   every version evaluates to the same value. Use a fixed disposable root. */
+static asset_code *generic_refresh_code;
+static char generic_refresh_path[1024];
+
+static void generic_asset_source_cleanup(void)
+{
+    asset_code_free(generic_refresh_code);
+    generic_refresh_code = NULL;
+    if (generic_refresh_path[0]) {
+        unlink(generic_refresh_path);
+    }
+    generic_refresh_path[0] = 0;
+}
+
+static bool generic_asset_source_refresh(const char *root)
+{
+    char path[1024], error[256];
+    snprintf(path, sizeof path, "%s/AssetMerge.chibi", root);
+    snprintf(generic_refresh_path, sizeof generic_refresh_path, "%s", path);
+    const char *base = "package asset\nimport data \"game:assets\"\n"
+                       "// local baseline\n"
+                       "Helper :: () -> int { return 1 }\n"
+                       "pub Build :: () -> byte[] { return "
+                       "data.Encode(data.Object([])) }\n";
+    const char *local = "package asset\nimport data \"game:assets\"\n"
+                        "// local draft\n"
+                        "Helper :: () -> int { return 1 }\n"
+                        "pub Build :: () -> byte[] { return "
+                        "data.Encode(data.Object([])) }\n";
+    const char *incoming = "package asset\nimport data \"game:assets\"\n"
+                           "// local baseline\n"
+                           "Helper :: () -> int { return 1 + 0 }\n"
+                           "pub Build :: () -> byte[] { return "
+                           "data.Encode(data.Object([])) }\n";
+    REQUIRE(!write_file_atomic(path, base));
+    asset_code *code = asset_code_open(path, error, sizeof error);
+    generic_refresh_code = code;
+    REQUIRE(code && !asset_code_static(code) && !asset_code_error(code)[0]);
+    REQUIRE(asset_code_replace(code, base, local));
+    REQUIRE(!write_file_atomic(path, incoming));
+    asset_code_refresh(code);
+    REQUIRE(!asset_code_error(code)[0]);
+    REQUIRE(strstr(asset_code_text(code), "// local draft"));
+    REQUIRE(strstr(asset_code_text(code), "return 1 + 0"));
+    char *merged = xstrdup(asset_code_text(code));
+    REQUIRE(asset_code_replay(code, false, false));
+    REQUIRE(!strcmp(asset_code_text(code), local));
+    REQUIRE(asset_code_replay(code, true, false));
+    REQUIRE(!strcmp(asset_code_text(code), merged));
+    REQUIRE(asset_code_save(code, error, sizeof error));
+    char *saved = file_read_text(path);
+    REQUIRE(saved && !strcmp(saved, merged));
+    free(saved);
+    free(merged);
+    /* Overlapping source-only changes retain the draft and block Save. */
+    const char *conflicting = "package asset\nimport data \"game:assets\"\n"
+                              "// local draft\n"
+                              "Helper :: () -> int { return 3 }\n"
+                              "pub Build :: () -> byte[] { return "
+                              "data.Encode(data.Object([])) }\n";
+    REQUIRE(asset_code_replace(code, asset_code_text(code), local));
+    REQUIRE(!write_file_atomic(path, conflicting));
+    asset_code_refresh(code);
+    REQUIRE(asset_code_error(code)[0] && !strcmp(asset_code_text(code), local));
+    REQUIRE(!asset_code_save(code, error, sizeof error));
+    saved = file_read_text(path);
+    REQUIRE(saved && !strcmp(saved, conflicting));
+    free(saved);
+    asset_code_free(code);
+    generic_refresh_code = NULL;
+    REQUIRE(!unlink(path));
+    generic_refresh_path[0] = 0;
+    return true;
+}
+
 static bool static_source_history(studio *s)
 {
     REQUIRE(large_source_read_limits());
@@ -980,6 +1057,7 @@ static bool static_source_history(studio *s)
         REQUIRE(!unlink(path));
         REQUIRE(!rmdir(directory));
     }
+    REQUIRE(generic_asset_source_refresh(root));
     REQUIRE(!rmdir(root));
     REQUIRE(static_prototype_refresh());
     return true;
@@ -4779,6 +4857,7 @@ static bool code_glyphs_frame(void *state)
 #include "scene_move.h"
 
 /* Uses the fixture defined by scene_move.h. */
+#include "compiled_asset_edit.h"
 #include "prototype_source.h"
 #include "prototype_source_authority.h"
 #include "prototype_source_capture.h"
@@ -4857,6 +4936,9 @@ bool studio_acceptance_frame(void *state)
             break;
         case PROTOTYPE_SOURCE_AUTHORITY:
             callback_ok = prototype_source_authority_frame(state);
+            break;
+        case COMPILED_ASSET_EDIT:
+            callback_ok = compiled_asset_edit_frame(state);
             break;
         case TYPED_PROTOTYPE_PREVIEW:
             callback_ok = typed_prototype_preview_frame(state);
@@ -5244,6 +5326,14 @@ TEST_CASE(debugger_source_history)
 
 int main(int argc, char **argv)
 {
+    if (argc == 2 && !strcmp(argv[1], "--compiled-asset-edit-model")) {
+        pu_setup(NULL, compiled_model_cleanup);
+        RUN_TEST_CASE(compiled_asset_edit_model);
+        pu_clear_setup();
+        pu_print_stats();
+        return pu_test_failed() ? 1 : 0;
+    }
+
     if (argc == 2 && !strcmp(argv[1], "--scene-read")) {
         studio_scene_read_tests();
         pu_print_stats();
@@ -5267,6 +5357,7 @@ int main(int argc, char **argv)
     }
     bool typed_preview = argc == 6 && !strcmp(argv[1], "--typed-prototype-preview") &&
                          !strcmp(argv[4], "--screenshot") && argv[5][0];
+    bool compiled_edit_mode = argc == 4 && !strcmp(argv[1], "--compiled-asset-edit");
     bool source_edit = argc == 4 && !strcmp(argv[1], "--source-edit");
     bool code_keys = argc == 4 && !strcmp(argv[1], "--code-keys");
     bool asset_keys = argc == 4 && !strcmp(argv[1], "--asset-keys");
@@ -5299,15 +5390,16 @@ int main(int argc, char **argv)
     if ((!source_edit && !code_keys && !asset_keys && !exporting && !visibility &&
          !keys_mode && !labels && !units && !hierarchy && !scene_move_mode &&
          !prototype_source_mode && !prototype_source_authority_mode &&
-         !typed_preview && !outliner_move_mode && !outliner_rows_mode &&
-         !physics && !assets && !viewport && !camera && !playing &&
+         !compiled_edit_mode && !typed_preview && !outliner_move_mode &&
+         !outliner_rows_mode && !physics && !assets && !viewport && !camera && !playing &&
          !prompting && !followups && !glyphs && !idle && !graph_pointer_mode &&
          !asset_pointer_mode && !debugging && !gizmo && !colliders) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
-            "--source-edit|--code-keys|--asset-keys|--export-game|"
+            "--compiled-asset-edit|--source-edit|--code-keys|--asset-keys|--"
+            "export-game|"
             "--graph-visibility|--graph-keys|--graph-pointer|--asset-pointer|--"
             "graph-labels|--unit-warnings|"
             "--scene-hierarchy|--scene-move|--prototype-source|--prototype-"
@@ -5347,7 +5439,8 @@ int main(int argc, char **argv)
     }
     pu_display_time(true);
     typed_preview_capture = typed_preview ? argv[5] : NULL;
-    mode = typed_preview                   ? TYPED_PROTOTYPE_PREVIEW
+    mode = compiled_edit_mode              ? COMPILED_ASSET_EDIT
+         : typed_preview                   ? TYPED_PROTOTYPE_PREVIEW
          : source_edit                     ? SOURCE_EDIT
          : code_keys                       ? CODE_KEYS
          : asset_keys                      ? ASSET_KEYS
@@ -5395,6 +5488,7 @@ int main(int argc, char **argv)
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
         case SCENE_MOVE: RUN_TEST_CASE(scene_move_contracts); break;
         case PROTOTYPE_SOURCE: RUN_TEST_CASE(prototype_source_ownership); break;
+        case COMPILED_ASSET_EDIT: RUN_TEST_CASE(compiled_asset_edit); break;
         case TYPED_PROTOTYPE_PREVIEW:
             RUN_TEST_CASE(typed_prototype_preview);
             break;

@@ -1784,7 +1784,7 @@
       "source_path": "src/editor/collab/workspace.h"
     },
     "src/editor/documents/asset_code.c": {
-      "consumer_sha256": "2a9f6382802bf3ad81a048414a891145f4c4b7e040fdf1ac82d0e6bc40e556cc",
+      "consumer_sha256": "04f5b056f70ce79c18a7bd6754bc128a948dc9754c866ee0d77500c5cf64f4b0",
       "current_source_sha256": "91f77c6e1b3d60ddab4c59fa395ba78c9122e54cb6707f866eb2fb9730d2615c",
       "sha256": "5bcaf149c81eb750ce0da5b74954c40758aedfa32e6cb590849d723050c3ce64",
       "source_path": "src/editor/documents/asset_code.c"
@@ -2427,7 +2427,7 @@
       "source_path": "src/editor/studio/studio_projects.c"
     },
     "src/editor/studio/studio_properties.c": {
-      "consumer_sha256": "78d6aa07cf3ade7e3e33f8271fbb0f1c21ecf1e2251f9d7030673bdd951e0af6",
+      "consumer_sha256": "0def0682ddc59680c431f9400d613730ac0f09defec538a4b50b152e042e09fc",
       "current_source_sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
       "sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
       "source_path": "src/editor/studio/studio_properties.c"

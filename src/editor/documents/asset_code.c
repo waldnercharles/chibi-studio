@@ -718,62 +718,6 @@ void asset_code_set_names(asset_code *c, const char *const *names, int count)
     }
 }
 
-static av_value *merge(
-    av_doc *doc,
-    const av_value *base,
-    const av_value *current,
-    const av_value *incoming,
-    bool *ok
-)
-{
-    if (av_equals(base, incoming) || av_equals(current, incoming)) {
-        return av_clone(doc, current);
-    }
-    if (av_equals(base, current)) {
-        return av_clone(doc, incoming);
-    }
-    if (!av_is_obj(base) || !av_is_obj(current) || !av_is_obj(incoming)) {
-        *ok = false;
-        return NULL;
-    }
-    av_value *result = av_obj(doc);
-    for (size_t i = 0; i < av_obj_size(current); i++) {
-        const char *key = av_get_str(av_obj_key_at(current, i));
-        const av_value *a = av_obj_get(base, key), *b = av_obj_get(current, key),
-                       *c = av_obj_get(incoming, key);
-        if (!c) {
-            if (a && !av_equals(a, b)) {
-                *ok = false;
-                return NULL;
-            }
-            if (!a) {
-                av_obj_add_val(doc, result, key, av_clone(doc, b));
-            }
-            continue;
-        }
-        av_value *value = merge(doc, a, b, c, ok);
-        if (!*ok) {
-            return NULL;
-        }
-        av_obj_add_val(doc, result, key, value);
-    }
-    for (size_t i = 0; i < av_obj_size(incoming); i++) {
-        const char *key = av_get_str(av_obj_key_at(incoming, i));
-        if (av_obj_get(current, key)) {
-            continue;
-        }
-        const av_value *a = av_obj_get(base, key), *c = av_obj_get(incoming, key);
-        if (a && !av_equals(a, c)) {
-            *ok = false;
-            return NULL;
-        }
-        if (!a) {
-            av_obj_add_val(doc, result, key, av_clone(doc, c));
-        }
-    }
-    return result;
-}
-
 static void understand_with_metadata(asset_code *c, const char *text, const char *metadata)
 {
     char *next = xstrdup(text), *layout = metadata ? xstrdup(metadata) : NULL;
@@ -1587,31 +1531,10 @@ void asset_code_refresh(asset_code *c)
     char *text = NULL;
     if (!asset_code_dirty(c)) {
         text = xstrdup(disk);
-    } else if (!strcmp(disk, c->disk)) {
-        text = xstrdup(c->text);
-    } else if (c->native_view || c->static_source) {
-        text = asset_code_merge_source(c->disk, c->text, disk);
     } else {
-        char error[256];
-        av_doc *base = asset_document_read(c->disk, error, sizeof error),
-               *incoming = asset_document_read(disk, error, sizeof error);
-        av_doc *merged = av_doc_new();
-        bool ok = base && incoming && c->source->document;
-        if (ok) {
-            av_value *value = merge(
-                merged,
-                av_doc_root(base),
-                av_doc_root(c->source->document),
-                av_doc_root(incoming),
-                &ok
-            );
-            if (ok) {
-                text = asset_source_reconcile(c->text, value, error, sizeof error);
-            }
-        }
-        av_doc_free(base);
-        av_doc_free(incoming);
-        av_doc_free(merged);
+        /* Every asset is authored source: value equality cannot establish
+           that incoming helper definitions or comments are unchanged. */
+        text = asset_code_merge_source(c->disk, c->text, disk);
     }
     if (!text) {
         snprintf(c->error, sizeof c->error, "Source conflicts with a disk edit; the current text is retained");

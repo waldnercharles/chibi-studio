@@ -874,12 +874,11 @@ bool properties_parameter_value(const av_value *value, pin_value *out)
             return true;
         case AV_SINT:
         case AV_UINT: {
-            if (av_is_uint(value) && av_get_uint(value) > INT64_MAX) {
+            if (av_is_uint(value)) {
                 *out = (pin_value){ .type = PIN_U64, .u64 = av_get_uint(value) };
                 return true;
             }
-            int64_t number = av_is_uint(value) ? (int64_t)av_get_uint(value)
-                                               : av_get_sint(value);
+            int64_t number = av_get_sint(value);
             if (number >= INT32_MIN && number <= INT32_MAX) {
                 *out = (pin_value){ .type = PIN_I32, .i = (int32_t)number };
                 return true;
