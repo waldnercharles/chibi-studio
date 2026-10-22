@@ -12,4 +12,3 @@ use. `fixtures.json` records extraction sources, purposes and hashes.
 The Firefight name belongs to the existing replay assertion; its sixty-frame idle
 scenario only exercises authoring lifetimes. Game encounter/input acceptance and
 expensive thumbnail/benchmark cases retain their original owning projects.
-No Studio or GPU test admission is implied by this fixture migration.

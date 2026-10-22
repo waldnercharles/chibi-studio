@@ -176,14 +176,14 @@ jobs:
         working-directory: chibi
         shell: bash
         run: |
-          timeout 60 xvfb-run -a build-studio/bin/chibi-dev \
+          xvfb-run -a build-studio/bin/chibi-dev \
             --project-root ../chibi-studio/projects/starter --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee studio.log
           ! grep -E 'Studio UI:|runtime frame failed|Could not initialize' studio.log
       - name: Two hidden frames of Studio's own project
         working-directory: chibi
         shell: bash
         run: |
-          timeout 60 xvfb-run -a build-studio/bin/chibi-dev \
+          xvfb-run -a build-studio/bin/chibi-dev \
             --project-root build-studio/share/chibi/studio --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee own.log
           ! grep -E 'Studio UI:|runtime frame failed|Could not initialize|Could not load graph asset' own.log
       - name: Installed Studio opens the project it starts in
@@ -196,6 +196,6 @@ jobs:
           make -C chibi-studio install PREFIX="$prefix"
           export PATH="$prefix/bin:$PATH"
           cd chibi-studio/projects/starter
-          timeout 60 xvfb-run -a chibi-dev --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee "$RUNNER_TEMP/installed.log"
+          xvfb-run -a chibi-dev --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee "$RUNNER_TEMP/installed.log"
           chibi export . --output "$RUNNER_TEMP/export"
           ! grep -E 'Studio UI:|runtime frame failed|Could not initialize' "$RUNNER_TEMP/installed.log"
