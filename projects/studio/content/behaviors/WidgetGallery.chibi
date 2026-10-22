@@ -1,7 +1,7 @@
 // Feeds the widget gallery's VirtualList ten thousand rows: it sets self.total,
 // and answers ShowRows with the rows in view as self.rows.
 WidgetGallery :: behavior {
-    Rows: retain int[] = []
+    Rows: int[] = []
 
     on Begin :: () {
         Rows.resize(10000)

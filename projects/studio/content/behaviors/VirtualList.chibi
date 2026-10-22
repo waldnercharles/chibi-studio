@@ -5,10 +5,10 @@
 VirtualList :: behavior {
     // List
     RowHeight: float = 24.0
-    Overscan: int = 6
+    Overscan := 6
     // State
-    ShownFirst: retain int = -1
-    ShownCount: retain int = -1
+    ShownFirst := -1
+    ShownCount := -1
     on Tick :: () {
         if max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan) != convert<To_Real>(ShownFirst) || ceil_max_View_400_RowHeight_2_Overscan(get_ui_scroll(Element: "#list").View_Height, RowHeight, Overscan) != convert<To_Real>(ShownCount) {
             ShownFirst = convert<To_Integer>(max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan))

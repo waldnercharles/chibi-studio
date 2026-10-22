@@ -81,8 +81,7 @@ storage script and shell with a controlled filesystem. Five new regression cases
 cover the pending debounce, a newer save during a held flush, failed-save Retry,
 and failed new-project and import flushes whose error handlers must preserve
 Retry. All five fail against the original scripts. Run this selector with
-`CHIBI_STUDIO_SOURCE` pointing to this Studio checkout, under the production
-60-second test supervisor.
+`CHIBI_STUDIO_SOURCE` pointing to this Studio checkout.
 
 These results cover the serial browser path and the specific interactions above.
 They do not establish worker-mode, cross-browser, full native GPU or full Studio

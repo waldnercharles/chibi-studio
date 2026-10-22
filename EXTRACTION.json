@@ -134,13 +134,13 @@
       "source_path": "projects/studio/content/behaviors/OutlinerRows.chibi"
     },
     "projects/studio/content/behaviors/VirtualList.chibi": {
-      "consumer_sha256": "c88f4dcb1de9814966022129f29b73a91b1f0512ede313a733af869e442ea5c4",
+      "consumer_sha256": "a4963cccec27b6ec0d1e74fe32321da3fd4e2fcc788e4c001ec7a35ab20e491d",
       "current_source_sha256": "9bd499b427da9ba05d3fbc2dbd0cc6838219147c9762b3dc7a6e4a5960d15272",
       "sha256": "9bd499b427da9ba05d3fbc2dbd0cc6838219147c9762b3dc7a6e4a5960d15272",
       "source_path": "projects/studio/content/behaviors/VirtualList.chibi"
     },
     "projects/studio/content/behaviors/WidgetGallery.chibi": {
-      "consumer_sha256": "7b911d790a1237833430e9f408169e9d7e982e2bbb1c3ba5ef05a08070bcf512",
+      "consumer_sha256": "e8cbec9bf93b07a84030bea0d84b7f1bbe1a82cfa4686f0393ca3d269b4231bb",
       "current_source_sha256": "7863d213dd57ea861063728c5396f9a7951ef7417dd750cbd257ed119a50f11f",
       "sha256": "7863d213dd57ea861063728c5396f9a7951ef7417dd750cbd257ed119a50f11f",
       "source_path": "projects/studio/content/behaviors/WidgetGallery.chibi"

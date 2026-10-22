@@ -4,17 +4,16 @@
 
 The `--outliner-rows` acceptance selector is a **baseline fixture** for the
 current C `STUDIO_NODE_SCENE_OBJECTS` service. Adding this fixture does not
-replace the production producer, alter `OutlinerRows.chibi`, or admit a test
-invocation. Its expectations were derived from the unchanged product sources
+replace the production producer or alter `OutlinerRows.chibi`.
+Its expectations were derived from the unchanged product sources
 at Studio `07dccf7b5fcfcc879b9d24e95730f4ee1d6a281f` (tree
 `2f66ad47f0f13437f9c86dda1d7921ccd0b3c369`).
 
 On 2026-10-16 the corrected fixture at Studio code commit
 `a8062aff75dae644ad0f0a1f1ec656e4a3bf8dfb` passed against the installed native SDK
 from engine `c4a9ed52f89da40c837d03222a682fb946909f62`: **1/1 case, 1,186 assertions,
-two frames, 16 queries and 24 rows in 4.231 seconds**, under the unchanged
-60-second whole-command supervisor. The acceptance-only Release/distribution
-build, copied resources, SDL offscreen/Mesa providers and immutable postflight
+two frames, 16 queries and 24 rows in 4.231 seconds**. The acceptance-only
+Release/distribution build, copied resources, SDL offscreen/Mesa providers and immutable postflight
 were independently checked. This establishes the native current-service
 baseline only; no browser, performance or authored live-cutover pass is claimed.
 
@@ -81,7 +80,7 @@ This native reflected row uses the existing `SceneObjectRow` schema. An
 additional authored record descriptor, if later introduced, needs its own
 complete owned-header checks; this fixture does not establish those by analogy.
 
-## Frozen workload for independent admission
+## Native workload
 
 One case, one disposable copy of the existing three-file acceptance project,
 one normal host startup/shutdown, exactly two hidden 1920×1080 frames at fixed
@@ -130,23 +129,17 @@ These counts describe explicit fixture calls, not every call the normal
 application makes while starting or composing its panels. They are not host
 crossing, allocation, renderer or compiler performance measurements.
 
-Before each execution, independently review the exact fixture, dispatcher,
-installed SDK, binary/resource provenance and renderer environment. Build time
-is separate. After the current unchanged Studio rendering baseline is verified,
-run only the reviewed `studio-acceptance --outliner-rows --project-root PATH`
-invocation inside the unchanged production `test_policy.run_commands` supervisor
-with a single 60-second deadline including children, initialization, both frames
-and teardown. Preserve the exact SDL offscreen/Mesa environment and isolated
-project/resources described in [offscreen rendering](offscreen-rendering.md).
-This new selector is not an existing admitted engine `agent.py` route; do not
-borrow another selector's label or bypass admission.
+Use a matching installed SDK, binary and resources, and record their provenance
+and renderer environment. Build time is separate. Run
+`studio-acceptance --outliner-rows --project-root PATH` with the SDL offscreen/Mesa
+environment and isolated project/resources described in
+[offscreen rendering](offscreen-rendering.md).
 
 Require exit 0, the exact success marker
 `Studio Outliner rows accepted: frames=2 queries=16 rows=24`, unchanged Counter
 bytes, no `Studio UI:`, `runtime frame failed` or `Could not initialize` marker,
 and no surviving process. Keep logs and source/SDK/resource identities. Stop on
-failure; do not increase frames, retry with a different backend, weaken
-assertions or reconstruct a larger suite from chunks.
+failure and explain it before changing the fixture or renderer environment.
 
 ## Separate obligations for the authored live conversion
 

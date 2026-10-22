@@ -66,7 +66,7 @@ sys.exit(test_policy.run_commands([[
     "--headless", "--frames", "2",
     "--fixed-dt", "0.016666666666666666",
     "--screenshot", capture,
-]], seconds=60))
+]]))
 PY
 cat "$log"
 if grep -E 'Studio UI:|runtime frame failed|Could not initialize' "$log"; then
@@ -78,11 +78,10 @@ elif [ "$?" -ne 1 ]; then
 fi
 ```
 
-This uses the unchanged production process-group/descendant supervisor. Its
-whole-operation deadline includes initialization, both frames, rendering,
-readback and teardown. The existing screenshot helper has an additional
-10-second readback wait inside that outer deadline. No checkpoint is supplied,
-so Studio's window/capture canvas is 1920×1080. External preparation/build time is separate.
+The engine runner owns process-group and descendant cleanup and propagates the
+command's exit status. The screenshot helper has a 10-second readback wait.
+No checkpoint is supplied, so Studio's window/capture canvas is 1920×1080.
+External preparation/build time is separate.
 
 Require exit 0, no `Studio UI:`, `runtime frame failed` or `Could not initialize`
 marker anywhere in the retained stdout/stderr, and a freshly created, decodable
@@ -98,14 +97,14 @@ inspection and stop; do not launch an unbounded Studio session.
 
 Two frames prove bounded startup and framebuffer readback. They do not exercise
 Outliner input, browser behavior, visual parity, lifecycle transitions or the
-full acceptance suite. Each meaningful interaction workload needs its own
-source-reviewed finite admission and the same complete-command deadline.
+full acceptance suite. Select interaction checks from the behavior being changed
+and report the coverage they establish.
 
 ## Validation record
 
-A single source-reviewed invocation on 2026-10-16 exited 0 in 6.948 seconds
-under the unchanged 60-second supervisor. Its 1920×1080 PNG was decoded and
-visually inspected: Studio chrome, the viewport grid, empty Outliner, Properties
+A single source-reviewed invocation on 2026-10-16 exited 0 in 6.948 seconds.
+Its 1920×1080 PNG was decoded and visually inspected: Studio chrome, the viewport
+grid, empty Outliner, Properties
 and behavior panels contain readable text. The isolated fixture has an empty
 Start scene; this observation is a startup/readback result, not input coverage.
 

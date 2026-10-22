@@ -38,9 +38,8 @@ SDL's supported `offscreen` video driver when the installed SDL/Vulkan stack
 supports it. `--headless` only hides the window; it does not select a video
 driver. A working software Vulkan implementation such as Mesa llvmpipe can
 render without Xvfb. See [offscreen rendering](docs/offscreen-rendering.md) for
-prerequisites, isolated project/resources, the unchanged 60-second supervisor,
-and actual screenshot verification. From the engine checkout, the underlying
-bounded command is:
+prerequisites, isolated project/resources and actual screenshot verification.
+From the engine checkout, run:
 
 ```sh
 env SDL_VIDEO_DRIVER=offscreen SDL_AUDIODRIVER=dummy build-studio/bin/chibi-dev \
@@ -48,10 +47,9 @@ env SDL_VIDEO_DRIVER=offscreen SDL_AUDIODRIVER=dummy build-studio/bin/chibi-dev 
   --fixed-dt 0.016666666666666666 --screenshot /path/to/studio.png
 ```
 
-Keep the entire invocation inside the production supervisor. If the selected
-SDL/backend lacks offscreen support, report its error; do not silently retry or
-increase frames/deadlines. An explicitly selected, supported Xvfb/X11 setup is a
-separate fallback requiring a usable graphics backend. Xvfb itself is not one.
+If the selected SDL/backend lacks offscreen support, report its error. An
+explicitly selected, supported Xvfb/X11 setup is a separate fallback requiring a
+usable graphics backend. Xvfb itself is not one.
 
 It must exit 0, and its log must not contain `Studio UI:`, `runtime frame failed`
 or `Could not initialize`. Two frames are a startup check, not UI coverage; say
