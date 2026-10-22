@@ -5,7 +5,7 @@
 #include "editor/workspace/editor.h"
 #include "editor/workspace/scene_internal.h"
 #include "runtime/component_catalog.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "test/suite_internal.h"
 
 #include <assert.h>
@@ -13,41 +13,90 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char *const
-    BOX = "name \"Box\"\n"
-          "components {\n"
-          "    GAME.GameAppearance height=10.0 width=20.0\n"
-          "    (object)GAME.GameTransform\n"
-          "}\n";
+static const char *const BOX =
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"name\", data.Value.Text(\"Box\")),\n"
+    "            data.Field.Named(\"components\", data.Object([\n"
+    "                data.Field.Named(\"GAME.GameAppearance\", data.Object([\n"
+    "                    data.Field.Named(\"height\", data.Value.Real(10.0)),\n"
+    "                    data.Field.Named(\"width\", data.Value.Real(20.0))\n"
+    "                ])),\n"
+    "                data.Field.Named(\"GAME.GameTransform\", "
+    "data.Object([]))\n"
+    "            ]))\n"
+    "        ])\n"
+    "    )\n"
+    "}\n";
 
 /* Three boxes, A at (10, 20), B at (50, 20) and C at (90, 60), C wider. */
-static const char *const
-    SCENE = "version 1\n"
-            "name \"Selection\"\n"
-            "(array)entities {\n"
-            "    - {\n"
-            "        name \"A\"\n"
-            "        prototype \"Box\"\n"
-            "        components {\n"
-            "            GAME.GameTransform x=10.0 y=20.0\n"
-            "        }\n"
-            "    }\n"
-            "    - {\n"
-            "        name \"B\"\n"
-            "        prototype \"Box\"\n"
-            "        components {\n"
-            "            GAME.GameTransform x=50.0 y=20.0\n"
-            "        }\n"
-            "    }\n"
-            "    - {\n"
-            "        name \"C\"\n"
-            "        prototype \"Box\"\n"
-            "        components {\n"
-            "            GAME.GameAppearance width=44.0\n"
-            "            GAME.GameTransform x=90.0 y=60.0\n"
-            "        }\n"
-            "    }\n"
-            "}\n";
+static const char *const SCENE =
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+    "            data.Field.Named(\"name\", data.Value.Text(\"Selection\")),\n"
+    "            data.Field.Named(\"entities\", data.List([\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"name\", data.Value.Text(\"A\")),\n"
+    "                    data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Box\")),\n"
+    "                    data.Field.Named(\"components\", data.Object([\n"
+    "                        data.Field.Named(\"GAME.GameTransform\", "
+    "data.Object([\n"
+    "                            data.Field.Named(\"x\", "
+    "data.Value.Real(10.0)),\n"
+    "                            data.Field.Named(\"y\", "
+    "data.Value.Real(20.0))\n"
+    "                        ]))\n"
+    "                    ]))\n"
+    "                ]),\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"name\", data.Value.Text(\"B\")),\n"
+    "                    data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Box\")),\n"
+    "                    data.Field.Named(\"components\", data.Object([\n"
+    "                        data.Field.Named(\"GAME.GameTransform\", "
+    "data.Object([\n"
+    "                            data.Field.Named(\"x\", "
+    "data.Value.Real(50.0)),\n"
+    "                            data.Field.Named(\"y\", "
+    "data.Value.Real(20.0))\n"
+    "                        ]))\n"
+    "                    ]))\n"
+    "                ]),\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"name\", data.Value.Text(\"C\")),\n"
+    "                    data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Box\")),\n"
+    "                    data.Field.Named(\"components\", data.Object([\n"
+    "                        data.Field.Named(\"GAME.GameAppearance\", "
+    "data.Object([\n"
+    "                            data.Field.Named(\"width\", "
+    "data.Value.Real(44.0))\n"
+    "                        ])),\n"
+    "                        data.Field.Named(\"GAME.GameTransform\", "
+    "data.Object([\n"
+    "                            data.Field.Named(\"x\", "
+    "data.Value.Real(90.0)),\n"
+    "                            data.Field.Named(\"y\", "
+    "data.Value.Real(60.0))\n"
+    "                        ]))\n"
+    "                    ]))\n"
+    "                ])\n"
+    "            ]))\n"
+    "        ])\n"
+    "    )\n"
+    "}\n";
 
 typedef struct
 {
@@ -207,8 +256,15 @@ static void clipboard_round_trip()
     select_instance(f.scene, 1);
     scene_toggle_instance(f.scene, 2);
     char *text = scene_copy_selection(f.scene);
-    bool written = text && strstr(text, "prototype \"Box\"") &&
-                   strstr(text, "width=44.0") && !strstr(text, "name \"A\"");
+    av_doc *clipboard = text ? asset_document_read(text, NULL, 0) : NULL;
+    av_value *copied = av_obj_get(av_doc_root(clipboard), "entities");
+    av_value *first = av_arr_get(copied, 0);
+    av_value *appearance = av_obj_get(av_obj_get(first, "components"), "GAME.GameAppearance");
+    bool written = clipboard && av_arr_size(copied) == 2 &&
+                   !strcmp(av_get_str(av_obj_get(first, "prototype")), "Box") &&
+                   av_get_num(av_obj_get(appearance, "width")) == 44 &&
+                   strcmp(av_get_str(av_obj_get(first, "name")), "A");
+    av_doc_free(clipboard);
     selection_fixture other = fixture_new(NULL);
     int pasted = scene_paste(other.scene, text, (scene_paste_place){ 0 });
     bool made = pasted == 2 && acount(other.scene->actors) == 2 &&
@@ -241,11 +297,27 @@ static void clipboard_round_trip()
 static void invalid_clipboard()
 {
     selection_fixture f = fixture_new(SCENE);
-    const char *unknown = "version 1\n"
-                          "name \"Other\"\n"
-                          "(array)entities {\n"
-                          "    - name=\"Ghost\" prototype=\"Missing\"\n"
-                          "}\n";
+    const char *unknown =
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Other\")),\n"
+        "            data.Field.Named(\"entities\", data.List([\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Ghost\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"Missing\"))\n"
+        "                ])\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n";
     bool text = scene_paste(f.scene, "hello { world", (scene_paste_place){ 0 }) < 0 &&
                 strstr(f.scene->message, "no objects");
     bool empty = scene_paste(f.scene, NULL, (scene_paste_place){ 0 }) < 0;

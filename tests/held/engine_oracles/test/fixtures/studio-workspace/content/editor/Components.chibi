@@ -1,0 +1,295 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.EngineSystem", data.Object([
+                    data.Field.Named("icon", data.Value.Text("system"))
+                ])),
+                data.Field.Named("GAME.GameActionBinding", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Gameplay")),
+                    data.Field.Named("icon", data.Value.Text("keyboard"))
+                ])),
+                data.Field.Named("GAME.GameAim", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Gameplay"))
+                ])),
+                data.Field.Named("GAME.GameAppearance", data.Object([
+                    data.Field.Named("icon", data.Value.Text("shape")),
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("antialias", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(0),
+                                data.Value.UInt(1)
+                            ]))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameBody", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Physics"))
+                ])),
+                data.Field.Named("GAME.GameCamera", data.Object([
+                    data.Field.Named("icon", data.Value.Text("camera"))
+                ])),
+                data.Field.Named("GAME.GameCollider", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Physics")),
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("radius", data.Object([
+                            data.Field.Named("unit", data.Value.Text("u"))
+                        ])),
+                        data.Field.Named("restitution", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(0),
+                                data.Value.UInt(1)
+                            ]))
+                        ])),
+                        data.Field.Named("friction", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(0),
+                                data.Value.UInt(1)
+                            ]))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameCombustion", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Gameplay")),
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("blast_radius", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(0),
+                                data.Value.UInt(1024)
+                            ])),
+                            data.Field.Named("unit", data.Value.Text("u"))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameDash", data.Object([
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("speed", data.Object([
+                            data.Field.Named("unit", data.Value.Text("u/s"))
+                        ])),
+                        data.Field.Named("cooldown", data.Object([
+                            data.Field.Named("unit", data.Value.Text("s"))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameDestructible", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Physics")),
+                    data.Field.Named("icon", data.Value.Text("diamond"))
+                ])),
+                data.Field.Named("GAME.GameDrive", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Physics")),
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("acceleration", data.Object([
+                            data.Field.Named("unit", data.Value.Text("u/s²"))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameFluidVolume", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Physics")),
+                    data.Field.Named("icon", data.Value.Text("water")),
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("absorption", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(0),
+                                data.Value.UInt(1)
+                            ]))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameFragmentGlow", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Material"))
+                ])),
+                data.Field.Named("GAME.GameFuel", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Gameplay"))
+                ])),
+                data.Field.Named("GAME.GameHRC2D", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Material")),
+                    data.Field.Named("icon", data.Value.Text("light")),
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("resolution", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.Real(0.1),
+                                data.Value.UInt(1)
+                            ]))
+                        ])),
+                        data.Field.Named("target_fps", data.Object([
+                            data.Field.Named("unit", data.Value.Text("fps"))
+                        ])),
+                        data.Field.Named("min_resolution", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.Real(0.1),
+                                data.Value.UInt(1)
+                            ]))
+                        ])),
+                        data.Field.Named("lighting_margin", data.Object([
+                            data.Field.Named("unit", data.Value.Text("u"))
+                        ])),
+                        data.Field.Named("bounce_hysteresis", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(0),
+                                data.Value.UInt(1)
+                            ]))
+                        ])),
+                        data.Field.Named("radiance_hysteresis", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(0),
+                                data.Value.UInt(1)
+                            ]))
+                        ])),
+                        data.Field.Named("trace_levels", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(1),
+                                data.Value.UInt(5)
+                            ]))
+                        ])),
+                        data.Field.Named("surface_radius", data.Object([
+                            data.Field.Named("unit", data.Value.Text("u"))
+                        ])),
+                        data.Field.Named("exposure", data.Object([
+                            data.Field.Named("unit", data.Value.Text("EV"))
+                        ])),
+                        data.Field.Named("bloom", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(0),
+                                data.Value.UInt(1)
+                            ]))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameHealth", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Gameplay")),
+                    data.Field.Named("icon", data.Value.Text("health"))
+                ])),
+                data.Field.Named("GAME.GameInput", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Gameplay")),
+                    data.Field.Named("icon", data.Value.Text("gamepad"))
+                ])),
+                data.Field.Named("GAME.GameMaterial", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Material")),
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("emission_intensity", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(0),
+                                data.Value.UInt(4)
+                            ]))
+                        ])),
+                        data.Field.Named("absorption", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(0),
+                                data.Value.UInt(1)
+                            ]))
+                        ])),
+                        data.Field.Named("edge_light", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(0),
+                                data.Value.UInt(1)
+                            ]))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameMaterialCavity", data.Object([
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("radius", data.Object([
+                            data.Field.Named("unit", data.Value.Text("u"))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameMovement", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Gameplay")),
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("speed", data.Object([
+                            data.Field.Named("unit", data.Value.Text("u/s"))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameParticleEmitter", data.Object([
+                    data.Field.Named("icon", data.Value.Text("emitter")),
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("absorption", data.Object([
+                            data.Field.Named("range", data.List([
+                                data.Value.UInt(0),
+                                data.Value.UInt(1)
+                            ]))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GamePickup", data.Object([
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("lifetime", data.Object([
+                            data.Field.Named("unit", data.Value.Text("s"))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GamePointLight", data.Object([
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("radius", data.Object([
+                            data.Field.Named("unit", data.Value.Text("u"))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameProjectile", data.Object([
+                    data.Field.Named("icon", data.Value.Text("projectile")),
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("speed", data.Object([
+                            data.Field.Named("unit", data.Value.Text("u/s"))
+                        ])),
+                        data.Field.Named("lifetime", data.Object([
+                            data.Field.Named("unit", data.Value.Text("s"))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameReflection", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Material"))
+                ])),
+                data.Field.Named("GAME.GameStarfield2D", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Material"))
+                ])),
+                data.Field.Named("GAME.GameSubstance", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Physics"))
+                ])),
+                data.Field.Named("GAME.GameSurfaceInfluence", data.Object([
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("radius", data.Object([
+                            data.Field.Named("unit", data.Value.Text("u"))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameTrail", data.Object([
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("lifetime", data.Object([
+                            data.Field.Named("unit", data.Value.Text("s"))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameVelocity", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Physics"))
+                ])),
+                data.Field.Named("GAME.GameVision", data.Object([
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("radius", data.Object([
+                            data.Field.Named("unit", data.Value.Text("u"))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.GameWeapon", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Gameplay")),
+                    data.Field.Named("fields", data.Object([
+                        data.Field.Named("cooldown", data.Object([
+                            data.Field.Named("unit", data.Value.Text("s"))
+                        ]))
+                    ]))
+                ])),
+                data.Field.Named("GAME.MaterialBreakProfile", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Physics"))
+                ])),
+                data.Field.Named("GAME.MaterialTerrain", data.Object([
+                    data.Field.Named("tab", data.Value.Text("Material")),
+                    data.Field.Named("icon", data.Value.Text("terrain"))
+                ]))
+            ]))
+        ])
+    )
+}

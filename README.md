@@ -30,7 +30,7 @@ On Windows, install the SDK with `cmake --install` from a Windows engine build
 SDK's UTF-8 manifest.
 
 The native build writes `build/bin/chibi-dev`. `chibi-dev PROJECT` opens a
-project directory or its `project.kdl`; without one it opens the project that
+project directory or its `project.chibi`; without one it opens the project that
 contains the working directory. The SDK's `chibi PROJECT` plays the same project.
 
 Distribution configuration records the SDK package ID and manifest checksum.
@@ -92,7 +92,7 @@ at its root URL. The browser bundle preloads SDK shaders,
 Studio's UI/project and an empty starter project. Browser projects and thumbnail
 caches persist through IndexedDB; import/export and collaboration bootstrap are
 owned here. `CHIBI_STUDIO_WEB_PROJECTS` accepts explicit extra sample directories,
-each containing `project.kdl` and `content`. Games remain separate repositories.
+each containing `project.chibi` and `content`. Games remain separate repositories.
 
 The SDK exports its worker ABI; Studio selects the matching bootstrap. A serial
 site can include a separately built worker site in `threads/`. The serial entry

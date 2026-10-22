@@ -7,7 +7,7 @@
  * returns a control's input; Preview UI Asset previews it. */
 #include "editor/studio/studio_internal.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,9 +31,7 @@ bool studio_asset_nameable(const reference_asset *asset, int kind)
 {
     const char *extension = asset->path ? strrchr(asset->path, '.') : NULL;
     bool source = !extension ||
-                  !strcmp(extension, kind == REFERENCE_ASSET_UI ? UI_MARKUP_EXTENSION : DECLARATIVE_ASSET_EXTENSION) ||
-                  (kind != REFERENCE_ASSET_UI &&
-                   !strcmp(extension, CODE_ASSET_EXTENSION));
+                  !strcmp(extension, kind == REFERENCE_ASSET_UI ? UI_MARKUP_EXTENSION : CODE_ASSET_EXTENSION);
     return (int)asset->kind == kind && !asset->unresolved && source;
 }
 

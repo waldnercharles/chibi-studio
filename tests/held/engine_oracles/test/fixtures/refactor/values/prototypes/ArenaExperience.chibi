@@ -1,0 +1,16 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("ArenaExperience")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.GameShader", data.Object([
+                    data.Field.Named("material", data.Value.Text("ArenaExperience"))
+                ]))
+            ]))
+        ])
+    )
+}

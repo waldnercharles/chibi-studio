@@ -304,7 +304,7 @@ static void shader_scene_load()
     free(shared[0]);
     free(shared[1]);
     assert(!app_scene_authoring_load_content(f.scene));
-    assert(!app_scene_authoring_load(f.scene, "test/fixtures/content/scenes/ShaderDemo.kdl"));
+    assert(!app_scene_authoring_load(f.scene, "test/fixtures/content/scenes/ShaderDemo.chibi"));
     assert(acount(f.scene->actors) == 3);
     char *pending = checkpoint_declaration(baseline, "    state checkpoint_pending: int = 1;\n");
     checkpoint_input_edit(&f, path, pending);
@@ -407,16 +407,31 @@ static void scene_tabs_retain_authored_state()
     assert(
         app_scene_authoring_register_prototype(
             f.scene,
-            "name \"ReloadPrototype\"\n"
-            "components {\n"
-            "    GameTransform x=1 y=2\n"
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"ReloadPrototype\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"GameTransform\", "
+            "data.Object([\n"
+            "                    data.Field.Named(\"x\", data.Value.Int(1)),\n"
+            "                    data.Field.Named(\"y\", data.Value.Int(2))\n"
+            "                ]))\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
             "}\n",
             NULL
         ) == 0
     );
     assert(app_scene_authoring_add_instance(f.scene, "ReloadPrototype") == 0);
-    const char *first_path = "/tmp/chibi-39-scene-a.kdl";
-    const char *second_path = "/tmp/chibi-39-scene-b.kdl";
+    const char *first_path = "/tmp/chibi-39-scene-a.chibi";
+    const char *second_path = "/tmp/chibi-39-scene-b.chibi";
     char *first_json = scene_authoring_scene_text(f.scene);
     assert(first_json && write_text_file_atomic(first_path, first_json) == 0);
     free(first_json);
@@ -462,16 +477,31 @@ static void scene_tabs_save_as_keeps_identity()
     assert(
         app_scene_authoring_register_prototype(
             f.scene,
-            "name \"SaveAsPrototype\"\n"
-            "components {\n"
-            "    GameTransform x=1 y=2\n"
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"SaveAsPrototype\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"GameTransform\", "
+            "data.Object([\n"
+            "                    data.Field.Named(\"x\", data.Value.Int(1)),\n"
+            "                    data.Field.Named(\"y\", data.Value.Int(2))\n"
+            "                ]))\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
             "}\n",
             NULL
         ) == 0
     );
     assert(app_scene_authoring_add_instance(f.scene, "SaveAsPrototype") == 0);
-    const char *first_path = "/tmp/chibi-39-save-as-a.kdl";
-    const char *second_path = "/tmp/chibi-39-save-as-b.kdl";
+    const char *first_path = "/tmp/chibi-39-save-as-a.chibi";
+    const char *second_path = "/tmp/chibi-39-save-as-b.chibi";
     char *json = scene_authoring_scene_text(f.scene);
     assert(json && write_text_file_atomic(first_path, json) == 0);
     free(json);
@@ -505,16 +535,31 @@ static void scene_tabs_failed_restore_rolls_back()
     assert(
         app_scene_authoring_register_prototype(
             f.scene,
-            "name \"RollbackPrototype\"\n"
-            "components {\n"
-            "    GameTransform x=1 y=2\n"
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"RollbackPrototype\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"GameTransform\", "
+            "data.Object([\n"
+            "                    data.Field.Named(\"x\", data.Value.Int(1)),\n"
+            "                    data.Field.Named(\"y\", data.Value.Int(2))\n"
+            "                ]))\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
             "}\n",
             NULL
         ) == 0
     );
     assert(app_scene_authoring_add_instance(f.scene, "RollbackPrototype") == 0);
-    const char *first_path = "/tmp/chibi-39-rollback-a.kdl";
-    const char *second_path = "/tmp/chibi-39-rollback-b.kdl";
+    const char *first_path = "/tmp/chibi-39-rollback-a.chibi";
+    const char *second_path = "/tmp/chibi-39-rollback-b.chibi";
     char *json = scene_authoring_scene_text(f.scene);
     assert(json && write_text_file_atomic(first_path, json) == 0);
     free(json);
@@ -535,7 +580,17 @@ static void scene_tabs_failed_restore_rolls_back()
     f.scene->scene_dirty = true;
     scene_tabs_sync_current(f.scene);
     av_value_free(f.scene->tabs[second].scene_history);
-    f.scene->tabs[second].scene_history = test_read_asset_value("");
+    f.scene->tabs[second].scene_history = test_read_asset_value(
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([])\n"
+        "    )\n"
+        "}\n"
+    );
     assert(scene_tabs_activate(f.scene, second) != 0);
     assert(f.scene->active_tab == first && f.scene->scene_dirty);
     assert(GAME_GameTransform_get_const(f.world, f.scene->actors[0].entity)->x == 11);
@@ -550,9 +605,24 @@ static void scene_tabs_discard_reverts_shared_assets()
     assert(
         app_scene_authoring_register_prototype(
             f.scene,
-            "name \"DiscardPrototype\"\n"
-            "components {\n"
-            "    GameTransform x=1 y=2\n"
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"DiscardPrototype\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"GameTransform\", "
+            "data.Object([\n"
+            "                    data.Field.Named(\"x\", data.Value.Int(1)),\n"
+            "                    data.Field.Named(\"y\", data.Value.Int(2))\n"
+            "                ]))\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
             "}\n",
             NULL
         ) == 0
@@ -646,8 +716,8 @@ static void opening_behaviors_refreshes_asset_catalog()
 static void scene_tabs_close_underlying_scene_keeps_context()
 {
     checkpoint_fixture f = fixture_new();
-    const char *first_path = "/tmp/chibi-39-close-scene-a.kdl";
-    const char *second_path = "/tmp/chibi-39-close-scene-c.kdl";
+    const char *first_path = "/tmp/chibi-39-close-scene-a.chibi";
+    const char *second_path = "/tmp/chibi-39-close-scene-c.chibi";
     char *json = scene_authoring_scene_text(f.scene);
     assert(json && write_text_file_atomic(first_path, json) == 0);
     free(json);
@@ -699,7 +769,17 @@ static void scene_tabs_failed_behavior_discard_is_atomic()
     const behavior_asset *editor_asset = editor_behavior_asset(f.graph);
     scene_document_tab *tab = &f.scene->tabs[f.scene->active_tab];
     av_value_free(tab->asset_saved);
-    tab->asset_saved = test_read_asset_value("");
+    tab->asset_saved = test_read_asset_value(
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([])\n"
+        "    )\n"
+        "}\n"
+    );
     assert(scene_tabs_discard(f.scene, f.scene->active_tab) == -1);
     assert(f.scene->document.kind == APP_EDITOR_DOCUMENT_BEHAVIOR);
     assert(f.scene->definition->working == working);
@@ -808,8 +888,8 @@ static void scene_tabs_retain_system_state()
 static void checkpoint_restores_next_scene_key()
 {
     checkpoint_fixture f = fixture_new();
-    const char *first_path = "/tmp/chibi-39-key-a.kdl";
-    const char *second_path = "/tmp/chibi-39-key-b.kdl";
+    const char *first_path = "/tmp/chibi-39-key-a.chibi";
+    const char *second_path = "/tmp/chibi-39-key-b.chibi";
     char *json = scene_authoring_scene_text(f.scene);
     assert(json && write_text_file_atomic(first_path, json) == 0);
     free(json);
@@ -884,9 +964,9 @@ static void asset_references_follow_authored_edits()
     assert(app_scene_authoring_load_content(f.scene) == 0);
     assert(app_scene_authoring_refresh_asset_index(f.scene) == 0);
     const reference_index *index = app_scene_authoring_asset_index(f.scene);
-    int arena = reference_index_find_asset(index, REFERENCE_ASSET_SCENE, "content/scenes/Arena3D.kdl", NULL);
+    int arena = reference_index_find_asset(index, REFERENCE_ASSET_SCENE, "content/scenes/Arena3D.chibi", NULL);
     assert(arena >= 0);
-    char *arena_path = realpath("content/scenes/Arena3D.kdl", NULL);
+    char *arena_path = realpath("content/scenes/Arena3D.chibi", NULL);
     assert(
         arena_path &&
         reference_index_find_asset(index, REFERENCE_ASSET_SCENE, arena_path, NULL) == arena
@@ -941,8 +1021,38 @@ static void asset_references_follow_authored_edits()
     char error[256];
     snprintf(edited, strlen(original) + 96, "%.*s on PendingReferenceEvent {} }", body_end, original);
     source_catalog_edit edits[] = {
-        { .path = "content/events/PendingReferenceEvent.kdl", .text = "name \"PendingReferenceEvent\"\ndomain \"event\"\n(array)variables {}\n" },
-        { .path = "content/events/UpdatedReferenceEvent.kdl", .text = "name \"UpdatedReferenceEvent\"\ndomain \"event\"\n(array)variables {}\n" },
+        { .path = "content/events/PendingReferenceEvent.chibi",
+          .text = "package asset\n"
+                  "\n"
+                  "import data \"game:assets\"\n"
+                  "\n"
+                  "pub Build :: () -> byte[] {\n"
+                  "    return data.Encode(\n"
+                  "        data.Object([\n"
+                  "            data.Field.Named(\"name\", "
+                  "data.Value.Text(\"PendingReferenceEvent\")),\n"
+                  "            data.Field.Named(\"domain\", "
+                  "data.Value.Text(\"event\")),\n"
+                  "            data.Field.Named(\"variables\", data.List([]))\n"
+                  "        ])\n"
+                  "    )\n"
+                  "}\n" },
+        { .path = "content/events/UpdatedReferenceEvent.chibi",
+          .text = "package asset\n"
+                  "\n"
+                  "import data \"game:assets\"\n"
+                  "\n"
+                  "pub Build :: () -> byte[] {\n"
+                  "    return data.Encode(\n"
+                  "        data.Object([\n"
+                  "            data.Field.Named(\"name\", "
+                  "data.Value.Text(\"UpdatedReferenceEvent\")),\n"
+                  "            data.Field.Named(\"domain\", "
+                  "data.Value.Text(\"event\")),\n"
+                  "            data.Field.Named(\"variables\", data.List([]))\n"
+                  "        ])\n"
+                  "    )\n"
+                  "}\n" },
         { .path = "content/behaviors/HealthBehavior.chibi", .text = edited },
     };
     assert(!game_preview_sources_edit(f.live, edits, 3, error, sizeof error));
@@ -990,18 +1100,33 @@ static void asset_references_follow_authored_edits()
     assert(
         app_scene_authoring_register_prototype(
             f.scene,
-            "name \"ReferencePrototype\"\n"
-            "components {\n"
-            "    (object)GameTransform\n"
-            "    GameShader material=\"ArenaPlayer\"\n"
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"ReferencePrototype\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"GameTransform\", "
+            "data.Object([])),\n"
+            "                data.Field.Named(\"GameShader\", data.Object([\n"
+            "                    data.Field.Named(\"material\", "
+            "data.Value.Text(\"ArenaPlayer\"))\n"
+            "                ]))\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
             "}\n",
             NULL
         ) == 0
     );
     scene_authoring_select_document(f.scene, APP_EDITOR_DOCUMENT_SCENE, APP_SCENE_DOCUMENT_ID);
     assert(app_scene_authoring_add_instance(f.scene, "ReferencePrototype") == 0);
-    const char *first_path = "/tmp/chibi-40-references-a.kdl";
-    const char *second_path = "/tmp/chibi-40-references-b.kdl";
+    const char *first_path = "/tmp/chibi-40-references-a.chibi";
+    const char *second_path = "/tmp/chibi-40-references-b.chibi";
     assert(app_scene_authoring_save(f.scene, first_path) == 0);
     int first_tab = f.scene->active_tab;
     char *json = scene_authoring_scene_text(f.scene);
@@ -1145,9 +1270,24 @@ int test_scene_checkpoint()
     assert(
         app_scene_authoring_register_prototype(
             fixture.scene,
-            "name \"ReloadPrototype\"\n"
-            "components {\n"
-            "    GameTransform x=1 y=2\n"
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"ReloadPrototype\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"GameTransform\", "
+            "data.Object([\n"
+            "                    data.Field.Named(\"x\", data.Value.Int(1)),\n"
+            "                    data.Field.Named(\"y\", data.Value.Int(2))\n"
+            "                ]))\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
             "}\n",
             NULL
         ) == 0

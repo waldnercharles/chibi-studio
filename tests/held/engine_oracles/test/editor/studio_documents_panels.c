@@ -2,7 +2,6 @@
  * Canvas preview, Settings, modals, the widget gallery and fields that keep
  * their editing keys. */
 
-#include "editor/workspace/viewport.h"
 #include "assets/code_source.h"
 #include "assets/project.h"
 #include "assets/ui_events.h"
@@ -13,6 +12,7 @@
 #include "editor/workspace/editor.h"
 #include "editor/workspace/editor_internal.h"
 #include "editor/workspace/input.h"
+#include "editor/workspace/viewport.h"
 #include "graph/document/serialize.h"
 #include "graph/nodes/component_nodes.h"
 #include "platform/cute.h"
@@ -20,7 +20,7 @@
 #include "render/screenshot.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/file_io.h"
 #include "support/text_overlay.h"
 #include "test/editor/studio_documents.h"
@@ -642,30 +642,69 @@ static void private_panel_code_reloads()
         snprintf(path, sizeof path, "%s/%s", root, directories[i]);
         assert(!mkdir(path, 0700));
     }
-    const char *files[] = { "project.kdl",
-                            "content/scenes/Studio.kdl",
-                            "content/prototypes/Panel.kdl",
+    const char *files[] = { "project.chibi",
+                            "content/scenes/Studio.chibi",
+                            "content/prototypes/Panel.chibi",
                             "content/libraries/Shared.chibi",
                             "content/behaviors/Panel.chibi" };
     const char *texts[] = {
         NULL,
-        "version 1\nname \"Studio\"\n(array)entities {\n - name=\"Panel\" "
-        "prototype=\"Panel\" {\n (array)behaviors \"Panel\"\n }\n}\n",
-        "name \"Panel\"\ncomponents {}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Studio\")),\n"
+        "            data.Field.Named(\"entities\", data.List([\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Panel\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"Panel\")),\n"
+        "                    data.Field.Named(\"behaviors\", data.List([\n"
+        "                        data.Value.Text(\"Panel\")\n"
+        "                    ]))\n"
+        "                ])\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Panel\")),\n"
+        "            data.Field.Named(\"components\", data.Object([]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
         "library Shared { pure function Seven() -> (Result: int) { result "
         "Result: int = 7; } }",
         "behavior Panel { state count: int = 0; on Begin() { count += "
         "Shared.Seven().Result; } }"
     };
-    char manifest[256];
-    snprintf(manifest, sizeof manifest,
-             "version %d\nname \"Private Studio\"\ncontent \"content\"\nstart_scene "
-             "\"scenes/Studio.kdl\"\n", CHIBI_PROJECT_VERSION);
+    av_doc *manifest_doc = av_doc_new();
+    av_value *manifest_root = av_obj(manifest_doc);
+    av_doc_set_root(manifest_doc, manifest_root);
+    av_obj_add_int(manifest_doc, manifest_root, "version", CHIBI_PROJECT_VERSION);
+    av_obj_add_str(manifest_doc, manifest_root, "name", "Private Studio");
+    av_obj_add_str(manifest_doc, manifest_root, "content", "content");
+    av_obj_add_str(manifest_doc, manifest_root, "start_scene", "scenes/Studio.chibi");
+    char *manifest = asset_document_write(manifest_root);
+    assert(manifest);
+    av_doc_free(manifest_doc);
     texts[0] = manifest;
     for (int i = 0; i < 5; i++) {
         snprintf(path, sizeof path, "%s/%s", root, files[i]);
         source_reload_write(path, texts[i]);
     }
+    free(manifest);
     studio_ui *original = s->ui;
     rml_backend *original_backend = s->backend;
     s->backend = rml_backend_create(640, 480, 1);
@@ -799,7 +838,7 @@ static void source_reload_preserves_failed_draft()
     tab->source_dirty = true;
     av_value *checkpoint = av_value_copy(tab->source_state);
     kit_code_editor *editor = asset_code_editor(code);
-    source_reload_write(path, "name \"unfinished");
+    source_reload_write(path, "package asset\n\npub Build :: () -> byte[] {");
     app_disk_result failed = studio_code_reload_path(s, path);
     bool retained = failed == APP_DISK_FAILED && acount(s->code.assets) == 1 &&
                     s->code.assets[0] == code && asset_code_editor(code) == editor &&
@@ -844,7 +883,7 @@ static void source_reload_preserves_failed_draft()
     tab->source_state = av_value_copy(checkpoint);
     tab->source_dirty = true;
     text_overlay_set(path, draft);
-    source_reload_write(path, "name \"unfinished");
+    source_reload_write(path, "package asset\n\npub Build :: () -> byte[] {");
     failed = studio_code_reload_path(s, path);
     test_check(
         failed == APP_DISK_FAILED && !acount(s->code.assets) &&
@@ -1222,7 +1261,11 @@ static void palettes_take_turns(studio_fixture *f)
 static void area_panels_take_turns(bool designer)
 {
     /* A behavior open, so Members lists it and GraphView's menus fill. */
-    studio_fixture f = scene_open("test/fixtures/studio-workspace", "test/fixtures/studio-workspace/content/scenes/Sandbox.kdl", "Movement");
+    studio_fixture f = scene_open(
+        "test/fixtures/studio-workspace",
+        "test/fixtures/studio-workspace/content/scenes/Sandbox.chibi",
+        "Movement"
+    );
     studio *s = f.studio;
     if (designer) {
         char path[PATH_MAX];

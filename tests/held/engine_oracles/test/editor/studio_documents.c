@@ -111,7 +111,7 @@ studio_fixture fixture_open(const char *project, const char *scene, const char *
 
 studio_fixture fixture_new()
 {
-    studio_fixture f = fixture_open(PROJECT, PROJECT "/content/scenes/Main.kdl", "Weapons");
+    studio_fixture f = fixture_open(PROJECT, PROJECT "/content/scenes/Main.chibi", "Weapons");
     double started = wall_seconds();
     assert(editor_open_graph(f.graph, FUNCTION_GRAPH) == 0);
     f.studio = studio_new(f.scene, f.viewport, PROJECT);
@@ -225,7 +225,7 @@ studio_fixture studio_project_open()
     static char root[PATH_MAX];
     char scene[PATH_MAX + 32];
     assert(realpath("projects/studio", root));
-    snprintf(scene, sizeof scene, "%s/content/scenes/Studio.kdl", root);
+    snprintf(scene, sizeof scene, "%s/content/scenes/Studio.chibi", root);
     studio_fixture f = scene_open(root, scene, "Dismiss");
     app_scene_authoring_set_default_ui(f.scene, "StudioShell");
     return f;

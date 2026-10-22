@@ -23,7 +23,7 @@
 #include "render/screenshot.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/text_file.h"
 #include "support/text_overlay.h"
 #include "test/editor/studio_documents.h"
@@ -441,7 +441,11 @@ static void graph_drag_retains_calculations_and_undo()
    rather than relying on the visual resemblance of adjacent completion rows. */
 static void graph_completion_tab_matches_highlight()
 {
-    studio_fixture f = fixture_open("test/fixtures/studio-workspace", "test/fixtures/studio-workspace/content/scenes/Sandbox.kdl", "Weapon");
+    studio_fixture f = fixture_open(
+        "test/fixtures/studio-workspace",
+        "test/fixtures/studio-workspace/content/scenes/Sandbox.chibi",
+        "Weapon"
+    );
     f.studio = studio_new(f.scene, f.viewport, "test/fixtures/studio-workspace");
     studio *s = f.studio;
     studio_maximize_graph(s);
@@ -524,7 +528,11 @@ static void graph_completion_tab_matches_highlight()
 
 static void replay_close_stop_reopen_keeps_graph_layout()
 {
-    studio_fixture f = fixture_open("test/fixtures/studio-workspace", "test/fixtures/studio-workspace/content/scenes/Sandbox.kdl", "Weapon");
+    studio_fixture f = fixture_open(
+        "test/fixtures/studio-workspace",
+        "test/fixtures/studio-workspace/content/scenes/Sandbox.chibi",
+        "Weapon"
+    );
     f.studio = studio_new(f.scene, f.viewport, "test/fixtures/studio-workspace");
     studio *s = f.studio;
     studio_maximize_graph(s);

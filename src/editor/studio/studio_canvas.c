@@ -13,11 +13,11 @@
  * area's SceneHeader: the `canvas` source shows the asset and what uses
  * it, the screen size, the backdrop and the Actions log, and the frame
  * stays native in the stage's slot. */
-#include "editor/workspace/viewport.h"
 #include "editor/studio/studio_internal.h"
+#include "editor/workspace/viewport.h"
 #include "platform/cute.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/xalloc.h"
 #include "ui/list.h"
 

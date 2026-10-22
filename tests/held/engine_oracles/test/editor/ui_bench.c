@@ -800,7 +800,7 @@ void bench_edit_float(ecs_world *world, ecs_entity entity, const char *component
 static ecs_entity spawn(ecs_world *world, const char *prototype)
 {
     char path[256], error[256];
-    snprintf(path, sizeof path, ARENA_CONTENT "prototypes/%s.kdl", prototype);
+    snprintf(path, sizeof path, ARENA_CONTENT "prototypes/%s.chibi", prototype);
     char *text = text_file_read(path);
     assert(text);
     game_prototype_registry components = registry();

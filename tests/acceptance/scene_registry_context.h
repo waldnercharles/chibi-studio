@@ -4,10 +4,38 @@ static bool cached_editor_registry(void)
 {
     char root[] = "/tmp/chibi-studio-registry-XXXXXX", prototypes[256],
          relationships[256], prototype_path[256], relationship_path[256];
-    const char
-        *source = "CachedProbe :: prototype { links:{CachedTargets:[]} }";
-    const char
-        *relationship = "CachedTargets :: relationship { exclusive:true }";
+    const char *source =
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"CachedProbe\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([])),\n"
+        "            data.Field.Named(\"links\", data.Object([\n"
+        "                data.Field.Named(\"CachedTargets\", data.List([]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n";
+    const char *relationship = "package asset\n"
+                               "\n"
+                               "import data \"game:assets\"\n"
+                               "\n"
+                               "pub Build :: () -> byte[] {\n"
+                               "    return data.Encode(\n"
+                               "        data.Object([\n"
+                               "            data.Field.Named(\"name\", "
+                               "data.Value.Text(\"CachedTargets\")),\n"
+                               "            data.Field.Named(\"exclusive\", "
+                               "data.Value.Bool(true))\n"
+                               "        ])\n"
+                               "    )\n"
+                               "}\n";
     REQUIRE(mkdtemp(root));
     move_fixture fixture = move_fixture_new_with_root(root);
     snprintf(prototypes, sizeof prototypes, "%s/prototypes", root);

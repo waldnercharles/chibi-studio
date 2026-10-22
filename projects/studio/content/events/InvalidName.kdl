@@ -1,8 +1,0 @@
-version 3
-name "InvalidName"
-domain "event"
-id_counter 1
-description "The new-project dialog rejected the supplied project name."
-(array)graphs {
-    - kind="event" name=""
-}

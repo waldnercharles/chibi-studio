@@ -1801,7 +1801,7 @@ static void drag(code_view *v, rml_vec2 at)
 }
 
 /* A word's character in the shown language: letters, digits, '_' and the
-   desc's word_chars, as '-' in RCSS's and KDL's names. */
+   desc's word_chars, as '-' in RCSS's and asset field names. */
 static bool word_char(const kit_code_editor *e, char c)
 {
     return isalnum((unsigned char)c) || c == '_' || (c && strchr(e->word_chars, c));

@@ -4,17 +4,56 @@
 #include "ui/input_feel.h"
 
 /* A 3D scene of one block 100 units on a side, standing at x 200. */
-static const char
-    block_prototype[] = "name \"Block\"\ncomponents {\n"
-                        "    Transform x=200 y=0\n"
-                        "    Geometry3D primitive=0 width=100.0 "
-                        "depth=100.0 height=100.0 elevation=50.0\n"
-                        "}\n";
-static const char
-    block_scene[] = "version 1\nname \"Scene\"\npresentation \"3d\"\n"
-                    "(array)entities {\n"
-                    "    - name=\"Block\" prototype=\"Block\"\n"
-                    "}\n";
+static const char block_prototype[] =
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"name\", data.Value.Text(\"Block\")),\n"
+    "            data.Field.Named(\"components\", data.Object([\n"
+    "                data.Field.Named(\"Transform\", data.Object([\n"
+    "                    data.Field.Named(\"x\", data.Value.UInt(200)),\n"
+    "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+    "                ])),\n"
+    "                data.Field.Named(\"Geometry3D\", data.Object([\n"
+    "                    data.Field.Named(\"primitive\", data.Value.UInt(0)),\n"
+    "                    data.Field.Named(\"width\", data.Value.Real(100.0)),\n"
+    "                    data.Field.Named(\"depth\", data.Value.Real(100.0)),\n"
+    "                    data.Field.Named(\"height\", "
+    "data.Value.Real(100.0)),\n"
+    "                    data.Field.Named(\"elevation\", "
+    "data.Value.Real(50.0))\n"
+    "                ]))\n"
+    "            ]))\n"
+    "        ])\n"
+    "    )\n"
+    "}\n";
+static const char block_scene
+    [] = "package asset\n"
+         "\n"
+         "import data \"game:assets\"\n"
+         "\n"
+         "pub Build :: () -> byte[] {\n"
+         "    return data.Encode(\n"
+         "        data.Object([\n"
+         "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+         "            data.Field.Named(\"name\", data.Value.Text(\"Scene\")),\n"
+         "            data.Field.Named(\"presentation\", "
+         "data.Value.Text(\"3d\")),\n"
+         "            data.Field.Named(\"entities\", data.List([\n"
+         "                data.Object([\n"
+         "                    data.Field.Named(\"name\", "
+         "data.Value.Text(\"Block\")),\n"
+         "                    data.Field.Named(\"prototype\", "
+         "data.Value.Text(\"Block\"))\n"
+         "                ])\n"
+         "            ]))\n"
+         "        ])\n"
+         "    )\n"
+         "}\n";
 #define CAMERA_FRAMES 30
 /* The frame the right button goes down to look, then fly. */
 #define LOOK_FRAME 14

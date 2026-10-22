@@ -1,4 +1,0 @@
-name "PropertiesHeader"
-components {
-    Ui document="PropertiesHeader" hidden=#true
-}

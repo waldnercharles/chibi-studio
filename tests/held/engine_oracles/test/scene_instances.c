@@ -1,16 +1,16 @@
-#include "authoring/engine_preview.h"
-#include "graph/authoring/graph_edit.h"
 #include "assets/scene_document.h"
+#include "authoring/engine_preview.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/workspace/editor.h"
 #include "editor/workspace/scene_internal.h"
+#include "graph/authoring/graph_edit.h"
 #include "graph/document/serialize_internal.h"
 #include "graph/model/registry.h"
 #include "runtime/component_catalog.h"
 #include "runtime/save.h"
 #include "support/array.h"
+#include "support/asset_document.h"
 #include "support/asset_json.h"
-#include "support/asset_text.h"
 #include "support/text_file.h"
 #include "types/value_document.h"
 
@@ -34,12 +34,27 @@ static void prototype_component_gain(app_scene_authoring *scene, ecs_world *worl
     assert(
         app_scene_authoring_register_prototype(
             scene,
-            "version 1\n"
-            "name \"ComponentGain\"\n"
-            "components {\n"
-            "    GameTransform x=0 y=0\n"
-            "}\n"
-            "(array)behaviors\n",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"ComponentGain\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"GameTransform\", "
+            "data.Object([\n"
+            "                    data.Field.Named(\"x\", data.Value.Int(0)),\n"
+            "                    data.Field.Named(\"y\", data.Value.Int(0))\n"
+            "                ]))\n"
+            "            ])),\n"
+            "            data.Field.Named(\"behaviors\", data.List([]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
             NULL
         ) == 0
     );
@@ -99,9 +114,25 @@ static void prototype_spawn_refresh(app_scene_authoring *scene, game_preview_wor
     assert(
         app_scene_authoring_register_prototype(
             scene,
-            "name \"RuntimeRefreshChild\"\n"
-            "components {\n"
-            "    GameHealth current=73 maximum=100\n"
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"RuntimeRefreshChild\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"GameHealth\", data.Object([\n"
+            "                    data.Field.Named(\"current\", "
+            "data.Value.Int(73)),\n"
+            "                    data.Field.Named(\"maximum\", "
+            "data.Value.Int(100))\n"
+            "                ]))\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
             "}\n",
             NULL
         ) == 0
@@ -109,9 +140,22 @@ static void prototype_spawn_refresh(app_scene_authoring *scene, game_preview_wor
     assert(
         app_scene_authoring_register_prototype(
             scene,
-            "name \"RuntimeRefreshSpawner\"\n"
-            "(object)components\n"
-            "(array)behaviors \"PrototypeRefreshSpawner\"\n",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"RuntimeRefreshSpawner\")),\n"
+            "            data.Field.Named(\"components\", data.Object([])),\n"
+            "            data.Field.Named(\"behaviors\", data.List([\n"
+            "                data.Value.Text(\"PrototypeRefreshSpawner\")\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
             NULL
         ) == 0
     );
@@ -200,13 +244,27 @@ static void duplicate_instance_preserves_edits(app_scene_authoring *scene, ecs_w
 
 static void prototype_vectors_and_text(app_scene_authoring *scene, ecs_world *world)
 {
-    const char *json = "name \"GuideTest\"\n"
-                       "components {\n"
-                       "    (object)GameTransform\n"
-                       "    (object)GameAim\n"
-                       "    (object)GameUi\n"
-                       "}\n"
-                       "(array)behaviors\n";
+    const char *
+        json = "package asset\n"
+               "\n"
+               "import data \"game:assets\"\n"
+               "\n"
+               "pub Build :: () -> byte[] {\n"
+               "    return data.Encode(\n"
+               "        data.Object([\n"
+               "            data.Field.Named(\"name\", "
+               "data.Value.Text(\"GuideTest\")),\n"
+               "            data.Field.Named(\"components\", data.Object([\n"
+               "                data.Field.Named(\"GameTransform\", "
+               "data.Object([])),\n"
+               "                data.Field.Named(\"GameAim\", "
+               "data.Object([])),\n"
+               "                data.Field.Named(\"GameUi\", data.Object([]))\n"
+               "            ])),\n"
+               "            data.Field.Named(\"behaviors\", data.List([]))\n"
+               "        ])\n"
+               "    )\n"
+               "}\n";
     assert(app_scene_authoring_register_prototype(scene, json, NULL) == 0);
     assert(app_scene_authoring_add_instance(scene, "GuideTest") == 0);
     ecs_entity entity = app_scene_authoring_runtime_state(scene).selected_entity;
@@ -284,14 +342,14 @@ static void prototype_vectors_and_text(app_scene_authoring *scene, ecs_world *wo
 }
 
 /* The file at `path`, which `canonical` turns into the text
-   chibi_ctl --format writes for its JSON. */
+   chibi_ctl --format writes for its authored module. */
 static char *saved_canonically(const char *path, char *(*canonical)(const char *json))
 {
     char *text = text_file_read(path);
     assert(text);
     char *json = canonical(text);
     char error[256];
-    char *disk = asset_text_to_disk(json, error, sizeof error);
+    char *disk = asset_document_to_disk(json, error, sizeof error);
     assert(disk && !strcmp(disk, text));
     free(json);
     free(disk);
@@ -367,7 +425,7 @@ static void rename_instance(app_scene_authoring *scene, const char *folder)
     assert(!strcmp(actor_name(scene, entity), "Hero"));
     assert(scene_actor_identity(scene, entity) == identity);
     char path[1024];
-    snprintf(path, sizeof path, "%s/Renamed.kdl", folder);
+    snprintf(path, sizeof path, "%s/Renamed.chibi", folder);
     assert(app_scene_authoring_save(scene, path) == 0);
     char *text = saved_canonically(path, canonical_scene);
     char error[256];
@@ -414,13 +472,33 @@ static void prototype_component_removal(app_scene_authoring *scene, ecs_world *w
     assert(
         app_scene_authoring_register_prototype(
             scene,
-            "version 1\n"
-            "name \"Removable\"\n"
-            "components {\n"
-            "    GameTransform x=0 y=0\n"
-            "    GameHealth current=73 maximum=100\n"
-            "}\n"
-            "(array)behaviors\n",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Removable\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"GameTransform\", "
+            "data.Object([\n"
+            "                    data.Field.Named(\"x\", data.Value.Int(0)),\n"
+            "                    data.Field.Named(\"y\", data.Value.Int(0))\n"
+            "                ])),\n"
+            "                data.Field.Named(\"GameHealth\", data.Object([\n"
+            "                    data.Field.Named(\"current\", "
+            "data.Value.Int(73)),\n"
+            "                    data.Field.Named(\"maximum\", "
+            "data.Value.Int(100))\n"
+            "                ]))\n"
+            "            ])),\n"
+            "            data.Field.Named(\"behaviors\", data.List([]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
             NULL
         ) == 0
     );
@@ -449,7 +527,7 @@ static void prototype_component_removal(app_scene_authoring *scene, ecs_world *w
     assert(history(scene, true) == 0);
     assert(!GAME_GameHealth_has(world, entity));
     char path[1024];
-    snprintf(path, sizeof path, "%s/Removable.kdl", folder);
+    snprintf(path, sizeof path, "%s/Removable.chibi", folder);
     assert(app_scene_authoring_save_prototype(scene, "Removable", path) == 0);
     char *text = saved_canonically(path, canonical_prototype);
     assert(!strstr(text, "GameHealth") && strstr(text, "GameTransform"));
@@ -558,13 +636,32 @@ static bool same_entity(ecs_entity a, ecs_entity b)
    the scene, its Undo nor its file holds them. */
 static void view_state(app_scene_authoring *scene, const char *folder)
 {
-    const char *pickable = "version 1\n"
-                           "name \"Pickable\"\n"
-                           "components {\n"
-                           "    GameAppearance height=20 width=20\n"
-                           "    GameTransform x=0 y=0\n"
-                           "}\n"
-                           "(array)behaviors\n";
+    const char *pickable =
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"Pickable\")),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"GameAppearance\", data.Object([\n"
+        "                    data.Field.Named(\"height\", "
+        "data.Value.Int(20)),\n"
+        "                    data.Field.Named(\"width\", data.Value.Int(20))\n"
+        "                ])),\n"
+        "                data.Field.Named(\"GameTransform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.Int(0)),\n"
+        "                    data.Field.Named(\"y\", data.Value.Int(0))\n"
+        "                ]))\n"
+        "            ])),\n"
+        "            data.Field.Named(\"behaviors\", data.List([]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n";
     assert(app_scene_authoring_register_prototype(scene, pickable, NULL) == 0);
     assert(app_scene_authoring_add_instance(scene, "Pickable") == 0);
     int below = scene->selected;
@@ -572,8 +669,8 @@ static void view_state(app_scene_authoring *scene, const char *folder)
     int above = scene->selected;
     ecs_entity under = scene->actors[below].entity, top = scene->actors[above].entity;
     char shown[1024], path[1024];
-    snprintf(shown, sizeof shown, "%s/Shown.kdl", folder);
-    snprintf(path, sizeof path, "%s/View.kdl", folder);
+    snprintf(shown, sizeof shown, "%s/Shown.chibi", folder);
+    snprintf(path, sizeof path, "%s/View.chibi", folder);
     /* A file names the scene after the file it last saved to, so the second
        save names it Shown, as the copy saved as View will be. */
     assert(app_scene_authoring_save(scene, shown) == 0);
@@ -631,13 +728,30 @@ static int prototype_current(app_scene_authoring *scene, const char *prototype)
     return value.i;
 }
 
-static const char *const APPLIED = "version 1\n"
-                                   "name \"Applied\"\n"
-                                   "components {\n"
-                                   "    GameTransform x=0 y=0\n"
-                                   "    GameHealth current=10 maximum=100\n"
-                                   "}\n"
-                                   "(array)behaviors\n";
+static const char *const APPLIED =
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+    "            data.Field.Named(\"name\", data.Value.Text(\"Applied\")),\n"
+    "            data.Field.Named(\"components\", data.Object([\n"
+    "                data.Field.Named(\"GameTransform\", data.Object([\n"
+    "                    data.Field.Named(\"x\", data.Value.Int(0)),\n"
+    "                    data.Field.Named(\"y\", data.Value.Int(0))\n"
+    "                ])),\n"
+    "                data.Field.Named(\"GameHealth\", data.Object([\n"
+    "                    data.Field.Named(\"current\", data.Value.Int(10)),\n"
+    "                    data.Field.Named(\"maximum\", data.Value.Int(100))\n"
+    "                ]))\n"
+    "            ])),\n"
+    "            data.Field.Named(\"behaviors\", data.List([]))\n"
+    "        ])\n"
+    "    )\n"
+    "}\n";
 
 /* Apply Overrides to Prototype: a chosen field becomes the prototype's, the
    instances that inherit it follow, one that overrides it keeps its own, and
@@ -757,7 +871,7 @@ static void save_as_prototype(app_scene_authoring *scene, ecs_world *world, cons
     assert(ecs_component_has(world, actor->entity, tag->id));
     assert(prototype_current(scene, "Tuned") == 55);
     char path[1024];
-    snprintf(path, sizeof path, "%s/prototypes/Tuned.kdl", folder);
+    snprintf(path, sizeof path, "%s/prototypes/Tuned.chibi", folder);
     assert(access(path, F_OK) == 0);
     assert(history(scene, false) == 0 && !scene_history_can_undo(scene->history));
     actor = &scene->actors[actor_named(scene, name)];
@@ -778,12 +892,26 @@ static void save_as_prototype(app_scene_authoring *scene, ecs_world *world, cons
    or an unsaved mark. */
 static void field_preview(app_scene_authoring *scene, ecs_world *world)
 {
-    const char *shaded = "version 1\n"
-                         "name \"Shaded\"\n"
-                         "components {\n"
-                         "    GameShader material=\"Base\"\n"
-                         "}\n"
-                         "(array)behaviors\n";
+    const char *shaded =
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Shaded\")),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"GameShader\", data.Object([\n"
+        "                    data.Field.Named(\"material\", "
+        "data.Value.Text(\"Base\"))\n"
+        "                ]))\n"
+        "            ])),\n"
+        "            data.Field.Named(\"behaviors\", data.List([]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n";
     assert(app_scene_authoring_register_prototype(scene, shaded, NULL) == 0);
     assert(app_scene_authoring_add_instance(scene, "Shaded") == 0);
     ecs_entity entity = scene->actors[scene->selected].entity;
@@ -823,13 +951,32 @@ void test_scene_instances()
     app_scene_authoring *
         scene = app_scene_authoring_new(world, live, definition, asset, e, NULL, NULL, runtime);
     assert(scene);
-    const char *first = "version 1\n"
-                        "name \"First\"\n"
-                        "components {\n"
-                        "    GameTransform x=0 y=0\n"
-                        "    GameHealth current=73 maximum=100\n"
-                        "}\n"
-                        "(array)behaviors\n";
+    const char *first =
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"First\")),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"GameTransform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.Int(0)),\n"
+        "                    data.Field.Named(\"y\", data.Value.Int(0))\n"
+        "                ])),\n"
+        "                data.Field.Named(\"GameHealth\", data.Object([\n"
+        "                    data.Field.Named(\"current\", "
+        "data.Value.Int(73)),\n"
+        "                    data.Field.Named(\"maximum\", "
+        "data.Value.Int(100))\n"
+        "                ]))\n"
+        "            ])),\n"
+        "            data.Field.Named(\"behaviors\", data.List([]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n";
     assert(app_scene_authoring_register_prototype(scene, first, NULL) == 0);
     prototype_component_gain(scene, world);
     prototype_spawn_refresh(scene, live, world);
@@ -844,7 +991,7 @@ void test_scene_instances()
     apply_overrides(scene, world);
     field_preview(scene, world);
     save_as_prototype(scene, world, folder);
-    const char *const saved[] = { "Renamed.kdl", "Removable.kdl", "Shown.kdl", "View.kdl" };
+    const char *const saved[] = { "Renamed.chibi", "Removable.chibi", "Shown.chibi", "View.chibi" };
     for (size_t i = 0; i < sizeof saved / sizeof *saved; i++) {
         char path[1024];
         snprintf(path, sizeof path, "%s/%s", folder, saved[i]);

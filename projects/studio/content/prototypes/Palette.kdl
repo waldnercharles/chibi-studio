@@ -1,4 +1,0 @@
-name "Palette"
-components {
-    Ui document="Palette" hidden=#true
-}

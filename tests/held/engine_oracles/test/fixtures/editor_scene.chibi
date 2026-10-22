@@ -1,0 +1,53 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(1)),
+            data.Field.Named("name", data.Value.Text("Editor interaction fixture")),
+            data.Field.Named("entities", data.List([
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Enemy_1")),
+                    data.Field.Named("prototype", data.Value.Text("Enemy")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("HealthBehavior"),
+                        data.Value.Text("EnemyBehavior")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("InputEntity_1")),
+                    data.Field.Named("prototype", data.Value.Text("InputEntity")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("InputBehavior")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Player_1")),
+                    data.Field.Named("prototype", data.Value.Text("Player")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("InputBehavior"),
+                        data.Value.Text("WeaponBehavior"),
+                        data.Value.Text("HealthBehavior"),
+                        data.Value.Text("AutoWeaponBehavior"),
+                        data.Value.Text("PlayerContactBehavior"),
+                        data.Value.Text("MovementTrailBehavior")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("StaticEntity_1")),
+                    data.Field.Named("prototype", data.Value.Text("StaticEntity"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Projectile_1")),
+                    data.Field.Named("prototype", data.Value.Text("Projectile")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("ProjectileBehavior"),
+                        data.Value.Text("ProjectileHitBehavior")
+                    ]))
+                ])
+            ]))
+        ])
+    )
+}

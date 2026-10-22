@@ -1,8 +1,0 @@
-version 3
-name "ConfirmDiscard"
-domain "event"
-id_counter 1
-description "The new-project dialog requires confirmation before discarding changes."
-(array)graphs {
-    - kind="event" name=""
-}

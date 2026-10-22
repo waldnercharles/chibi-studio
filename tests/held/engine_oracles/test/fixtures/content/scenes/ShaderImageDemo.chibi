@@ -1,0 +1,69 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(1)),
+            data.Field.Named("name", data.Value.Text("Image Shader Demo")),
+            data.Field.Named("presentation", data.Value.Text("3d")),
+            data.Field.Named("entities", data.List([
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Energy Box")),
+                    data.Field.Named("prototype", data.Value.Text("ShaderEnergy")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameTransform", data.Object([
+                            data.Field.Named("x", data.Value.Real(-185.0)),
+                            data.Field.Named("y", data.Value.Real(0.0))
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Energy Prism")),
+                    data.Field.Named("prototype", data.Value.Text("ShaderEnergy")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameGeometry3D", data.Object([
+                            data.Field.Named("primitive", data.Value.UInt(4)),
+                            data.Field.Named("width", data.Value.Real(140.0)),
+                            data.Field.Named("depth", data.Value.Real(140.0)),
+                            data.Field.Named("height", data.Value.Real(24.0)),
+                            data.Field.Named("elevation", data.Value.Real(12.0))
+                        ])),
+                        data.Field.Named("GameShader", data.Object([
+                            data.Field.Named("material", data.Value.Text("EnergyCells")),
+                            data.Field.Named("shape", data.Value.Text("")),
+                            data.Field.Named("parameters", data.Value.Text("Intensity 2.1\n(array)\"Scroll Speed\" -0.045 0.025\n(array)Tiling 1.2 1.2\n")),
+                            data.Field.Named("bounds_x", data.Value.Real(0.0)),
+                            data.Field.Named("bounds_y", data.Value.Real(0.0))
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Energy Sphere")),
+                    data.Field.Named("prototype", data.Value.Text("ShaderEnergy")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameTransform", data.Object([
+                            data.Field.Named("x", data.Value.Real(185.0)),
+                            data.Field.Named("y", data.Value.Real(0.0))
+                        ])),
+                        data.Field.Named("GameGeometry3D", data.Object([
+                            data.Field.Named("primitive", data.Value.UInt(1)),
+                            data.Field.Named("width", data.Value.Real(110.0)),
+                            data.Field.Named("depth", data.Value.Real(110.0)),
+                            data.Field.Named("height", data.Value.Real(110.0)),
+                            data.Field.Named("elevation", data.Value.Real(55.0))
+                        ])),
+                        data.Field.Named("GameShader", data.Object([
+                            data.Field.Named("material", data.Value.Text("EnergyCells")),
+                            data.Field.Named("shape", data.Value.Text("")),
+                            data.Field.Named("parameters", data.Value.Text("Intensity 1.3\n(array)Tiling 2 1\n")),
+                            data.Field.Named("bounds_x", data.Value.Real(0.0)),
+                            data.Field.Named("bounds_y", data.Value.Real(0.0))
+                        ]))
+                    ]))
+                ])
+            ]))
+        ])
+    )
+}

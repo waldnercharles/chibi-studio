@@ -175,8 +175,32 @@ static void actor_history()
         scene_history_push(history, unrelated, (GameTransform){ 50, 60 }, (GameTransform){ 70, 80 })
     );
     char name[] = "Actor", prototype[] = "Player";
-    av_value *base = test_read_asset_value("marker \"base\"\n");
-    av_value *state = test_read_asset_value("marker \"state\"\n");
+    av_value *base = test_read_asset_value(
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"marker\", data.Value.Text(\"base\"))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
+    av_value *state = test_read_asset_value(
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"marker\", data.Value.Text(\"state\"))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
     scene_actor_edit actor = { .identity = 123,
                                .index = 2,
                                .name = name,
@@ -324,7 +348,17 @@ static void behavior_history()
         (pin_value){ .type = PIN_F32, .f = 3 },
         (pin_value){ .type = PIN_F32, .f = 9 }
     ));
-    av_value *empty_components = test_read_asset_value("");
+    av_value *empty_components = test_read_asset_value(
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([])\n"
+        "    )\n"
+        "}\n"
+    );
     scene_actor_edit deletion = { .index = 0,
                                   .name = "Actor",
                                   .prototype_name = "Player",
@@ -392,9 +426,22 @@ static void component_override_roundtrip()
     }
     char error[256];
     game_prototype *base = game_prototype_load(
-        "name \"Base\"\n"
-        "components {\n"
-        "    GameTransform x=1 y=2\n"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Base\")),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"GameTransform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.Int(1)),\n"
+        "                    data.Field.Named(\"y\", data.Value.Int(2))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
         "}\n",
         &registry,
         error,
@@ -404,8 +451,21 @@ static void component_override_roundtrip()
     ecs_entity entity;
     assert(game_prototype_spawn_components(base, world, &entity, error, sizeof error) == 0);
     av_value *changes = test_read_asset_value(
-        "GameTransform #null\n"
-        "GameHealth current=73 maximum=100\n"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"GameTransform\", data.Value.Null),\n"
+        "            data.Field.Named(\"GameHealth\", data.Object([\n"
+        "                data.Field.Named(\"current\", data.Value.Int(73)),\n"
+        "                data.Field.Named(\"maximum\", data.Value.Int(100))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
     );
     assert(
         game_prototype_apply_components_value(world, entity, changes, &registry, &owned_strings, error, sizeof error) ==

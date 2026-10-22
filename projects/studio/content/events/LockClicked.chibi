@@ -1,0 +1,35 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(3)),
+            data.Field.Named("name", data.Value.Text("LockClicked")),
+            data.Field.Named("domain", data.Value.Text("event")),
+            data.Field.Named("id_counter", data.Value.UInt(3)),
+            data.Field.Named("description", data.Value.Text("A row's lock was clicked; Locked is whether its object was locked.")),
+            data.Field.Named("variables", data.List([
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(1)),
+                    data.Field.Named("name", data.Value.Text("Key")),
+                    data.Field.Named("type", data.Value.Text("const char *")),
+                    data.Field.Named("category", data.Value.Text("Payload"))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(2)),
+                    data.Field.Named("name", data.Value.Text("Locked")),
+                    data.Field.Named("type", data.Value.Text("bool")),
+                    data.Field.Named("category", data.Value.Text("Payload"))
+                ])
+            ])),
+            data.Field.Named("graphs", data.List([
+                data.Object([
+                    data.Field.Named("kind", data.Value.Text("event")),
+                    data.Field.Named("name", data.Value.Text(""))
+                ])
+            ]))
+        ])
+    )
+}

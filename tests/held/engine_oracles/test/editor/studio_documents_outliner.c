@@ -18,7 +18,7 @@
 #include "render/screenshot.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/text_file.h"
 #include "support/text_overlay.h"
 #include "test/editor/studio_documents.h"

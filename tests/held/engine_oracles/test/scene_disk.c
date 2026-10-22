@@ -1,5 +1,5 @@
-#include "authoring/engine_preview.h"
 #include "assets/code_source.h"
+#include "authoring/engine_preview.h"
 #include "editor/workspace/asset_index.h"
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
@@ -7,6 +7,7 @@
 #include "graph/runtime/instance.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
+#include "support/asset_document.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -27,8 +28,6 @@ typedef struct
     double now;
 } disk_fixture;
 
-static const char
-    DOT[] = "name \"Dot\"\ncomponents { GAME.GameTransform { x %s; }; }\n";
 static const char PULSE[] = "behavior Pulse { %s on Tick() {} }\n";
 
 static void path_to(const disk_fixture *f, const char *name, char *out, size_t size)
@@ -46,6 +45,45 @@ static void write_asset(const disk_fixture *f, const char *name, const char *for
     fclose(file);
 }
 
+static void write_document(const disk_fixture *fixture, const char *name, av_doc *doc)
+{
+    char *source = asset_document_write(av_doc_root(doc));
+    assert(source);
+    write_asset(fixture, name, "%s", source);
+    free(source);
+    av_doc_free(doc);
+}
+
+static void write_dot(const disk_fixture *fixture, double x)
+{
+    av_doc *doc = av_doc_new();
+    av_value *root = av_obj(doc);
+    av_doc_set_root(doc, root);
+    av_obj_add_str(doc, root, "name", "Dot");
+    av_value *components = av_obj_add_obj(doc, root, "components");
+    av_value *transform = av_obj_add_obj(doc, components, "GAME.GameTransform");
+    av_obj_add_val(doc, transform, "x", av_real(doc, x));
+    write_document(fixture, "prototypes/Dot.chibi", doc);
+}
+
+static void write_scene(const disk_fixture *fixture, int first)
+{
+    av_doc *doc = av_doc_new();
+    av_value *root = av_obj(doc);
+    av_doc_set_root(doc, root);
+    av_obj_add_int(doc, root, "version", 1);
+    av_obj_add_str(doc, root, "name", "Main");
+    av_value *entities = av_obj_add_arr(doc, root, "entities");
+    for (int i = first; i < first + 2; i++) {
+        char name[32];
+        snprintf(name, sizeof name, "Dot_%d", i);
+        av_value *entity = av_arr_add_obj(doc, entities);
+        av_obj_add_str(doc, entity, "name", name);
+        av_obj_add_str(doc, entity, "prototype", "Dot");
+    }
+    write_document(fixture, "scenes/Main.chibi", doc);
+}
+
 static disk_fixture fixture_new()
 {
     disk_fixture f = { .world = ecs_world_new() };
@@ -60,8 +98,8 @@ static disk_fixture fixture_new()
         path_to(&f, folders[i], folder, sizeof folder);
         assert(mkdir(folder, 0755) == 0);
     }
-    write_asset(&f, "prototypes/Dot.kdl", DOT, "1.0");
-    write_asset(&f, "scenes/Main.kdl", "version 1\nname \"Main\"\n(array)entities { %s }\n", "- { name \"Dot_1\"; prototype \"Dot\"; }; - { name \"Dot_2\"; prototype \"Dot\"; };");
+    write_dot(&f, 1.0);
+    write_scene(&f, 1);
     f.live = game_preview_world_new(f.world);
     game_preview_definition *definition = game_preview_definition_new("Editing", behavior_asset_new("Editing"));
     assert(definition && game_preview_add_definition(f.live, definition) == 0);
@@ -78,7 +116,7 @@ static disk_fixture fixture_new()
         f.runtime
     );
     char scene_path[128];
-    path_to(&f, "scenes/Main.kdl", scene_path, sizeof scene_path);
+    path_to(&f, "scenes/Main.chibi", scene_path, sizeof scene_path);
     assert(app_scene_authoring_set_content_root(f.scene, f.root) == 0);
     assert(app_scene_authoring_load_content(f.scene) == 0);
     assert(app_scene_authoring_load(f.scene, scene_path) == 0);
@@ -93,9 +131,12 @@ static void fixture_free(disk_fixture *f)
     game_preview_world_free(f->live);
     editor_free(f->graph);
     ecs_world_free(f->world);
-    const char *files[] = { "prototypes/Dot.kdl", "behaviors/Pulse.chibi",
-                            "scenes/Main.kdl",    "prototypes",
-                            "behaviors",          "scenes" };
+    const char *files[] = { "prototypes/Dot.chibi",
+                            "behaviors/Pulse.chibi",
+                            "scenes/Main.chibi",
+                            "prototypes",
+                            "behaviors",
+                            "scenes" };
     for (int i = 0; i < 6; i++) {
         char path[128];
         path_to(f, files[i], path, sizeof path);
@@ -133,27 +174,27 @@ static void prototypes_follow_disk_unless_edited()
 {
     disk_fixture f = fixture_new();
     char path[128];
-    path_to(&f, "prototypes/Dot.kdl", path, sizeof path);
-    write_asset(&f, "prototypes/Dot.kdl", DOT, "5.0");
+    path_to(&f, "prototypes/Dot.chibi", path, sizeof path);
+    write_dot(&f, 5.0);
     assert(
-        poll_disk(&f, "Dot.kdl") == APP_DISK_RELOADED && dot_x(&f, 0) == 5 &&
+        poll_disk(&f, "Dot.chibi") == APP_DISK_RELOADED && dot_x(&f, 0) == 5 &&
         dot_x(&f, 1) == 5
     );
 
     set_dot_x(&f, 7);
     assert(app_scene_authoring_save_prototype(f.scene, "Dot", path) == 0);
-    assert(poll_disk(&f, "Dot.kdl") == APP_DISK_NONE && dot_x(&f, 0) == 7);
+    assert(poll_disk(&f, "Dot.chibi") == APP_DISK_NONE && dot_x(&f, 0) == 7);
 
     set_dot_x(&f, 9);
-    write_asset(&f, "prototypes/Dot.kdl", DOT, "3.0");
-    assert(poll_disk(&f, "Dot.kdl") == APP_DISK_UNSAVED && dot_x(&f, 0) == 9);
+    write_dot(&f, 3.0);
+    assert(poll_disk(&f, "Dot.chibi") == APP_DISK_UNSAVED && dot_x(&f, 0) == 9);
     assert(
         app_scene_authoring_reload_path(f.scene, path) == APP_DISK_RELOADED &&
         dot_x(&f, 0) == 3
     );
 
-    write_asset(&f, "prototypes/Dot.kdl", "%s", "{");
-    assert(poll_disk(&f, "Dot.kdl") == APP_DISK_FAILED && dot_x(&f, 0) == 3);
+    write_asset(&f, "prototypes/Dot.chibi", "%s", "{");
+    assert(poll_disk(&f, "Dot.chibi") == APP_DISK_FAILED && dot_x(&f, 0) == 3);
     fixture_free(&f);
 }
 
@@ -259,10 +300,10 @@ static void the_scene_reloads_after_the_runtime_stops()
     select_instance(f.scene, 1);
     f.scene->camera = (scene_camera){ .view = { 10, 20, 300, 200 }, .saved = true };
     f.scene->runtime_snapshot_valid = true;
-    write_asset(&f, "scenes/Main.kdl", "version 1\nname \"Main\"\n(array)entities { %s }\n", "- { name \"Dot_2\"; prototype \"Dot\"; }; - { name \"Dot_3\"; prototype \"Dot\"; };");
-    assert(poll_disk(&f, "Main.kdl") == APP_DISK_NONE && acount(f.scene->actors) == 2);
+    write_scene(&f, 2);
+    assert(poll_disk(&f, "Main.chibi") == APP_DISK_NONE && acount(f.scene->actors) == 2);
     f.scene->runtime_snapshot_valid = false;
-    assert(poll_disk(&f, "Main.kdl") == APP_DISK_RELOADED);
+    assert(poll_disk(&f, "Main.chibi") == APP_DISK_RELOADED);
     assert(!strcmp(f.scene->actors[1].name, "Dot_3"));
     assert(!strcmp(selected_actor(f.scene)->name, "Dot_2"));
     assert(f.scene->camera.saved && f.scene->camera.view.center_x == 10);

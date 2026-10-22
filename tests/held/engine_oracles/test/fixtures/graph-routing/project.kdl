@@ -1,4 +1,0 @@
-version 10
-name "Graph routing corpus"
-content "content"
-start_scene "scenes/Start.kdl"

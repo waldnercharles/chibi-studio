@@ -2,7 +2,7 @@
 #include "authoring/engine_preview.h"
 /* Assets ▸ New and Settings ▸ Project over a project on disk: every kind New
  * makes is written as its model saves it, joins the asset index at once and
- * opens as Assets opens it; the Project rows rewrite project.kdl. */
+ * opens as Assets opens it; the Project rows rewrite project.chibi. */
 #include "assets/new_asset.h"
 #include "assets/scene_document.h"
 #include "authoring/behavior_loader.h"
@@ -15,7 +15,7 @@
 #include "editor/workspace/viewport.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/text_file.h"
 #include "test/suite_internal.h"
 #include "ui/popover.h"
@@ -34,10 +34,23 @@
 #define STRINGIFY(value) STRINGIFY_INNER(value)
 #define PROJECT_VERSION_TEXT STRINGIFY(CHIBI_PROJECT_VERSION)
 #define MANIFEST                                                               \
-    "version " PROJECT_VERSION_TEXT "\n"                                       \
-    "name \"Fresh\"\n"                                                         \
-    "content \"content\"\n"                                                    \
-    "start_scene \"scenes/Main.kdl\"\n"
+    "package asset\n"                                                          \
+    "\n"                                                                       \
+    "import data \"game:assets\"\n"                                            \
+    "\n"                                                                       \
+    "pub Build :: () -> byte[] {\n"                                            \
+    "    return data.Encode(\n"                                                \
+    "        data.Object([\n"                                                  \
+    "            data.Field.Named(\"version\", "                               \
+    "data.Value.Int(" PROJECT_VERSION_TEXT ")),\n"                             \
+    "            data.Field.Named(\"name\", data.Value.Text(\"Fresh\")),\n"    \
+    "            data.Field.Named(\"content\", "                               \
+    "data.Value.Text(\"content\")),\n"                                         \
+    "            data.Field.Named(\"start_scene\", "                           \
+    "data.Value.Text(\"scenes/Main.chibi\"))\n"                                \
+    "        ])\n"                                                             \
+    "    )\n"                                                                  \
+    "}\n"
 
 typedef struct
 {
@@ -76,8 +89,8 @@ static new_fixture fixture_new()
     join(path, sizeof path, f.content, "scenes");
     assert(mkdir(f.content, 0755) == 0 && mkdir(path, 0755) == 0);
     char *json = new_asset_text(NEW_ASSET_SCENE, "Main");
-    char *yaml = asset_text_to_disk(json, error, sizeof error);
-    join(path, sizeof path, f.content, "scenes/Main.kdl");
+    char *yaml = asset_document_to_disk(json, error, sizeof error);
+    join(path, sizeof path, f.content, "scenes/Main.chibi");
     write_text(path, yaml);
     free(yaml);
     free(json);
@@ -324,8 +337,8 @@ static void creates_every_kind()
             script_analysis_free(source);
             script_syntax_free(syntax);
         } else if (kind < NEW_ASSET_KIND_COUNT) {
-            av_doc *document = text ? av_doc_read(text, NULL, 0) : NULL;
-            test_check(document != NULL, "creating a declarative asset preserves KDL");
+            av_doc *document = text ? asset_document_read(text, NULL, 0) : NULL;
+            test_check(document != NULL, "creating a data asset writes an authored Chibi module");
             av_doc_free(document);
         }
         const reference_index *index = app_scene_authoring_asset_index(f.scene);
@@ -527,15 +540,15 @@ static void project_creation_modal()
 }
 
 /* Settings ▸ Project renames the project and picks its start scene, each
-   written to project.kdl in its place. */
+   written to project.chibi in its place. */
 static void project_settings_write()
 {
     new_fixture f = fixture_new();
     studio *s = f.studio;
     char path[160];
-    join(path, sizeof path, f.content, "scenes/Boss.kdl");
+    join(path, sizeof path, f.content, "scenes/Boss.chibi");
     char *json = new_asset_text(NEW_ASSET_SCENE, "Boss"), error[128];
-    char *yaml = asset_text_to_disk(json, error, sizeof error);
+    char *yaml = asset_document_to_disk(json, error, sizeof error);
     write_text(path, yaml);
     free(yaml);
     free(json);
@@ -552,7 +565,7 @@ static void project_settings_write()
     char shown[64] = "", selected[128] = "";
     if (name && start) {
         rml_element_value(name, shown, sizeof shown);
-        rml_element_set_value(start, "scenes/Boss.kdl");
+        rml_element_set_value(start, "scenes/Boss.chibi");
         frames(&f, 2);
         rml_element_focus(name, false);
         rml_element_select(name);
@@ -568,13 +581,27 @@ static void project_settings_write()
     }
     join(path, sizeof path, f.root, CHIBI_PROJECT_MANIFEST);
     char *manifest = text_file_read(path);
-    const char *expected = "version " PROJECT_VERSION_TEXT "\n"
-                           "name \"Renamed\"\n"
-                           "content \"content\"\n"
-                           "start_scene \"scenes/Boss.kdl\"\n";
+    const char *expected = "package asset\n"
+                           "\n"
+                           "import data \"game:assets\"\n"
+                           "\n"
+                           "pub Build :: () -> byte[] {\n"
+                           "    return data.Encode(\n"
+                           "        data.Object([\n"
+                           "            data.Field.Named(\"version\", "
+                           "data.Value.Int(" PROJECT_VERSION_TEXT ")),\n"
+                           "            data.Field.Named(\"name\", "
+                           "data.Value.Text(\"Renamed\")),\n"
+                           "            data.Field.Named(\"content\", "
+                           "data.Value.Text(\"content\")),\n"
+                           "            data.Field.Named(\"start_scene\", "
+                           "data.Value.Text(\"scenes/Boss.chibi\"))\n"
+                           "        ])\n"
+                           "    )\n"
+                           "}\n";
     bool written = manifest && !strcmp(manifest, expected);
     bool current_scene = s->project.start_scene &&
-                         !strcmp(s->project.start_scene, "scenes/Boss.kdl");
+                         !strcmp(s->project.start_scene, "scenes/Boss.chibi");
     if (!(scope && name && start && !strcmp(shown, "Fresh") && written && current_scene)) {
         printf(
             "  scope=%p name=%p start=%p shown='%s' selected='%s' model='%s' "
@@ -592,7 +619,7 @@ static void project_settings_write()
     test_check(
         scope && name && start && !strcmp(shown, "Fresh") && written && current_scene,
         "Settings ▸ Project renames the project and sets its start scene in "
-        "project.kdl"
+        "project.chibi"
     );
     free(manifest);
     fixture_free(&f);
@@ -635,7 +662,7 @@ static void project_creation_reload()
     assert(unlink(path) == 0);
     join(path, sizeof path, project.content, "prototypes");
     assert(mkdir(path, 0755) == 0);
-    join(path, sizeof path, project.content, "prototypes/Broken.kdl");
+    join(path, sizeof path, project.content, "prototypes/Broken.chibi");
     write_text(path, "invalid: [\n");
     bool rejected_prototype = app_scene_authoring_load_content(f.scene) != 0;
     test_check(rejected_behavior && rejected_prototype, "UI-only content does not hide invalid required behavior or prototype assets");

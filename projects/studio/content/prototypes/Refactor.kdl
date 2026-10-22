@@ -1,4 +1,0 @@
-name "Refactor"
-components {
-    Ui document="Refactor" hidden=#true
-}

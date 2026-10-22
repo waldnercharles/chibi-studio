@@ -1,5 +1,0 @@
-name "Cave"
-components {
-    GAME.GameShader material="Basalt"
-    GAME.MaterialTerrain field="BasaltCave"
-}

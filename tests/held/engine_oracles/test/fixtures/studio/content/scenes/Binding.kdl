@@ -1,5 +1,0 @@
-version 1
-name "Binding"
-(array)entities {
-    - name="Binding" prototype="Binding"
-}

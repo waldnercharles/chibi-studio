@@ -1,0 +1,344 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(3)),
+            data.Field.Named("name", data.Value.Text("ShaderMath")),
+            data.Field.Named("domain", data.Value.Text("shader-library")),
+            data.Field.Named("id_counter", data.Value.UInt(589)),
+            data.Field.Named("description", data.Value.Text("Shared pulse, ring mask and hit flash functions with explicit inputs.")),
+            data.Field.Named("graphs", data.List([
+                data.Object([
+                    data.Field.Named("kind", data.Value.Text("event")),
+                    data.Field.Named("name", data.Value.Text("Functions"))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(56)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("name", data.Value.Text("Pulse")),
+                    data.Field.Named("entry_id", data.Value.UInt(57)),
+                    data.Field.Named("return_id", data.Value.UInt(59)),
+                    data.Field.Named("call_depth_limit", data.Value.UInt(64)),
+                    data.Field.Named("nodes", data.List([
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(57)),
+                            data.Field.Named("type", data.Value.Text("Function Entry")),
+                            data.Field.Named("outputs", data.List([
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(61)),
+                                    data.Field.Named("name", data.Value.Text("Time")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ]),
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(62)),
+                                    data.Field.Named("name", data.Value.Text("Speed")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ])
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(59)),
+                            data.Field.Named("type", data.Value.Text("Return")),
+                            data.Field.Named("inputs", data.List([
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(63)),
+                                    data.Field.Named("name", data.Value.Text("Brightness")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ])
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(190)),
+                            data.Field.Named("type", data.Value.Text("Behavior Expression")),
+                            data.Field.Named("reference_name", data.Value.Text("(sin(time * speed) + 1) * 0.5")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("time", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(191)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ])),
+                                data.Field.Named("speed", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(192)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Result", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(193)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ])
+                    ])),
+                    data.Field.Named("edges", data.List([
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("57.Time")),
+                            data.Field.Named("to", data.Value.Text("190.time"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("57.Speed")),
+                            data.Field.Named("to", data.Value.Text("190.speed"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("190.Result")),
+                            data.Field.Named("to", data.Value.Text("59.Brightness"))
+                        ])
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(102)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("name", data.Value.Text("Ring Mask")),
+                    data.Field.Named("entry_id", data.Value.UInt(103)),
+                    data.Field.Named("return_id", data.Value.UInt(107)),
+                    data.Field.Named("call_depth_limit", data.Value.UInt(64)),
+                    data.Field.Named("nodes", data.List([
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(103)),
+                            data.Field.Named("type", data.Value.Text("Function Entry")),
+                            data.Field.Named("outputs", data.List([
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(104)),
+                                    data.Field.Named("name", data.Value.Text("Position")),
+                                    data.Field.Named("type", data.Value.Text("struct")),
+                                    data.Field.Named("type_name", data.Value.Text("ShaderVec2")),
+                                    data.Field.Named("kind", data.Value.Text("data")),
+                                    data.Field.Named("default", data.Object([
+                                        data.Field.Named("x", data.Value.Real(0.0)),
+                                        data.Field.Named("y", data.Value.Real(0.0))
+                                    ]))
+                                ]),
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(105)),
+                                    data.Field.Named("name", data.Value.Text("Radius")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data")),
+                                    data.Field.Named("default", data.Value.Real(35.0))
+                                ]),
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(106)),
+                                    data.Field.Named("name", data.Value.Text("Width")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data")),
+                                    data.Field.Named("default", data.Value.Real(3.0))
+                                ])
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(107)),
+                            data.Field.Named("type", data.Value.Text("Return")),
+                            data.Field.Named("inputs", data.List([
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(108)),
+                                    data.Field.Named("name", data.Value.Text("Mask")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ])
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(110)),
+                            data.Field.Named("type", data.Value.Text("Shader Circle")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("Position", data.Object([
+                                    data.Field.Named("default", data.Object([
+                                        data.Field.Named("x", data.Value.Real(0.0)),
+                                        data.Field.Named("y", data.Value.Real(0.0))
+                                    ]))
+                                ]))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(305)),
+                            data.Field.Named("type", data.Value.Text("Behavior Expression")),
+                            data.Field.Named("reference_name", data.Value.Text("saturate(1 - abs(distance) / max(width, 0.001))")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("distance", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(306)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ])),
+                                data.Field.Named("width", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(307)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Result", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(308)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ])
+                    ])),
+                    data.Field.Named("edges", data.List([
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("103.Position")),
+                            data.Field.Named("to", data.Value.Text("110.Position"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("103.Radius")),
+                            data.Field.Named("to", data.Value.Text("110.Radius"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("103.Width")),
+                            data.Field.Named("to", data.Value.Text("305.width"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("110.Value")),
+                            data.Field.Named("to", data.Value.Text("305.distance"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("305.Result")),
+                            data.Field.Named("to", data.Value.Text("107.Mask"))
+                        ])
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(163)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("math_expression", data.Value.Text("(sin(time * speed) + 1) * 0.5")),
+                    data.Field.Named("expression_mode", data.Value.UInt(1)),
+                    data.Field.Named("entry_id", data.Value.UInt(249))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(275)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("math_expression", data.Value.Text("saturate(1 - abs(distance) / max(width, 0.001))")),
+                    data.Field.Named("expression_mode", data.Value.UInt(1)),
+                    data.Field.Named("entry_id", data.Value.UInt(370))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(399)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("name", data.Value.Text("Hit Flash")),
+                    data.Field.Named("entry_id", data.Value.UInt(400)),
+                    data.Field.Named("return_id", data.Value.UInt(402)),
+                    data.Field.Named("call_depth_limit", data.Value.UInt(64)),
+                    data.Field.Named("nodes", data.List([
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(400)),
+                            data.Field.Named("type", data.Value.Text("Function Entry")),
+                            data.Field.Named("outputs", data.List([
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(404)),
+                                    data.Field.Named("name", data.Value.Text("Color")),
+                                    data.Field.Named("type", data.Value.Text("struct")),
+                                    data.Field.Named("type_name", data.Value.Text("ShaderVec3")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ]),
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(405)),
+                                    data.Field.Named("name", data.Value.Text("Flash")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ])
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(402)),
+                            data.Field.Named("type", data.Value.Text("Return")),
+                            data.Field.Named("inputs", data.List([
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(406)),
+                                    data.Field.Named("name", data.Value.Text("Base Color")),
+                                    data.Field.Named("type", data.Value.Text("struct")),
+                                    data.Field.Named("type_name", data.Value.Text("ShaderVec3")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ]),
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(407)),
+                                    data.Field.Named("name", data.Value.Text("Glow")),
+                                    data.Field.Named("type", data.Value.Text("struct")),
+                                    data.Field.Named("type_name", data.Value.Text("ShaderVec3")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ])
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(435)),
+                            data.Field.Named("type", data.Value.Text("Behavior Expression")),
+                            data.Field.Named("reference_name", data.Value.Text("mix(color, vec3(0.75, 0.95, 1), saturate(flash))")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("color", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(436)),
+                                    data.Field.Named("type", data.Value.Text("struct")),
+                                    data.Field.Named("type_name", data.Value.Text("ShaderVec3"))
+                                ])),
+                                data.Field.Named("flash", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(437)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Result", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(438)),
+                                    data.Field.Named("type", data.Value.Text("struct")),
+                                    data.Field.Named("type_name", data.Value.Text("ShaderVec3"))
+                                ]))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(515)),
+                            data.Field.Named("type", data.Value.Text("Behavior Expression")),
+                            data.Field.Named("reference_name", data.Value.Text("vec3(0.75, 0.95, 1) * flash")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("flash", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(516)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Result", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(517)),
+                                    data.Field.Named("type", data.Value.Text("struct")),
+                                    data.Field.Named("type_name", data.Value.Text("ShaderVec3"))
+                                ]))
+                            ]))
+                        ])
+                    ])),
+                    data.Field.Named("edges", data.List([
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("400.Color")),
+                            data.Field.Named("to", data.Value.Text("435.color"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("400.Flash")),
+                            data.Field.Named("to", data.Value.Text("435.flash"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("400.Flash")),
+                            data.Field.Named("to", data.Value.Text("515.flash"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("435.Result")),
+                            data.Field.Named("to", data.Value.Text("402.Base Color"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("515.Result")),
+                            data.Field.Named("to", data.Value.Text("402.Glow"))
+                        ])
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(408)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("math_expression", data.Value.Text("mix(color, vec3(0.75, 0.95, 1), saturate(flash))")),
+                    data.Field.Named("expression_mode", data.Value.UInt(1)),
+                    data.Field.Named("entry_id", data.Value.UInt(541))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(493)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("math_expression", data.Value.Text("vec3(0.75, 0.95, 1) * flash")),
+                    data.Field.Named("expression_mode", data.Value.UInt(1)),
+                    data.Field.Named("entry_id", data.Value.UInt(568))
+                ])
+            ]))
+        ])
+    )
+}

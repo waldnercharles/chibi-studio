@@ -1,0 +1,17 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("scene", data.Value.Text("Sandbox")),
+            data.Field.Named("frames", data.Value.UInt(60)),
+            data.Field.Named("keys", data.List([
+                data.Object([
+                    data.Field.Named("frame", data.Value.UInt(0))
+                ])
+            ]))
+        ])
+    )
+}

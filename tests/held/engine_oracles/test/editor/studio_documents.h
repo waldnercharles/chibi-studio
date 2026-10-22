@@ -17,7 +17,7 @@
    stays one line wherever the canvas arranges it. */
 #define FUNCTION_GRAPH 1
 #define SETTER 10247
-#define VAULT PROJECT "/content/scenes/Vault.kdl"
+#define VAULT PROJECT "/content/scenes/Vault.chibi"
 #define BANK PROJECT "/content/ui/Bank.rml"
 
 typedef struct

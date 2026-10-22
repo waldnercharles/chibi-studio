@@ -4,8 +4,8 @@
 #include "editor/workspace/scene_internal.h"
 #include "runtime/save.h"
 #include "support/array.h"
+#include "support/asset_document.h"
 #include "support/asset_json.h"
-#include "support/asset_text.h"
 #include "support/text_file.h"
 #include "support/xalloc.h"
 
@@ -20,13 +20,7 @@
 
 static void scenario_path(const app_scene_authoring *scene, const char *name, char *out, size_t size)
 {
-    snprintf(
-        out,
-        size,
-        "%s/" SCENARIO_FOLDER "/%s" DECLARATIVE_ASSET_EXTENSION,
-        scene->content_root,
-        name
-    );
+    snprintf(out, size, "%s/" SCENARIO_FOLDER "/%s" CODE_ASSET_EXTENSION, scene->content_root, name);
 }
 
 /* The open scene's asset name: its file name without the extension. */
@@ -35,7 +29,7 @@ static void read_scene_name(const app_scene_authoring *scene, char *out, size_t 
     const char *path = scene->scene_path ? scene->scene_path : "Scene";
     const char *slash = strrchr(path, '/');
     snprintf(out, size, "%s", slash ? slash + 1 : path);
-    char *extension = strstr(out, DECLARATIVE_ASSET_EXTENSION);
+    char *extension = strstr(out, CODE_ASSET_EXTENSION);
     if (extension) {
         *extension = 0;
     }
@@ -204,9 +198,9 @@ char **app_scenario_names(const app_scene_authoring *scene)
     struct dirent *entry;
     while (dir && (entry = readdir(dir))) {
         size_t length = strlen(entry->d_name),
-               extension = strlen(DECLARATIVE_ASSET_EXTENSION);
+               extension = strlen(CODE_ASSET_EXTENSION);
         if (entry->d_name[0] == '.' || length <= extension ||
-            strcmp(entry->d_name + length - extension, DECLARATIVE_ASSET_EXTENSION)) {
+            strcmp(entry->d_name + length - extension, CODE_ASSET_EXTENSION)) {
             continue;
         }
         char *name = xstrdup(entry->d_name);

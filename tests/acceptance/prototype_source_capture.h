@@ -3,10 +3,46 @@
  * acceptance callback. Keep the model, input and transport alive until shutdown. */
 static authority_fixture source_capture;
 static char source_capture_path[1024], source_capture_directory[1024];
-static const char source_capture_shared[] = "AuthoritySource :: prototype { "
-                                            "Transform {x:1,y:2} }\n";
-static const char source_capture_draft[] = "AuthoritySource :: prototype { "
-                                           "Transform {x:9,y:2} }\n";
+static const char source_capture_shared
+    [] = "package asset\n"
+         "\n"
+         "import data \"game:assets\"\n"
+         "\n"
+         "pub Build :: () -> byte[] {\n"
+         "    return data.Encode(\n"
+         "        data.Object([\n"
+         "            data.Field.Named(\"name\", "
+         "data.Value.Text(\"AuthoritySource\")),\n"
+         "            data.Field.Named(\"includes\", data.List([])),\n"
+         "            data.Field.Named(\"components\", data.Object([\n"
+         "                data.Field.Named(\"Transform\", data.Object([\n"
+         "                    data.Field.Named(\"x\", data.Value.UInt(1)),\n"
+         "                    data.Field.Named(\"y\", data.Value.UInt(2))\n"
+         "                ]))\n"
+         "            ]))\n"
+         "        ])\n"
+         "    )\n"
+         "}\n";
+static const char source_capture_draft
+    [] = "package asset\n"
+         "\n"
+         "import data \"game:assets\"\n"
+         "\n"
+         "pub Build :: () -> byte[] {\n"
+         "    return data.Encode(\n"
+         "        data.Object([\n"
+         "            data.Field.Named(\"name\", "
+         "data.Value.Text(\"AuthoritySource\")),\n"
+         "            data.Field.Named(\"includes\", data.List([])),\n"
+         "            data.Field.Named(\"components\", data.Object([\n"
+         "                data.Field.Named(\"Transform\", data.Object([\n"
+         "                    data.Field.Named(\"x\", data.Value.UInt(9)),\n"
+         "                    data.Field.Named(\"y\", data.Value.UInt(2))\n"
+         "                ]))\n"
+         "            ]))\n"
+         "        ])\n"
+         "    )\n"
+         "}\n";
 static const void *source_capture_step;
 static uint64_t source_capture_identity;
 static int source_capture_toast;
@@ -76,9 +112,29 @@ static bool prototype_source_capture_verify(studio *s)
     REQUIRE(s == source_capture.s);
     REQUIRE(s->source_input_toast == source_capture_toast);
     REQUIRE(scene_source_input_conflict_identity(s->scene) == source_capture_identity);
-    REQUIRE(
-        authority_text(&source_capture, source_capture_shared, "AuthoritySource :: prototype { Transform {x:9,y:2} }\n\n")
-    );
+    REQUIRE(authority_text(
+        &source_capture,
+        source_capture_shared,
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"AuthoritySource\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(9)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(2))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
     REQUIRE(asset_code_step(authority_asset(&source_capture)->source) == source_capture_step);
     rml_element *focus = rml_context_focus_element(rml_backend_context(s->backend));
     REQUIRE(focus && !strcmp(rml_element_tag_name(focus), "kit-code"));

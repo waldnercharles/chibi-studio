@@ -1,0 +1,24 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("Binding")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.GameActionBinding", data.Object([
+                    data.Field.Named("action", data.Value.Text("Dash")),
+                    data.Field.Named("source", data.Value.Text("Aim Stick"))
+                ])),
+                data.Field.Named("GAME.GameDrive", data.Object([
+                    data.Field.Named("acceleration", data.Value.Real(5.0)),
+                    data.Field.Named("target", data.Object([
+                        data.Field.Named("x", data.Value.Real(3.0)),
+                        data.Field.Named("y", data.Value.Real(4.0))
+                    ]))
+                ]))
+            ]))
+        ])
+    )
+}

@@ -1,0 +1,74 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(3)),
+            data.Field.Named("name", data.Value.Text("MaterialIslands")),
+            data.Field.Named("domain", data.Value.Text("field")),
+            data.Field.Named("id_counter", data.Value.UInt(56)),
+            data.Field.Named("graphs", data.List([
+                data.Object([
+                    data.Field.Named("kind", data.Value.Text("event")),
+                    data.Field.Named("name", data.Value.Text("")),
+                    data.Field.Named("nodes", data.List([
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(45)),
+                            data.Field.Named("type", data.Value.Text("Field X"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(47)),
+                            data.Field.Named("type", data.Value.Text("Field Y"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(49)),
+                            data.Field.Named("type", data.Value.Text("Call Pure Function")),
+                            data.Field.Named("reference_id", data.Value.UInt(1)),
+                            data.Field.Named("reference_name", data.Value.Text("Islands")),
+                            data.Field.Named("reference_asset", data.Value.Text("FieldShapes")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("X", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(50)),
+                                    data.Field.Named("declaration_id", data.Value.UInt(6)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ])),
+                                data.Field.Named("Y", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(51)),
+                                    data.Field.Named("declaration_id", data.Value.UInt(7)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Value", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(52)),
+                                    data.Field.Named("declaration_id", data.Value.UInt(8)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(53)),
+                            data.Field.Named("type", data.Value.Text("Field Output"))
+                        ])
+                    ])),
+                    data.Field.Named("edges", data.List([
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("45.Value")),
+                            data.Field.Named("to", data.Value.Text("49.X"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("47.Value")),
+                            data.Field.Named("to", data.Value.Text("49.Y"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("49.Value")),
+                            data.Field.Named("to", data.Value.Text("53.Value"))
+                        ])
+                    ]))
+                ])
+            ]))
+        ])
+    )
+}

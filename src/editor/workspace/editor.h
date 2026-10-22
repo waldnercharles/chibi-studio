@@ -126,7 +126,7 @@ void editor_free(editor *e);
 const behavior_asset *editor_behavior_asset(const editor *e);
 /* Source views share the working document. Preserve graph, view and selection. */
 int editor_source_presentation(editor *, const authoring_source_presentation *);
-/* Replace a declarative graph from its KDL draft and preserve surviving selection. */
+/* Replace a declarative graph from its asset source draft and preserve surviving selection. */
 int editor_declarative_graph(editor *, const behavior_asset *);
 const authoring_source_presentation *editor_presentation(const editor *);
 /* The session validates and records source edits. It leaves the current graph

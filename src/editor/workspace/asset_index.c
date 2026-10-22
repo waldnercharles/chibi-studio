@@ -11,7 +11,7 @@
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/text_file.h"
 
 #include <assert.h>
@@ -65,17 +65,17 @@ static reference_asset_kind content_asset_kind(const app_scene_authoring *scene,
         const char *folder, *extension;
         reference_asset_kind kind;
     } folders[] = {
-        { "scenes", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_SCENE },
+        { "scenes", CODE_ASSET_EXTENSION, REFERENCE_ASSET_SCENE },
         { "prototypes", CODE_ASSET_EXTENSION, REFERENCE_ASSET_PROTOTYPE },
         { "relationships", CODE_ASSET_EXTENSION, REFERENCE_ASSET_RELATIONSHIP },
         { "behaviors", CODE_ASSET_EXTENSION, REFERENCE_ASSET_BEHAVIOR },
-        { "events", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_EVENT },
-        { "materials", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_MATERIAL },
-        { "shapes", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_SHAPE },
-        { "models", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_SHAPE },
-        { "fields", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_FIELD },
+        { "events", CODE_ASSET_EXTENSION, REFERENCE_ASSET_EVENT },
+        { "materials", CODE_ASSET_EXTENSION, REFERENCE_ASSET_MATERIAL },
+        { "shapes", CODE_ASSET_EXTENSION, REFERENCE_ASSET_SHAPE },
+        { "models", CODE_ASSET_EXTENSION, REFERENCE_ASSET_SHAPE },
+        { "fields", CODE_ASSET_EXTENSION, REFERENCE_ASSET_FIELD },
         { "libraries", CODE_ASSET_EXTENSION, REFERENCE_ASSET_LIBRARY },
-        { "shader-libraries", DECLARATIVE_ASSET_EXTENSION, REFERENCE_ASSET_LIBRARY },
+        { "shader-libraries", CODE_ASSET_EXTENSION, REFERENCE_ASSET_LIBRARY },
         { "systems", CODE_ASSET_EXTENSION, REFERENCE_ASSET_SYSTEM },
         { "ui", UI_MARKUP_EXTENSION, REFERENCE_ASSET_UI },
     };
@@ -85,9 +85,7 @@ static reference_asset_kind content_asset_kind(const app_scene_authoring *scene,
         }
         bool listed = folders[i].kind == REFERENCE_ASSET_UI
                         ? ui_listed(path)
-                        : has_extension(path, folders[i].extension) ||
-                              (folders[i].kind == REFERENCE_ASSET_PROTOTYPE &&
-                               has_extension(path, DECLARATIVE_ASSET_EXTENSION));
+                        : has_extension(path, folders[i].extension);
         return listed ? folders[i].kind : REFERENCE_ASSET_KIND_COUNT;
     }
     return REFERENCE_ASSET_KIND_COUNT;
@@ -99,8 +97,7 @@ static const char *content_asset_name(const char *path)
     static char name[256];
     snprintf(name, sizeof name, "%s", base);
     char *extension = strrchr(name, '.');
-    if (extension && (!strcmp(extension, DECLARATIVE_ASSET_EXTENSION) ||
-                      !strcmp(extension, CODE_ASSET_EXTENSION) ||
+    if (extension && (!strcmp(extension, CODE_ASSET_EXTENSION) ||
                       !strcmp(extension, UI_MARKUP_EXTENSION))) {
         *extension = '\0';
     }

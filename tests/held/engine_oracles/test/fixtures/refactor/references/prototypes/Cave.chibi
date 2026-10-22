@@ -1,0 +1,19 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("Cave")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.GameShader", data.Object([
+                    data.Field.Named("material", data.Value.Text("Basalt"))
+                ])),
+                data.Field.Named("GAME.MaterialTerrain", data.Object([
+                    data.Field.Named("field", data.Value.Text("BasaltCave"))
+                ]))
+            ]))
+        ])
+    )
+}

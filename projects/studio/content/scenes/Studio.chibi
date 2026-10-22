@@ -1,0 +1,213 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(1)),
+            data.Field.Named("name", data.Value.Text("Studio")),
+            data.Field.Named("entities", data.List([
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Settings")),
+                    data.Field.Named("prototype", data.Value.Text("Settings")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("NavKeys"),
+                        data.Value.Text("Dismiss")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Data")),
+                    data.Field.Named("prototype", data.Value.Text("Data"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Theme")),
+                    data.Field.Named("prototype", data.Value.Text("Theme"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Inspector")),
+                    data.Field.Named("prototype", data.Value.Text("Inspector"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("StatusBar")),
+                    data.Field.Named("prototype", data.Value.Text("StatusBar"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("TopBar")),
+                    data.Field.Named("prototype", data.Value.Text("TopBar"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Workspace")),
+                    data.Field.Named("prototype", data.Value.Text("Workspace"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Collaboration")),
+                    data.Field.Named("prototype", data.Value.Text("Collaboration")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("NavKeys"),
+                        data.Value.Text("Dismiss")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Shortcuts")),
+                    data.Field.Named("prototype", data.Value.Text("Shortcuts")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("Dismiss")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("NewProject")),
+                    data.Field.Named("prototype", data.Value.Text("NewProject")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("NewProjectKeys")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("AreaHeader")),
+                    data.Field.Named("prototype", data.Value.Text("AreaHeader"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Properties")),
+                    data.Field.Named("prototype", data.Value.Text("Properties"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("PropertiesHeader")),
+                    data.Field.Named("prototype", data.Value.Text("PropertiesHeader"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Outliner")),
+                    data.Field.Named("prototype", data.Value.Text("Outliner")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("OutlinerInput"),
+                        data.Value.Text("OutlinerMenu"),
+                        data.Value.Text("OutlinerRename"),
+                        data.Value.Text("OutlinerRows")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("OutlinerHeader")),
+                    data.Field.Named("prototype", data.Value.Text("OutlinerHeader")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("OutlinerHeaderInput")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Widgets")),
+                    data.Field.Named("prototype", data.Value.Text("Widgets")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("VirtualList"),
+                        data.Value.Text("WidgetGallery")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Assets")),
+                    data.Field.Named("prototype", data.Value.Text("Assets"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("AssetsHeader")),
+                    data.Field.Named("prototype", data.Value.Text("AssetsHeader"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("NewAsset")),
+                    data.Field.Named("prototype", data.Value.Text("NewAsset"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Output")),
+                    data.Field.Named("prototype", data.Value.Text("Output"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("OutputHeader")),
+                    data.Field.Named("prototype", data.Value.Text("OutputHeader"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Members")),
+                    data.Field.Named("prototype", data.Value.Text("Members"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("MembersHeader")),
+                    data.Field.Named("prototype", data.Value.Text("MembersHeader"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Scene")),
+                    data.Field.Named("prototype", data.Value.Text("Scene"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("SceneHeader")),
+                    data.Field.Named("prototype", data.Value.Text("SceneHeader"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Canvas")),
+                    data.Field.Named("prototype", data.Value.Text("Canvas"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Performance")),
+                    data.Field.Named("prototype", data.Value.Text("Performance"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("PerformanceHeader")),
+                    data.Field.Named("prototype", data.Value.Text("PerformanceHeader"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("BehaviorHeader")),
+                    data.Field.Named("prototype", data.Value.Text("BehaviorHeader"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("GraphFind")),
+                    data.Field.Named("prototype", data.Value.Text("GraphFind"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("CodeHeader")),
+                    data.Field.Named("prototype", data.Value.Text("CodeHeader"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("CodeFind")),
+                    data.Field.Named("prototype", data.Value.Text("CodeFind"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("CodeMenu")),
+                    data.Field.Named("prototype", data.Value.Text("CodeMenu"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Details")),
+                    data.Field.Named("prototype", data.Value.Text("Details"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("DetailsHeader")),
+                    data.Field.Named("prototype", data.Value.Text("DetailsHeader"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Hierarchy")),
+                    data.Field.Named("prototype", data.Value.Text("Hierarchy"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("HierarchyHeader")),
+                    data.Field.Named("prototype", data.Value.Text("HierarchyHeader"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Library")),
+                    data.Field.Named("prototype", data.Value.Text("Library"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("LibraryHeader")),
+                    data.Field.Named("prototype", data.Value.Text("LibraryHeader"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Palette")),
+                    data.Field.Named("prototype", data.Value.Text("Palette"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Picker")),
+                    data.Field.Named("prototype", data.Value.Text("Picker"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Refactor")),
+                    data.Field.Named("prototype", data.Value.Text("Refactor"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("GraphMenu")),
+                    data.Field.Named("prototype", data.Value.Text("GraphMenu"))
+                ])
+            ]))
+        ])
+    )
+}

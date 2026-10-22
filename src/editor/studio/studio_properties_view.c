@@ -1,3 +1,4 @@
+#include "authoring/source_asset.h"
 #include "editor/documents/prototype_source_input.h"
 /* Properties' view: the `properties` variable Properties.rml and
  * PropertiesHeader.rml bind (docs/studio-rml-migration.md, Data):
@@ -241,14 +242,15 @@ static yyjson_mut_val *axis_new(yyjson_mut_doc *doc)
 
 static yyjson_mut_val *row_new(yyjson_mut_doc *doc)
 {
-    static const char *const TEXTS[] = { "id",      "label", "tip",  "about",
-                                         "control", "unit",  "text", "drop",
-                                         "problem", "kind",  "hint" };
+    static const char *const TEXTS[] = { "id",       "label", "tip",  "about",
+                                         "control",  "unit",  "text", "drop",
+                                         "problem",  "kind",  "hint", "origin",
+                                         "originTip" };
     static const char *const ROOMS[] = { "value", "min", "max", "step" };
-    static const char *const FLAGS[] = { "shown",    "overridden", "mixed",
-                                         "readonly", "invalid",    "integer",
-                                         "float",    "slider",     "checked",
-                                         "preview" };
+    static const char *const FLAGS[] = { "shown",    "overridden",   "mixed",
+                                         "readonly", "invalid",      "integer",
+                                         "float",    "slider",       "checked",
+                                         "preview",  "resetOverride" };
     yyjson_mut_val *row = yyjson_mut_obj(doc);
     ADD_TEXTS(doc, row, TEXTS);
     for (size_t i = 0; i < sizeof ROOMS / sizeof *ROOMS; i++) {
@@ -398,6 +400,8 @@ typedef struct rows
 typedef struct row_desc
 {
     const char *id, *label, *about, *control;
+    const char *origin, *origin_tip;
+    bool reset_override;
     bool overridden, mixed, readonly, invalid;
 } row_desc;
 
@@ -416,6 +420,9 @@ static yyjson_mut_val *next_row(rows *r, const row_desc *d)
     put_flag(v, row, "mixed", d->mixed);
     put_flag(v, row, "readonly", d->readonly);
     put_flag(v, row, "invalid", d->invalid);
+    put_text(v, row, "origin", d->origin ? d->origin : "");
+    put_text(v, row, "originTip", d->origin_tip ? d->origin_tip : "");
+    put_flag(v, row, "resetOverride", d->reset_override);
     return row;
 }
 
@@ -1204,6 +1211,26 @@ static void show_prototype_field(
         .row = { .id = id, .label = label, .about = field->description, .readonly = locked },
         .path = scene_link_path(asset->prototype->links, component->desc->id, index)
     };
+    authoring_prototype_field_source source = { 0 };
+    if (scene_prototype_source_owned(asset) &&
+        authoring_prototype_source_field(
+            scene_source_input_text(s->scene, asset),
+            component->desc->name,
+            field->name,
+            &source
+        )) {
+        f.row.origin = source.overridden ? "Override"
+                     : source.computed   ? "Computed"
+                                         : "";
+        f.row.origin_tip = source.overridden
+                             ? "Explicit source override. Reset restores the "
+                               "computed value."
+                         : source.computed ? "Computed from source. Editing "
+                                             "stores an explicit override."
+                                           : "";
+        f.row.reset_override = source.overridden;
+        f.row.overridden = source.overridden;
+    }
     pin_read_field(component->data, field, &f.value);
     const prototype *shown = scene_source_input_preview(s->scene, asset);
     if (shown != asset->prototype) {
@@ -1215,6 +1242,68 @@ static void show_prototype_field(
         }
     }
     field_row(r, &f);
+}
+
+static void prototype_parameters(view *v, scene_prototype_asset *asset, bool locked)
+{
+    if (v->s->tab != STUDIO_TAB_OBJECT || !scene_prototype_source_owned(asset)) {
+        return;
+    }
+    char error[256];
+    av_doc *doc = authoring_prototype_source_parameters(
+        scene_source_input_text(v->s->scene, asset),
+        error,
+        sizeof error
+    );
+    const av_value *parameters = av_doc_root(doc);
+    if (!av_obj_size(parameters)) {
+        av_doc_free(doc);
+        return;
+    }
+    rows r = next_panel(
+        v,
+        &(panel_desc){ .key = "parameters",
+                       .title = "Parameters",
+                       .order = -1,
+                       .open = properties_open(v->s, "parameters") }
+    );
+    for (size_t i = 0;
+         properties_open(v->s, "parameters") && i < av_obj_size(parameters);
+         i++) {
+        const char *name = av_get_str(av_obj_key_at(parameters, i));
+        if (v->s->property_search[0] &&
+            !studio_matches(v->s->property_search, "Parameters") &&
+            !studio_matches(v->s->property_search, name)) {
+            continue;
+        }
+        pin_value value;
+        if (!properties_parameter_value(av_obj_value_at(parameters, i), &value)) {
+            continue;
+        }
+        properties_row key;
+        properties_parameter_row(asset->path, name, i, &key);
+        char id[PROPERTIES_ROW_ID], label[128];
+        properties_row_id(&key, id);
+        editor_component_label(name, label, sizeof label);
+        row_desc row = { .id = id, .label = label, .readonly = locked };
+        if (value.type == PIN_STR || value.type == PIN_I64 || value.type == PIN_U64) {
+            row.control = "text";
+            text_row(&r, &row, value.type == PIN_STR ? value.str : pin_value_to_string(&value));
+        } else if (value.type == PIN_BOOL) {
+            row.control = "bool";
+            bool_row(&r, &row, value.b);
+        } else {
+            row.control = "number";
+            number_shape shape = { .integer = value.type != PIN_F64, .step = 1 };
+            number_bounds(value.type, &shape);
+            if (!shape.integer) {
+                float_step(&shape);
+            }
+            number_row(&r, &row, &shape, value.type == PIN_F64 ? value.d : integer_of(&value));
+        }
+    }
+    end_panel(&r);
+    av_doc_free(doc);
 }
 
 static void prototype_panels(view *v, scene_prototype_asset *asset, bool locked)
@@ -1696,6 +1785,7 @@ static void body(view *v, const properties_subject *subject)
             out.identity = "prototype";
             show_prototype_identity(v, subject->asset->prototype);
         }
+        prototype_parameters(v, subject->asset, subject->locked);
         prototype_panels(v, subject->asset, subject->locked);
         add_button(v, subject);
     } else if (subject->actor) {

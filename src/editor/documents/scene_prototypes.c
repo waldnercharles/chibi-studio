@@ -4,8 +4,8 @@
 #include "editor/documents/prototype_source_input.h"
 #include "editor/workspace/scene_internal.h"
 #include "runtime/component_catalog.h"
+#include "support/asset_document.h"
 #include "support/asset_json.h"
-#include "support/asset_text.h"
 #include "support/text_overlay.h"
 #include "types/value_document.h"
 
@@ -110,7 +110,7 @@ static const prototype_component *source_component(const prototype *value, ecs_c
 }
 
 /* A preexisting model draft is converted before ownership changes. Never
- * replace it with clean disk text or serialize KDL into its source file. */
+ * replace it with clean disk text or serialize evaluated values into its source file. */
 static bool source_import_model(
     app_scene_authoring *scene,
     scene_prototype_asset *asset,
@@ -1197,6 +1197,13 @@ static int append_prototype_asset(app_scene_authoring *scene, prototype *native_
     return 0;
 }
 
+int scene_register_prototype_value(app_scene_authoring *scene, const av_value *value, const char *path)
+{
+    char error[256];
+    prototype *native = prototype_load_value(value, &scene->registry, error, sizeof error);
+    return append_prototype_asset(scene, native, path);
+}
+
 int app_scene_authoring_register_prototype(app_scene_authoring *scene, const char *json, const char *path)
 {
     if (!scene || !json) {
@@ -1217,17 +1224,12 @@ int app_scene_authoring_save_prototype(
     if (!asset || !asset->prototype || !path) {
         return -1;
     }
-    const char *extension = strrchr(path, '.');
     if (scene_prototype_source_owned(asset)) {
         if (strcmp(asset->path, path)) {
             snprintf(scene->prototype_message, sizeof scene->prototype_message, "Save the canonical prototype at its source path.");
             return -1;
         }
         return scene_prototype_source_save(scene, asset);
-    }
-    if (extension && !strcmp(extension, CODE_ASSET_EXTENSION)) {
-        snprintf(scene->prototype_message, sizeof scene->prototype_message, "A model-only prototype cannot be saved as canonical source.");
-        return -1;
     }
     if (scene_tabs_path_in_use(scene, APP_EDITOR_DOCUMENT_PROTOTYPE, path)) {
         snprintf(scene->prototype_message, sizeof scene->prototype_message, "Prototype path is already open.");

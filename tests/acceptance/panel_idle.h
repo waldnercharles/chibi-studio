@@ -330,18 +330,77 @@ static bool panel_idle_frame(void *state)
             REQUIRE(
                 app_scene_authoring_register_prototype(
                     scene,
-                    "name \"IdleProbe\"\ncomponents {\n    Transform x=0 "
-                    "y=0\n    Velocity\n}\n(array)behaviors \"Counter\"\n",
+                    "package asset\n"
+                    "\n"
+                    "import data \"game:assets\"\n"
+                    "\n"
+                    "pub Build :: () -> byte[] {\n"
+                    "    return data.Encode(\n"
+                    "        data.Object([\n"
+                    "            data.Field.Named(\"name\", "
+                    "data.Value.Text(\"IdleProbe\")),\n"
+                    "            data.Field.Named(\"components\", "
+                    "data.Object([\n"
+                    "                data.Field.Named(\"Transform\", "
+                    "data.Object([\n"
+                    "                    data.Field.Named(\"x\", "
+                    "data.Value.UInt(0)),\n"
+                    "                    data.Field.Named(\"y\", "
+                    "data.Value.UInt(0))\n"
+                    "                ])),\n"
+                    "                data.Field.Named(\"Velocity\", "
+                    "data.Object([]))\n"
+                    "            ])),\n"
+                    "            data.Field.Named(\"behaviors\", data.List([\n"
+                    "                data.Value.Text(\"Counter\")\n"
+                    "            ]))\n"
+                    "        ])\n"
+                    "    )\n"
+                    "}\n",
                     NULL
                 ) == 0
             );
             REQUIRE(
                 scene_authoring_load_text(
                     scene,
-                    "version 1\nname \"Start\"\n(array)entities {\n"
-                    "    - name=\"First\" prototype=\"IdleProbe\"\n"
-                    "    - name=\"Second\" prototype=\"IdleProbe\" { "
-                    "components { Transform x=3 y=0; }; }\n}\n",
+                    "package asset\n"
+                    "\n"
+                    "import data \"game:assets\"\n"
+                    "\n"
+                    "pub Build :: () -> byte[] {\n"
+                    "    return data.Encode(\n"
+                    "        data.Object([\n"
+                    "            data.Field.Named(\"version\", "
+                    "data.Value.UInt(1)),\n"
+                    "            data.Field.Named(\"name\", "
+                    "data.Value.Text(\"Start\")),\n"
+                    "            data.Field.Named(\"entities\", data.List([\n"
+                    "                data.Object([\n"
+                    "                    data.Field.Named(\"name\", "
+                    "data.Value.Text(\"First\")),\n"
+                    "                    data.Field.Named(\"prototype\", "
+                    "data.Value.Text(\"IdleProbe\"))\n"
+                    "                ]),\n"
+                    "                data.Object([\n"
+                    "                    data.Field.Named(\"name\", "
+                    "data.Value.Text(\"Second\")),\n"
+                    "                    data.Field.Named(\"prototype\", "
+                    "data.Value.Text(\"IdleProbe\")),\n"
+                    "                    data.Field.Named(\"components\", "
+                    "data.Object([\n"
+                    "                        data.Field.Named(\"Transform\", "
+                    "data.Object([\n"
+                    "                            data.Field.Named(\"x\", "
+                    "data.Value.UInt(3)),\n"
+                    "                            data.Field.Named(\"y\", "
+                    "data.Value.UInt(0))\n"
+                    "                        ]))\n"
+                    "                    ]))\n"
+                    "                ])\n"
+                    "            ]))\n"
+                    "        ])\n"
+                    "    )\n"
+                    "}\n",
                     NULL
                 ) == 0
             );

@@ -25,25 +25,60 @@ typedef struct
 } refactor_fixture;
 
 static const char PULSE[] = "behavior Pulse { on Tick() {} }\n";
-static const char DOT[] = "name \"Dot\"\n"
-                          "components {\n"
-                          "    GAME.GameTransform x=1.0\n"
-                          "}\n"
-                          "(array)behaviors \"Pulse\"\n";
-static const char MAIN[] = "version 1\n"
-                           "name \"Main\"\n"
-                           "(array)entities {\n"
-                           "    - {\n"
-                           "        name \"Dot_1\"\n"
-                           "        prototype \"Dot\"\n"
-                           "        (array)behaviors \"Pulse\"\n"
-                           "    }\n"
-                           "    - {\n"
-                           "        name \"Dot_2\"\n"
-                           "        prototype \"Dot\"\n"
-                           "        (array)behaviors \"Pulse\"\n"
-                           "    }\n"
-                           "}\n";
+static const char DOT
+    [] = "package asset\n"
+         "\n"
+         "import data \"game:assets\"\n"
+         "\n"
+         "pub Build :: () -> byte[] {\n"
+         "    return data.Encode(\n"
+         "        data.Object([\n"
+         "            data.Field.Named(\"name\", data.Value.Text(\"Dot\")),\n"
+         "            data.Field.Named(\"components\", data.Object([\n"
+         "                data.Field.Named(\"GAME.GameTransform\", "
+         "data.Object([\n"
+         "                    data.Field.Named(\"x\", data.Value.Real(1.0))\n"
+         "                ]))\n"
+         "            ])),\n"
+         "            data.Field.Named(\"behaviors\", data.List([\n"
+         "                data.Value.Text(\"Pulse\")\n"
+         "            ]))\n"
+         "        ])\n"
+         "    )\n"
+         "}\n";
+static const char MAIN
+    [] = "package asset\n"
+         "\n"
+         "import data \"game:assets\"\n"
+         "\n"
+         "pub Build :: () -> byte[] {\n"
+         "    return data.Encode(\n"
+         "        data.Object([\n"
+         "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+         "            data.Field.Named(\"name\", data.Value.Text(\"Main\")),\n"
+         "            data.Field.Named(\"entities\", data.List([\n"
+         "                data.Object([\n"
+         "                    data.Field.Named(\"name\", "
+         "data.Value.Text(\"Dot_1\")),\n"
+         "                    data.Field.Named(\"prototype\", "
+         "data.Value.Text(\"Dot\")),\n"
+         "                    data.Field.Named(\"behaviors\", data.List([\n"
+         "                        data.Value.Text(\"Pulse\")\n"
+         "                    ]))\n"
+         "                ]),\n"
+         "                data.Object([\n"
+         "                    data.Field.Named(\"name\", "
+         "data.Value.Text(\"Dot_2\")),\n"
+         "                    data.Field.Named(\"prototype\", "
+         "data.Value.Text(\"Dot\")),\n"
+         "                    data.Field.Named(\"behaviors\", data.List([\n"
+         "                        data.Value.Text(\"Pulse\")\n"
+         "                    ]))\n"
+         "                ])\n"
+         "            ]))\n"
+         "        ])\n"
+         "    )\n"
+         "}\n";
 
 static const char *const FOLDERS[] = { "behaviors", "libraries", "prototypes", "scenes" };
 #define FOLDER_COUNT ((int)(sizeof FOLDERS / sizeof *FOLDERS))
@@ -102,8 +137,8 @@ static refactor_fixture fixture_new()
     write_asset(&f, "libraries/DirectionMath.chibi", library);
     free(library);
     write_asset(&f, "behaviors/Pulse.chibi", PULSE);
-    write_asset(&f, "prototypes/Dot.kdl", DOT);
-    write_asset(&f, "scenes/Main.kdl", MAIN);
+    write_asset(&f, "prototypes/Dot.chibi", DOT);
+    write_asset(&f, "scenes/Main.chibi", MAIN);
     f.live = game_preview_world_new(f.world);
     game_preview_definition *definition = game_preview_definition_new("Editing", behavior_asset_new("Editing"));
     assert(definition && game_preview_add_definition(f.live, definition) == 0);
@@ -120,7 +155,7 @@ static refactor_fixture fixture_new()
         f.runtime
     );
     char scene[128];
-    path_to(&f, "scenes/Main.kdl", scene, sizeof scene);
+    path_to(&f, "scenes/Main.chibi", scene, sizeof scene);
     assert(app_scene_authoring_set_content_root(f.scene, f.root) == 0);
     assert(app_scene_authoring_load_content(f.scene) == 0);
     assert(game_preview_find_definition(f.live, "WeaponActions"));
@@ -204,8 +239,8 @@ static void behaviors()
                        0;
     bool moved = applied && exists(&f, "behaviors/Beat.chibi") &&
                  !exists(&f, "behaviors/Pulse.chibi") &&
-                 holds(&f, "prototypes/Dot.kdl", "Beat") &&
-                 holds(&f, "scenes/Main.kdl", "Beat");
+                 holds(&f, "prototypes/Dot.chibi", "Beat") &&
+                 holds(&f, "scenes/Main.chibi", "Beat");
     bool loaded = game_preview_find_definition(f.live, "Beat") &&
                   !game_preview_find_definition(f.live, "Pulse") &&
                   game_prototype_has_graph(find_prototype(f.scene, "Dot")->prototype, "Beat");
@@ -290,7 +325,7 @@ static void prototypes()
     bool renamed = applied && find_prototype(f.scene, "Point") &&
                    !find_prototype(f.scene, "Dot") && acount(f.scene->actors) == 2 &&
                    !strcmp(f.scene->actors[0].prototype_name, "Point") &&
-                   holds(&f, "scenes/Main.kdl", "prototype \"Point\"");
+                   holds(&f, "scenes/Main.chibi", "prototype \"Point\"");
     if (!renamed) {
         printf("  prototype rename: %s\n", error);
     }
@@ -317,9 +352,21 @@ static void refusals()
     assert(plan);
     write_asset(
         &f,
-        "prototypes/Dot.kdl",
-        "name \"Dot\"\n"
-        "(array)behaviors \"Pulse\"\n"
+        "prototypes/Dot.chibi",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Dot\")),\n"
+        "            data.Field.Named(\"behaviors\", data.List([\n"
+        "                data.Value.Text(\"Pulse\")\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
     );
     app_refactor *undo = NULL;
     assert(app_scene_authoring_apply_refactor(f.scene, plan, &undo, error, sizeof error) != 0);
@@ -327,9 +374,9 @@ static void refusals()
     app_refactor_free(plan);
 
     /* Edits made after a rename keep its Undo from reloading over them. */
-    write_asset(&f, "prototypes/Dot.kdl", DOT);
+    write_asset(&f, "prototypes/Dot.chibi", DOT);
     char dot[128];
-    path_to(&f, "prototypes/Dot.kdl", dot, sizeof dot);
+    path_to(&f, "prototypes/Dot.chibi", dot, sizeof dot);
     app_scene_authoring_reload_path(f.scene, dot);
     plan = rename_to(&f, asset_named(&f, REFERENCE_ASSET_BEHAVIOR, "Pulse"), "Beat", error, sizeof error);
     assert(
@@ -385,7 +432,7 @@ static void deletes()
     }
     kept = find_prototype(f.scene, "Dot");
     bool adopted = copies == 1 && kept->path && !kept->dirty &&
-                   exists(&f, "prototypes/Dot.kdl");
+                   exists(&f, "prototypes/Dot.chibi");
     if (!adopted) {
         printf(
             "  undo of a placed prototype's delete: %d copies, path %s, dirty "

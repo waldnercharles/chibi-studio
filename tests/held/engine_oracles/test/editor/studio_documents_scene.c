@@ -28,7 +28,7 @@
    workspace. The generated world stays off, so shots hold still. */
 static studio_fixture sandbox_open()
 {
-    studio_fixture f = scene_open(SANDBOX, SANDBOX "/content/scenes/Sandbox.kdl", "Movement");
+    studio_fixture f = scene_open(SANDBOX, SANDBOX "/content/scenes/Sandbox.chibi", "Movement");
     f.studio->prefs.scene_world = false;
     f.studio->prefs.scene_cameras = true;
     frames(&f, 8);

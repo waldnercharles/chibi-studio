@@ -7,7 +7,7 @@
 #include "graph/document/serialize.h"
 #include "graph/shader/shader_graph.h"
 #include "runtime/component_catalog.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -475,7 +475,7 @@ static char *document_default_path(app_scene_authoring *scene)
 {
     const char *folder = NULL;
     const char *name = NULL;
-    const char *extension = DECLARATIVE_ASSET_EXTENSION;
+    const char *extension = CODE_ASSET_EXTENSION;
     if (scene->document.kind == APP_EDITOR_DOCUMENT_PROTOTYPE) {
         scene_prototype_asset *asset = selected_prototype(scene);
         folder = "prototypes";

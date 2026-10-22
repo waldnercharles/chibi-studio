@@ -109,8 +109,36 @@ static void write_text(const char *path, const char *text)
    refuses a behavior with one in any other. */
 static void controller()
 {
-    char *game = search_in("test/fixtures/language", "scene objects");
-    char *studio = search_in("projects/studio", "scene objects");
+    char *game = search_in(
+        "test/fixtures/language",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"scene\", "
+        "data.Value.Text(\"objects\"))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
+    char *studio = search_in(
+        "projects/studio",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"scene\", "
+        "data.Value.Text(\"objects\"))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
     test_check(
         game && !strstr(game, "\"Scene Objects\"") && studio &&
             strstr(studio, "\"Scene Objects\""),

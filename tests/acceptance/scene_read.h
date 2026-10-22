@@ -319,7 +319,7 @@ static bool scene_read_make_full(scene_read_fixture *f)
             apush(document->components, ((prototype_component){ .desc = &f->custom[c] }));
         }
         char path[80];
-        snprintf(path, sizeof path, "content/prototypes/%s.kdl", names[p]);
+        snprintf(path, sizeof path, "content/prototypes/%s.chibi", names[p]);
         apush(
             f->scene->prototypes,
             ((scene_prototype_asset){ .path = xstrdup(path), .prototype = document })
@@ -414,7 +414,7 @@ static bool scene_read_full_facts(const studio_scene_read *read, bool changed)
     for (int i = 0; i < 3; i++) {
         const studio_scene_read_prototype *p = &facts->prototypes[i];
         char path[80], identity[32];
-        snprintf(path, sizeof path, "content/prototypes/%s.kdl", prototype_names[i]);
+        snprintf(path, sizeof path, "content/prototypes/%s.chibi", prototype_names[i]);
         snprintf(
             identity,
             sizeof identity,

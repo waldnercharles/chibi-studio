@@ -1,4 +1,0 @@
-name "OrbitFlipper"
-components {
-    GAME.GameActionBinding action="FlipLeft" source="Z"
-}

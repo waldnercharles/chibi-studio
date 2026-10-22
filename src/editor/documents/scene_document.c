@@ -8,7 +8,7 @@
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
 #include "runtime/declared_components.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/xalloc.h"
 
 #include <assert.h>
@@ -229,7 +229,7 @@ av_value *scene_authoring_scene_value(app_scene_authoring *scene)
 char *scene_authoring_scene_text(app_scene_authoring *scene)
 {
     av_value *value = scene_authoring_scene_value(scene);
-    char *text = value ? asset_text_write(value) : NULL;
+    char *text = value ? asset_document_write(value) : NULL;
     av_value_free(value);
     return text;
 }
@@ -316,7 +316,7 @@ bool scene_prototype_sources_refresh(app_scene_authoring *scene)
             continue;
         }
         const char *extension = strrchr(entry->path, '.');
-        if (!extension || (strcmp(extension, ".chibi") && strcmp(extension, ".kdl"))) {
+        if (!extension || strcmp(extension, CODE_ASSET_EXTENSION)) {
             continue;
         }
         char *text = read_scene_file_limit(entry->path, PROTOTYPE_READ_MAX - bytes);
@@ -884,7 +884,7 @@ int scene_authoring_load_value(app_scene_authoring *scene, av_value *value, cons
 int scene_authoring_load_text(app_scene_authoring *scene, const char *text, const char *path)
 {
     char error[256];
-    av_doc *doc = text ? asset_text_read(text, error, sizeof error) : NULL;
+    av_doc *doc = text ? asset_document_read(text, error, sizeof error) : NULL;
     if (!doc) {
         snprintf(scene->message, sizeof scene->message, "Could not load scene: %s", text ? error : "missing document");
         return -1;

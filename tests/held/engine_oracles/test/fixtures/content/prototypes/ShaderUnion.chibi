@@ -1,0 +1,28 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("ShaderUnion")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.GameAppearance", data.Object([
+                    data.Field.Named("antialias", data.Value.Real(0.5)),
+                    data.Field.Named("border_color", data.Value.UInt(551398143)),
+                    data.Field.Named("color", data.Value.UInt(551398143)),
+                    data.Field.Named("height", data.Value.Real(68.0)),
+                    data.Field.Named("width", data.Value.Real(104.0))
+                ])),
+                data.Field.Named("GAME.GameShader", data.Object([
+                    data.Field.Named("bounds_x", data.Value.Real(52.0)),
+                    data.Field.Named("bounds_y", data.Value.Real(34.0)),
+                    data.Field.Named("material", data.Value.Text("")),
+                    data.Field.Named("parameters", data.Value.Text("")),
+                    data.Field.Named("shape", data.Value.Text("SmoothUnion"))
+                ])),
+                data.Field.Named("GAME.GameTransform", data.Object([]))
+            ]))
+        ])
+    )
+}

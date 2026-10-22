@@ -76,7 +76,7 @@ static studio_bench bench_open()
     );
     int loaded = app_scene_authoring_set_content_root(b.scene, ARENA "/content") |
                  app_scene_authoring_load_content(b.scene) |
-                 app_scene_authoring_load(b.scene, ARENA "/content/scenes/Sandbox.kdl") |
+                 app_scene_authoring_load(b.scene, ARENA "/content/scenes/Sandbox.chibi") |
                  app_scene_authoring_open_behavior(b.scene, "Movement");
     assert(loaded == 0);
     b.studio = studio_new(b.scene, b.viewport, ARENA);

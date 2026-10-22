@@ -1,4 +1,0 @@
-name "StatusBar"
-components {
-    Ui document="StatusBar" hidden=#true
-}

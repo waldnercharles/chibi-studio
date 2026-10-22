@@ -119,7 +119,6 @@ extern void test_number_serialization();
 extern void test_asset_value();
 extern void test_asset_source();
 extern void test_asset_code_checkpoint();
-extern void run_asset_text_checks();
 extern void test_auto_weapon();
 extern void test_graph_navigation();
 extern void test_extract();

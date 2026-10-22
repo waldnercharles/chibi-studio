@@ -1,0 +1,33 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(1)),
+            data.Field.Named("name", data.Value.Text("Neon Swarm")),
+            data.Field.Named("entities", data.List([
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Encounter_1")),
+                    data.Field.Named("prototype", data.Value.Text("Encounter")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("WaveBehavior")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Player_1")),
+                    data.Field.Named("prototype", data.Value.Text("Player")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("InputBehavior"),
+                        data.Value.Text("WeaponBehavior"),
+                        data.Value.Text("HealthBehavior"),
+                        data.Value.Text("AutoWeaponBehavior"),
+                        data.Value.Text("PlayerContactBehavior"),
+                        data.Value.Text("MovementTrailBehavior")
+                    ]))
+                ])
+            ]))
+        ])
+    )
+}

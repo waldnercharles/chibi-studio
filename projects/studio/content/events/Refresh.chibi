@@ -1,0 +1,21 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(3)),
+            data.Field.Named("name", data.Value.Text("Refresh")),
+            data.Field.Named("domain", data.Value.Text("event")),
+            data.Field.Named("id_counter", data.Value.UInt(1)),
+            data.Field.Named("description", data.Value.Text("Studio refreshes a panel it shows, after the panel's own events, at each UI refresh: publish what changed, as a panel source syncs. Set UI Data changes nothing when a value is the same.")),
+            data.Field.Named("graphs", data.List([
+                data.Object([
+                    data.Field.Named("kind", data.Value.Text("event")),
+                    data.Field.Named("name", data.Value.Text(""))
+                ])
+            ]))
+        ])
+    )
+}

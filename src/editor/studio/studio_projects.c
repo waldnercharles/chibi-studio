@@ -44,13 +44,21 @@ EM_JS(char *, web_project_open_status, (), {
 })
 
 EM_JS(bool, web_project_create_available, (), {
-    return typeof Module['chibiCreateProject'] == 'function';
+    return typeof Module['chibiCreateProject'] == 'function' &&
+           typeof Module['chibiFinishCreateProject'] == 'function';
 })
 
-EM_JS(char *, web_create_project, (const char *name, int version), {
-    const result = Module['chibiCreateProject'](UTF8ToString(name), version);
+EM_JS(char *, web_create_project, (const char *name), {
+    const result = Module['chibiCreateProject'](UTF8ToString(name));
     return stringToNewUTF8(typeof result == 'string' ? result : JSON.stringify(result));
 })
+
+EM_JS(char *, web_finish_create_project, (const char *root, bool success), {
+    const error = Module['chibiFinishCreateProject'](UTF8ToString(root), success);
+    return error ? stringToNewUTF8(error) : 0;
+})
+
+static void add_project(studio *s, const char *manifest);
 
 /* The page asks before it unloads while this is set (web_shell.html). */
 EM_JS(void, web_set_unsaved, (bool unsaved), {
@@ -72,12 +80,12 @@ static void add_web_projects(studio *s)
     yyjson_val *project;
     yyjson_arr_foreach(yyjson_doc_get_root(doc), i, count, project)
     {
-        apush(
-            s->projects,
-            ((studio_project){
-                .root = xstrdup(yyjson_get_str(yyjson_obj_get(project, "root"))),
-                .name = xstrdup(yyjson_get_str(yyjson_obj_get(project, "name"))) })
-        );
+        const char *root = yyjson_get_str(yyjson_obj_get(project, "root"));
+        char manifest[4096];
+        int length = snprintf(manifest, sizeof manifest, "%s" CHIBI_PROJECT_MANIFEST, root);
+        if (length > 0 && (size_t)length < sizeof manifest) {
+            add_project(s, manifest);
+        }
     }
     yyjson_doc_free(doc);
 }
@@ -647,7 +655,7 @@ static char *browser_project_root(const char *name, char *error, size_t error_si
         snprintf(error, error_size, "Project creation is unavailable in this browser");
         return NULL;
     }
-    char *json = web_create_project(name, CHIBI_PROJECT_VERSION);
+    char *json = web_create_project(name);
     yyjson_doc *doc = json ? yyjson_read(json, strlen(json), 0) : NULL;
     free(json);
     yyjson_val *result = doc ? yyjson_doc_get_root(doc) : NULL;
@@ -732,6 +740,28 @@ static bool create_project(studio *s)
     root = browser_project_root(dialog->name, error, sizeof error);
     if (!root) {
         snprintf(dialog->error, sizeof dialog->error, "%s", error);
+        return false;
+    }
+    /* Browser roots include the slash expected by the page's open-project API;
+       the SDK creates a new directory and takes its path without that slash. */
+    size_t root_end = strlen(root) - 1;
+    root[root_end] = '\0';
+    int status = chibi_project_create(root, dialog->name, error, sizeof error);
+    root[root_end] = '/';
+    if (status != 0) {
+        char *cleanup_error = web_finish_create_project(root, false);
+        free(cleanup_error);
+        snprintf(dialog->error, sizeof dialog->error, "%s", error);
+        free(root);
+        return false;
+    }
+    char *storage_error = web_finish_create_project(root, true);
+    if (storage_error) {
+        char *cleanup_error = web_finish_create_project(root, false);
+        free(cleanup_error);
+        snprintf(dialog->error, sizeof dialog->error, "%s", storage_error);
+        free(storage_error);
+        free(root);
         return false;
     }
     snprintf(dialog->created_root, sizeof dialog->created_root, "%s", root);

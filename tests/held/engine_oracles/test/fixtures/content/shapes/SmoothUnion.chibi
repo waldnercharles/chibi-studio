@@ -1,0 +1,134 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(3)),
+            data.Field.Named("name", data.Value.Text("SmoothUnion")),
+            data.Field.Named("domain", data.Value.Text("shape")),
+            data.Field.Named("bounds_x", data.Value.Real(52.0)),
+            data.Field.Named("bounds_y", data.Value.Real(34.0)),
+            data.Field.Named("id_counter", data.Value.UInt(38)),
+            data.Field.Named("description", data.Value.Text("Two circles joined by a smooth union. Radius and Smoothness are exposed; bounds are explicit half extents.")),
+            data.Field.Named("graphs", data.List([
+                data.Object([
+                    data.Field.Named("kind", data.Value.Text("event")),
+                    data.Field.Named("name", data.Value.Text("")),
+                    data.Field.Named("nodes", data.List([
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(1)),
+                            data.Field.Named("type", data.Value.Text("Shader Shape Output"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(3)),
+                            data.Field.Named("type", data.Value.Text("Shader Position"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(5)),
+                            data.Field.Named("type", data.Value.Text("Shader Parameter")),
+                            data.Field.Named("reference_name", data.Value.Text("Radius")),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Value", data.Value.Real(24.0))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(7)),
+                            data.Field.Named("type", data.Value.Text("Shader Parameter")),
+                            data.Field.Named("reference_id", data.Value.UInt(1)),
+                            data.Field.Named("reference_name", data.Value.Text("Smoothness")),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Value", data.Value.Real(12.0))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(9)),
+                            data.Field.Named("type", data.Value.Text("Shader Vector2")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("X", data.Value.Real(-18.0))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(13)),
+                            data.Field.Named("type", data.Value.Text("Shader Vector2")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("X", data.Value.Real(18.0))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(17)),
+                            data.Field.Named("type", data.Value.Text("Shader Subtract"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(21)),
+                            data.Field.Named("type", data.Value.Text("Shader Subtract"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(25)),
+                            data.Field.Named("type", data.Value.Text("Shader Circle"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(29)),
+                            data.Field.Named("type", data.Value.Text("Shader Circle"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(33)),
+                            data.Field.Named("type", data.Value.Text("Shader SmoothUnion"))
+                        ])
+                    ])),
+                    data.Field.Named("edges", data.List([
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("3.Position")),
+                            data.Field.Named("to", data.Value.Text("17.A"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("3.Position")),
+                            data.Field.Named("to", data.Value.Text("21.A"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("5.Value")),
+                            data.Field.Named("to", data.Value.Text("25.Radius"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("5.Value")),
+                            data.Field.Named("to", data.Value.Text("29.Radius"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("7.Value")),
+                            data.Field.Named("to", data.Value.Text("33.Smoothness"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("9.Value")),
+                            data.Field.Named("to", data.Value.Text("17.B"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("13.Value")),
+                            data.Field.Named("to", data.Value.Text("21.B"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("17.Value")),
+                            data.Field.Named("to", data.Value.Text("25.Position"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("21.Value")),
+                            data.Field.Named("to", data.Value.Text("29.Position"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("25.Value")),
+                            data.Field.Named("to", data.Value.Text("33.A"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("29.Value")),
+                            data.Field.Named("to", data.Value.Text("33.B"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("33.Value")),
+                            data.Field.Named("to", data.Value.Text("1.Distance"))
+                        ])
+                    ]))
+                ])
+            ]))
+        ])
+    )
+}

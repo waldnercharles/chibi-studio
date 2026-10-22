@@ -9,11 +9,33 @@
 
 /* Two rejected projects exercise only project loading, before UI resources exist. */
 static const char *const project_open_bytes[] = {
-    "version \"invalid\"\n",
-    "version 23\n"
-    "name \"Rejected migration\"\n"
-    "content \"content\"\n"
-    "start_scene \"scenes/Start.kdl\"\n",
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"version\", data.Value.Text(\"invalid\"))\n"
+    "        ])\n"
+    "    )\n"
+    "}\n",
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"version\", data.Value.UInt(23)),\n"
+    "            data.Field.Named(\"name\", data.Value.Text(\"Rejected "
+    "migration\")),\n"
+    "            data.Field.Named(\"content\", data.Value.Text(\"content\")),\n"
+    "            data.Field.Named(\"start_scene\", "
+    "data.Value.Text(\"scenes/Start.chibi\"))\n"
+    "        ])\n"
+    "    )\n"
+    "}\n",
     "behavior Broken {\n"
 };
 static char project_open_directory[128];
@@ -75,7 +97,7 @@ static bool project_open_prepare()
             project_open_files[i],
             sizeof project_open_files[i],
             project_open_roots[i],
-            "project.kdl"
+            "project.chibi"
         ));
     }
     REQUIRE(mkdir(project_open_content, 0700) == 0);
@@ -135,10 +157,10 @@ TEST_CASE(project_open_errors_stop_before_ui)
     REQUIRE(!project_open_results[0]);
     REQUIRE(!strcmp(error, expected));
 
-    char *source = realpath(project_open_files[2], NULL);
-    REQUIRE(source);
-    length = snprintf(expected, sizeof expected, "%s: Cannot migrate invalid version 23 source", source);
-    free(source);
+    char *unsupported = realpath(project_open_files[1], NULL);
+    REQUIRE(unsupported);
+    length = snprintf(expected, sizeof expected, "Project version 23 needs an older build; this build opens version %d: %s", CHIBI_PROJECT_VERSION, unsupported);
+    free(unsupported);
     REQUIRE(length > 0 && (size_t)length < sizeof expected);
     project_open_results[1] = studio_ui_new(&s, project_open_roots[1], error, sizeof error);
     REQUIRE(!project_open_results[1]);

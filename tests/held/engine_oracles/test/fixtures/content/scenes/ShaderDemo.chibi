@@ -1,0 +1,47 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(1)),
+            data.Field.Named("name", data.Value.Text("Shader Demo")),
+            data.Field.Named("entities", data.List([
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Animated emission")),
+                    data.Field.Named("prototype", data.Value.Text("ShaderRing")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameTransform", data.Object([
+                            data.Field.Named("x", data.Value.Real(220.0)),
+                            data.Field.Named("y", data.Value.Real(300.0))
+                        ]))
+                    ])),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("DamageFlashBehavior")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Color gradient")),
+                    data.Field.Named("prototype", data.Value.Text("ShaderGradient")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameTransform", data.Object([
+                            data.Field.Named("x", data.Value.Real(400.0)),
+                            data.Field.Named("y", data.Value.Real(300.0))
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Smooth union")),
+                    data.Field.Named("prototype", data.Value.Text("ShaderUnion")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameTransform", data.Object([
+                            data.Field.Named("x", data.Value.Real(580.0)),
+                            data.Field.Named("y", data.Value.Real(300.0))
+                        ]))
+                    ]))
+                ])
+            ]))
+        ])
+    )
+}

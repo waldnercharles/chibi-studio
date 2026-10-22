@@ -34,7 +34,7 @@
 #include "graph/authoring/graph_edit.h"
 #include "graph/document/serialize.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/file_io.h"
 #include "support/text_file.h"
 #include "support/text_overlay.h"
@@ -74,10 +74,7 @@ static scene_document_tab *active_asset(studio *s)
         return NULL;
     }
     const char *extension = strrchr(tab->path, '.');
-    return extension && (!strcmp(extension, CODE_ASSET_EXTENSION) ||
-                         !strcmp(extension, DECLARATIVE_ASSET_EXTENSION))
-             ? tab
-             : NULL;
+    return extension && !strcmp(extension, CODE_ASSET_EXTENSION) ? tab : NULL;
 }
 
 static void capture_asset(studio *s, asset_code *code)
@@ -2521,7 +2518,7 @@ bool studio_code_command_enabled(studio *s, studio_command command)
     }
 }
 
-/* Comments the selected lines: // in sources and KDL, block comments in
+/* Comments the selected lines: // in sources, block comments in
    RML and RCSS, each line or the lines as one block. */
 static void toggle_comment(studio *s, kit_code_editor *e, asset_code *code)
 {
@@ -2844,7 +2841,7 @@ static void empty_state(studio *s)
     kit_push(k, "empty", NULL, "pending-editor behavior-empty");
     kit_icon(k, "icon", "glyph", KIT_ICON_EXPRESSION);
     kit_label(k, "title", "title", "No file open");
-    kit_label(k, "hint", "dim", "Open a source, KDL asset, UI document or stylesheet from Assets");
+    kit_label(k, "hint", "dim", "Open a source, asset, UI document or stylesheet from Assets");
     kit_push(k, "actions", NULL, "behavior-choices");
     kit_button_desc search = { .label = "Search",
                                .icon = KIT_ICON_SEARCH,

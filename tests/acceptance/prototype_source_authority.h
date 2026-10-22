@@ -1,7 +1,13 @@
 #include "editor/documents/prototype_source_input.h"
 
 #define AUTHORITY_SOURCE(x, y)                                                 \
-    "AuthoritySource :: prototype { Transform {x:" #x ",y:" #y "} }\n"
+    "package asset\nimport data \"game:assets\"\n"                             \
+    "pub Build :: () -> byte[] { return data.Encode(data.Object(["             \
+    "data.Field.Named(\"name\",data.Value.Text(\"AuthoritySource\")),"         \
+    "data.Field.Named(\"components\",data.Object([data.Field.Named("           \
+    "\"Transform\",data.Object(["                                              \
+    "data.Field.Named(\"x\",data.Value.Real(" #x ")),"                         \
+    "data.Field.Named(\"y\",data.Value.Real(" #y "))]))]))])) }\n"
 
 /* One tiny file, one move_fixture, no actors, and one real same-scene
  * checkpoint restoration. The dedicated selector owns the two UI frames. */
@@ -266,7 +272,8 @@ static bool authority_unopened_rejection(authority_fixture *test)
     char *raw = authority_action(
         test,
         AUTHORITY_SOURCE(1, 2),
-        "AuthoritySource :: prototype {",
+        "package asset\n"
+        "pub Build :: () -> byte[] {",
         collab_revision(),
         0,
         true
@@ -521,8 +528,27 @@ static bool authority_conflicts(authority_fixture *test)
     REQUIRE(authority_text(test, AUTHORITY_SOURCE(10, 10), NULL));
 
     const char *invalid[] = {
-        "AuthoritySource :: prototype {",
-        "DifferentIdentity :: prototype { Transform {x:99,y:99} }"
+        "package asset\n"
+        "pub Build :: () -> byte[] {",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"DifferentIdentity\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(99)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(99))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
     };
     for (int i = 0; i < 2; i++) {
         REQUIRE(!authority_raw(test, invalid[i]));

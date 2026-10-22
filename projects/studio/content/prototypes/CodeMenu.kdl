@@ -1,4 +1,0 @@
-name "CodeMenu"
-components {
-    Ui document="CodeMenu" hidden=#true
-}

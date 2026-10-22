@@ -12,11 +12,11 @@
 static inline void register_damage_event(game_preview_world *world)
 {
     const char *paths[] = {
-        "test/fixtures/behavior-catalog/content/events/Damage.kdl",
-        "test/fixtures/behavior-catalog/content/events/Damaged.kdl",
-        "test/fixtures/behavior-catalog/content/events/Died.kdl",
-        "test/fixtures/behavior-catalog/content/events/RefreshEncounter.kdl",
-        "test/fixtures/behavior-catalog/content/events/CollectExperience.kdl"
+        "test/fixtures/behavior-catalog/content/events/Damage.chibi",
+        "test/fixtures/behavior-catalog/content/events/Damaged.chibi",
+        "test/fixtures/behavior-catalog/content/events/Died.chibi",
+        "test/fixtures/behavior-catalog/content/events/RefreshEncounter.chibi",
+        "test/fixtures/behavior-catalog/content/events/CollectExperience.chibi"
     };
     for (int i = 0; i < (int)(sizeof paths / sizeof *paths); i++) {
         char *json = text_file_read(paths[i]);
@@ -37,12 +37,12 @@ static inline behavior_asset *link_test_libraries(behavior_asset *asset)
         "MovementActions.chibi",
         "test/fixtures/behavior-catalog/content/libraries/WeaponActions.chibi",
         "test/fixtures/behavior-catalog/content/shader-libraries/"
-        "ShaderMath.kdl",
-        "test/fixtures/behavior-catalog/content/events/Damage.kdl",
-        "test/fixtures/behavior-catalog/content/events/Damaged.kdl",
-        "test/fixtures/behavior-catalog/content/events/Died.kdl",
-        "test/fixtures/behavior-catalog/content/events/RefreshEncounter.kdl",
-        "test/fixtures/behavior-catalog/content/events/CollectExperience.kdl"
+        "ShaderMath.chibi",
+        "test/fixtures/behavior-catalog/content/events/Damage.chibi",
+        "test/fixtures/behavior-catalog/content/events/Damaged.chibi",
+        "test/fixtures/behavior-catalog/content/events/Died.chibi",
+        "test/fixtures/behavior-catalog/content/events/RefreshEncounter.chibi",
+        "test/fixtures/behavior-catalog/content/events/CollectExperience.chibi"
     };
     enum
     {

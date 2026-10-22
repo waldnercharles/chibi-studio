@@ -1,4 +1,0 @@
-name "Widgets"
-components {
-    Ui document="Widgets" hidden=#true
-}

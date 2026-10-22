@@ -1,0 +1,18 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("Camera")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.GameCamera", data.Object([
+                    data.Field.Named("width", data.Value.Real(960.0)),
+                    data.Field.Named("height", data.Value.Real(540.0))
+                ])),
+                data.Field.Named("GAME.GameTransform", data.Object([]))
+            ]))
+        ])
+    )
+}

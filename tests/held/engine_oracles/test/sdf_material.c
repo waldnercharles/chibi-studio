@@ -1,8 +1,8 @@
-#include "authoring/shader_prepare.h"
-#include "authoring/mesh_prepare.h"
-#include "graph/authoring/graph_edit.h"
-#include "editor/workspace/viewport.h"
 #include "assets/model_export.h"
+#include "authoring/mesh_prepare.h"
+#include "authoring/shader_prepare.h"
+#include "editor/workspace/viewport.h"
+#include "graph/authoring/graph_edit.h"
 #include "graph/document/serialize.h"
 #include "graph/shader/shader_graph.h"
 #include "platform/cute.h"
@@ -14,6 +14,7 @@
 #include "render/shader_program.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
+#include "support/asset_document.h"
 #include "support/xalloc.h"
 
 #include <assert.h>
@@ -663,27 +664,26 @@ static bool test_sdf_batches(ecs_world *world)
     }
     // Different resolved parameters now share a graph-pair batch. Each value
     // must still affect its actor rather than leaking a neighbor's table row.
-    char parameters[PARAMETERS][160];
+    char *parameters[PARAMETERS];
     for (int i = 0; i < PARAMETERS; i++) {
         ecs_entity entity = actor(world, true, shape_asset->name);
         actors[i] = (render_mesh_material_actor){ entity,
                                                   { -30 + (i % 6) * 12.0f,
                                                     -16 + (i / 6) * 16.0f } };
         int group = i / 3;
-        snprintf(
-            parameters[i],
-            sizeof parameters[i],
-            "Radius %g\n"
-            "(array)Tint %g %g %g\n"
-            "Glow %g\n"
-            "Roughness %g\n",
-            3.0f + group * .3f,
-            .15f + group * .1f,
-            .7f - group * .08f,
-            .2f + group * .04f,
-            1.0f + group * .2f,
-            .1f + group * .12f
-        );
+        av_doc *parameter_doc = av_doc_new();
+        av_value *parameter_root = av_obj(parameter_doc);
+        av_doc_set_root(parameter_doc, parameter_root);
+        av_obj_add_float(parameter_doc, parameter_root, "Radius", 3.0f + group * .3f);
+        av_value *tint = av_obj_add_arr(parameter_doc, parameter_root, "Tint");
+        av_arr_append(tint, av_float(parameter_doc, .15f + group * .1f));
+        av_arr_append(tint, av_float(parameter_doc, .7f - group * .08f));
+        av_arr_append(tint, av_float(parameter_doc, .2f + group * .04f));
+        av_obj_add_float(parameter_doc, parameter_root, "Glow", 1.0f + group * .2f);
+        av_obj_add_float(parameter_doc, parameter_root, "Roughness", .1f + group * .12f);
+        parameters[i] = asset_document_write(parameter_root);
+        assert(parameters[i]);
+        av_doc_free(parameter_doc);
         GameShader *binding = GAME_GameShader_get(world, entity);
         binding->material = material_asset->name;
         binding->parameters = parameters[i];
@@ -804,6 +804,9 @@ static bool test_sdf_batches(ecs_world *world)
             }
         }
         snapshot_free(&tie);
+    }
+    for (int i = 0; i < PARAMETERS; i++) {
+        free(parameters[i]);
     }
     render_mesh_material_free(pass);
     behavior_asset_free(shape_asset);
@@ -1264,7 +1267,7 @@ static bool model_image_boundary()
 static void bake_fixture_save(const char *root, const char *folder, behavior_asset *asset)
 {
     char path[512];
-    snprintf(path, sizeof path, "%s/%s/%s.kdl", root, folder, asset->name);
+    snprintf(path, sizeof path, "%s/%s/%s.chibi", root, folder, asset->name);
     char *text = behavior_asset_save(asset);
     FILE *file = fopen(path, "wb");
     assert(file && text && fwrite(text, 1, strlen(text), file) == strlen(text));
@@ -1386,8 +1389,22 @@ static bool model_bake_render()
     ecs_entity live = actor(world, true, model->name),
                mesh = actor(world, false, NULL);
     GameMeshAsset source = { .source = path };
-    const char *qualified = "material.ImageSlot.Roughness 0.35\n"
-                            "material.MirrorSlot.Roughness 0.65\n";
+    const char *qualified = "package asset\n"
+                            "\n"
+                            "import data \"game:assets\"\n"
+                            "\n"
+                            "pub Build :: () -> byte[] {\n"
+                            "    return data.Encode(\n"
+                            "        data.Object([\n"
+                            "            "
+                            "data.Field.Named(\"material.ImageSlot.Roughness\","
+                            " data.Value.Real(0.35)),\n"
+                            "            "
+                            "data.Field.Named(\"material.MirrorSlot."
+                            "Roughness\", data.Value.Real(0.65))\n"
+                            "        ])\n"
+                            "    )\n"
+                            "}\n";
     GAME_GameShader_get(world, live)->parameters = qualified;
     GameShader mesh_binding = { .parameters = qualified };
     assert(
@@ -1451,7 +1468,7 @@ static bool model_bake_render()
     behavior_asset_free(model);
     for (int i = 0; i < 2; i++) {
         assert(render_shader_material_remove(materials[i]->name, &shader_error));
-        snprintf(path, sizeof path, "%s/materials/%s.kdl", root, materials[i]->name);
+        snprintf(path, sizeof path, "%s/materials/%s.chibi", root, materials[i]->name);
         assert(!unlink(path));
         behavior_asset_free(materials[i]);
     }
@@ -1462,7 +1479,7 @@ static bool model_bake_render()
     }
     assert(!rmdir(bundle));
     assert(!unlink(image_key));
-    snprintf(path, sizeof path, "%s/models/BakeGPUModel.kdl", root);
+    snprintf(path, sizeof path, "%s/models/BakeGPUModel.chibi", root);
     assert(!unlink(path));
     for (int i = 0; i < 2; i++) {
         snprintf(path, sizeof path, "%s/%s", root, folders[i]);

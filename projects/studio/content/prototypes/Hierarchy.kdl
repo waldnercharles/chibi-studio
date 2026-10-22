@@ -1,4 +1,0 @@
-name "Hierarchy"
-components {
-    Ui document="Hierarchy" hidden=#true
-}

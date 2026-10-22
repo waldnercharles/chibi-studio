@@ -1,4 +1,0 @@
-name "AreaHeader"
-components {
-    Ui document="AreaHeader" hidden=#true
-}

@@ -1,12 +1,13 @@
 #include "authoring/engine_preview.h"
 #include "authoring/native_prototype.h"
-#include "editor/workspace/viewport.h"
 #include "authoring/preview.h"
-#include "runtime/camera.h"
-#include "runtime/engine.h"
-#include "runtime/component_catalog.h"
 #include "authoring/prototype_preview.h"
+#include "editor/workspace/viewport.h"
+#include "runtime/camera.h"
+#include "runtime/component_catalog.h"
+#include "runtime/engine.h"
 #include "support/array.h"
+#include "support/asset_document.h"
 #include "support/xalloc.h"
 
 #include <assert.h>
@@ -48,7 +49,7 @@ static void expect_edited_style(const GameAppearance *appearance)
 static game_prototype *read_prototype(const char *name, const game_prototype_registry *registry)
 {
     char path[256], error[256];
-    snprintf(path, sizeof path, "test/fixtures/content/prototypes/%s.kdl", name);
+    snprintf(path, sizeof path, "test/fixtures/content/prototypes/%s.chibi", name);
     FILE *file = fopen(path, "rb");
     assert(file);
     fseek(file, 0, SEEK_END);
@@ -73,13 +74,28 @@ static game_prototype *read_prototype(const char *name, const game_prototype_reg
     return prototype;
 }
 
-static void reject_component_values(const game_prototype_registry *registry, const char *components)
+static void reject_component_values(
+    const game_prototype_registry *registry,
+    const char *component,
+    const char *field,
+    int64_t value
+)
 {
-    char json[512], error[256];
-    snprintf(json, sizeof json, "name \"Invalid values\"\ncomponents { %s }\n", components);
-    game_prototype *invalid = game_prototype_load(json, registry, error, sizeof error);
+    char error[256];
+    av_doc *doc = av_doc_new();
+    av_value *root = av_obj(doc);
+    av_doc_set_root(doc, root);
+    av_obj_add_str(doc, root, "name", "Invalid values");
+    av_value *components = av_obj_add_obj(doc, root, "components");
+    av_value *fields = av_obj_add_obj(doc, components, component);
+    av_obj_add_int(doc, fields, field, value);
+    char *source = asset_document_write(root);
+    assert(source);
+    game_prototype *invalid = game_prototype_load(source, registry, error, sizeof error);
     assert(!invalid);
     game_prototype_free(invalid);
+    free(source);
+    av_doc_free(doc);
 }
 
 static void expect_entity(ecs_world *world, ecs_entity entity, float width, float height, unsigned color)
@@ -310,10 +326,28 @@ static void preview_reset(
 
 static void legacy_appearance(const game_prototype_registry *registry, ecs_world *world)
 {
-    const char *json = "name \"Legacy appearance\"\n"
-                       "components {\n"
-                       "    GameAppearance width=24 height=16 color=287454020\n"
-                       "}\n";
+    const char *json =
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Legacy "
+        "appearance\")),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"GameAppearance\", data.Object([\n"
+        "                    data.Field.Named(\"width\", data.Value.Int(24)),\n"
+        "                    data.Field.Named(\"height\", "
+        "data.Value.Int(16)),\n"
+        "                    data.Field.Named(\"color\", "
+        "data.Value.Int(287454020))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n";
     char error[256];
     game_prototype *prototype = game_prototype_load(json, registry, error, sizeof error);
     assert(prototype);
@@ -338,9 +372,9 @@ void test_appearance()
     for (int i = 0; i < registry.component_count; i++) {
         assert(ecs_world_register_component(world, registry.components[i], NULL) == ECS_OK);
     }
-    reject_component_values(&registry, "GameAppearance shape=2147483648\n");
-    reject_component_values(&registry, "GameAppearance color=4294967296\n");
-    reject_component_values(&registry, "GameHealth current=2147483648\n");
+    reject_component_values(&registry, "GameAppearance", "shape", INT64_C(2147483648));
+    reject_component_values(&registry, "GameAppearance", "color", INT64_C(4294967296));
+    reject_component_values(&registry, "GameHealth", "current", INT64_C(2147483648));
     added_component_defaults(&registry, world);
     legacy_appearance(&registry, world);
     game_preview_world *live = game_preview_world_new(world);

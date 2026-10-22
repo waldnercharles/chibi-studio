@@ -1,0 +1,35 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(3)),
+            data.Field.Named("name", data.Value.Text("Basalt")),
+            data.Field.Named("domain", data.Value.Text("material")),
+            data.Field.Named("id_counter", data.Value.UInt(10)),
+            data.Field.Named("graphs", data.List([
+                data.Object([
+                    data.Field.Named("kind", data.Value.Text("event")),
+                    data.Field.Named("name", data.Value.Text("")),
+                    data.Field.Named("nodes", data.List([
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(1)),
+                            data.Field.Named("type", data.Value.Text("Shader Surface Output")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("Base Color", data.Object([
+                                    data.Field.Named("default", data.Object([
+                                        data.Field.Named("x", data.Value.Real(0.2)),
+                                        data.Field.Named("y", data.Value.Real(0.4)),
+                                        data.Field.Named("z", data.Value.Real(0.6))
+                                    ]))
+                                ]))
+                            ]))
+                        ])
+                    ]))
+                ])
+            ]))
+        ])
+    )
+}

@@ -1,4 +1,0 @@
-name "Inspector"
-components {
-    Ui document="Inspector" hidden=#true
-}

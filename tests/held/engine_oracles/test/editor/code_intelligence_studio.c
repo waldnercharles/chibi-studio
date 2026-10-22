@@ -102,7 +102,7 @@ static fixture fixture_new()
     );
     assert(app_scene_authoring_set_content_root(f.scene, PROJECT "/content") == 0);
     assert(app_scene_authoring_load_content(f.scene) == 0);
-    assert(app_scene_authoring_load(f.scene, PROJECT "/content/scenes/Main.kdl") == 0);
+    assert(app_scene_authoring_load(f.scene, PROJECT "/content/scenes/Main.chibi") == 0);
     f.studio = studio_new(f.scene, f.viewport, PROJECT);
     f.studio->prefs.code_vim = false;
     f.studio->prefs.code_apply_live = false;
@@ -653,9 +653,28 @@ static void prototype_source_navigation(fixture *f)
     char folder[PATH_MAX], path[PATH_MAX];
     snprintf(folder, sizeof folder, "%s/prototypes", f->root);
     assert(!mkdir(folder, 0777));
-    snprintf(path, sizeof path, "%s/SourceTarget.kdl", folder);
+    snprintf(path, sizeof path, "%s/SourceTarget.chibi", folder);
     FILE *file = fopen(path, "w");
-    assert(file && fputs("name \"SourceTarget\"\ncomponents {}\n", file) >= 0 && !fclose(file));
+    assert(
+        file &&
+        fputs(
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"SourceTarget\")),\n"
+            "            data.Field.Named(\"components\", data.Object([]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
+            file
+        ) >= 0 &&
+        !fclose(file)
+    );
     assert(!app_scene_authoring_set_content_root(f->scene, f->root));
     assert(!app_scene_authoring_load_content(f->scene));
     ui_code_place target = { .line = 1, .offset = 0 };

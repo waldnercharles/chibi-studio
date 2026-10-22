@@ -346,20 +346,77 @@ static void declarative_checkpoint()
     av_doc *doc = av_doc_new();
     av_value *root = av_obj(doc);
     av_doc_set_root(doc, root);
-    const char *path = "/tmp/chibi-source-checkpoint.kdl";
-    const char *valid = "name \"Last good\"\n";
+    const char *path = "/tmp/chibi-source-checkpoint.chibi";
+    const char *valid = "package asset\n"
+                        "\n"
+                        "import data \"game:assets\"\n"
+                        "\n"
+                        "pub Build :: () -> byte[] {\n"
+                        "    return data.Encode(\n"
+                        "        data.Object([\n"
+                        "            data.Field.Named(\"name\", "
+                        "data.Value.Text(\"Last good\"))\n"
+                        "        ])\n"
+                        "    )\n"
+                        "}\n";
     av_obj_add_str(doc, root, "path", path);
-    av_obj_add_str(doc, root, "disk", "name \"Saved\"\n");
-    av_obj_add_str(doc, root, "text", "name \"unfinished");
+    av_obj_add_str(
+        doc,
+        root,
+        "disk",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Saved\"))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
+    av_obj_add_str(doc, root, "text", "package asset\n\npub Build :: () -> byte[] {");
     av_obj_add_str(doc, root, "valid", valid);
     av_obj_add_bool(doc, root, "overlay", true);
     av_obj_add_int(doc, root, "step", 1);
     av_obj_add_int(doc, root, "cursor", 3);
     av_obj_add_int(doc, root, "anchor", 12);
     av_value *history = av_obj_add_arr(doc, root, "history");
-    av_obj_add_str(doc, av_arr_add_obj(doc, history), "text", "name \"Saved\"\n");
-    av_obj_add_str(doc, av_arr_add_obj(doc, history), "text", "name \"unfinished");
-    av_obj_add_str(doc, av_arr_add_obj(doc, history), "text", "name \"Finished\"\n");
+    av_obj_add_str(
+        doc,
+        av_arr_add_obj(doc, history),
+        "text",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Saved\"))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
+    av_obj_add_str(doc, av_arr_add_obj(doc, history), "text", "package asset\n\npub Build :: () -> byte[] {");
+    av_obj_add_str(
+        doc,
+        av_arr_add_obj(doc, history),
+        "text",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"Finished\"))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
 
     /* An invalid draft and the redo branch survive replacement independently
      * of the last valid preview and saved disk baseline. */
@@ -384,7 +441,9 @@ static void declarative_checkpoint()
     assert(!text_overlay_text(path));
 
     code = asset_code_restore(snapshot, NULL);
-    assert(code && !strcmp(kit_code_text(asset_code_editor(code), NULL), "name \"unfinished"));
+    assert(
+        code && !strcmp(kit_code_text(asset_code_editor(code), NULL), "package asset\n\npub Build :: () -> byte[] {")
+    );
     av_value *again = asset_code_capture(code);
     assert(av_equals(snapshot, again));
     asset_code_free(code);
@@ -394,28 +453,124 @@ static void declarative_checkpoint()
 
     /* Independent visual changes merge into an unsaved source draft without
      * canonicalizing its comments or overwriting the typed name. */
-    char file_path[] = "/tmp/chibi-kdl-refresh-XXXXXX";
+    char file_path[] = "/tmp/chibi-source-refresh-XXXXXX";
     int fd = mkstemp(file_path);
     assert(fd >= 0);
     FILE *file = fdopen(fd, "w");
     assert(file);
-    fputs("name \"Saved\"\nvalue 2\n", file);
+    fputs(
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Saved\")),\n"
+        "            data.Field.Named(\"value\", data.Value.Int(2))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        file
+    );
     assert(!fclose(file));
     doc = av_doc_new();
     root = av_obj(doc);
     av_doc_set_root(doc, root);
     av_obj_add_str(doc, root, "path", file_path);
-    av_obj_add_str(doc, root, "disk", "name \"Saved\"\nvalue 1\n");
-    av_obj_add_str(doc, root, "text", "// draft\nname  \"Draft\"\nvalue 1\n");
-    av_obj_add_str(doc, root, "valid", "// draft\nname  \"Draft\"\nvalue 1\n");
+    av_obj_add_str(
+        doc,
+        root,
+        "disk",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Saved\")),\n"
+        "            data.Field.Named(\"value\", data.Value.Int(1))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
+    av_obj_add_str(
+        doc,
+        root,
+        "text",
+        "// draft\n"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\",  data.Value.Text(\"Draft\")),\n"
+        "            data.Field.Named(\"value\", data.Value.Int(1))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
+    av_obj_add_str(
+        doc,
+        root,
+        "valid",
+        "// draft\n"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\",  data.Value.Text(\"Draft\")),\n"
+        "            data.Field.Named(\"value\", data.Value.Int(1))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
     av_obj_add_bool(doc, root, "overlay", true);
     av_obj_add_int(doc, root, "step", 0);
     history = av_obj_add_arr(doc, root, "history");
-    av_obj_add_str(doc, av_arr_add_obj(doc, history), "text", "// draft\nname  \"Draft\"\nvalue 1\n");
+    av_obj_add_str(
+        doc,
+        av_arr_add_obj(doc, history),
+        "text",
+        "// draft\n"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\",  data.Value.Text(\"Draft\")),\n"
+        "            data.Field.Named(\"value\", data.Value.Int(1))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
     code = asset_code_restore(root, NULL);
     assert(code);
     asset_code_refresh(code);
-    assert(!strcmp(kit_code_text(asset_code_editor(code), NULL), "// draft\nname  \"Draft\"\nvalue 2\n"));
+    assert(!strcmp(
+        kit_code_text(asset_code_editor(code), NULL),
+        "// draft\n"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\",  data.Value.Text(\"Draft\")),\n"
+        "            data.Field.Named(\"value\", data.Value.Int(2))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
     assert(asset_code_dirty(code));
     assert(asset_code_save(code, error, sizeof error));
     assert(!asset_code_dirty(code));

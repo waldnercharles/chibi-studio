@@ -55,7 +55,12 @@ void run_runtime_catalog_checks()
         test_check(flow_run_error(break_run)->code == 0, "successful nodes retain a non-failed render state");
         char *break_json = graph_save(&g_break);
         graph *break_loaded = break_json ? graph_load(break_json) : NULL;
-        test_check(break_json && strstr(break_json, "flags=16"), "breakpoint and watch identity round-trip without position reuse");
+        test_check(
+            break_loaded && acount(break_loaded->nodes) == 2 &&
+                break_loaded->nodes[1]->id == break_sink->id &&
+                (break_loaded->nodes[1]->input_pins[1].flags & PIN_FLAG_WATCH),
+            "breakpoint and watch identity round-trip without position reuse"
+        );
         free(break_json);
         if (break_loaded) {
             graph_free(break_loaded);

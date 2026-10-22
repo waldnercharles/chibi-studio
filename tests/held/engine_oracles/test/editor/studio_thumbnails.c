@@ -6,18 +6,17 @@
  * rests, and its Undo too; Sandbox streams its terrain before its picture,
  * showing what it has at the cap; a changed file renders again; and the disk
  * cache keeps pictures between sessions until their content changes. */
-#include "editor/workspace/viewport.h"
-#include "editor/studio/studio_thumbnails.h"
-
 #include "assets/new_asset.h"
 #include "editor/studio/studio_internal.h"
+#include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/input.h"
+#include "editor/workspace/viewport.h"
 #include "graph/document/serialize.h"
 #include "platform/cute.h"
 #include "render/scene_renderer.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/file_io.h"
 #include "support/text_file.h"
 #include "support/xalloc.h"
@@ -39,6 +38,7 @@
 #define ARENA "projects/arena2d"
 #define STRINGIFY_INNER(value) #value
 #define STRINGIFY(value) STRINGIFY_INNER(value)
+#define PROJECT_VERSION_TEXT STRINGIFY(CHIBI_PROJECT_VERSION)
 
 /* ---------- Mini-maps ---------- */
 
@@ -472,7 +472,7 @@ static void arena_thumbnails()
 {
     static char root[PATH_MAX];
     assert(realpath(ARENA, root));
-    thumbs_fixture f = fixture_open(root, "scenes/Sandbox.kdl");
+    thumbs_fixture f = fixture_open(root, "scenes/Sandbox.chibi");
     frame(&f, FRAME_SECONDS);
     every_kind_renders(&f);
     large_previews_evict(&f);
@@ -499,7 +499,7 @@ static char *disk_text(new_asset_kind kind, const char *name)
         kind == NEW_ASSET_SYSTEM) {
         return json;
     }
-    char *disk = asset_text_to_disk(json, error, sizeof error);
+    char *disk = asset_document_to_disk(json, error, sizeof error);
     free(json);
     return disk;
 }
@@ -536,12 +536,52 @@ static void write_in(const char *root, const char *file, const char *text)
 }
 
 #define DOT_PROTOTYPE                                                          \
-    "name \"Dot\"\ncomponents {\n    GAME.GameAppearance color=0xff8800ff "    \
-    "height=40.0 "                                                             \
-    "shape=\"Circle\" width=40.0\n    (object)GAME.GameTransform\n}\n"
+    "package asset\n"                                                          \
+    "\n"                                                                       \
+    "import data \"game:assets\"\n"                                            \
+    "\n"                                                                       \
+    "pub Build :: () -> byte[] {\n"                                            \
+    "    return data.Encode(\n"                                                \
+    "        data.Object([\n"                                                  \
+    "            data.Field.Named(\"name\", data.Value.Text(\"Dot\")),\n"      \
+    "            data.Field.Named(\"components\", data.Object([\n"             \
+    "                data.Field.Named(\"GAME.GameAppearance\", "               \
+    "data.Object([\n"                                                          \
+    "                    data.Field.Named(\"color\", "                         \
+    "data.Value.Int(4287103231)),\n"                                           \
+    "                    data.Field.Named(\"height\", "                        \
+    "data.Value.Real(40.0)),\n"                                                \
+    "                    data.Field.Named(\"shape\", "                         \
+    "data.Value.Text(\"Circle\")),\n"                                          \
+    "                    data.Field.Named(\"width\", data.Value.Real(40.0))\n" \
+    "                ])),\n"                                                   \
+    "                data.Field.Named(\"GAME.GameTransform\", "                \
+    "data.Object([]))\n"                                                       \
+    "            ]))\n"                                                        \
+    "        ])\n"                                                             \
+    "    )\n"                                                                  \
+    "}\n"
 #define MAIN_SCENE                                                             \
-    "version 1\nname \"Main\"\n(array)entities {\n    - name=\"Dot\" "         \
-    "prototype=\"Dot\"\n}\n"
+    "package asset\n"                                                          \
+    "\n"                                                                       \
+    "import data \"game:assets\"\n"                                            \
+    "\n"                                                                       \
+    "pub Build :: () -> byte[] {\n"                                            \
+    "    return data.Encode(\n"                                                \
+    "        data.Object([\n"                                                  \
+    "            data.Field.Named(\"version\", data.Value.Int(1)),\n"          \
+    "            data.Field.Named(\"name\", data.Value.Text(\"Main\")),\n"     \
+    "            data.Field.Named(\"entities\", data.List([\n"                 \
+    "                data.Object([\n"                                          \
+    "                    data.Field.Named(\"name\", "                          \
+    "data.Value.Text(\"Dot\")),\n"                                             \
+    "                    data.Field.Named(\"prototype\", "                     \
+    "data.Value.Text(\"Dot\"))\n"                                              \
+    "                ])\n"                                                     \
+    "            ]))\n"                                                        \
+    "        ])\n"                                                             \
+    "    )\n"                                                                  \
+    "}\n"
 
 /* A project of a scene showing one prototype, and a behavior. */
 static void make_project(char *root)
@@ -556,15 +596,26 @@ static void make_project(char *root)
     write_in(
         root,
         CHIBI_PROJECT_MANIFEST,
-        "version " STRINGIFY(
-            CHIBI_PROJECT_VERSION
-        ) "\n"
-          "name \"Thumbs\"\n"
-          "content \"content\"\n"
-          "start_scene \"scenes/Main.kdl\"\n"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", "
+        "data.Value.Int(" PROJECT_VERSION_TEXT ")),\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Thumbs\")),\n"
+        "            data.Field.Named(\"content\", "
+        "data.Value.Text(\"content\")),\n"
+        "            data.Field.Named(\"start_scene\", "
+        "data.Value.Text(\"scenes/Main.chibi\"))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
     );
-    write_in(root, "content/scenes/Main.kdl", MAIN_SCENE);
-    write_in(root, "content/prototypes/Dot.kdl", DOT_PROTOTYPE);
+    write_in(root, "content/scenes/Main.chibi", MAIN_SCENE);
+    write_in(root, "content/prototypes/Dot.chibi", DOT_PROTOTYPE);
     char *behavior = disk_text(NEW_ASSET_BEHAVIOR, "Spin");
     write_in(root, "content/behaviors/Spin.chibi", behavior);
     free(behavior);
@@ -584,7 +635,7 @@ static void imported_graph_renders(const char *root)
                          "chosen = Shared.Seven(Input: 7); on Tick() { count "
                          "+= chosen.Result; } }";
     write_text(caller, source);
-    thumbs_fixture f = fixture_open(root, "scenes/Main.kdl");
+    thumbs_fixture f = fixture_open(root, "scenes/Main.chibi");
     assert(app_scene_authoring_refresh_asset_index(f.scene) == 0);
     const reference_index *index = app_scene_authoring_asset_index(f.scene);
     int asset = -1;
@@ -613,7 +664,7 @@ static void changed_file_renders_again(const char *root)
 {
     char path[PATH_MAX];
     snprintf(path, sizeof path, "%s/content/behaviors/Spin.chibi", root);
-    thumbs_fixture f = fixture_open(root, "scenes/Main.kdl");
+    thumbs_fixture f = fixture_open(root, "scenes/Main.chibi");
     studio *s = f.studio;
     s->assets_kind = REFERENCE_ASSET_BEHAVIOR;
     settle(&f, NULL);
@@ -644,7 +695,7 @@ static void changed_file_renders_again(const char *root)
    does an edit of a prototype it uses. */
 static void unsaved_scene_renders(const char *root)
 {
-    thumbs_fixture f = fixture_open(root, "scenes/Main.kdl");
+    thumbs_fixture f = fixture_open(root, "scenes/Main.chibi");
     studio *s = f.studio;
     app_scene_authoring *scene = f.scene;
     s->assets_kind = REFERENCE_ASSET_SCENE;
@@ -676,18 +727,18 @@ static void pictures_persist(const char *root)
     char cache[64] = "/tmp/chibi-thumb-cache-XXXXXX";
     assert(mkdtemp(cache));
     setenv("CHIBI_THUMBNAIL_CACHE", cache, 1);
-    thumbs_fixture f = fixture_open(root, "scenes/Main.kdl");
+    thumbs_fixture f = fixture_open(root, "scenes/Main.chibi");
     f.studio->assets_kind = -1;
     settle(&f, NULL);
     studio_thumb_stats first = studio_thumbs_stats(f.studio);
     fixture_free(&f);
-    f = fixture_open(root, "scenes/Main.kdl");
+    f = fixture_open(root, "scenes/Main.chibi");
     f.studio->assets_kind = -1;
     settle(&f, NULL);
     studio_thumb_stats second = studio_thumbs_stats(f.studio);
     fixture_free(&f);
-    write_in(root, "content/prototypes/Dot.kdl", DOT_PROTOTYPE "// edited\n");
-    f = fixture_open(root, "scenes/Main.kdl");
+    write_in(root, "content/prototypes/Dot.chibi", DOT_PROTOTYPE "// edited\n");
+    f = fixture_open(root, "scenes/Main.chibi");
     f.studio->assets_kind = -1;
     settle(&f, NULL);
     studio_thumb_stats third = studio_thumbs_stats(f.studio);
@@ -786,12 +837,115 @@ static void streamed_terrain_waits(const char *root)
     snprintf(path, sizeof path, "%s/content/fields", root);
     assert(mkdir(path, 0755) == 0);
     char *field = disk_text(NEW_ASSET_FIELD, "Ground");
-    write_in(root, "content/fields/Ground.kdl", field);
+    write_in(root, "content/fields/Ground.chibi", field);
     free(field);
-    write_in(root, "content/prototypes/Ground.kdl", "name \"Ground\"\ncomponents {\n    (object)GAME.GameTransform\n    GAME.MaterialTerrain category=8 cell_size=2.0 field=\"Ground\" island_cells=4000 mask=15 min_fragment_cells=24 seed=7 stream_budget=1 stream_radius=64.0\n}\n");
-    write_in(root, "content/prototypes/Eye.kdl", "name \"Eye\"\ncomponents {\n    GAME.GameCamera height=200.0 width=200.0\n    (object)GAME.GameTransform\n}\n");
-    write_in(root, "content/scenes/Cave.kdl", "version 1\nname \"Cave\"\n(array)entities {\n    - name=\"Ground\" prototype=\"Ground\"\n    - name=\"Eye\" prototype=\"Eye\"\n    - {\n        name \"Dot\"\n        prototype \"Dot\"\n        components {\n            GAME.GameTransform x=2400.0\n        }\n    }\n}\n");
-    thumbs_fixture f = fixture_open(root, "scenes/Cave.kdl");
+    write_in(
+        root,
+        "content/prototypes/Ground.chibi",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Ground\")),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"GAME.GameTransform\", "
+        "data.Object([])),\n"
+        "                data.Field.Named(\"GAME.MaterialTerrain\", "
+        "data.Object([\n"
+        "                    data.Field.Named(\"category\", "
+        "data.Value.Int(8)),\n"
+        "                    data.Field.Named(\"cell_size\", "
+        "data.Value.Real(2.0)),\n"
+        "                    data.Field.Named(\"field\", "
+        "data.Value.Text(\"Ground\")),\n"
+        "                    data.Field.Named(\"island_cells\", "
+        "data.Value.Int(4000)),\n"
+        "                    data.Field.Named(\"mask\", data.Value.Int(15)),\n"
+        "                    data.Field.Named(\"min_fragment_cells\", "
+        "data.Value.Int(24)),\n"
+        "                    data.Field.Named(\"seed\", data.Value.Int(7)),\n"
+        "                    data.Field.Named(\"stream_budget\", "
+        "data.Value.Int(1)),\n"
+        "                    data.Field.Named(\"stream_radius\", "
+        "data.Value.Real(64.0))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
+    write_in(
+        root,
+        "content/prototypes/Eye.chibi",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Eye\")),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"GAME.GameCamera\", data.Object([\n"
+        "                    data.Field.Named(\"height\", "
+        "data.Value.Real(200.0)),\n"
+        "                    data.Field.Named(\"width\", "
+        "data.Value.Real(200.0))\n"
+        "                ])),\n"
+        "                data.Field.Named(\"GAME.GameTransform\", "
+        "data.Object([]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
+    write_in(
+        root,
+        "content/scenes/Cave.chibi",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Cave\")),\n"
+        "            data.Field.Named(\"entities\", data.List([\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Ground\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"Ground\"))\n"
+        "                ]),\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Eye\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"Eye\"))\n"
+        "                ]),\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Dot\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"Dot\")),\n"
+        "                    data.Field.Named(\"components\", data.Object([\n"
+        "                        data.Field.Named(\"GAME.GameTransform\", "
+        "data.Object([\n"
+        "                            data.Field.Named(\"x\", "
+        "data.Value.Real(2400.0))\n"
+        "                        ]))\n"
+        "                    ]))\n"
+        "                ])\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
+    thumbs_fixture f = fixture_open(root, "scenes/Cave.chibi");
     studio *s = f.studio;
     s->assets_kind = REFERENCE_ASSET_SYSTEM;
     frame(&f, FRAME_SECONDS);
@@ -823,7 +977,7 @@ static void cold_start(const char *root)
     double took[2];
     int frames[2];
     for (int run = 0; run < 2; run++) {
-        thumbs_fixture f = fixture_open(root, "scenes/Sandbox.kdl");
+        thumbs_fixture f = fixture_open(root, "scenes/Sandbox.chibi");
         f.studio->assets_kind = -1;
         double wall = now();
         frames[run] = settle_within(&f, NULL, 6000);

@@ -62,7 +62,11 @@ static const char
    Library in view beside the Canvas. */
 static studio_fixture designer_open()
 {
-    studio_fixture f = scene_open("test/fixtures/studio-workspace", "test/fixtures/studio-workspace/content/scenes/Sandbox.kdl", "Movement");
+    studio_fixture f = scene_open(
+        "test/fixtures/studio-workspace",
+        "test/fixtures/studio-workspace/content/scenes/Sandbox.chibi",
+        "Movement"
+    );
     studio *s = f.studio;
     s->maximized = -1;
     s->prefs.code_apply_live = false;

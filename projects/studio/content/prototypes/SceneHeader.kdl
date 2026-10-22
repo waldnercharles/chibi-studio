@@ -1,4 +1,0 @@
-name "SceneHeader"
-components {
-    Ui document="SceneHeader" hidden=#true
-}

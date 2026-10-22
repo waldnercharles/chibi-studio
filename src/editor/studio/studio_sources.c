@@ -11,17 +11,17 @@
  * saved key to the save, a theme value to its file, which restyles
  * everything the page styles, and a setting to the preferences. A preview of
  * Studio's own ui assets shows the same data and applies nothing. */
-#include "editor/workspace/viewport.h"
 #include "assets/asset_source.h"
 #include "assets/project.h"
+#include "authoring/preview_runtime.h"
+#include "authoring/prototype_preview.h"
 #include "editor/collab/collab.h"
 #include "editor/documents/component_properties.h"
 #include "editor/studio/studio_internal.h"
-#include "authoring/preview_runtime.h"
+#include "editor/workspace/viewport.h"
 #include "runtime/declared_components.h"
-#include "authoring/prototype_preview.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/rcss.h"
 #include "support/text_file.h"
 #include "support/xalloc.h"
@@ -343,7 +343,7 @@ static bool sync_theme(studio *s, const studio_panel_sync *at)
 static const struct
 {
     const char *key;   /* the row's */
-    const char *field; /* in project.kdl */
+    const char *field; /* in project.chibi */
     const char *label, *description;
     bool optional;
 } PROJECT_ROWS[STUDIO_PROJECT_FIELD_COUNT] = {
@@ -1017,7 +1017,7 @@ static int by_label(const void *a, const void *b)
 }
 
 /* The open project's assets of `kind` by name, sorted: ui assets by their
-   name, scenes by their path under content, as project.kdl names them. */
+   name, scenes by their path under content, as project.chibi names them. */
 static studio_setting_choice *asset_choices(const studio *s, reference_asset_kind kind)
 {
     const reference_index *index = app_scene_authoring_asset_index(s->scene);
@@ -1089,14 +1089,14 @@ static void apply_project_field(studio *s, studio_project_field field, const cha
     assert(!"a project field");
 }
 
-/* Writes a field of the project's project.kdl in its place, adding it last
+/* Writes a field of the project's project.chibi in its place, adding it last
  * or, when empty, leaving it out, then applies it. */
 static void set_project_field(studio *s, studio_project_field field, const char *value)
 {
     char path[1024], error[256] = "cannot be read";
     snprintf(path, sizeof path, "%s/" CHIBI_PROJECT_MANIFEST, s->project_root);
     char *text = text_file_read(path);
-    av_doc *doc = text ? av_doc_read(text, error, sizeof error) : NULL;
+    av_doc *doc = text ? asset_document_read(text, error, sizeof error) : NULL;
     av_value *object = av_doc_root(doc);
     if (!av_is_obj(object)) {
         char message[1400];

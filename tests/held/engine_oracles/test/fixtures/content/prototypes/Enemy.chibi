@@ -1,0 +1,60 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("Enemy")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.GameAppearance", data.Object([
+                    data.Field.Named("border_color", data.Value.UInt(4291559679)),
+                    data.Field.Named("border_width", data.Value.Real(2.0)),
+                    data.Field.Named("color", data.Value.UInt(336527615)),
+                    data.Field.Named("glow_color", data.Value.UInt(4291559488)),
+                    data.Field.Named("glow_radius", data.Value.Real(6.0)),
+                    data.Field.Named("height", data.Value.Real(28.0)),
+                    data.Field.Named("shape", data.Value.Text("Diamond")),
+                    data.Field.Named("width", data.Value.Real(28.0))
+                ])),
+                data.Field.Named("GAME.GameBody", data.Object([
+                    data.Field.Named("type", data.Value.Text("Dynamic"))
+                ])),
+                data.Field.Named("GAME.GameCollider", data.Object([
+                    data.Field.Named("category", data.Value.UInt(2)),
+                    data.Field.Named("mask", data.Value.UInt(13)),
+                    data.Field.Named("radius", data.Value.Real(12.0))
+                ])),
+                data.Field.Named("GAME.GameHealth", data.Object([
+                    data.Field.Named("current", data.Value.UInt(50)),
+                    data.Field.Named("maximum", data.Value.UInt(50))
+                ])),
+                data.Field.Named("GAME.GameMaterial", data.Object([
+                    data.Field.Named("absorption", data.Value.Real(1.0)),
+                    data.Field.Named("border_emission_color", data.Value.UInt(4291559679)),
+                    data.Field.Named("border_scene", data.Value.UInt(4291559679)),
+                    data.Field.Named("emission_color", data.Value.UInt(4291559679)),
+                    data.Field.Named("emission_intensity", data.Value.Real(0.01)),
+                    data.Field.Named("emission_multiplier", data.Value.Real(0.5)),
+                    data.Field.Named("scene", data.Value.UInt(336527615))
+                ])),
+                data.Field.Named("GAME.GameMovement", data.Object([
+                    data.Field.Named("speed", data.Value.Real(90.0))
+                ])),
+                data.Field.Named("GAME.GameSdfMotion", data.Object([
+                    data.Field.Named("angular_frequency", data.Value.Real(4.0)),
+                    data.Field.Named("temporal_frequency", data.Value.Real(3.0))
+                ])),
+                data.Field.Named("GAME.GameTransform", data.Object([
+                    data.Field.Named("x", data.Value.Real(640.0)),
+                    data.Field.Named("y", data.Value.Real(180.0))
+                ])),
+                data.Field.Named("GAME.GameVelocity", data.Object([]))
+            ])),
+            data.Field.Named("behaviors", data.List([
+                data.Value.Text("EnemyBehavior"),
+                data.Value.Text("HealthBehavior")
+            ]))
+        ])
+    )
+}

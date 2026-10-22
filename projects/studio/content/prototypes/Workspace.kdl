@@ -1,4 +1,0 @@
-name "Workspace"
-components {
-    Ui document="Workspace" hidden=#true
-}

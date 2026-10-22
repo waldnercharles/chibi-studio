@@ -191,7 +191,7 @@ static void set_acceleration(studio_fixture *f, int actor, float value)
 /* The Binding scene with its object's Object tab in Properties. */
 static studio_fixture binding_open(const char *search)
 {
-    studio_fixture f = fixture_open(PROJECT, PROJECT "/content/scenes/Binding.kdl", "Weapons");
+    studio_fixture f = fixture_open(PROJECT, PROJECT "/content/scenes/Binding.chibi", "Weapons");
     f.studio = studio_new(f.scene, f.viewport, "projects/studio");
     select_instance(f.scene, 0);
     show_object_properties(f.studio);
@@ -211,7 +211,22 @@ static void prototype_properties_follow_document()
     s->tab = STUDIO_TAB_SCENE;
     char error[256];
     assert(component_presentation_read(
-        "components { GAME.GameUi { tab \"Gameplay\"; }; }\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"GAME.GameUi\", data.Object([\n"
+        "                    data.Field.Named(\"tab\", "
+        "data.Value.Text(\"Gameplay\"))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
         (ecs_component_catalog){ f.scene->registry.components,
                                  f.scene->registry.component_count },
         &s->presentation.hints,

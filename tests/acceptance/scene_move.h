@@ -96,7 +96,20 @@ static bool large_source_read_limits(void)
         REQUIRE(fwrite(chunk, 1, bytes, file) == bytes);
         written += bytes;
     }
-    const char *suffix = "Large :: prototype {}";
+    const char *suffix =
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Large\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n";
     REQUIRE(fputs(suffix, file) >= 0);
     REQUIRE(!fclose(file));
     char *text = read_scene_file(path);
@@ -170,13 +183,108 @@ static bool static_source_dispatch_history(studio *host)
     snprintf(scene_path, sizeof scene_path, "%s/Unrelated.chibi", root);
     const char *folders[] = { "relationships", "prototypes" };
     const char *names[] = { "UndoTargets", "UndoEnemy" };
-    const char *before[] = { "UndoTargets :: relationship {exclusive:true}",
-                             "UndoEnemy :: prototype {Transform {x:1,y:0}}" };
-    const char *after[] = { "UndoTargets :: relationship {exclusive:false}",
-                            "UndoEnemy :: prototype {Transform {x:2,y:0}}" };
+    const char *before[] = {
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"UndoTargets\")),\n"
+        "            data.Field.Named(\"exclusive\", data.Value.Bool(true))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"UndoEnemy\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(1)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    };
+    const char *after[] = {
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"UndoTargets\")),\n"
+        "            data.Field.Named(\"exclusive\", data.Value.Bool(false))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"UndoEnemy\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(2)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    };
     const char *invalid[] = {
-        "UndoTargets :: relationship {exclusive:1}",
-        "UndoEnemy :: prototype {Transform {x:\"bad\",y:0}}"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"UndoTargets\")),\n"
+        "            data.Field.Named(\"exclusive\", data.Value.UInt(1))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"UndoEnemy\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", "
+        "data.Value.Text(\"bad\")),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
     };
     const app_editor_document_kind kinds[] = { APP_EDITOR_DOCUMENT_RELATIONSHIP,
                                                APP_EDITOR_DOCUMENT_PROTOTYPE };
@@ -410,10 +518,53 @@ static bool static_relationship_refresh(studio *host)
 {
     char root[] = "/tmp/chibi-studio-relation-XXXXXX", directory[256],
          prototypes[256], path[256], probe[256], error[256];
-    const char *before = "AcceptanceTargets :: relationship { exclusive:true }";
-    const char *after = "AcceptanceTargets :: relationship { exclusive:false }";
-    const char *prototype_source = "RegistryProbe :: prototype { "
-                                   "links:{AcceptanceTargets:[]} }";
+    const char *before = "package asset\n"
+                         "\n"
+                         "import data \"game:assets\"\n"
+                         "\n"
+                         "pub Build :: () -> byte[] {\n"
+                         "    return data.Encode(\n"
+                         "        data.Object([\n"
+                         "            data.Field.Named(\"name\", "
+                         "data.Value.Text(\"AcceptanceTargets\")),\n"
+                         "            data.Field.Named(\"exclusive\", "
+                         "data.Value.Bool(true))\n"
+                         "        ])\n"
+                         "    )\n"
+                         "}\n";
+    const char *after = "package asset\n"
+                        "\n"
+                        "import data \"game:assets\"\n"
+                        "\n"
+                        "pub Build :: () -> byte[] {\n"
+                        "    return data.Encode(\n"
+                        "        data.Object([\n"
+                        "            data.Field.Named(\"name\", "
+                        "data.Value.Text(\"AcceptanceTargets\")),\n"
+                        "            data.Field.Named(\"exclusive\", "
+                        "data.Value.Bool(false))\n"
+                        "        ])\n"
+                        "    )\n"
+                        "}\n";
+    const char *prototype_source =
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"RegistryProbe\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([])),\n"
+        "            data.Field.Named(\"links\", data.Object([\n"
+        "                data.Field.Named(\"AcceptanceTargets\", "
+        "data.List([]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n";
     REQUIRE(host && host->kit);
     REQUIRE(mkdtemp(root));
     move_fixture fixture = move_fixture_new_with_root(root);
@@ -484,8 +635,43 @@ static bool static_relationship_refresh(studio *host)
     studio_disk_frame(s);
     bool baseline = acount(s->records) == (saved_notice ? 1 : 0) &&
                     acount(fixture.scene->prototypes) == 0;
-    REQUIRE(!write_file_atomic(path, "AcceptanceTargets :: relationship { exclusive:1 }"));
-    REQUIRE(!write_file_atomic(probe, "RegistryProbe :: prototype { links:{AcceptanceTargets:[]} }\n"));
+    REQUIRE(!write_file_atomic(
+        path,
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"AcceptanceTargets\")),\n"
+        "            data.Field.Named(\"exclusive\", data.Value.UInt(1))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
+    REQUIRE(!write_file_atomic(
+        probe,
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"RegistryProbe\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([])),\n"
+        "            data.Field.Named(\"links\", data.Object([\n"
+        "                data.Field.Named(\"AcceptanceTargets\", "
+        "data.List([]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
     s->time = 1;
     studio_disk_frame(s);
     bool invalid_notice = acount(s->records) == 2 &&
@@ -560,8 +746,20 @@ static bool static_prototype_refresh(void)
 {
     char root[] = "/tmp/chibi-studio-prototype-XXXXXX", directory[256],
          paths[4][256], relationships[256], relationship[256];
-    const char
-        *relation = "AcceptanceTargets :: relationship { exclusive:true }";
+    const char *relation = "package asset\n"
+                           "\n"
+                           "import data \"game:assets\"\n"
+                           "\n"
+                           "pub Build :: () -> byte[] {\n"
+                           "    return data.Encode(\n"
+                           "        data.Object([\n"
+                           "            data.Field.Named(\"name\", "
+                           "data.Value.Text(\"AcceptanceTargets\")),\n"
+                           "            data.Field.Named(\"exclusive\", "
+                           "data.Value.Bool(true))\n"
+                           "        ])\n"
+                           "    )\n"
+                           "}\n";
     REQUIRE(mkdtemp(root));
     move_fixture fixture = move_fixture_new_with_root(root);
     app_scene_authoring *scene = fixture.scene;
@@ -572,11 +770,79 @@ static bool static_prototype_refresh(void)
                             "AcceptanceLeaf",
                             "AcceptanceNest" };
     const char *sources[] = {
-        "AcceptanceBase :: prototype { Transform {x:1, y:0} }",
-        "AcceptanceMiddle :: prototype(AcceptanceBase) {}",
-        "AcceptanceLeaf :: prototype(AcceptanceMiddle) {}",
-        "AcceptanceNest :: prototype { children:[{name:\"child\", "
-        "prototype:AcceptanceBase}] }"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"AcceptanceBase\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(1)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"AcceptanceMiddle\")),\n"
+        "            data.Field.Named(\"includes\", data.List([\n"
+        "                data.Value.Text(\"AcceptanceBase\")\n"
+        "            ])),\n"
+        "            data.Field.Named(\"components\", data.Object([]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"AcceptanceLeaf\")),\n"
+        "            data.Field.Named(\"includes\", data.List([\n"
+        "                data.Value.Text(\"AcceptanceMiddle\")\n"
+        "            ])),\n"
+        "            data.Field.Named(\"components\", data.Object([]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"AcceptanceNest\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([])),\n"
+        "            data.Field.Named(\"children\", data.List([\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"child\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"AcceptanceBase\"))\n"
+        "                ])\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
     };
     for (int i = 0; i < 4; i++) {
         snprintf(paths[i], sizeof paths[i], "%s/%s.chibi", directory, names[i]);
@@ -599,7 +865,28 @@ static bool static_prototype_refresh(void)
         !app_scene_authoring_read_prototype_field(scene, names[2], "Transform", "x", &value)
     );
     REQUIRE(value.type == PIN_F32 && value.f == 1);
-    REQUIRE(!write_file_atomic(paths[0], "AcceptanceBase :: prototype { Transform {x:2, y:0} }"));
+    REQUIRE(!write_file_atomic(
+        paths[0],
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"AcceptanceBase\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(2)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
     REQUIRE(app_scene_authoring_reload_path(scene, paths[0]) == APP_DISK_RELOADED);
     for (int i = 0; i < 3; i++) {
         REQUIRE(
@@ -620,8 +907,44 @@ static bool static_prototype_refresh(void)
     app_disk_change *changes = app_scene_authoring_sync_disk(scene, 0);
     bool baseline = !acount(changes);
     app_disk_changes_free(changes);
-    REQUIRE(!write_file_atomic(relationship, "AcceptanceTargets :: relationship { exclusive:1 }"));
-    REQUIRE(!write_file_atomic(paths[0], "AcceptanceBase :: prototype { Transform {x:20, y:0} }"));
+    REQUIRE(!write_file_atomic(
+        relationship,
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"AcceptanceTargets\")),\n"
+        "            data.Field.Named(\"exclusive\", data.Value.UInt(1))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
+    REQUIRE(!write_file_atomic(
+        paths[0],
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"AcceptanceBase\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(20)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
     changes = app_scene_authoring_sync_disk(scene, 1);
     float refreshed[4] = { 0 };
     bool propagated = true, reloaded = false;
@@ -645,7 +968,23 @@ static bool static_prototype_refresh(void)
 
     /* If both refreshes fail, the first relationship diagnostic wins. If
      * only prototype refresh fails, keep its error and failure result. */
-    REQUIRE(!write_file_atomic(paths[3], "AcceptanceBase :: prototype {}"));
+    REQUIRE(!write_file_atomic(
+        paths[3],
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"AcceptanceBase\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
     bool combined_failed = !app_scene_authoring_refresh_content(scene) &&
                            strstr(app_scene_authoring_message(scene), "Invalid relationship property or value type");
     REQUIRE(!write_file_atomic(relationship, relation));
@@ -678,7 +1017,28 @@ static bool static_prototype_refresh(void)
     REQUIRE(!write_prototype_field(scene, middle, "Transform", "x", edited));
     REQUIRE(middle->dirty);
     REQUIRE(acount(scene->tabs) == passive_tabs + 1 && scene->active_tab == passive_active);
-    REQUIRE(!write_file_atomic(paths[0], "AcceptanceBase :: prototype { Transform {x:3, y:0} }"));
+    REQUIRE(!write_file_atomic(
+        paths[0],
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"AcceptanceBase\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(3)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
     REQUIRE(app_scene_authoring_reload_path(scene, paths[0]) == APP_DISK_UNSAVED);
     REQUIRE(
         !app_scene_authoring_read_prototype_field(scene, names[1], "Transform", "x", &value)
@@ -721,7 +1081,11 @@ static bool static_prototype_refresh(void)
     char invalid_path[256], message[sizeof scene->message],
         prototype_message[sizeof scene->prototype_message];
     snprintf(invalid_path, sizeof invalid_path, "%s/Unloaded.chibi", directory);
-    REQUIRE(!write_file_atomic(invalid_path, "Unloaded :: prototype {"));
+    REQUIRE(!write_file_atomic(
+        invalid_path,
+        "package asset\n"
+        "pub Build :: () -> byte[] {"
+    ));
     REQUIRE(!app_scene_authoring_refresh_content(scene));
     REQUIRE(scene->message[0] && !find_prototype(scene, "Unloaded"));
     REQUIRE(!app_scene_authoring_refresh_asset_index(scene));
@@ -864,31 +1228,164 @@ static bool scene_move_contract()
     REQUIRE(
         app_scene_authoring_register_prototype(
             scene,
-            "name \"Mover\"\ncomponents { Transform x=0 y=0; "
-            "Orientation radians=0; Joint; "
-            "Appearance shape=\"Box\" width=4.0 height=4.0; }\n",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Mover\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"Transform\", data.Object([\n"
+            "                    data.Field.Named(\"x\", data.Value.UInt(0)),\n"
+            "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+            "                ])),\n"
+            "                data.Field.Named(\"Orientation\", data.Object([\n"
+            "                    data.Field.Named(\"radians\", "
+            "data.Value.UInt(0))\n"
+            "                ])),\n"
+            "                data.Field.Named(\"Joint\", data.Object([])),\n"
+            "                data.Field.Named(\"Appearance\", data.Object([\n"
+            "                    data.Field.Named(\"shape\", "
+            "data.Value.Text(\"Box\")),\n"
+            "                    data.Field.Named(\"width\", "
+            "data.Value.Real(4.0)),\n"
+            "                    data.Field.Named(\"height\", "
+            "data.Value.Real(4.0))\n"
+            "                ]))\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
             NULL
         ) == 0
     );
     REQUIRE(
         scene_authoring_load_text(
             scene,
-            "version 1\nname \"Scene\"\n(array)entities {\n"
-            " - name=\"Left\" prototype=\"Mover\" { components { Transform "
-            "x=100.0 y=0.0; "
-            "Orientation radians=1.5707964; Joint other=\"Left.A\"; }; "
-            "(array)children {\n"
-            "  - name=\"A\" prototype=\"Mover\" { components { Transform "
-            "x=10.0 y=0.0; }; }\n"
-            "  - name=\"B\" prototype=\"Mover\" { components { Transform "
-            "x=20.0 y=0.0; }; }\n"
-            "  - name=\"Clash\" prototype=\"Mover\"\n } }\n"
-            " - name=\"Right\" prototype=\"Mover\" { components { "
-            "Transform x=200.0 y=0.0; "
-            "Orientation radians=-1.5707964; Joint other=\"Right.A\"; "
-            "}; (array)children { - "
-            "name=\"Clash\" prototype=\"Mover\"; }; }\n"
-            " - name=\"C\" prototype=\"Mover\"\n}\n",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Scene\")),\n"
+            "            data.Field.Named(\"entities\", data.List([\n"
+            "                data.Object([\n"
+            "                    data.Field.Named(\"name\", "
+            "data.Value.Text(\"Left\")),\n"
+            "                    data.Field.Named(\"prototype\", "
+            "data.Value.Text(\"Mover\")),\n"
+            "                    data.Field.Named(\"components\", "
+            "data.Object([\n"
+            "                        data.Field.Named(\"Transform\", "
+            "data.Object([\n"
+            "                            data.Field.Named(\"x\", "
+            "data.Value.Real(100.0)),\n"
+            "                            data.Field.Named(\"y\", "
+            "data.Value.Real(0.0))\n"
+            "                        ])),\n"
+            "                        data.Field.Named(\"Orientation\", "
+            "data.Object([\n"
+            "                            data.Field.Named(\"radians\", "
+            "data.Value.Real(1.5707964))\n"
+            "                        ])),\n"
+            "                        data.Field.Named(\"Joint\", "
+            "data.Object([\n"
+            "                            data.Field.Named(\"other\", "
+            "data.Value.Text(\"Left.A\"))\n"
+            "                        ]))\n"
+            "                    ])),\n"
+            "                    data.Field.Named(\"children\", data.List([\n"
+            "                        data.Object([\n"
+            "                            data.Field.Named(\"name\", "
+            "data.Value.Text(\"A\")),\n"
+            "                            data.Field.Named(\"prototype\", "
+            "data.Value.Text(\"Mover\")),\n"
+            "                            data.Field.Named(\"components\", "
+            "data.Object([\n"
+            "                                data.Field.Named(\"Transform\", "
+            "data.Object([\n"
+            "                                    data.Field.Named(\"x\", "
+            "data.Value.Real(10.0)),\n"
+            "                                    data.Field.Named(\"y\", "
+            "data.Value.Real(0.0))\n"
+            "                                ]))\n"
+            "                            ]))\n"
+            "                        ]),\n"
+            "                        data.Object([\n"
+            "                            data.Field.Named(\"name\", "
+            "data.Value.Text(\"B\")),\n"
+            "                            data.Field.Named(\"prototype\", "
+            "data.Value.Text(\"Mover\")),\n"
+            "                            data.Field.Named(\"components\", "
+            "data.Object([\n"
+            "                                data.Field.Named(\"Transform\", "
+            "data.Object([\n"
+            "                                    data.Field.Named(\"x\", "
+            "data.Value.Real(20.0)),\n"
+            "                                    data.Field.Named(\"y\", "
+            "data.Value.Real(0.0))\n"
+            "                                ]))\n"
+            "                            ]))\n"
+            "                        ]),\n"
+            "                        data.Object([\n"
+            "                            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Clash\")),\n"
+            "                            data.Field.Named(\"prototype\", "
+            "data.Value.Text(\"Mover\"))\n"
+            "                        ])\n"
+            "                    ]))\n"
+            "                ]),\n"
+            "                data.Object([\n"
+            "                    data.Field.Named(\"name\", "
+            "data.Value.Text(\"Right\")),\n"
+            "                    data.Field.Named(\"prototype\", "
+            "data.Value.Text(\"Mover\")),\n"
+            "                    data.Field.Named(\"components\", "
+            "data.Object([\n"
+            "                        data.Field.Named(\"Transform\", "
+            "data.Object([\n"
+            "                            data.Field.Named(\"x\", "
+            "data.Value.Real(200.0)),\n"
+            "                            data.Field.Named(\"y\", "
+            "data.Value.Real(0.0))\n"
+            "                        ])),\n"
+            "                        data.Field.Named(\"Orientation\", "
+            "data.Object([\n"
+            "                            data.Field.Named(\"radians\", "
+            "data.Value.Real(-1.5707964))\n"
+            "                        ])),\n"
+            "                        data.Field.Named(\"Joint\", "
+            "data.Object([\n"
+            "                            data.Field.Named(\"other\", "
+            "data.Value.Text(\"Right.A\"))\n"
+            "                        ]))\n"
+            "                    ])),\n"
+            "                    data.Field.Named(\"children\", data.List([\n"
+            "                        data.Object([\n"
+            "                            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Clash\")),\n"
+            "                            data.Field.Named(\"prototype\", "
+            "data.Value.Text(\"Mover\"))\n"
+            "                        ])\n"
+            "                    ]))\n"
+            "                ]),\n"
+            "                data.Object([\n"
+            "                    data.Field.Named(\"name\", "
+            "data.Value.Text(\"C\")),\n"
+            "                    data.Field.Named(\"prototype\", "
+            "data.Value.Text(\"Mover\"))\n"
+            "                ])\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
             NULL
         ) == 0
     );
@@ -1079,25 +1576,143 @@ static bool scene_move_spatial_contract()
     REQUIRE(
         app_scene_authoring_register_prototype(
             scene,
-            "name \"Spatial\"\ncomponents { Transform3D { "
-            "rotation x=0.0 y=0.0 z=0.0 w=1.0; scale x=1.0 y=1.0 z=1.0; }; }\n",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Spatial\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"Transform3D\", data.Object([\n"
+            "                    data.Field.Named(\"rotation\", data.Object([\n"
+            "                        data.Field.Named(\"x\", "
+            "data.Value.Real(0.0)),\n"
+            "                        data.Field.Named(\"y\", "
+            "data.Value.Real(0.0)),\n"
+            "                        data.Field.Named(\"z\", "
+            "data.Value.Real(0.0)),\n"
+            "                        data.Field.Named(\"w\", "
+            "data.Value.Real(1.0))\n"
+            "                    ])),\n"
+            "                    data.Field.Named(\"scale\", data.Object([\n"
+            "                        data.Field.Named(\"x\", "
+            "data.Value.Real(1.0)),\n"
+            "                        data.Field.Named(\"y\", "
+            "data.Value.Real(1.0)),\n"
+            "                        data.Field.Named(\"z\", "
+            "data.Value.Real(1.0))\n"
+            "                    ]))\n"
+            "                ]))\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
             NULL
         ) == 0
     );
     REQUIRE(
         scene_authoring_load_text(
             scene,
-            "version 1\nname \"Scene\"\n(array)entities {\n"
-            " - name=\"Parent\" prototype=\"Spatial\" { components { "
-            "Transform3D { "
-            "position x=10.0 y=20.0 z=30.0; rotation x=0.0 y=0.0 z=0.70710677 "
-            "w=0.70710677; "
-            "scale x=2.0 y=2.0 z=2.0; }; }; }\n"
-            " - name=\"Object\" prototype=\"Spatial\" { components { "
-            "Transform3D { "
-            "position x=4.0 y=5.0 z=6.0; rotation x=0.18257418 y=0.36514837 "
-            "z=0.5477226 w=0.73029673; "
-            "scale x=1.0 y=2.0 z=3.0; }; }; }\n}\n",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Scene\")),\n"
+            "            data.Field.Named(\"entities\", data.List([\n"
+            "                data.Object([\n"
+            "                    data.Field.Named(\"name\", "
+            "data.Value.Text(\"Parent\")),\n"
+            "                    data.Field.Named(\"prototype\", "
+            "data.Value.Text(\"Spatial\")),\n"
+            "                    data.Field.Named(\"components\", "
+            "data.Object([\n"
+            "                        data.Field.Named(\"Transform3D\", "
+            "data.Object([\n"
+            "                            data.Field.Named(\"position\", "
+            "data.Object([\n"
+            "                                data.Field.Named(\"x\", "
+            "data.Value.Real(10.0)),\n"
+            "                                data.Field.Named(\"y\", "
+            "data.Value.Real(20.0)),\n"
+            "                                data.Field.Named(\"z\", "
+            "data.Value.Real(30.0))\n"
+            "                            ])),\n"
+            "                            data.Field.Named(\"rotation\", "
+            "data.Object([\n"
+            "                                data.Field.Named(\"x\", "
+            "data.Value.Real(0.0)),\n"
+            "                                data.Field.Named(\"y\", "
+            "data.Value.Real(0.0)),\n"
+            "                                data.Field.Named(\"z\", "
+            "data.Value.Real(0.70710677)),\n"
+            "                                data.Field.Named(\"w\", "
+            "data.Value.Real(0.70710677))\n"
+            "                            ])),\n"
+            "                            data.Field.Named(\"scale\", "
+            "data.Object([\n"
+            "                                data.Field.Named(\"x\", "
+            "data.Value.Real(2.0)),\n"
+            "                                data.Field.Named(\"y\", "
+            "data.Value.Real(2.0)),\n"
+            "                                data.Field.Named(\"z\", "
+            "data.Value.Real(2.0))\n"
+            "                            ]))\n"
+            "                        ]))\n"
+            "                    ]))\n"
+            "                ]),\n"
+            "                data.Object([\n"
+            "                    data.Field.Named(\"name\", "
+            "data.Value.Text(\"Object\")),\n"
+            "                    data.Field.Named(\"prototype\", "
+            "data.Value.Text(\"Spatial\")),\n"
+            "                    data.Field.Named(\"components\", "
+            "data.Object([\n"
+            "                        data.Field.Named(\"Transform3D\", "
+            "data.Object([\n"
+            "                            data.Field.Named(\"position\", "
+            "data.Object([\n"
+            "                                data.Field.Named(\"x\", "
+            "data.Value.Real(4.0)),\n"
+            "                                data.Field.Named(\"y\", "
+            "data.Value.Real(5.0)),\n"
+            "                                data.Field.Named(\"z\", "
+            "data.Value.Real(6.0))\n"
+            "                            ])),\n"
+            "                            data.Field.Named(\"rotation\", "
+            "data.Object([\n"
+            "                                data.Field.Named(\"x\", "
+            "data.Value.Real(0.18257418)),\n"
+            "                                data.Field.Named(\"y\", "
+            "data.Value.Real(0.36514837)),\n"
+            "                                data.Field.Named(\"z\", "
+            "data.Value.Real(0.5477226)),\n"
+            "                                data.Field.Named(\"w\", "
+            "data.Value.Real(0.73029673))\n"
+            "                            ])),\n"
+            "                            data.Field.Named(\"scale\", "
+            "data.Object([\n"
+            "                                data.Field.Named(\"x\", "
+            "data.Value.Real(1.0)),\n"
+            "                                data.Field.Named(\"y\", "
+            "data.Value.Real(2.0)),\n"
+            "                                data.Field.Named(\"z\", "
+            "data.Value.Real(3.0))\n"
+            "                            ]))\n"
+            "                        ]))\n"
+            "                    ]))\n"
+            "                ])\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
             NULL
         ) == 0
     );

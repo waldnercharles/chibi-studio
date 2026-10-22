@@ -1,5 +1,0 @@
-name "Settings"
-components {
-    Ui document="Settings" hidden=#true
-}
-(array)behaviors "Dismiss" "NavKeys"

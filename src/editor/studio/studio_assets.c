@@ -16,7 +16,7 @@
 #include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/asset_index.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/xalloc.h"
 #include "ui/popover.h"
 

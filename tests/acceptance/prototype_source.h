@@ -1,4 +1,5 @@
 #include "authoring/native_prototype.h"
+#include "authoring/source_asset.h"
 #include "editor/collab/protocol.h"
 
 /* A separate two-frame selector: four tiny prototype sources, three actors,
@@ -30,6 +31,205 @@ static bool bridge_property(
     snprintf(edit.args[1], sizeof edit.args[1], "%s", text);
     snprintf(edit.args[active ? 2 : 3], sizeof edit.args[0], "%s", axis);
     studio_properties_action(s, active ? "input" : "change", &edit);
+    return true;
+}
+
+static void bridge_parameter_source(
+    char *out,
+    size_t size,
+    const char *name,
+    const char *first,
+    const char *second,
+    bool reversed
+)
+{
+    int length = snprintf(
+        out,
+        size,
+        "package asset\nimport data \"game:assets\"\n"
+        "pub Parameters :: () -> data.Value { return data.Object(["
+        "data.Field.Named(\"%s\", data.Value.Int(%d)),"
+        "data.Field.Named(\"%s\", data.Value.Int(%d))]) }\n"
+        "pub Overrides :: () -> data.Value { return data.Object([]) }\n"
+        "pub Build :: () -> byte[] { return data.Encode(data.Object(["
+        "data.Field.Named(\"name\", data.Value.Text(\"%s\")),"
+        "data.Field.Named(\"parameters\", Parameters()),"
+        "data.Field.Named(\"overrides\", Overrides()),"
+        "data.Field.Named(\"components\", "
+        "data.Object([data.Field.Named(\"Transform\","
+        "data.Object([data.Field.Named(\"x\", data.Value.UInt(1))]))]))])) }\n",
+        first,
+        reversed ? 7 : 1,
+        second,
+        reversed ? 1 : 2,
+        name
+    );
+    assert(length > 0 && (size_t)length < size);
+}
+
+/* Parameters, computed inspector overrides and source share one history. This
+ * reuses Base after the existing inheritance assertions and adds no frames. */
+static bool bridge_computed_source(
+    studio *s,
+    const ecs_component_desc *transform,
+    int x,
+    const char *name,
+    const char *path
+)
+{
+    app_scene_authoring *scene = s->scene;
+    REQUIRE(!app_scene_authoring_open_prototype(scene, name));
+    scene_prototype_asset *asset = find_prototype(scene, name);
+    const char *
+        source = "package asset\n"
+                 "\n"
+                 "import data \"game:assets\"\n"
+                 "\n"
+                 "pub Parameters :: () -> data.Value {\n"
+                 "    return data.Object([data.Field.Named(\"amount\", "
+                 "data.Value.Real(2.0))])\n"
+                 "}\n"
+                 "\n"
+                 "pub Overrides :: () -> data.Value {\n"
+                 "    return data.Object([])\n"
+                 "}\n"
+                 "\n"
+                 "Twice :: (value: number) -> number {\n"
+                 "    return value * 2.0\n"
+                 "}\n"
+                 "\n"
+                 "MakeEnemy :: (parameters: data.Value) -> data.Value {\n"
+                 "    amount := data.AsReal(data.Get(parameters, \"amount\"))\n"
+                 "    return data.Object([\n"
+                 "        data.Field.Named(\"name\", "
+                 "data.Value.Text(\"SourceBridgeBase\")),\n"
+                 "        data.Field.Named(\"parameters\", parameters),\n"
+                 "        data.Field.Named(\"components\", data.Object([\n"
+                 "            data.Field.Named(\"Transform\", data.Object([\n"
+                 "                data.Field.Named(\"x\", "
+                 "data.Value.Real(Twice(amount))),\n"
+                 "                data.Field.Named(\"y\", "
+                 "data.Value.Real(7.0))\n"
+                 "            ]))\n"
+                 "        ]))\n"
+                 "    ])\n"
+                 "}\n"
+                 "\n"
+                 "pub Build :: () -> byte[] {\n"
+                 "    return "
+                 "data.Encode(data.ApplyPrototype(MakeEnemy(Parameters()), "
+                 "data.Object([\n"
+                 "        data.Field.Named(\"components\", Overrides()),\n"
+                 "        data.Field.Named(\"overrides\", Overrides())\n"
+                 "    ])))\n"
+                 "}\n";
+    char *before = xstrdup(asset_code_text(asset->source));
+    REQUIRE(studio_code_replace(s, path, before, source));
+    free(before);
+    REQUIRE(!asset_code_error(asset->source)[0]);
+    REQUIRE(bridge_field(scene, name, "x", 4));
+
+    properties_row parameter;
+    properties_parameter_row(path, "amount", 0, &parameter);
+    ui_activation change = { .argc = 4 };
+    properties_row_id(&parameter, change.args[0]);
+    snprintf(change.args[1], sizeof change.args[1], "3");
+    studio_properties_action(s, "input", &change);
+    snprintf(change.args[1], sizeof change.args[1], "4");
+    studio_properties_action(s, "change", &change);
+    REQUIRE(bridge_field(scene, name, "x", 8));
+    REQUIRE(!prototype_undo(scene));
+    REQUIRE(bridge_field(scene, name, "x", 4));
+    REQUIRE(!prototype_redo(scene));
+    REQUIRE(bridge_field(scene, name, "x", 8));
+    REQUIRE(bridge_property(s, transform, x, name, "", "12", false));
+    REQUIRE(bridge_field(scene, name, "x", 12));
+    authoring_prototype_field_source field;
+    REQUIRE(
+        authoring_prototype_source_field(asset_code_text(asset->source), "Transform", "x", &field)
+    );
+    REQUIRE(field.computed && field.overridden);
+    REQUIRE(strstr(asset_code_text(asset->source), "Twice(amount)"));
+    snprintf(change.args[1], sizeof change.args[1], "5");
+    studio_properties_action(s, "change", &change);
+    REQUIRE(bridge_field(scene, name, "x", 12));
+
+    properties_row row = { .kind = PROPERTIES_PROTOTYPE,
+                           .component = transform->id,
+                           .field = x };
+    snprintf(row.prototype, sizeof row.prototype, "%s", name);
+    ui_activation reset = { .argc = 1 };
+    properties_row_id(&row, reset.args[0]);
+    studio_properties_action(s, "resetOverride", &reset);
+    REQUIRE(bridge_field(scene, name, "x", 10));
+    REQUIRE(
+        authoring_prototype_source_field(asset_code_text(asset->source), "Transform", "x", &field)
+    );
+    REQUIRE(field.computed && !field.overridden);
+    REQUIRE(!prototype_undo(scene));
+    REQUIRE(bridge_field(scene, name, "x", 12));
+    REQUIRE(!prototype_redo(scene));
+    REQUIRE(bridge_field(scene, name, "x", 10));
+    studio_save(s);
+    REQUIRE(!asset_code_dirty(asset->source));
+    char *saved = file_read_text(path);
+    REQUIRE(saved && strstr(saved, "Twice(amount)"));
+    REQUIRE(!scene_prototype_source_reload(scene, asset));
+    REQUIRE(!strcmp(asset_code_text(asset->source), saved));
+    free(saved);
+    REQUIRE(bridge_field(scene, name, "x", 10));
+
+    /* Names may exceed a row id. Full-name identity rejects stale indices and
+       queued actions after another prototype with the same key is selected. */
+    char short_name[128], long_name[160], long_source[4096];
+    memset(short_name, 'p', sizeof short_name - 1);
+    short_name[sizeof short_name - 1] = 0;
+    snprintf(long_name, sizeof long_name, "%s_tail", short_name);
+    bridge_parameter_source(long_source, sizeof long_source, "SourceBridgeBase", short_name, long_name, false);
+    before = xstrdup(asset_code_text(asset->source));
+    REQUIRE(studio_code_replace(s, path, before, long_source));
+    free(before);
+    properties_parameter_row(path, long_name, 1, &parameter);
+    properties_row_id(&parameter, change.args[0]);
+    snprintf(change.args[1], sizeof change.args[1], "7");
+    studio_properties_action(s, "change", &change);
+    av_doc *parameters = authoring_prototype_source_parameters(
+        asset_code_text(asset->source),
+        NULL,
+        0
+    );
+    REQUIRE(
+        parameters && av_get_int(av_obj_get(av_doc_root(parameters), short_name)) == 1 &&
+        av_get_int(av_obj_get(av_doc_root(parameters), long_name)) == 7
+    );
+    av_doc_free(parameters);
+    bridge_parameter_source(long_source, sizeof long_source, "SourceBridgeBase", long_name, short_name, true);
+    before = xstrdup(asset_code_text(asset->source));
+    REQUIRE(studio_code_replace(s, path, before, long_source));
+    free(before);
+    studio_properties_action(s, "change", &change);
+    REQUIRE(!strcmp(asset_code_text(asset->source), long_source));
+
+    scene_prototype_asset *other = find_prototype(scene, "SourceBridge");
+    REQUIRE(other && !app_scene_authoring_open_prototype(scene, "SourceBridge"));
+    bridge_parameter_source(long_source, sizeof long_source, "SourceBridge", short_name, long_name, false);
+    before = xstrdup(asset_code_text(other->source));
+    REQUIRE(studio_code_replace(s, other->path, before, long_source));
+    free(before);
+    studio_properties_action(s, "change", &change);
+    REQUIRE(!strcmp(asset_code_text(other->source), long_source));
+    properties_parameter_row(other->path, long_name, 1, &parameter);
+    ui_activation current = { .argc = 3 };
+    properties_row_id(&parameter, current.args[0]);
+    snprintf(current.args[1], sizeof current.args[1], "9");
+    studio_properties_action(s, "input", &current);
+    char group[sizeof s->prototype_edit];
+    snprintf(group, sizeof group, "%s", s->prototype_edit);
+    REQUIRE(group[0]);
+    before = xstrdup(asset_code_text(other->source));
+    studio_properties_action(s, "change", &change);
+    REQUIRE(!strcmp(asset_code_text(other->source), before) && !strcmp(s->prototype_edit, group));
+    free(before);
     return true;
 }
 
@@ -164,11 +364,84 @@ static bool prototype_source_contract(studio *s)
                             "SourceBridgeApply",
                             "SourceBridgeReverse" };
     const char *sources[] = {
-        "SourceBridgeBase :: prototype { Transform {x:10,y:7} }\n",
-        "// keep this comment\nSourceBridge :: prototype(SourceBridgeBase) { "
-        "Transform {x:1} }\n",
-        "SourceBridgeApply :: prototype { Transform {x:1,y:2} }\n",
-        "SourceBridgeReverse :: prototype { Transform {x:4,y:5} }\n"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"SourceBridgeBase\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(10)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(7))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "// keep this comment\n"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"SourceBridge\")),\n"
+        "            data.Field.Named(\"includes\", data.List([\n"
+        "                data.Value.Text(\"SourceBridgeBase\")\n"
+        "            ])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(1))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"SourceBridgeApply\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(1)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(2))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"SourceBridgeReverse\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(4)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(5))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
     };
     for (int i = 0; i < 4; i++) {
         int n = snprintf(
@@ -336,7 +609,13 @@ static bool prototype_source_contract(studio *s)
     /* Text and Properties see the same draft. Invalid syntax and a valid
        identity-changing draft retain the last accepted model and overlay. */
     char *accepted = xstrdup(asset_code_text(code));
-    REQUIRE(studio_code_replace(s, paths[1], accepted, "SourceBridge :: prototype {"));
+    REQUIRE(studio_code_replace(
+        s,
+        paths[1],
+        accepted,
+        "package asset\n"
+        "pub Build :: () -> byte[] {"
+    ));
     const void *invalid_step = asset_code_step(code);
     REQUIRE(
         app_scene_authoring_set_prototype_field(
@@ -349,13 +628,37 @@ static bool prototype_source_contract(studio *s)
     );
     REQUIRE(
         asset_code_step(code) == invalid_step &&
-        !strcmp(asset_code_text(code), "SourceBridge :: prototype {")
+        !strcmp(
+            asset_code_text(code),
+            "package asset\n"
+            "pub Build :: () -> byte[] {"
+        )
     );
     REQUIRE(!prototype_undo(scene));
     REQUIRE(!strcmp(asset_code_text(code), accepted));
-    REQUIRE(
-        studio_code_replace(s, paths[1], accepted, "WrongBridgeName :: prototype {Transform{x:99}}")
-    );
+    REQUIRE(studio_code_replace(
+        s,
+        paths[1],
+        accepted,
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"WrongBridgeName\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(99))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
     REQUIRE(asset_code_error(code)[0]);
     REQUIRE(text_overlay_text(paths[1]) && !strcmp(text_overlay_text(paths[1]), accepted));
     REQUIRE(!prototype_undo(scene));
@@ -365,8 +668,28 @@ static bool prototype_source_contract(studio *s)
        explicit Save performs the pending application and clears its hold. */
     s->prefs.code_apply_live = false;
     char *before_held = xstrdup(asset_code_text(code));
-    const char *held_text = "SourceBridge :: prototype(SourceBridgeBase) { "
-                            "Transform {x:18,y:9} }";
+    const char *held_text =
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"SourceBridge\")),\n"
+        "            data.Field.Named(\"includes\", data.List([\n"
+        "                data.Value.Text(\"SourceBridgeBase\")\n"
+        "            ])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(18)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(9))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n";
     REQUIRE(studio_code_replace(s, paths[1], before_held, held_text));
     REQUIRE(asset_code_runtime_held(code));
     REQUIRE(!app_scene_authoring_open_prototype(scene, names[1]));
@@ -379,7 +702,7 @@ static bool prototype_source_contract(studio *s)
     REQUIRE(!asset_code_runtime_held(code));
     s->prefs.code_apply_live = true;
     char *saved = file_read_text(paths[1]);
-    REQUIRE(saved && strstr(saved, ":: prototype") && !asset_code_dirty(code));
+    REQUIRE(saved && strstr(saved, "pub Build") && !asset_code_dirty(code));
     REQUIRE(asset_code_can_replay(code, false));
     REQUIRE(!prototype_undo(scene));
     REQUIRE(asset_code_dirty(code));
@@ -423,12 +746,52 @@ static bool prototype_source_contract(studio *s)
        source history. Scene Undo restores source using a recoverable step. */
     REQUIRE(!scene_authoring_load_text(
         scene,
-        "version 1\nname \"Scene\"\n"
-        "(array)entities { - name=\"Source\" prototype=\"SourceBridgeApply\" { "
-        "components {Transform x=20.0;}; }\n"
-        "- name=\"Peer\" prototype=\"SourceBridgeApply\"\n"
-        "- name=\"Override\" prototype=\"SourceBridgeApply\" { components "
-        "{Transform x=30.0;}; } }",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Scene\")),\n"
+        "            data.Field.Named(\"entities\", data.List([\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Source\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"SourceBridgeApply\")),\n"
+        "                    data.Field.Named(\"components\", data.Object([\n"
+        "                        data.Field.Named(\"Transform\", "
+        "data.Object([\n"
+        "                            data.Field.Named(\"x\", "
+        "data.Value.Real(20.0))\n"
+        "                        ]))\n"
+        "                    ]))\n"
+        "                ]),\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Peer\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"SourceBridgeApply\"))\n"
+        "                ]),\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Override\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"SourceBridgeApply\")),\n"
+        "                    data.Field.Named(\"components\", data.Object([\n"
+        "                        data.Field.Named(\"Transform\", "
+        "data.Object([\n"
+        "                            data.Field.Named(\"x\", "
+        "data.Value.Real(30.0))\n"
+        "                        ]))\n"
+        "                    ]))\n"
+        "                ])\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
         NULL
     ));
     REQUIRE(acount(scene->actors) == 3);
@@ -512,7 +875,8 @@ static bool prototype_source_contract(studio *s)
         text_overlay_text(paths[2]) &&
         !strcmp(text_overlay_text(paths[2]), applied->source_accepted)
     );
-    const char *invalid_apply = "SourceBridgeApply :: prototype {";
+    const char *invalid_apply = "package asset\n"
+                                "pub Build :: () -> byte[] {";
     REQUIRE(studio_code_replace(s, paths[2], deleted_text, invalid_apply));
     const void *missing_invalid_step = asset_code_step(deleted_source);
     /* One checkpoint covers both a rejected identity draft and the populated
@@ -521,9 +885,29 @@ static bool prototype_source_contract(studio *s)
     asset = find_prototype(scene, names[1]);
     code = asset->source;
     accepted = xstrdup(asset_code_text(code));
-    REQUIRE(
-        studio_code_replace(s, paths[1], accepted, "WrongBridgeName :: prototype {Transform{x:99}}")
-    );
+    REQUIRE(studio_code_replace(
+        s,
+        paths[1],
+        accepted,
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"WrongBridgeName\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(99))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
     char *checkpoint = app_scene_authoring_checkpoint(scene);
     REQUIRE(checkpoint);
     move_fixture restored = move_fixture_new_with_root(scene->content_root);
@@ -536,9 +920,27 @@ static bool prototype_source_contract(studio *s)
         restored_asset && restored_asset->source &&
         asset_code_error(restored_asset->source)[0]
     );
-    REQUIRE(
-        !strcmp(asset_code_text(restored_asset->source), "WrongBridgeName :: prototype {Transform{x:99}}")
-    );
+    REQUIRE(!strcmp(
+        asset_code_text(restored_asset->source),
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"WrongBridgeName\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(99))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
     REQUIRE(!strcmp(restored_asset->source_accepted, accepted));
     scene_prototype_asset *restored_apply = find_prototype(restored.scene, names[2]);
     REQUIRE(restored_apply && restored_apply->source);
@@ -636,9 +1038,30 @@ static bool prototype_source_contract(studio *s)
        missing behavior can follow a successful attach on an earlier actor;
        reversing the source reconciles every touched identity, not just the
        last completely applied model. */
-    const char
-        *unapplied = "SourceBridgeApply :: prototype { Transform {x:20,y:2} "
-                     "behaviors:[Counter,UnavailableBridgeBehavior]; }";
+    const char *unapplied =
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"SourceBridgeApply\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(20)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(2))\n"
+        "                ]))\n"
+        "            ])),\n"
+        "            data.Field.Named(\"behaviors\", data.List([\n"
+        "                data.Value.Text(\"Counter\"),\n"
+        "                data.Value.Text(\"UnavailableBridgeBehavior\")\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n";
     REQUIRE(
         scene_prototype_source_accept(scene, applied, text, unapplied, false, true, error, sizeof error) > 0
     );
@@ -690,6 +1113,7 @@ static bool prototype_source_contract(studio *s)
         );
     }
     free(text);
+    REQUIRE(bridge_computed_source(s, transform, x, names[0], paths[0]));
     for (int i = 0; i < 4; i++) {
         REQUIRE(!unlink(paths[i]));
     }

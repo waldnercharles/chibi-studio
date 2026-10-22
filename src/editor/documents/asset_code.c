@@ -9,7 +9,7 @@
 #include "execution/backend.h"
 #include "graph/document/serialize.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/file_io.h"
 #include "support/text_edit.h"
 #include "support/text_overlay.h"
@@ -38,7 +38,7 @@ struct asset_code
     char *metadata;  /* Editor state snapshot; never saved to the project. */
     char *view_text; /* Last displayed/reported managed widget text; never checkpointed. */
     char *content_root;
-    asset_source *source; /* Declarative KDL only. */
+    asset_source *source;  /* Compiled asset documents. */
     script_syntax *syntax; /* Canonical draft before project context is attached. */
     authoring_sources *working, *last_valid, *execution;
     const authoring_source *facts;
@@ -47,7 +47,7 @@ struct asset_code
     authoring_source_presentation *presentation, *valid_presentation,
         *execution_presentation;
     preview_world *world; /* Bound scene; semantic generations are retained independently. */
-    behavior_asset *candidate, *shared; /* Native KDL graph documents only. */
+    behavior_asset *candidate, *shared; /* Compiled graph asset documents. */
     const behavior_asset *shared_asset;
     unsigned shared_revision;
     bool source_pending, replaying, runtime_held, graph_draft, native_view,
@@ -92,42 +92,15 @@ static void position(const char *text, int offset, int *line, int *column)
 static kit_code_editor *create_view(asset_code *c, const char *text)
 {
     size_t length = strlen(c->path), suffix = strlen(CODE_ASSET_EXTENSION);
-    c->native_view = length >= suffix &&
-                     !strcmp(c->path + length - suffix, CODE_ASSET_EXTENSION);
-    if (c->native_view) {
-        script_syntax *syntax = script_parse(text);
-        TSNode root = ts_tree_root_node(syntax->tree);
-        c->relationship_source = strstr(c->path, "/relationships/") != NULL;
-        c->static_source = strstr(c->path, "/prototypes/") || c->relationship_source;
-        bool static_path = c->static_source;
-        for (uint32_t i = 0; i < ts_node_named_child_count(root); i++) {
-            const char *kind = ts_node_type(ts_node_named_child(root, i));
-            c->static_source |= !strcmp(kind, "prototype_declaration") ||
-                                !strcmp(kind, "relationship_declaration");
-            if (!static_path && !strcmp(kind, "relationship_declaration")) {
-                c->relationship_source = true;
-            }
-        }
-        script_syntax_free(syntax);
-        c->native_view = !c->static_source;
-    }
-    if (!c->native_view && !c->static_source &&
-        !(length >= strlen(DECLARATIVE_ASSET_EXTENSION) &&
-          !strcmp(c->path + length - strlen(DECLARATIVE_ASSET_EXTENSION), DECLARATIVE_ASSET_EXTENSION))) {
-        script_syntax *syntax = script_parse(text);
-        TSNode root = ts_tree_root_node(syntax->tree);
-        for (uint32_t i = 0; i < ts_node_named_child_count(root); i++) {
-            const char *type = ts_node_type(ts_node_named_child(root, i));
-            if (!strcmp(type, "behavior") || !strcmp(type, "library") ||
-                !strcmp(type, "system")) {
-                c->native_view = true;
-                break;
-            }
-        }
-        script_syntax_free(syntax);
-    }
+    bool code = length >= suffix &&
+                !strcmp(c->path + length - suffix, CODE_ASSET_EXTENSION);
+    c->relationship_source = code && strstr(c->path, "/relationships/") != NULL;
+    c->static_source = code &&
+                       (strstr(c->path, "/prototypes/") || c->relationship_source);
+    c->native_view = code && !c->static_source && !asset_document_source(text);
     return kit_code_editor_create(text);
 }
+
 static const authoring_source *find_source(const authoring_sources *sources, const char *path)
 {
     for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
@@ -896,8 +869,8 @@ static void understand_with_metadata(asset_code *c, const char *text, const char
                 : layout ? xstrdup(layout)
                          : NULL;
     free(layout);
-    /* Only text a graph follows waits for validation; other KDL is checked
-       as it parses. */
+    /* Only text a graph follows waits for validation; other asset source is
+       checked as it parses. */
     c->source_pending = c->native_view || c->candidate;
     c->replaying = false;
     c->graph_draft = false;
@@ -1620,8 +1593,8 @@ void asset_code_refresh(asset_code *c)
         text = asset_code_merge_source(c->disk, c->text, disk);
     } else {
         char error[256];
-        av_doc *base = av_doc_read(c->disk, error, sizeof error),
-               *incoming = av_doc_read(disk, error, sizeof error);
+        av_doc *base = asset_document_read(c->disk, error, sizeof error),
+               *incoming = asset_document_read(disk, error, sizeof error);
         av_doc *merged = av_doc_new();
         bool ok = base && incoming && c->source->document;
         if (ok) {
@@ -2039,8 +2012,7 @@ kit_code_result asset_code_draw_input(
                               : c->completions.start;
     desc.hover = local ? NULL : c->hover;
     desc.history = true;
-    /* KDL names take hyphens; .chibi names are C's. */
-    desc.word_chars = c->native_view || c->static_source ? NULL : "-";
+    desc.word_chars = NULL;
     if (!local) {
         link_symbol(c, &desc);
     }

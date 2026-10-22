@@ -84,7 +84,7 @@ static const uint32_t PROTOTYPE_ICONS[COMPONENT_ICON_COUNT] = {
 };
 
 /* A prototype's icon follows from what it is made of, never from its name: of
-   the icons its components name in editor/Components.kdl, the first in
+   the icons its components name in editor/Components.chibi, the first in
    component_icon order decides. */
 uint32_t studio_prototype_icon(const studio *s, const char *prototype_name)
 {
@@ -1914,7 +1914,7 @@ static void track_pointer(studio *s)
     }
 }
 
-/* editor/Components.kdl applies without a restart. An invalid edit keeps the
+/* editor/Components.chibi applies without a restart. An invalid edit keeps the
    last valid file; the engine's presentation applies while it is missing. */
 static void sync_presentation(studio *s)
 {

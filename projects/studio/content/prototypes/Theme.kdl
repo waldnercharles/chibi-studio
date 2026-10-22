@@ -1,4 +1,0 @@
-name "Theme"
-components {
-    Ui document="ThemeTokens" hidden=#true
-}

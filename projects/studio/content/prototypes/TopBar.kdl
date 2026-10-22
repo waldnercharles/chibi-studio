@@ -1,4 +1,0 @@
-name "TopBar"
-components {
-    Ui document="TopBar" hidden=#true
-}

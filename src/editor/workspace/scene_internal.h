@@ -241,7 +241,6 @@ struct app_scene_authoring
     bool studio_project; /* Studio's own project, whose behaviors call the editor nodes */
     studio_node_service studio_nodes; /* those calls' service, run by the window's Studio */
     tree_watch disk;  /* declarative content files as last loaded or saved */
-    tree_watch code_disk;
     char **disk_pending; /* changes waiting for the runtime to stop */
     int selected;
     /* The selection each recent step began and ended with (scene_actors.c). */
@@ -445,6 +444,7 @@ bool prototype_has_component_id(const prototype *prototype, ecs_component_id id)
 /* The registry's component `name`, or NULL. */
 const ecs_component_desc *component_descriptor(const app_scene_authoring *scene, const char *name);
 /* The live world and the prototype preview spawn the prototype as it is now. */
+int scene_register_prototype_value(app_scene_authoring *, const av_value *, const char *path);
 int register_prototype_hosts(app_scene_authoring *scene, const prototype *prototype);
 
 /* Hierarchy edits use actor identities in history/checkpoints, never ECS slots. */

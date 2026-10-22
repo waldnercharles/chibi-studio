@@ -1,0 +1,294 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(1)),
+            data.Field.Named("name", data.Value.Text("Arena 3D")),
+            data.Field.Named("presentation", data.Value.Text("3d")),
+            data.Field.Named("entities", data.List([
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Arena")),
+                    data.Field.Named("prototype", data.Value.Text("ArenaFloor"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Encounter")),
+                    data.Field.Named("prototype", data.Value.Text("ArenaEncounter")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("ArenaWaveBehavior")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Player")),
+                    data.Field.Named("prototype", data.Value.Text("ArenaPlayer")),
+                    data.Field.Named("behaviors", data.List([
+                        data.Value.Text("TwinStickInputBehavior"),
+                        data.Value.Text("TwinStickWeaponBehavior"),
+                        data.Value.Text("HealthBehavior"),
+                        data.Value.Text("PlayerContactBehavior"),
+                        data.Value.Text("ArenaShipMotionBehavior"),
+                        data.Value.Text("CombatFeedback"),
+                        data.Value.Text("ArenaImpactFeedback")
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Phase Warden")),
+                    data.Field.Named("prototype", data.Value.Text("PhaseWarden"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Boundary 1")),
+                    data.Field.Named("prototype", data.Value.Text("ArenaWallHorizontal")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameTransform", data.Object([
+                            data.Field.Named("x", data.Value.Real(39.83717)),
+                            data.Field.Named("y", data.Value.Real(-265.0))
+                        ])),
+                        data.Field.Named("GameOrientation", data.Object([
+                            data.Field.Named("radians", data.Value.Real(-1.0471976))
+                        ])),
+                        data.Field.Named("GameGeometry3D", data.Object([
+                            data.Field.Named("primitive", data.Value.UInt(0)),
+                            data.Field.Named("width", data.Value.Real(205.2273)),
+                            data.Field.Named("depth", data.Value.Real(1.6)),
+                            data.Field.Named("height", data.Value.Real(2.0)),
+                            data.Field.Named("elevation", data.Value.Real(0.0))
+                        ])),
+                        data.Field.Named("GameCollider", data.Object([
+                            data.Field.Named("radius", data.Value.Real(0.0)),
+                            data.Field.Named("category", data.Value.UInt(8)),
+                            data.Field.Named("mask", data.Value.UInt(7)),
+                            data.Field.Named("shape", data.Value.Text("Box")),
+                            data.Field.Named("width", data.Value.Real(208.2273)),
+                            data.Field.Named("height", data.Value.Real(4.0)),
+                            data.Field.Named("sensor", data.Value.Bool(false)),
+                            data.Field.Named("ignore_entity", data.Value.Null)
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Boundary 2")),
+                    data.Field.Named("prototype", data.Value.Text("ArenaWallHorizontal")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameTransform", data.Object([
+                            data.Field.Named("x", data.Value.Real(323.31616)),
+                            data.Field.Named("y", data.Value.Real(-354.0))
+                        ])),
+                        data.Field.Named("GameOrientation", data.Object([
+                            data.Field.Named("radians", data.Value.Real(0.0))
+                        ])),
+                        data.Field.Named("GameGeometry3D", data.Object([
+                            data.Field.Named("primitive", data.Value.UInt(0)),
+                            data.Field.Named("width", data.Value.Real(463.88022)),
+                            data.Field.Named("depth", data.Value.Real(1.6)),
+                            data.Field.Named("height", data.Value.Real(2.0)),
+                            data.Field.Named("elevation", data.Value.Real(0.0))
+                        ])),
+                        data.Field.Named("GameCollider", data.Object([
+                            data.Field.Named("radius", data.Value.Real(0.0)),
+                            data.Field.Named("category", data.Value.UInt(8)),
+                            data.Field.Named("mask", data.Value.UInt(7)),
+                            data.Field.Named("shape", data.Value.Text("Box")),
+                            data.Field.Named("width", data.Value.Real(466.88022)),
+                            data.Field.Named("height", data.Value.Real(4.0)),
+                            data.Field.Named("sensor", data.Value.Bool(false)),
+                            data.Field.Named("ignore_entity", data.Value.Null)
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Boundary 3")),
+                    data.Field.Named("prototype", data.Value.Text("ArenaWallHorizontal")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameTransform", data.Object([
+                            data.Field.Named("x", data.Value.Real(606.7951)),
+                            data.Field.Named("y", data.Value.Real(-265.0))
+                        ])),
+                        data.Field.Named("GameOrientation", data.Object([
+                            data.Field.Named("radians", data.Value.Real(1.0471976))
+                        ])),
+                        data.Field.Named("GameGeometry3D", data.Object([
+                            data.Field.Named("primitive", data.Value.UInt(0)),
+                            data.Field.Named("width", data.Value.Real(205.2273)),
+                            data.Field.Named("depth", data.Value.Real(1.6)),
+                            data.Field.Named("height", data.Value.Real(2.0)),
+                            data.Field.Named("elevation", data.Value.Real(0.0))
+                        ])),
+                        data.Field.Named("GameCollider", data.Object([
+                            data.Field.Named("radius", data.Value.Real(0.0)),
+                            data.Field.Named("category", data.Value.UInt(8)),
+                            data.Field.Named("mask", data.Value.UInt(7)),
+                            data.Field.Named("shape", data.Value.Text("Box")),
+                            data.Field.Named("width", data.Value.Real(208.2273)),
+                            data.Field.Named("height", data.Value.Real(4.0)),
+                            data.Field.Named("sensor", data.Value.Bool(false)),
+                            data.Field.Named("ignore_entity", data.Value.Null)
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Boundary 4")),
+                    data.Field.Named("prototype", data.Value.Text("ArenaWallHorizontal")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameTransform", data.Object([
+                            data.Field.Named("x", data.Value.Real(606.7951)),
+                            data.Field.Named("y", data.Value.Real(-87.0))
+                        ])),
+                        data.Field.Named("GameOrientation", data.Object([
+                            data.Field.Named("radians", data.Value.Real(2.0943952))
+                        ])),
+                        data.Field.Named("GameGeometry3D", data.Object([
+                            data.Field.Named("primitive", data.Value.UInt(0)),
+                            data.Field.Named("width", data.Value.Real(205.2273)),
+                            data.Field.Named("depth", data.Value.Real(1.6)),
+                            data.Field.Named("height", data.Value.Real(2.0)),
+                            data.Field.Named("elevation", data.Value.Real(0.0))
+                        ])),
+                        data.Field.Named("GameCollider", data.Object([
+                            data.Field.Named("radius", data.Value.Real(0.0)),
+                            data.Field.Named("category", data.Value.UInt(8)),
+                            data.Field.Named("mask", data.Value.UInt(7)),
+                            data.Field.Named("shape", data.Value.Text("Box")),
+                            data.Field.Named("width", data.Value.Real(208.2273)),
+                            data.Field.Named("height", data.Value.Real(4.0)),
+                            data.Field.Named("sensor", data.Value.Bool(false)),
+                            data.Field.Named("ignore_entity", data.Value.Null)
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Boundary 5")),
+                    data.Field.Named("prototype", data.Value.Text("ArenaWallHorizontal")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameTransform", data.Object([
+                            data.Field.Named("x", data.Value.Real(323.31616)),
+                            data.Field.Named("y", data.Value.Real(2.0))
+                        ])),
+                        data.Field.Named("GameOrientation", data.Object([
+                            data.Field.Named("radians", data.Value.Real(3.1415927))
+                        ])),
+                        data.Field.Named("GameGeometry3D", data.Object([
+                            data.Field.Named("primitive", data.Value.UInt(0)),
+                            data.Field.Named("width", data.Value.Real(463.88022)),
+                            data.Field.Named("depth", data.Value.Real(1.6)),
+                            data.Field.Named("height", data.Value.Real(2.0)),
+                            data.Field.Named("elevation", data.Value.Real(0.0))
+                        ])),
+                        data.Field.Named("GameCollider", data.Object([
+                            data.Field.Named("radius", data.Value.Real(0.0)),
+                            data.Field.Named("category", data.Value.UInt(8)),
+                            data.Field.Named("mask", data.Value.UInt(7)),
+                            data.Field.Named("shape", data.Value.Text("Box")),
+                            data.Field.Named("width", data.Value.Real(466.88022)),
+                            data.Field.Named("height", data.Value.Real(4.0)),
+                            data.Field.Named("sensor", data.Value.Bool(false)),
+                            data.Field.Named("ignore_entity", data.Value.Null)
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Boundary 6")),
+                    data.Field.Named("prototype", data.Value.Text("ArenaWallHorizontal")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameTransform", data.Object([
+                            data.Field.Named("x", data.Value.Real(39.83717)),
+                            data.Field.Named("y", data.Value.Real(-87.0))
+                        ])),
+                        data.Field.Named("GameOrientation", data.Object([
+                            data.Field.Named("radians", data.Value.Real(-2.0943952))
+                        ])),
+                        data.Field.Named("GameGeometry3D", data.Object([
+                            data.Field.Named("primitive", data.Value.UInt(0)),
+                            data.Field.Named("width", data.Value.Real(205.2273)),
+                            data.Field.Named("depth", data.Value.Real(1.6)),
+                            data.Field.Named("height", data.Value.Real(2.0)),
+                            data.Field.Named("elevation", data.Value.Real(0.0))
+                        ])),
+                        data.Field.Named("GameCollider", data.Object([
+                            data.Field.Named("radius", data.Value.Real(0.0)),
+                            data.Field.Named("category", data.Value.UInt(8)),
+                            data.Field.Named("mask", data.Value.UInt(7)),
+                            data.Field.Named("shape", data.Value.Text("Box")),
+                            data.Field.Named("width", data.Value.Real(208.2273)),
+                            data.Field.Named("height", data.Value.Real(4.0)),
+                            data.Field.Named("sensor", data.Value.Bool(false)),
+                            data.Field.Named("ignore_entity", data.Value.Null)
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Environment")),
+                    data.Field.Named("prototype", data.Value.Text("ArenaEnvironment"))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Space Dash")),
+                    data.Field.Named("prototype", data.Value.Text("ActionBinding")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameActionBinding", data.Object([
+                            data.Field.Named("source", data.Value.Text("Space")),
+                            data.Field.Named("action", data.Value.Text("Dash")),
+                            data.Field.Named("firing", data.Value.Bool(false))
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Shift Dash")),
+                    data.Field.Named("prototype", data.Value.Text("ActionBinding")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameActionBinding", data.Object([
+                            data.Field.Named("source", data.Value.Text("Shift")),
+                            data.Field.Named("action", data.Value.Text("Dash")),
+                            data.Field.Named("firing", data.Value.Bool(false))
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Pad Dash")),
+                    data.Field.Named("prototype", data.Value.Text("ActionBinding")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameActionBinding", data.Object([
+                            data.Field.Named("source", data.Value.Text("Pad A")),
+                            data.Field.Named("action", data.Value.Text("Dash")),
+                            data.Field.Named("firing", data.Value.Bool(false))
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Stick Fire")),
+                    data.Field.Named("prototype", data.Value.Text("ActionBinding")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameActionBinding", data.Object([
+                            data.Field.Named("source", data.Value.Text("Aim Stick")),
+                            data.Field.Named("action", data.Value.Text("Fire")),
+                            data.Field.Named("firing", data.Value.Bool(true))
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Trigger Fire")),
+                    data.Field.Named("prototype", data.Value.Text("ActionBinding")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameActionBinding", data.Object([
+                            data.Field.Named("source", data.Value.Text("Pad Right Trigger")),
+                            data.Field.Named("action", data.Value.Text("Fire")),
+                            data.Field.Named("firing", data.Value.Bool(true))
+                        ]))
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("name", data.Value.Text("Mouse Fire")),
+                    data.Field.Named("prototype", data.Value.Text("ActionBinding")),
+                    data.Field.Named("components", data.Object([
+                        data.Field.Named("GameActionBinding", data.Object([
+                            data.Field.Named("source", data.Value.Text("Mouse Left")),
+                            data.Field.Named("action", data.Value.Text("Fire")),
+                            data.Field.Named("firing", data.Value.Bool(true)),
+                            data.Field.Named("disabled", data.Value.Bool(false))
+                        ]))
+                    ]))
+                ])
+            ]))
+        ])
+    )
+}

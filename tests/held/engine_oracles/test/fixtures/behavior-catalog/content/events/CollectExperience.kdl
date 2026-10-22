@@ -1,8 +1,0 @@
-version 3
-name "CollectExperience"
-domain "event"
-id_counter 2
-description "Invite waiting experience pickups to fly to the player after combat ends."
-(array)graphs {
-    - kind="event" name="Events"
-}

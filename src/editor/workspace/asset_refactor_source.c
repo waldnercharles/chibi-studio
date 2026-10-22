@@ -7,7 +7,7 @@
 #include "editor/workspace/scene_internal.h"
 #include "runtime/declared_components.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/xalloc.h"
 
 #include <stdio.h>
@@ -147,7 +147,7 @@ static bool source_attachments(
             scene_document_free(document);
         }
         if (text) {
-            av_doc *document = asset_text_read(text, error, size);
+            av_doc *document = asset_document_read(text, error, size);
             char *reconciled = document
                                  ? asset_source_reconcile(file->text, av_doc_root(document), error, size)
                                  : NULL;

@@ -1,0 +1,625 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(3)),
+            data.Field.Named("name", data.Value.Text("CaveField")),
+            data.Field.Named("domain", data.Value.Text("field")),
+            data.Field.Named("id_counter", data.Value.UInt(2304)),
+            data.Field.Named("variables", data.List([
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(5)),
+                    data.Field.Named("name", data.Value.Text("Radius")),
+                    data.Field.Named("type", data.Value.Text("float")),
+                    data.Field.Named("default", data.Value.Real(225.0))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(9)),
+                    data.Field.Named("name", data.Value.Text("Roughness")),
+                    data.Field.Named("type", data.Value.Text("float")),
+                    data.Field.Named("default", data.Value.Real(100.0))
+                ])
+            ])),
+            data.Field.Named("graphs", data.List([
+                data.Object([
+                    data.Field.Named("kind", data.Value.Text("event")),
+                    data.Field.Named("name", data.Value.Text("")),
+                    data.Field.Named("nodes", data.List([
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(1)),
+                            data.Field.Named("type", data.Value.Text("Field X"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(3)),
+                            data.Field.Named("type", data.Value.Text("Field Y"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(6)),
+                            data.Field.Named("type", data.Value.Text("Field Parameter")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("Name", data.Value.Text("Radius"))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(10)),
+                            data.Field.Named("type", data.Value.Text("Field Parameter")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("Name", data.Value.Text("Roughness"))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(199)),
+                            data.Field.Named("type", data.Value.Text("Field Output"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(2113)),
+                            data.Field.Named("type", data.Value.Text("Call Pure Function")),
+                            data.Field.Named("reference_name", data.Value.Text("Artery")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("X", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(2114)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ])),
+                                data.Field.Named("Y", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(2115)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ])),
+                                data.Field.Named("Radius", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(2116)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Distance", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(2117)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(2118)),
+                            data.Field.Named("type", data.Value.Text("Call Pure Function")),
+                            data.Field.Named("reference_name", data.Value.Text("Wall Noise")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("X", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(2119)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ])),
+                                data.Field.Named("Y", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(2120)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Value", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(2121)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(2142)),
+                            data.Field.Named("type", data.Value.Text("Behavior Expression")),
+                            data.Field.Named("reference_name", data.Value.Text("-(artery + roughness * wallNoise)")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("artery", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(2143)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ])),
+                                data.Field.Named("roughness", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(2144)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ])),
+                                data.Field.Named("wallNoise", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(2145)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Result", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(2146)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ])
+                    ])),
+                    data.Field.Named("edges", data.List([
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("1.Value")),
+                            data.Field.Named("to", data.Value.Text("2113.X"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("1.Value")),
+                            data.Field.Named("to", data.Value.Text("2118.X"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("3.Value")),
+                            data.Field.Named("to", data.Value.Text("2113.Y"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("3.Value")),
+                            data.Field.Named("to", data.Value.Text("2118.Y"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("6.Value")),
+                            data.Field.Named("to", data.Value.Text("2113.Radius"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("10.Value")),
+                            data.Field.Named("to", data.Value.Text("2142.roughness"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("2113.Distance")),
+                            data.Field.Named("to", data.Value.Text("2142.artery"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("2118.Value")),
+                            data.Field.Named("to", data.Value.Text("2142.wallNoise"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("2142.Result")),
+                            data.Field.Named("to", data.Value.Text("199.Value"))
+                        ])
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(879)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("name", data.Value.Text("Artery")),
+                    data.Field.Named("entry_id", data.Value.UInt(880)),
+                    data.Field.Named("return_id", data.Value.UInt(882)),
+                    data.Field.Named("call_depth_limit", data.Value.UInt(64)),
+                    data.Field.Named("nodes", data.List([
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(880)),
+                            data.Field.Named("type", data.Value.Text("Function Entry")),
+                            data.Field.Named("outputs", data.List([
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(884)),
+                                    data.Field.Named("name", data.Value.Text("X")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ]),
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(885)),
+                                    data.Field.Named("name", data.Value.Text("Y")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ]),
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(886)),
+                                    data.Field.Named("name", data.Value.Text("Radius")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ])
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(882)),
+                            data.Field.Named("type", data.Value.Text("Return")),
+                            data.Field.Named("inputs", data.List([
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(887)),
+                                    data.Field.Named("name", data.Value.Text("Distance")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ])
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(925)),
+                            data.Field.Named("type", data.Value.Text("Behavior Expression")),
+                            data.Field.Named("reference_name", data.Value.Text("0.55 * radius * noise(x / 700, 0, 3)")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("radius", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(926)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0)),
+                                    data.Field.Named("binding", data.Object([
+                                        data.Field.Named("kind", data.Value.Text("local")),
+                                        data.Field.Named("name", data.Value.Text("radius"))
+                                    ]))
+                                ])),
+                                data.Field.Named("x", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(927)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0)),
+                                    data.Field.Named("binding", data.Object([
+                                        data.Field.Named("kind", data.Value.Text("local")),
+                                        data.Field.Named("name", data.Value.Text("x"))
+                                    ]))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Result", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(928)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(1022)),
+                            data.Field.Named("type", data.Value.Text("Behavior Expression")),
+                            data.Field.Named("reference_name", data.Value.Text("x / (5 * radius)")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("x", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1023)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0)),
+                                    data.Field.Named("binding", data.Object([
+                                        data.Field.Named("kind", data.Value.Text("local")),
+                                        data.Field.Named("name", data.Value.Text("x"))
+                                    ]))
+                                ])),
+                                data.Field.Named("radius", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1024)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0)),
+                                    data.Field.Named("binding", data.Object([
+                                        data.Field.Named("kind", data.Value.Text("local")),
+                                        data.Field.Named("name", data.Value.Text("radius"))
+                                    ]))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Result", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1025)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(1134)),
+                            data.Field.Named("type", data.Value.Text("Behavior Expression")),
+                            data.Field.Named("reference_name", data.Value.Text("arteryCenter + select(hash(floor(segment), 0, 5), 1, -1) * radius * 2.15 * sin((segment - floor(segment)) * pi)")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("arteryCenter", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1135)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ])),
+                                data.Field.Named("segment", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1136)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ])),
+                                data.Field.Named("radius", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1137)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0)),
+                                    data.Field.Named("binding", data.Object([
+                                        data.Field.Named("kind", data.Value.Text("local")),
+                                        data.Field.Named("name", data.Value.Text("radius"))
+                                    ]))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Result", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1138)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(1322)),
+                            data.Field.Named("type", data.Value.Text("Behavior Expression")),
+                            data.Field.Named("reference_name", data.Value.Text("abs(y - arteryCenter) - radius * (1 + 0.4 * noise(x / 420, 0, 4))")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("y", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1323)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ])),
+                                data.Field.Named("arteryCenter", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1324)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ])),
+                                data.Field.Named("radius", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1325)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0)),
+                                    data.Field.Named("binding", data.Object([
+                                        data.Field.Named("kind", data.Value.Text("local")),
+                                        data.Field.Named("name", data.Value.Text("radius"))
+                                    ]))
+                                ])),
+                                data.Field.Named("x", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1326)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0)),
+                                    data.Field.Named("binding", data.Object([
+                                        data.Field.Named("kind", data.Value.Text("local")),
+                                        data.Field.Named("name", data.Value.Text("x"))
+                                    ]))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Result", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1327)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(1563)),
+                            data.Field.Named("type", data.Value.Text("Behavior Expression")),
+                            data.Field.Named("reference_name", data.Value.Text("abs(y - pocketCenter) - 0.43 * radius")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("y", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1564)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ])),
+                                data.Field.Named("pocketCenter", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1565)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ])),
+                                data.Field.Named("radius", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1566)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0)),
+                                    data.Field.Named("binding", data.Object([
+                                        data.Field.Named("kind", data.Value.Text("local")),
+                                        data.Field.Named("name", data.Value.Text("radius"))
+                                    ]))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Result", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1567)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(1704)),
+                            data.Field.Named("type", data.Value.Text("Behavior Expression")),
+                            data.Field.Named("reference_name", data.Value.Text("min(tunnel, pocket)")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("tunnel", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1705)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ])),
+                                data.Field.Named("pocket", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1706)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Result", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1707)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ])
+                    ])),
+                    data.Field.Named("edges", data.List([
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("880.X")),
+                            data.Field.Named("to", data.Value.Text("925.x"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("880.X")),
+                            data.Field.Named("to", data.Value.Text("1022.x"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("880.X")),
+                            data.Field.Named("to", data.Value.Text("1322.x"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("880.Y")),
+                            data.Field.Named("to", data.Value.Text("1322.y"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("880.Y")),
+                            data.Field.Named("to", data.Value.Text("1563.y"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("880.Radius")),
+                            data.Field.Named("to", data.Value.Text("925.radius"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("880.Radius")),
+                            data.Field.Named("to", data.Value.Text("1022.radius"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("880.Radius")),
+                            data.Field.Named("to", data.Value.Text("1134.radius"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("880.Radius")),
+                            data.Field.Named("to", data.Value.Text("1322.radius"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("880.Radius")),
+                            data.Field.Named("to", data.Value.Text("1563.radius"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("925.Result")),
+                            data.Field.Named("to", data.Value.Text("1134.arteryCenter"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("925.Result")),
+                            data.Field.Named("to", data.Value.Text("1322.arteryCenter"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("1022.Result")),
+                            data.Field.Named("to", data.Value.Text("1134.segment"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("1134.Result")),
+                            data.Field.Named("to", data.Value.Text("1563.pocketCenter"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("1322.Result")),
+                            data.Field.Named("to", data.Value.Text("1704.tunnel"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("1563.Result")),
+                            data.Field.Named("to", data.Value.Text("1704.pocket"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("1704.Result")),
+                            data.Field.Named("to", data.Value.Text("882.Distance"))
+                        ])
+                    ])),
+                    data.Field.Named("locals", data.List([
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(2187)),
+                            data.Field.Named("name", data.Value.Text("radius")),
+                            data.Field.Named("from", data.Value.Text("880.Radius"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(2188)),
+                            data.Field.Named("name", data.Value.Text("x")),
+                            data.Field.Named("from", data.Value.Text("880.X"))
+                        ])
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(888)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("math_expression", data.Value.Text("0.55 * radius * noise(x / 700, 0, 3)")),
+                    data.Field.Named("expression_mode", data.Value.UInt(1)),
+                    data.Field.Named("entry_id", data.Value.UInt(1386))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(1003)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("math_expression", data.Value.Text("x / (5 * radius)")),
+                    data.Field.Named("expression_mode", data.Value.UInt(1)),
+                    data.Field.Named("entry_id", data.Value.UInt(1177))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(1064)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("math_expression", data.Value.Text("arteryCenter + select(hash(floor(segment), 0, 5), 1, -1) * radius * 2.15 * sin((segment - floor(segment)) * pi)")),
+                    data.Field.Named("expression_mode", data.Value.UInt(1)),
+                    data.Field.Named("entry_id", data.Value.UInt(1596))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(1265)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("math_expression", data.Value.Text("abs(y - arteryCenter) - radius * (1 + 0.4 * noise(x / 420, 0, 4))")),
+                    data.Field.Named("expression_mode", data.Value.UInt(1)),
+                    data.Field.Named("entry_id", data.Value.UInt(1709))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(1536)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("math_expression", data.Value.Text("abs(y - pocketCenter) - 0.43 * radius")),
+                    data.Field.Named("expression_mode", data.Value.UInt(1)),
+                    data.Field.Named("entry_id", data.Value.UInt(1766))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(1692)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("math_expression", data.Value.Text("min(tunnel, pocket)")),
+                    data.Field.Named("expression_mode", data.Value.UInt(1)),
+                    data.Field.Named("entry_id", data.Value.UInt(2190))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(1792)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("name", data.Value.Text("Wall Noise")),
+                    data.Field.Named("entry_id", data.Value.UInt(1793)),
+                    data.Field.Named("return_id", data.Value.UInt(1795)),
+                    data.Field.Named("call_depth_limit", data.Value.UInt(64)),
+                    data.Field.Named("nodes", data.List([
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(1793)),
+                            data.Field.Named("type", data.Value.Text("Function Entry")),
+                            data.Field.Named("outputs", data.List([
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1797)),
+                                    data.Field.Named("name", data.Value.Text("X")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ]),
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1798)),
+                                    data.Field.Named("name", data.Value.Text("Y")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ])
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(1795)),
+                            data.Field.Named("type", data.Value.Text("Return")),
+                            data.Field.Named("inputs", data.List([
+                                data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1799)),
+                                    data.Field.Named("name", data.Value.Text("Value")),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("kind", data.Value.Text("data"))
+                                ])
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(1903)),
+                            data.Field.Named("type", data.Value.Text("Behavior Expression")),
+                            data.Field.Named("reference_name", data.Value.Text("0.57 * noise(x / 170, y / 170, 0) + 0.28 * noise(x / 65, y / 65, 1) + 0.15 * noise(x / 23, y / 23, 2)")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("x", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1904)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ])),
+                                data.Field.Named("y", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1905)),
+                                    data.Field.Named("type", data.Value.Text("float")),
+                                    data.Field.Named("flags", data.Value.UInt(0))
+                                ]))
+                            ])),
+                            data.Field.Named("outputs", data.Object([
+                                data.Field.Named("Result", data.Object([
+                                    data.Field.Named("id", data.Value.UInt(1906)),
+                                    data.Field.Named("type", data.Value.Text("float"))
+                                ]))
+                            ]))
+                        ])
+                    ])),
+                    data.Field.Named("edges", data.List([
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("1793.X")),
+                            data.Field.Named("to", data.Value.Text("1903.x"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("1793.Y")),
+                            data.Field.Named("to", data.Value.Text("1903.y"))
+                        ]),
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("1903.Result")),
+                            data.Field.Named("to", data.Value.Text("1795.Value"))
+                        ])
+                    ]))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(1800)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("math_expression", data.Value.Text("0.57 * noise(x / 170, y / 170, 0) + 0.28 * noise(x / 65, y / 65, 1) + 0.15 * noise(x / 23, y / 23, 2)")),
+                    data.Field.Named("expression_mode", data.Value.UInt(1)),
+                    data.Field.Named("entry_id", data.Value.UInt(2202))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(2122)),
+                    data.Field.Named("kind", data.Value.Text("function")),
+                    data.Field.Named("math_expression", data.Value.Text("-(artery + roughness * wallNoise)")),
+                    data.Field.Named("expression_mode", data.Value.UInt(1)),
+                    data.Field.Named("entry_id", data.Value.UInt(2168))
+                ])
+            ]))
+        ])
+    )
+}

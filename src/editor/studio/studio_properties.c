@@ -1,3 +1,4 @@
+#include "authoring/source_asset.h"
 #include "editor/documents/prototype_source_input.h"
 /* Studio Properties: its model and intents. The panel is authored
  * (Properties.rml and PropertiesHeader.rml over the `properties` variable,
@@ -10,11 +11,11 @@
 #include "editor/documents/component_properties.h"
 #include "editor/studio/studio_properties_internal.h"
 #include "editor/ui/labels.h"
-#include "types/value_format.h"
 #include "graph/model/registry.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
 #include "support/xalloc.h"
+#include "types/value_format.h"
 #include "ui/popover.h"
 
 #include <assert.h>
@@ -49,7 +50,7 @@ const char *properties_tab_label(studio_tab tab)
     }
 }
 
-/* editor/Components.kdl names a component's tab; the rest belong to Object. */
+/* editor/Components.chibi names a component's tab; the rest belong to Object. */
 studio_tab properties_tab_of(const studio *s, const ecs_component_desc *desc)
 {
     return (studio_tab)(STUDIO_TAB_OBJECT +
@@ -78,7 +79,8 @@ static bool open_first(const studio *s, const char *key)
 {
     static const char *const FIRST[] = { "Transform",   "Appearance",
                                          "Orientation", "behaviors",
-                                         "ui",          "physics" };
+                                         "ui",          "physics",
+                                         "parameters" };
     for (size_t i = 0; i < sizeof FIRST / sizeof *FIRST; i++) {
         if (!strcmp(FIRST[i], key)) {
             return true;
@@ -257,6 +259,9 @@ void properties_row_id(const properties_row *row, char out[PROPERTIES_ROW_ID])
         case PROPERTIES_PROTOTYPE:
             snprintf(out, PROPERTIES_ROW_ID, "p%" PRIu64 ".%d.%s", row->component, row->field, row->prototype);
             return;
+        case PROPERTIES_PARAMETER:
+            snprintf(out, PROPERTIES_ROW_ID, "q.%zu.%" PRIx64, row->parameter_index, row->parameter_identity);
+            return;
         case PROPERTIES_SCENE:
             snprintf(out, PROPERTIES_ROW_ID, "s.%s", SCENE_SETTINGS[row->field]);
             return;
@@ -281,6 +286,12 @@ bool properties_row_parse(const char *id, properties_row *out)
         }
         snprintf(out->prototype, sizeof out->prototype, "%s", id + used);
         return true;
+    }
+    if (!strncmp(id, "q.", 2)) {
+        out->kind = PROPERTIES_PARAMETER;
+        return sscanf(id, "q.%zu.%" SCNx64 "%n", &out->parameter_index, &out->parameter_identity, &used) ==
+                   2 &&
+               !id[used];
     }
     out->kind = PROPERTIES_SCENE;
     for (int i = 0; i < SCENE_SETTING_COUNT; i++) {
@@ -820,6 +831,167 @@ static void edit_object(studio *s, const edit *e)
     }
 }
 
+void properties_parameter_row(const char *path, const char *name, size_t index, properties_row *row)
+{
+    *row = (properties_row){ .kind = PROPERTIES_PARAMETER, .parameter_index = index };
+    uint64_t identity = UINT64_C(14695981039346656037);
+    for (const unsigned char *c = (const unsigned char *)path; *c; c++) {
+        identity = (identity ^ *c) * UINT64_C(1099511628211);
+    }
+    identity *= UINT64_C(1099511628211); /* Path/name separator. */
+    for (const unsigned char *c = (const unsigned char *)name; *c; c++) {
+        identity = (identity ^ *c) * UINT64_C(1099511628211);
+    }
+    row->parameter_identity = identity;
+}
+
+const char *properties_parameter_name(const av_value *parameters, const char *path, const properties_row *row)
+{
+    if (row->parameter_index >= av_obj_size(parameters)) {
+        return NULL;
+    }
+    const char *name = av_get_str(av_obj_key_at(parameters, row->parameter_index));
+    properties_row current;
+    properties_parameter_row(path, name, row->parameter_index, &current);
+    return current.parameter_identity == row->parameter_identity ? name : NULL;
+}
+
+bool properties_parameter_value(const av_value *value, pin_value *out)
+{
+    *out = (pin_value){ 0 };
+    if (!value) {
+        return false;
+    }
+    switch (av_get_type(value)) {
+        case AV_BOOL:
+            *out = (pin_value){ .type = PIN_BOOL, .b = av_get_bool(value) };
+            return true;
+        case AV_STRING:
+            *out = (pin_value){ .type = PIN_STR, .str = av_get_str(value) };
+            return true;
+        case AV_REAL:
+            *out = (pin_value){ .type = PIN_F64, .d = av_get_num(value) };
+            return true;
+        case AV_SINT:
+        case AV_UINT: {
+            if (av_is_uint(value) && av_get_uint(value) > INT64_MAX) {
+                *out = (pin_value){ .type = PIN_U64, .u64 = av_get_uint(value) };
+                return true;
+            }
+            int64_t number = av_is_uint(value) ? (int64_t)av_get_uint(value)
+                                               : av_get_sint(value);
+            if (number >= INT32_MIN && number <= INT32_MAX) {
+                *out = (pin_value){ .type = PIN_I32, .i = (int32_t)number };
+                return true;
+            }
+            *out = (pin_value){ .type = PIN_I64, .i64 = number };
+            return true;
+        }
+        default: return false;
+    }
+}
+
+static void source_edit_result(studio *s, int result)
+{
+    if (result < 0 || result == APP_PROTOTYPE_EDIT_NOT_APPLIED) {
+        studio_error(
+            s,
+            result < 0 ? "Could not edit prototype" : "Edited, but not applied",
+            s->scene->prototype_message
+        );
+    }
+}
+
+static void edit_parameter(studio *s, const edit *e)
+{
+    properties_subject subject;
+    properties_subject_of(s, &subject);
+    scene_prototype_asset *asset = subject.asset;
+    if (!asset || subject.locked || !scene_prototype_source_owned(asset)) {
+        return;
+    }
+    char error[256];
+    av_doc *doc = authoring_prototype_source_parameters(
+        scene_source_input_text(s->scene, asset),
+        error,
+        sizeof error
+    );
+    const char *name = doc
+                         ? properties_parameter_name(av_doc_root(doc), asset->path, &e->row)
+                         : NULL;
+    if (!name) {
+        av_doc_free(doc);
+        return;
+    }
+    pin_value value;
+    bool valid = properties_parameter_value(av_obj_get(av_doc_root(doc), name), &value);
+    if (valid) {
+        char *end;
+        errno = 0;
+        switch (value.type) {
+            case PIN_BOOL:
+                value.b = !strcmp(e->text, "1") || !strcmp(e->text, "true");
+                break;
+            case PIN_STR: value.str = e->text; break;
+            case PIN_I64:
+            case PIN_U64: valid = parse_integer64(e->text, &value); break;
+            case PIN_I32: {
+                int64_t number = strtoimax(e->text, &end, 10);
+                valid = end != e->text && !*end && errno != ERANGE &&
+                        number >= INT32_MIN && number <= INT32_MAX;
+                if (valid) {
+                    value.i = (int32_t)number;
+                }
+                break;
+            }
+            case PIN_F64:
+                value.d = strtod(e->text, &end);
+                valid = end != e->text && !*end && errno != ERANGE &&
+                        isfinite(value.d);
+                break;
+            default: valid = false; break;
+        }
+    }
+    if (valid) {
+        char key[192];
+        properties_row_id(&e->row, key);
+        authoring_prototype_edit change = { .kind = AUTHORING_PROTOTYPE_SET_PARAMETER,
+                                            .field = name,
+                                            .value = value };
+        source_edit_result(
+            s,
+            scene_source_input_edit(s->scene, asset, &change, 1, key, !strcmp(s->prototype_edit, key))
+        );
+        snprintf(s->prototype_edit, sizeof s->prototype_edit, "%s", key);
+    }
+    av_doc_free(doc);
+    if (!e->active) {
+        s->prototype_edit[0] = 0;
+        scene_source_input_end(s->scene, asset->path);
+        asset_code_end_typing(asset->source);
+    }
+}
+
+static void reset_source_override(studio *s, const properties_row *row)
+{
+    properties_subject subject;
+    properties_subject_of(s, &subject);
+    scene_prototype_asset *asset = subject.asset;
+    const ecs_component_desc *desc = properties_component(s->scene, row->component);
+    if (row->kind != PROPERTIES_PROTOTYPE || !asset || subject.locked ||
+        !desc || strcmp(row->prototype, asset->prototype->name) ||
+        row->field < 0 || row->field >= desc->type->field_count ||
+        !scene_prototype_source_owned(asset)) {
+        return;
+    }
+    authoring_prototype_edit change = { .kind = AUTHORING_PROTOTYPE_RESET_FIELD_OVERRIDE,
+                                        .component = desc->name,
+                                        .field = desc->type->fields[row->field].name };
+    s->prototype_edit[0] = 0;
+    source_edit_result(s, scene_source_input_edit(s->scene, asset, &change, 1, "reset-override", false));
+    scene_source_input_end(s->scene, asset->path);
+}
+
 /* Prototype edits preview live and record one Undo step per gesture, on the
    prototype's own history. */
 static void edit_prototype(studio *s, const edit *e)
@@ -945,6 +1117,7 @@ static void edit_row(studio *s, const edit *e)
         case PROPERTIES_OBJECT: edit_object(s, e); return;
         case PROPERTIES_PROTOTYPE: edit_prototype(s, e); return;
         case PROPERTIES_SCENE: edit_scene(s, e); return;
+        case PROPERTIES_PARAMETER: edit_parameter(s, e); return;
     }
 }
 
@@ -954,8 +1127,8 @@ static void edit_row(studio *s, const edit *e)
 static void check(studio *s, const properties_row *row, bool on)
 {
     edit e = { .row = *row, .text = on ? "1" : "0", .axis = "" };
-    if (row->kind == PROPERTIES_SCENE) {
-        edit_scene(s, &e);
+    if (row->kind == PROPERTIES_SCENE || row->kind == PROPERTIES_PARAMETER) {
+        edit_row(s, &e);
         return;
     }
     pin_value value = { 0 };
@@ -1593,6 +1766,49 @@ static void settle(studio *s, rml_element *field, const char *id)
     if (!strcmp(id, "name") && subject.actor) {
         snprintf(text, sizeof text, "%s", subject.actor->name);
     } else if (
+        properties_row_parse(id, &row) && row.kind == PROPERTIES_PARAMETER &&
+        subject.asset
+    ) {
+        char error[256];
+        av_doc *doc = authoring_prototype_source_parameters(
+            scene_source_input_text(s->scene, subject.asset),
+            error,
+            sizeof error
+        );
+        const char *name = doc ? properties_parameter_name(
+                                     av_doc_root(doc),
+                                     subject.asset->path,
+                                     &row
+                                 )
+                               : NULL;
+        if (name &&
+            properties_parameter_value(av_obj_get(av_doc_root(doc), name), &value)) {
+            snprintf(text, sizeof text, "%s", value.type == PIN_STR ? value.str : pin_value_to_string(&value));
+        }
+        av_doc_free(doc);
+    } else if (
+        properties_row_parse(id, &row) && row.kind == PROPERTIES_PROTOTYPE &&
+        subject.asset
+    ) {
+        const ecs_component_desc *desc = properties_component(s->scene, row.component);
+        const prototype *shown = scene_source_input_preview(s->scene, subject.asset);
+        if (desc && row.field >= 0 && row.field < desc->type->field_count &&
+            !prototype_read_field(
+                shown,
+                desc->name,
+                desc->type->fields[row.field].name,
+                &value
+            )) {
+            snprintf(
+                text,
+                sizeof text,
+                "%s",
+                value.type == PIN_STR || value.type == PIN_NAME
+                    ? value.str
+                    : pin_value_to_string(&value)
+            );
+        }
+    } else if (
         properties_row_parse(id, &row) && row.kind == PROPERTIES_OBJECT &&
         subject.actor &&
         ecs_component_read_field(s->scene->world, subject.actor->entity, row.component, row.field, &value) ==
@@ -1676,6 +1892,8 @@ void studio_properties_action(studio *s, const char *action, const ui_activation
         drop(s, &row, a->args[1]);
     } else if (!strcmp(action, "menu") && parsed) {
         field_menu(s, &row, a);
+    } else if (!strcmp(action, "resetOverride") && parsed) {
+        reset_source_override(s, &row);
     } else if (!strcmp(action, "reset")) {
         reset(s);
     } else if (!strcmp(action, "apply")) {

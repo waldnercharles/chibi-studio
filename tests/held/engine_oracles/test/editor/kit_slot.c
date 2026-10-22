@@ -428,8 +428,8 @@ static bool emitted_once(slot_fixture *f, const char *event, int value)
 }
 
 static const studio_tab_view TABS[] = {
-    { "Sandbox", "scenes/Sandbox.kdl", KIT_ICON_SCENE, false, false, false },
-    { "Player", "prototypes/Player.kdl", KIT_ICON_PROTOTYPE, true, true, false },
+    { "Sandbox", "scenes/Sandbox.chibi", KIT_ICON_SCENE, false, false, false },
+    { "Player", "prototypes/Player.chibi", KIT_ICON_PROTOTYPE, true, true, false },
     { "Hud", "ui/Hud.rml", KIT_ICON_LAYOUT, false, false, true },
 };
 
@@ -463,7 +463,7 @@ static void topbar_checks()
     test_check(
         !ui_mount_error(f.mount)[0] && count(&f, ".doc-tab") == 3 &&
             state_is(tabs[1], "on") && state_is(tabs[0], "off") &&
-            !strcmp(tip, "scenes/Sandbox.kdl") &&
+            !strcmp(tip, "scenes/Sandbox.chibi") &&
             text_is(rml_element_query_selector(tabs[1], ".label"), "Player") &&
             count(&f, ".dirty-dot") == 1 && count(&f, ".doc-close") == 1 &&
             rml_element_query_selector(tabs[2], ".doc-close") &&

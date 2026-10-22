@@ -75,7 +75,7 @@ static debug_fixture fixture_new()
     );
     assert(app_scene_authoring_set_content_root(f.scene, "content") == 0);
     assert(app_scene_authoring_load_content(f.scene) == 0);
-    assert(app_scene_authoring_load(f.scene, "content/scenes/Arena3D.kdl") == 0);
+    assert(app_scene_authoring_load(f.scene, "content/scenes/Arena3D.chibi") == 0);
     assert(app_scene_authoring_runtime_command(f.scene, APP_RUNTIME_SCENE, APP_RUNTIME_PLAY) == 0);
     engine_set_focus(f.runtime, ENGINE_FOCUS_VIEWPORT);
     return f;

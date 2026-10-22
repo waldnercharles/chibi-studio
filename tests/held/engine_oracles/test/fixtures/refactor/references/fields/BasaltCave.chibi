@@ -1,0 +1,39 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(3)),
+            data.Field.Named("name", data.Value.Text("BasaltCave")),
+            data.Field.Named("domain", data.Value.Text("field")),
+            data.Field.Named("id_counter", data.Value.UInt(10)),
+            data.Field.Named("graphs", data.List([
+                data.Object([
+                    data.Field.Named("kind", data.Value.Text("event")),
+                    data.Field.Named("name", data.Value.Text("")),
+                    data.Field.Named("nodes", data.List([
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(1)),
+                            data.Field.Named("type", data.Value.Text("Field Constant")),
+                            data.Field.Named("inputs", data.Object([
+                                data.Field.Named("Value", data.Value.Real(-1.0))
+                            ]))
+                        ]),
+                        data.Object([
+                            data.Field.Named("id", data.Value.UInt(4)),
+                            data.Field.Named("type", data.Value.Text("Field Output"))
+                        ])
+                    ])),
+                    data.Field.Named("edges", data.List([
+                        data.Object([
+                            data.Field.Named("from", data.Value.Text("1.Value")),
+                            data.Field.Named("to", data.Value.Text("4.Value"))
+                        ])
+                    ]))
+                ])
+            ]))
+        ])
+    )
+}

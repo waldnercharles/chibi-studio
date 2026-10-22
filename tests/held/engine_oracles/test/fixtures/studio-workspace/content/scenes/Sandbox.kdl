@@ -1,6 +1,0 @@
-version 1
-name "Sandbox"
-(array)entities {
-    - name="Player" prototype="Player"
-    - name="Camera" prototype="Camera"
-}

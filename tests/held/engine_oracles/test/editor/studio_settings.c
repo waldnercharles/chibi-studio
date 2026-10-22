@@ -847,14 +847,14 @@ static void page_open(page_fixture *f)
                                       .mac = false,
                                       .project = "Arena" };
     snprintf(f->view.fields[STUDIO_PROJECT_NAME], sizeof f->view.fields[0], "Arena");
-    snprintf(f->view.fields[STUDIO_PROJECT_START_SCENE], sizeof f->view.fields[0], "scenes/Main.kdl");
+    snprintf(f->view.fields[STUDIO_PROJECT_START_SCENE], sizeof f->view.fields[0], "scenes/Main.chibi");
     apush(
         f->view.choices[STUDIO_PROJECT_START_SCENE],
-        ((studio_setting_choice){ "scenes/Main.kdl", "Main" })
+        ((studio_setting_choice){ "scenes/Main.chibi", "Main" })
     );
     apush(
         f->view.choices[STUDIO_PROJECT_START_SCENE],
-        ((studio_setting_choice){ "scenes/Boss.kdl", "Boss" })
+        ((studio_setting_choice){ "scenes/Boss.chibi", "Boss" })
     );
     apush(f->view.choices[STUDIO_PROJECT_UI], ((studio_setting_choice){ "Hud", "Hud" }));
     apush(f->view.choices[STUDIO_PROJECT_UI], ((studio_setting_choice){ "Shell", "Shell" }));
@@ -1213,18 +1213,18 @@ static void page_keyboard_and_project()
                       !strcmp(yyjson_mut_get_str(member(name, "control")), "text") &&
                       !yyjson_mut_get_bool(member(name, "modified"));
     set_text(&f, name, "value", "Neon Swarm");
-    set_text(&f, start, "value", "scenes/Boss.kdl");
+    set_text(&f, start, "value", "scenes/Boss.chibi");
     studio_settings_sync(&f.view, f.doc, true);
     bool renamed = !strcmp(f.view.fields[STUDIO_PROJECT_NAME], "Neon Swarm") &&
-                   !strcmp(f.view.fields[STUDIO_PROJECT_START_SCENE], "scenes/Boss.kdl");
+                   !strcmp(f.view.fields[STUDIO_PROJECT_START_SCENE], "scenes/Boss.chibi");
     set_text(&f, name, "value", "");
-    set_text(&f, start, "value", "scenes/Missing.kdl");
+    set_text(&f, start, "value", "scenes/Missing.chibi");
     studio_settings_sync(&f.view, f.doc, true);
     yyjson_mut_val *first = yyjson_mut_arr_get(member(start, "choices"), 0);
     test_check(
         shown_name && renamed &&
             !strcmp(f.view.fields[STUDIO_PROJECT_NAME], "Neon Swarm") &&
-            !strcmp(f.view.fields[STUDIO_PROJECT_START_SCENE], "scenes/Boss.kdl") &&
+            !strcmp(f.view.fields[STUDIO_PROJECT_START_SCENE], "scenes/Boss.chibi") &&
             yyjson_mut_arr_size(member(start, "choices")) == 2 &&
             !strcmp(yyjson_mut_get_str(member(first, "label")), "Main") &&
             !yyjson_mut_get_bool(member(start, "modified")),

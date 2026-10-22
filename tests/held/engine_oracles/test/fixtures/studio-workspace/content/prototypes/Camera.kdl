@@ -1,5 +1,0 @@
-name "Camera"
-components {
-    GAME.GameCamera width=960.0 height=540.0
-    (object)GAME.GameTransform
-}

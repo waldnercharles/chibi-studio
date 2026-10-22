@@ -7,7 +7,7 @@
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/text_overlay.h"
 #include "support/xalloc.h"
 
@@ -74,8 +74,7 @@ static char *tab_label(app_editor_document_kind kind, const char *id, const char
     size_t length = strlen(label);
     const char *extension = strrchr(label, '.');
     if (!extension || (strcmp(extension, UI_MARKUP_EXTENSION) &&
-                       strcmp(extension, CODE_ASSET_EXTENSION) &&
-                       strcmp(extension, DECLARATIVE_ASSET_EXTENSION))) {
+                       strcmp(extension, CODE_ASSET_EXTENSION))) {
         return label;
     }
     size_t extension_length = strlen(extension);
@@ -779,7 +778,7 @@ int scene_tabs_open_scene(app_scene_authoring *scene, const char *path)
             return -1;
         }
         char error[256];
-        av_doc *native = asset_text_read(json, error, sizeof error);
+        av_doc *native = asset_document_read(json, error, sizeof error);
         free(json);
         if (!native) {
             free_tab(tab);

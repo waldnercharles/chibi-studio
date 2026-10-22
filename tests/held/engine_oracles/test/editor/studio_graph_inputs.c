@@ -72,7 +72,7 @@ static graph_input_fixture fixture_open(void)
     snprintf(content, sizeof content, "%s/content", PROJECT);
     assert(app_scene_authoring_set_content_root(f.scene, content) == 0);
     assert(app_scene_authoring_load_content(f.scene) == 0);
-    assert(app_scene_authoring_load(f.scene, PROJECT "/content/scenes/Main.kdl") == 0);
+    assert(app_scene_authoring_load(f.scene, PROJECT "/content/scenes/Main.chibi") == 0);
     assert(app_scene_authoring_open_behavior(f.scene, "Teller") == 0);
     f.studio = studio_new(f.scene, f.viewport, PROJECT);
     f.scene_frame = true;

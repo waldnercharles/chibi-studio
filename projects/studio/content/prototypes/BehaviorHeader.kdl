@@ -1,4 +1,0 @@
-name "BehaviorHeader"
-components {
-    Ui document="BehaviorHeader" hidden=#true
-}

@@ -1,4 +1,0 @@
-name "Output"
-components {
-    Ui document="Output" hidden=#true
-}

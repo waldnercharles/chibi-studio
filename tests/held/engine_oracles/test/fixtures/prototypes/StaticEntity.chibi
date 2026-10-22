@@ -1,0 +1,26 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("StaticEntity")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.GameAppearance", data.Object([
+                    data.Field.Named("antialias", data.Value.Real(1.0)),
+                    data.Field.Named("color", data.Value.UInt(2173740543)),
+                    data.Field.Named("height", data.Value.Real(32.0)),
+                    data.Field.Named("width", data.Value.Real(32.0))
+                ])),
+                data.Field.Named("GAME.GameHealth", data.Object([
+                    data.Field.Named("current", data.Value.UInt(100)),
+                    data.Field.Named("maximum", data.Value.UInt(100))
+                ])),
+                data.Field.Named("GAME.GameTransform", data.Object([
+                    data.Field.Named("x", data.Value.Real(80.0))
+                ]))
+            ]))
+        ])
+    )
+}

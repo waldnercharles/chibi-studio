@@ -19,6 +19,7 @@ body, body.area-panel { width: 100%; height: 100%; margin: 0dp; padding: 0dp; ov
 .prop { align-items: center; }
 /* A row's one control, as its kind builds it. */
 .kind { display: flex; flex: 1 1 0dp; min-width: 0dp; }
+.source-origin { flex: 0 0 auto; font-size: var(--studio-font-10, 10dp); }
 /* RmlUi gives :focus to a focused element's ancestors too, as :focus-within. */
 .field.text:focus { background-color: var(--field-edit); border-color: var(--ring); }
 .identity .name-field .field.text:focus { background-color: var(--field-edit); border-color: var(--ring); }

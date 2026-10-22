@@ -8,8 +8,8 @@
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
 #include "runtime/declared_components.h"
+#include "support/asset_document.h"
 #include "support/asset_json.h"
-#include "support/asset_text.h"
 #include "support/text_overlay.h"
 
 #include <assert.h>
@@ -37,7 +37,7 @@ static void checkpoint_behavior(
     }
     av_doc *snapshot = av_doc_new();
     av_doc_set_root(snapshot, behavior_asset_to_value(snapshot, asset));
-    owned_text(doc, object, key, av_doc_write(snapshot));
+    owned_text(doc, object, key, av_json_write(av_doc_root(snapshot)));
     av_doc_free(snapshot);
 }
 
@@ -527,7 +527,9 @@ char *app_scene_authoring_checkpoint(app_scene_authoring *scene)
         const scene_prototype_asset *asset = &scene->prototypes[i];
         yyjson_mut_val *item = yyjson_mut_arr_add_obj(doc, prototypes);
         checkpoint_text(doc, item, "path", asset->path);
-        owned_text(doc, item, "json", prototype_save(asset->prototype));
+        av_value *prototype_value = prototype_to_value(asset->prototype);
+        owned_text(doc, item, "json", av_json_write(prototype_value));
+        av_value_free(prototype_value);
         yyjson_mut_obj_add_bool(
             doc,
             item,
@@ -721,7 +723,7 @@ static bool restore_behaviors(app_scene_authoring *scene, yyjson_val *behaviors,
                 continue;
             }
             char error[256] = "Invalid native checkpoint graph";
-            av_doc *applied_doc = asset_text_read(applied_json, error, sizeof error);
+            av_doc *applied_doc = av_json_read(applied_json);
             behavior_asset *applied = applied_doc
                                         ? behavior_asset_from_value(av_doc_root(applied_doc))
                                         : NULL;
@@ -743,7 +745,7 @@ static bool restore_behaviors(app_scene_authoring *scene, yyjson_val *behaviors,
                 behavior_asset_free(applied);
                 continue;
             }
-            av_doc *working_doc = asset_text_read(working_json, error, sizeof error);
+            av_doc *working_doc = av_json_read(working_json);
             behavior_asset *working = working_doc
                                         ? behavior_asset_from_value(av_doc_root(working_doc))
                                         : NULL;
@@ -798,11 +800,16 @@ static bool restore_prototypes(app_scene_authoring *scene, yyjson_val *prototype
     yyjson_arr_foreach(prototypes, i, count, item)
     {
         const char *json = yyjson_get_str(yyjson_obj_get(item, "json"));
-        if (!json || app_scene_authoring_register_prototype(
-                         scene,
-                         json,
-                         yyjson_get_str(yyjson_obj_get(item, "path"))
-                     ) != 0) {
+        av_doc *prototype_document = json ? av_json_read(json) : NULL;
+        int registered = prototype_document
+                           ? scene_register_prototype_value(
+                                 scene,
+                                 av_doc_root(prototype_document),
+                                 yyjson_get_str(yyjson_obj_get(item, "path"))
+                             )
+                           : -1;
+        av_doc_free(prototype_document);
+        if (registered != 0) {
             return false;
         }
         scene_prototype_asset *asset = &alast(scene->prototypes);
@@ -1053,6 +1060,14 @@ static bool restore_playback(app_scene_authoring *scene, yyjson_val *root)
            app_scene_authoring_runtime_command(scene, target, APP_RUNTIME_PAUSE) == 0;
 }
 
+static int checkpoint_clear_scene(app_scene_authoring *scene)
+{
+    av_doc *document = av_json_read("{\"version\":1,\"name\":\"Checkpoint\",\"entities\":[]}");
+    int result = scene_authoring_load_value(scene, av_doc_root(document), NULL);
+    av_doc_free(document);
+    return result;
+}
+
 int app_scene_authoring_restore_checkpoint(app_scene_authoring *scene, const char *json)
 {
     yyjson_doc *doc = json ? yyjson_read(json, strlen(json), 0) : NULL;
@@ -1074,9 +1089,8 @@ int app_scene_authoring_restore_checkpoint(app_scene_authoring *scene, const cha
         goto done;
     }
     scene_source_input_harvest(scene);
-    if (scene_authoring_load_text(scene, "version 1\nname Checkpoint\n(array)entities\n", NULL) !=
-            0 ||
-        !clear_behavior_models(scene) || !restore_sources(scene, root) ||
+    if (checkpoint_clear_scene(scene) != 0 || !clear_behavior_models(scene) ||
+        !restore_sources(scene, root) ||
         !restore_behaviors(scene, behaviors, prototypes) ||
         !restore_prototypes(scene, prototypes) ||
         !restore_system(scene, root) || !restore_scene(scene, root, actors) ||

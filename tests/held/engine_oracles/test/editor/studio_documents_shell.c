@@ -19,7 +19,7 @@
 #include "render/screenshot.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/text_file.h"
 #include "support/text_overlay.h"
 #include "test/editor/studio_documents.h"
@@ -1455,7 +1455,7 @@ static void document_tabs()
     assert(scene >= 0);
     char root_key[PATH_MAX];
     snprintf(root_key, sizeof root_key, "%s", f.scene->tabs[scene].key);
-    assert(realpath(PROJECT "/content/scenes/Main.kdl", path));
+    assert(realpath(PROJECT "/content/scenes/Main.chibi", path));
     assert(scene_tabs_open_scene(f.scene, path) == 0);
     frames(&f, 4);
     int second_scene = f.scene->active_tab;
@@ -2005,7 +2005,7 @@ static void capture_shell(const char *dir)
                      { "light-comfortable-150", STUDIO_THEME_LIGHT, true, 1.5f } };
     for (size_t v = 0; v < sizeof VARIANTS / sizeof *VARIANTS; v++) {
         const char *name = VARIANTS[v].name;
-        studio_fixture f = scene_open(PROJECT, PROJECT "/content/scenes/Main.kdl", "Weapons");
+        studio_fixture f = scene_open(PROJECT, PROJECT "/content/scenes/Main.chibi", "Weapons");
         studio *s = f.studio;
         s->maximized = -1;
         s->prefs.theme = VARIANTS[v].theme;

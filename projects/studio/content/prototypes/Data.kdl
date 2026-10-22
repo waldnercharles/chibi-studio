@@ -1,4 +1,0 @@
-name "Data"
-components {
-    Ui document="SavedData" hidden=#true
-}

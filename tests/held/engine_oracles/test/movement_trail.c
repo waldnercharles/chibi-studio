@@ -57,7 +57,7 @@ static void trail_case(bool isolated)
 {
     game_prototype_registry registry = { GAME_REGISTRY_COMPONENTS,
                                          GAME_REGISTRY_COMPONENT_COUNT };
-    char *text = read_content("test/fixtures/content/prototypes/Player.kdl");
+    char *text = read_content("test/fixtures/content/prototypes/Player.chibi");
     char error[256];
     game_prototype *prototype = game_prototype_load(text, &registry, error, sizeof error);
     free(text);

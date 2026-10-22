@@ -1,8 +1,0 @@
-version 3
-name "RefreshEncounter"
-domain "event"
-id_counter 2
-description "Recount encounter members after a lifecycle change."
-(array)graphs {
-    - kind="event" name="Events"
-}

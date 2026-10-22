@@ -1,4 +1,0 @@
-name "CodeHeader"
-components {
-    Ui document="CodeHeader" hidden=#true
-}

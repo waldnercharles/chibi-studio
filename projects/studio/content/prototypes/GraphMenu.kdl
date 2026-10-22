@@ -1,4 +1,0 @@
-name "GraphMenu"
-components {
-    Ui document="GraphMenu" hidden=#true
-}

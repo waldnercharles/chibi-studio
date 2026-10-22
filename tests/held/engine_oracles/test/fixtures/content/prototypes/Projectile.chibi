@@ -1,0 +1,53 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("Projectile")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.GameAppearance", data.Object([
+                    data.Field.Named("antialias", data.Value.Real(2.0)),
+                    data.Field.Named("color", data.Value.UInt(16773375)),
+                    data.Field.Named("glow_color", data.Value.UInt(16773216)),
+                    data.Field.Named("glow_radius", data.Value.Real(6.0)),
+                    data.Field.Named("height", data.Value.Real(6.0)),
+                    data.Field.Named("shape", data.Value.Text("Capsule")),
+                    data.Field.Named("width", data.Value.Real(18.0))
+                ])),
+                data.Field.Named("GAME.GameBody", data.Object([
+                    data.Field.Named("continuous", data.Value.Bool(true)),
+                    data.Field.Named("type", data.Value.Text("Kinematic"))
+                ])),
+                data.Field.Named("GAME.GameCollider", data.Object([
+                    data.Field.Named("category", data.Value.UInt(4)),
+                    data.Field.Named("mask", data.Value.UInt(10)),
+                    data.Field.Named("radius", data.Value.Real(4.0)),
+                    data.Field.Named("sensor", data.Value.Bool(true))
+                ])),
+                data.Field.Named("GAME.GameMaterial", data.Object([
+                    data.Field.Named("absorption", data.Value.Real(1.0)),
+                    data.Field.Named("emission_color", data.Value.UInt(16773375)),
+                    data.Field.Named("emission_intensity", data.Value.Real(0.1)),
+                    data.Field.Named("emission_multiplier", data.Value.Real(1.0)),
+                    data.Field.Named("scene", data.Value.UInt(16773375))
+                ])),
+                data.Field.Named("GAME.GameOrientation", data.Object([])),
+                data.Field.Named("GAME.GameProjectile", data.Object([
+                    data.Field.Named("damage", data.Value.UInt(10)),
+                    data.Field.Named("lifetime", data.Value.Real(2.0)),
+                    data.Field.Named("speed", data.Value.Real(420.0))
+                ])),
+                data.Field.Named("GAME.GameTransform", data.Object([])),
+                data.Field.Named("GAME.GameVelocity", data.Object([
+                    data.Field.Named("x", data.Value.Real(420.0))
+                ]))
+            ])),
+            data.Field.Named("behaviors", data.List([
+                data.Value.Text("ProjectileBehavior"),
+                data.Value.Text("ProjectileHitBehavior")
+            ]))
+        ])
+    )
+}

@@ -15,7 +15,7 @@
 #include "render/screenshot.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/text_file.h"
 #include "support/text_overlay.h"
 #include "test/editor/studio_documents.h"
@@ -127,7 +127,11 @@ static void wheel_over(studio *s, rml_element *el, float notches)
    them. */
 static void scrolled_grid_shows_tiles()
 {
-    studio_fixture f = scene_open("test/fixtures/studio-workspace", "test/fixtures/studio-workspace/content/scenes/Sandbox.kdl", "Movement");
+    studio_fixture f = scene_open(
+        "test/fixtures/studio-workspace",
+        "test/fixtures/studio-workspace/content/scenes/Sandbox.chibi",
+        "Movement"
+    );
     studio *s = f.studio;
     /* The index rebuilds as Studio first opens: add to it afterwards. */
     frames(&f, 4);

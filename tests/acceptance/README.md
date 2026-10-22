@@ -146,9 +146,9 @@ elsewhere) on the `count` line then comments it and again uncomments it, and
 one undo restores the commented line, an undo step of its own. It runs
 twenty-one hidden frames; Counter stays unsaved.
 
-`studio-acceptance --kdl-keys --project-root PATH` takes another disposable copy.
-It shows the open scene in the Text Editor, types Enter at the end of its KDL
-and saves it: KDL that reads settles without waiting on a graph, so Save writes
+`studio-acceptance --asset-keys --project-root PATH` takes another disposable copy.
+It shows the open scene in the Text Editor, types Enter at the end of its source
+and saves it: Asset source that reads settles without waiting on a graph, so Save writes
 it into the disposable copy. Another Enter and a paste follow within the typing
 pause, and two undos return to the saved text: Save ends the typing burst and a
 paste is an undo step of its own. It runs fourteen hidden frames.
@@ -168,7 +168,7 @@ chord comments the problem's line. Counter stays unsaved.
 
 `studio-acceptance --code-glyphs --project-root PATH` takes another disposable
 copy, adds a prototype named Crêpes and a UI document, Probe, and runs
-thirty hidden frames. In the open scene's KDL, Control+Space in the
+thirty hidden frames. In the open scene source, Control+Space in the
 strings "Crê" and "Cre" opens the completion list at the same left edge: the
 list starts under the word a cell a character, not a byte. In Probe's markup,
 with Mod (Command on macOS) held and the pointer resting on a class its styles
@@ -566,8 +566,8 @@ acceptance suite or establish web input coverage.
 Before each independent engine GPU invocation, restore the bundled manifest:
 
 ```sh
-cp "$CHIBI_STUDIO_SOURCE/projects/studio/project.kdl" \
-  "$CHIBI_STUDIO_BUILD/share/chibi/studio/project.kdl"
+cp "$CHIBI_STUDIO_SOURCE/projects/studio/project.chibi" \
+  "$CHIBI_STUDIO_BUILD/share/chibi/studio/project.chibi"
 ```
 
 Studio migrates that build copy when it starts. Restoring it keeps each run on
@@ -627,6 +627,15 @@ draft. Scene Undo followed by source Undo must recover a later invalid draft.
 A missing behavior exercises accepted-but-not-applied status, no-op Apply status,
 and reversal of touched behavior attachments. Stale and invalid acceptance
 proposals must retain source bytes, typed model, and history.
+
+After those checks, the same first frame reuses Base with a scalar parameter
+and a pure helper. Inspector parameter gestures coalesce into one Undo step;
+a computed field edit preserves its formula and creates an explicit override.
+Changing the parameter retains that override. Reset override, Undo and Redo
+restore the expected evaluated values. Save and Reload preserve the helper and
+formula bytes. Long parameter keys sharing a 127-byte prefix remain distinct;
+queued parameter actions reject reordered keys and another selected prototype.
+This adds no files, worlds, frames or rendering passes.
 
 The same first frame also exercises one notified delete/return of the existing
 Apply file. A retained source stays dirty through Close, failed Save All and
@@ -755,3 +764,21 @@ cleanup before failing at `REQUIRE(test.retry_held == 1)`. This is separate from
 original authority control, whose early exit prints `retry_held=-1` (not run);
 candidate requires `retry_held=1`. It adds no frames,
 transport envelopes or actors to either invocation.
+
+## Typed prototype rendered review
+
+`studio-acceptance --typed-prototype-preview --project-root PATH --screenshot PATH`
+uses an isolated acceptance-project copy and the installed typed-assets SDK.
+Run it under the unchanged 60-second production supervisor after the workload
+has been reviewed and admitted. Configuration and compilation happen separately.
+It runs one process and two hidden frames, creates one tiny prototype file,
+and adds no actors, worlds or checkpoints. Frame one registers and opens the
+source, selects Code and Properties in the normal layout, and clears search.
+Frame two uses production emission and the host's screenshot readback to write
+one PNG. It asserts visible Parameters, numeric input, Computed and Override
+labels, the Reset override button, and evaluated Transform values. It adds no
+manual composition passes or simulated input. The temporary source remains
+available until host shutdown and is removed on success or failure; only a
+newly created prototypes directory is removed. The PNG is retained for visual
+review of spacing, baselines and controls. This selector does not expand
+`--prototype-source` or other acceptance workloads.

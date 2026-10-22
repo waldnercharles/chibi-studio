@@ -22,7 +22,7 @@
 #include "runtime/component_catalog.h"
 #include "runtime/declared_components.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/text_file.h"
 #include "support/xalloc.h"
 #include "ui/drag.h"
@@ -132,13 +132,13 @@ static void on_emit(void *user, const rml_event *event, const char *name, int ar
 static prototype *load_prototype(const studio_ui *studio_ui_state, const char *name, char *error, size_t size)
 {
     char path[1024];
-    snprintf(path, sizeof path, "%s/prototypes/%s.kdl", studio_ui_state->content_root, name);
+    snprintf(path, sizeof path, "%s/prototypes/%s.chibi", studio_ui_state->content_root, name);
     char *text = text_file_read(path);
     prototype *prototype = text
                              ? prototype_load(text, &studio_ui_state->registry, error, size)
                              : NULL;
     if (!text) {
-        snprintf(error, size, "prototypes/%s.kdl is missing", name);
+        snprintf(error, size, "prototypes/%s.chibi is missing", name);
     }
     free(text);
     return prototype;
@@ -148,9 +148,9 @@ static prototype *load_prototype(const studio_ui *studio_ui_state, const char *n
 static bool launch(studio_ui *studio_ui_state, char *error, size_t size)
 {
     char path[1024];
-    snprintf(path, sizeof path, "%s/scenes/Studio.kdl", studio_ui_state->content_root);
+    snprintf(path, sizeof path, "%s/scenes/Studio.chibi", studio_ui_state->content_root);
     char *text = text_file_read(path);
-    snprintf(error, size, "scenes/Studio.kdl is missing");
+    snprintf(error, size, "scenes/Studio.chibi is missing");
     scene_document *scene = text ? scene_document_load(text, error, size) : NULL;
     free(text);
     if (!scene) {
@@ -327,7 +327,7 @@ static void follow_disk(studio *s)
     char **changed = tree_watch_poll(
         &studio_ui_state->files,
         studio_ui_state->content_root,
-        DECLARATIVE_ASSET_EXTENSION,
+        CODE_ASSET_EXTENSION,
         s->time
     );
     char **code = tree_watch_poll(
@@ -372,7 +372,7 @@ static void follow_disk(studio *s)
     free_world(studio_ui_state);
     char error[256];
     if (!open_world(s, studio_ui_state, error, sizeof error)) {
-        report_error(s, "scenes/Studio.kdl", error);
+        report_error(s, "scenes/Studio.chibi", error);
     }
 }
 
@@ -409,7 +409,7 @@ studio_ui *studio_ui_new(studio *s, const char *project_root, char *error, size_
         studio_ui_free(studio_ui_state);
         return NULL;
     }
-    tree_watch_poll(&studio_ui_state->files, studio_ui_state->content_root, DECLARATIVE_ASSET_EXTENSION, 0);
+    tree_watch_poll(&studio_ui_state->files, studio_ui_state->content_root, CODE_ASSET_EXTENSION, 0);
     tree_watch_poll(&studio_ui_state->code_files, studio_ui_state->content_root, CODE_ASSET_EXTENSION, 0);
     return studio_ui_state;
 }

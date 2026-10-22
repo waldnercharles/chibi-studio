@@ -456,25 +456,62 @@ void run_graph_document_checks()
         graph_free(&ramp_graph);
     }
 
-    /* 10. load error handling: malformed JSON, missing fields, unknown type,
+    /* 10. load error handling: malformed source, missing fields, unknown type,
      * out-of-range pin. */
     {
         const char *bad[] = {
-            "{ not json",
-            "(array)nodes\n",
-            "version 3\n"
-            "id_counter 1\n"
-            "name \"\"\n"
-            "description \"\"\n"
-            "(array)nodes {\n"
-            "    - type=\"nope\"\n"
-            "}\n"
-            "(array)edges\n",
-            "version 3\n"
-            "(array)nodes {\n"
-            "    - type=\"Add\"\n"
-            "}\n"
-            "(array)edges\n",
+            "package asset\npub Build :: () -> byte[] {",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"nodes\", data.List([]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"version\", data.Value.Int(3)),\n"
+            "            data.Field.Named(\"id_counter\", data.Value.Int(1)),\n"
+            "            data.Field.Named(\"name\", data.Value.Text(\"\")),\n"
+            "            data.Field.Named(\"description\", "
+            "data.Value.Text(\"\")),\n"
+            "            data.Field.Named(\"nodes\", data.List([\n"
+            "                data.Object([\n"
+            "                    data.Field.Named(\"type\", "
+            "data.Value.Text(\"nope\"))\n"
+            "                ])\n"
+            "            ])),\n"
+            "            data.Field.Named(\"edges\", data.List([]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"version\", data.Value.Int(3)),\n"
+            "            data.Field.Named(\"nodes\", data.List([\n"
+            "                data.Object([\n"
+            "                    data.Field.Named(\"type\", "
+            "data.Value.Text(\"Add\"))\n"
+            "                ])\n"
+            "            ])),\n"
+            "            data.Field.Named(\"edges\", data.List([]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
         };
         test_check(graph_load(bad[0]) == NULL && graph_last_error()[0] != '\0', "malformed JSON rejected");
         test_check(graph_load(bad[1]) == NULL && graph_last_error()[0] != '\0', "missing edges array rejected");
@@ -482,9 +519,20 @@ void run_graph_document_checks()
         test_check(graph_load(bad[3]) == NULL, "malformed pin list rejected");
         test_check(
             graph_load(
-                "version 2\n"
-                "(array)nodes\n"
-                "(array)edges\n"
+                "package asset\n"
+                "\n"
+                "import data \"game:assets\"\n"
+                "\n"
+                "pub Build :: () -> byte[] {\n"
+                "    return data.Encode(\n"
+                "        data.Object([\n"
+                "            data.Field.Named(\"version\", "
+                "data.Value.Int(2)),\n"
+                "            data.Field.Named(\"nodes\", data.List([])),\n"
+                "            data.Field.Named(\"edges\", data.List([]))\n"
+                "        ])\n"
+                "    )\n"
+                "}\n"
             ) == NULL &&
                 strstr(graph_last_error(), "version"),
             "unsupported schema version rejected"
@@ -616,7 +664,11 @@ void run_graph_document_checks()
             test_check(g5.nodes[0]->input_pins[0].default_value.d == 2.0, "append: literal survives");
 
             int n_before = acount(g5.nodes);
-            test_check(graph_append(&g5, "{ not json", 0.0f, 0.0f) == -1, "append: bad json fails");
+            test_check(
+                graph_append(&g5, "package asset\npub Build :: () -> byte[] {", 0.0f, 0.0f) ==
+                    -1,
+                "append: bad json fails"
+            );
             test_check(acount(g5.nodes) == n_before, "append: graph untouched on error");
 
             graph_free(&g5);

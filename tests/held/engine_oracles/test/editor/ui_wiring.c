@@ -33,7 +33,7 @@ static void picker_choices()
 {
     reference_index *index = reference_index_new();
     reference_index_add_asset(index, REFERENCE_ASSET_UI, "Settings", "content/ui/Settings.rml", NULL);
-    reference_index_add_asset(index, REFERENCE_ASSET_PROTOTYPE, "Vault", "content/prototypes/Vault.kdl", NULL);
+    reference_index_add_asset(index, REFERENCE_ASSET_PROTOTYPE, "Vault", "content/prototypes/Vault.chibi", NULL);
     reference_index_add_asset(index, REFERENCE_ASSET_UI, "bank", "content/ui/bank.rml", NULL);
     int widgets = reference_index_add_asset(index, REFERENCE_ASSET_UI, "Widgets", "content/ui/Widgets.rml", NULL);
     reference_index_add_ui(index, widgets, "<use ui=\"Missing\"/>");
@@ -114,25 +114,47 @@ static void attached_documents()
     };
     char error[256];
     game_prototype *vault = game_prototype_load(
-        "name \"Vault\"\n"
-        "(array)behaviors {\n"
-        "    - \"Teller\"\n"
-        "}\n"
-        "components {\n"
-        "    GameUi {\n"
-        "        document \"Bank\"\n"
-        "    }\n"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Vault\")),\n"
+        "            data.Field.Named(\"behaviors\", data.List([\n"
+        "                data.Value.Text(\"Teller\")\n"
+        "            ])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"GameUi\", data.Object([\n"
+        "                    data.Field.Named(\"document\", "
+        "data.Value.Text(\"Bank\"))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
         "}\n",
         &registry,
         error,
         sizeof error
     );
     game_prototype *sign = game_prototype_load(
-        "name \"Sign\"\n"
-        "components {\n"
-        "    GameUi {\n"
-        "        document \"Notice\"\n"
-        "    }\n"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Sign\")),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"GameUi\", data.Object([\n"
+        "                    data.Field.Named(\"document\", "
+        "data.Value.Text(\"Notice\"))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
         "}\n",
         &registry,
         error,
@@ -148,15 +170,30 @@ static void attached_documents()
         index,
         REFERENCE_ASSET_PROTOTYPE,
         "Vault",
-        "content/prototypes/Vault.kdl",
+        "content/prototypes/Vault.chibi",
         NULL
     );
-    int other = reference_index_add_asset(index, REFERENCE_ASSET_PROTOTYPE, "Sign", "content/prototypes/Sign.kdl", NULL);
-    int scene = reference_index_add_asset(index, REFERENCE_ASSET_SCENE, "Hall", "content/scenes/Hall.kdl", NULL);
+    int other = reference_index_add_asset(index, REFERENCE_ASSET_PROTOTYPE, "Sign", "content/prototypes/Sign.chibi", NULL);
+    int scene = reference_index_add_asset(index, REFERENCE_ASSET_SCENE, "Hall", "content/scenes/Hall.chibi", NULL);
     reference_index_add_prototype(index, prototype, vault);
     reference_index_add_prototype(index, other, sign);
     const char *behaviors[] = { "Teller" };
-    av_value *overrides = test_read_asset_value("GAME.GameUi document=\"Desk\"; ");
+    av_value *overrides = test_read_asset_value(
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"GAME.GameUi\", data.Object([\n"
+        "                data.Field.Named(\"document\", "
+        "data.Value.Text(\"Desk\"))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
     reference_object clerk = { .name = "clerk",
                                .prototype = "Sign",
                                .base = sign,

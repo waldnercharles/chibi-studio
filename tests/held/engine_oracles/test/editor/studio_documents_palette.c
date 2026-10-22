@@ -467,7 +467,7 @@ static void refactor_renames_and_deletes()
 {
     char root[64], scene[128];
     copy_project(root, sizeof root);
-    snprintf(scene, sizeof scene, "%s/content/scenes/Vault.kdl", root);
+    snprintf(scene, sizeof scene, "%s/content/scenes/Vault.chibi", root);
     studio_fixture f = scene_open(root, scene, "Teller");
     studio *s = f.studio;
     frames(&f, 3);

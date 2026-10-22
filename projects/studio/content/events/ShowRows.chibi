@@ -1,0 +1,35 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(3)),
+            data.Field.Named("name", data.Value.Text("ShowRows")),
+            data.Field.Named("domain", data.Value.Text("event")),
+            data.Field.Named("id_counter", data.Value.UInt(3)),
+            data.Field.Named("description", data.Value.Text("A virtual list's rows in view changed: show Count rows from First.")),
+            data.Field.Named("variables", data.List([
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(1)),
+                    data.Field.Named("name", data.Value.Text("First")),
+                    data.Field.Named("type", data.Value.Text("int")),
+                    data.Field.Named("category", data.Value.Text("Payload"))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(2)),
+                    data.Field.Named("name", data.Value.Text("Count")),
+                    data.Field.Named("type", data.Value.Text("int")),
+                    data.Field.Named("category", data.Value.Text("Payload"))
+                ])
+            ])),
+            data.Field.Named("graphs", data.List([
+                data.Object([
+                    data.Field.Named("kind", data.Value.Text("event")),
+                    data.Field.Named("name", data.Value.Text(""))
+                ])
+            ]))
+        ])
+    )
+}

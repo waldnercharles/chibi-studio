@@ -455,7 +455,7 @@ static tabs_fixture fixture_new(bool with_studio)
     );
     assert(app_scene_authoring_set_content_root(f.scene, PROJECT "/content") == 0);
     assert(app_scene_authoring_load_content(f.scene) == 0);
-    assert(app_scene_authoring_load(f.scene, PROJECT "/content/scenes/Main.kdl") == 0);
+    assert(app_scene_authoring_load(f.scene, PROJECT "/content/scenes/Main.chibi") == 0);
     f.studio = with_studio ? studio_new(f.scene, f.viewport, PROJECT) : NULL;
     return f;
 }
@@ -754,10 +754,40 @@ static void scene_reload_preserves_document(const char *folder)
     char scenes[PATH_MAX], first[PATH_MAX], second[PATH_MAX];
     snprintf(scenes, sizeof scenes, "%s/scenes", folder);
     assert(mkdir(scenes, 0700) == 0);
-    snprintf(first, sizeof first, "%s/scenes/First.kdl", folder);
-    snprintf(second, sizeof second, "%s/scenes/Second.kdl", folder);
-    write_text(first, "version 1\nname \"First\"\n(array)entities\n");
-    write_text(second, "version 1\nname \"Second\"\n(array)entities\n");
+    snprintf(first, sizeof first, "%s/scenes/First.chibi", folder);
+    snprintf(second, sizeof second, "%s/scenes/Second.chibi", folder);
+    write_text(
+        first,
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"First\")),\n"
+        "            data.Field.Named(\"entities\", data.List([]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
+    write_text(
+        second,
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Second\")),\n"
+        "            data.Field.Named(\"entities\", data.List([]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    );
     assert(app_scene_authoring_set_content_root(scene, folder) == 0);
     assert(scene_tabs_open_scene(scene, first) == 0);
     int first_tab = scene->active_tab;

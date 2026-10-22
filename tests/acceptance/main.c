@@ -1,3 +1,4 @@
+#include "support/asset_document.h"
 #define PICO_UNIT_IMPLEMENTATION
 #include "assets/input_map.h"
 #include "authoring/preview_source.h"
@@ -52,7 +53,7 @@ static bool callback_ok = true;
 static enum {
     SOURCE_EDIT,
     CODE_KEYS,
-    KDL_KEYS,
+    ASSET_KEYS,
     EXPORT_GAME,
     GRAPH_VISIBILITY,
     GRAPH_KEYS,
@@ -65,6 +66,7 @@ static enum {
     SCENE_MOVE,
     PROTOTYPE_SOURCE,
     PROTOTYPE_SOURCE_AUTHORITY,
+    TYPED_PROTOTYPE_PREVIEW,
     OUTLINER_MOVE,
     OUTLINER_ROWS,
     SCENE_PHYSICS,
@@ -201,7 +203,24 @@ static bool input_map_reloads(studio *s)
     char *path = content_path_join(s->scene->content_root, INPUT_MAP_FILE);
     FILE *file = fopen(path, "wb");
     REQUIRE(file);
-    fputs("Jump {\n    (array)sources \"Space\"\n}\n", file);
+    fputs(
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"Jump\", data.Object([\n"
+        "                data.Field.Named(\"sources\", data.List([\n"
+        "                    data.Value.Text(\"Space\")\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        file
+    );
     fclose(file);
     app_disk_result result = app_scene_authoring_reload_path(s->scene, path);
     remove(path);
@@ -807,15 +826,99 @@ static bool static_source_history(studio *s)
     REQUIRE(mkdtemp(root));
     const char *folders[] = { "relationships", "prototypes" };
     const char *names[] = { "Targets", "Enemy" };
-    const char *original[] = { "Targets :: relationship { exclusive:true }",
-                               "Enemy :: prototype {}" };
+    const char *original[] = {
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"Targets\")),\n"
+        "            data.Field.Named(\"exclusive\", data.Value.Bool(true))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Enemy\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    };
     const char *changed[] = {
-        "Targets :: relationship { exclusive:false }",
-        "Enemy :: prototype { StaticHealth {current:2} }"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"Targets\")),\n"
+        "            data.Field.Named(\"exclusive\", data.Value.Bool(false))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Enemy\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"StaticHealth\", data.Object([\n"
+        "                    data.Field.Named(\"current\", "
+        "data.Value.UInt(2))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
     };
     const char *invalid[] = {
-        "Targets :: relationship { exclusive:1 }",
-        "Enemy :: prototype { StaticHealth {current:\"bad\"} }"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"Targets\")),\n"
+        "            data.Field.Named(\"exclusive\", data.Value.UInt(1))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Enemy\")),\n"
+        "            data.Field.Named(\"includes\", data.List([])),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"StaticHealth\", data.Object([\n"
+        "                    data.Field.Named(\"current\", "
+        "data.Value.Text(\"bad\"))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
     };
     for (int i = 0; i < 2; i++) {
         snprintf(directory, sizeof directory, "%s/%s", root, folders[i]);
@@ -974,7 +1077,7 @@ static bool source_edit_frame(void *state)
    for the completion list to open, then comments a line, finds, rests the
    caret in another tab and steps a frame. */
 #define KEY_FRAMES 38
-#define KDL_FRAMES 14
+#define ASSET_KEY_FRAMES 14
 #define TEXT(x) #x
 #define FRAMES_TEXT(x) TEXT(x)
 
@@ -1076,14 +1179,14 @@ static const char commented_bytes[] = "Counter :: behavior {\n"
 static asset_code *scene_code(studio *s)
 {
     for (int i = 0; i < acount(s->code.assets); i++) {
-        if (strstr(asset_code_path(s->code.assets[i]), "Start.kdl")) {
+        if (strstr(asset_code_path(s->code.assets[i]), "Start.chibi")) {
             return s->code.assets[i];
         }
     }
     return NULL;
 }
 
-/* The scene's KDL in the Text Editor settles once typed in, so Save writes
+/* The scene source in the Text Editor settles once typed in, so Save writes
    it. */
 static bool scene_saves(studio *s)
 {
@@ -1242,13 +1345,13 @@ static bool undoes_to_save(asset_code *code)
     return true;
 }
 
-/* Enter at the end of the open scene's KDL settles without waiting on a
+/* Enter at the end of the open scene source settles without waiting on a
    graph, so Save writes it. */
-static bool kdl_keys_frame(void *state)
+static bool asset_keys_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
     frames++;
-    REQUIRE(frames <= KDL_FRAMES);
+    REQUIRE(frames <= ASSET_KEY_FRAMES);
     if (frames == 1) {
         studio_show_editor(s, STUDIO_EDITOR_CODE);
         return true;
@@ -1265,7 +1368,7 @@ static bool kdl_keys_frame(void *state)
         REQUIRE(scene_saves(s));
     } else if (frames == 12) {
         kit_code_paste(asset_code_editor(scene), "x");
-    } else if (frames == KDL_FRAMES) {
+    } else if (frames == ASSET_KEY_FRAMES) {
         REQUIRE(undoes_to_save(scene));
     }
     return true;
@@ -2262,7 +2365,24 @@ static bool add_probe(studio *s)
     REQUIRE(
         app_scene_authoring_register_prototype(
             scene,
-            "name \"Probe\"\ncomponents {\n    Transform x=0 y=0\n}\n",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Probe\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"Transform\", data.Object([\n"
+            "                    data.Field.Named(\"x\", data.Value.UInt(0)),\n"
+            "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+            "                ]))\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
             NULL
         ) == 0
     );
@@ -2429,56 +2549,255 @@ static bool write_content(const char *folder, const char *file, const char *text
 /* A component naming another object, which the game sets as it runs. */
 static const char
     link_component[] = "Link :: component {\n    target: entity\n}\n";
-static const char
-    linked_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
-                     "    - name=\"A\" prototype=\"Linker\"\n"
-                     "    - name=\"B\" prototype=\"Linker\"\n"
-                     "}\n";
+static const char linked_scene[] =
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+    "            data.Field.Named(\"name\", data.Value.Text(\"Scene\")),\n"
+    "            data.Field.Named(\"entities\", data.List([\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"name\", data.Value.Text(\"A\")),\n"
+    "                    data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Linker\"))\n"
+    "                ]),\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"name\", data.Value.Text(\"B\")),\n"
+    "                    data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Linker\"))\n"
+    "                ])\n"
+    "            ]))\n"
+    "        ])\n"
+    "    )\n"
+    "}\n";
 
 /* A names the ship's turret by its path. */
-static const char
-    path_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
-                   "    - name=\"Ship\" prototype=\"Hull\" { (array)children "
-                   "{ - name=\"Turret\" prototype=\"Hull\"; }; }\n"
-                   "    - name=\"A\" prototype=\"Linker\" { components "
-                   "{ Link target=\"Ship.Turret\"; }; }\n"
-                   "}\n";
-
-/* A names the turret, and B a gun the ship does not have. */
-static const char renamed_scene
-    [] = "version 1\nname \"Scene\"\n(array)entities {\n"
-         "    - name=\"Ship\" prototype=\"Hull\" { (array)children "
-         "{ - name=\"Turret\" prototype=\"Hull\"; }; }\n"
-         "    - name=\"A\" prototype=\"Linker\" { components "
-         "{ Link target=\"Ship.Turret\"; }; }\n"
-         "    - name=\"B\" prototype=\"Linker\" { components "
-         "{ Link target=\"Ship.Gun\"; }; }\n"
+static const char path_scene
+    [] = "package asset\n"
+         "\n"
+         "import data \"game:assets\"\n"
+         "\n"
+         "pub Build :: () -> byte[] {\n"
+         "    return data.Encode(\n"
+         "        data.Object([\n"
+         "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+         "            data.Field.Named(\"name\", data.Value.Text(\"Scene\")),\n"
+         "            data.Field.Named(\"entities\", data.List([\n"
+         "                data.Object([\n"
+         "                    data.Field.Named(\"name\", "
+         "data.Value.Text(\"Ship\")),\n"
+         "                    data.Field.Named(\"prototype\", "
+         "data.Value.Text(\"Hull\")),\n"
+         "                    data.Field.Named(\"children\", data.List([\n"
+         "                        data.Object([\n"
+         "                            data.Field.Named(\"name\", "
+         "data.Value.Text(\"Turret\")),\n"
+         "                            data.Field.Named(\"prototype\", "
+         "data.Value.Text(\"Hull\"))\n"
+         "                        ])\n"
+         "                    ]))\n"
+         "                ]),\n"
+         "                data.Object([\n"
+         "                    data.Field.Named(\"name\", "
+         "data.Value.Text(\"A\")),\n"
+         "                    data.Field.Named(\"prototype\", "
+         "data.Value.Text(\"Linker\")),\n"
+         "                    data.Field.Named(\"components\", data.Object([\n"
+         "                        data.Field.Named(\"Link\", data.Object([\n"
+         "                            data.Field.Named(\"target\", "
+         "data.Value.Text(\"Ship.Turret\"))\n"
+         "                        ]))\n"
+         "                    ]))\n"
+         "                ])\n"
+         "            ]))\n"
+         "        ])\n"
+         "    )\n"
          "}\n";
 
+/* A names the turret, and B a gun the ship does not have. */
+static const char renamed_scene[] =
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+    "            data.Field.Named(\"name\", data.Value.Text(\"Scene\")),\n"
+    "            data.Field.Named(\"entities\", data.List([\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"name\", "
+    "data.Value.Text(\"Ship\")),\n"
+    "                    data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Hull\")),\n"
+    "                    data.Field.Named(\"children\", data.List([\n"
+    "                        data.Object([\n"
+    "                            data.Field.Named(\"name\", "
+    "data.Value.Text(\"Turret\")),\n"
+    "                            data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Hull\"))\n"
+    "                        ])\n"
+    "                    ]))\n"
+    "                ]),\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"name\", data.Value.Text(\"A\")),\n"
+    "                    data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Linker\")),\n"
+    "                    data.Field.Named(\"components\", data.Object([\n"
+    "                        data.Field.Named(\"Link\", data.Object([\n"
+    "                            data.Field.Named(\"target\", "
+    "data.Value.Text(\"Ship.Turret\"))\n"
+    "                        ]))\n"
+    "                    ]))\n"
+    "                ]),\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"name\", data.Value.Text(\"B\")),\n"
+    "                    data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Linker\")),\n"
+    "                    data.Field.Named(\"components\", data.Object([\n"
+    "                        data.Field.Named(\"Link\", data.Object([\n"
+    "                            data.Field.Named(\"target\", "
+    "data.Value.Text(\"Ship.Gun\"))\n"
+    "                        ]))\n"
+    "                    ]))\n"
+    "                ])\n"
+    "            ]))\n"
+    "        ])\n"
+    "    )\n"
+    "}\n";
+
 /* A and B name paths no object has. */
-static const char
-    unresolved_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
-                         "    - name=\"A\" prototype=\"Linker\" { components "
-                         "{ Link target=\"Nowhere\"; }; }\n"
-                         "    - name=\"B\" prototype=\"Linker\" { components "
-                         "{ Link target=\"Elsewhere\"; }; }\n"
-                         "}\n";
+static const char unresolved_scene[] =
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+    "            data.Field.Named(\"name\", data.Value.Text(\"Scene\")),\n"
+    "            data.Field.Named(\"entities\", data.List([\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"name\", data.Value.Text(\"A\")),\n"
+    "                    data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Linker\")),\n"
+    "                    data.Field.Named(\"components\", data.Object([\n"
+    "                        data.Field.Named(\"Link\", data.Object([\n"
+    "                            data.Field.Named(\"target\", "
+    "data.Value.Text(\"Nowhere\"))\n"
+    "                        ]))\n"
+    "                    ]))\n"
+    "                ]),\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"name\", data.Value.Text(\"B\")),\n"
+    "                    data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Linker\")),\n"
+    "                    data.Field.Named(\"components\", data.Object([\n"
+    "                        data.Field.Named(\"Link\", data.Object([\n"
+    "                            data.Field.Named(\"target\", "
+    "data.Value.Text(\"Elsewhere\"))\n"
+    "                        ]))\n"
+    "                    ]))\n"
+    "                ])\n"
+    "            ]))\n"
+    "        ])\n"
+    "    )\n"
+    "}\n";
 
 /* A ship with a turret, and a root that shares the turret's name. */
-static const char
-    nested_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
-                     "    - name=\"Ship\" prototype=\"Hull\" { (array)children "
-                     "{ - name=\"Turret\" prototype=\"Hull\"; }; }\n"
-                     "    - name=\"Turret\" prototype=\"Hull\"\n"
-                     "}\n";
+static const char nested_scene
+    [] = "package asset\n"
+         "\n"
+         "import data \"game:assets\"\n"
+         "\n"
+         "pub Build :: () -> byte[] {\n"
+         "    return data.Encode(\n"
+         "        data.Object([\n"
+         "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+         "            data.Field.Named(\"name\", data.Value.Text(\"Scene\")),\n"
+         "            data.Field.Named(\"entities\", data.List([\n"
+         "                data.Object([\n"
+         "                    data.Field.Named(\"name\", "
+         "data.Value.Text(\"Ship\")),\n"
+         "                    data.Field.Named(\"prototype\", "
+         "data.Value.Text(\"Hull\")),\n"
+         "                    data.Field.Named(\"children\", data.List([\n"
+         "                        data.Object([\n"
+         "                            data.Field.Named(\"name\", "
+         "data.Value.Text(\"Turret\")),\n"
+         "                            data.Field.Named(\"prototype\", "
+         "data.Value.Text(\"Hull\"))\n"
+         "                        ])\n"
+         "                    ]))\n"
+         "                ]),\n"
+         "                data.Object([\n"
+         "                    data.Field.Named(\"name\", "
+         "data.Value.Text(\"Turret\")),\n"
+         "                    data.Field.Named(\"prototype\", "
+         "data.Value.Text(\"Hull\"))\n"
+         "                ])\n"
+         "            ]))\n"
+         "        ])\n"
+         "    )\n"
+         "}\n";
 
 /* A turned ship whose turret sits ten units ahead of it. */
 static const char turned_scene[] =
-    "version 1\nname \"Scene\"\n(array)entities {\n"
-    "    - name=\"Ship\" prototype=\"Hull\" { components { Transform "
-    "x=100.0 y=0.0; "
-    "Orientation radians=1.5707964; }; (array)children { - name=\"Turret\" "
-    "prototype=\"Hull\" { components { Transform x=10.0 y=0.0; }; }; }; }\n"
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+    "            data.Field.Named(\"name\", data.Value.Text(\"Scene\")),\n"
+    "            data.Field.Named(\"entities\", data.List([\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"name\", "
+    "data.Value.Text(\"Ship\")),\n"
+    "                    data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Hull\")),\n"
+    "                    data.Field.Named(\"components\", data.Object([\n"
+    "                        data.Field.Named(\"Transform\", data.Object([\n"
+    "                            data.Field.Named(\"x\", "
+    "data.Value.Real(100.0)),\n"
+    "                            data.Field.Named(\"y\", "
+    "data.Value.Real(0.0))\n"
+    "                        ])),\n"
+    "                        data.Field.Named(\"Orientation\", data.Object([\n"
+    "                            data.Field.Named(\"radians\", "
+    "data.Value.Real(1.5707964))\n"
+    "                        ]))\n"
+    "                    ])),\n"
+    "                    data.Field.Named(\"children\", data.List([\n"
+    "                        data.Object([\n"
+    "                            data.Field.Named(\"name\", "
+    "data.Value.Text(\"Turret\")),\n"
+    "                            data.Field.Named(\"prototype\", "
+    "data.Value.Text(\"Hull\")),\n"
+    "                            data.Field.Named(\"components\", "
+    "data.Object([\n"
+    "                                data.Field.Named(\"Transform\", "
+    "data.Object([\n"
+    "                                    data.Field.Named(\"x\", "
+    "data.Value.Real(10.0)),\n"
+    "                                    data.Field.Named(\"y\", "
+    "data.Value.Real(0.0))\n"
+    "                                ]))\n"
+    "                            ]))\n"
+    "                        ])\n"
+    "                    ]))\n"
+    "                ])\n"
+    "            ]))\n"
+    "        ])\n"
+    "    )\n"
     "}\n";
 
 static bool child_of(app_scene_authoring *scene, int child, int parent)
@@ -2590,8 +2909,29 @@ static bool renames_paths(app_scene_authoring *scene)
 static bool names_by_path(app_scene_authoring *scene)
 {
     REQUIRE(
-        app_scene_authoring_register_prototype(scene, "name \"Linker\"\ncomponents {\n    Link\n    Transform x=0 y=0\n}\n", NULL) ==
-        0
+        app_scene_authoring_register_prototype(
+            scene,
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Linker\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"Link\", data.Object([])),\n"
+            "                data.Field.Named(\"Transform\", data.Object([\n"
+            "                    data.Field.Named(\"x\", data.Value.UInt(0)),\n"
+            "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+            "                ]))\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
+            NULL
+        ) == 0
     );
     REQUIRE(scene_authoring_load_text(scene, path_scene, NULL) == 0);
     REQUIRE(acount(scene->actors) == 3 && links(scene, 2, 1) && saves_as(scene, path_scene));
@@ -2739,10 +3079,36 @@ static bool scene_hierarchy_frame(void *state)
     REQUIRE(
         app_scene_authoring_register_prototype(
             scene,
-            "name \"Hull\"\ncomponents {\n    Transform x=0 y=0\n    "
-            "Orientation "
-            "radians=0\n    Appearance shape=\"Box\" width=4.0 "
-            "height=4.0\n}\n",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Hull\")),\n"
+            "            data.Field.Named(\"components\", data.Object([\n"
+            "                data.Field.Named(\"Transform\", data.Object([\n"
+            "                    data.Field.Named(\"x\", data.Value.UInt(0)),\n"
+            "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+            "                ])),\n"
+            "                data.Field.Named(\"Orientation\", data.Object([\n"
+            "                    data.Field.Named(\"radians\", "
+            "data.Value.UInt(0))\n"
+            "                ])),\n"
+            "                data.Field.Named(\"Appearance\", data.Object([\n"
+            "                    data.Field.Named(\"shape\", "
+            "data.Value.Text(\"Box\")),\n"
+            "                    data.Field.Named(\"width\", "
+            "data.Value.Real(4.0)),\n"
+            "                    data.Field.Named(\"height\", "
+            "data.Value.Real(4.0))\n"
+            "                ]))\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
             NULL
         ) == 0
     );
@@ -2773,11 +3139,46 @@ static bool scene_hierarchy_frame(void *state)
     snprintf(
         expected,
         sizeof expected,
-        "version 1\nname \"Scene\"\n(array)entities {\n"
-        "    - name=\"Ship\" prototype=\"Hull\" { (array)children { - "
-        "name=\"Turret\" prototype=\"Hull\"; "
-        "- name=\"%s\" prototype=\"Hull\"; }; }\n"
-        "    - name=\"Turret\" prototype=\"Hull\"\n}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Scene\")),\n"
+        "            data.Field.Named(\"entities\", data.List([\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Ship\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"Hull\")),\n"
+        "                    data.Field.Named(\"children\", data.List([\n"
+        "                        data.Object([\n"
+        "                            data.Field.Named(\"name\", "
+        "data.Value.Text(\"Turret\")),\n"
+        "                            data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"Hull\"))\n"
+        "                        ]),\n"
+        "                        data.Object([\n"
+        "                            data.Field.Named(\"name\", "
+        "data.Value.Text(\"%s\")),\n"
+        "                            data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"Hull\"))\n"
+        "                        ])\n"
+        "                    ]))\n"
+        "                ]),\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Turret\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"Hull\"))\n"
+        "                ])\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
         scene->actors[2].name
     );
     REQUIRE(saves_as(scene, expected));
@@ -2802,21 +3203,61 @@ static bool scene_hierarchy_frame(void *state)
     return select_crossed_links(s);
 }
 
-static const char physics_crate[] = "name \"Crate3D\"\ncomponents {\n"
-                                    "    Body3D type=\"Dynamic\"\n"
-                                    "    Collider3D {\n"
-                                    "        category 1\n"
-                                    "        mask 1\n"
-                                    "        size x=32.0 y=32.0 z=32.0\n"
-                                    "    }\n"
-                                    "    Transform3D {\n"
-                                    "        scale x=1.0 y=1.0 z=1.0\n"
-                                    "    }\n"
-                                    "}\n";
-static const char
-    physics_scene[] = "version 1\nname \"Scene\"\n(array)entities {\n"
-                      "    - name=\"Crate\" prototype=\"Crate3D\"\n"
-                      "}\n";
+static const char physics_crate[] =
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"name\", data.Value.Text(\"Crate3D\")),\n"
+    "            data.Field.Named(\"components\", data.Object([\n"
+    "                data.Field.Named(\"Body3D\", data.Object([\n"
+    "                    data.Field.Named(\"type\", "
+    "data.Value.Text(\"Dynamic\"))\n"
+    "                ])),\n"
+    "                data.Field.Named(\"Collider3D\", data.Object([\n"
+    "                    data.Field.Named(\"category\", data.Value.UInt(1)),\n"
+    "                    data.Field.Named(\"mask\", data.Value.UInt(1)),\n"
+    "                    data.Field.Named(\"size\", data.Object([\n"
+    "                        data.Field.Named(\"x\", data.Value.Real(32.0)),\n"
+    "                        data.Field.Named(\"y\", data.Value.Real(32.0)),\n"
+    "                        data.Field.Named(\"z\", data.Value.Real(32.0))\n"
+    "                    ]))\n"
+    "                ])),\n"
+    "                data.Field.Named(\"Transform3D\", data.Object([\n"
+    "                    data.Field.Named(\"scale\", data.Object([\n"
+    "                        data.Field.Named(\"x\", data.Value.Real(1.0)),\n"
+    "                        data.Field.Named(\"y\", data.Value.Real(1.0)),\n"
+    "                        data.Field.Named(\"z\", data.Value.Real(1.0))\n"
+    "                    ]))\n"
+    "                ]))\n"
+    "            ]))\n"
+    "        ])\n"
+    "    )\n"
+    "}\n";
+static const char physics_scene
+    [] = "package asset\n"
+         "\n"
+         "import data \"game:assets\"\n"
+         "\n"
+         "pub Build :: () -> byte[] {\n"
+         "    return data.Encode(\n"
+         "        data.Object([\n"
+         "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+         "            data.Field.Named(\"name\", data.Value.Text(\"Scene\")),\n"
+         "            data.Field.Named(\"entities\", data.List([\n"
+         "                data.Object([\n"
+         "                    data.Field.Named(\"name\", "
+         "data.Value.Text(\"Crate\")),\n"
+         "                    data.Field.Named(\"prototype\", "
+         "data.Value.Text(\"Crate3D\"))\n"
+         "                ])\n"
+         "            ]))\n"
+         "        ])\n"
+         "    )\n"
+         "}\n";
 
 /* Whether 3D physics holds a moving body for the scene's first object. */
 static bool moving_3d(app_scene_authoring *scene)
@@ -2863,19 +3304,28 @@ static const char *const spares[] = { "SpareA", "SpareB", "SpareC" };
 
 static bool spare_path(const char *name, char *path, size_t size)
 {
-    int length = snprintf(path, size, "%s/content/prototypes/%s.kdl", project, name);
+    int length = snprintf(path, size, "%s/content/prototypes/%s.chibi", project, name);
     REQUIRE(length > 0 && (size_t)length < size);
     return true;
 }
 
 static bool write_spare(const char *name)
 {
-    char path[1024], text[128];
+    char path[1024];
     REQUIRE(spare_path(name, path, sizeof path));
-    snprintf(text, sizeof text, "name \"%s\"\ncomponents {\n    (object)Transform\n}\n", name);
+    av_doc *document = av_doc_new();
+    av_value *root = av_obj(document);
+    av_doc_set_root(document, root);
+    av_obj_add_str(document, root, "name", name);
+    av_value *components = av_obj_add_obj(document, root, "components");
+    av_obj_add_obj(document, components, "Transform");
+    char *text = asset_document_write(root);
+    av_doc_free(document);
+    REQUIRE(text);
     FILE *file = fopen(path, "wb");
     REQUIRE(file);
     bool written = fputs(text, file) >= 0;
+    free(text);
     REQUIRE(fclose(file) == 0 && written);
     return true;
 }
@@ -2997,17 +3447,46 @@ static bool select_and_delete(studio *s)
 
 /* A box, and inside it a spot with nothing to draw, which a marker shows. */
 static const char marked_scene
-    [] = "version 1\nname \"Scene\"\n(array)entities {\n"
-         "    - name=\"Box\" prototype=\"Box\"\n"
-         "    - name=\"Spot\" prototype=\"Spot\" { components { Transform "
-         "x=5.0 y=5.0; }; }\n"
+    [] = "package asset\n"
+         "\n"
+         "import data \"game:assets\"\n"
+         "\n"
+         "pub Build :: () -> byte[] {\n"
+         "    return data.Encode(\n"
+         "        data.Object([\n"
+         "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+         "            data.Field.Named(\"name\", data.Value.Text(\"Scene\")),\n"
+         "            data.Field.Named(\"entities\", data.List([\n"
+         "                data.Object([\n"
+         "                    data.Field.Named(\"name\", "
+         "data.Value.Text(\"Box\")),\n"
+         "                    data.Field.Named(\"prototype\", "
+         "data.Value.Text(\"Box\"))\n"
+         "                ]),\n"
+         "                data.Object([\n"
+         "                    data.Field.Named(\"name\", "
+         "data.Value.Text(\"Spot\")),\n"
+         "                    data.Field.Named(\"prototype\", "
+         "data.Value.Text(\"Spot\")),\n"
+         "                    data.Field.Named(\"components\", data.Object([\n"
+         "                        data.Field.Named(\"Transform\", "
+         "data.Object([\n"
+         "                            data.Field.Named(\"x\", "
+         "data.Value.Real(5.0)),\n"
+         "                            data.Field.Named(\"y\", "
+         "data.Value.Real(5.0))\n"
+         "                        ]))\n"
+         "                    ]))\n"
+         "                ])\n"
+         "            ]))\n"
+         "        ])\n"
+         "    )\n"
          "}\n";
 /* More undrawn objects than any fixed count of markers the Scene kept, laid
    out inside the box's 40 by 40, so a framed view shows them all. */
 #define CROWD_COLUMNS 20
 #define CROWD_ROWS 15
 #define CROWD (CROWD_COLUMNS * CROWD_ROWS)
-#define CROWD_LINE 128 /* room for each spot's line of the scene */
 #define VIEWPORT_FRAMES 19
 /* The narrow Scene the hint must fit: under the hint box's 320 dp. */
 #define NARROW_SCENE_DP 240.0f
@@ -3139,9 +3618,28 @@ static bool previewed_prototype_plays(studio *s)
 }
 
 /* A prototype that runs Counter, this project's source behavior. */
-static const char ticker_prototype[] = "name \"Ticker\"\ncomponents {\n"
-                                       "    Transform x=0 y=0\n}\n"
-                                       "(array)behaviors \"Counter\"\n";
+static const char ticker_prototype
+    [] = "package asset\n"
+         "\n"
+         "import data \"game:assets\"\n"
+         "\n"
+         "pub Build :: () -> byte[] {\n"
+         "    return data.Encode(\n"
+         "        data.Object([\n"
+         "            data.Field.Named(\"name\", "
+         "data.Value.Text(\"Ticker\")),\n"
+         "            data.Field.Named(\"components\", data.Object([\n"
+         "                data.Field.Named(\"Transform\", data.Object([\n"
+         "                    data.Field.Named(\"x\", data.Value.UInt(0)),\n"
+         "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+         "                ]))\n"
+         "            ])),\n"
+         "            data.Field.Named(\"behaviors\", data.List([\n"
+         "                data.Value.Text(\"Counter\")\n"
+         "            ]))\n"
+         "        ])\n"
+         "    )\n"
+         "}\n";
 
 /* Counter's `count` state as the preview's world published it. */
 static uint64_t previewed_count_state(app_scene_authoring *scene)
@@ -3219,28 +3717,122 @@ static bool grid_after_list_filter(studio *s)
 }
 
 /* A field of one value everywhere, whose thumbnail is one flat color. */
-static const char flat_field
-    [] = "version 3\nname \"Flat\"\ndomain \"field\"\nid_counter 10\n"
-         "(array)graphs {\n    - {\n        kind \"event\"\n"
-         "        name \"\"\n        (array)nodes {\n"
-         "            - id=1 type=\"Field Constant\" { inputs Value=-1.0; }\n"
-         "            - id=4 type=\"Field Output\"\n        }\n"
-         "        (array)edges {\n            - from=\"1.Value\" "
-         "to=\"4.Value\"\n"
-         "        }\n    }\n}\n";
+static const char flat_field[] =
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"version\", data.Value.UInt(3)),\n"
+    "            data.Field.Named(\"name\", data.Value.Text(\"Flat\")),\n"
+    "            data.Field.Named(\"domain\", data.Value.Text(\"field\")),\n"
+    "            data.Field.Named(\"id_counter\", data.Value.UInt(10)),\n"
+    "            data.Field.Named(\"graphs\", data.List([\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"kind\", "
+    "data.Value.Text(\"event\")),\n"
+    "                    data.Field.Named(\"name\", data.Value.Text(\"\")),\n"
+    "                    data.Field.Named(\"nodes\", data.List([\n"
+    "                        data.Object([\n"
+    "                            data.Field.Named(\"id\", "
+    "data.Value.UInt(1)),\n"
+    "                            data.Field.Named(\"type\", "
+    "data.Value.Text(\"Field Constant\")),\n"
+    "                            data.Field.Named(\"inputs\", data.Object([\n"
+    "                                data.Field.Named(\"Value\", "
+    "data.Value.Real(-1.0))\n"
+    "                            ]))\n"
+    "                        ]),\n"
+    "                        data.Object([\n"
+    "                            data.Field.Named(\"id\", "
+    "data.Value.UInt(4)),\n"
+    "                            data.Field.Named(\"type\", "
+    "data.Value.Text(\"Field Output\"))\n"
+    "                        ])\n"
+    "                    ])),\n"
+    "                    data.Field.Named(\"edges\", data.List([\n"
+    "                        data.Object([\n"
+    "                            data.Field.Named(\"from\", "
+    "data.Value.Text(\"1.Value\")),\n"
+    "                            data.Field.Named(\"to\", "
+    "data.Value.Text(\"4.Value\"))\n"
+    "                        ])\n"
+    "                    ]))\n"
+    "                ])\n"
+    "            ]))\n"
+    "        ])\n"
+    "    )\n"
+    "}\n";
 /* A shape whose outline lies far outside its frame, which covers nothing,
    and a UI document whose one box paints nothing. */
-static const char blank_shape
-    [] = "version 3\nname \"Blank\"\ndomain \"shape\"\nbounds_x 16.0\n"
-         "bounds_y 16.0\nid_counter 11\n(array)graphs {\n    - {\n"
-         "        kind \"event\"\n        name \"\"\n        (array)nodes {\n"
-         "            - id=1 type=\"Shader Shape Output\"\n"
-         "            - id=3 type=\"Shader Vector2\" { inputs X=1000.0; }\n"
-         "            - id=7 type=\"Shader Circle\" { inputs Radius=1.0; }\n"
-         "        }\n        (array)edges {\n"
-         "            - from=\"3.Value\" to=\"7.Position\"\n"
-         "            - from=\"7.Value\" to=\"1.Distance\"\n"
-         "        }\n    }\n}\n";
+static const char blank_shape[] =
+    "package asset\n"
+    "\n"
+    "import data \"game:assets\"\n"
+    "\n"
+    "pub Build :: () -> byte[] {\n"
+    "    return data.Encode(\n"
+    "        data.Object([\n"
+    "            data.Field.Named(\"version\", data.Value.UInt(3)),\n"
+    "            data.Field.Named(\"name\", data.Value.Text(\"Blank\")),\n"
+    "            data.Field.Named(\"domain\", data.Value.Text(\"shape\")),\n"
+    "            data.Field.Named(\"bounds_x\", data.Value.Real(16.0)),\n"
+    "            data.Field.Named(\"bounds_y\", data.Value.Real(16.0)),\n"
+    "            data.Field.Named(\"id_counter\", data.Value.UInt(11)),\n"
+    "            data.Field.Named(\"graphs\", data.List([\n"
+    "                data.Object([\n"
+    "                    data.Field.Named(\"kind\", "
+    "data.Value.Text(\"event\")),\n"
+    "                    data.Field.Named(\"name\", data.Value.Text(\"\")),\n"
+    "                    data.Field.Named(\"nodes\", data.List([\n"
+    "                        data.Object([\n"
+    "                            data.Field.Named(\"id\", "
+    "data.Value.UInt(1)),\n"
+    "                            data.Field.Named(\"type\", "
+    "data.Value.Text(\"Shader Shape Output\"))\n"
+    "                        ]),\n"
+    "                        data.Object([\n"
+    "                            data.Field.Named(\"id\", "
+    "data.Value.UInt(3)),\n"
+    "                            data.Field.Named(\"type\", "
+    "data.Value.Text(\"Shader Vector2\")),\n"
+    "                            data.Field.Named(\"inputs\", data.Object([\n"
+    "                                data.Field.Named(\"X\", "
+    "data.Value.Real(1000.0))\n"
+    "                            ]))\n"
+    "                        ]),\n"
+    "                        data.Object([\n"
+    "                            data.Field.Named(\"id\", "
+    "data.Value.UInt(7)),\n"
+    "                            data.Field.Named(\"type\", "
+    "data.Value.Text(\"Shader Circle\")),\n"
+    "                            data.Field.Named(\"inputs\", data.Object([\n"
+    "                                data.Field.Named(\"Radius\", "
+    "data.Value.Real(1.0))\n"
+    "                            ]))\n"
+    "                        ])\n"
+    "                    ])),\n"
+    "                    data.Field.Named(\"edges\", data.List([\n"
+    "                        data.Object([\n"
+    "                            data.Field.Named(\"from\", "
+    "data.Value.Text(\"3.Value\")),\n"
+    "                            data.Field.Named(\"to\", "
+    "data.Value.Text(\"7.Position\"))\n"
+    "                        ]),\n"
+    "                        data.Object([\n"
+    "                            data.Field.Named(\"from\", "
+    "data.Value.Text(\"7.Value\")),\n"
+    "                            data.Field.Named(\"to\", "
+    "data.Value.Text(\"1.Distance\"))\n"
+    "                        ])\n"
+    "                    ]))\n"
+    "                ])\n"
+    "            ]))\n"
+    "        ])\n"
+    "    )\n"
+    "}\n";
 static const char blank_rml[] = "<div style=\"display: block; width: 64px; "
                                 "height: 64px;\"></div>\n";
 #define ASSET_FRAMES 20
@@ -3567,23 +4159,29 @@ static bool graph_pointer_frame(void *state)
 /* The box and CROWD undrawn spots inside it, the last selected. */
 static bool load_crowd(studio *s)
 {
-    size_t size = (size_t)(CROWD + 3) * CROWD_LINE;
-    char *text = xmalloc(size);
-    int at = snprintf(text, size, "version 1\nname \"Scene\"\n(array)entities {\n    - name=\"Box\" prototype=\"Box\"\n");
+    av_doc *document = av_doc_new();
+    av_value *root = av_obj(document);
+    av_doc_set_root(document, root);
+    av_obj_add_int(document, root, "version", 1);
+    av_obj_add_str(document, root, "name", "Scene");
+    av_value *entities = av_obj_add_arr(document, root, "entities");
+    av_value *box = av_arr_add_obj(document, entities);
+    av_obj_add_str(document, box, "name", "Box");
+    av_obj_add_str(document, box, "prototype", "Box");
     for (int i = 0; i < CROWD; i++) {
-        int x = 2 * (i % CROWD_COLUMNS) - CROWD_COLUMNS + 1;
-        int y = 2 * (i / CROWD_COLUMNS) - CROWD_ROWS + 1;
-        at += snprintf(
-            text + at,
-            size - (size_t)at,
-            "    - name=\"Spot%d\" prototype=\"Spot\" { components { "
-            "Transform x=%d.0 y=%d.0; }; }\n",
-            i,
-            x,
-            y
-        );
+        char name[32];
+        snprintf(name, sizeof name, "Spot%d", i);
+        av_value *entity = av_arr_add_obj(document, entities);
+        av_obj_add_str(document, entity, "name", name);
+        av_obj_add_str(document, entity, "prototype", "Spot");
+        av_value *components = av_obj_add_obj(document, entity, "components");
+        av_value *transform = av_obj_add_obj(document, components, "Transform");
+        av_obj_add_float(document, transform, "x", 2 * (i % CROWD_COLUMNS) - CROWD_COLUMNS + 1);
+        av_obj_add_float(document, transform, "y", 2 * (i / CROWD_COLUMNS) - CROWD_ROWS + 1);
     }
-    snprintf(text + at, size - (size_t)at, "}\n");
+    char *text = asset_document_write(root);
+    av_doc_free(document);
+    REQUIRE(text);
     int loaded = scene_authoring_load_text(s->scene, text, NULL);
     free(text);
     REQUIRE(loaded == 0 && acount(s->scene->actors) == CROWD + 1);
@@ -3738,18 +4336,70 @@ static bool scene_viewport_frame(void *state)
             REQUIRE(
                 app_scene_authoring_register_prototype(
                     scene,
-                    "name \"Box\"\ncomponents {\n    Transform x=0 y=0\n   "
-                    " "
-                    "Orientation radians=0\n    Appearance "
-                    "shape=\"Box\" "
-                    "width=40.0 height=40.0\n}\n",
+                    "package asset\n"
+                    "\n"
+                    "import data \"game:assets\"\n"
+                    "\n"
+                    "pub Build :: () -> byte[] {\n"
+                    "    return data.Encode(\n"
+                    "        data.Object([\n"
+                    "            data.Field.Named(\"name\", "
+                    "data.Value.Text(\"Box\")),\n"
+                    "            data.Field.Named(\"components\", "
+                    "data.Object([\n"
+                    "                data.Field.Named(\"Transform\", "
+                    "data.Object([\n"
+                    "                    data.Field.Named(\"x\", "
+                    "data.Value.UInt(0)),\n"
+                    "                    data.Field.Named(\"y\", "
+                    "data.Value.UInt(0))\n"
+                    "                ])),\n"
+                    "                data.Field.Named(\"Orientation\", "
+                    "data.Object([\n"
+                    "                    data.Field.Named(\"radians\", "
+                    "data.Value.UInt(0))\n"
+                    "                ])),\n"
+                    "                data.Field.Named(\"Appearance\", "
+                    "data.Object([\n"
+                    "                    data.Field.Named(\"shape\", "
+                    "data.Value.Text(\"Box\")),\n"
+                    "                    data.Field.Named(\"width\", "
+                    "data.Value.Real(40.0)),\n"
+                    "                    data.Field.Named(\"height\", "
+                    "data.Value.Real(40.0))\n"
+                    "                ]))\n"
+                    "            ]))\n"
+                    "        ])\n"
+                    "    )\n"
+                    "}\n",
                     NULL
                 ) == 0
             );
             REQUIRE(
                 app_scene_authoring_register_prototype(
                     scene,
-                    "name \"Spot\"\ncomponents {\n    Transform x=0 y=0\n}\n",
+                    "package asset\n"
+                    "\n"
+                    "import data \"game:assets\"\n"
+                    "\n"
+                    "pub Build :: () -> byte[] {\n"
+                    "    return data.Encode(\n"
+                    "        data.Object([\n"
+                    "            data.Field.Named(\"name\", "
+                    "data.Value.Text(\"Spot\")),\n"
+                    "            data.Field.Named(\"components\", "
+                    "data.Object([\n"
+                    "                data.Field.Named(\"Transform\", "
+                    "data.Object([\n"
+                    "                    data.Field.Named(\"x\", "
+                    "data.Value.UInt(0)),\n"
+                    "                    data.Field.Named(\"y\", "
+                    "data.Value.UInt(0))\n"
+                    "                ]))\n"
+                    "            ]))\n"
+                    "        ])\n"
+                    "    )\n"
+                    "}\n",
                     NULL
                 ) == 0
             );
@@ -3820,7 +4470,8 @@ static const char shared_problem[] = "Counter :: behavior {\n"
                                      "        missing = 1\n"
                                      "    }\n"
                                      "}\n";
-static const char crepe_lines[] = "probe \"Cr\xc3\xaa\"\nprobe \"Cre\"\n";
+static const char crepe_lines[] = "ProbeA: string : \"Cr\xc3\xaa\";\nProbeB: "
+                                  "string : \"Cre\";\n";
 /* Class names long enough to fill the text's first row, where the pointer
    rests on them. */
 #define LONG_CLASS                                                             \
@@ -3833,9 +4484,24 @@ static const char probe_rml[] = "<div class=\"lonely" LONG_CLASS "\"></div>\n";
    do not. */
 static bool write_glyph_content()
 {
-    REQUIRE(
-        write_content("prototypes", "Cr\xc3\xaapes.kdl", "name \"Cr\xc3\xaapes\"\ncomponents {\n    (object)Transform\n}\n")
-    );
+    REQUIRE(write_content(
+        "prototypes",
+        "Cr\xc3\xaapes.chibi",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Crêpes\")),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n"
+    ));
     REQUIRE(write_content("ui", "Probe.rml", probe_rml));
     REQUIRE(write_content("ui", "Probe.rcss", ".known" LONG_CLASS " { color: red; }\n"));
     return true;
@@ -4117,6 +4783,7 @@ static bool code_glyphs_frame(void *state)
 #include "prototype_source_authority.h"
 #include "prototype_source_capture.h"
 #include "source_action_outcomes.h"
+#include "typed_prototype_preview.h"
 
 static bool prototype_source_authority_frame(void *state)
 {
@@ -4170,7 +4837,7 @@ bool studio_acceptance_frame(void *state)
     switch (mode) {
         case SOURCE_EDIT: callback_ok = source_edit_frame(state); break;
         case CODE_KEYS: callback_ok = code_keys_frame(state); break;
-        case KDL_KEYS: callback_ok = kdl_keys_frame(state); break;
+        case ASSET_KEYS: callback_ok = asset_keys_frame(state); break;
         case EXPORT_GAME: callback_ok = export_frame(state); break;
         case GRAPH_VISIBILITY:
             callback_ok = graph_visibility_frame(state);
@@ -4190,6 +4857,9 @@ bool studio_acceptance_frame(void *state)
             break;
         case PROTOTYPE_SOURCE_AUTHORITY:
             callback_ok = prototype_source_authority_frame(state);
+            break;
+        case TYPED_PROTOTYPE_PREVIEW:
+            callback_ok = typed_prototype_preview_frame(state);
             break;
         case OUTLINER_MOVE: callback_ok = outliner_move_frame(state); break;
         case OUTLINER_ROWS: callback_ok = outliner_rows_frame(state); break;
@@ -4241,18 +4911,18 @@ TEST_CASE(code_enter_types_newlines)
     return true;
 }
 
-TEST_CASE(kdl_enter_saves)
+TEST_CASE(asset_enter_saves)
 {
     REQUIRE(unchanged_source());
     char *args[] = { (char *)executable, "--headless",
-                     "--frames",         FRAMES_TEXT(KDL_FRAMES),
+                     "--frames",         FRAMES_TEXT(ASSET_KEY_FRAMES),
                      "--fixed-dt",       "0.016666666666666666",
                      "--project-root",   (char *)project };
     REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
     REQUIRE(callback_ok);
     REQUIRE(unchanged_source());
-    REQUIRE(frames == KDL_FRAMES && keys == 2);
-    printf("Studio KDL keys accepted: frames=%d keys=%d\n", frames, keys);
+    REQUIRE(frames == ASSET_KEY_FRAMES && keys == 2);
+    printf("Studio asset keys accepted: frames=%d keys=%d\n", frames, keys);
     return true;
 }
 
@@ -4413,8 +5083,8 @@ TEST_CASE(scene_physics_settings)
 TEST_CASE(asset_selection)
 {
     REQUIRE(write_spares());
-    REQUIRE(write_content("fields", "Flat.kdl", flat_field));
-    REQUIRE(write_content("shapes", "Blank.kdl", blank_shape));
+    REQUIRE(write_content("fields", "Flat.chibi", flat_field));
+    REQUIRE(write_content("shapes", "Blank.chibi", blank_shape));
     REQUIRE(write_content("ui", "Blank.rml", blank_rml));
     char *args[] = { (char *)executable, "--headless",
                      "--frames",         FRAMES_TEXT(ASSET_FRAMES),
@@ -4446,7 +5116,7 @@ TEST_CASE(scene_viewport)
 static bool start_unchanged()
 {
     char path[1024];
-    int length = snprintf(path, sizeof path, "%s/content/scenes/Start.kdl", project);
+    int length = snprintf(path, sizeof path, "%s/content/scenes/Start.chibi", project);
     REQUIRE(length > 0 && (size_t)length < sizeof path);
     char *text = file_read_text(path);
     REQUIRE(text);
@@ -4595,9 +5265,11 @@ int main(int argc, char **argv)
         pu_print_stats();
         return pu_test_failed() ? 1 : 0;
     }
+    bool typed_preview = argc == 6 && !strcmp(argv[1], "--typed-prototype-preview") &&
+                         !strcmp(argv[4], "--screenshot") && argv[5][0];
     bool source_edit = argc == 4 && !strcmp(argv[1], "--source-edit");
     bool code_keys = argc == 4 && !strcmp(argv[1], "--code-keys");
-    bool kdl_keys = argc == 4 && !strcmp(argv[1], "--kdl-keys");
+    bool asset_keys = argc == 4 && !strcmp(argv[1], "--asset-keys");
     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
     bool keys_mode = argc == 4 && !strcmp(argv[1], "--graph-keys");
@@ -4624,18 +5296,18 @@ int main(int argc, char **argv)
     bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
     bool idle = argc == 4 && !strcmp(argv[1], "--panel-idle");
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
-    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
+    if ((!source_edit && !code_keys && !asset_keys && !exporting && !visibility &&
          !keys_mode && !labels && !units && !hierarchy && !scene_move_mode &&
          !prototype_source_mode && !prototype_source_authority_mode &&
-         !outliner_move_mode && !outliner_rows_mode && !physics && !assets &&
-         !viewport && !camera && !playing && !prompting && !followups &&
-         !glyphs && !idle && !graph_pointer_mode && !asset_pointer_mode &&
-         !debugging && !gizmo && !colliders) ||
+         !typed_preview && !outliner_move_mode && !outliner_rows_mode &&
+         !physics && !assets && !viewport && !camera && !playing &&
+         !prompting && !followups && !glyphs && !idle && !graph_pointer_mode &&
+         !asset_pointer_mode && !debugging && !gizmo && !colliders) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
-            "--source-edit|--code-keys|--kdl-keys|--export-game|"
+            "--source-edit|--code-keys|--asset-keys|--export-game|"
             "--graph-visibility|--graph-keys|--graph-pointer|--asset-pointer|--"
             "graph-labels|--unit-warnings|"
             "--scene-hierarchy|--scene-move|--prototype-source|--prototype-"
@@ -4649,7 +5321,8 @@ int main(int argc, char **argv)
             "history "
             "--project-root PATH | --scene-cursors | --scene-read | "
             "--project-open | "
-            "--outliner-row-policies --source PATH\n"
+            "--outliner-row-policies --source PATH | "
+            "--typed-prototype-preview --project-root PATH --screenshot PATH\n"
         );
         return 2;
     }
@@ -4673,9 +5346,11 @@ int main(int argc, char **argv)
         return 2;
     }
     pu_display_time(true);
-    mode = source_edit                     ? SOURCE_EDIT
+    typed_preview_capture = typed_preview ? argv[5] : NULL;
+    mode = typed_preview                   ? TYPED_PROTOTYPE_PREVIEW
+         : source_edit                     ? SOURCE_EDIT
          : code_keys                       ? CODE_KEYS
-         : kdl_keys                        ? KDL_KEYS
+         : asset_keys                      ? ASSET_KEYS
          : exporting                       ? EXPORT_GAME
          : visibility                      ? GRAPH_VISIBILITY
          : keys_mode                       ? GRAPH_KEYS
@@ -4704,7 +5379,7 @@ int main(int argc, char **argv)
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
-        case KDL_KEYS: RUN_TEST_CASE(kdl_enter_saves); break;
+        case ASSET_KEYS: RUN_TEST_CASE(asset_enter_saves); break;
         case EXPORT_GAME: RUN_TEST_CASE(export_game); break;
         case GRAPH_VISIBILITY:
             RUN_TEST_CASE(graph_visibility_and_document_pair);
@@ -4720,6 +5395,9 @@ int main(int argc, char **argv)
         case SCENE_HIERARCHY: RUN_TEST_CASE(scene_hierarchy); break;
         case SCENE_MOVE: RUN_TEST_CASE(scene_move_contracts); break;
         case PROTOTYPE_SOURCE: RUN_TEST_CASE(prototype_source_ownership); break;
+        case TYPED_PROTOTYPE_PREVIEW:
+            RUN_TEST_CASE(typed_prototype_preview);
+            break;
         case PROTOTYPE_SOURCE_AUTHORITY:
             RUN_TEST_CASE(prototype_source_authority);
             break;

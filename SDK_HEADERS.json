@@ -205,6 +205,8 @@
   "authoring/source_asset.h": [
     "src/editor/documents/asset_code.c",
     "src/editor/documents/scene_document.c",
+    "src/editor/studio/studio_properties.c",
+    "src/editor/studio/studio_properties_view.c",
     "src/editor/workspace/scene_authoring.c"
   ],
   "authoring/source_catalog.h": [
@@ -215,16 +217,10 @@
   ],
   "authoring/source_format.h": [
     "src/editor/documents/asset_code.c",
-    "src/editor/documents/scene_documents.c",
-    "src/editor/workspace/scene_authoring.c"
+    "src/editor/documents/scene_documents.c"
   ],
   "authoring/source_intelligence.h": [
     "src/editor/documents/asset_code.c"
-  ],
-  "authoring/source_metadata.h": [
-    "src/editor/documents/scene_documents.c",
-    "src/editor/workspace/asset_refactor.c",
-    "src/editor/workspace/scene_authoring.c"
   ],
   "authoring/source_navigation.h": [
     "src/editor/documents/asset_code.h",
@@ -776,6 +772,7 @@
     "src/editor/collab/actions_scene.c",
     "src/editor/collab/collab.c",
     "src/editor/documents/asset_code.c",
+    "src/editor/documents/prototype_source_input.c",
     "src/editor/documents/scene_disk.c",
     "src/editor/documents/scene_history.c",
     "src/editor/documents/scene_prototype_actions.c",
@@ -860,17 +857,7 @@
     "src/editor/workspace/tree_watch.c",
     "src/editor/workspace/viewport.c"
   ],
-  "support/asset_json.h": [
-    "src/editor/collab/actions_graph.c",
-    "src/editor/collab/actions_scene.c",
-    "src/editor/documents/document.c",
-    "src/editor/documents/scene_history.c",
-    "src/editor/documents/scene_prototypes.c",
-    "src/editor/workspace/scenario_playback.c",
-    "src/editor/workspace/scene_authoring.c",
-    "src/editor/workspace/scene_checkpoint.c"
-  ],
-  "support/asset_text.h": [
+  "support/asset_document.h": [
     "src/editor/documents/asset_code.c",
     "src/editor/documents/scene_disk.c",
     "src/editor/documents/scene_document.c",
@@ -890,6 +877,16 @@
     "src/editor/workspace/scene_checkpoint.c",
     "src/editor/workspace/scene_tabs.c"
   ],
+  "support/asset_json.h": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/collab/actions_scene.c",
+    "src/editor/documents/document.c",
+    "src/editor/documents/scene_history.c",
+    "src/editor/documents/scene_prototypes.c",
+    "src/editor/workspace/scenario_playback.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_checkpoint.c"
+  ],
   "support/asset_value.h": [
     "src/editor/documents/document.c",
     "src/editor/documents/scene_history.h",
@@ -902,6 +899,7 @@
   "support/file_io.h": [
     "src/editor/documents/asset_code.c",
     "src/editor/documents/ui_buffer.c",
+    "src/editor/studio/studio_code.c",
     "src/editor/studio/studio_thumbnails.c"
   ],
   "support/file_watch.h": [
@@ -976,6 +974,7 @@
     "src/editor/collab/collab.c",
     "src/editor/documents/asset_code.c",
     "src/editor/documents/document.c",
+    "src/editor/documents/prototype_source_input.c",
     "src/editor/documents/scene_disk.c",
     "src/editor/documents/scene_document.c",
     "src/editor/documents/scene_history.c",

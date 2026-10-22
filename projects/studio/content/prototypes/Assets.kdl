@@ -1,4 +1,0 @@
-name "Assets"
-components {
-    Ui document="Assets" hidden=#true
-}

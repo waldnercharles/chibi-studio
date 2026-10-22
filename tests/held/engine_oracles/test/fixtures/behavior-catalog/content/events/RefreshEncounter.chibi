@@ -1,0 +1,21 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(3)),
+            data.Field.Named("name", data.Value.Text("RefreshEncounter")),
+            data.Field.Named("domain", data.Value.Text("event")),
+            data.Field.Named("id_counter", data.Value.UInt(2)),
+            data.Field.Named("description", data.Value.Text("Recount encounter members after a lifecycle change.")),
+            data.Field.Named("graphs", data.List([
+                data.Object([
+                    data.Field.Named("kind", data.Value.Text("event")),
+                    data.Field.Named("name", data.Value.Text("Events"))
+                ])
+            ]))
+        ])
+    )
+}

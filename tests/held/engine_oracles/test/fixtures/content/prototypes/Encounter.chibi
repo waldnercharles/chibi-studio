@@ -1,0 +1,20 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("Encounter")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.GameTransform", data.Object([
+                    data.Field.Named("x", data.Value.Real(320.0)),
+                    data.Field.Named("y", data.Value.Real(-180.0))
+                ]))
+            ])),
+            data.Field.Named("behaviors", data.List([
+                data.Value.Text("WaveBehavior")
+            ]))
+        ])
+    )
+}

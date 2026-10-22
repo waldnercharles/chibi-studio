@@ -1,0 +1,17 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("TopBar")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("Ui", data.Object([
+                    data.Field.Named("document", data.Value.Text("TopBar")),
+                    data.Field.Named("hidden", data.Value.Bool(true))
+                ]))
+            ]))
+        ])
+    )
+}

@@ -189,11 +189,74 @@ static bool outliner_rows_fixture(studio *s)
     REQUIRE(acount(scene->actors) == 0);
     REQUIRE(outliner_rows_once(s, &OUTLINER_ROWS_EMPTY, true, true));
     static const char *const prototypes[] = {
-        "name \"Plain\"\ncomponents { Transform x=0 y=0; }\n",
-        "name \"CameraRig\"\ncomponents { Transform x=0 y=0; "
-        "DirectionalLight; Camera width=64 height=64; Shader; Ui; "
-        "EngineSystem; }\n(array)behaviors \"Counter\"\n",
-        "name \"Lamp\"\ncomponents { Transform x=0 y=0; DirectionalLight; }\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Plain\")),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(0)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+        "                ]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", "
+        "data.Value.Text(\"CameraRig\")),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(0)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+        "                ])),\n"
+        "                data.Field.Named(\"DirectionalLight\", "
+        "data.Object([])),\n"
+        "                data.Field.Named(\"Camera\", data.Object([\n"
+        "                    data.Field.Named(\"width\", "
+        "data.Value.UInt(64)),\n"
+        "                    data.Field.Named(\"height\", "
+        "data.Value.UInt(64))\n"
+        "                ])),\n"
+        "                data.Field.Named(\"Shader\", data.Object([])),\n"
+        "                data.Field.Named(\"Ui\", data.Object([])),\n"
+        "                data.Field.Named(\"EngineSystem\", data.Object([]))\n"
+        "            ])),\n"
+        "            data.Field.Named(\"behaviors\", data.List([\n"
+        "                data.Value.Text(\"Counter\")\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Lamp\")),\n"
+        "            data.Field.Named(\"components\", data.Object([\n"
+        "                data.Field.Named(\"Transform\", data.Object([\n"
+        "                    data.Field.Named(\"x\", data.Value.UInt(0)),\n"
+        "                    data.Field.Named(\"y\", data.Value.UInt(0))\n"
+        "                ])),\n"
+        "                data.Field.Named(\"DirectionalLight\", "
+        "data.Object([]))\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n",
     };
     for (size_t i = 0; i < sizeof prototypes / sizeof *prototypes; i++) {
         REQUIRE(app_scene_authoring_register_prototype(scene, prototypes[i], NULL) == 0);
@@ -201,13 +264,55 @@ static bool outliner_rows_fixture(studio *s)
     REQUIRE(
         scene_authoring_load_text(
             scene,
-            "version 1\nname \"Rows\"\n(array)entities {\n"
-            " - name=\"Alpha\" prototype=\"Plain\" { (array)children {\n"
-            "  - name=\"Bolt\" prototype=\"CameraRig\" {\n"
-            "   components { MaterialTerrain; }\n"
-            "   (array)children {\n"
-            "   - name=\"Élan\" prototype=\"Lamp\"\n } }\n } }\n"
-            " - name=\"Delta\" prototype=\"Plain\"\n}\n",
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Rows\")),\n"
+            "            data.Field.Named(\"entities\", data.List([\n"
+            "                data.Object([\n"
+            "                    data.Field.Named(\"name\", "
+            "data.Value.Text(\"Alpha\")),\n"
+            "                    data.Field.Named(\"prototype\", "
+            "data.Value.Text(\"Plain\")),\n"
+            "                    data.Field.Named(\"children\", data.List([\n"
+            "                        data.Object([\n"
+            "                            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Bolt\")),\n"
+            "                            data.Field.Named(\"prototype\", "
+            "data.Value.Text(\"CameraRig\")),\n"
+            "                            data.Field.Named(\"components\", "
+            "data.Object([\n"
+            "                                "
+            "data.Field.Named(\"MaterialTerrain\", data.Object([]))\n"
+            "                            ])),\n"
+            "                            data.Field.Named(\"children\", "
+            "data.List([\n"
+            "                                data.Object([\n"
+            "                                    data.Field.Named(\"name\", "
+            "data.Value.Text(\"Élan\")),\n"
+            "                                    "
+            "data.Field.Named(\"prototype\", data.Value.Text(\"Lamp\"))\n"
+            "                                ])\n"
+            "                            ]))\n"
+            "                        ])\n"
+            "                    ]))\n"
+            "                ]),\n"
+            "                data.Object([\n"
+            "                    data.Field.Named(\"name\", "
+            "data.Value.Text(\"Delta\")),\n"
+            "                    data.Field.Named(\"prototype\", "
+            "data.Value.Text(\"Plain\"))\n"
+            "                ])\n"
+            "            ]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
             NULL
         ) == 0
     );
@@ -262,7 +367,24 @@ static bool outliner_rows_fixture(studio *s)
     s->rename.entity = 0;
     s->rename.outliner = false;
     REQUIRE(
-        scene_authoring_load_text(scene, "version 1\nname \"Replacement\"\n(array)entities\n", NULL) == 0
+        scene_authoring_load_text(
+            scene,
+            "package asset\n"
+            "\n"
+            "import data \"game:assets\"\n"
+            "\n"
+            "pub Build :: () -> byte[] {\n"
+            "    return data.Encode(\n"
+            "        data.Object([\n"
+            "            data.Field.Named(\"version\", data.Value.UInt(1)),\n"
+            "            data.Field.Named(\"name\", "
+            "data.Value.Text(\"Replacement\")),\n"
+            "            data.Field.Named(\"entities\", data.List([]))\n"
+            "        ])\n"
+            "    )\n"
+            "}\n",
+            NULL
+        ) == 0
     );
     REQUIRE(outliner_rows_once(s, &OUTLINER_ROWS_EMPTY, true, false));
     for (int i = 0; i < OUTLINER_ROWS_ACTORS; i++) {

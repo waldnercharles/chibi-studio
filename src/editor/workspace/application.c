@@ -813,7 +813,7 @@ void *chibi_application_create(int argc, char **argv, const char *checkpoint, ch
             scene_path = argv[++i];
         } else if ((strcmp(argv[i], "--project") == 0 || strcmp(argv[i], "--project-root") == 0)) {
             if (i + 1 == argc || argv[i + 1][0] == '-') {
-                snprintf(error, error_size, "%s requires a project directory or project.kdl", argv[i]);
+                snprintf(error, error_size, "%s requires a project directory or project.chibi", argv[i]);
                 return NULL;
             }
             project_path = argv[++i];

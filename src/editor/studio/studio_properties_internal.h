@@ -39,6 +39,7 @@ typedef enum
     PROPERTIES_OBJECT,
     PROPERTIES_PROTOTYPE,
     PROPERTIES_SCENE,
+    PROPERTIES_PARAMETER,
 } properties_row_kind;
 
 typedef enum
@@ -61,12 +62,21 @@ typedef struct properties_row
     ecs_component_id component;
     int field; /* in the component, or a properties_scene_setting */
     char prototype[128];
+    size_t parameter_index;
+    uint64_t parameter_identity;
 } properties_row;
 
 /* An id fits an emit argument. */
 #define PROPERTIES_ROW_ID 128
 void properties_row_id(const properties_row *row, char out[PROPERTIES_ROW_ID]);
 bool properties_row_parse(const char *id, properties_row *out);
+
+/* Parameter rows keep a bounded identity of the full path/name, never a truncated key. */
+void properties_parameter_row(const char *path, const char *name, size_t index, properties_row *);
+const char *properties_parameter_name(const av_value *, const char *path, const properties_row *);
+
+/* Read a syntax-only scalar parameter into its ordinary Chibi type. */
+bool properties_parameter_value(const av_value *, pin_value *);
 
 /* The registry's component `id`, or NULL. */
 const ecs_component_desc *properties_component(const app_scene_authoring *scene, ecs_component_id id);

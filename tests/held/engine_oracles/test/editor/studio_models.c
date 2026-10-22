@@ -3,24 +3,24 @@
 #include "graph/authoring/graph_edit.h"
 /* A model document roundtrip through Studio commands and retained controls.
  * Generic graph setup supplies a reusable component; interactions change it. */
-#include "editor/workspace/viewport.h"
-#include "authoring/behavior_loader.h"
 #include "assets/new_asset.h"
 #include "assets/scene_document.h"
 #include "assets/system_document.h"
+#include "authoring/behavior_loader.h"
 #include "editor/studio/studio_graph_internal.h"
 #include "editor/studio/studio_internal.h"
 #include "editor/workspace/editor_internal.h"
 #include "editor/workspace/input.h"
 #include "editor/workspace/model_preview.h"
 #include "editor/workspace/scene_internal.h"
+#include "editor/workspace/viewport.h"
 #include "graph/modeling/model_compile.h"
 #include "render/screenshot.h"
 #include "render/shader_catalog.h"
 #include "render/shader_images.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/file_io.h"
 #include "support/text_file.h"
 #include "test/suite_internal.h"
@@ -40,10 +40,23 @@
 #define STRINGIFY(value) STRINGIFY_INNER(value)
 #define PROJECT_VERSION_TEXT STRINGIFY(CHIBI_PROJECT_VERSION)
 #define MANIFEST                                                               \
-    "version " PROJECT_VERSION_TEXT "\n"                                       \
-    "name \"Fresh\"\n"                                                         \
-    "content \"content\"\n"                                                    \
-    "start_scene \"scenes/Main.kdl\"\n"
+    "package asset\n"                                                          \
+    "\n"                                                                       \
+    "import data \"game:assets\"\n"                                            \
+    "\n"                                                                       \
+    "pub Build :: () -> byte[] {\n"                                            \
+    "    return data.Encode(\n"                                                \
+    "        data.Object([\n"                                                  \
+    "            data.Field.Named(\"version\", "                               \
+    "data.Value.Int(" PROJECT_VERSION_TEXT ")),\n"                             \
+    "            data.Field.Named(\"name\", data.Value.Text(\"Fresh\")),\n"    \
+    "            data.Field.Named(\"content\", "                               \
+    "data.Value.Text(\"content\")),\n"                                         \
+    "            data.Field.Named(\"start_scene\", "                           \
+    "data.Value.Text(\"scenes/Main.chibi\"))\n"                                \
+    "        ])\n"                                                             \
+    "    )\n"                                                                  \
+    "}\n"
 
 typedef struct
 {
@@ -82,8 +95,8 @@ static model_fixture fixture_new()
     join(path, sizeof path, f.content, "scenes");
     assert(mkdir(f.content, 0755) == 0 && mkdir(path, 0755) == 0);
     char *json = new_asset_text(NEW_ASSET_SCENE, "Main");
-    char *yaml = asset_text_to_disk(json, error, sizeof error);
-    join(path, sizeof path, f.content, "scenes/Main.kdl");
+    char *yaml = asset_document_to_disk(json, error, sizeof error);
+    join(path, sizeof path, f.content, "scenes/Main.chibi");
     write_text(path, yaml);
     free(yaml);
     free(json);
@@ -507,7 +520,7 @@ void test_studio_models()
     test_check(material_override && picked && assigned, "a sparse reused material override uses the typed material asset picker");
     save(&f);
     char file[256];
-    snprintf(file, sizeof file, "%s/models/%s.kdl", f.content, assembly);
+    snprintf(file, sizeof file, "%s/models/%s.chibi", f.content, assembly);
     scene_tabs_close(f.scene, APP_EDITOR_DOCUMENT_BEHAVIOR, assembly);
     assert(app_scene_authoring_open_behavior(f.scene, assembly) == 0);
     frames(&f, 3);

@@ -1,0 +1,16 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("FreeMotionSystem")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.EngineSystem", data.Object([
+                    data.Field.Named("asset", data.Value.Text("FreeMotion"))
+                ]))
+            ]))
+        ])
+    )
+}

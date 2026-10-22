@@ -1,5 +1,0 @@
-name "NewProject"
-components {
-    Ui document="NewProject" hidden=#true
-}
-(array)behaviors "NewProjectKeys"

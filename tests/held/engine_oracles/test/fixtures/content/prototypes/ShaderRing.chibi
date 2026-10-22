@@ -1,0 +1,32 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("ShaderRing")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.GameAppearance", data.Object([
+                    data.Field.Named("antialias", data.Value.Real(0.5)),
+                    data.Field.Named("border_color", data.Value.UInt(4294967295)),
+                    data.Field.Named("color", data.Value.UInt(4294967295)),
+                    data.Field.Named("height", data.Value.Real(100.0)),
+                    data.Field.Named("shape", data.Value.Text("Circle")),
+                    data.Field.Named("width", data.Value.Real(100.0))
+                ])),
+                data.Field.Named("GAME.GameShader", data.Object([
+                    data.Field.Named("bounds_x", data.Value.Real(50.0)),
+                    data.Field.Named("bounds_y", data.Value.Real(50.0)),
+                    data.Field.Named("material", data.Value.Text("PulseRing")),
+                    data.Field.Named("parameters", data.Value.Text("")),
+                    data.Field.Named("shape", data.Value.Text(""))
+                ])),
+                data.Field.Named("GAME.GameTransform", data.Object([]))
+            ])),
+            data.Field.Named("behaviors", data.List([
+                data.Value.Text("DamageFlashBehavior")
+            ]))
+        ])
+    )
+}

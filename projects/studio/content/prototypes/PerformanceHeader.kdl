@@ -1,4 +1,0 @@
-name "PerformanceHeader"
-components {
-    Ui document="PerformanceHeader" hidden=#true
-}

@@ -1,4 +1,0 @@
-name "ArenaExperience"
-components {
-    GAME.GameShader material="ArenaExperience"
-}

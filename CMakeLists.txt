@@ -33,7 +33,7 @@ endif()
 set(CHIBI_STUDIO_SDK_BUILD_ID "${sdk_id}" CACHE INTERNAL "Configured SDK package identity" FORCE)
 set(CHIBI_STUDIO_SDK_MANIFEST_SHA256 "${sdk_hash}" CACHE INTERNAL "Configured SDK manifest checksum" FORCE)
 set(STUDIO_PACKAGES
-    asset_authoring asset_json asset_text asset_values authoring behavior_runtime
+    asset_authoring asset_json asset_documents asset_values authoring behavior_runtime
     capabilities component_presentation declared_components ecs engine entity_runtime execution
     execution_contract field_catalog graph_authoring graph_compilation graph_model graph_catalog image_preparation input_map json
     material_runtime model_authoring model_runtime native_types physics_runtime platform

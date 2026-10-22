@@ -1,5 +1,0 @@
-name "Collaboration"
-components {
-    Ui document="Collaboration" hidden=#true
-}
-(array)behaviors "Dismiss" "NavKeys"

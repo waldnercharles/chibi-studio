@@ -1,7 +1,0 @@
-name "ShaderRing"
-components {
-    GAME.GameAppearance antialias=0.5 border_color=0xffffffff color=0xffffffff height=100.0 shape="Circle" width=100.0
-    GAME.GameShader bounds_x=50.0 bounds_y=50.0 material="PulseRing" parameters="" shape=""
-    (object)GAME.GameTransform
-}
-(array)behaviors "DamageFlashBehavior"

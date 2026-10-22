@@ -1,4 +1,0 @@
-name "Canvas"
-components {
-    Ui document="Canvas" hidden=#true
-}

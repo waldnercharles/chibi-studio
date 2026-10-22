@@ -1,5 +1,5 @@
 {
-  "status": "held source preservation; not executable acceptance",
+  "status": "Migrated authored source preservation; not executable acceptance",
   "origin_checkout": "/Users/cwaldner/.codex/worktrees/e537/c-blueprints",
   "source_header_count": 85,
   "fixture_tree_count": 180,
@@ -9,1347 +9,2961 @@
     {
       "path": "content/behaviors/HealthBehavior.chibi",
       "bytes": 3246,
-      "sha256": "973b7e465b50ad6954c15be3db91e176491f72f011efe5b0f65294992f015d0c"
+      "sha256": "973b7e465b50ad6954c15be3db91e176491f72f011efe5b0f65294992f015d0c",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 0,
+        "bytes": 3246,
+        "sha256": "973b7e465b50ad6954c15be3db91e176491f72f011efe5b0f65294992f015d0c"
+      }
     },
     {
       "path": "content/behaviors/PlayerContactBehavior.chibi",
       "bytes": 2685,
-      "sha256": "919eae8941a14c91c316d1835576668bc43454d691341913bdbb93b609310072"
+      "sha256": "919eae8941a14c91c316d1835576668bc43454d691341913bdbb93b609310072",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 1,
+        "bytes": 2685,
+        "sha256": "919eae8941a14c91c316d1835576668bc43454d691341913bdbb93b609310072"
+      }
     },
     {
-      "path": "content/prototypes/ArenaEnemy.kdl",
-      "bytes": 907,
-      "sha256": "4f9dc17a79aaa36f4ddb0ae3f135e842f6d4dd53c9a131d0e3822dc11e307bee"
+      "path": "content/prototypes/ArenaEnemy.chibi",
+      "bytes": 4161,
+      "sha256": "5a4707d5904738b6b9d49c77e3bce633a14314c8e34cd695e938b247f71c794c",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 2,
+        "bytes": 907,
+        "sha256": "4f9dc17a79aaa36f4ddb0ae3f135e842f6d4dd53c9a131d0e3822dc11e307bee"
+      }
     },
     {
-      "path": "content/scenes/Arena3D.kdl",
-      "bytes": 4186,
-      "sha256": "6f09d3b203fe16827cfdbedc523c25ca59b05d3a3f8eb876af909d2cb5539fcb"
+      "path": "content/scenes/Arena3D.chibi",
+      "bytes": 17947,
+      "sha256": "a750b65498eb9ea5cbdc6567265b139f103bc7aa80cf30c9d954d191fe2574db",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 3,
+        "bytes": 4186,
+        "sha256": "6f09d3b203fe16827cfdbedc523c25ca59b05d3a3f8eb876af909d2cb5539fcb"
+      }
     },
     {
       "path": "test/appearance.c",
-      "bytes": 14923,
-      "sha256": "79dfc46892e749837a63716e63a25173c2e0c043d998af1a6d4ee5876d518453"
+      "bytes": 16048,
+      "sha256": "4a0da717d6de7e3494769c68fb07f13b581c39eb098191bb692033f80d118e4a",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 4,
+        "bytes": 14923,
+        "sha256": "79dfc46892e749837a63716e63a25173c2e0c043d998af1a6d4ee5876d518453"
+      }
     },
     {
       "path": "test/arena_input.c",
-      "bytes": 22471,
-      "sha256": "6896c9d25c76696c59f87b699b3ed2c6acbba9f41678bd2780c7702c2e27b577"
+      "bytes": 22475,
+      "sha256": "2579af555bd626392fcbed8d4fe76034ce63d05d5398af2f1fe9339d39641ed7",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 5,
+        "bytes": 22471,
+        "sha256": "6896c9d25c76696c59f87b699b3ed2c6acbba9f41678bd2780c7702c2e27b577"
+      }
     },
     {
       "path": "test/arena_play.c",
-      "bytes": 93068,
-      "sha256": "b3197ed77b9494952a7a4191f2e356b60ffd2acd3eae54624d2a8bfb3dc6f999"
+      "bytes": 96738,
+      "sha256": "96e0a6f82b1015811070b1a979b8bccc3d328f42fe2d2d88c6a1d7ad7715ec9b",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 6,
+        "bytes": 93068,
+        "sha256": "b3197ed77b9494952a7a4191f2e356b60ffd2acd3eae54624d2a8bfb3dc6f999"
+      }
     },
     {
       "path": "test/asset_fixture.h",
-      "bytes": 507,
-      "sha256": "157999aefff6bb67a83b27b1fafa53e4365cf3952fe4c7218416af6600d45ace"
+      "bytes": 519,
+      "sha256": "55359d501f9dbbfbfa044b4a0b70f3f6206aaff382bc1e404f1a10212182dfcc",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 7,
+        "bytes": 507,
+        "sha256": "157999aefff6bb67a83b27b1fafa53e4365cf3952fe4c7218416af6600d45ace"
+      }
     },
     {
       "path": "test/collab_protocol.c",
       "bytes": 2295,
-      "sha256": "0d403ef2aea23be8088996feb08bb3fe96ca0c35fe93d055950aca061af8f50e"
+      "sha256": "0d403ef2aea23be8088996feb08bb3fe96ca0c35fe93d055950aca061af8f50e",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 8,
+        "bytes": 2295,
+        "sha256": "0d403ef2aea23be8088996feb08bb3fe96ca0c35fe93d055950aca061af8f50e"
+      }
     },
     {
       "path": "test/collab_replay.c",
       "bytes": 9053,
-      "sha256": "2f181d96002358d26230643cde09e72194788b810496bb4da8ceaea7b3f51b63"
+      "sha256": "2f181d96002358d26230643cde09e72194788b810496bb4da8ceaea7b3f51b63",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 9,
+        "bytes": 9053,
+        "sha256": "2f181d96002358d26230643cde09e72194788b810496bb4da8ceaea7b3f51b63"
+      }
     },
     {
       "path": "test/editor/asset_code.c",
-      "bytes": 18637,
-      "sha256": "8765cc64bda2f89fb75cbd2c659b7d51ea7a21378f608dd116f3ca1c18ec4205"
+      "bytes": 22757,
+      "sha256": "a6cb6050f499f7d4b5b9b846029cfb724e38efcf5b815d567d595540497b5045",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 10,
+        "bytes": 18637,
+        "sha256": "8765cc64bda2f89fb75cbd2c659b7d51ea7a21378f608dd116f3ca1c18ec4205"
+      }
     },
     {
       "path": "test/editor/code_intelligence.c",
       "bytes": 24527,
-      "sha256": "c432595d6b58febb8023d1b0dc574f28db3b72cdee26c474b28f796cf967179f"
+      "sha256": "c432595d6b58febb8023d1b0dc574f28db3b72cdee26c474b28f796cf967179f",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 11,
+        "bytes": 24527,
+        "sha256": "c432595d6b58febb8023d1b0dc574f28db3b72cdee26c474b28f796cf967179f"
+      }
     },
     {
       "path": "test/editor/code_intelligence_studio.c",
-      "bytes": 30048,
-      "sha256": "d400ace344ef95baa8cafbaf9031e0fbf31de84714617801d00c0806835670fc"
+      "bytes": 30544,
+      "sha256": "fab8bf6997e316e65429443f7ee89421dd4809d6f0a6bb3acfa5df69cdcae0d8",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 12,
+        "bytes": 30048,
+        "sha256": "d400ace344ef95baa8cafbaf9031e0fbf31de84714617801d00c0806835670fc"
+      }
     },
     {
       "path": "test/editor/commands.c",
       "bytes": 72731,
-      "sha256": "c6ee20f83d5f4656050a557499c08d59356b6145d48f7245f122c793f64cace5"
+      "sha256": "c6ee20f83d5f4656050a557499c08d59356b6145d48f7245f122c793f64cace5",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 13,
+        "bytes": 72731,
+        "sha256": "c6ee20f83d5f4656050a557499c08d59356b6145d48f7245f122c793f64cace5"
+      }
     },
     {
       "path": "test/editor/debug_target.c",
-      "bytes": 13560,
-      "sha256": "e7bdef46f3f240f69707482fd7ab12bccb6f4a4f3a55e3a2e53fbc13c08986bb"
+      "bytes": 13562,
+      "sha256": "388b505cb6d4f42d3e62d4543f26beeee0cbb0c821e610871504779d8e12f1a0",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 14,
+        "bytes": 13560,
+        "sha256": "e7bdef46f3f240f69707482fd7ab12bccb6f4a4f3a55e3a2e53fbc13c08986bb"
+      }
     },
     {
       "path": "test/editor/iframe_bindings.c",
       "bytes": 8581,
-      "sha256": "985bba7115c85032b3b2ff90ae1de7550979e47b6874505004fecb120e3921f8"
+      "sha256": "985bba7115c85032b3b2ff90ae1de7550979e47b6874505004fecb120e3921f8",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 15,
+        "bytes": 8581,
+        "sha256": "985bba7115c85032b3b2ff90ae1de7550979e47b6874505004fecb120e3921f8"
+      }
     },
     {
       "path": "test/editor/kit_code.c",
       "bytes": 38626,
-      "sha256": "b180e2d7c236797fb97136560ae31403fdcd37e8f9f7462d3b41154ab52ff856"
+      "sha256": "b180e2d7c236797fb97136560ae31403fdcd37e8f9f7462d3b41154ab52ff856",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 16,
+        "bytes": 38626,
+        "sha256": "b180e2d7c236797fb97136560ae31403fdcd37e8f9f7462d3b41154ab52ff856"
+      }
     },
     {
       "path": "test/editor/kit_documents.c",
       "bytes": 17863,
-      "sha256": "e960044618f61699925baa4945e10fd4c33a8c7f5bbd1d1e001d791187de9201"
+      "sha256": "e960044618f61699925baa4945e10fd4c33a8c7f5bbd1d1e001d791187de9201",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 17,
+        "bytes": 17863,
+        "sha256": "e960044618f61699925baa4945e10fd4c33a8c7f5bbd1d1e001d791187de9201"
+      }
     },
     {
       "path": "test/editor/kit_empty_documents.c",
       "bytes": 4661,
-      "sha256": "ba871938509f6a74a054ae19ed0175db7a55c9a10dced0422c4b31108a07d13c"
+      "sha256": "ba871938509f6a74a054ae19ed0175db7a55c9a10dced0422c4b31108a07d13c",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 18,
+        "bytes": 4661,
+        "sha256": "ba871938509f6a74a054ae19ed0175db7a55c9a10dced0422c4b31108a07d13c"
+      }
     },
     {
       "path": "test/editor/kit_host.c",
       "bytes": 15750,
-      "sha256": "7b8dc1f1a78b4bafbf9ca88816b83cf1973247ee03a92f8520496fd47749cf60"
+      "sha256": "7b8dc1f1a78b4bafbf9ca88816b83cf1973247ee03a92f8520496fd47749cf60",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 19,
+        "bytes": 15750,
+        "sha256": "7b8dc1f1a78b4bafbf9ca88816b83cf1973247ee03a92f8520496fd47749cf60"
+      }
     },
     {
       "path": "test/editor/kit_slot.c",
-      "bytes": 22926,
-      "sha256": "eae2d3a431858ffc0edd3b16c20573b63a1220a7eeaea4074deaeba3e8bcf449"
+      "bytes": 22932,
+      "sha256": "0b95a127637f646cb9332a7e3ffca3c8b771ed47fc93941a3133f1b293b66dfc",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 20,
+        "bytes": 22926,
+        "sha256": "eae2d3a431858ffc0edd3b16c20573b63a1220a7eeaea4074deaeba3e8bcf449"
+      }
     },
     {
       "path": "test/editor/rmlui_kit.c",
       "bytes": 116225,
-      "sha256": "3ba49d43c20f10b88c643e3c1e81db9f1e8c931f89c535fb362e7b6cb4f72699"
+      "sha256": "3ba49d43c20f10b88c643e3c1e81db9f1e8c931f89c535fb362e7b6cb4f72699",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 21,
+        "bytes": 116225,
+        "sha256": "3ba49d43c20f10b88c643e3c1e81db9f1e8c931f89c535fb362e7b6cb4f72699"
+      }
     },
     {
       "path": "test/editor/rmlui_render.c",
       "bytes": 65970,
-      "sha256": "d74b957774ae651d7cf9b1d85f5cfe869b69483b5b16eab8a3bb0d65db30cb52"
+      "sha256": "d74b957774ae651d7cf9b1d85f5cfe869b69483b5b16eab8a3bb0d65db30cb52",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 22,
+        "bytes": 65970,
+        "sha256": "d74b957774ae651d7cf9b1d85f5cfe869b69483b5b16eab8a3bb0d65db30cb52"
+      }
     },
     {
       "path": "test/editor/scene_gizmo.c",
-      "bytes": 8787,
-      "sha256": "45fa77bdc996a0a8c186d6489245b5741aaac702250aad8ebc1a97da2b682105"
+      "bytes": 10912,
+      "sha256": "8dc81298a71da4ab9515da55a2055c0496139cc0d8588b3b591d57a33a01b9dc",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 23,
+        "bytes": 8787,
+        "sha256": "45fa77bdc996a0a8c186d6489245b5741aaac702250aad8ebc1a97da2b682105"
+      }
     },
     {
       "path": "test/editor/scene_selection.c",
-      "bytes": 13065,
-      "sha256": "593694d805f91e2c229462a3e7b318ce92bdfd8094ad8b3e3a08f8c40e8672e5"
+      "bytes": 16413,
+      "sha256": "f504ea05396e9853a47dc827fd891c982d146b1502be837b95ad7a7433af9317",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 24,
+        "bytes": 13065,
+        "sha256": "593694d805f91e2c229462a3e7b318ce92bdfd8094ad8b3e3a08f8c40e8672e5"
+      }
     },
     {
       "path": "test/editor/scene_view.c",
-      "bytes": 8533,
-      "sha256": "b8be4b0bf0ca016de91d456c523187c6c4bb48b0556cb8cc7d5571307a7eaf19"
+      "bytes": 10682,
+      "sha256": "9a572d7966410b1661c79259fcd6f5466b5ed1e0db9eadbf3e073c56ecf17e32",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 25,
+        "bytes": 8533,
+        "sha256": "b8be4b0bf0ca016de91d456c523187c6c4bb48b0556cb8cc7d5571307a7eaf19"
+      }
     },
     {
       "path": "test/editor/studio_commands.c",
       "bytes": 17817,
-      "sha256": "1d7174c3793d69995c5516622162a7b569f458308160bb3863e565b0aee36f72"
+      "sha256": "1d7174c3793d69995c5516622162a7b569f458308160bb3863e565b0aee36f72",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 26,
+        "bytes": 17817,
+        "sha256": "1d7174c3793d69995c5516622162a7b569f458308160bb3863e565b0aee36f72"
+      }
     },
     {
       "path": "test/editor/studio_documents.c",
-      "bytes": 18024,
-      "sha256": "64ba56a6aed085b883ff85fefc58d7eaf4957365791afc5019c522a4ecf2fa3b"
+      "bytes": 18028,
+      "sha256": "7bcd1956946cb777b34e6ea761066c1264a8c4e38dffcc92016165c2c3f00c2a",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 27,
+        "bytes": 18024,
+        "sha256": "64ba56a6aed085b883ff85fefc58d7eaf4957365791afc5019c522a4ecf2fa3b"
+      }
     },
     {
       "path": "test/editor/studio_documents.h",
-      "bytes": 5680,
-      "sha256": "e932e356a901f154d7d3e869e7c1c5af94dbefd21244fe9585f106a2cd090b48"
+      "bytes": 5682,
+      "sha256": "674ffc54489d7e07e689927f71f35cc179864b292d6a57d835d2cea58a4e083d",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 28,
+        "bytes": 5680,
+        "sha256": "e932e356a901f154d7d3e869e7c1c5af94dbefd21244fe9585f106a2cd090b48"
+      }
     },
     {
       "path": "test/editor/studio_documents_assets.c",
-      "bytes": 7112,
-      "sha256": "ff0a3861d5c75c2d7b9a8ff0541f74eed8b47267e47e76478a1055ec3c95da31"
+      "bytes": 7168,
+      "sha256": "c5cfaa40321c4537c49339b0d239b6109b97f54dbe4ddf4a62c0adadb72b33f4",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 29,
+        "bytes": 7112,
+        "sha256": "ff0a3861d5c75c2d7b9a8ff0541f74eed8b47267e47e76478a1055ec3c95da31"
+      }
     },
     {
       "path": "test/editor/studio_documents_chrome.c",
       "bytes": 17873,
-      "sha256": "9ed3b3f561a4bde6248e740e8b483063d083a2ae4a96fa7dd7169535a1bfe78b"
+      "sha256": "9ed3b3f561a4bde6248e740e8b483063d083a2ae4a96fa7dd7169535a1bfe78b",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 30,
+        "bytes": 17873,
+        "sha256": "9ed3b3f561a4bde6248e740e8b483063d083a2ae4a96fa7dd7169535a1bfe78b"
+      }
     },
     {
       "path": "test/editor/studio_documents_designer.c",
-      "bytes": 32768,
-      "sha256": "4ed75fce3c1271d8fcde69dd92b95fb490e672410a5ec820d38b9245456b328f"
+      "bytes": 32800,
+      "sha256": "43639bc9a0e321ee4ee224c20fe24d305efc72b7d4659a3ef7c8ac758fc528fc",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 31,
+        "bytes": 32768,
+        "sha256": "4ed75fce3c1271d8fcde69dd92b95fb490e672410a5ec820d38b9245456b328f"
+      }
     },
     {
       "path": "test/editor/studio_documents_graph.c",
-      "bytes": 37078,
-      "sha256": "0deade973c6c1fd33d7e0879fb49f9b1d546d4f9c7980dc05aa31d062c4066c3"
+      "bytes": 37146,
+      "sha256": "5b5395c8965e162ba60274552524cea00852090165393af1223a8bcbef04642e",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 32,
+        "bytes": 37078,
+        "sha256": "0deade973c6c1fd33d7e0879fb49f9b1d546d4f9c7980dc05aa31d062c4066c3"
+      }
     },
     {
       "path": "test/editor/studio_documents_graph_chrome.c",
       "bytes": 25962,
-      "sha256": "36b875cba0dd98e52b8d9f2bdf5918ee321cf1e2bc7d73950921f1f0420b0bea"
+      "sha256": "36b875cba0dd98e52b8d9f2bdf5918ee321cf1e2bc7d73950921f1f0420b0bea",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 33,
+        "bytes": 25962,
+        "sha256": "36b875cba0dd98e52b8d9f2bdf5918ee321cf1e2bc7d73950921f1f0420b0bea"
+      }
     },
     {
       "path": "test/editor/studio_documents_inspector.c",
       "bytes": 13664,
-      "sha256": "d03cc6700cd58972a5b953eb3bc0da7063d46ceafe829bf919265d4020a79541"
+      "sha256": "d03cc6700cd58972a5b953eb3bc0da7063d46ceafe829bf919265d4020a79541",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 34,
+        "bytes": 13664,
+        "sha256": "d03cc6700cd58972a5b953eb3bc0da7063d46ceafe829bf919265d4020a79541"
+      }
     },
     {
       "path": "test/editor/studio_documents_members.c",
       "bytes": 19149,
-      "sha256": "e1a5b8df49f561fde292c84e25d5b1cb0d7f4064c9faa41e4f3cc6408d7708a5"
+      "sha256": "e1a5b8df49f561fde292c84e25d5b1cb0d7f4064c9faa41e4f3cc6408d7708a5",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 35,
+        "bytes": 19149,
+        "sha256": "e1a5b8df49f561fde292c84e25d5b1cb0d7f4064c9faa41e4f3cc6408d7708a5"
+      }
     },
     {
       "path": "test/editor/studio_documents_outliner.c",
-      "bytes": 32481,
-      "sha256": "fdeca1ecfb778b68792474d9e73c58b6bf45f7ccc92e0ec7c4c7cc246da620e4"
+      "bytes": 32485,
+      "sha256": "241a8b6af998daaf05176c4fe7aec9dd2518e63638e8685e89ab25eaedd2cd58",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 36,
+        "bytes": 32481,
+        "sha256": "fdeca1ecfb778b68792474d9e73c58b6bf45f7ccc92e0ec7c4c7cc246da620e4"
+      }
     },
     {
       "path": "test/editor/studio_documents_output.c",
       "bytes": 20570,
-      "sha256": "e2fa0dbdaaa41c97c99efd5527f357e1ee8fe3d11f633b08986dcbb6e2fa5eea"
+      "sha256": "e2fa0dbdaaa41c97c99efd5527f357e1ee8fe3d11f633b08986dcbb6e2fa5eea",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 37,
+        "bytes": 20570,
+        "sha256": "e2fa0dbdaaa41c97c99efd5527f357e1ee8fe3d11f633b08986dcbb6e2fa5eea"
+      }
     },
     {
       "path": "test/editor/studio_documents_palette.c",
-      "bytes": 22573,
-      "sha256": "86cf08bdd05344cb6587960853a04e9bb0f4ee44f4d6b356cc6432ecfa2dd15b"
+      "bytes": 22575,
+      "sha256": "f3c6a65a57dad646f4275dd07aaf82ca727f948cdc71cb226425e545212530d3",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 38,
+        "bytes": 22573,
+        "sha256": "86cf08bdd05344cb6587960853a04e9bb0f4ee44f4d6b356cc6432ecfa2dd15b"
+      }
     },
     {
       "path": "test/editor/studio_documents_panels.c",
-      "bytes": 53354,
-      "sha256": "ed81a684ecbc6c84830d371f59f2fe086fd017ae0a03088531f1b7d6ba7f17bc"
+      "bytes": 54993,
+      "sha256": "d42a871131e4fb45e99d9eea23e6295d624afc635d23b7c8a1e7afc3267a7676",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 39,
+        "bytes": 53354,
+        "sha256": "ed81a684ecbc6c84830d371f59f2fe086fd017ae0a03088531f1b7d6ba7f17bc"
+      }
     },
     {
       "path": "test/editor/studio_documents_properties.c",
-      "bytes": 37806,
-      "sha256": "1272926cb56aa0b90fdf452fc19bfcc594b24459507c6875b098095c38855ede"
+      "bytes": 38296,
+      "sha256": "31a7b7f86f37d6567c95feadf9011a34209fa2f3fc84d576ab2375400bdc1b8c",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 40,
+        "bytes": 37806,
+        "sha256": "1272926cb56aa0b90fdf452fc19bfcc594b24459507c6875b098095c38855ede"
+      }
     },
     {
       "path": "test/editor/studio_documents_scene.c",
-      "bytes": 18581,
-      "sha256": "ada9c85e72db51a494f1c7e8b52aad32ad81e4bde7324cfae19c1c835a9ff3f3"
+      "bytes": 18583,
+      "sha256": "5157eef2f7dfb03b59a614521f304de516526276e6c5ac21e94b2ccb280cb281",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 41,
+        "bytes": 18581,
+        "sha256": "ada9c85e72db51a494f1c7e8b52aad32ad81e4bde7324cfae19c1c835a9ff3f3"
+      }
     },
     {
       "path": "test/editor/studio_documents_shell.c",
-      "bytes": 96009,
-      "sha256": "8c34eabf6131f8e1adceb24039812a96ede6523dee13f3dd46b13fe42bd16995"
+      "bytes": 96017,
+      "sha256": "7c1b90c88da1e37f97eb358272bbf95a97d35251a03902440a5066961fcaf77c",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 42,
+        "bytes": 96009,
+        "sha256": "8c34eabf6131f8e1adceb24039812a96ede6523dee13f3dd46b13fe42bd16995"
+      }
     },
     {
       "path": "test/editor/studio_graph_inputs.c",
-      "bytes": 70971,
-      "sha256": "d9571758bcd542725ea0343badd4c3d7f78b968a2ca46f2fe49c461953edde08"
+      "bytes": 70973,
+      "sha256": "223c56f37d2cf4f812a86d64238c8e146a2167d63dd80207fbdd5851fe44f74b",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 43,
+        "bytes": 70971,
+        "sha256": "d9571758bcd542725ea0343badd4c3d7f78b968a2ca46f2fe49c461953edde08"
+      }
     },
     {
       "path": "test/editor/studio_graph_zoom.c",
       "bytes": 11846,
-      "sha256": "7e870f4af963a10b346d4448f998d643df155cabdb5f930bb03608d09a868224"
+      "sha256": "7e870f4af963a10b346d4448f998d643df155cabdb5f930bb03608d09a868224",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 44,
+        "bytes": 11846,
+        "sha256": "7e870f4af963a10b346d4448f998d643df155cabdb5f930bb03608d09a868224"
+      }
     },
     {
       "path": "test/editor/studio_models.c",
-      "bytes": 37286,
-      "sha256": "7b1b454be27d0d3d2e7b96c081b28625fded6c88f2606d7746f98e0f400d9e87"
+      "bytes": 38321,
+      "sha256": "d2dea380169708f096799321c09914243aebc80d0d2437d9e5413009d82b9a6c",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 45,
+        "bytes": 37286,
+        "sha256": "7b1b454be27d0d3d2e7b96c081b28625fded6c88f2606d7746f98e0f400d9e87"
+      }
     },
     {
       "path": "test/editor/studio_new_assets.c",
-      "bytes": 27552,
-      "sha256": "8e6e5eb9c36ddb6052533b3e58d62222ff7a6470ff3c943baa864432030e4048"
+      "bytes": 29401,
+      "sha256": "a7aa408df03da761501b019ae2b4ba7eb55f17056fe341ff0047719532bf933c",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 46,
+        "bytes": 27552,
+        "sha256": "8e6e5eb9c36ddb6052533b3e58d62222ff7a6470ff3c943baa864432030e4048"
+      }
     },
     {
       "path": "test/editor/studio_nodes_gate.c",
-      "bytes": 5282,
-      "sha256": "a92785b8950fe37fb09db4db774e5efcc68175b339aea0bfe05eefc25495263b"
+      "bytes": 5978,
+      "sha256": "c6236006a7cf7c7dcad7083e42670c0ef85aa75e55a4c26e8fab5ab40adfcf87",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 47,
+        "bytes": 5282,
+        "sha256": "a92785b8950fe37fb09db4db774e5efcc68175b339aea0bfe05eefc25495263b"
+      }
     },
     {
       "path": "test/editor/studio_pinch.c",
       "bytes": 1785,
-      "sha256": "f9e40656ae1ca06c151bebbb3b5d67cc92e394a1266c001e86285dd5a9bb4d1b"
+      "sha256": "f9e40656ae1ca06c151bebbb3b5d67cc92e394a1266c001e86285dd5a9bb4d1b",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 48,
+        "bytes": 1785,
+        "sha256": "f9e40656ae1ca06c151bebbb3b5d67cc92e394a1266c001e86285dd5a9bb4d1b"
+      }
     },
     {
       "path": "test/editor/studio_settings.c",
-      "bytes": 79970,
-      "sha256": "d4e954aa5f8a4b31fb0c9b76a999d9fbbe593a1d47e6d59bc08182594f790e4d"
+      "bytes": 79984,
+      "sha256": "a86331dbb18b322f4c713e59df7ab1ea0e05c6a8200dd88bfa18cbf4911847b4",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 49,
+        "bytes": 79970,
+        "sha256": "d4e954aa5f8a4b31fb0c9b76a999d9fbbe593a1d47e6d59bc08182594f790e4d"
+      }
     },
     {
       "path": "test/editor/studio_thumbnails.c",
-      "bytes": 34651,
-      "sha256": "217023764182ed89738a96848fa32d909c7f9f6eb8cc377addeb12d9c7b0ca03"
+      "bytes": 41905,
+      "sha256": "b934544459a692ac0e4478b6857ef7b2abc7a0fd7d09d23fe258a821c78a25d2",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 50,
+        "bytes": 34651,
+        "sha256": "217023764182ed89738a96848fa32d909c7f9f6eb8cc377addeb12d9c7b0ca03"
+      }
     },
     {
       "path": "test/editor/ui_bench.c",
-      "bytes": 49802,
-      "sha256": "312d7d984b10c75c4ac41d42b52ea079b59bd78f50d03906c5e4f5b47ac4c8ec"
+      "bytes": 49804,
+      "sha256": "2300e11726e3d612283626b5263c3e3057e435d90c91a550f11e6176b2162b50",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 51,
+        "bytes": 49802,
+        "sha256": "312d7d984b10c75c4ac41d42b52ea079b59bd78f50d03906c5e4f5b47ac4c8ec"
+      }
     },
     {
       "path": "test/editor/ui_bench.h",
       "bytes": 3111,
-      "sha256": "316f596132c2339eb32ec5e1c0fd2dc0fbf9136f9ad1290e1de8406e5c301b68"
+      "sha256": "316f596132c2339eb32ec5e1c0fd2dc0fbf9136f9ad1290e1de8406e5c301b68",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 52,
+        "bytes": 3111,
+        "sha256": "316f596132c2339eb32ec5e1c0fd2dc0fbf9136f9ad1290e1de8406e5c301b68"
+      }
     },
     {
       "path": "test/editor/ui_bench_studio.c",
-      "bytes": 99314,
-      "sha256": "4fc492000780a4c1657585b941ec5cf52d71fb7baff576bdb3fee6a355cc8dd7"
+      "bytes": 99370,
+      "sha256": "c2a2179c20222ec9826d390bbb18ba5c4871fd14a83321e4b3e944f7c9eaed47",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 53,
+        "bytes": 99314,
+        "sha256": "4fc492000780a4c1657585b941ec5cf52d71fb7baff576bdb3fee6a355cc8dd7"
+      }
     },
     {
       "path": "test/editor/ui_designer.c",
       "bytes": 30408,
-      "sha256": "c136696bd0cea7e6408cebe9ef2fc7ed35c6da27fdb5e5a869d800823ef078da"
+      "sha256": "c136696bd0cea7e6408cebe9ef2fc7ed35c6da27fdb5e5a869d800823ef078da",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 54,
+        "bytes": 30408,
+        "sha256": "c136696bd0cea7e6408cebe9ef2fc7ed35c6da27fdb5e5a869d800823ef078da"
+      }
     },
     {
       "path": "test/editor/ui_documents.c",
-      "bytes": 33560,
-      "sha256": "d3813d110eb551b45c9208509e059b1e64100d3196c06f6989ab3a82a7c0f450"
+      "bytes": 34462,
+      "sha256": "05293af03a6b24df82e3e0141641fe36d49d6e97a31601a45202a11033013aa6",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 55,
+        "bytes": 33560,
+        "sha256": "d3813d110eb551b45c9208509e059b1e64100d3196c06f6989ab3a82a7c0f450"
+      }
     },
     {
       "path": "test/editor/ui_inspector.c",
       "bytes": 14316,
-      "sha256": "6ce4ee9149d0e6114503c0048cb09189a15e541fe551cc4fb5adf17f40a0fe01"
+      "sha256": "6ce4ee9149d0e6114503c0048cb09189a15e541fe551cc4fb5adf17f40a0fe01",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 56,
+        "bytes": 14316,
+        "sha256": "6ce4ee9149d0e6114503c0048cb09189a15e541fe551cc4fb5adf17f40a0fe01"
+      }
     },
     {
       "path": "test/editor/ui_popovers.c",
       "bytes": 27491,
-      "sha256": "6e4d7d7d6ccc136451dcb16394276a77a15ec5b69cae57f92e5077cf5035ed26"
+      "sha256": "6e4d7d7d6ccc136451dcb16394276a77a15ec5b69cae57f92e5077cf5035ed26",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 57,
+        "bytes": 27491,
+        "sha256": "6e4d7d7d6ccc136451dcb16394276a77a15ec5b69cae57f92e5077cf5035ed26"
+      }
     },
     {
       "path": "test/editor/ui_sources.c",
       "bytes": 14761,
-      "sha256": "28f6f99242417c2a408b8c0a923e60f94c3b027930f57b920379ab36030cc9e3"
+      "sha256": "28f6f99242417c2a408b8c0a923e60f94c3b027930f57b920379ab36030cc9e3",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 58,
+        "bytes": 14761,
+        "sha256": "28f6f99242417c2a408b8c0a923e60f94c3b027930f57b920379ab36030cc9e3"
+      }
     },
     {
       "path": "test/editor/ui_wiring.c",
-      "bytes": 11365,
-      "sha256": "6ba8c5965d76b75bca4642185a70d6c79025a90e9224c793be2612957da459c2"
+      "bytes": 12864,
+      "sha256": "2ebeebb03afa8c4294d8afeb32db5e40553ab46828fcb30c70e67d4ba30a08c3",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 59,
+        "bytes": 11365,
+        "sha256": "6ba8c5965d76b75bca4642185a70d6c79025a90e9224c793be2612957da459c2"
+      }
     },
     {
       "path": "test/editor_checkpoint.c",
       "bytes": 8247,
-      "sha256": "a5c57499dbee6953b5b35d5b3f028df98ff607e62a6101fdc7fb3a375ab911b6"
+      "sha256": "a5c57499dbee6953b5b35d5b3f028df98ff607e62a6101fdc7fb3a375ab911b6",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 60,
+        "bytes": 8247,
+        "sha256": "a5c57499dbee6953b5b35d5b3f028df98ff607e62a6101fdc7fb3a375ab911b6"
+      }
     },
     {
       "path": "test/editor_documents.c",
       "bytes": 9055,
-      "sha256": "03c5de1aa91490e16552487c3b955ba8700b9a3862d5c081ffd6221e3fa035b6"
+      "sha256": "03c5de1aa91490e16552487c3b955ba8700b9a3862d5c081ffd6221e3fa035b6",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 61,
+        "bytes": 9055,
+        "sha256": "03c5de1aa91490e16552487c3b955ba8700b9a3862d5c081ffd6221e3fa035b6"
+      }
     },
     {
       "path": "test/editor_flow.c",
       "bytes": 7790,
-      "sha256": "536623c3fe53ac7466bd2f9642f3d293ce8208a06c6f7e513d3a8787506f2438"
+      "sha256": "536623c3fe53ac7466bd2f9642f3d293ce8208a06c6f7e513d3a8787506f2438",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 62,
+        "bytes": 7790,
+        "sha256": "536623c3fe53ac7466bd2f9642f3d293ce8208a06c6f7e513d3a8787506f2438"
+      }
     },
     {
       "path": "test/fixtures/behavior-catalog/README.md",
       "bytes": 360,
-      "sha256": "2e518b59d84846741ff9aa97e140af8d14dab2e184c5bfe05e85efa8b524a833"
+      "sha256": "2e518b59d84846741ff9aa97e140af8d14dab2e184c5bfe05e85efa8b524a833",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 63,
+        "bytes": 360,
+        "sha256": "2e518b59d84846741ff9aa97e140af8d14dab2e184c5bfe05e85efa8b524a833"
+      }
     },
     {
-      "path": "test/fixtures/behavior-catalog/content/events/CollectExperience.kdl",
-      "bytes": 202,
-      "sha256": "bde027f8b22b0c27244d854464656916b91c1fe8990814ff8b9c6dc657d25fb5"
+      "path": "test/fixtures/behavior-catalog/content/events/CollectExperience.chibi",
+      "bytes": 801,
+      "sha256": "94fd5fe6efc04ed131f3679e8c46e702f26ecdd1b89178607a0f7a0c1ab4ff79",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 64,
+        "bytes": 202,
+        "sha256": "bde027f8b22b0c27244d854464656916b91c1fe8990814ff8b9c6dc657d25fb5"
+      }
     },
     {
-      "path": "test/fixtures/behavior-catalog/content/events/Damage.kdl",
-      "bytes": 321,
-      "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+      "path": "test/fixtures/behavior-catalog/content/events/Damage.chibi",
+      "bytes": 1645,
+      "sha256": "059cddbeb04d1ca8d076568562fcb2e61ed77372c93674c679893175c0a47ec8",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 65,
+        "bytes": 321,
+        "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+      }
     },
     {
-      "path": "test/fixtures/behavior-catalog/content/events/Damaged.kdl",
-      "bytes": 371,
-      "sha256": "c15780843c895e8e5a6cc6f49360c8b7d10684ba3bf6b08e82925d20cc8a3789"
+      "path": "test/fixtures/behavior-catalog/content/events/Damaged.chibi",
+      "bytes": 1695,
+      "sha256": "45f7b3807d814c029561b855e1e4a065a57e41b44be3e9ff3e4413aa1ad97111",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 66,
+        "bytes": 371,
+        "sha256": "c15780843c895e8e5a6cc6f49360c8b7d10684ba3bf6b08e82925d20cc8a3789"
+      }
     },
     {
-      "path": "test/fixtures/behavior-catalog/content/events/Died.kdl",
-      "bytes": 301,
-      "sha256": "a657074520b482981fa4ed753dc6fe8c08e6a93b41b20193ac32a04850504ce9"
+      "path": "test/fixtures/behavior-catalog/content/events/Died.chibi",
+      "bytes": 1287,
+      "sha256": "05424b8e42dad7c49ac6c5d5c9239fb75fda4e39afc6c87d76e1f58859c62529",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 67,
+        "bytes": 301,
+        "sha256": "a657074520b482981fa4ed753dc6fe8c08e6a93b41b20193ac32a04850504ce9"
+      }
     },
     {
-      "path": "test/fixtures/behavior-catalog/content/events/RefreshEncounter.kdl",
-      "bytes": 179,
-      "sha256": "6a4e38e5560a51fdf4d64659e8608f5e36d320325b0673c80e99da93a68d6e93"
+      "path": "test/fixtures/behavior-catalog/content/events/RefreshEncounter.chibi",
+      "bytes": 778,
+      "sha256": "249dc3436227c57f9d32ba9bedebad97c16c238dc627f8474a88ab55e3ce701b",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 68,
+        "bytes": 179,
+        "sha256": "6a4e38e5560a51fdf4d64659e8608f5e36d320325b0673c80e99da93a68d6e93"
+      }
     },
     {
       "path": "test/fixtures/behavior-catalog/content/libraries/DirectionMath.chibi",
       "bytes": 392,
-      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 69,
+        "bytes": 392,
+        "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+      }
     },
     {
       "path": "test/fixtures/behavior-catalog/content/libraries/MovementActions.chibi",
       "bytes": 417,
-      "sha256": "0e8bc6d946c51d743a492f16ae86c048ae4af519527c5bff2df9e148940df8de"
+      "sha256": "0e8bc6d946c51d743a492f16ae86c048ae4af519527c5bff2df9e148940df8de",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 70,
+        "bytes": 417,
+        "sha256": "0e8bc6d946c51d743a492f16ae86c048ae4af519527c5bff2df9e148940df8de"
+      }
     },
     {
       "path": "test/fixtures/behavior-catalog/content/libraries/WeaponActions.chibi",
       "bytes": 1970,
-      "sha256": "0e2588c5583c6a518db82db5f33398a1a5135b8a96b7b280db8ee1a79423f79d"
+      "sha256": "0e2588c5583c6a518db82db5f33398a1a5135b8a96b7b280db8ee1a79423f79d",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 71,
+        "bytes": 1970,
+        "sha256": "0e2588c5583c6a518db82db5f33398a1a5135b8a96b7b280db8ee1a79423f79d"
+      }
     },
     {
-      "path": "test/fixtures/behavior-catalog/content/scenes/Start.kdl",
-      "bytes": 39,
-      "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+      "path": "test/fixtures/behavior-catalog/content/scenes/Start.chibi",
+      "bytes": 316,
+      "sha256": "ba4ed9b31b8e3db758660895811c19c0d11d405bfec870a6a70f4b8650803fca",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 72,
+        "bytes": 39,
+        "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+      }
     },
     {
-      "path": "test/fixtures/behavior-catalog/content/shader-libraries/ShaderMath.kdl",
-      "bytes": 5636,
-      "sha256": "40b0f0e65b56c3765bb267c407212991f7226c0a980c396aac585846b82685b4"
+      "path": "test/fixtures/behavior-catalog/content/shader-libraries/ShaderMath.chibi",
+      "bytes": 21414,
+      "sha256": "a33cb5b48c505c4c737b666e15725296bc8360f425346e9a9f6571fec1aa4dd0",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 73,
+        "bytes": 5636,
+        "sha256": "40b0f0e65b56c3765bb267c407212991f7226c0a980c396aac585846b82685b4"
+      }
     },
     {
       "path": "test/fixtures/behavior-catalog/fixtures.json",
-      "bytes": 3193,
-      "sha256": "143990103573bba3a3bd83725a7bbcdd83f2a2ba3c220dbb0e57e3d84e83065c"
+      "bytes": 3409,
+      "sha256": "68b359e837e764bad63b160071b63a44932243e682f59314ce29508d99792fdd",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 74,
+        "bytes": 3193,
+        "sha256": "143990103573bba3a3bd83725a7bbcdd83f2a2ba3c220dbb0e57e3d84e83065c"
+      }
     },
     {
-      "path": "test/fixtures/behavior-catalog/project.kdl",
-      "bytes": 94,
-      "sha256": "cf6579bb8420eed70e34bdcf5b1e03f48391abf1fe9f7bce94e67111a8775990"
+      "path": "test/fixtures/behavior-catalog/project.chibi",
+      "bytes": 434,
+      "sha256": "da09d77a4f657f21c8134ecf58687ddbbe13b91f3c53cbee5cff041ebfe482c7",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 75,
+        "bytes": 94,
+        "sha256": "cf6579bb8420eed70e34bdcf5b1e03f48391abf1fe9f7bce94e67111a8775990"
+      }
     },
     {
       "path": "test/fixtures/component-presentation/README.md",
       "bytes": 232,
-      "sha256": "92ff59c61a8b9b6680efb078851f6a408456bff5b63776bd6501f2faf554a77f"
+      "sha256": "92ff59c61a8b9b6680efb078851f6a408456bff5b63776bd6501f2faf554a77f",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 76,
+        "bytes": 232,
+        "sha256": "92ff59c61a8b9b6680efb078851f6a408456bff5b63776bd6501f2faf554a77f"
+      }
     },
     {
-      "path": "test/fixtures/component-presentation/content/editor/Components.kdl",
-      "bytes": 3707,
-      "sha256": "715ac09169ae07f5af6cbd58a18b7e080cbb152198086dac97ce1ba4921e519b"
+      "path": "test/fixtures/component-presentation/content/editor/Components.chibi",
+      "bytes": 14939,
+      "sha256": "268c9b8504123148a8eba8503769be143e5ae742e99b17b0992628544e023e4b",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 77,
+        "bytes": 3707,
+        "sha256": "715ac09169ae07f5af6cbd58a18b7e080cbb152198086dac97ce1ba4921e519b"
+      }
     },
     {
-      "path": "test/fixtures/component-presentation/content/prototypes/InspectorSubject.kdl",
-      "bytes": 186,
-      "sha256": "2892c9913a0e36b9e190075fb1cc324e44d42b95da7cf374965c6b3fbb968446"
+      "path": "test/fixtures/component-presentation/content/prototypes/InspectorSubject.chibi",
+      "bytes": 639,
+      "sha256": "02661776c1c4a6193f9a8e879f1cb1f3102f91c976d14468302763c156f5ab0f",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 78,
+        "bytes": 186,
+        "sha256": "2892c9913a0e36b9e190075fb1cc324e44d42b95da7cf374965c6b3fbb968446"
+      }
     },
     {
-      "path": "test/fixtures/component-presentation/content/scenes/Start.kdl",
-      "bytes": 39,
-      "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+      "path": "test/fixtures/component-presentation/content/scenes/Start.chibi",
+      "bytes": 316,
+      "sha256": "ba4ed9b31b8e3db758660895811c19c0d11d405bfec870a6a70f4b8650803fca",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 79,
+        "bytes": 39,
+        "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+      }
     },
     {
       "path": "test/fixtures/component-presentation/fixtures.json",
-      "bytes": 465,
-      "sha256": "dc1f3e2b6a87688b22fd0f9ab11af1bb6c7d8784d5c75fffa08074f41b20ffe6"
+      "bytes": 499,
+      "sha256": "4082d1b95aa0fa16c1ff0ab4a43438547078dd4567002ed763081562a1794b5a",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 80,
+        "bytes": 465,
+        "sha256": "dc1f3e2b6a87688b22fd0f9ab11af1bb6c7d8784d5c75fffa08074f41b20ffe6"
+      }
     },
     {
-      "path": "test/fixtures/component-presentation/project.kdl",
-      "bytes": 100,
-      "sha256": "e388943fffa2b270cae5caf7edf64d4dd13907149b61933413e3c533ad08ddc9"
+      "path": "test/fixtures/component-presentation/project.chibi",
+      "bytes": 440,
+      "sha256": "38c519b13dbc97a82b3d68418ae2f1e29f8eb90fa94a7bb23fca8593c6074723",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 81,
+        "bytes": 100,
+        "sha256": "e388943fffa2b270cae5caf7edf64d4dd13907149b61933413e3c533ad08ddc9"
+      }
     },
     {
       "path": "test/fixtures/content/behaviors/ArenaShardBehavior.chibi",
       "bytes": 6602,
-      "sha256": "c18d512396b2ad65a542985e028c3efbceb332f7c1bda4029080c02679ad0d46"
+      "sha256": "c18d512396b2ad65a542985e028c3efbceb332f7c1bda4029080c02679ad0d46",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 82,
+        "bytes": 6602,
+        "sha256": "c18d512396b2ad65a542985e028c3efbceb332f7c1bda4029080c02679ad0d46"
+      }
     },
     {
       "path": "test/fixtures/content/behaviors/AutoWeaponBehavior.chibi",
       "bytes": 1598,
-      "sha256": "b90bcabbe08f6098e2973394727f1d26f35860b8acf8ddf5193e203ed6905eb0"
+      "sha256": "b90bcabbe08f6098e2973394727f1d26f35860b8acf8ddf5193e203ed6905eb0",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 83,
+        "bytes": 1598,
+        "sha256": "b90bcabbe08f6098e2973394727f1d26f35860b8acf8ddf5193e203ed6905eb0"
+      }
     },
     {
       "path": "test/fixtures/content/behaviors/DamageFlashBehavior.chibi",
       "bytes": 571,
-      "sha256": "068270d9836bf8a86ce0893536f45c5c9c45e894e3165d195147ce71e460ce20"
+      "sha256": "068270d9836bf8a86ce0893536f45c5c9c45e894e3165d195147ce71e460ce20",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 84,
+        "bytes": 571,
+        "sha256": "068270d9836bf8a86ce0893536f45c5c9c45e894e3165d195147ce71e460ce20"
+      }
     },
     {
       "path": "test/fixtures/content/behaviors/DashBehavior.chibi",
       "bytes": 7574,
-      "sha256": "b1c70ec469ddffef324f8b2885291318e61dbedaf03f7b1dacbe7bed710174b8"
+      "sha256": "b1c70ec469ddffef324f8b2885291318e61dbedaf03f7b1dacbe7bed710174b8",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 85,
+        "bytes": 7574,
+        "sha256": "b1c70ec469ddffef324f8b2885291318e61dbedaf03f7b1dacbe7bed710174b8"
+      }
     },
     {
       "path": "test/fixtures/content/behaviors/InputBehavior.chibi",
       "bytes": 1512,
-      "sha256": "372adc8343987476b407ff737e7b6b60d9857bf0d0bc3fc605da34cb1913a8aa"
+      "sha256": "372adc8343987476b407ff737e7b6b60d9857bf0d0bc3fc605da34cb1913a8aa",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 86,
+        "bytes": 1512,
+        "sha256": "372adc8343987476b407ff737e7b6b60d9857bf0d0bc3fc605da34cb1913a8aa"
+      }
     },
     {
       "path": "test/fixtures/content/behaviors/MovementTrailBehavior.chibi",
       "bytes": 3043,
-      "sha256": "066b919a22262a6eb4bc571d52ed63eb2fd176891d38f021a0fce13b8efd39b6"
+      "sha256": "066b919a22262a6eb4bc571d52ed63eb2fd176891d38f021a0fce13b8efd39b6",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 87,
+        "bytes": 3043,
+        "sha256": "066b919a22262a6eb4bc571d52ed63eb2fd176891d38f021a0fce13b8efd39b6"
+      }
     },
     {
       "path": "test/fixtures/content/behaviors/ProjectileBehavior.chibi",
       "bytes": 1750,
-      "sha256": "89e2fffe383c2a3896ede22441b886a3e7550b1f655574208b0a08d658395b4c"
+      "sha256": "89e2fffe383c2a3896ede22441b886a3e7550b1f655574208b0a08d658395b4c",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 88,
+        "bytes": 1750,
+        "sha256": "89e2fffe383c2a3896ede22441b886a3e7550b1f655574208b0a08d658395b4c"
+      }
     },
     {
       "path": "test/fixtures/content/behaviors/ReplayInput.chibi",
       "bytes": 167,
-      "sha256": "9d40da85ffb67f5a4e80c120b873d01e2c570854361a7247eddc0aa331c69805"
+      "sha256": "9d40da85ffb67f5a4e80c120b873d01e2c570854361a7247eddc0aa331c69805",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 89,
+        "bytes": 167,
+        "sha256": "9d40da85ffb67f5a4e80c120b873d01e2c570854361a7247eddc0aa331c69805"
+      }
     },
     {
       "path": "test/fixtures/content/behaviors/WaveBehavior.chibi",
       "bytes": 2621,
-      "sha256": "49cb103d386071ed03f086ddd69506125b7e72f3af2aef595d2691b6b5ff4b4d"
+      "sha256": "49cb103d386071ed03f086ddd69506125b7e72f3af2aef595d2691b6b5ff4b4d",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 90,
+        "bytes": 2621,
+        "sha256": "49cb103d386071ed03f086ddd69506125b7e72f3af2aef595d2691b6b5ff4b4d"
+      }
     },
     {
       "path": "test/fixtures/content/behaviors/WavePulseBehavior.chibi",
       "bytes": 1395,
-      "sha256": "2ba29627ef95048b901340046b10e987049735af6e8fc5e827aa0b6c61aaa9fd"
+      "sha256": "2ba29627ef95048b901340046b10e987049735af6e8fc5e827aa0b6c61aaa9fd",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 91,
+        "bytes": 1395,
+        "sha256": "2ba29627ef95048b901340046b10e987049735af6e8fc5e827aa0b6c61aaa9fd"
+      }
     },
     {
       "path": "test/fixtures/content/behaviors/WeaponBehavior.chibi",
       "bytes": 343,
-      "sha256": "2dd03c9ad7eb69416280deb5b461d88bc843a8bfabdd527931a27cfa2f9bc446"
+      "sha256": "2dd03c9ad7eb69416280deb5b461d88bc843a8bfabdd527931a27cfa2f9bc446",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 92,
+        "bytes": 343,
+        "sha256": "2dd03c9ad7eb69416280deb5b461d88bc843a8bfabdd527931a27cfa2f9bc446"
+      }
     },
     {
-      "path": "test/fixtures/content/events/CollectExperience.kdl",
-      "bytes": 202,
-      "sha256": "bde027f8b22b0c27244d854464656916b91c1fe8990814ff8b9c6dc657d25fb5"
+      "path": "test/fixtures/content/events/CollectExperience.chibi",
+      "bytes": 801,
+      "sha256": "94fd5fe6efc04ed131f3679e8c46e702f26ecdd1b89178607a0f7a0c1ab4ff79",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 93,
+        "bytes": 202,
+        "sha256": "bde027f8b22b0c27244d854464656916b91c1fe8990814ff8b9c6dc657d25fb5"
+      }
     },
     {
-      "path": "test/fixtures/content/events/Damage.kdl",
-      "bytes": 321,
-      "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+      "path": "test/fixtures/content/events/Damage.chibi",
+      "bytes": 1645,
+      "sha256": "059cddbeb04d1ca8d076568562fcb2e61ed77372c93674c679893175c0a47ec8",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 94,
+        "bytes": 321,
+        "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+      }
     },
     {
-      "path": "test/fixtures/content/events/Damaged.kdl",
-      "bytes": 371,
-      "sha256": "c15780843c895e8e5a6cc6f49360c8b7d10684ba3bf6b08e82925d20cc8a3789"
+      "path": "test/fixtures/content/events/Damaged.chibi",
+      "bytes": 1695,
+      "sha256": "45f7b3807d814c029561b855e1e4a065a57e41b44be3e9ff3e4413aa1ad97111",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 95,
+        "bytes": 371,
+        "sha256": "c15780843c895e8e5a6cc6f49360c8b7d10684ba3bf6b08e82925d20cc8a3789"
+      }
     },
     {
-      "path": "test/fixtures/content/events/Died.kdl",
-      "bytes": 301,
-      "sha256": "a657074520b482981fa4ed753dc6fe8c08e6a93b41b20193ac32a04850504ce9"
+      "path": "test/fixtures/content/events/Died.chibi",
+      "bytes": 1287,
+      "sha256": "05424b8e42dad7c49ac6c5d5c9239fb75fda4e39afc6c87d76e1f58859c62529",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 96,
+        "bytes": 301,
+        "sha256": "a657074520b482981fa4ed753dc6fe8c08e6a93b41b20193ac32a04850504ce9"
+      }
     },
     {
-      "path": "test/fixtures/content/events/RefreshEncounter.kdl",
-      "bytes": 179,
-      "sha256": "6a4e38e5560a51fdf4d64659e8608f5e36d320325b0673c80e99da93a68d6e93"
+      "path": "test/fixtures/content/events/RefreshEncounter.chibi",
+      "bytes": 778,
+      "sha256": "249dc3436227c57f9d32ba9bedebad97c16c238dc627f8474a88ab55e3ce701b",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 97,
+        "bytes": 179,
+        "sha256": "6a4e38e5560a51fdf4d64659e8608f5e36d320325b0673c80e99da93a68d6e93"
+      }
     },
     {
       "path": "test/fixtures/content/libraries/DirectionMath.chibi",
       "bytes": 392,
-      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 98,
+        "bytes": 392,
+        "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+      }
     },
     {
       "path": "test/fixtures/content/libraries/MovementActions.chibi",
       "bytes": 417,
-      "sha256": "0e8bc6d946c51d743a492f16ae86c048ae4af519527c5bff2df9e148940df8de"
+      "sha256": "0e8bc6d946c51d743a492f16ae86c048ae4af519527c5bff2df9e148940df8de",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 99,
+        "bytes": 417,
+        "sha256": "0e8bc6d946c51d743a492f16ae86c048ae4af519527c5bff2df9e148940df8de"
+      }
     },
     {
       "path": "test/fixtures/content/libraries/WeaponActions.chibi",
       "bytes": 1965,
-      "sha256": "a21ce63baf82ce32849edeb5b19b4140b7add76a768046a6856755cb4e237ca2"
+      "sha256": "a21ce63baf82ce32849edeb5b19b4140b7add76a768046a6856755cb4e237ca2",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 100,
+        "bytes": 1965,
+        "sha256": "a21ce63baf82ce32849edeb5b19b4140b7add76a768046a6856755cb4e237ca2"
+      }
     },
     {
-      "path": "test/fixtures/content/materials/EnergyCells.kdl",
-      "bytes": 7088,
-      "sha256": "7066159ad6b12cdc5a537e2086b731676533ae085427ac001fb5995be99abb5c"
+      "path": "test/fixtures/content/materials/EnergyCells.chibi",
+      "bytes": 24296,
+      "sha256": "a0d76b78fd1a24707a79af319e468a516780778de49992ddaf4142794dc73fe2",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 101,
+        "bytes": 7088,
+        "sha256": "7066159ad6b12cdc5a537e2086b731676533ae085427ac001fb5995be99abb5c"
+      }
     },
     {
-      "path": "test/fixtures/content/materials/OutlineGradient.kdl",
-      "bytes": 12677,
-      "sha256": "aae82750e8a0811104b8d3c428e882073284d69caf85e3dd4209c6dcc250130a"
+      "path": "test/fixtures/content/materials/OutlineGradient.chibi",
+      "bytes": 45069,
+      "sha256": "d39be3ba759afcc6c79281cc672e25cdcd09022aba3f130aee25e277d7389aec",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 102,
+        "bytes": 12677,
+        "sha256": "aae82750e8a0811104b8d3c428e882073284d69caf85e3dd4209c6dcc250130a"
+      }
     },
     {
-      "path": "test/fixtures/content/materials/PulseRing.kdl",
-      "bytes": 6073,
-      "sha256": "bc5d534c75ea0299ca310b9e52e4c7b72a125a58611746bc25474f6a89b268d7"
+      "path": "test/fixtures/content/materials/PulseRing.chibi",
+      "bytes": 22251,
+      "sha256": "591015541ca3838a7d60212f61824ba56453dadd8b40dd3844c628537a7475a4",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 103,
+        "bytes": 6073,
+        "sha256": "bc5d534c75ea0299ca310b9e52e4c7b72a125a58611746bc25474f6a89b268d7"
+      }
     },
     {
-      "path": "test/fixtures/content/prototypes/Editor2DPreview.kdl",
-      "bytes": 235,
-      "sha256": "41ec911b9195987cc7726fcde2236aa56f865c36f56cbb76fa41001a08c93a06"
+      "path": "test/fixtures/content/prototypes/Editor2DPreview.chibi",
+      "bytes": 1200,
+      "sha256": "b20ed4bdb9046eb14ce248edcd97dfcfe5de8dfbe1a5942b782b87a4c6a6948f",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 104,
+        "bytes": 235,
+        "sha256": "41ec911b9195987cc7726fcde2236aa56f865c36f56cbb76fa41001a08c93a06"
+      }
     },
     {
-      "path": "test/fixtures/content/prototypes/Encounter.kdl",
-      "bytes": 104,
-      "sha256": "e8ded4ae49d9b4595ca5767a076e6745f9fcdbbe4698875bb5df5669abb1ffc1"
+      "path": "test/fixtures/content/prototypes/Encounter.chibi",
+      "bytes": 618,
+      "sha256": "5556eab8a420cb48620c015833b99d233d4e5b19077a9a20d613146af7c14077",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 105,
+        "bytes": 104,
+        "sha256": "e8ded4ae49d9b4595ca5767a076e6745f9fcdbbe4698875bb5df5669abb1ffc1"
+      }
     },
     {
-      "path": "test/fixtures/content/prototypes/Enemy.kdl",
-      "bytes": 720,
-      "sha256": "9f86175526b0c604c5191cad1396280a7f70278480140af00909a8eb0cf41730"
+      "path": "test/fixtures/content/prototypes/Enemy.chibi",
+      "bytes": 3186,
+      "sha256": "2cdeb4dcc37883d3779d5c550d2d5ec3d05788e9e548f601e7afb72ecea210c7",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 106,
+        "bytes": 720,
+        "sha256": "9f86175526b0c604c5191cad1396280a7f70278480140af00909a8eb0cf41730"
+      }
     },
     {
-      "path": "test/fixtures/content/prototypes/Player.kdl",
-      "bytes": 822,
-      "sha256": "d256a659b33aab8afee24789f1eddababbe8ad9060f12a94c6bc298f2f669019"
+      "path": "test/fixtures/content/prototypes/Player.chibi",
+      "bytes": 3508,
+      "sha256": "811e79f49835b34ad44a3468ba198308e8900803b5feeca309a958a9c874be0d",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 107,
+        "bytes": 822,
+        "sha256": "d256a659b33aab8afee24789f1eddababbe8ad9060f12a94c6bc298f2f669019"
+      }
     },
     {
-      "path": "test/fixtures/content/prototypes/Projectile.kdl",
-      "bytes": 623,
-      "sha256": "c77e524c721592dfd06e01c4ebb59d67a1b48d867ce1c43ffbb61f529fd72207"
+      "path": "test/fixtures/content/prototypes/Projectile.chibi",
+      "bytes": 2755,
+      "sha256": "53d68c72550291681d3a7e6dcb66d017e289e18d1184428b7b466077c7fcb1ac",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 108,
+        "bytes": 623,
+        "sha256": "c77e524c721592dfd06e01c4ebb59d67a1b48d867ce1c43ffbb61f529fd72207"
+      }
     },
     {
-      "path": "test/fixtures/content/prototypes/ShaderGradient.kdl",
-      "bytes": 285,
-      "sha256": "aa01c06e872a76aae0072290cb8ced5cf40872acf76a101a67a29b9a7871ab78"
+      "path": "test/fixtures/content/prototypes/ShaderGradient.chibi",
+      "bytes": 1351,
+      "sha256": "4c0f7dbec8c3265cf8821f79e503512bab747868edc150f9520c2b059fb472bd",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 109,
+        "bytes": 285,
+        "sha256": "aa01c06e872a76aae0072290cb8ced5cf40872acf76a101a67a29b9a7871ab78"
+      }
     },
     {
-      "path": "test/fixtures/content/prototypes/ShaderRing.kdl",
-      "bytes": 314,
-      "sha256": "18764f134232fb185eb7678d37199650366212a0c178f752dfc3315aacca69f0"
+      "path": "test/fixtures/content/prototypes/ShaderRing.chibi",
+      "bytes": 1467,
+      "sha256": "ce5e0a50849e17fe737f76c0401281b1d74a8d30df7f904870f6105347e93e73",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 110,
+        "bytes": 314,
+        "sha256": "18764f134232fb185eb7678d37199650366212a0c178f752dfc3315aacca69f0"
+      }
     },
     {
-      "path": "test/fixtures/content/prototypes/ShaderUnion.kdl",
-      "bytes": 262,
-      "sha256": "fe126ec931aefd79dcd8854ad70fd8d5ccad47f36b1d19e756c30398bdc3fcd2"
+      "path": "test/fixtures/content/prototypes/ShaderUnion.chibi",
+      "bytes": 1267,
+      "sha256": "9c1950dfdcc53bde151e6946c57d1af7cce51c2cbc7c46d45269831d43f23d78",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 111,
+        "bytes": 262,
+        "sha256": "fe126ec931aefd79dcd8854ad70fd8d5ccad47f36b1d19e756c30398bdc3fcd2"
+      }
     },
     {
-      "path": "test/fixtures/content/scenes/Editor2D.kdl",
-      "bytes": 880,
-      "sha256": "40cf1015bcd212c9f5bebd661b49f7a40ec10186e5346f02313263dfdaf55954"
+      "path": "test/fixtures/content/scenes/Editor2D.chibi",
+      "bytes": 3934,
+      "sha256": "ec08ec2062e2dd86f4e6768b7a27ea77ccda50b1a42e6f16cb83c4eb48c0c958",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 112,
+        "bytes": 880,
+        "sha256": "40cf1015bcd212c9f5bebd661b49f7a40ec10186e5346f02313263dfdaf55954"
+      }
     },
     {
-      "path": "test/fixtures/content/scenes/NeonSwarm.kdl",
-      "bytes": 368,
-      "sha256": "0b7baa033183465462a851594100c423d113c17d7f412275b1a1110dc624952a"
+      "path": "test/fixtures/content/scenes/NeonSwarm.chibi",
+      "bytes": 1343,
+      "sha256": "1817049e93b12d127eda035883b52daee1575a68232bcada4c147aabb92461d6",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 113,
+        "bytes": 368,
+        "sha256": "0b7baa033183465462a851594100c423d113c17d7f412275b1a1110dc624952a"
+      }
     },
     {
-      "path": "test/fixtures/content/scenes/ShaderDemo.kdl",
-      "bytes": 546,
-      "sha256": "e15c39b9ced611305fb6ece9f0489a80fcfd4c385cd15744176b6f1af625742c"
+      "path": "test/fixtures/content/scenes/ShaderDemo.chibi",
+      "bytes": 2143,
+      "sha256": "cbdd3b62122c1388932602357f5b935141454ec3c77784f2edf9a1a20929fcc3",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 114,
+        "bytes": 546,
+        "sha256": "e15c39b9ced611305fb6ece9f0489a80fcfd4c385cd15744176b6f1af625742c"
+      }
     },
     {
-      "path": "test/fixtures/content/scenes/ShaderImageDemo.kdl",
-      "bytes": 952,
-      "sha256": "56ee6492c94c273a9289582176b265e7ec66de6069aa340ed68ad5530e344bc5"
+      "path": "test/fixtures/content/scenes/ShaderImageDemo.chibi",
+      "bytes": 3925,
+      "sha256": "ddc00633f47f127cb1d9f1d547a942caaeec6bfe3e3d0c454d025748ae79ef8d",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 115,
+        "bytes": 952,
+        "sha256": "56ee6492c94c273a9289582176b265e7ec66de6069aa340ed68ad5530e344bc5"
+      }
     },
     {
-      "path": "test/fixtures/content/scenes/Start.kdl",
-      "bytes": 39,
-      "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+      "path": "test/fixtures/content/scenes/Start.chibi",
+      "bytes": 316,
+      "sha256": "ba4ed9b31b8e3db758660895811c19c0d11d405bfec870a6a70f4b8650803fca",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 116,
+        "bytes": 39,
+        "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+      }
     },
     {
-      "path": "test/fixtures/content/shader-libraries/ShaderMath.kdl",
-      "bytes": 4644,
-      "sha256": "5ff7c6a7e7e45afaf5b3a0ad0bbd4b2eb5157dae8b380970079f2a6e65783f89"
+      "path": "test/fixtures/content/shader-libraries/ShaderMath.chibi",
+      "bytes": 18630,
+      "sha256": "675863ac1edb24a491feda778bc68cd5f23031a467487be6573a50ec98126462",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 117,
+        "bytes": 4644,
+        "sha256": "5ff7c6a7e7e45afaf5b3a0ad0bbd4b2eb5157dae8b380970079f2a6e65783f89"
+      }
     },
     {
-      "path": "test/fixtures/content/shapes/SmoothUnion.kdl",
-      "bytes": 1770,
-      "sha256": "64fc1f817c2023d4176af55e8813eb284f5953a027e3f99b4d8a99f4e8d16e73"
+      "path": "test/fixtures/content/shapes/SmoothUnion.chibi",
+      "bytes": 7357,
+      "sha256": "d8bd5d1cdbc3a6c9c40b51768a89d900d7f3cf9399cc5d990937bd1fd6b8b4ae",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 118,
+        "bytes": 1770,
+        "sha256": "64fc1f817c2023d4176af55e8813eb284f5953a027e3f99b4d8a99f4e8d16e73"
+      }
     },
     {
       "path": "test/fixtures/content/textures/EnergyCells.png",
       "bytes": 931,
-      "sha256": "828502f9f946e8901d8f34b00f39e0b53743aad459f317d2ce3bf3ca6f2c7d94"
+      "sha256": "828502f9f946e8901d8f34b00f39e0b53743aad459f317d2ce3bf3ca6f2c7d94",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 119,
+        "bytes": 931,
+        "sha256": "828502f9f946e8901d8f34b00f39e0b53743aad459f317d2ce3bf3ca6f2c7d94"
+      }
     },
     {
-      "path": "test/fixtures/editor_scene.kdl",
-      "bytes": 706,
-      "sha256": "0e1585c331e9f1740e120d812e2235f2d33bee420f6adf94d0bfea2920609ec4"
+      "path": "test/fixtures/editor_scene.chibi",
+      "bytes": 2406,
+      "sha256": "05387bd33736234c0913e67e1069345fe56a185ee090e6a620455cdd090295cf",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 120,
+        "bytes": 706,
+        "sha256": "0e1585c331e9f1740e120d812e2235f2d33bee420f6adf94d0bfea2920609ec4"
+      }
     },
     {
       "path": "test/fixtures/generation.bin",
       "bytes": 256,
-      "sha256": "40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880"
+      "sha256": "40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 121,
+        "bytes": 256,
+        "sha256": "40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/README.md",
       "bytes": 578,
-      "sha256": "0e675156690720ad2679277f6b8bd097033fd3295596e302728367fff14c2519"
+      "sha256": "0e675156690720ad2679277f6b8bd097033fd3295596e302728367fff14c2519",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 122,
+        "bytes": 578,
+        "sha256": "0e675156690720ad2679277f6b8bd097033fd3295596e302728367fff14c2519"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/BoostEmitter.chibi",
       "bytes": 115,
-      "sha256": "2b7ea0f8c6458eab778f66cda98389948c2047db6addf385922e73f8a181e34c"
+      "sha256": "2b7ea0f8c6458eab778f66cda98389948c2047db6addf385922e73f8a181e34c",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 123,
+        "bytes": 115,
+        "sha256": "2b7ea0f8c6458eab778f66cda98389948c2047db6addf385922e73f8a181e34c"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/CameraFollow.chibi",
       "bytes": 212,
-      "sha256": "d4b11ca9e2830ef36afb749ae29340aa8e91b897760d697b41475ab897032058"
+      "sha256": "d4b11ca9e2830ef36afb749ae29340aa8e91b897760d697b41475ab897032058",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 124,
+        "bytes": 212,
+        "sha256": "d4b11ca9e2830ef36afb749ae29340aa8e91b897760d697b41475ab897032058"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/CutMaterial.chibi",
       "bytes": 255,
-      "sha256": "1657178333bb3436adc3f9665cea6a47c3569d853b65fc952e174b643db5ec4f"
+      "sha256": "1657178333bb3436adc3f9665cea6a47c3569d853b65fc952e174b643db5ec4f",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 125,
+        "bytes": 255,
+        "sha256": "1657178333bb3436adc3f9665cea6a47c3569d853b65fc952e174b643db5ec4f"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/HudDisplay.chibi",
       "bytes": 2770,
-      "sha256": "993d336c7ae4480a569b24e08b58a3e8b3f55a6f3c2650508d6f24775f81f821"
+      "sha256": "993d336c7ae4480a569b24e08b58a3e8b3f55a6f3c2650508d6f24775f81f821",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 126,
+        "bytes": 2770,
+        "sha256": "993d336c7ae4480a569b24e08b58a3e8b3f55a6f3c2650508d6f24775f81f821"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/HullDamage.chibi",
       "bytes": 596,
-      "sha256": "cdbfa92bcf31453ebb51e099631a05bcc424367283c778023cef3891f2ffca89"
+      "sha256": "cdbfa92bcf31453ebb51e099631a05bcc424367283c778023cef3891f2ffca89",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 127,
+        "bytes": 596,
+        "sha256": "cdbfa92bcf31453ebb51e099631a05bcc424367283c778023cef3891f2ffca89"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/MaterialImpactHealth.chibi",
       "bytes": 519,
-      "sha256": "fae9952169c2afff133e46bb296fc4c467333a24eeb23840bd12f8cfe0678530"
+      "sha256": "fae9952169c2afff133e46bb296fc4c467333a24eeb23840bd12f8cfe0678530",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 128,
+        "bytes": 519,
+        "sha256": "fae9952169c2afff133e46bb296fc4c467333a24eeb23840bd12f8cfe0678530"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/Movement.chibi",
       "bytes": 854,
-      "sha256": "4f14f158cf83604f1691f31b28ae56a9d5b1abba2aef1be945741a5f878a4426"
+      "sha256": "4f14f158cf83604f1691f31b28ae56a9d5b1abba2aef1be945741a5f878a4426",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 129,
+        "bytes": 854,
+        "sha256": "4f14f158cf83604f1691f31b28ae56a9d5b1abba2aef1be945741a5f878a4426"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/MovementEmitter.chibi",
       "bytes": 191,
-      "sha256": "c20251a648ec523daa94f5deea4f2478c764cf26c82a7436fbef452cb131eaf6"
+      "sha256": "c20251a648ec523daa94f5deea4f2478c764cf26c82a7436fbef452cb131eaf6",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 130,
+        "bytes": 191,
+        "sha256": "c20251a648ec523daa94f5deea4f2478c764cf26c82a7436fbef452cb131eaf6"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/PlayerEffects.chibi",
       "bytes": 235,
-      "sha256": "75e65dcd8a7291c668c02dc3bd3d9ad73a7c3a55678c837edc71b222c66f30e3"
+      "sha256": "75e65dcd8a7291c668c02dc3bd3d9ad73a7c3a55678c837edc71b222c66f30e3",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 131,
+        "bytes": 235,
+        "sha256": "75e65dcd8a7291c668c02dc3bd3d9ad73a7c3a55678c837edc71b222c66f30e3"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/ProjectileEffects.chibi",
       "bytes": 320,
-      "sha256": "40f11ec82e65e1fd36994c354dba2035f181d99673adf4b0362b32b513bd63ba"
+      "sha256": "40f11ec82e65e1fd36994c354dba2035f181d99673adf4b0362b32b513bd63ba",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 132,
+        "bytes": 320,
+        "sha256": "40f11ec82e65e1fd36994c354dba2035f181d99673adf4b0362b32b513bd63ba"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/ProjectileHit.chibi",
       "bytes": 428,
-      "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131"
+      "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 133,
+        "bytes": 428,
+        "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/ProjectileLifecycle.chibi",
       "bytes": 634,
-      "sha256": "fcc649c849fbb61b7ce337be3ea072149a397589ad13e45a84952894ef632b38"
+      "sha256": "fcc649c849fbb61b7ce337be3ea072149a397589ad13e45a84952894ef632b38",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 134,
+        "bytes": 634,
+        "sha256": "fcc649c849fbb61b7ce337be3ea072149a397589ad13e45a84952894ef632b38"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/Pursuit.chibi",
       "bytes": 784,
-      "sha256": "3c7a4bf572de6814ce0368f1e818d03fc9198f07433ed176038e8110c524a50a"
+      "sha256": "3c7a4bf572de6814ce0368f1e818d03fc9198f07433ed176038e8110c524a50a",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 135,
+        "bytes": 784,
+        "sha256": "3c7a4bf572de6814ce0368f1e818d03fc9198f07433ed176038e8110c524a50a"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/SwarmerEffects.chibi",
       "bytes": 204,
-      "sha256": "7f32f3b59e9384132069e198b3674ec887b1677c87d661191502098a12727660"
+      "sha256": "7f32f3b59e9384132069e198b3674ec887b1677c87d661191502098a12727660",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 136,
+        "bytes": 204,
+        "sha256": "7f32f3b59e9384132069e198b3674ec887b1677c87d661191502098a12727660"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/behaviors/Weapon.chibi",
       "bytes": 2438,
-      "sha256": "c1148c36914c05893fa1d2db6627caa1bdc27831d05ccf6f5b11e02828dd7ac5"
+      "sha256": "c1148c36914c05893fa1d2db6627caa1bdc27831d05ccf6f5b11e02828dd7ac5",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 137,
+        "bytes": 2438,
+        "sha256": "c1148c36914c05893fa1d2db6627caa1bdc27831d05ccf6f5b11e02828dd7ac5"
+      }
     },
     {
-      "path": "test/fixtures/graph-routing/content/events/Damage.kdl",
-      "bytes": 321,
-      "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+      "path": "test/fixtures/graph-routing/content/events/Damage.chibi",
+      "bytes": 1645,
+      "sha256": "059cddbeb04d1ca8d076568562fcb2e61ed77372c93674c679893175c0a47ec8",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 138,
+        "bytes": 321,
+        "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+      }
     },
     {
-      "path": "test/fixtures/graph-routing/content/events/Material Impact.kdl",
-      "bytes": 324,
-      "sha256": "d57898ee3f520364fe2344140d8caa9db4811dc534be90321b40bc25421137d2"
+      "path": "test/fixtures/graph-routing/content/events/Material Impact.chibi",
+      "bytes": 1796,
+      "sha256": "c66da62646d743ef9b8e8411a20acbdf270dc18ffb7845cdb896e0897f8b45fc",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 139,
+        "bytes": 324,
+        "sha256": "d57898ee3f520364fe2344140d8caa9db4811dc534be90321b40bc25421137d2"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/libraries/DirectionMath.chibi",
       "bytes": 392,
-      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 140,
+        "bytes": 392,
+        "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/content/libraries/WeaponActions.chibi",
       "bytes": 2053,
-      "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6"
+      "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 141,
+        "bytes": 2053,
+        "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6"
+      }
     },
     {
-      "path": "test/fixtures/graph-routing/content/prototypes/BoostEmitter.kdl",
-      "bytes": 103,
-      "sha256": "dbfbe93b42d42c2e86a5ac889b13f391c9c7940f0998fe365392fc14ee28f76e"
+      "path": "test/fixtures/graph-routing/content/prototypes/BoostEmitter.chibi",
+      "bytes": 430,
+      "sha256": "a52b87e4a9ad36d5032c9e887c57b65009159857de17944fa24fd6d15ed14fc7",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 142,
+        "bytes": 103,
+        "sha256": "dbfbe93b42d42c2e86a5ac889b13f391c9c7940f0998fe365392fc14ee28f76e"
+      }
     },
     {
-      "path": "test/fixtures/graph-routing/content/prototypes/MovementEmitter.kdl",
-      "bytes": 106,
-      "sha256": "88c77a2e00e7f1f4c24efa115dbc433c121b44eb896172ce30a3200394eadab6"
+      "path": "test/fixtures/graph-routing/content/prototypes/MovementEmitter.chibi",
+      "bytes": 433,
+      "sha256": "2208910bc249870447a0d3377adad2a3bfcfc15fb35c9b87ced6433509bbacee",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 143,
+        "bytes": 106,
+        "sha256": "88c77a2e00e7f1f4c24efa115dbc433c121b44eb896172ce30a3200394eadab6"
+      }
     },
     {
-      "path": "test/fixtures/graph-routing/content/scenes/Start.kdl",
-      "bytes": 39,
-      "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+      "path": "test/fixtures/graph-routing/content/scenes/Start.chibi",
+      "bytes": 316,
+      "sha256": "ba4ed9b31b8e3db758660895811c19c0d11d405bfec870a6a70f4b8650803fca",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 144,
+        "bytes": 39,
+        "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+      }
     },
     {
       "path": "test/fixtures/graph-routing/fixtures.json",
-      "bytes": 11335,
-      "sha256": "47481946fc076cc9ee91e28ad50f43f8287aa773cb6746ea7552fafc30496d4c"
+      "bytes": 11967,
+      "sha256": "6bd63ed2a363aef1e0124ea5da558b1a99a28c3644243e1d5dcaff9b52e23bd1",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 145,
+        "bytes": 11335,
+        "sha256": "47481946fc076cc9ee91e28ad50f43f8287aa773cb6746ea7552fafc30496d4c"
+      }
     },
     {
-      "path": "test/fixtures/graph-routing/project.kdl",
-      "bytes": 88,
-      "sha256": "9982731c2a66cf54fac46d0609378c8a1142cd75d7ae71743736d9cccaef436d"
+      "path": "test/fixtures/graph-routing/project.chibi",
+      "bytes": 428,
+      "sha256": "a0e7818ae5c9f56e9eb8907bdcefed11f8c9a9fdacd9d6ea9578cab420ad72ed",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 146,
+        "bytes": 88,
+        "sha256": "9982731c2a66cf54fac46d0609378c8a1142cd75d7ae71743736d9cccaef436d"
+      }
     },
     {
       "path": "test/fixtures/graph/MeshSurfaceSweep01.chibi",
       "bytes": 539,
-      "sha256": "e2d1d91bc3b106fbcce1269da617d0733b5a21a7d804b1021892d74b2d25d92f"
+      "sha256": "e2d1d91bc3b106fbcce1269da617d0733b5a21a7d804b1021892d74b2d25d92f",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 147,
+        "bytes": 539,
+        "sha256": "e2d1d91bc3b106fbcce1269da617d0733b5a21a7d804b1021892d74b2d25d92f"
+      }
     },
     {
       "path": "test/fixtures/language/README.md",
       "bytes": 379,
-      "sha256": "64629e25ab9aa24ce8fe6c480dbcd1ab28c2e4b88e210486e24bbea913741077"
+      "sha256": "64629e25ab9aa24ce8fe6c480dbcd1ab28c2e4b88e210486e24bbea913741077",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 148,
+        "bytes": 379,
+        "sha256": "64629e25ab9aa24ce8fe6c480dbcd1ab28c2e4b88e210486e24bbea913741077"
+      }
     },
     {
       "path": "test/fixtures/language/content/behaviors/ArenaDropBehavior.chibi",
       "bytes": 5436,
-      "sha256": "b2b409a5419b2e1887f9c03fd960878dae881be198f772d1835f13e7a84a0ca2"
+      "sha256": "b2b409a5419b2e1887f9c03fd960878dae881be198f772d1835f13e7a84a0ca2",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 149,
+        "bytes": 5436,
+        "sha256": "b2b409a5419b2e1887f9c03fd960878dae881be198f772d1835f13e7a84a0ca2"
+      }
     },
     {
       "path": "test/fixtures/language/content/behaviors/CameraFollow.chibi",
       "bytes": 212,
-      "sha256": "d4b11ca9e2830ef36afb749ae29340aa8e91b897760d697b41475ab897032058"
+      "sha256": "d4b11ca9e2830ef36afb749ae29340aa8e91b897760d697b41475ab897032058",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 150,
+        "bytes": 212,
+        "sha256": "d4b11ca9e2830ef36afb749ae29340aa8e91b897760d697b41475ab897032058"
+      }
     },
     {
       "path": "test/fixtures/language/content/behaviors/HealthBehavior.chibi",
       "bytes": 3246,
-      "sha256": "973b7e465b50ad6954c15be3db91e176491f72f011efe5b0f65294992f015d0c"
+      "sha256": "973b7e465b50ad6954c15be3db91e176491f72f011efe5b0f65294992f015d0c",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 151,
+        "bytes": 3246,
+        "sha256": "973b7e465b50ad6954c15be3db91e176491f72f011efe5b0f65294992f015d0c"
+      }
     },
     {
       "path": "test/fixtures/language/content/behaviors/PlayerEffects.chibi",
       "bytes": 235,
-      "sha256": "75e65dcd8a7291c668c02dc3bd3d9ad73a7c3a55678c837edc71b222c66f30e3"
+      "sha256": "75e65dcd8a7291c668c02dc3bd3d9ad73a7c3a55678c837edc71b222c66f30e3",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 152,
+        "bytes": 235,
+        "sha256": "75e65dcd8a7291c668c02dc3bd3d9ad73a7c3a55678c837edc71b222c66f30e3"
+      }
     },
     {
       "path": "test/fixtures/language/content/behaviors/ProjectileHit.chibi",
       "bytes": 428,
-      "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131"
+      "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 153,
+        "bytes": 428,
+        "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131"
+      }
     },
     {
       "path": "test/fixtures/language/content/behaviors/WatchedPayload.chibi",
       "bytes": 119,
-      "sha256": "e55f029a430d561aa34984c96ffda0a357f9717b5b0bf4e3eb902f30d7705761"
+      "sha256": "e55f029a430d561aa34984c96ffda0a357f9717b5b0bf4e3eb902f30d7705761",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 154,
+        "bytes": 119,
+        "sha256": "e55f029a430d561aa34984c96ffda0a357f9717b5b0bf4e3eb902f30d7705761"
+      }
     },
     {
-      "path": "test/fixtures/language/content/events/Damage.kdl",
-      "bytes": 321,
-      "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+      "path": "test/fixtures/language/content/events/Damage.chibi",
+      "bytes": 1645,
+      "sha256": "059cddbeb04d1ca8d076568562fcb2e61ed77372c93674c679893175c0a47ec8",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 155,
+        "bytes": 321,
+        "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+      }
     },
     {
       "path": "test/fixtures/language/content/libraries/DirectionMath.chibi",
       "bytes": 392,
-      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 156,
+        "bytes": 392,
+        "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+      }
     },
     {
       "path": "test/fixtures/language/content/libraries/WeaponActions.chibi",
       "bytes": 2053,
-      "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6"
+      "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 157,
+        "bytes": 2053,
+        "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6"
+      }
     },
     {
-      "path": "test/fixtures/language/content/prototypes/BoostEmitter.kdl",
-      "bytes": 103,
-      "sha256": "dbfbe93b42d42c2e86a5ac889b13f391c9c7940f0998fe365392fc14ee28f76e"
+      "path": "test/fixtures/language/content/prototypes/BoostEmitter.chibi",
+      "bytes": 430,
+      "sha256": "a52b87e4a9ad36d5032c9e887c57b65009159857de17944fa24fd6d15ed14fc7",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 158,
+        "bytes": 103,
+        "sha256": "dbfbe93b42d42c2e86a5ac889b13f391c9c7940f0998fe365392fc14ee28f76e"
+      }
     },
     {
-      "path": "test/fixtures/language/content/prototypes/MovementEmitter.kdl",
-      "bytes": 106,
-      "sha256": "88c77a2e00e7f1f4c24efa115dbc433c121b44eb896172ce30a3200394eadab6"
+      "path": "test/fixtures/language/content/prototypes/MovementEmitter.chibi",
+      "bytes": 433,
+      "sha256": "2208910bc249870447a0d3377adad2a3bfcfc15fb35c9b87ced6433509bbacee",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 159,
+        "bytes": 106,
+        "sha256": "88c77a2e00e7f1f4c24efa115dbc433c121b44eb896172ce30a3200394eadab6"
+      }
     },
     {
-      "path": "test/fixtures/language/content/scenes/Start.kdl",
-      "bytes": 39,
-      "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+      "path": "test/fixtures/language/content/scenes/Start.chibi",
+      "bytes": 316,
+      "sha256": "ba4ed9b31b8e3db758660895811c19c0d11d405bfec870a6a70f4b8650803fca",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 160,
+        "bytes": 39,
+        "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+      }
     },
     {
       "path": "test/fixtures/language/content/systems/FreeMotion.chibi",
       "bytes": 141,
-      "sha256": "ca406d1a9675cb97bf2583de96e1266a7abf36ecfac1c0c8b17f53c78b4af859"
+      "sha256": "ca406d1a9675cb97bf2583de96e1266a7abf36ecfac1c0c8b17f53c78b4af859",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 161,
+        "bytes": 141,
+        "sha256": "ca406d1a9675cb97bf2583de96e1266a7abf36ecfac1c0c8b17f53c78b4af859"
+      }
     },
     {
       "path": "test/fixtures/language/fixtures.json",
-      "bytes": 5192,
-      "sha256": "037ae831fea9b956c5891a31761aae4519a05073b8faa7935187efbe27e95235"
+      "bytes": 5508,
+      "sha256": "8542f9adfb41e5ece091e0dd51b76257eb331ad2cd45b5c4032a187dd5ce3c9a",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 162,
+        "bytes": 5192,
+        "sha256": "037ae831fea9b956c5891a31761aae4519a05073b8faa7935187efbe27e95235"
+      }
     },
     {
-      "path": "test/fixtures/language/project.kdl",
-      "bytes": 86,
-      "sha256": "1a2b984420c837616cee73c371a6e4bd54792e319624ad4052d3d8421c0b2699"
+      "path": "test/fixtures/language/project.chibi",
+      "bytes": 426,
+      "sha256": "9107ea20f603720552452f69774c8d186784db4eb8824005ccd2c68818488879",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 163,
+        "bytes": 86,
+        "sha256": "1a2b984420c837616cee73c371a6e4bd54792e319624ad4052d3d8421c0b2699"
+      }
     },
     {
       "path": "test/fixtures/language/prototype/README.md",
       "bytes": 644,
-      "sha256": "0a25b3c8fd8b0c2d33b6ea90fda0c3daa15fe33df6caaee6022e72ae2509b554"
+      "sha256": "0a25b3c8fd8b0c2d33b6ea90fda0c3daa15fe33df6caaee6022e72ae2509b554",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 164,
+        "bytes": 644,
+        "sha256": "0a25b3c8fd8b0c2d33b6ea90fda0c3daa15fe33df6caaee6022e72ae2509b554"
+      }
     },
     {
       "path": "test/fixtures/language/prototype/branching.chibi",
       "bytes": 447,
-      "sha256": "41628bef44c9b7a88b49fb21fad9057596939c50e34784117334778ac1f2b5e1"
+      "sha256": "41628bef44c9b7a88b49fb21fad9057596939c50e34784117334778ac1f2b5e1",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 165,
+        "bytes": 447,
+        "sha256": "41628bef44c9b7a88b49fb21fad9057596939c50e34784117334778ac1f2b5e1"
+      }
     },
     {
       "path": "test/fixtures/language/prototype/cooldown.chibi",
       "bytes": 241,
-      "sha256": "ac148520ce3ee4c9de2c4a4bc1bb6601947bac4c74129a9fda7b10aa4530af17"
+      "sha256": "ac148520ce3ee4c9de2c4a4bc1bb6601947bac4c74129a9fda7b10aa4530af17",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 166,
+        "bytes": 241,
+        "sha256": "ac148520ce3ee4c9de2c4a4bc1bb6601947bac4c74129a9fda7b10aa4530af17"
+      }
     },
     {
       "path": "test/fixtures/language/prototype/expressions.chibi",
       "bytes": 375,
-      "sha256": "d7183848525bc219786eff729d1b7cab35a49e16ea57eef3ecbcfbc842a051e0"
+      "sha256": "d7183848525bc219786eff729d1b7cab35a49e16ea57eef3ecbcfbc842a051e0",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 167,
+        "bytes": 375,
+        "sha256": "d7183848525bc219786eff729d1b7cab35a49e16ea57eef3ecbcfbc842a051e0"
+      }
     },
     {
       "path": "test/fixtures/language/prototype/projectile.chibi",
       "bytes": 177,
-      "sha256": "4b7f7443c46f29abd24ecc37eb7f012286f010dc196faf2c56506a558815a14f"
+      "sha256": "4b7f7443c46f29abd24ecc37eb7f012286f010dc196faf2c56506a558815a14f",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 168,
+        "bytes": 177,
+        "sha256": "4b7f7443c46f29abd24ecc37eb7f012286f010dc196faf2c56506a558815a14f"
+      }
     },
     {
       "path": "test/fixtures/language/prototype/recharge.chibi",
       "bytes": 179,
-      "sha256": "6994643523b5e833bfe2d234d3eacc7f64ff9f34965e0e7093e9cffc15b25930"
+      "sha256": "6994643523b5e833bfe2d234d3eacc7f64ff9f34965e0e7093e9cffc15b25930",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 169,
+        "bytes": 179,
+        "sha256": "6994643523b5e833bfe2d234d3eacc7f64ff9f34965e0e7093e9cffc15b25930"
+      }
     },
     {
       "path": "test/fixtures/material-contracts/README.md",
       "bytes": 320,
-      "sha256": "422f3ef34552265bb6a3d9f66dc0cd8070744cff349d24deec3f5abc2bad77bb"
+      "sha256": "422f3ef34552265bb6a3d9f66dc0cd8070744cff349d24deec3f5abc2bad77bb",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 170,
+        "bytes": 320,
+        "sha256": "422f3ef34552265bb6a3d9f66dc0cd8070744cff349d24deec3f5abc2bad77bb"
+      }
     },
     {
       "path": "test/fixtures/material-contracts/content/behaviors/MaterialImpactHealth.chibi",
       "bytes": 519,
-      "sha256": "fae9952169c2afff133e46bb296fc4c467333a24eeb23840bd12f8cfe0678530"
+      "sha256": "fae9952169c2afff133e46bb296fc4c467333a24eeb23840bd12f8cfe0678530",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 171,
+        "bytes": 519,
+        "sha256": "fae9952169c2afff133e46bb296fc4c467333a24eeb23840bd12f8cfe0678530"
+      }
     },
     {
-      "path": "test/fixtures/material-contracts/content/events/Material Impact.kdl",
-      "bytes": 324,
-      "sha256": "d57898ee3f520364fe2344140d8caa9db4811dc534be90321b40bc25421137d2"
+      "path": "test/fixtures/material-contracts/content/events/Material Impact.chibi",
+      "bytes": 1796,
+      "sha256": "c66da62646d743ef9b8e8411a20acbdf270dc18ffb7845cdb896e0897f8b45fc",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 172,
+        "bytes": 324,
+        "sha256": "d57898ee3f520364fe2344140d8caa9db4811dc534be90321b40bc25421137d2"
+      }
     },
     {
-      "path": "test/fixtures/material-contracts/content/fields/CaveField.kdl",
-      "bytes": 10375,
-      "sha256": "8198cc73d3cb13cef8981cceb92a9d85b99522fffa29c7427f8ac0dfda8d27bc"
+      "path": "test/fixtures/material-contracts/content/fields/CaveField.chibi",
+      "bytes": 39639,
+      "sha256": "5375a2069b8022ed7dfbb8c420a2ed554611642d215874ad6994ff3330b5ce92",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 173,
+        "bytes": 10375,
+        "sha256": "8198cc73d3cb13cef8981cceb92a9d85b99522fffa29c7427f8ac0dfda8d27bc"
+      }
     },
     {
-      "path": "test/fixtures/material-contracts/content/fields/MaterialIslands.kdl",
-      "bytes": 908,
-      "sha256": "fffc1afacdb8ad3b8ab3d3443b282e4bf636c4dd2f28cebb39b04890678e0ff1"
+      "path": "test/fixtures/material-contracts/content/fields/MaterialIslands.chibi",
+      "bytes": 3967,
+      "sha256": "4c4967205866368dd61d164fc4cb8338d4b8a8467e652f17967c9f0da584974d",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 174,
+        "bytes": 908,
+        "sha256": "fffc1afacdb8ad3b8ab3d3443b282e4bf636c4dd2f28cebb39b04890678e0ff1"
+      }
     },
     {
       "path": "test/fixtures/material-contracts/content/libraries/FieldShapes.chibi",
       "bytes": 801,
-      "sha256": "7c277ea5f214211b3dcf1ae3cce3fd2d2116230582b68cf790e934895ca6f721"
+      "sha256": "7c277ea5f214211b3dcf1ae3cce3fd2d2116230582b68cf790e934895ca6f721",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 175,
+        "bytes": 801,
+        "sha256": "7c277ea5f214211b3dcf1ae3cce3fd2d2116230582b68cf790e934895ca6f721"
+      }
     },
     {
-      "path": "test/fixtures/material-contracts/content/materials/ArenaFloor.kdl",
-      "bytes": 26339,
-      "sha256": "5bc9998716a5ad357cb4553ac04260095d0715c84557ea1c9d8e2fb48cbfb762"
+      "path": "test/fixtures/material-contracts/content/materials/ArenaFloor.chibi",
+      "bytes": 95893,
+      "sha256": "de252cf75d1e370a0c39b16ccb701416c092850b366b68339eb55a2f9fc52b9b",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 176,
+        "bytes": 26339,
+        "sha256": "5bc9998716a5ad357cb4553ac04260095d0715c84557ea1c9d8e2fb48cbfb762"
+      }
     },
     {
-      "path": "test/fixtures/material-contracts/content/scenes/Start.kdl",
-      "bytes": 39,
-      "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+      "path": "test/fixtures/material-contracts/content/scenes/Start.chibi",
+      "bytes": 316,
+      "sha256": "ba4ed9b31b8e3db758660895811c19c0d11d405bfec870a6a70f4b8650803fca",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 177,
+        "bytes": 39,
+        "sha256": "4512130a3539013e0ec2e50c0c0427cb9f027f9f997d95379b6a47950aee745b"
+      }
     },
     {
       "path": "test/fixtures/material-contracts/fixtures.json",
-      "bytes": 2070,
-      "sha256": "0d4ad1b11ec209f7c3b779c9f06c46758ffc2705f6e6e5e806fdae5eb51693a4"
+      "bytes": 2214,
+      "sha256": "920d1eca973c57443e5fa3a61103d001fa3ca6aa34163a3c67a2446b06725111",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 178,
+        "bytes": 2070,
+        "sha256": "0d4ad1b11ec209f7c3b779c9f06c46758ffc2705f6e6e5e806fdae5eb51693a4"
+      }
     },
     {
-      "path": "test/fixtures/material-contracts/project.kdl",
-      "bytes": 86,
-      "sha256": "dbc3a30fa19140f3c2b4e6673fa5962478ef9eeade711a1f481e91a509eb9389"
+      "path": "test/fixtures/material-contracts/project.chibi",
+      "bytes": 426,
+      "sha256": "767b1d0e623d9cd2d06c68ddeef47e2f325872843b96f22881999d54c7f48eff",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 179,
+        "bytes": 86,
+        "sha256": "dbc3a30fa19140f3c2b4e6673fa5962478ef9eeade711a1f481e91a509eb9389"
+      }
     },
     {
       "path": "test/fixtures/mesh_sdf/box.obj",
       "bytes": 239,
-      "sha256": "3f1777c4855a62044b416bb8a3e6952eed35a7fc92a0981325017190452e248e"
+      "sha256": "3f1777c4855a62044b416bb8a3e6952eed35a7fc92a0981325017190452e248e",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 180,
+        "bytes": 239,
+        "sha256": "3f1777c4855a62044b416bb8a3e6952eed35a7fc92a0981325017190452e248e"
+      }
     },
     {
-      "path": "test/fixtures/project.kdl",
-      "bytes": 85,
-      "sha256": "35d2eff7dcd87218cb6de139cc10dc829a73a2d19cd964da66443550b8c6fab2"
+      "path": "test/fixtures/project.chibi",
+      "bytes": 425,
+      "sha256": "0e17543d0680d13e26f4514e8858961cbbc1ddd916004ed816ae0bffdc4e9c39",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 181,
+        "bytes": 85,
+        "sha256": "35d2eff7dcd87218cb6de139cc10dc829a73a2d19cd964da66443550b8c6fab2"
+      }
     },
     {
-      "path": "test/fixtures/prototypes/InputEntity.kdl",
-      "bytes": 430,
-      "sha256": "eb6ca0acbb4aa6b61e7b4be6b9f8296e7eb377f47b44c6dd6c71e89fcd65c547"
+      "path": "test/fixtures/prototypes/InputEntity.chibi",
+      "bytes": 1990,
+      "sha256": "0336b7faf0c1bd662321af76c2301844f035f6f553c7e3bf3005fa47ae973d48",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 182,
+        "bytes": 430,
+        "sha256": "eb6ca0acbb4aa6b61e7b4be6b9f8296e7eb377f47b44c6dd6c71e89fcd65c547"
+      }
     },
     {
-      "path": "test/fixtures/prototypes/StaticEntity.kdl",
-      "bytes": 187,
-      "sha256": "f8dc01f764b575cd639566c5cf0fb34c33efc29ea4bf72385b6f55f01bc6d343"
+      "path": "test/fixtures/prototypes/StaticEntity.chibi",
+      "bytes": 1041,
+      "sha256": "c2fbaaed0241a68613a89f3eef0f72786696d2a3fc0406de9b2a24797a1df96b",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 183,
+        "bytes": 187,
+        "sha256": "f8dc01f764b575cd639566c5cf0fb34c33efc29ea4bf72385b6f55f01bc6d343"
+      }
     },
     {
       "path": "test/fixtures/refactor/README.md",
       "bytes": 1149,
-      "sha256": "c1fda10c37124ab767084cea98c0acd0bad17757cfd69fb438f38621387bea78"
+      "sha256": "c1fda10c37124ab767084cea98c0acd0bad17757cfd69fb438f38621387bea78",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 184,
+        "bytes": 1149,
+        "sha256": "c1fda10c37124ab767084cea98c0acd0bad17757cfd69fb438f38621387bea78"
+      }
     },
     {
       "path": "test/fixtures/refactor/references/behaviors/HullDamage.chibi",
       "bytes": 596,
-      "sha256": "cdbfa92bcf31453ebb51e099631a05bcc424367283c778023cef3891f2ffca89"
+      "sha256": "cdbfa92bcf31453ebb51e099631a05bcc424367283c778023cef3891f2ffca89",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 185,
+        "bytes": 596,
+        "sha256": "cdbfa92bcf31453ebb51e099631a05bcc424367283c778023cef3891f2ffca89"
+      }
     },
     {
       "path": "test/fixtures/refactor/references/behaviors/ProjectileEffects.chibi",
       "bytes": 320,
-      "sha256": "40f11ec82e65e1fd36994c354dba2035f181d99673adf4b0362b32b513bd63ba"
+      "sha256": "40f11ec82e65e1fd36994c354dba2035f181d99673adf4b0362b32b513bd63ba",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 186,
+        "bytes": 320,
+        "sha256": "40f11ec82e65e1fd36994c354dba2035f181d99673adf4b0362b32b513bd63ba"
+      }
     },
     {
       "path": "test/fixtures/refactor/references/behaviors/ProjectileHit.chibi",
       "bytes": 428,
-      "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131"
+      "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 187,
+        "bytes": 428,
+        "sha256": "670816f43dc66ded457f2669811cbed99c7a009ddcf3266c2e9aa9f0e0260131"
+      }
     },
     {
       "path": "test/fixtures/refactor/references/behaviors/Pursuit.chibi",
       "bytes": 784,
-      "sha256": "3c7a4bf572de6814ce0368f1e818d03fc9198f07433ed176038e8110c524a50a"
+      "sha256": "3c7a4bf572de6814ce0368f1e818d03fc9198f07433ed176038e8110c524a50a",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 188,
+        "bytes": 784,
+        "sha256": "3c7a4bf572de6814ce0368f1e818d03fc9198f07433ed176038e8110c524a50a"
+      }
     },
     {
       "path": "test/fixtures/refactor/references/behaviors/SwarmerEffects.chibi",
       "bytes": 204,
-      "sha256": "7f32f3b59e9384132069e198b3674ec887b1677c87d661191502098a12727660"
+      "sha256": "7f32f3b59e9384132069e198b3674ec887b1677c87d661191502098a12727660",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 189,
+        "bytes": 204,
+        "sha256": "7f32f3b59e9384132069e198b3674ec887b1677c87d661191502098a12727660"
+      }
     },
     {
       "path": "test/fixtures/refactor/references/behaviors/Weapon.chibi",
       "bytes": 2438,
-      "sha256": "c1148c36914c05893fa1d2db6627caa1bdc27831d05ccf6f5b11e02828dd7ac5"
+      "sha256": "c1148c36914c05893fa1d2db6627caa1bdc27831d05ccf6f5b11e02828dd7ac5",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 190,
+        "bytes": 2438,
+        "sha256": "c1148c36914c05893fa1d2db6627caa1bdc27831d05ccf6f5b11e02828dd7ac5"
+      }
     },
     {
-      "path": "test/fixtures/refactor/references/events/CollectExperience.kdl",
-      "bytes": 202,
-      "sha256": "bde027f8b22b0c27244d854464656916b91c1fe8990814ff8b9c6dc657d25fb5"
+      "path": "test/fixtures/refactor/references/events/CollectExperience.chibi",
+      "bytes": 801,
+      "sha256": "94fd5fe6efc04ed131f3679e8c46e702f26ecdd1b89178607a0f7a0c1ab4ff79",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 191,
+        "bytes": 202,
+        "sha256": "bde027f8b22b0c27244d854464656916b91c1fe8990814ff8b9c6dc657d25fb5"
+      }
     },
     {
-      "path": "test/fixtures/refactor/references/events/Damage.kdl",
-      "bytes": 321,
-      "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+      "path": "test/fixtures/refactor/references/events/Damage.chibi",
+      "bytes": 1645,
+      "sha256": "059cddbeb04d1ca8d076568562fcb2e61ed77372c93674c679893175c0a47ec8",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 192,
+        "bytes": 321,
+        "sha256": "e2a90987fa4ac914bd079a3f2ad47b0002f0933ae38186fb1ad3beb184f90aaf"
+      }
     },
     {
-      "path": "test/fixtures/refactor/references/fields/BasaltCave.kdl",
-      "bytes": 337,
-      "sha256": "ef4ab9a4cfa89041edbef2860d129e7c4f257490aaffd957285fe892568ed2b7"
+      "path": "test/fixtures/refactor/references/fields/BasaltCave.chibi",
+      "bytes": 1674,
+      "sha256": "1ac07ee9e8337377f6b2b7daaa2024f91ea17dca3d1987b117cb0548246bf038",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 193,
+        "bytes": 337,
+        "sha256": "ef4ab9a4cfa89041edbef2860d129e7c4f257490aaffd957285fe892568ed2b7"
+      }
     },
     {
       "path": "test/fixtures/refactor/references/libraries/DirectionMath.chibi",
       "bytes": 392,
-      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 194,
+        "bytes": 392,
+        "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+      }
     },
     {
       "path": "test/fixtures/refactor/references/libraries/WeaponActions.chibi",
       "bytes": 2053,
-      "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6"
+      "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 195,
+        "bytes": 2053,
+        "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6"
+      }
     },
     {
-      "path": "test/fixtures/refactor/references/materials/Basalt.kdl",
-      "bytes": 404,
-      "sha256": "33331d526d217f2e09f5dc10ab8e3c081cd38fa58787955430be9e7a8b50cf2f"
+      "path": "test/fixtures/refactor/references/materials/Basalt.chibi",
+      "bytes": 1551,
+      "sha256": "7fc34fe498284f56d865184f02a5aba0eab74483c6d3ddfe8ba4c67eac97815f",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 196,
+        "bytes": 404,
+        "sha256": "33331d526d217f2e09f5dc10ab8e3c081cd38fa58787955430be9e7a8b50cf2f"
+      }
     },
     {
-      "path": "test/fixtures/refactor/references/prototypes/Cave.kdl",
-      "bytes": 109,
-      "sha256": "f712e4a40c16cfa4d9b368c560e893a75e4849ba2d0c24c8ad1cda1e0de31caa"
+      "path": "test/fixtures/refactor/references/prototypes/Cave.chibi",
+      "bytes": 602,
+      "sha256": "c0ef6807dda1adc8b4f4ae3204754de39d17db19208fc433e8373c2295f843cd",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 197,
+        "bytes": 109,
+        "sha256": "f712e4a40c16cfa4d9b368c560e893a75e4849ba2d0c24c8ad1cda1e0de31caa"
+      }
     },
     {
-      "path": "test/fixtures/refactor/references/prototypes/FreeMotionSystem.kdl",
-      "bytes": 80,
-      "sha256": "35bc8e29368e3b3443f4f89e876e09841c06f6302e4a9b20a645b1f0982946d4"
+      "path": "test/fixtures/refactor/references/prototypes/FreeMotionSystem.chibi",
+      "bytes": 448,
+      "sha256": "a2f6b85c1688cbac4b2542f5d9ea2ce4a76d61fe6a46094568bded864c82ed8d",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 198,
+        "bytes": 80,
+        "sha256": "35bc8e29368e3b3443f4f89e876e09841c06f6302e4a9b20a645b1f0982946d4"
+      }
     },
     {
-      "path": "test/fixtures/refactor/references/prototypes/Player.kdl",
-      "bytes": 60,
-      "sha256": "b1d6a7dd0d53c30feb27927d3189209d59f65047b28cb238f35dc48efd5ce640"
+      "path": "test/fixtures/refactor/references/prototypes/Player.chibi",
+      "bytes": 345,
+      "sha256": "9e9d63067fe4bde1c74e1382716193b95db7529e62a7a508562c6d3e6ca13476",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 199,
+        "bytes": 60,
+        "sha256": "b1d6a7dd0d53c30feb27927d3189209d59f65047b28cb238f35dc48efd5ce640"
+      }
     },
     {
-      "path": "test/fixtures/refactor/references/prototypes/Projectile.kdl",
-      "bytes": 65,
-      "sha256": "03199078c635e8459f6e5aece12a8eef24f10398a5cf3778e4b127f1267591b9"
+      "path": "test/fixtures/refactor/references/prototypes/Projectile.chibi",
+      "bytes": 350,
+      "sha256": "bed1c5fe8e3522bfe42676857b6ff22d26ee0def9a9c96f140908af9731bc897",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 200,
+        "bytes": 65,
+        "sha256": "03199078c635e8459f6e5aece12a8eef24f10398a5cf3778e4b127f1267591b9"
+      }
     },
     {
-      "path": "test/fixtures/refactor/references/prototypes/Swarmer.kdl",
-      "bytes": 42,
-      "sha256": "1f6ec37dc3ca4aec07fcc5ef51399e99c40f79070a9797d8ef4bdfbe725263a8"
+      "path": "test/fixtures/refactor/references/prototypes/Swarmer.chibi",
+      "bytes": 314,
+      "sha256": "abd4302f7ea3278599714e933b7f3f0dc591fbf1f9252c698e82ba0ff3fb2e8d",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 201,
+        "bytes": 42,
+        "sha256": "1f6ec37dc3ca4aec07fcc5ef51399e99c40f79070a9797d8ef4bdfbe725263a8"
+      }
     },
     {
-      "path": "test/fixtures/refactor/references/prototypes/TrailEmitter.kdl",
-      "bytes": 72,
-      "sha256": "7826edcb9e4e20525204f97e57907630b8d02f5eea9b6dda82ecfdefce54d8ff"
+      "path": "test/fixtures/refactor/references/prototypes/TrailEmitter.chibi",
+      "bytes": 357,
+      "sha256": "12067fad4e7f719bf6741cf506aa216822ec7732b31deea356bb4b10cedc5e79",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 202,
+        "bytes": 72,
+        "sha256": "7826edcb9e4e20525204f97e57907630b8d02f5eea9b6dda82ecfdefce54d8ff"
+      }
     },
     {
-      "path": "test/fixtures/refactor/references/scenes/Sandbox.kdl",
-      "bytes": 290,
-      "sha256": "188fa82614e9c007253f5649745fd4550ae44b764ac10a2d8a02404dc2176eeb"
+      "path": "test/fixtures/refactor/references/scenes/Sandbox.chibi",
+      "bytes": 1343,
+      "sha256": "0da5e40dfdc1dac2d4bf8701f560e4dc8c80b82aadce01c91a95762a333a86ea",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 203,
+        "bytes": 290,
+        "sha256": "188fa82614e9c007253f5649745fd4550ae44b764ac10a2d8a02404dc2176eeb"
+      }
     },
     {
       "path": "test/fixtures/refactor/references/systems/FreeMotion.chibi",
       "bytes": 141,
-      "sha256": "ca406d1a9675cb97bf2583de96e1266a7abf36ecfac1c0c8b17f53c78b4af859"
+      "sha256": "ca406d1a9675cb97bf2583de96e1266a7abf36ecfac1c0c8b17f53c78b4af859",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 204,
+        "bytes": 141,
+        "sha256": "ca406d1a9675cb97bf2583de96e1266a7abf36ecfac1c0c8b17f53c78b4af859"
+      }
     },
     {
       "path": "test/fixtures/refactor/references/ui/MenuButton.rml",
       "bytes": 39,
-      "sha256": "f97aeaae2c0be78c3bc39c0710592cbaad93b637e4122a83907f85f43667c833"
+      "sha256": "f97aeaae2c0be78c3bc39c0710592cbaad93b637e4122a83907f85f43667c833",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 205,
+        "bytes": 39,
+        "sha256": "f97aeaae2c0be78c3bc39c0710592cbaad93b637e4122a83907f85f43667c833"
+      }
     },
     {
       "path": "test/fixtures/refactor/references/ui/PauseMenu.rml",
       "bytes": 480,
-      "sha256": "6b7953877e414a058539da2e569bea3d6866be536a5ce0c14720f93a3076b06e"
+      "sha256": "6b7953877e414a058539da2e569bea3d6866be536a5ce0c14720f93a3076b06e",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 206,
+        "bytes": 480,
+        "sha256": "6b7953877e414a058539da2e569bea3d6866be536a5ce0c14720f93a3076b06e"
+      }
     },
     {
       "path": "test/fixtures/refactor/values/behaviors/ArenaDropBehavior.chibi",
       "bytes": 5436,
-      "sha256": "b2b409a5419b2e1887f9c03fd960878dae881be198f772d1835f13e7a84a0ca2"
+      "sha256": "b2b409a5419b2e1887f9c03fd960878dae881be198f772d1835f13e7a84a0ca2",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 207,
+        "bytes": 5436,
+        "sha256": "b2b409a5419b2e1887f9c03fd960878dae881be198f772d1835f13e7a84a0ca2"
+      }
     },
     {
-      "path": "test/fixtures/refactor/values/materials/ArenaExperience.kdl",
-      "bytes": 413,
-      "sha256": "45be1da080d0cdcbfa2b33588477b7a30df5b3c9d06be297b9a4892f90c15898"
+      "path": "test/fixtures/refactor/values/materials/ArenaExperience.chibi",
+      "bytes": 1560,
+      "sha256": "e4de6e811774f4c706d1294a44abaed5a6068f2e43c204b51bd1cc64edca9a81",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 208,
+        "bytes": 413,
+        "sha256": "45be1da080d0cdcbfa2b33588477b7a30df5b3c9d06be297b9a4892f90c15898"
+      }
     },
     {
-      "path": "test/fixtures/refactor/values/prototypes/ArenaExperience.kdl",
-      "bytes": 85,
-      "sha256": "36d8c74305659e374e4e0a0f5722711e48e8be26da04266d5ab42bc7b4715f4a"
+      "path": "test/fixtures/refactor/values/prototypes/ArenaExperience.chibi",
+      "bytes": 453,
+      "sha256": "991b11c84e2955093932219a0df6455f1ac6d59868f3b56d6979a10b8ee196b2",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 209,
+        "bytes": 85,
+        "sha256": "36d8c74305659e374e4e0a0f5722711e48e8be26da04266d5ab42bc7b4715f4a"
+      }
     },
     {
-      "path": "test/fixtures/refactor/values/prototypes/OrbitFlipper.kdl",
-      "bytes": 91,
-      "sha256": "3a6273d9a6867a4cda1ead65688a74c14d7e845d67cd04a84c29e02d60310ee1"
+      "path": "test/fixtures/refactor/values/prototypes/OrbitFlipper.chibi",
+      "bytes": 518,
+      "sha256": "fbaee68c3ac831fbcaac22651bd07321ef8c24f3774612a0353b2e58ff265e86",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 210,
+        "bytes": 91,
+        "sha256": "3a6273d9a6867a4cda1ead65688a74c14d7e845d67cd04a84c29e02d60310ee1"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/README.md",
-      "bytes": 892,
-      "sha256": "7d2d49e3d238cceb2f03f960ed6b82a5e0e09f15e9b4892717cb2eb4290e529d"
+      "bytes": 894,
+      "sha256": "ca5e9d5a79e7fee266b37f21ddfd8bfc453e274865a55aebd80e4f9c804942d5",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 211,
+        "bytes": 892,
+        "sha256": "7d2d49e3d238cceb2f03f960ed6b82a5e0e09f15e9b4892717cb2eb4290e529d"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/content/behaviors/Movement.chibi",
       "bytes": 854,
-      "sha256": "4f14f158cf83604f1691f31b28ae56a9d5b1abba2aef1be945741a5f878a4426"
+      "sha256": "4f14f158cf83604f1691f31b28ae56a9d5b1abba2aef1be945741a5f878a4426",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 212,
+        "bytes": 854,
+        "sha256": "4f14f158cf83604f1691f31b28ae56a9d5b1abba2aef1be945741a5f878a4426"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/content/behaviors/Weapon.chibi",
       "bytes": 2438,
-      "sha256": "c1148c36914c05893fa1d2db6627caa1bdc27831d05ccf6f5b11e02828dd7ac5"
+      "sha256": "c1148c36914c05893fa1d2db6627caa1bdc27831d05ccf6f5b11e02828dd7ac5",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 213,
+        "bytes": 2438,
+        "sha256": "c1148c36914c05893fa1d2db6627caa1bdc27831d05ccf6f5b11e02828dd7ac5"
+      }
     },
     {
-      "path": "test/fixtures/studio-workspace/content/editor/Components.kdl",
-      "bytes": 3707,
-      "sha256": "715ac09169ae07f5af6cbd58a18b7e080cbb152198086dac97ce1ba4921e519b"
+      "path": "test/fixtures/studio-workspace/content/editor/Components.chibi",
+      "bytes": 14939,
+      "sha256": "268c9b8504123148a8eba8503769be143e5ae742e99b17b0992628544e023e4b",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 214,
+        "bytes": 3707,
+        "sha256": "715ac09169ae07f5af6cbd58a18b7e080cbb152198086dac97ce1ba4921e519b"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/content/libraries/DirectionMath.chibi",
       "bytes": 392,
-      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+      "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 215,
+        "bytes": 392,
+        "sha256": "5d71a37821b3a711385a89f64637fa2b2624029f7312a4aabaed26982aa36321"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/content/libraries/WeaponActions.chibi",
       "bytes": 2053,
-      "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6"
+      "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 216,
+        "bytes": 2053,
+        "sha256": "e7001582df4e6c2fc2cb7b9d3ef4c665bbe347bb7657b72ef3717cedd7febed6"
+      }
     },
     {
-      "path": "test/fixtures/studio-workspace/content/prototypes/Camera.kdl",
-      "bytes": 105,
-      "sha256": "354c4e1410ef0a36f32001f9c26decaaa432787a8378efc1d45e262511e3c51c"
+      "path": "test/fixtures/studio-workspace/content/prototypes/Camera.chibi",
+      "bytes": 574,
+      "sha256": "2ebcdd37f071fda1f2374da6e14ee2328d317e86e85e25c126c45d37c5756dba",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 217,
+        "bytes": 105,
+        "sha256": "354c4e1410ef0a36f32001f9c26decaaa432787a8378efc1d45e262511e3c51c"
+      }
     },
     {
-      "path": "test/fixtures/studio-workspace/content/prototypes/Player.kdl",
-      "bytes": 522,
-      "sha256": "07b8f677156e54a8fcd0cf94f6dfc5d6a0b7960c1587a936ed7e0ca787420c7f"
+      "path": "test/fixtures/studio-workspace/content/prototypes/Player.chibi",
+      "bytes": 1841,
+      "sha256": "b4502d0aa280eef4ecbe0b4cb1e03987e6355f72ea208bec428cdf06e7ddd9ec",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 218,
+        "bytes": 522,
+        "sha256": "07b8f677156e54a8fcd0cf94f6dfc5d6a0b7960c1587a936ed7e0ca787420c7f"
+      }
     },
     {
-      "path": "test/fixtures/studio-workspace/content/prototypes/Projectile.kdl",
-      "bytes": 189,
-      "sha256": "5f869389167d71f4e5467f6ad64873e6f219ca2908acc8c31e0310ede02569af"
+      "path": "test/fixtures/studio-workspace/content/prototypes/Projectile.chibi",
+      "bytes": 642,
+      "sha256": "80a9185806e91aa8bf7d6c8fd561143a1bd48932501332aa91cbde16b98acdf4",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 219,
+        "bytes": 189,
+        "sha256": "5f869389167d71f4e5467f6ad64873e6f219ca2908acc8c31e0310ede02569af"
+      }
     },
     {
-      "path": "test/fixtures/studio-workspace/content/scenarios/Firefight.kdl",
-      "bytes": 56,
-      "sha256": "081b057508fc94fe573a1b18c524a4e955ef1d72861729d0741b06899f51dd84"
+      "path": "test/fixtures/studio-workspace/content/scenarios/Firefight.chibi",
+      "bytes": 443,
+      "sha256": "9ebd738469afb827e583a6d1989085d1dd68febd4f291c6f99d666cd530477e3",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 220,
+        "bytes": 56,
+        "sha256": "081b057508fc94fe573a1b18c524a4e955ef1d72861729d0741b06899f51dd84"
+      }
     },
     {
-      "path": "test/fixtures/studio-workspace/content/scenes/Sandbox.kdl",
-      "bytes": 123,
-      "sha256": "fa5cfdbb1f7580a383fd714ef2bed0486520c32ba49a0f6eaa7c83a4a49b34a1"
+      "path": "test/fixtures/studio-workspace/content/scenes/Sandbox.chibi",
+      "bytes": 730,
+      "sha256": "f58e29f6e4e47e2154b6c78f057fed5644d9411a0ee0f43878b9a53fa152d0a4",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 221,
+        "bytes": 123,
+        "sha256": "fa5cfdbb1f7580a383fd714ef2bed0486520c32ba49a0f6eaa7c83a4a49b34a1"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/content/ui/HUD.rcss",
       "bytes": 25,
-      "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+      "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 222,
+        "bytes": 25,
+        "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/content/ui/HUD.rml",
       "bytes": 107,
-      "sha256": "ff0e980b989f0982398029ee3d77e087a871612051667f6b2d944ecad1d184be"
+      "sha256": "ff0e980b989f0982398029ee3d77e087a871612051667f6b2d944ecad1d184be",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 223,
+        "bytes": 107,
+        "sha256": "ff0e980b989f0982398029ee3d77e087a871612051667f6b2d944ecad1d184be"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/content/ui/MenuButton.rcss",
       "bytes": 25,
-      "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+      "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 224,
+        "bytes": 25,
+        "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/content/ui/MenuButton.rml",
       "bytes": 25,
-      "sha256": "cb1ff2208354950aebb36584c24cf93d4a38218cee52ff536ec9e1359cb7037b"
+      "sha256": "cb1ff2208354950aebb36584c24cf93d4a38218cee52ff536ec9e1359cb7037b",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 225,
+        "bytes": 25,
+        "sha256": "cb1ff2208354950aebb36584c24cf93d4a38218cee52ff536ec9e1359cb7037b"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/content/ui/Meter.rcss",
       "bytes": 25,
-      "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+      "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 226,
+        "bytes": 25,
+        "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/content/ui/Meter.rml",
       "bytes": 56,
-      "sha256": "db086141f1adfdc8a967564ff52776add10620b613a54bdaadd36caaf2fd3444"
+      "sha256": "db086141f1adfdc8a967564ff52776add10620b613a54bdaadd36caaf2fd3444",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 227,
+        "bytes": 56,
+        "sha256": "db086141f1adfdc8a967564ff52776add10620b613a54bdaadd36caaf2fd3444"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/content/ui/PauseMenu.rcss",
       "bytes": 25,
-      "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+      "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 228,
+        "bytes": 25,
+        "sha256": "7a25ace493f1ca0f13062e2bebd79e7b02c1b745f7da6599734425e88e3c0b68"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/content/ui/PauseMenu.rml",
       "bytes": 47,
-      "sha256": "8b6c2d10e8bb47935cdc98a29d6d1fea0785f2b7c24ed1c7b58c34f007fea140"
+      "sha256": "8b6c2d10e8bb47935cdc98a29d6d1fea0785f2b7c24ed1c7b58c34f007fea140",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 229,
+        "bytes": 47,
+        "sha256": "8b6c2d10e8bb47935cdc98a29d6d1fea0785f2b7c24ed1c7b58c34f007fea140"
+      }
     },
     {
       "path": "test/fixtures/studio-workspace/fixtures.json",
-      "bytes": 5474,
-      "sha256": "82527f2f58649f365134dcce9a229854d6bd08e4fd97cf818a93e1207cc62e46"
+      "bytes": 5802,
+      "sha256": "f9daeba5a2e7fdb3824948cb3c8969fa1f028e87035ba080eac98ff1c7617594",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 230,
+        "bytes": 5474,
+        "sha256": "82527f2f58649f365134dcce9a229854d6bd08e4fd97cf818a93e1207cc62e46"
+      }
     },
     {
-      "path": "test/fixtures/studio-workspace/project.kdl",
-      "bytes": 96,
-      "sha256": "d4c314ecbb9646858c480a56e938f5992ea6f64514f369f32b787483a584b49e"
+      "path": "test/fixtures/studio-workspace/project.chibi",
+      "bytes": 436,
+      "sha256": "c681760df0d0b661db16c28b0ccbca995f316fe90725beb49bbe4a72ee0b6d67",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 231,
+        "bytes": 96,
+        "sha256": "d4c314ecbb9646858c480a56e938f5992ea6f64514f369f32b787483a584b49e"
+      }
     },
     {
       "path": "test/fixtures/studio/content/behaviors/Teller.chibi",
       "bytes": 46,
-      "sha256": "eca5b09eab4191670e01b424fdd903c49bb9ba91350a310d7d52bdf61283f328"
+      "sha256": "eca5b09eab4191670e01b424fdd903c49bb9ba91350a310d7d52bdf61283f328",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 232,
+        "bytes": 46,
+        "sha256": "eca5b09eab4191670e01b424fdd903c49bb9ba91350a310d7d52bdf61283f328"
+      }
     },
     {
       "path": "test/fixtures/studio/content/libraries/Weapons.chibi",
       "bytes": 316,
-      "sha256": "c9c133cb51e7a007df721a9285ece475d680948dd06208b79c757602dec30940"
+      "sha256": "c9c133cb51e7a007df721a9285ece475d680948dd06208b79c757602dec30940",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 233,
+        "bytes": 316,
+        "sha256": "c9c133cb51e7a007df721a9285ece475d680948dd06208b79c757602dec30940"
+      }
     },
     {
-      "path": "test/fixtures/studio/content/prototypes/Binding.kdl",
-      "bytes": 169,
-      "sha256": "88349e3e0f0cd29a0ba9c2b77ea65109ec32ca62db4a560e454a505de6f70d77"
+      "path": "test/fixtures/studio/content/prototypes/Binding.chibi",
+      "bytes": 901,
+      "sha256": "12bb4d65dd8cc37eb5babf1aeb3ac71026622c5714216266eef6d13a306a62f5",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 234,
+        "bytes": 169,
+        "sha256": "88349e3e0f0cd29a0ba9c2b77ea65109ec32ca62db4a560e454a505de6f70d77"
+      }
     },
     {
-      "path": "test/fixtures/studio/content/prototypes/Vault.kdl",
-      "bytes": 168,
-      "sha256": "b0a82262c878460a94c1ed1d33dccd33fe2bd4f574c57ad97e14ec4f6fd1761a"
+      "path": "test/fixtures/studio/content/prototypes/Vault.chibi",
+      "bytes": 849,
+      "sha256": "85d8622791e1c3f5d2ac06b7ea8a895dbeb223c8c061a0ea13e11fa49cb653bd",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 235,
+        "bytes": 168,
+        "sha256": "b0a82262c878460a94c1ed1d33dccd33fe2bd4f574c57ad97e14ec4f6fd1761a"
+      }
     },
     {
-      "path": "test/fixtures/studio/content/scenes/Binding.kdl",
-      "bytes": 86,
-      "sha256": "ebe9b016283d2ce1dafa64f01be08f3d5e69f20937b541c4000cbbbbd4177468"
+      "path": "test/fixtures/studio/content/scenes/Binding.chibi",
+      "bytes": 532,
+      "sha256": "98ba98b6057331b0d5104434fea4f57c677c6d4255c777dc4d9b391872014739",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 236,
+        "bytes": 86,
+        "sha256": "ebe9b016283d2ce1dafa64f01be08f3d5e69f20937b541c4000cbbbbd4177468"
+      }
     },
     {
-      "path": "test/fixtures/studio/content/scenes/Main.kdl",
-      "bytes": 38,
-      "sha256": "9750fd67199801a2612ce9f6e5f1ae1a1b4b2f1b6b1b271735e0e6f8c672f560"
+      "path": "test/fixtures/studio/content/scenes/Main.chibi",
+      "bytes": 315,
+      "sha256": "187fb52495ba89520992abc6746d520d062dc4cd91db6e0bc9d6c34b87c6462c",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 237,
+        "bytes": 38,
+        "sha256": "9750fd67199801a2612ce9f6e5f1ae1a1b4b2f1b6b1b271735e0e6f8c672f560"
+      }
     },
     {
-      "path": "test/fixtures/studio/content/scenes/Vault.kdl",
-      "bytes": 80,
-      "sha256": "a2c597a1a6d103e67f41d83c73520c501d1040a622683d0019be69b2fb7a5159"
+      "path": "test/fixtures/studio/content/scenes/Vault.chibi",
+      "bytes": 526,
+      "sha256": "6e61a458a5ffef8855e396b9759d740780c8a512f3341c8599b9f8db3e20e931",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 238,
+        "bytes": 80,
+        "sha256": "a2c597a1a6d103e67f41d83c73520c501d1040a622683d0019be69b2fb7a5159"
+      }
     },
     {
       "path": "test/fixtures/studio/content/ui/Bank.rcss",
       "bytes": 56,
-      "sha256": "880471e7796e19a96c3cd747a57efdddfdfda1f25d2d3311be856a4c4031e1f2"
+      "sha256": "880471e7796e19a96c3cd747a57efdddfdfda1f25d2d3311be856a4c4031e1f2",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 239,
+        "bytes": 56,
+        "sha256": "880471e7796e19a96c3cd747a57efdddfdfda1f25d2d3311be856a4c4031e1f2"
+      }
     },
     {
       "path": "test/fixtures/studio/content/ui/Bank.rml",
       "bytes": 92,
-      "sha256": "5e23e85d011eeec3ea33cafe91108bb854f48eab5cc8cec16fcb44d069f6667f"
+      "sha256": "5e23e85d011eeec3ea33cafe91108bb854f48eab5cc8cec16fcb44d069f6667f",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 240,
+        "bytes": 92,
+        "sha256": "5e23e85d011eeec3ea33cafe91108bb854f48eab5cc8cec16fcb44d069f6667f"
+      }
     },
     {
-      "path": "test/fixtures/studio/project.kdl",
-      "bytes": 83,
-      "sha256": "82c5940df6ba740be430d887b93e8841fe2e599450ee4b66ba8c8cfe770a4e18"
+      "path": "test/fixtures/studio/project.chibi",
+      "bytes": 423,
+      "sha256": "02e294d7cd1c67705c2dc4e3a4e6ceda9e2827f4b1461b09823e0948a3c569aa",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 241,
+        "bytes": 83,
+        "sha256": "82c5940df6ba740be430d887b93e8841fe2e599450ee4b66ba8c8cfe770a4e18"
+      }
     },
     {
       "path": "test/fixtures/systems/MovementSystem.chibi",
       "bytes": 739,
-      "sha256": "66f97f5574c01713d526da152cfcbbde574f09b81687d1f815bb5bc440e8d4af"
+      "sha256": "66f97f5574c01713d526da152cfcbbde574f09b81687d1f815bb5bc440e8d4af",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 242,
+        "bytes": 739,
+        "sha256": "66f97f5574c01713d526da152cfcbbde574f09b81687d1f815bb5bc440e8d4af"
+      }
     },
     {
       "path": "test/graph/document.c",
-      "bytes": 28152,
-      "sha256": "76d258c0f2b17df1afbd6655797deeb3f37099bcb2b5a0880325a9f2ce697366"
+      "bytes": 30475,
+      "sha256": "c104d5faeaa5d8441aa04e8af1ba2ecbb73b78e65860b4d3118dbc0366639ae8",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 243,
+        "bytes": 28152,
+        "sha256": "76d258c0f2b17df1afbd6655797deeb3f37099bcb2b5a0880325a9f2ce697366"
+      }
     },
     {
       "path": "test/graph/editing.c",
       "bytes": 14476,
-      "sha256": "632a9fc3d1ede6728ff5f20de2c5f2b26f6c17bdbbd0cbc5e33718f3804b89ab"
+      "sha256": "632a9fc3d1ede6728ff5f20de2c5f2b26f6c17bdbbd0cbc5e33718f3804b89ab",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 244,
+        "bytes": 14476,
+        "sha256": "632a9fc3d1ede6728ff5f20de2c5f2b26f6c17bdbbd0cbc5e33718f3804b89ab"
+      }
     },
     {
       "path": "test/graph/input_bindings.c",
-      "bytes": 82180,
-      "sha256": "7790bdb0c8039def2e81209ccc91e0c7332bfc6b960b02dd5581df43dffd16de"
+      "bytes": 82184,
+      "sha256": "5409072fe9f8e7e03c3221e9bf9cc9125520c50977042b76d8357a94920acb01",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 245,
+        "bytes": 82180,
+        "sha256": "7790bdb0c8039def2e81209ccc91e0c7332bfc6b960b02dd5581df43dffd16de"
+      }
     },
     {
       "path": "test/graph/optimizer.c",
       "bytes": 33604,
-      "sha256": "2e16a4a6ae8643982d0938b9e4c2cea02dfc65a3cb63076338acc0749dcc0cb5"
+      "sha256": "2e16a4a6ae8643982d0938b9e4c2cea02dfc65a3cb63076338acc0749dcc0cb5",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 246,
+        "bytes": 33604,
+        "sha256": "2e16a4a6ae8643982d0938b9e4c2cea02dfc65a3cb63076338acc0749dcc0cb5"
+      }
     },
     {
       "path": "test/graph/optimizer_sources.c",
       "bytes": 13241,
-      "sha256": "b2c5ae966250008e0d676070d51725a9ad26b29e448c46a9ccad98c4fb1a1bcd"
+      "sha256": "b2c5ae966250008e0d676070d51725a9ad26b29e448c46a9ccad98c4fb1a1bcd",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 247,
+        "bytes": 13241,
+        "sha256": "b2c5ae966250008e0d676070d51725a9ad26b29e448c46a9ccad98c4fb1a1bcd"
+      }
     },
     {
       "path": "test/graph_navigation.c",
       "bytes": 8089,
-      "sha256": "25bdbcad1464833fcb8c383cb98b9ff8d505e72b106262dd54a5b26c54803f11"
+      "sha256": "25bdbcad1464833fcb8c383cb98b9ff8d505e72b106262dd54a5b26c54803f11",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 248,
+        "bytes": 8089,
+        "sha256": "25bdbcad1464833fcb8c383cb98b9ff8d505e72b106262dd54a5b26c54803f11"
+      }
     },
     {
       "path": "test/labels.c",
       "bytes": 3666,
-      "sha256": "7cbcbc4ee15d9e8f6f5962b19eda8941f3348d4c988491b2919611a8374fb8eb"
+      "sha256": "7cbcbc4ee15d9e8f6f5962b19eda8941f3348d4c988491b2919611a8374fb8eb",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 249,
+        "bytes": 3666,
+        "sha256": "7cbcbc4ee15d9e8f6f5962b19eda8941f3348d4c988491b2919611a8374fb8eb"
+      }
     },
     {
       "path": "test/math_expression.c",
       "bytes": 95861,
-      "sha256": "f9c936509887f4994c46d6fc2cd5174628ba0118cf43cf5cdafd796e3cf51da7"
+      "sha256": "f9c936509887f4994c46d6fc2cd5174628ba0118cf43cf5cdafd796e3cf51da7",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 250,
+        "bytes": 95861,
+        "sha256": "f9c936509887f4994c46d6fc2cd5174628ba0118cf43cf5cdafd796e3cf51da7"
+      }
     },
     {
       "path": "test/movement_input.c",
       "bytes": 713,
-      "sha256": "1b72582bb5e9084c72d582be629caedb351d80c85a7032bf8b59398d56dbbd43"
+      "sha256": "1b72582bb5e9084c72d582be629caedb351d80c85a7032bf8b59398d56dbbd43",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 251,
+        "bytes": 713,
+        "sha256": "1b72582bb5e9084c72d582be629caedb351d80c85a7032bf8b59398d56dbbd43"
+      }
     },
     {
       "path": "test/movement_trail.c",
-      "bytes": 6524,
-      "sha256": "7fcafef3db0fb598fd49367b3e9f5223125b0d42d59b28caeaa72451d5e2a73f"
+      "bytes": 6526,
+      "sha256": "362858ea188878cd88f8922b9b13360b2fdedd74392497f4fef0d2787ebe73f3",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 252,
+        "bytes": 6524,
+        "sha256": "7fcafef3db0fb598fd49367b3e9f5223125b0d42d59b28caeaa72451d5e2a73f"
+      }
     },
     {
       "path": "test/physics_executor.h",
       "bytes": 494,
-      "sha256": "314692d337991b59bef6afebd646983b06378818a61bca27ea81b8f547c8b6e8"
+      "sha256": "314692d337991b59bef6afebd646983b06378818a61bca27ea81b8f547c8b6e8",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 253,
+        "bytes": 494,
+        "sha256": "314692d337991b59bef6afebd646983b06378818a61bca27ea81b8f547c8b6e8"
+      }
     },
     {
       "path": "test/runtime/catalog.c",
-      "bytes": 12917,
-      "sha256": "12f59792c89b496dfbc8ba0a1ef1817d68554e8655186b560661ca63a96d313f"
+      "bytes": 13101,
+      "sha256": "a63cf0e745d206b4e0e323e6f537563ac5f0857bd8971d8dbfaa91c5b9c828c1",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 254,
+        "bytes": 12917,
+        "sha256": "12f59792c89b496dfbc8ba0a1ef1817d68554e8655186b560661ca63a96d313f"
+      }
     },
     {
       "path": "test/runtime/game_capabilities.c",
       "bytes": 10025,
-      "sha256": "ba32fe527ff82722f7ff6af16feddfbd66fe44166ebf8711eeb0e930d5f4f5b4"
+      "sha256": "ba32fe527ff82722f7ff6af16feddfbd66fe44166ebf8711eeb0e930d5f4f5b4",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 255,
+        "bytes": 10025,
+        "sha256": "ba32fe527ff82722f7ff6af16feddfbd66fe44166ebf8711eeb0e930d5f4f5b4"
+      }
     },
     {
       "path": "test/runtime/ui_source.c",
       "bytes": 36957,
-      "sha256": "dc7530cdcb9ceba934dcfa9e7b951fec83821d80d7949538ac207d5c2aec8a37"
+      "sha256": "dc7530cdcb9ceba934dcfa9e7b951fec83821d80d7949538ac207d5c2aec8a37",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 256,
+        "bytes": 36957,
+        "sha256": "dc7530cdcb9ceba934dcfa9e7b951fec83821d80d7949538ac207d5c2aec8a37"
+      }
     },
     {
       "path": "test/scene_checkpoint.c",
-      "bytes": 56259,
-      "sha256": "0b7781c59708d55334449acff2f0dd3804c682b63cba0668e9f36ba33921b27c"
+      "bytes": 61997,
+      "sha256": "9f8f50e30f3434ee7faf1883b15d1d81c846919403b3485b4efacf2ee9df06d5",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 257,
+        "bytes": 56259,
+        "sha256": "0b7781c59708d55334449acff2f0dd3804c682b63cba0668e9f36ba33921b27c"
+      }
     },
     {
       "path": "test/scene_debug.c",
       "bytes": 13148,
-      "sha256": "7d23eb0b5054316068f41d717ef57f95208b3f0990a6a05f25ac2197abd58fb4"
+      "sha256": "7d23eb0b5054316068f41d717ef57f95208b3f0990a6a05f25ac2197abd58fb4",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 258,
+        "bytes": 13148,
+        "sha256": "7d23eb0b5054316068f41d717ef57f95208b3f0990a6a05f25ac2197abd58fb4"
+      }
     },
     {
       "path": "test/scene_disk.c",
-      "bytes": 14248,
-      "sha256": "4ce3eb149935c4fc14541709f0a7d356ab8802e98fb12388a53b345de43ba9f6"
+      "bytes": 15278,
+      "sha256": "256020c9eac2a6f238792bb3c42a149fcdbbe2a887e02657f58a93492bfeb064",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 259,
+        "bytes": 14248,
+        "sha256": "4ce3eb149935c4fc14541709f0a7d356ab8802e98fb12388a53b345de43ba9f6"
+      }
     },
     {
       "path": "test/scene_history.c",
-      "bytes": 33350,
-      "sha256": "2798f9f10957b47b3803539b4dd18c28f77aaf55818add4cbec5fe6e395813ed"
+      "bytes": 35342,
+      "sha256": "603f07a15501d346f4062989f985b77022c9211fc51a06efb936158657e927c4",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 260,
+        "bytes": 33350,
+        "sha256": "2798f9f10957b47b3803539b4dd18c28f77aaf55818add4cbec5fe6e395813ed"
+      }
     },
     {
       "path": "test/scene_instances.c",
-      "bytes": 38257,
-      "sha256": "ce6c69c8d9bfbd779ce1102373a020b7441ba5d5c8cba0624a230e13342c3361"
+      "bytes": 44839,
+      "sha256": "0d63811898f95def80cb44e354d15a7dbf6477fde2afaa2bad04a566fc378549",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 261,
+        "bytes": 38257,
+        "sha256": "ce6c69c8d9bfbd779ce1102373a020b7441ba5d5c8cba0624a230e13342c3361"
+      }
     },
     {
       "path": "test/scene_refactor.c",
-      "bytes": 15207,
-      "sha256": "e5b137a7fa4a80679f5f152fdbeaa7b3a65a42b37ee47befe47c34e0232d4267"
+      "bytes": 17032,
+      "sha256": "063e5e0be9cee4a0f721a6bbc9fb4847dff1103821ef2ba41b6313c6a2c2dd27",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 262,
+        "bytes": 15207,
+        "sha256": "e5b137a7fa4a80679f5f152fdbeaa7b3a65a42b37ee47befe47c34e0232d4267"
+      }
     },
     {
       "path": "test/sdf_material.c",
-      "bytes": 72309,
-      "sha256": "97855c7553bf57adeda0eaae57f4a6da3a6fb36a3ada86447d61f354382b09ce"
+      "bytes": 73566,
+      "sha256": "8c113fa533ddbf4145516dd4cfaafc8c48fd9d7b4ac846ec87488a89d81aa235",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 263,
+        "bytes": 72309,
+        "sha256": "97855c7553bf57adeda0eaae57f4a6da3a6fb36a3ada86447d61f354382b09ce"
+      }
     },
     {
       "path": "test/suite_internal.h",
-      "bytes": 10521,
-      "sha256": "1f9a608789cbe722d02798b4e399e7f2036071ccdf25b1503c38c85a9dcb4463"
+      "bytes": 10484,
+      "sha256": "e52f55ff533a712557e3e4c1ecdc44d445646c3e8e5d01de02ac7718d25c70f7",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 264,
+        "bytes": 10521,
+        "sha256": "1f9a608789cbe722d02798b4e399e7f2036071ccdf25b1503c38c85a9dcb4463"
+      }
     },
     {
       "path": "test/support/code_fixture.h",
       "bytes": 4284,
-      "sha256": "417f29c7873bc47c41c91d4b39864396f232bece3fa2907cc1109d518dedbf16"
+      "sha256": "417f29c7873bc47c41c91d4b39864396f232bece3fa2907cc1109d518dedbf16",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 265,
+        "bytes": 4284,
+        "sha256": "417f29c7873bc47c41c91d4b39864396f232bece3fa2907cc1109d518dedbf16"
+      }
     },
     {
       "path": "test/support/event_fixture.h",
-      "bytes": 3182,
-      "sha256": "9bd8fdb98157836f67b242ec7ed4d425e6cead0d0b06205b4b6b48bd7d685e47"
+      "bytes": 3204,
+      "sha256": "67775b27c03c13788d143baeb30447a2f8d8a929de1a4508f3d4090135aaaf12",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 266,
+        "bytes": 3182,
+        "sha256": "9bd8fdb98157836f67b242ec7ed4d425e6cead0d0b06205b4b6b48bd7d685e47"
+      }
     },
     {
       "path": "test/support/physics_executor.c",
       "bytes": 1384,
-      "sha256": "a0ee35f2c2828b4c1322984ffae561c9aea3d9f3a4bf3d5b3861e9d74c4ac98d"
+      "sha256": "a0ee35f2c2828b4c1322984ffae561c9aea3d9f3a4bf3d5b3861e9d74c4ac98d",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 267,
+        "bytes": 1384,
+        "sha256": "a0ee35f2c2828b4c1322984ffae561c9aea3d9f3a4bf3d5b3861e9d74c4ac98d"
+      }
     },
     {
       "path": "test/support/simulation_fixture.h",
       "bytes": 1601,
-      "sha256": "94db64c0dc7c522649ff8d32e50ce83864229bdd2f6c5d6b9d4a54cb99bdf584"
+      "sha256": "94db64c0dc7c522649ff8d32e50ce83864229bdd2f6c5d6b9d4a54cb99bdf584",
+      "origin": {
+        "source_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json",
+        "record_index": 268,
+        "bytes": 1601,
+        "sha256": "94db64c0dc7c522649ff8d32e50ce83864229bdd2f6c5d6b9d4a54cb99bdf584"
+      }
     }
   ],
   "unresolved_or_directory_literal_references": [
@@ -1359,23 +2973,23 @@
     "content/behaviors/Spin.chibi",
     "content/behaviors/Teller.chibi",
     "content/behaviors/Weapon.chibi",
-    "content/events/PendingReferenceEvent.kdl",
-    "content/events/UpdatedReferenceEvent.kdl",
-    "content/fields/Ground.kdl",
+    "content/events/PendingReferenceEvent.chibi",
+    "content/events/UpdatedReferenceEvent.chibi",
+    "content/fields/Ground.chibi",
     "content/libraries",
     "content/libraries/Shared.chibi",
     "content/prototypes",
-    "content/prototypes/Dot.kdl",
-    "content/prototypes/Eye.kdl",
-    "content/prototypes/Ground.kdl",
-    "content/prototypes/Panel.kdl",
-    "content/prototypes/Sign.kdl",
-    "content/prototypes/Vault.kdl",
+    "content/prototypes/Dot.chibi",
+    "content/prototypes/Eye.chibi",
+    "content/prototypes/Ground.chibi",
+    "content/prototypes/Panel.chibi",
+    "content/prototypes/Sign.chibi",
+    "content/prototypes/Vault.chibi",
     "content/scenes",
-    "content/scenes/Cave.kdl",
-    "content/scenes/Hall.kdl",
-    "content/scenes/Main.kdl",
-    "content/scenes/Studio.kdl",
+    "content/scenes/Cave.chibi",
+    "content/scenes/Hall.chibi",
+    "content/scenes/Main.chibi",
+    "content/scenes/Studio.chibi",
     "content/sdf-bake-render-XXXXXX",
     "content/sdf-model-images-XXXXXX",
     "content/ui/Bank.rml",
@@ -1396,7 +3010,7 @@
     "test/fixtures/content/behaviors/%s.chibi",
     "test/fixtures/content/behaviors/HealthBehavior.chibi",
     "test/fixtures/content/behaviors/PlayerContactBehavior.chibi",
-    "test/fixtures/content/prototypes/%s.kdl",
+    "test/fixtures/content/prototypes/%s.chibi",
     "test/fixtures/language",
     "test/fixtures/language/content",
     "test/fixtures/language/content/libraries/CheckpointCaller.chibi",
@@ -1409,9 +3023,10 @@
   "prior_snapshots": [
     {
       "source": "test/movement_trail.c",
-      "snapshot": "prior_snapshots/ebc60a87f99d1cbe035d483c900e5735cb9e38379c23b9a50c0be3356efa2f92/test/movement_trail.c",
       "bytes": 6732,
-      "sha256": "ebc60a87f99d1cbe035d483c900e5735cb9e38379c23b9a50c0be3356efa2f92"
+      "sha256": "ebc60a87f99d1cbe035d483c900e5735cb9e38379c23b9a50c0be3356efa2f92",
+      "source_snapshot": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/prior_snapshots/ebc60a87f99d1cbe035d483c900e5735cb9e38379c23b9a50c0be3356efa2f92/test/movement_trail.c"
     }
-  ]
+  ],
+  "origin_manifest": "https://github.com/waldnercharles/chibi-studio/blob/97f74c7ea2ec7c681b527daef75256ca75075ad6/tests/held/engine_oracles/PROVENANCE.json"
 }

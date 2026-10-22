@@ -1,0 +1,42 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("version", data.Value.UInt(3)),
+            data.Field.Named("name", data.Value.Text("Material Impact")),
+            data.Field.Named("domain", data.Value.Text("event")),
+            data.Field.Named("id_counter", data.Value.UInt(4)),
+            data.Field.Named("variables", data.List([
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(1)),
+                    data.Field.Named("name", data.Value.Text("Energy")),
+                    data.Field.Named("type", data.Value.Text("float"))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(2)),
+                    data.Field.Named("name", data.Value.Text("Cause")),
+                    data.Field.Named("type", data.Value.Text("int"))
+                ]),
+                data.Object([
+                    data.Field.Named("id", data.Value.UInt(3)),
+                    data.Field.Named("name", data.Value.Text("Point")),
+                    data.Field.Named("type", data.Value.Text("struct")),
+                    data.Field.Named("type_name", data.Value.Text("CF_V2")),
+                    data.Field.Named("default", data.Object([
+                        data.Field.Named("x", data.Value.Real(0.0)),
+                        data.Field.Named("y", data.Value.Real(0.0))
+                    ]))
+                ])
+            ])),
+            data.Field.Named("graphs", data.List([
+                data.Object([
+                    data.Field.Named("kind", data.Value.Text("event")),
+                    data.Field.Named("name", data.Value.Text(""))
+                ])
+            ]))
+        ])
+    )
+}

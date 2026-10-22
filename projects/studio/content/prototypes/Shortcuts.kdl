@@ -1,5 +1,0 @@
-name "Shortcuts"
-components {
-    Ui document="Shortcuts" hidden=#true
-}
-(array)behaviors "Dismiss"

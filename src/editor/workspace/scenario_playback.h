@@ -9,7 +9,7 @@
  * asset, or replay one on a loop. Both restart the scene first, so they follow
  * it from its start and a replay matches its recording. */
 int app_scenario_record(app_scene_authoring *scene);
-/* Stops recording and saves it as scenarios/<Scene> Recording[ N].kdl,
+/* Stops recording and saves it as scenarios/<Scene> Recording[ N].chibi,
  * writing the asset name to `name`. */
 int app_scenario_save(app_scene_authoring *scene, char *name, size_t size);
 /* Replays the named scenario, restarting the scene whenever it finishes. */

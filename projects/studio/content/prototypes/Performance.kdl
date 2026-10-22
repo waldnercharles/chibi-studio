@@ -1,4 +1,0 @@
-name "Performance"
-components {
-    Ui document="Performance" hidden=#true
-}

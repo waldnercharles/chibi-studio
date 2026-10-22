@@ -47,7 +47,8 @@
                     !(file.data instanceof Uint8Array)) throw new Error('Snapshot contains an unsafe project path');
                 seen.add(file.path);
             }
-            if (!seen.has('project.kdl')) throw new Error('Snapshot is missing project.kdl');
+            if (!seen.has('project.chibi'))
+                throw new Error('Snapshot is missing project.chibi');
         };
         return {
             localRoot,

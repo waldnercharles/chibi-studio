@@ -1,0 +1,23 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("Outliner")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("Ui", data.Object([
+                    data.Field.Named("document", data.Value.Text("Outliner")),
+                    data.Field.Named("hidden", data.Value.Bool(true))
+                ]))
+            ])),
+            data.Field.Named("behaviors", data.List([
+                data.Value.Text("OutlinerInput"),
+                data.Value.Text("OutlinerMenu"),
+                data.Value.Text("OutlinerRename"),
+                data.Value.Text("OutlinerRows")
+            ]))
+        ])
+    )
+}

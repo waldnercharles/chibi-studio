@@ -1,0 +1,79 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("ArenaEnemy")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.GameBody", data.Object([
+                    data.Field.Named("type", data.Value.Text("Dynamic"))
+                ])),
+                data.Field.Named("GAME.GameCollider", data.Object([
+                    data.Field.Named("category", data.Value.UInt(2)),
+                    data.Field.Named("mask", data.Value.UInt(15)),
+                    data.Field.Named("radius", data.Value.Real(10.0))
+                ])),
+                data.Field.Named("GAME.GameEncounterMember", data.Object([
+                    data.Field.Named("role", data.Value.UInt(1))
+                ])),
+                data.Field.Named("GAME.GameGeometry3D", data.Object([
+                    data.Field.Named("depth", data.Value.Real(11.0)),
+                    data.Field.Named("elevation", data.Value.Real(12.0)),
+                    data.Field.Named("height", data.Value.Real(11.0)),
+                    data.Field.Named("primitive", data.Value.UInt(8)),
+                    data.Field.Named("width", data.Value.Real(11.0))
+                ])),
+                data.Field.Named("GAME.GameHealth", data.Object([
+                    data.Field.Named("current", data.Value.UInt(30)),
+                    data.Field.Named("maximum", data.Value.UInt(30))
+                ])),
+                data.Field.Named("GAME.GameMovement", data.Object([
+                    data.Field.Named("speed", data.Value.Real(55.0))
+                ])),
+                data.Field.Named("GAME.GameOrientation", data.Object([
+                    data.Field.Named("radians", data.Value.Real(0.35))
+                ])),
+                data.Field.Named("GAME.GamePointLight", data.Object([
+                    data.Field.Named("color", data.Value.UInt(4282739711)),
+                    data.Field.Named("elevation", data.Value.Real(14.0)),
+                    data.Field.Named("intensity", data.Value.Real(0.2)),
+                    data.Field.Named("radius", data.Value.Real(16.0))
+                ])),
+                data.Field.Named("GAME.GameShader", data.Object([
+                    data.Field.Named("material", data.Value.Text("ArenaEnemy")),
+                    data.Field.Named("parameters", data.Value.Text("")),
+                    data.Field.Named("shape", data.Value.Text(""))
+                ])),
+                data.Field.Named("GAME.GameSurfaceInfluence", data.Object([
+                    data.Field.Named("color", data.Value.UInt(4282739711)),
+                    data.Field.Named("linger", data.Value.Real(0.22)),
+                    data.Field.Named("radius", data.Value.Real(12.0)),
+                    data.Field.Named("strength", data.Value.Real(0.12))
+                ])),
+                data.Field.Named("GAME.GameTransform", data.Object([
+                    data.Field.Named("x", data.Value.Real(480.0)),
+                    data.Field.Named("y", data.Value.Real(-180.0))
+                ])),
+                data.Field.Named("GAME.GameVelocity", data.Object([])),
+                data.Field.Named("GAME.GameVisualMotion", data.Object([
+                    data.Field.Named("reaction_age", data.Value.Real(0.32)),
+                    data.Field.Named("reaction_duration", data.Value.Real(0.32)),
+                    data.Field.Named("rest_elevation", data.Value.Real(12.0)),
+                    data.Field.Named("speed", data.Value.Real(1.6))
+                ])),
+                data.Field.Named("GAME.GameVisualTransform", data.Object([
+                    data.Field.Named("scale", data.Value.Real(1.0))
+                ]))
+            ])),
+            data.Field.Named("behaviors", data.List([
+                data.Value.Text("ArenaEnemyVisualBehavior"),
+                data.Value.Text("ArenaImpactFeedback"),
+                data.Value.Text("CombatFeedback"),
+                data.Value.Text("EnemyBehavior"),
+                data.Value.Text("HealthBehavior")
+            ]))
+        ])
+    )
+}

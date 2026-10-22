@@ -6,7 +6,7 @@ graph completion and graph tab lifetimes without a playable game composition.
 
 Movement and Weapon, their callable dependencies and optional metadata are frozen
 regression snapshots. Weapon node48 and its layout must stay stable for completion
-and close/reopen checks. Components.kdl supplies the reflected labels those checks
+and close/reopen checks. Components.chibi supplies the reflected labels those checks
 use. `fixtures.json` records extraction sources, purposes and hashes.
 
 The Firefight name belongs to the existing replay assertion; its sixty-frame idle

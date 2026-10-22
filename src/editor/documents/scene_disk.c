@@ -8,7 +8,7 @@
 #include "editor/workspace/scene_internal.h"
 #include "graph/document/serialize.h"
 #include "support/array.h"
-#include "support/asset_text.h"
+#include "support/asset_document.h"
 #include "support/xalloc.h"
 
 #include <stdio.h>
@@ -315,7 +315,7 @@ static app_disk_result sync_scene(app_scene_authoring *scene, const char *path, 
         return APP_DISK_FAILED;
     }
     char error[256];
-    av_doc *native = asset_text_read(json, error, sizeof error);
+    av_doc *native = asset_document_read(json, error, sizeof error);
     free(json);
     if (!native) {
         snprintf(scene->message, sizeof scene->message, "Could not reload %s: %s", content_basename(path), error);
@@ -434,12 +434,7 @@ app_disk_change *app_scene_authoring_sync_disk(app_scene_authoring *scene, doubl
     if (!scene->content_root) {
         return changes;
     }
-    char **changed = tree_watch_poll(&scene->disk, scene->content_root, DECLARATIVE_ASSET_EXTENSION, now);
-    char **code_changed = tree_watch_poll(&scene->code_disk, scene->content_root, CODE_ASSET_EXTENSION, now);
-    for (int i = 0; i < acount(code_changed); i++) {
-        apush(changed, code_changed[i]);
-    }
-    afree(code_changed);
+    char **changed = tree_watch_poll(&scene->disk, scene->content_root, CODE_ASSET_EXTENSION, now);
     if (!changed && (!acount(scene->disk_pending) || runtime_session(scene))) {
         return changes;
     }
@@ -767,8 +762,7 @@ static bool named_file(const char *path, const char *name)
     const char *base = content_basename(path);
     size_t length = strlen(name);
     return !strncmp(base, name, length) &&
-           (!strcmp(base + length, DECLARATIVE_ASSET_EXTENSION) ||
-            !strcmp(base + length, CODE_ASSET_EXTENSION));
+           !strcmp(base + length, CODE_ASSET_EXTENSION);
 }
 
 /* A file that comes back, as Undo brings back a deleted one, takes up what
@@ -812,11 +806,6 @@ static void forget_file(app_scene_authoring *scene, const char *from)
 
 void scene_disk_note(app_scene_authoring *scene, const char *path)
 {
-    const char *extension = strrchr(path, '.');
-    if (extension && !strcmp(extension, CODE_ASSET_EXTENSION)) {
-        tree_watch_note(&scene->code_disk, path);
-        return;
-    }
     tree_watch_note(&scene->disk, path);
 }
 

@@ -56,7 +56,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Without the local server bridge, projects persist in IndexedDB, one folder each under /workspace.
-// A project is its folder: project.kdl plus everything beside it.
+// A project is its folder: project.chibi plus everything beside it.
 if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
     const launch = new URLSearchParams(window.location.search);
     const workspace = '/workspace';
@@ -115,15 +115,18 @@ if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
         kept ||= navigator.storage?.persist?.();
     };
     const exists = path => fs().analyzePath(path).exists;
-    const kdlString = value => JSON.stringify(value).replace(/\\u([0-9a-f]{4})/gi, (_, hex) => `\\u{${hex}}`);
     const slug = name => String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const manifest = 'project.kdl';
+    const manifest = 'project.chibi';
     let projectRoot;
+    const creating = new Set();
     const found = id => /^[a-z0-9-]+$/.test(id) && exists(`${workspace}/${id}/${manifest}`);
     const unique = name => {
         const base = slug(name) || 'project';
         let id = base;
-        for (let n = 2; exists(`${workspace}/${id}`); n++) id = `${base}-${n}`;
+        for (let n = 2;
+             exists(`${workspace}/${id}`) || creating.has(`${workspace}/${id}/`);
+             n++)
+            id = `${base}-${n}`;
         return id;
     };
     const walk = (path, visit, name = '') => {
@@ -139,35 +142,41 @@ if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
         fs().mkdirTree(path.slice(0, path.lastIndexOf('/')));
         fs().writeFile(path, data);
     };
-    Module['chibiCreateProject'] = (name, version) => {
+    // The SDK creates authored files after the page reserves a unique root.
+    Module['chibiCreateProject'] = name => {
         const title = String(name).trim();
-        if (!title || title.length > 128) return JSON.stringify({error: 'Enter a project name of 1 to 128 characters'});
-        if (!Number.isInteger(version) || version < 1) return JSON.stringify({error: 'Invalid project version'});
-        let root;
-        try {
-            const id = unique(title);
-            root = `${workspace}/${id}`;
-            const manifestPath = `${root}/${manifest}`;
-            const scenePath = `${root}/content/scenes/Start.kdl`;
-            write(manifestPath, `version ${version}\nname ${kdlString(title)}\ncontent "content"\nstart_scene "scenes/Start.kdl"\n`);
-            write(scenePath, "version 1\nname \"Start\"\n(array)entities\n");
-            keep();
-            persist();
-            return JSON.stringify({root: `${root}/`});
-        } catch (error) {
-            if (root) {
-                try {
-                    for (const path of [`${root}/content/scenes/Start.kdl`, `${root}/${manifest}`]) {
-                        if (exists(path)) fs().unlink(path);
-                    }
-                    for (const path of [`${root}/content/scenes`, `${root}/content`, root]) {
-                        if (exists(path)) fs().rmdir(path);
-                    }
-                } catch {
-                    // Keep reporting the error that caused project creation to fail.
-                }
+        if (!title || title.length > 128)
+            return JSON.stringify(
+                { error: 'Enter a project name of 1 to 128 characters' }
+            );
+        const root = `${workspace}/${unique(title)}/`;
+        creating.add(root);
+        return JSON.stringify({ root });
+    };
+    Module['chibiFinishCreateProject'] = (root, success) => {
+        if (!creating.has(root)) return 'Project creation is no longer pending';
+        const remove = path => {
+            if (!exists(path)) return;
+            if (!fs().isDir(fs().stat(path).mode)) {
+                fs().unlink(path);
+                return;
             }
-            return JSON.stringify({error: error.message || String(error)});
+            for (const child of fs().readdir(path)) {
+                if (child !== '.' && child !== '..') remove(`${path}/${child}`);
+            }
+            fs().rmdir(path);
+        };
+        try {
+            if (success) {
+                keep();
+                persist();
+            } else {
+                remove(root.replace(/\/$/, ''));
+            }
+            creating.delete(root);
+            return '';
+        } catch (error) {
+            return error.message || String(error);
         }
     };
     // Samples are bundled as project folders under /projects; the Studio starter opens by default.
@@ -222,7 +231,7 @@ if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
         }
         return files;
     };
-    // The shallowest project.kdl marks the project folder, at the archive root or in one
+    // The shallowest project.chibi marks the project folder, at the archive root or in one
     // top folder; the project takes that folder's name, or the archive's.
     const importFiles = (archive, file) => {
         const manifestName = archive.map(([name]) => name)
@@ -332,26 +341,18 @@ if (typeof window !== 'undefined' && !Module['chibiSaveAsset']) {
     };
     // Studio's Open Project list: the user's projects, then each sample not yet
     // copied into one. Opening one reloads the page onto it, as Import does.
-    const projectName = path => {
-        const value = fs().readFile(path, {encoding: 'utf8'}).match(/^\s*name\s+("(?:[^"\\]|\\.)*"|[^\s;{}]+)/m)?.[1];
-        if (!value) return undefined;
-        if (!value.startsWith('"')) return value;
-        const json = value.replace(/\\u\{([0-9a-f]{1,6})\}/gi, (_, hex) => {
-            const code = Number.parseInt(hex, 16);
-            return JSON.stringify(String.fromCodePoint(code)).slice(1, -1);
-        }).replace(/\\s/g, ' ');
-        try { return JSON.parse(json); } catch { return undefined; }
-    };
     const folders = path => (exists(path) ? fs().readdir(path).filter(name => !name.startsWith('.')) : []);
     Module['chibiProjects'] = () => JSON.stringify([
         ...folders(workspace).filter(found).map(id => ({
-            name: projectName(`${workspace}/${id}/${manifest}`) || id,
-            root: `${workspace}/${id}/`,
-        })),
-        ...folders(samples).filter(sample => !found(slug(sample)) && exists(`${samples}/${sample}/${manifest}`)).map(sample => ({
-            name: projectName(`${samples}/${sample}/${manifest}`) || sample,
-            root: `${samples}/${sample}/`,
-        })),
+                                                    name: id,
+                                                    root: `${workspace}/${id}/`,
+                                                })),
+        ...folders(samples)
+            .filter(sample => !found(slug(sample)) && exists(`${samples}/${sample}/${manifest}`))
+            .map(sample => ({
+                     name: sample,
+                     root: `${samples}/${sample}/`,
+                 })),
     ]);
     let projectOpenStatus = '';
     Module['chibiProjectOpenStatus'] = () => projectOpenStatus;

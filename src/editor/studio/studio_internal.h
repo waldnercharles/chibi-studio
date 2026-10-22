@@ -743,7 +743,7 @@ typedef struct
     int undo_toast;
 } studio_refactor;
 
-/* The open project's editor/Components.kdl, re-read when it changes. */
+/* The open project's editor/Components.chibi, re-read when it changes. */
 typedef struct
 {
     component_presentation hints; /* the last valid file; empty (the engine's) while it is missing */
@@ -2516,7 +2516,7 @@ void studio_canvas_free(studio *s);
 
 /* The Settings page's categories, in its sidebar's order. The Keyboard
  * category lists the command registry; Project edits the open project's
- * project.kdl. */
+ * project.chibi. */
 typedef enum
 {
     STUDIO_SETTINGS_APPEARANCE,
@@ -2596,7 +2596,7 @@ studio_prefs studio_prefs_read(const char *json);
  * ages share the file without dropping each other's settings. */
 char *studio_prefs_write(const studio_prefs *prefs, const char *saved);
 
-/* The Project tab's rows: fields of the open project's project.kdl, in the
+/* The Project tab's rows: fields of the open project's project.chibi, in the
  * page's order. */
 typedef enum
 {
@@ -2618,7 +2618,7 @@ typedef struct studio_settings_view
     int recording; /* command + 1, zero when idle */
     bool mac;
     const char *project; /* the open project's name */
-    /* Each project.kdl field as the project reads it, "" for none; the
+    /* Each project.chibi field as the project reads it, "" for none; the
        page may set them. */
     char fields[STUDIO_PROJECT_FIELD_COUNT][256];
     /* The assets a field chooses from (support/array.h): Start Scene's

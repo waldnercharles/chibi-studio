@@ -1,4 +1,0 @@
-version 23
-name "New Project"
-content "content"
-start_scene "scenes/Start.kdl"

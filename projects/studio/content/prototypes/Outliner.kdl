@@ -1,5 +1,0 @@
-name "Outliner"
-components {
-    Ui document="Outliner" hidden=#true
-}
-(array)behaviors "OutlinerInput" "OutlinerMenu" "OutlinerRename" "OutlinerRows"

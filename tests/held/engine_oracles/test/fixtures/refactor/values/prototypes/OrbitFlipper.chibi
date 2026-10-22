@@ -1,0 +1,17 @@
+package asset
+
+import data "game:assets"
+
+pub Build :: () -> byte[] {
+    return data.Encode(
+        data.Object([
+            data.Field.Named("name", data.Value.Text("OrbitFlipper")),
+            data.Field.Named("components", data.Object([
+                data.Field.Named("GAME.GameActionBinding", data.Object([
+                    data.Field.Named("action", data.Value.Text("FlipLeft")),
+                    data.Field.Named("source", data.Value.Text("Z"))
+                ]))
+            ]))
+        ])
+    )
+}

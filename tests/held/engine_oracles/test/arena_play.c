@@ -192,13 +192,13 @@ static arena_fixture fixture_new()
         f.runtime
     );
     assert(app_scene_authoring_load_content(f.scene) == 0);
-    const char
-        *preview_path = "test/fixtures/content/prototypes/Editor2DPreview.kdl";
+    const char *
+        preview_path = "test/fixtures/content/prototypes/Editor2DPreview.chibi";
     char *preview_json = text_file_read(preview_path);
     assert(preview_json);
     assert(app_scene_authoring_register_prototype(f.scene, preview_json, preview_path) == 0);
     free(preview_json);
-    int loaded = app_scene_authoring_load(f.scene, "content/scenes/Arena3D.kdl");
+    int loaded = app_scene_authoring_load(f.scene, "content/scenes/Arena3D.chibi");
     if (loaded != 0) {
         fprintf(stderr, "Arena scene load: %s\n", app_scene_authoring_message(f.scene));
     }
@@ -413,7 +413,7 @@ static void preview_projection(arena_fixture *f)
     assert(app_scene_authoring_set_runtime_target(f->scene, APP_RUNTIME_SCENE) == 0);
     frame(f);
     assert(engine_viewport_perspective(f->viewport));
-    assert(app_scene_authoring_load(f->scene, "test/fixtures/content/scenes/Editor2D.kdl") == 0);
+    assert(app_scene_authoring_load(f->scene, "test/fixtures/content/scenes/Editor2D.chibi") == 0);
     frame(f);
     assert(!engine_viewport_perspective(f->viewport));
     assert(app_scene_authoring_preview_prototype(f->scene, "ArenaPlayer") == 0);
@@ -423,7 +423,7 @@ static void preview_projection(arena_fixture *f)
     assert(app_scene_authoring_set_runtime_target(f->scene, APP_RUNTIME_SCENE) == 0);
     frame(f);
     assert(!engine_viewport_perspective(f->viewport));
-    assert(app_scene_authoring_load(f->scene, "content/scenes/Arena3D.kdl") == 0);
+    assert(app_scene_authoring_load(f->scene, "content/scenes/Arena3D.chibi") == 0);
     frame(f);
     assert(engine_viewport_perspective(f->viewport));
 }
@@ -517,23 +517,79 @@ static int screen_light(const CF_Pixel *pixels, CF_V2 point)
 static void planar_orientation(arena_fixture *f)
 {
     const char *json =
-        "version 1\n"
-        "name \"Planar orientation\"\n"
-        "presentation \"2d\"\n"
-        "(array)entities {\n"
-        "    - {\n"
-        "        name \"Player\"\n"
-        "        prototype \"ArenaPlayer\"\n"
-        "        components {\n"
-        "            GameTransform x=0 y=0\n"
-        "            GameAppearance shape=3 width=80 height=60 "
-        "color=4294967295 glow_radius=0 border_width=0 stroke_width=0\n"
-        "            GameShader material=\"\" shape=\"\" parameters=\"\"\n"
-        "            GameMaterial scene=4294967295 emission_color=4294967295 "
-        "emission_intensity=0.1 emission_multiplier=1 absorption=1\n"
-        "        }\n"
-        "        (array)behaviors \"TwinStickInputBehavior\"\n"
-        "    }\n"
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Planar "
+        "orientation\")),\n"
+        "            data.Field.Named(\"presentation\", "
+        "data.Value.Text(\"2d\")),\n"
+        "            data.Field.Named(\"entities\", data.List([\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Player\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"ArenaPlayer\")),\n"
+        "                    data.Field.Named(\"components\", data.Object([\n"
+        "                        data.Field.Named(\"GameTransform\", "
+        "data.Object([\n"
+        "                            data.Field.Named(\"x\", "
+        "data.Value.Int(0)),\n"
+        "                            data.Field.Named(\"y\", "
+        "data.Value.Int(0))\n"
+        "                        ])),\n"
+        "                        data.Field.Named(\"GameAppearance\", "
+        "data.Object([\n"
+        "                            data.Field.Named(\"shape\", "
+        "data.Value.Int(3)),\n"
+        "                            data.Field.Named(\"width\", "
+        "data.Value.Int(80)),\n"
+        "                            data.Field.Named(\"height\", "
+        "data.Value.Int(60)),\n"
+        "                            data.Field.Named(\"color\", "
+        "data.Value.Int(4294967295)),\n"
+        "                            data.Field.Named(\"glow_radius\", "
+        "data.Value.Int(0)),\n"
+        "                            data.Field.Named(\"border_width\", "
+        "data.Value.Int(0)),\n"
+        "                            data.Field.Named(\"stroke_width\", "
+        "data.Value.Int(0))\n"
+        "                        ])),\n"
+        "                        data.Field.Named(\"GameShader\", "
+        "data.Object([\n"
+        "                            data.Field.Named(\"material\", "
+        "data.Value.Text(\"\")),\n"
+        "                            data.Field.Named(\"shape\", "
+        "data.Value.Text(\"\")),\n"
+        "                            data.Field.Named(\"parameters\", "
+        "data.Value.Text(\"\"))\n"
+        "                        ])),\n"
+        "                        data.Field.Named(\"GameMaterial\", "
+        "data.Object([\n"
+        "                            data.Field.Named(\"scene\", "
+        "data.Value.Int(4294967295)),\n"
+        "                            data.Field.Named(\"emission_color\", "
+        "data.Value.Int(4294967295)),\n"
+        "                            data.Field.Named(\"emission_intensity\", "
+        "data.Value.Real(0.1)),\n"
+        "                            data.Field.Named(\"emission_multiplier\", "
+        "data.Value.Int(1)),\n"
+        "                            data.Field.Named(\"absorption\", "
+        "data.Value.Int(1))\n"
+        "                        ]))\n"
+        "                    ])),\n"
+        "                    data.Field.Named(\"behaviors\", data.List([\n"
+        "                        data.Value.Text(\"TwinStickInputBehavior\")\n"
+        "                    ]))\n"
+        "                ])\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
         "}\n";
     char path[] = "/tmp/arena-ui-orientation-XXXXXX";
     int descriptor = mkstemp(path);
@@ -595,7 +651,7 @@ static void planar_orientation(arena_fixture *f)
     }
     assert(app_scene_authoring_runtime_command(f->scene, APP_RUNTIME_SCENE, APP_RUNTIME_STOP) == 0);
     assert(unlink(path) == 0);
-    assert(app_scene_authoring_load(f->scene, "content/scenes/Arena3D.kdl") == 0);
+    assert(app_scene_authoring_load(f->scene, "content/scenes/Arena3D.chibi") == 0);
     frame(f);
     puts("planar orientation PASS: authored aim, rendered tips and empty-corner picking in four quadrants");
 }
@@ -741,7 +797,7 @@ static int standalone_key(arena_fixture *f, app_game_presentation *game, SDL_Sca
 
 static void standalone_play(arena_fixture *f)
 {
-    assert(app_scene_authoring_load(f->scene, "content/scenes/Arena3D.kdl") == 0);
+    assert(app_scene_authoring_load(f->scene, "content/scenes/Arena3D.chibi") == 0);
     /* Projectile lifetime is part of the firing comparison below. */
     for (int i = 0; i < acount(f->scene->actors); i++) {
         if (!strcmp(f->scene->actors[i].prototype_name, "PhaseWarden")) {
@@ -1402,24 +1458,45 @@ int arena_play_review_run(const char *program, bool editor_mode, bool crowd)
 
 static void ship_motion_review(arena_fixture *f, const char *directory)
 {
-    const char *json = "version 1\n"
-                       "name \"Ship motion review\"\n"
-                       "presentation \"3d\"\n"
-                       "(array)entities {\n"
-                       "    - {\n"
-                       "        name \"Player\"\n"
-                       "        prototype \"ArenaPlayer\"\n"
-                       "        (object)components\n"
-                       "        (array)behaviors \"TwinStickInputBehavior\" "
-                       "\"ArenaShipMotionBehavior\"\n"
-                       "    }\n"
-                       "    - {\n"
-                       "        name \"Environment\"\n"
-                       "        prototype \"ArenaEnvironment\"\n"
-                       "        (object)components\n"
-                       "        (array)behaviors\n"
-                       "    }\n"
-                       "}\n";
+    const char *json =
+        "package asset\n"
+        "\n"
+        "import data \"game:assets\"\n"
+        "\n"
+        "pub Build :: () -> byte[] {\n"
+        "    return data.Encode(\n"
+        "        data.Object([\n"
+        "            data.Field.Named(\"version\", data.Value.Int(1)),\n"
+        "            data.Field.Named(\"name\", data.Value.Text(\"Ship motion "
+        "review\")),\n"
+        "            data.Field.Named(\"presentation\", "
+        "data.Value.Text(\"3d\")),\n"
+        "            data.Field.Named(\"entities\", data.List([\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Player\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"ArenaPlayer\")),\n"
+        "                    data.Field.Named(\"components\", "
+        "data.Object([])),\n"
+        "                    data.Field.Named(\"behaviors\", data.List([\n"
+        "                        data.Value.Text(\"TwinStickInputBehavior\"),\n"
+        "                        data.Value.Text(\"ArenaShipMotionBehavior\")\n"
+        "                    ]))\n"
+        "                ]),\n"
+        "                data.Object([\n"
+        "                    data.Field.Named(\"name\", "
+        "data.Value.Text(\"Environment\")),\n"
+        "                    data.Field.Named(\"prototype\", "
+        "data.Value.Text(\"ArenaEnvironment\")),\n"
+        "                    data.Field.Named(\"components\", "
+        "data.Object([])),\n"
+        "                    data.Field.Named(\"behaviors\", data.List([]))\n"
+        "                ])\n"
+        "            ]))\n"
+        "        ])\n"
+        "    )\n"
+        "}\n";
     char path[] = "/tmp/arena-motion-review-XXXXXX";
     int descriptor = mkstemp(path);
     assert(descriptor >= 0 && close(descriptor) == 0);
@@ -1642,7 +1719,7 @@ static ecs_entity *scene_scale_enemies(arena_fixture *f, int count, bool combat)
             encounter->alive = count;
         }
     }
-    char *json = text_file_read("content/prototypes/ArenaEnemy.kdl"), error[256];
+    char *json = text_file_read("content/prototypes/ArenaEnemy.chibi"), error[256];
     assert(json);
     game_prototype *prototype = game_prototype_load(json, &f->scene->registry, error, sizeof error);
     free(json);

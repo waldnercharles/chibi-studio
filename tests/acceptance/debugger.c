@@ -195,9 +195,30 @@ bool acceptance_debugger_frame(studio *s, int frame)
         REQUIRE(
             app_scene_authoring_register_prototype(
                 s->scene,
-                "name \"Ticker\"\ncomponents {\n"
-                "    Transform x=0 y=0\n}\n"
-                "(array)behaviors \"Counter\"\n",
+                "package asset\n"
+                "\n"
+                "import data \"game:assets\"\n"
+                "\n"
+                "pub Build :: () -> byte[] {\n"
+                "    return data.Encode(\n"
+                "        data.Object([\n"
+                "            data.Field.Named(\"name\", "
+                "data.Value.Text(\"Ticker\")),\n"
+                "            data.Field.Named(\"components\", data.Object([\n"
+                "                data.Field.Named(\"Transform\", "
+                "data.Object([\n"
+                "                    data.Field.Named(\"x\", "
+                "data.Value.UInt(0)),\n"
+                "                    data.Field.Named(\"y\", "
+                "data.Value.UInt(0))\n"
+                "                ]))\n"
+                "            ])),\n"
+                "            data.Field.Named(\"behaviors\", data.List([\n"
+                "                data.Value.Text(\"Counter\")\n"
+                "            ]))\n"
+                "        ])\n"
+                "    )\n"
+                "}\n",
                 NULL
             ) == 0
         );

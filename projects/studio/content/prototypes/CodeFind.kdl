@@ -1,4 +1,0 @@
-name "CodeFind"
-components {
-    Ui document="CodeFind" hidden=#true
-}

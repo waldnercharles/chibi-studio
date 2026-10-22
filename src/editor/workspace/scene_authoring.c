@@ -5,7 +5,6 @@
 #include "authoring/preview_source.h"
 #include "authoring/prototype_preview.h"
 #include "authoring/source_asset.h"
-#include "authoring/source_format.h"
 #include "authoring/source_presentation.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/collab/collab.h"
@@ -30,8 +29,8 @@
 #include "runtime/component_catalog.h"
 #include "runtime/declared_components.h"
 #include "support/array.h"
+#include "support/asset_document.h"
 #include "support/asset_json.h"
-#include "support/asset_text.h"
 #include "support/text_file.h"
 #include "support/xalloc.h"
 #include "types/array.h"
@@ -98,33 +97,13 @@ int write_file_atomic(const char *path, const char *text)
 
 static int write_asset_file(const char *path, const char *text)
 {
-    const char *extension = strrchr(path, '.');
-    if (extension && !strcmp(extension, ".chibi")) {
-        script_syntax *syntax = script_parse(text);
-        char error[192];
-        char *formatted = authoring_source_format(syntax, error, sizeof error);
-        if (!formatted) {
-            script_syntax_free(syntax);
-            return -1;
-        }
-        int result = write_file_atomic(path, formatted);
-        script_syntax_free(syntax);
-        free(formatted);
-        return result;
-    }
-    char error[128];
-    av_doc *document = asset_text_read(text, error, sizeof error);
-    if (!document) {
+    char error[192];
+    char *source = asset_document_to_disk(text, error, sizeof error);
+    if (!source) {
         return -1;
     }
-    char *previous = text_file_read(path);
-    char *updated = previous && *previous
-                      ? asset_source_reconcile(previous, av_doc_root(document), error, sizeof error)
-                      : av_doc_write(document);
-    free(previous);
-    av_doc_free(document);
-    int result = updated ? write_file_atomic(path, updated) : -1;
-    free(updated);
+    int result = write_file_atomic(path, source);
+    free(source);
     return result;
 }
 
@@ -161,11 +140,12 @@ av_doc *scene_code_document_path(
     size_t size
 )
 {
-    if (path && source_catalog_source_path(scene->content_root, path)) {
+    if (path && source_catalog_source_path(scene->content_root, path) &&
+        !asset_document_source(text)) {
         snprintf(error, size, "Executable source requires a canonical presentation");
         return NULL;
     }
-    return asset_text_read(text, error, size);
+    return asset_document_read(text, error, size);
 }
 
 behavior_asset *scene_graph_source_path(
@@ -180,7 +160,8 @@ behavior_asset *scene_graph_source_path(
         snprintf(error, size, "Cannot read source");
         return NULL;
     }
-    if (path && source_catalog_source_path(scene->content_root, path)) {
+    if (path && source_catalog_source_path(scene->content_root, path) &&
+        !asset_document_source(text)) {
         authoring_source_presentation
             *view = scene_source_projection_path(scene, text, path, error, size);
         return view ? authoring_source_presentation_take_view(view) : NULL;
@@ -253,7 +234,24 @@ static authoring_source_presentation *resolve_source_presentation(
 
 int save_content_file(app_scene_authoring *scene, const char *path, const char *text)
 {
+    char *previous = text_file_read(path);
+    char *updated = NULL;
+    if (previous) {
+        char error[256];
+        av_doc *document = asset_document_read(text, error, sizeof error);
+        updated = document
+                    ? asset_source_reconcile(previous, av_doc_root(document), error, sizeof error)
+                    : NULL;
+        av_doc_free(document);
+        free(previous);
+        if (!updated) {
+            snprintf(scene->message, sizeof scene->message, "Could not preserve source while saving: %s", error);
+            return -1;
+        }
+        text = updated;
+    }
     int result = write_asset_file(path, text);
+    free(updated);
     if (!result) {
         scene_disk_note(scene, path);
     }
@@ -2360,7 +2358,6 @@ void app_scene_authoring_free(app_scene_authoring *scene)
     }
     afree(scene->content);
     tree_watch_free(&scene->disk);
-    tree_watch_free(&scene->code_disk);
     tree_watch_changes_free(scene->disk_pending);
     free(scene->content_root);
     free(scene->scene_path);

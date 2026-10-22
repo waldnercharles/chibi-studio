@@ -1,4 +1,0 @@
-name "Projectile"
-components {
-    (object)GAME.GameProjectile
-}

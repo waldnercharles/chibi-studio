@@ -66,12 +66,12 @@ static arena_fixture arena_new()
         ) == 0
     );
     const char
-        *projectile_path = "test/fixtures/content/prototypes/Projectile.kdl";
+        *projectile_path = "test/fixtures/content/prototypes/Projectile.chibi";
     char *projectile_json = text_file_read(projectile_path);
     assert(projectile_json);
     assert(app_scene_authoring_register_prototype(f.scene, projectile_json, projectile_path) == 0);
     free(projectile_json);
-    int loaded = app_scene_authoring_load(f.scene, "content/scenes/Arena3D.kdl");
+    int loaded = app_scene_authoring_load(f.scene, "content/scenes/Arena3D.chibi");
     if (loaded) {
         fprintf(stderr, "Arena load: %s\n", app_scene_authoring_message(f.scene));
     }
