@@ -3,7 +3,7 @@
 // object items follow the run; sets the eye's Alt+click tip for the platform.
 OutlinerMenu :: behavior {
     action set_ui_data_8 = set_ui_data(0, "menu.actor", convert<To_Real>(selection().Count) > 0)
-    on Begin {
+    on Begin :: () {
         await set_ui_data(0, "menu.spawnBreak.label", string("Break When Spawned"))
         await set_ui_data(0, "menu.spawnBreak.icon", string(""))
         await set_ui_data(0, "menu.spawnBreak.shortcut", string(""))
@@ -13,7 +13,7 @@ OutlinerMenu :: behavior {
             set_ui_data(0, "isolateTip", string("Alt+click shows only this object"))
         }
     }
-    on Refresh {
+    on Refresh :: () {
         Count := selection().Count
         if convert<To_Real>(Count) == 1 {
             await set_ui_data(0, "menu.label", selection().Name)

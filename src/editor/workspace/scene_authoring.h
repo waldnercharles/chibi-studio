@@ -131,8 +131,10 @@ int app_scene_authoring_save_prototype(
     const char *prototype_name,
     const char *path
 );
-/* Field storage is borrowed from the authored prototype until its next edit. */
+/* Struct storage is borrowed until the next edit. Native string field
+ * descriptors and bytes are copied into caller-owned storage. */
 int app_scene_authoring_read_prototype_field(
+    arena *storage,
     app_scene_authoring *scene,
     const char *prototype_name,
     const char *component,
@@ -247,9 +249,9 @@ typedef struct
     /* Terrain, clouds and liquids as the game's first frame generates them,
        without Begin, behaviors or a step. */
     bool generated_world;
-    bool lighting; /* HRC lighting; off shows material colors unlit */
-    bool fog;      /* the fog of war as the game starts */
-    bool cameras;  /* each Camera's frame, labeled */
+    bool lighting;  /* HRC lighting; off shows material colors unlit */
+    bool fog;       /* the fog of war as the game starts */
+    bool cameras;   /* each Camera's frame, labeled */
     bool colliders; /* every Collider3D's outline, not only the selection's */
 } app_scene_view_options;
 void app_scene_authoring_set_view_options(app_scene_authoring *scene, app_scene_view_options options);

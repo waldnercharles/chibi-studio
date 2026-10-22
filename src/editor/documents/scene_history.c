@@ -8,6 +8,7 @@
 #include "support/asset_json.h"
 #include "support/xalloc.h"
 #include "types/array.h"
+#include "types/text.h"
 #include "types/type.h"
 #include "types/value_document.h"
 
@@ -42,15 +43,11 @@ struct scene_history
 };
 
 scene_history *scene_history_new()
-{
-    return xcalloc(1, sizeof(scene_history));
-}
+{ return xcalloc(1, sizeof(scene_history)); }
 
 static void free_names(const char *const *names, int count)
 {
-    for (int i = 0; i < count; i++) {
-        free((void *)names[i]);
-    }
+    for (int i = 0; i < count; i++) { free((void *)names[i]); }
     free((void *)names);
 }
 
@@ -62,8 +59,8 @@ static void clear_edits(scene_edit **edits)
             free((void *)fields[j].before.type_name);
             free((void *)fields[j].after.type_name);
             if (fields[j].before.type == PIN_STR || fields[j].before.type == PIN_NAME) {
-                free((void *)fields[j].before.str);
-                free((void *)fields[j].after.str);
+                pin_value_destroy(&fields[j].before);
+                pin_value_destroy(&fields[j].after);
             }
             if (fields[j].before.type == PIN_STRUCT) {
                 free(fields[j].before.ptr);
@@ -107,9 +104,7 @@ static void clear_edits(scene_edit **edits)
 
 void scene_history_free(scene_history *history)
 {
-    if (!history) {
-        return;
-    }
+    if (!history) { return; }
     clear_edits(&history->undo);
     clear_edits(&history->redo);
     afree(history->undo);
@@ -148,9 +143,7 @@ uint64_t scene_history_group_id(const scene_history *history, bool redo)
    share the group counter, so they grow and never repeat. */
 static uint64_t next_step(scene_history *history)
 {
-    if (history->group) {
-        return history->group;
-    }
+    if (history->group) { return history->group; }
     assert(history->next_group != UINT64_MAX);
     return ++history->next_group;
 }
@@ -167,9 +160,7 @@ bool scene_history_push(scene_history *history, ecs_entity entity, Transform bef
     assert(history && entity.slot);
     assert(isfinite(before.x) && isfinite(before.y));
     assert(isfinite(after.x) && isfinite(after.y));
-    if (before.x == after.x && before.y == after.y) {
-        return false;
-    }
+    if (before.x == after.x && before.y == after.y) { return false; }
     apush(
         history->undo,
         ((scene_edit){ .entity = entity,
@@ -184,9 +175,7 @@ bool scene_history_push(scene_history *history, ecs_entity entity, Transform bef
 
 static bool scalar(pin_value value)
 {
-    if (value.container != PIN_CONTAINER_SINGLE) {
-        return false;
-    }
+    if (value.container != PIN_CONTAINER_SINGLE) { return false; }
     switch (value.type) {
         case PIN_BOOL:
         case PIN_I8:
@@ -213,9 +202,7 @@ static bool scalar(pin_value value)
 
 static bool same_type(pin_value a, pin_value b)
 {
-    if (a.type != b.type) {
-        return false;
-    }
+    if (a.type != b.type) { return false; }
     if (a.type != PIN_ENUM && a.type != PIN_HANDLE && a.type != PIN_STRUCT) {
         return true;
     }
@@ -239,7 +226,7 @@ static bool same_value(pin_value a, pin_value b)
         case PIN_F64: return a.d == b.d;
         case PIN_ENUM: return a.e == b.e;
         case PIN_STR:
-        case PIN_NAME: return !strcmp(a.str ? a.str : "", b.str ? b.str : "");
+        case PIN_NAME: return pin_value_equal(&a, &b);
         case PIN_STRUCT: return pin_value_equal(&a, &b);
         default: return false;
     }
@@ -268,15 +255,16 @@ bool scene_history_push_fields(
         }
         changed |= !same_value(fields[i].before, fields[i].after);
     }
-    if (!changed) {
-        return false;
-    }
+    if (!changed) { return false; }
     scene_edit edit = { .entity = entity };
     for (int i = 0; i < count; i++) {
         scene_field_edit field = fields[i];
         if (field.before.type == PIN_STR || field.before.type == PIN_NAME) {
-            field.before.str = xstrdup(field.before.str ? field.before.str : "");
-            field.after.str = xstrdup(field.after.str ? field.after.str : "");
+            int before_error = pin_value_copy(&field.before, &fields[i].before);
+            int after_error = pin_value_copy(&field.after, &fields[i].after);
+            assert(!before_error && !after_error);
+            (void)before_error;
+            (void)after_error;
         }
         if (field.before.type == PIN_STRUCT) {
             const type_desc *type = type_catalog_find(field.before.type_name);
@@ -363,16 +351,10 @@ const scene_actor_edit *scene_history_peek_actor(
 {
     assert(history);
     const scene_edit *source = redo ? history->redo : history->undo;
-    if (!acount(source) || !alast(source).actor) {
-        return NULL;
-    }
+    if (!acount(source) || !alast(source).actor) { return NULL; }
     const scene_edit *edit = &alast(source);
-    if (entity) {
-        *entity = edit->entity;
-    }
-    if (present) {
-        *present = edit->actor->created ? redo : !redo;
-    }
+    if (entity) { *entity = edit->entity; }
+    if (present) { *present = edit->actor->created ? redo : !redo; }
     return edit->actor;
 }
 
@@ -405,17 +387,11 @@ void scene_history_complete_actor(scene_history *history, bool redo, ecs_entity 
 
 static bool valid_names(const char *const *names, int count)
 {
-    if (count < 0 || (count && !names)) {
-        return false;
-    }
+    if (count < 0 || (count && !names)) { return false; }
     for (int i = 0; i < count; i++) {
-        if (!names[i] || !names[i][0]) {
-            return false;
-        }
+        if (!names[i] || !names[i][0]) { return false; }
         for (int j = 0; j < i; j++) {
-            if (strcmp(names[i], names[j]) == 0) {
-                return false;
-            }
+            if (strcmp(names[i], names[j]) == 0) { return false; }
         }
     }
     return true;
@@ -423,13 +399,9 @@ static bool valid_names(const char *const *names, int count)
 
 static const char **copy_names(const char *const *names, int count)
 {
-    if (!count) {
-        return NULL;
-    }
+    if (!count) { return NULL; }
     const char **copy = xmalloc((size_t)count * sizeof *copy);
-    for (int i = 0; i < count; i++) {
-        copy[i] = xstrdup(names[i]);
-    }
+    for (int i = 0; i < count; i++) { copy[i] = xstrdup(names[i]); }
     return copy;
 }
 
@@ -444,9 +416,7 @@ bool scene_history_push_behaviors(scene_history *history, ecs_entity entity, con
     for (int i = 0; !changed && i < edit->before_count; i++) {
         changed = strcmp(edit->before[i], edit->after[i]) != 0;
     }
-    if (!changed) {
-        return false;
-    }
+    if (!changed) { return false; }
     scene_behavior_edit *copy = xmalloc(sizeof *copy);
     *copy = *edit;
     copy->before = copy_names(edit->before, edit->before_count);
@@ -470,12 +440,8 @@ const scene_behavior_edit *scene_history_peek_behaviors(
 {
     assert(history);
     const scene_edit *source = redo ? history->redo : history->undo;
-    if (!acount(source) || !alast(source).behaviors) {
-        return NULL;
-    }
-    if (entity) {
-        *entity = alast(source).entity;
-    }
+    if (!acount(source) || !alast(source).behaviors) { return NULL; }
+    if (entity) { *entity = alast(source).entity; }
     return alast(source).behaviors;
 }
 
@@ -548,13 +514,9 @@ bool scene_history_push_rename(
 )
 {
     assert(history && entity.slot && before && before[0] && after && after[0]);
-    if (!strcmp(before, after)) {
-        return false;
-    }
+    if (!strcmp(before, after)) { return false; }
     scene_path_ref *copied = NULL;
-    for (int i = 0; i < acount(paths); i++) {
-        apush(copied, paths[i]);
-    }
+    for (int i = 0; i < acount(paths); i++) { apush(copied, paths[i]); }
     apush(
         history->undo,
         ((scene_edit){ .entity = entity,
@@ -572,9 +534,7 @@ const char *scene_history_peek_rename(const scene_history *history, bool redo, e
 {
     assert(history);
     const scene_edit *source = redo ? history->redo : history->undo;
-    if (!acount(source) || !alast(source).name_after) {
-        return NULL;
-    }
+    if (!acount(source) || !alast(source).name_after) { return NULL; }
     *entity = alast(source).entity;
     return redo ? alast(source).name_after : alast(source).name_before;
 }
@@ -601,9 +561,7 @@ void scene_history_complete_rename(scene_history *history, bool redo)
 bool scene_history_push_hierarchy(scene_history *history, av_value *before, av_value *after)
 {
     assert(history && before && after);
-    if (av_equals(before, after)) {
-        return false;
-    }
+    if (av_equals(before, after)) { return false; }
     apush(
         history->undo,
         ((scene_edit){ .group = history->group,
@@ -618,9 +576,7 @@ bool scene_history_push_hierarchy(scene_history *history, av_value *before, av_v
 av_value *scene_history_peek_hierarchy(const scene_history *history, bool redo)
 {
     const scene_edit *edits = redo ? history->redo : history->undo;
-    if (!acount(edits)) {
-        return NULL;
-    }
+    if (!acount(edits)) { return NULL; }
     return redo ? alast(edits).hierarchy_after : alast(edits).hierarchy_before;
 }
 
@@ -643,9 +599,7 @@ bool scene_history_can_undo(const scene_history *history)
 bool scene_history_push_physics(scene_history *history, physics_settings before, physics_settings after)
 {
     assert(physics_settings_valid(before) && physics_settings_valid(after));
-    if (physics_settings_equal(before, after)) {
-        return false;
-    }
+    if (physics_settings_equal(before, after)) { return false; }
     apush(
         history->undo,
         ((scene_edit){ .physics = true,
@@ -661,9 +615,7 @@ bool scene_history_push_physics(scene_history *history, physics_settings before,
 const physics_settings *scene_history_peek_physics(const scene_history *history, bool redo)
 {
     const scene_edit *edits = redo ? history->redo : history->undo;
-    if (!acount(edits) || !alast(edits).physics) {
-        return NULL;
-    }
+    if (!acount(edits) || !alast(edits).physics) { return NULL; }
     return redo ? &alast(edits).physics_after : &alast(edits).physics_before;
 }
 
@@ -688,18 +640,14 @@ static int apply_edit(scene_history *history, ecs_world *world, ecs_entity *out_
     assert(history && world);
     scene_edit **source = redo ? &history->redo : &history->undo;
     scene_edit **destination = redo ? &history->undo : &history->redo;
-    if (!acount(*source)) {
-        return 0;
-    }
+    if (!acount(*source)) { return 0; }
     scene_edit edit = alast(*source);
     if (edit.actor || edit.behaviors || edit.prototype || edit.physics || edit.name_after ||
         edit.hierarchy_after || !ecs_entity_is_alive(world, edit.entity)) {
         return -1;
     }
     if (edit.fields) {
-        if (!valid_fields(world, &edit)) {
-            return -1;
-        }
+        if (!valid_fields(world, &edit)) { return -1; }
         for (int i = 0; i < acount(edit.fields); i++) {
             scene_field_edit *field = &edit.fields[i];
             int result = ecs_component_write_field(
@@ -713,37 +661,27 @@ static int apply_edit(scene_history *history, ecs_world *world, ecs_entity *out_
         }
     } else {
         Transform *transform = Transform_get(world, edit.entity);
-        if (!transform) {
-            return -1;
-        }
+        if (!transform) { return -1; }
         *transform = redo ? edit.after : edit.before;
     }
     asetlen(*source, acount(*source) - 1);
     apush(*destination, edit);
-    if (out_entity) {
-        *out_entity = edit.entity;
-    }
+    if (out_entity) { *out_entity = edit.entity; }
     return 1;
 }
 
 int scene_history_undo(scene_history *history, ecs_world *world, ecs_entity *out_entity)
-{
-    return apply_edit(history, world, out_entity, false);
-}
+{ return apply_edit(history, world, out_entity, false); }
 
 int scene_history_redo(scene_history *history, ecs_world *world, ecs_entity *out_entity)
-{
-    return apply_edit(history, world, out_entity, true);
-}
+{ return apply_edit(history, world, out_entity, true); }
 
 /* History uses reflected names so restoring a saved workspace cannot retarget
  * an Undo after a component or field is reordered. */
 
 static void history_text(av_doc *doc, av_value *object, const char *key, const char *text)
 {
-    if (text) {
-        av_obj_add_str(doc, object, key, text);
-    }
+    if (text) { av_obj_add_str(doc, object, key, text); }
 }
 
 static char *history_copy_text(av_value *object, const char *key)
@@ -754,24 +692,18 @@ static char *history_copy_text(av_value *object, const char *key)
 
 static void history_free_strings(char **strings)
 {
-    for (int i = 0; i < acount(strings); i++) {
-        free(strings[i]);
-    }
+    for (int i = 0; i < acount(strings); i++) { free(strings[i]); }
     afree(strings);
 }
 
 static bool history_read_strings(av_value *array, char ***out)
 {
-    if (!av_is_arr(array)) {
-        return false;
-    }
+    if (!av_is_arr(array)) { return false; }
     size_t i, count;
     av_value *value;
     av_arr_foreach(array, i, count, value)
     {
-        if (!av_is_str(value)) {
-            return false;
-        }
+        if (!av_is_str(value)) { return false; }
         apush(*out, xstrdup(av_get_str(value)));
     }
     return true;
@@ -788,14 +720,10 @@ static av_value *history_position(av_doc *doc, const double *positions)
 
 static bool history_read_position(av_value *array, double *values)
 {
-    if (!av_is_arr(array) || av_arr_size(array) != 4) {
-        return false;
-    }
+    if (!av_is_arr(array) || av_arr_size(array) != 4) { return false; }
     for (int i = 0; i < 4; i++) {
         av_value *value = av_arr_get(array, i);
-        if (!av_is_num(value) || !isfinite(av_get_num(value))) {
-            return false;
-        }
+        if (!av_is_num(value) || !isfinite(av_get_num(value))) { return false; }
         values[i] = av_get_num(value);
     }
     return true;
@@ -816,9 +744,7 @@ static const ecs_component_desc *history_component_id(ecs_component_id id)
 {
     ecs_component_catalog project = project_components();
     for (int i = 0; i < project.component_count; i++) {
-        if (project.components[i]->id == id) {
-            return project.components[i];
-        }
+        if (project.components[i]->id == id) { return project.components[i]; }
     }
     return NULL;
 }
@@ -827,9 +753,7 @@ static const ecs_component_desc *history_component_id(ecs_component_id id)
 static int history_field(const ecs_component_desc *component, const char *name)
 {
     for (int i = 0; name && i < component->type->field_count; i++) {
-        if (!strcmp(component->type->fields[i].name, name)) {
-            return i;
-        }
+        if (!strcmp(component->type->fields[i].name, name)) { return i; }
     }
     return -1;
 }
@@ -837,12 +761,8 @@ static int history_field(const ecs_component_desc *component, const char *name)
 /* Reads a rename's paths; an older history without them rewrote none. */
 static bool history_read_paths(av_value *array, scene_path_ref **paths)
 {
-    if (!array) {
-        return true;
-    }
-    if (!av_is_arr(array)) {
-        return false;
-    }
+    if (!array) { return true; }
+    if (!av_is_arr(array)) { return false; }
     size_t i, count;
     av_value *item;
     av_arr_foreach(array, i, count, item)
@@ -854,9 +774,7 @@ static bool history_read_paths(av_value *array, scene_path_ref **paths)
         int field = component && component->type
                       ? history_field(component, av_get_str(av_obj_get(item, "field")))
                       : -1;
-        if (!av_is_uint(actor) || field < 0) {
-            return false;
-        }
+        if (!av_is_uint(actor) || field < 0) { return false; }
         apush(*paths, ((scene_path_ref){ av_get_uint(actor), component->id, field }));
     }
     return true;
@@ -869,7 +787,6 @@ static av_value *history_value(av_doc *doc, pin_value value)
     history_text(doc, object, "name", value.type_name);
     switch (value.type) {
         case PIN_BOOL: av_obj_add_bool(doc, object, "value", value.b); break;
-        case PIN_STR:
         case PIN_NAME:
             history_text(doc, object, "value", value.str ? value.str : "");
             break;
@@ -891,6 +808,7 @@ static av_value *history_value(av_doc *doc, pin_value value)
         case PIN_F64:
             av_obj_add_val(doc, object, "value", av_real(doc, value.d));
             break;
+        case PIN_STR:
         case PIN_STRUCT: {
             pin_value_write_document(doc, object, "value", value.type, value.type_name, &value);
             break;
@@ -922,7 +840,8 @@ static bool history_read_typed_value(pin_type type, const char *type_name, av_va
         *out = value;
         out->type_name = type_name;
         if (type == PIN_STR || type == PIN_NAME) {
-            out->str = xstrdup(value.str);
+            valid = pin_value_copy(out, &value) == 0;
+            out->type_name = type_name;
         }
         if (type == PIN_STRUCT) {
             out->ptr = xmalloc(shape->size);
@@ -936,9 +855,7 @@ static bool history_read_typed_value(pin_type type, const char *type_name, av_va
 static bool history_read_value(av_value *object, pin_value *out)
 {
     av_value *type = av_obj_get(object, "type"), *value = av_obj_get(object, "value");
-    if (!av_is_int(type)) {
-        return false;
-    }
+    if (!av_is_int(type)) { return false; }
     out->type = av_get_int(type);
     out->type_name = history_copy_text(object, "name");
     if (out->type == PIN_STRUCT) {
@@ -951,22 +868,27 @@ static bool history_read_value(av_value *object, pin_value *out)
         return scalar(*out);
     }
     if (out->type == PIN_STR || out->type == PIN_NAME) {
-        if (!av_is_str(value)) {
-            return false;
+        if (!av_is_str(value)) { return false; }
+        if (out->type == PIN_STR) {
+            pin_value text;
+            if (pin_value_text(NULL, &text, av_get_str(value), av_get_len(value))) {
+                return false;
+            }
+            out->text = text.text;
+        } else {
+            if (memchr(av_get_str(value), 0, av_get_len(value))) {
+                return false;
+            }
+            out->str = xstrdup(av_get_str(value));
         }
-        out->str = xstrdup(av_get_str(value));
         return true;
     }
     if (out->type == PIN_BOOL) {
-        if (!av_is_bool(value)) {
-            return false;
-        }
+        if (!av_is_bool(value)) { return false; }
         out->b = av_get_bool(value);
         return true;
     }
-    if (!av_is_num(value)) {
-        return false;
-    }
+    if (!av_is_num(value)) { return false; }
     bool signed_number = av_is_int(value) &&
                          (!av_is_uint(value) || av_get_uint(value) <= INT64_MAX);
     bool unsigned_number = av_is_uint(value);
@@ -1023,9 +945,7 @@ static bool history_read_value(av_value *object, pin_value *out)
             break;
         case PIN_U64:
         case PIN_HANDLE:
-            if (!unsigned_number) {
-                return false;
-            }
+            if (!unsigned_number) { return false; }
             out->u64 = unsigned_value;
             break;
         case PIN_F32: out->f = av_get_num(value); break;
@@ -1156,9 +1076,7 @@ av_value *scene_history_capture(const scene_history *history)
 
 static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **before, uint64_t **after)
 {
-    if (!av_is_arr(array)) {
-        return false;
-    }
+    if (!av_is_arr(array)) { return false; }
     size_t i, count;
     av_value *object;
     av_arr_foreach(array, i, count, object)
@@ -1183,9 +1101,7 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
         av_value *hierarchy = av_obj_get(object, "hierarchy_before");
         if (hierarchy) {
             av_value *next = av_obj_get(object, "hierarchy_after");
-            if (!av_is_obj(hierarchy) || !av_is_obj(next)) {
-                return false;
-            }
+            if (!av_is_obj(hierarchy) || !av_is_obj(next)) { return false; }
             out->entity = (ecs_entity){ 0 };
             out->hierarchy_before = av_value_copy(hierarchy);
             out->hierarchy_after = av_value_copy(next);
@@ -1207,9 +1123,7 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
         out->before = (Transform){ position[0], position[1] };
         out->after = (Transform){ position[2], position[3] };
         av_value *fields = av_obj_get(object, "fields");
-        if (!av_is_arr(fields)) {
-            return false;
-        }
+        if (!av_is_arr(fields)) { return false; }
         size_t j, field_count;
         av_value *item;
         av_arr_foreach(fields, j, field_count, item)
@@ -1220,9 +1134,7 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
             int index = component && component->type
                           ? history_field(component, av_get_str(av_obj_get(item, "field")))
                           : -1;
-            if (index < 0) {
-                return false;
-            }
+            if (index < 0) { return false; }
             scene_field_edit field = { .component = component->id, .field = index };
             apush(out->fields, field);
             scene_field_edit *stored = &alast(out->fields);
@@ -1242,9 +1154,7 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
             out->actor = xcalloc(1, sizeof *out->actor);
             scene_actor_edit *actor = out->actor;
             av_value *identity = av_obj_get(item, "identity");
-            if (identity && !av_is_uint(identity)) {
-                return false;
-            }
+            if (identity && !av_is_uint(identity)) { return false; }
             actor->identity = av_get_uint(identity);
             actor->parent = av_get_uint(av_obj_get(item, "parent"));
             actor->index = av_get_int(av_obj_get(item, "index"));
@@ -1283,9 +1193,7 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
             };
             history_free_strings(previous);
             history_free_strings(next);
-            if (!valid) {
-                return false;
-            }
+            if (!valid) { return false; }
         }
         item = av_obj_get(object, "prototype");
         if (item) {
@@ -1305,9 +1213,7 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
             out->entity = (ecs_entity){ 0 };
             out->prototype = valid ? copy_prototype_edit(&edit) : NULL;
             free(name);
-            if (!valid) {
-                return false;
-            }
+            if (!valid) { return false; }
         }
         item = av_obj_get(object, "rename");
         if (item) {
@@ -1331,9 +1237,7 @@ bool scene_history_restore_value(
 )
 {
 
-    if (av_get_int(av_obj_get(root, "version")) != 1) {
-        return false;
-    }
+    if (av_get_int(av_obj_get(root, "version")) != 1) { return false; }
     scene_history candidate = { .next_group = av_get_uint(av_obj_get(root, "next_group")) };
     uint64_t *before = NULL, *after = NULL;
     for (int i = 0; i < count; i++) {

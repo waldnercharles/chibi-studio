@@ -11,6 +11,7 @@
 #include "render/grid_2d.h"
 #include "runtime/component_catalog.h"
 #include "runtime/transform_propagation.h"
+#include "support/arena.h"
 #include "support/array.h"
 
 #include <assert.h>
@@ -91,9 +92,7 @@ typedef struct
 } gizmo_frame;
 
 bool scene_gizmo_spatial(int part)
-{
-    return part >= SCENE_GIZMO_ARROW_X && part < SCENE_GIZMO_HANDLE;
-}
+{ return part >= SCENE_GIZMO_ARROW_X && part < SCENE_GIZMO_HANDLE; }
 
 float scene_snap(float value, float increment)
 {
@@ -108,16 +107,12 @@ static CF_V2 rotated(CF_V2 v, float angle)
 }
 
 static CF_Color packed(unsigned color)
-{
-    return cf_make_color_rgba(color >> 24, color >> 16, color >> 8, color);
-}
+{ return cf_make_color_rgba(color >> 24, color >> 16, color >> 8, color); }
 
 static int field_named(const ecs_component_desc *component, const char *name)
 {
     for (int f = 0; f < component->type->field_count; f++) {
-        if (!strcmp(component->type->fields[f].name, name)) {
-            return f;
-        }
+        if (!strcmp(component->type->fields[f].name, name)) { return f; }
     }
     assert(!"a reflected field of the component");
     return -1;
@@ -131,7 +126,14 @@ static pin_value read_field(
 )
 {
     pin_value value = { 0 };
-    int read = ecs_component_read_field(world, entity, component->id, field_named(component, name), &value);
+    int read = ecs_component_read_field(
+        NULL,
+        world,
+        entity,
+        component->id,
+        field_named(component, name),
+        &value
+    );
     assert(read == ECS_OK && value.type == PIN_F32);
     return value;
 }
@@ -178,9 +180,7 @@ static scene_gizmo_target target_of(const ecs_world *world, ecs_entity entity)
             target.size = extent;
         }
     }
-    for (int f = 0; f < FIELD_COUNT; f++) {
-        target.field[f] = -1;
-    }
+    for (int f = 0; f < FIELD_COUNT; f++) { target.field[f] = -1; }
     return target;
 }
 
@@ -218,9 +218,7 @@ static scene_gizmo_target *selection_targets(const app_scene_authoring *scene)
 static bool frame_of(const scene_gizmo_target *targets, gizmo_frame *out)
 {
     int count = acount(targets);
-    if (!count) {
-        return false;
-    }
+    if (!count) { return false; }
     *out = (gizmo_frame){ 0 };
     CF_V2 min = { INFINITY, INFINITY }, max = { -INFINITY, -INFINITY };
     bool any_size = false;
@@ -310,9 +308,7 @@ bool scene_gizmo_hint(app_scene_authoring *scene, scene_tool_hint *hint)
     gizmo_frame frame;
     bool grey = frame_of(targets, &frame) && !tool_enabled(tool, &frame);
     afree(targets);
-    if (!grey) {
-        return false;
-    }
+    if (!grey) { return false; }
     engine_viewport_camera camera;
     engine_viewport_get_camera(viewport, &camera);
     *hint = (scene_tool_hint){
@@ -358,14 +354,14 @@ int scene_gizmo_record(
     const char *name
 )
 {
-    if (!ecs_component_has(scene->world, entity, component->id)) {
-        return -1;
-    }
+    if (!ecs_component_has(scene->world, entity, component->id)) { return -1; }
     scene_gizmo_field field = { .entity = entity,
                                 .component = component->id,
                                 .field = field_named(component, name) };
+    arena storage = { 0 };
     pin_value value = { 0 };
     int read = ecs_component_read_field(
+        &storage,
         scene->world,
         entity,
         component->id,
@@ -374,15 +370,14 @@ int scene_gizmo_record(
     );
     bool copied = read == ECS_OK && scene_property_value_copy(&field.before, value) &&
                   scene_property_value_copy(&field.after, value);
+    arena_free(&storage);
     assert(copied);
     apush(scene->gizmo.fields, field);
     return acount(scene->gizmo.fields) - 1;
 }
 
 pin_value scene_gizmo_started(const app_scene_authoring *scene, int index)
-{
-    return scene->gizmo.fields[index].before;
-}
+{ return scene->gizmo.fields[index].before; }
 
 void scene_gizmo_write(app_scene_authoring *scene, int index, pin_value value)
 {
@@ -447,9 +442,7 @@ static void add_fields(app_scene_authoring *scene, scene_gizmo_target *target, i
     if (part == SCENE_GIZMO_RING) {
         add_field(scene, target, FIELD_RADIANS, &COMPONENT_Orientation, "radians");
     }
-    if (part < SCENE_GIZMO_HANDLE || target->size.x <= 0) {
-        return;
-    }
+    if (part < SCENE_GIZMO_HANDLE || target->size.x <= 0) { return; }
     const char *height;
     const ecs_component_desc *size = sized_component(scene->world, target->entity, &height);
     add_field(scene, target, FIELD_WIDTH, size, "width");
@@ -461,9 +454,7 @@ static void add_fields(app_scene_authoring *scene, scene_gizmo_target *target, i
 }
 
 static float started(const scene_gizmo *g, const scene_gizmo_target *target, int slot)
-{
-    return g->fields[target->field[slot]].before.f;
-}
+{ return g->fields[target->field[slot]].before.f; }
 
 static void set(app_scene_authoring *scene, const scene_gizmo_target *target, int slot, float value)
 {
@@ -484,9 +475,7 @@ static void place(app_scene_authoring *scene, const scene_gizmo_target *target, 
 }
 
 bool scene_gizmo_snapping(const scene_gizmo *g)
-{
-    return g->in.snap != g->in.ctrl && g->in.increment > 0;
-}
+{ return g->in.snap != g->in.ctrl && g->in.increment > 0; }
 
 /* Numbers as the status bar shows them: at most two decimals, no zeros. */
 static float shown(float value)
@@ -498,15 +487,11 @@ static float shown(float value)
 /* The status bar's line for the change so far: what the gesture does and
    its delta, which the label by the pointer shows alone. */
 void scene_gizmo_describe(scene_gizmo *g, const char *verb)
-{
-    snprintf(g->status, sizeof g->status, "%s %s", verb, g->delta);
-}
+{ snprintf(g->status, sizeof g->status, "%s %s", verb, g->delta); }
 
 /* The gesture reports nothing more until it changes something again. */
 static void quiet(scene_gizmo *g)
-{
-    g->status[0] = g->delta[0] = '\0';
-}
+{ g->status[0] = g->delta[0] = '\0'; }
 
 void scene_gizmo_begin(app_scene_authoring *scene, scene_gizmo_part part, CF_V2 at)
 {
@@ -717,9 +702,7 @@ static void commit_field(app_scene_authoring *scene, const scene_gizmo_field *fi
 void scene_gizmo_finish(app_scene_authoring *scene, bool cancel)
 {
     scene_gizmo *g = &scene->gizmo;
-    if (!g->active) {
-        return;
-    }
+    if (!g->active) { return; }
     scene_gizmo_field *fields = g->fields;
     g->fields = NULL;
     afree(g->targets);
@@ -755,17 +738,13 @@ void scene_gizmo_finish(app_scene_authoring *scene, bool cancel)
         free_fields(fields);
         return;
     }
-    if (changed > 1) {
-        scene_history_begin_group(scene->history);
-    }
+    if (changed > 1) { scene_history_begin_group(scene->history); }
     for (int i = 0; i < acount(fields); i++) {
         if (field_changed(&fields[i])) {
             commit_field(scene, &fields[i], g->dirty);
         }
     }
-    if (changed > 1) {
-        scene_history_end_group(scene->history);
-    }
+    if (changed > 1) { scene_history_end_group(scene->history); }
     snprintf(g->report, sizeof g->report, "%s", g->status);
     quiet(g);
     free_fields(fields);
@@ -780,14 +759,10 @@ static void drag_frame(app_scene_authoring *scene, const engine_viewport_pointer
         g->moved = true;
         scene_gizmo_update(scene, (CF_V2){ pointer->world_x, pointer->world_y });
     }
-    if (!pointer->released) {
-        return;
-    }
+    if (!pointer->released) { return; }
     int reselect = g->moved ? -1 : g->reselect;
     scene_gizmo_finish(scene, false);
-    if (reselect >= 0) {
-        select_instance(scene, reselect);
-    }
+    if (reselect >= 0) { select_instance(scene, reselect); }
 }
 
 void scene_gizmo_drag_object(app_scene_authoring *scene, int index, const engine_viewport_pointer *pointer)
@@ -815,9 +790,7 @@ void scene_gizmo_drag_object(app_scene_authoring *scene, int index, const engine
 /* The part under canvas point `at`, with the box's angle for its cursor. */
 static int hovered_part(app_scene_authoring *scene, CF_V2 at, float pixel)
 {
-    if (scene->gizmo.in.tool == SCENE_TOOL_SELECT) {
-        return SCENE_GIZMO_NONE;
-    }
+    if (scene->gizmo.in.tool == SCENE_TOOL_SELECT) { return SCENE_GIZMO_NONE; }
     scene_gizmo_target *targets = selection_targets(scene);
     gizmo_frame frame;
     int part = SCENE_GIZMO_NONE;
@@ -844,9 +817,7 @@ static void modal_frame(app_scene_authoring *scene, const engine_viewport_pointe
         g->moved = true;
         scene_gizmo_update(scene, (CF_V2){ pointer->world_x, pointer->world_y });
     }
-    if (pointer->pressed || g->in.confirm) {
-        scene_gizmo_finish(scene, false);
-    }
+    if (pointer->pressed || g->in.confirm) { scene_gizmo_finish(scene, false); }
 }
 
 bool scene_gizmo_pointer(app_scene_authoring *scene, engine_viewport *viewport, const engine_viewport_pointer *pointer)
@@ -880,9 +851,7 @@ bool scene_gizmo_pointer(app_scene_authoring *scene, engine_viewport *viewport, 
     }
     g->hover = valid ? hovered_part(scene, at, pointer->world_per_pixel)
                      : SCENE_GIZMO_NONE;
-    if (!pointer->pressed || g->hover == SCENE_GIZMO_NONE) {
-        return false;
-    }
+    if (!pointer->pressed || g->hover == SCENE_GIZMO_NONE) { return false; }
     scene_authoring_select_document(scene, APP_EDITOR_DOCUMENT_SCENE, APP_SCENE_DOCUMENT_ID);
     scene_gizmo_begin(scene, g->hover, at);
     drag_frame(scene, pointer);
@@ -923,9 +892,7 @@ const char *scene_gizmo_cursor(const app_scene_authoring *scene)
 
 CF_Color scene_gizmo_color(const scene_gizmo *g, int part, unsigned color)
 {
-    if (g->active == part) {
-        return packed(SCENE_GIZMO_DRAGGED_COLOR);
-    }
+    if (g->active == part) { return packed(SCENE_GIZMO_DRAGGED_COLOR); }
     CF_Color base = packed(color);
     return g->hover == part && !g->active
              ? cf_color_lerp(base, cf_color_white(), 0.45f)
@@ -976,9 +943,7 @@ static void draw_ring(const scene_gizmo *g, const gizmo_frame *frame, float pixe
     cf_draw_push_color(scene_gizmo_color(g, SCENE_GIZMO_RING, FREE_COLOR));
     cf_draw_circle2(frame->pivot, radius, (g->hover == SCENE_GIZMO_RING ? 3 : LINE) * pixel);
     cf_draw_pop_color();
-    if (g->active != SCENE_GIZMO_RING) {
-        return;
-    }
+    if (g->active != SCENE_GIZMO_RING) { return; }
     /* Spokes from where the turn began to where it is. */
     cf_draw_push_color(packed(SCENE_GIZMO_DRAGGED_COLOR));
     for (int spoke = 0; spoke < 2; spoke++) {
@@ -992,9 +957,7 @@ static void draw_ring(const scene_gizmo *g, const gizmo_frame *frame, float pixe
 static void draw_box(const scene_gizmo *g, const gizmo_frame *frame, float pixel)
 {
     CF_V2 corners[4];
-    for (int c = 0; c < 4; c++) {
-        corners[c] = handle_at(frame, 2 * c, pixel);
-    }
+    for (int c = 0; c < 4; c++) { corners[c] = handle_at(frame, 2 * c, pixel); }
     cf_draw_push_color(packed(frame->sized ? SCENE_ACTIVE_COLOR : SCENE_GIZMO_DISABLED_COLOR));
     cf_draw_polyline(corners, 4, pixel, true);
     cf_draw_pop_color();
@@ -1019,9 +982,7 @@ static void draw_box(const scene_gizmo *g, const gizmo_frame *frame, float pixel
 static void draw_constraint(const app_scene_authoring *scene, float pixel)
 {
     const scene_gizmo *g = &scene->gizmo;
-    if (!g->modal || g->axis == SCENE_GIZMO_FREE) {
-        return;
-    }
+    if (!g->modal || g->axis == SCENE_GIZMO_FREE) { return; }
     engine_viewport_camera camera;
     engine_viewport_get_camera(scene->render_viewport, &camera);
     float reach = camera.span_width + camera.span_height;
@@ -1038,9 +999,7 @@ void scene_gizmo_draw(app_scene_authoring *scene)
     const scene_gizmo *g = &scene->gizmo;
     float pixel = scene->selection_scale > 0 ? scene->selection_scale : 1;
     draw_constraint(scene, pixel);
-    if (g->in.tool == SCENE_TOOL_SELECT) {
-        return;
-    }
+    if (g->in.tool == SCENE_TOOL_SELECT) { return; }
     scene_gizmo_target *targets = selection_targets(scene);
     gizmo_frame frame;
     if (frame_of(targets, &frame)) {

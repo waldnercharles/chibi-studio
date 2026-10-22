@@ -8,6 +8,7 @@
 #include "support/array.h"
 #include "support/asset_json.h"
 #include "support/xalloc.h"
+#include "types/array.h"
 #include "types/type.h"
 #include "types/value_document.h"
 
@@ -29,9 +30,7 @@ yyjson_mut_val *scene_action_root(app_scene_authoring *scene, const char *operat
     const char *tab = scene->active_tab >= 0 && scene->active_tab < acount(scene->tabs)
                         ? scene->tabs[scene->active_tab].key
                         : scene_tabs_current_scene_key(scene);
-    if (tab) {
-        yyjson_mut_obj_add_strcpy(doc, root, "tab", tab);
-    }
+    if (tab) { yyjson_mut_obj_add_strcpy(doc, root, "tab", tab); }
     app_editor_document_context document = app_scene_authoring_document(scene);
     yyjson_mut_obj_add_int(doc, root, "document_kind", document.kind);
     if (document.id) {
@@ -43,9 +42,7 @@ yyjson_mut_val *scene_action_root(app_scene_authoring *scene, const char *operat
 
 char *scene_action_write(yyjson_mut_doc *doc)
 {
-    if (!doc) {
-        return NULL;
-    }
+    if (!doc) { return NULL; }
     char *json = yyjson_mut_write(doc, 0, NULL);
     yyjson_mut_doc_free(doc);
     return json;
@@ -54,32 +51,22 @@ char *scene_action_write(yyjson_mut_doc *doc)
 collab_action_gate scene_action_begin(app_scene_authoring *scene, const char *json)
 {
     assert(scene && json);
-    if (collab_replaying()) {
-        return COLLAB_ACTION_APPLY;
-    }
+    if (collab_replaying()) { return COLLAB_ACTION_APPLY; }
     if (scene->collab_action_depth) {
         scene->collab_action_depth++;
         return COLLAB_ACTION_APPLY;
     }
     collab_action_gate gate = collab_actions_begin(json);
-    if (gate == COLLAB_ACTION_APPLY) {
-        scene->collab_action_depth = 1;
-    }
+    if (gate == COLLAB_ACTION_APPLY) { scene->collab_action_depth = 1; }
     return gate;
 }
 
 bool scene_action_finish(app_scene_authoring *scene, const char *json, bool success)
 {
     assert(scene && json);
-    if (collab_replaying()) {
-        return success;
-    }
-    if (!scene->collab_action_depth) {
-        return success;
-    }
-    if (--scene->collab_action_depth) {
-        return success;
-    }
+    if (collab_replaying()) { return success; }
+    if (!scene->collab_action_depth) { return success; }
+    if (--scene->collab_action_depth) { return success; }
     return collab_actions_finish(json, success);
 }
 
@@ -98,9 +85,7 @@ bool scene_collab_can_write_locally(void)
 uint64_t scene_actor_next_identity(app_scene_authoring *scene)
 {
     assert(scene);
-    if (!scene->next_actor_id) {
-        scene->next_actor_id = 1;
-    }
+    if (!scene->next_actor_id) { scene->next_actor_id = 1; }
     return scene->next_actor_id;
 }
 
@@ -124,13 +109,9 @@ uint64_t scene_actor_identity(const app_scene_authoring *scene, ecs_entity entit
 
 scene_actor *scene_actor_by_identity(app_scene_authoring *scene, uint64_t identity)
 {
-    if (!scene || !identity) {
-        return NULL;
-    }
+    if (!scene || !identity) { return NULL; }
     for (int i = 0; i < acount(scene->actors); i++) {
-        if (scene->actors[i].identity == identity) {
-            return &scene->actors[i];
-        }
+        if (scene->actors[i].identity == identity) { return &scene->actors[i]; }
     }
     return NULL;
 }
@@ -150,9 +131,7 @@ void scene_actor_set_identity(app_scene_authoring *scene, scene_actor *actor, ui
 
 static bool fail(char *error, size_t size, const char *message)
 {
-    if (size) {
-        snprintf(error, size, "%s", message);
-    }
+    if (size) { snprintf(error, size, "%s", message); }
     return false;
 }
 
@@ -197,9 +176,7 @@ static scene_actor *action_actor(app_scene_authoring *scene, yyjson_val *root, c
         return NULL;
     }
     scene_actor *actor = scene_actor_by_identity(scene, yyjson_get_uint(id));
-    if (!actor) {
-        fail(error, size, "Scene action actor no longer exists");
-    }
+    if (!actor) { fail(error, size, "Scene action actor no longer exists"); }
     return actor;
 }
 
@@ -207,9 +184,7 @@ static const ecs_component_desc *component_named(app_scene_authoring *scene, con
 {
     for (int i = 0; i < scene->registry.component_count; i++) {
         const ecs_component_desc *desc = scene->registry.components[i];
-        if (desc && name && !strcmp(desc->name, name)) {
-            return desc;
-        }
+        if (desc && name && !strcmp(desc->name, name)) { return desc; }
     }
     return NULL;
 }
@@ -238,7 +213,8 @@ static bool read_plain_value(pin_type type, const char *type_name, yyjson_val *j
         *out = value;
         out->type_name = type_name;
         if (type == PIN_STR || type == PIN_NAME) {
-            out->str = xstrdup(value.str);
+            valid = pin_value_copy(out, &value) == 0;
+            out->type_name = type_name;
         }
         if (type == PIN_STRUCT) {
             out->ptr = xmalloc(shape->size);
@@ -253,11 +229,9 @@ static bool read_plain_value(pin_type type, const char *type_name, yyjson_val *j
 static void free_action_value(pin_value *value)
 {
     if (value->type == PIN_STR || value->type == PIN_NAME) {
-        free((void *)value->str);
+        pin_value_destroy(value);
     }
-    if (value->type == PIN_STRUCT) {
-        free(value->ptr);
-    }
+    if (value->type == PIN_STRUCT) { free(value->ptr); }
     *value = (pin_value){ 0 };
 }
 
@@ -269,9 +243,7 @@ static bool read_field_value(
     pin_value *out
 )
 {
-    if (!out) {
-        return false;
-    }
+    if (!out) { return false; }
     *out = (pin_value){ 0 };
     if (!component || !component->type || !field_name || !json) {
         return false;
@@ -281,9 +253,7 @@ static bool read_field_value(
            strcmp(component->type->fields[field].name, field_name)) {
         field++;
     }
-    if (field == component->type->field_count) {
-        return false;
-    }
+    if (field == component->type->field_count) { return false; }
     const type_field *schema = &component->type->fields[field];
     *out = (pin_value){ 0 };
     if (!read_plain_value(schema->type, schema->type_name, json, out) ||
@@ -324,9 +294,7 @@ static bool apply_property(app_scene_authoring *scene, yyjson_val *root, char *e
 }
 
 static bool prototype_edit_accepted(int result)
-{
-    return result == 0 || result == APP_PROTOTYPE_EDIT_NOT_APPLIED;
-}
+{ return result == 0 || result == APP_PROTOTYPE_EDIT_NOT_APPLIED; }
 
 static bool apply_prototype_field(app_scene_authoring *scene, yyjson_val *root, char *error, size_t size)
 {
@@ -476,9 +444,7 @@ bool scene_collab_apply_action(app_scene_authoring *scene, const char *json, cha
         ok = apply_tab_action(scene, operation, root, error, error_size);
         goto done;
     }
-    if (!activate_action_tab(scene, root, error, error_size)) {
-        goto done;
-    }
+    if (!activate_action_tab(scene, root, error, error_size)) { goto done; }
     if (!strcmp(operation, "hierarchy.move")) {
         ok = apply_hierarchy_move(scene, root, error, error_size);
     } else if (!strcmp(operation, "instance.add")) {
@@ -525,9 +491,7 @@ bool scene_collab_apply_action(app_scene_authoring *scene, const char *json, cha
         }
     } else if (!strcmp(operation, "instance.delete")) {
         scene_actor *actor = action_actor(scene, root, error, error_size);
-        if (!actor) {
-            goto done;
-        }
+        if (!actor) { goto done; }
         select_instance(scene, (int)(actor - scene->actors));
         ok = app_scene_authoring_delete_instance(scene) == 0;
         if (!ok) {

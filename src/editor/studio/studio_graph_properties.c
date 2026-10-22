@@ -21,6 +21,7 @@
 #include "support/array.h"
 #include "support/xalloc.h"
 #include "types/array.h"
+#include "types/text.h"
 #include "ui/popover.h"
 
 #include <errno.h>
@@ -81,7 +82,7 @@ static bool target_of(const char *id, target *out)
 
 /* ---------- Values ---------- */
 
-static bool pin_string(pin_type type)
+static bool pin_is_string(pin_type type)
 {
     return type == PIN_STR || type == PIN_NAME;
 }
@@ -162,7 +163,13 @@ typedef struct
     const type_field *field;
 } leaf;
 
-static bool leaf_at(const pin_value *value, const pin_spec *shape, const char *path, leaf *out)
+static bool leaf_at(
+    arena *scratch,
+    const pin_value *value,
+    const pin_spec *shape,
+    const char *path,
+    leaf *out
+)
 {
     *out = (leaf){ .value = *value, .shape = *shape };
     for (const char *at = path; at && *at;) {
@@ -186,7 +193,9 @@ static bool leaf_at(const pin_value *value, const pin_spec *shape, const char *p
                 return false;
             }
             const type_field *field = &type->fields[index];
-            pin_read_field(out->value.ptr, field, &out->value);
+            if (pin_read_field(scratch, out->value.ptr, field, &out->value)) {
+                return false;
+            }
             out->value.type_name = out->value.type_name ? out->value.type_name
                                                         : field->type_name;
             out->shape = (pin_spec){ .type = field->type,
@@ -206,7 +215,13 @@ static bool leaf_at(const pin_value *value, const pin_spec *shape, const char *p
 }
 
 /* Writes `with` at `path` in `value`, in place. */
-static bool write_at(pin_value *value, const pin_spec *shape, const char *path, const pin_value *with)
+static bool write_at(
+    arena *scratch,
+    pin_value *value,
+    const pin_spec *shape,
+    const char *path,
+    const pin_value *with
+)
 {
     if (!path || !*path) {
         *value = *with;
@@ -225,7 +240,7 @@ static bool write_at(pin_value *value, const pin_spec *shape, const char *path, 
             return false;
         }
         pin_value entry = pin_array_get(array, index);
-        return write_at(&entry, &item, rest, with) &&
+        return write_at(scratch, &entry, &item, rest, with) &&
                !pin_array_set(array, index, &entry);
     }
     const type_desc *type = type_catalog_find(shape->type_name);
@@ -234,17 +249,18 @@ static bool write_at(pin_value *value, const pin_spec *shape, const char *path, 
     }
     const type_field *field = &type->fields[index];
     pin_value inner;
-    pin_read_field(value->ptr, field, &inner);
+    if (pin_read_field(scratch, value->ptr, field, &inner)) {
+        return false;
+    }
     inner.type_name = inner.type_name ? inner.type_name : field->type_name;
     pin_spec inner_shape = { .type = field->type,
                              .type_name = field->type_name,
                              .kind = PIN_DATA,
                              .container = PIN_CONTAINER_SINGLE };
-    if (!write_at(&inner, &inner_shape, rest, with)) {
+    if (!write_at(scratch, &inner, &inner_shape, rest, with)) {
         return false;
     }
-    pin_write_field(value->ptr, field, inner);
-    return true;
+    return !pin_write_field(scratch, value->ptr, field, inner);
 }
 
 static const char *arena_text(arena *scratch, const char *text)
@@ -305,7 +321,10 @@ static void vector_row(gd_rows *r, const gd_row *d, const pin_value *value, cons
     gd_number_shape axis = number_shape(PIN_F32);
     for (int i = 0; type && value->ptr && i < width; i++) {
         pin_value component;
-        pin_read_field(value->ptr, &type->fields[i], &component);
+        if (type->fields[i].type < PIN_I8 || type->fields[i].type > PIN_F64 ||
+            pin_read_field(NULL, value->ptr, &type->fields[i], &component)) {
+            continue;
+        }
         values[i] = sg_literal_number(&component);
         axis = number_shape(component.type);
     }
@@ -333,8 +352,10 @@ static void field_rows(gd_rows *r, const pin_row *pr, const leaf *l, const char 
         step_path(at, path, 'f', i);
         leaf_id(id, pr, at);
         editor_identifier_label(type->fields[i].name, label, sizeof label);
+        arena scratch = { 0 };
         leaf field;
-        if (!leaf_at(&l->value, &l->shape, step, &field)) {
+        if (!leaf_at(&scratch, &l->value, &l->shape, step, &field)) {
+            arena_free(&scratch);
             continue;
         }
         /* A ramp stop's Position stays between its neighbours'. */
@@ -343,6 +364,7 @@ static void field_rows(gd_rows *r, const pin_row *pr, const leaf *l, const char 
                        .label = label,
                        .readonly = pr->readonly || (position && range[0] > range[1]) };
         leaf_row(r, pr, &row, &field, at, position ? range : NULL);
+        arena_free(&scratch);
     }
 }
 
@@ -358,7 +380,9 @@ static void item_rows(gd_rows *r, const pin_row *pr, const leaf *l)
         leaf_id(id, pr, step);
         snprintf(label, sizeof label, "Item %d", i + 1);
         leaf item;
-        leaf_at(&l->value, &l->shape, step, &item);
+        if (!leaf_at(NULL, &l->value, &l->shape, step, &item)) {
+            continue;
+        }
         double range[2] = { 1, 0 };
         if (ramp) {
             sg_ramp_range(array, i, &range[0], &range[1]);
@@ -419,20 +443,31 @@ static void leaf_row(
         gd_put_flag(r, gd_next_row(r, &row), "checked", value->b);
         return;
     }
-    if (pin_string(shape->type)) {
+    if (pin_is_string(shape->type)) {
         reference_asset_kind
             asset = l->owner && l->field
                       ? reference_named_field_kind(l->owner->name, l->field->name)
                       : REFERENCE_ASSET_KIND_COUNT;
         char problem[192];
+        arena scratch = { 0 };
+        const char *text;
+        const char *error = pin_text_cstring(&scratch, *value, &text, NULL);
+        if (error) {
+            row.control = "label";
+            row.readonly = true;
+            gd_put_text(r, gd_next_row(r, &row), "text", error);
+            arena_free(&scratch);
+            return;
+        }
         row.control = asset != REFERENCE_ASSET_KIND_COUNT ? "asset" : "text";
         row.invalid = asset != REFERENCE_ASSET_KIND_COUNT &&
-                      gd_asset_problem(pr->s, asset, value->str ? value->str : "", problem);
+                      gd_asset_problem(pr->s, asset, text, problem);
         item = gd_next_row(r, &row);
-        gd_put_text(r, item, "text", value->str ? value->str : "");
+        gd_put_text(r, item, "text", text);
         if (asset != REFERENCE_ASSET_KIND_COUNT) {
-            gd_put_asset(r, item, asset, value->str ? value->str : "");
+            gd_put_asset(r, item, asset, text);
         }
+        arena_free(&scratch);
         return;
     }
     if (shape->type == PIN_I64 || shape->type == PIN_U64) {
@@ -525,17 +560,27 @@ static void value_row(gd_rows *r, const pin_row *pr, const gd_row *d)
     if (spec->type == PIN_STR && spec->type_name &&
         !strcmp(spec->type_name, "MaterialAsset")) {
         reference_asset_kind kind = REFERENCE_ASSET_MATERIAL;
-        const char *asset = spec->default_value.str ? spec->default_value.str : "";
+        arena scratch = { 0 };
+        const char *asset;
+        const char *error = pin_text_cstring(&scratch, spec->default_value, &asset, NULL);
+        if (error) {
+            row.control = "label";
+            row.readonly = true;
+            gd_put_text(r, gd_next_row(r, &row), "text", error);
+            arena_free(&scratch);
+            return;
+        }
         char problem[192];
         row.control = "asset";
         row.invalid = gd_asset_problem(s, kind, asset, problem);
         yyjson_mut_val *item = gd_next_row(r, &row);
         gd_put_text(r, item, "text", asset);
         gd_put_asset(r, item, kind, asset);
+        arena_free(&scratch);
         return;
     }
     if (spec->type == PIN_BOOL || (width > 0 && !(spec->flags & PIN_FLAG_COLOR)) ||
-        pin_string(spec->type) || (spec->type >= PIN_I8 && spec->type <= PIN_F64)) {
+        pin_is_string(spec->type) || (spec->type >= PIN_I8 && spec->type <= PIN_F64)) {
         leaf_row(r, pr, &row, &l, "", NULL);
         return;
     }
@@ -1475,16 +1520,24 @@ static bool edited_leaf(
             out->type_name = type->name;
         }
         pin_value component;
-        pin_read_field(out->ptr, &type->fields[axis], &component);
+        if (pin_read_field(scratch, out->ptr, &type->fields[axis], &component)) {
+            return false;
+        }
         sg_set_literal_number(&component, strtod(text, NULL));
-        pin_write_field(out->ptr, &type->fields[axis], component);
-        return true;
+        return !pin_write_field(scratch, out->ptr, &type->fields[axis], component);
     }
     if (l->shape.type == PIN_BOOL) {
         out->b = text[0] && strcmp(text, "0") && strcmp(text, "false");
         return true;
     }
-    if (pin_string(l->shape.type)) {
+    if (l->shape.type == PIN_STR) {
+        if (pin_value_text(scratch, out, text, strlen(text))) {
+            return false;
+        }
+        out->type_name = l->value.type_name;
+        return true;
+    }
+    if (l->shape.type == PIN_NAME) {
         out->str = arena_text(scratch, text);
         return true;
     }
@@ -1512,12 +1565,12 @@ static bool edit_items(const target *t, const char *action, arena *scratch, pin_
         item = atoi(step + 1);
     }
     leaf l;
-    if (!leaf_at(value, shape, parent, &l)) {
+    if (!leaf_at(scratch, value, shape, parent, &l)) {
         return false;
     }
     pin_value edited = l.value;
     edited.ptr = sg_array_edit(scratch, &l.value, &l.shape, item, item < 0);
-    return edited.ptr && write_at(value, shape, parent, &edited);
+    return edited.ptr && write_at(scratch, value, shape, parent, &edited);
 }
 
 /* The default in `value` with the control's edit written in; false when it
@@ -1540,12 +1593,12 @@ static bool edited_value(
         return edit_items(t, action, scratch, value, shape);
     }
     leaf l;
-    if (!leaf_at(value, shape, t->path, &l)) {
+    if (!leaf_at(scratch, value, shape, t->path, &l)) {
         return false;
     }
     int output = t->part == 'o';
     const editor_choices *choices = choices_of(s, n, output, t->index, t->path, &l);
-    if (choices || pin_string(l.shape.type) || l.shape.type == PIN_I64 ||
+    if (choices || pin_is_string(l.shape.type) || l.shape.type == PIN_I64 ||
         l.shape.type == PIN_U64) {
         *step = SG_STEP_ONCE;
     }
@@ -1557,7 +1610,7 @@ static bool edited_value(
     if (l.shape.type == PIN_BOOL && !choices && with.b == l.value.b) {
         return false;
     }
-    return write_at(value, shape, t->path, &with);
+    return write_at(scratch, value, shape, t->path, &with);
 }
 
 /* An edit of pin `t`'s default, or of a place inside it: the control's

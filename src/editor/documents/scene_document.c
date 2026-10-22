@@ -27,21 +27,15 @@ void scene_document_name(const app_scene_authoring *scene, char *name, size_t si
     if (scene->scene_path && scene->scene_path[0]) {
         snprintf(name, size, "%s", content_basename(scene->scene_path));
         char *extension = strrchr(name, '.');
-        if (extension && extension != name) {
-            *extension = '\0';
-        }
+        if (extension && extension != name) { *extension = '\0'; }
     }
 }
 
 static bool same_names(const char **names, char **graphs)
 {
-    if (acount(names) != acount(graphs)) {
-        return false;
-    }
+    if (acount(names) != acount(graphs)) { return false; }
     for (int i = 0; i < acount(names); i++) {
-        if (strcmp(names[i], graphs[i])) {
-            return false;
-        }
+        if (strcmp(names[i], graphs[i])) { return false; }
     }
     return true;
 }
@@ -51,9 +45,7 @@ void scene_override_path(av_doc *doc, av_value *overrides, const prototype_link 
     const char *key = link->component->key ? link->component->key
                                            : link->component->name;
     av_value *fields = av_obj_get(overrides, key);
-    if (!fields) {
-        fields = av_obj_add_obj(doc, overrides, key);
-    }
+    if (!fields) { fields = av_obj_add_obj(doc, overrides, key); }
     av_obj_set(doc, fields, link->component->type->fields[link->field].name, av_str(doc, link->path));
 }
 
@@ -109,9 +101,7 @@ static av_value *with_paths(app_scene_authoring *scene, const scene_actor *actor
 }
 
 av_value *scene_actor_paths(app_scene_authoring *scene, const scene_actor *actor)
-{
-    return acount(actor->paths) ? with_paths(scene, actor, NULL) : NULL;
-}
+{ return acount(actor->paths) ? with_paths(scene, actor, NULL) : NULL; }
 
 /* An actor keeps its prototype's behaviors until the scene lists its own or
    its behaviors differ from the prototype's. */
@@ -142,7 +132,8 @@ static int add_actor_entity(
     }
     int index = acount(document->entities);
     int result = scene_document_add_entity(document, parent, actor->name, actor->prototype_name);
-    if (result == 0 && (actor->own_behaviors || !same_names(names, actor->base->graphs))) {
+    if (result == 0 &&
+        (actor->own_behaviors || !same_names(names, actor->base->graphs))) {
         result = scene_document_set_entity_behaviors(document, index, names, acount(names));
     }
     afree(names);
@@ -172,9 +163,7 @@ static int listed_parent(app_scene_authoring *scene, const int *actors, const sc
 {
     uint64_t parent = scene_actor_parent(scene, actor);
     for (int i = 0; parent && i < acount(actors); i++) {
-        if (scene->actors[actors[i]].identity == parent) {
-            return i;
-        }
+        if (scene->actors[actors[i]].identity == parent) { return i; }
     }
     return -1;
 }
@@ -196,16 +185,12 @@ scene_document *scene_authoring_document(app_scene_authoring *scene)
     char name[256];
     scene_document_name(scene, name, sizeof name);
     scene_document *document = scene_document_new(name);
-    if (!document) {
-        return NULL;
-    }
+    if (!document) { return NULL; }
     document->perspective = scene->perspective;
     scene_document_set_ui(document, scene->ui);
     document->physics = physics_configuration(scene->live->runtime->physics);
     int *actors = NULL;
-    for (int i = 0; i < acount(scene->actors); i++) {
-        apush(actors, i);
-    }
+    for (int i = 0; i < acount(scene->actors); i++) { apush(actors, i); }
     int result = scene_document_add_actors(scene, document, actors);
     afree(actors);
     if (result != 0) {
@@ -236,17 +221,13 @@ char *scene_authoring_scene_text(app_scene_authoring *scene)
 
 int app_scene_authoring_save(app_scene_authoring *scene, const char *path)
 {
-    if (!scene || !path) {
-        return -1;
-    }
+    if (!scene || !path) { return -1; }
     if (scene_tabs_path_in_use(scene, APP_EDITOR_DOCUMENT_SCENE, path)) {
         snprintf(scene->message, sizeof scene->message, "Scene path is already open.");
         return -1;
     }
     char *json = scene_authoring_scene_text(scene);
-    if (!json) {
-        return -1;
-    }
+    if (!json) { return -1; }
     int result = save_content_file(scene, path, json);
     free(json);
     if (result == 0) {
@@ -264,9 +245,7 @@ static char *read_scene_file_limit(const char *path, size_t limit)
 {
     FILE *file = fopen(path, "rb");
     if (!file || fseek(file, 0, SEEK_END)) {
-        if (file) {
-            fclose(file);
-        }
+        if (file) { fclose(file); }
         return NULL;
     }
     long size = ftell(file);
@@ -290,9 +269,7 @@ static char *read_scene_file_limit(const char *path, size_t limit)
 }
 
 char *read_scene_file(const char *path)
-{
-    return read_scene_file_limit(path, SIZE_MAX - 1);
-}
+{ return read_scene_file_limit(path, SIZE_MAX - 1); }
 
 static const char *prototype_source_include(const char *name, void *user)
 {
@@ -316,9 +293,7 @@ bool scene_prototype_sources_refresh(app_scene_authoring *scene)
             continue;
         }
         const char *extension = strrchr(entry->path, '.');
-        if (!extension || strcmp(extension, CODE_ASSET_EXTENSION)) {
-            continue;
-        }
+        if (!extension || strcmp(extension, CODE_ASSET_EXTENSION)) { continue; }
         char *text = read_scene_file_limit(entry->path, PROTOTYPE_READ_MAX - bytes);
         if (!text || acount(sources) >= PROTOTYPE_EXPANSION_MAX) {
             free(text);
@@ -403,16 +378,12 @@ static int load_content_prototype(app_scene_authoring *scene, const char *path)
 
 int scene_attach_studio_nodes(app_scene_authoring *scene, preview_world *world, char *error, size_t size)
 {
-    if (!scene->studio_project || preview_sources_working(world)) {
-        return 0;
-    }
+    if (!scene->studio_project || preview_sources_working(world)) { return 0; }
     int bound = source_bind_service(world->runtime->sources, "studio", &scene->studio_nodes);
     assert(!bound);
     (void)bound;
     native_capabilities *catalog = authoring_application_catalog_new(true, error, size);
-    if (!catalog) {
-        return -1;
-    }
+    if (!catalog) { return -1; }
     int status = preview_sources_prepare_with_catalog(
         world,
         scene->content_root,
@@ -427,13 +398,9 @@ int scene_attach_studio_nodes(app_scene_authoring *scene, preview_world *world, 
 
 int app_scene_authoring_load_content(app_scene_authoring *scene)
 {
-    if (!scene) {
-        return -1;
-    }
+    if (!scene) { return -1; }
     content_refresh(scene);
-    if (!scene_prototype_sources_refresh(scene)) {
-        return -1;
-    }
+    if (!scene_prototype_sources_refresh(scene)) { return -1; }
     preview_world *worlds[] = {
         scene->live,
         prototype_preview_live(scene->prototype_preview),
@@ -453,9 +420,7 @@ int app_scene_authoring_load_content(app_scene_authoring *scene)
         scene->prototype_preview,
         scene->content_root
     );
-    if (loaded < 0) {
-        loaded = 0;
-    }
+    if (loaded < 0) { loaded = 0; }
     const char *runtime_folders[] = {
         "libraries", "shader-libraries", "events", "systems",   "fields",
         "materials", "shapes",           "models", "behaviors", "prototypes"
@@ -463,29 +428,21 @@ int app_scene_authoring_load_content(app_scene_authoring *scene)
     const char *first_runtime_asset = NULL;
     for (int i = 0; i < acount(scene->content); i++) {
         scene_content_entry *entry = &scene->content[i];
-        if (entry->directory) {
-            continue;
-        }
+        if (entry->directory) { continue; }
         for (int j = 0; j < (int)(sizeof runtime_folders / sizeof *runtime_folders);
              j++) {
             if (content_path_in_folder(scene, entry->path, runtime_folders[j])) {
-                if (!first_runtime_asset) {
-                    first_runtime_asset = entry->path;
-                }
+                if (!first_runtime_asset) { first_runtime_asset = entry->path; }
                 break;
             }
         }
         if (content_path_in_folder(scene, entry->path, "prototypes")) {
             int count = load_content_prototype(scene, entry->path);
-            if (count < 0) {
-                return -1;
-            }
+            if (count < 0) { return -1; }
             loaded += count;
         }
     }
-    if (loaded || !first_runtime_asset) {
-        return 0;
-    }
+    if (loaded || !first_runtime_asset) { return 0; }
     snprintf(scene->message, sizeof scene->message, "Could not load runtime content: %s", first_runtime_asset);
     return -1;
 }
@@ -493,9 +450,7 @@ int app_scene_authoring_load_content(app_scene_authoring *scene)
 static scene_prototype_asset *ensure_prototype(app_scene_authoring *scene, const char *name)
 {
     scene_prototype_asset *asset = find_prototype(scene, name);
-    if (asset || !scene || !scene->resolve_prototype) {
-        return asset;
-    }
+    if (asset || !scene || !scene->resolve_prototype) { return asset; }
     const char *json = scene->resolve_prototype(name, scene->resolve_user);
     if (!json || app_scene_authoring_register_prototype(scene, json, NULL) != 0) {
         return NULL;
@@ -505,9 +460,7 @@ static scene_prototype_asset *ensure_prototype(app_scene_authoring *scene, const
 
 int apply_components_value(app_scene_authoring *scene, ecs_entity entity, av_value *components)
 {
-    if (!components) {
-        return 0;
-    }
+    if (!components) { return 0; }
     char error[256];
     prototype_registry registry = app_component_registry();
     if (prototype_apply_components_value(
@@ -625,9 +578,7 @@ int scene_validate_entity(app_scene_authoring *scene, const scene_entity *entity
 
 int scene_spawn_entity(app_scene_authoring *scene, const scene_entity *entity, const char *name, ecs_entity parent)
 {
-    if (add_actor(scene, name, entity->prototype) != 0) {
-        return -1;
-    }
+    if (add_actor(scene, name, entity->prototype) != 0) { return -1; }
     scene_actor *actor = &alast(scene->actors);
     if (parent.slot &&
         (ecs_world_record_add_pair(scene->world, actor->entity, ECS_CHILD_OF, parent, 0) ||
@@ -644,9 +595,7 @@ int scene_spawn_entity(app_scene_authoring *scene, const scene_entity *entity, c
                      ? prototype_components_links(&scene->registry, entity->components)
                      : NULL;
     actor->own_behaviors = entity->own_behaviors;
-    if (!entity->own_behaviors) {
-        return 0;
-    }
+    if (!entity->own_behaviors) { return 0; }
     preview_runtime *runtime = scene->live->runtime;
     source_registry *behaviors = runtime->sources;
     source_detach_entity(behaviors, actor->entity);
@@ -681,9 +630,7 @@ static const scene_actor *actor_at_path(app_scene_authoring *scene, const char *
                 found = actor;
             }
         }
-        if (!found || !path[length]) {
-            return found;
-        }
+        if (!found || !path[length]) { return found; }
         parent = found->entity;
         path += length + 1;
     }
@@ -693,15 +640,13 @@ static void link_path(app_scene_authoring *scene, const scene_actor *actor, cons
 {
     const ecs_component_desc *desc = link->component;
     pin_value held = { 0 };
-    if (ecs_component_read_field(scene->world, actor->entity, desc->id, link->field, &held) !=
+    if (ecs_component_read_field(NULL, scene->world, actor->entity, desc->id, link->field, &held) !=
         ECS_OK) {
         return;
     }
     const scene_actor *target = actor_at_path(scene, link->path);
     uint64_t handle = target ? ecs_entity_to_u64(target->entity) : 0;
-    if (held.u64 == handle) {
-        return;
-    }
+    if (held.u64 == handle) { return; }
     pin_value value = { .type = PIN_HANDLE,
                         .type_name = desc->type->fields[link->field].type_name,
                         .u64 = handle };
@@ -723,9 +668,7 @@ void scene_link_paths(app_scene_authoring *scene)
 static char *actor_path(app_scene_authoring *scene, const scene_actor *actor, const char *name)
 {
     uint64_t parent = scene_actor_parent(scene, actor);
-    if (!parent) {
-        return xstrdup(name);
-    }
+    if (!parent) { return xstrdup(name); }
     const scene_actor *holder = scene_actor_by_identity(scene, parent);
     assert(holder);
     char *above = actor_path(scene, holder, holder->name);
@@ -896,9 +839,7 @@ int scene_authoring_load_text(app_scene_authoring *scene, const char *text, cons
 
 int app_scene_authoring_load(app_scene_authoring *scene, const char *path)
 {
-    if (!scene || !path) {
-        return -1;
-    }
+    if (!scene || !path) { return -1; }
     char *json = read_scene_file(path);
     if (!json) {
         snprintf(scene->message, sizeof scene->message, "Could not read %s.", path);
@@ -914,14 +855,10 @@ int app_scene_authoring_load(app_scene_authoring *scene, const char *path)
 }
 
 const char *app_scene_authoring_message(const app_scene_authoring *scene)
-{
-    return scene ? scene->message : NULL;
-}
+{ return scene ? scene->message : NULL; }
 
 void scene_notice(app_scene_authoring *scene)
-{
-    snprintf(scene->notice, sizeof scene->notice, "%s", scene->message);
-}
+{ snprintf(scene->notice, sizeof scene->notice, "%s", scene->message); }
 
 app_editor_document_context app_scene_authoring_document(const app_scene_authoring *scene)
 {

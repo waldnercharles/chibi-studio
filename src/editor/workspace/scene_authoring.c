@@ -28,12 +28,14 @@
 #include "runtime/behaviors/entities.h"
 #include "runtime/component_catalog.h"
 #include "runtime/declared_components.h"
+#include "support/arena.h"
 #include "support/array.h"
 #include "support/asset_document.h"
 #include "support/asset_json.h"
 #include "support/text_file.h"
 #include "support/xalloc.h"
 #include "types/array.h"
+#include "types/text.h"
 #include "types/type.h"
 #include "types/value_document.h"
 #include "types/value_format.h"
@@ -69,9 +71,7 @@ EM_JS(int, web_save_asset, (const char *path, const char *text), {
 int write_file_atomic(const char *path, const char *text)
 {
 #ifdef __EMSCRIPTEN__
-    if (web_save_asset(path, text)) {
-        return -1;
-    }
+    if (web_save_asset(path, text)) { return -1; }
 #endif
     size_t size = strlen(path) + 5;
     char *temporary = (char *)xmalloc(size);
@@ -82,15 +82,9 @@ int write_file_atomic(const char *path, const char *text)
         return -1;
     }
     int result = fputs(text, file) < 0;
-    if (fclose(file) != 0) {
-        result = -1;
-    }
-    if (!result && rename(temporary, path) != 0) {
-        result = -1;
-    }
-    if (result) {
-        remove(temporary);
-    }
+    if (fclose(file) != 0) { result = -1; }
+    if (!result && rename(temporary, path) != 0) { result = -1; }
+    if (result) { remove(temporary); }
     free(temporary);
     return result;
 }
@@ -99,18 +93,14 @@ static int write_asset_file(const char *path, const char *text)
 {
     char error[192];
     char *source = asset_document_to_disk(text, error, sizeof error);
-    if (!source) {
-        return -1;
-    }
+    if (!source) { return -1; }
     int result = write_file_atomic(path, source);
     free(source);
     return result;
 }
 
 int write_text_file_atomic(const char *path, const char *text)
-{
-    return write_asset_file(path, text);
-}
+{ return write_asset_file(path, text); }
 
 #ifdef __EMSCRIPTEN__
 EM_JS(int, web_delete_asset, (const char *path), {
@@ -122,9 +112,7 @@ EM_JS(int, web_delete_asset, (const char *path), {
 
 int remove_content_file(const char *path)
 {
-    if (remove(path) != 0) {
-        return -1;
-    }
+    if (remove(path) != 0) { return -1; }
 #ifdef __EMSCRIPTEN__
     return web_delete_asset(path);
 #else
@@ -167,9 +155,7 @@ behavior_asset *scene_graph_source_path(
         return view ? authoring_source_presentation_take_view(view) : NULL;
     }
     behavior_asset *asset = behavior_asset_load(text);
-    if (!asset) {
-        snprintf(error, size, "%s", graph_last_error());
-    }
+    if (!asset) { snprintf(error, size, "%s", graph_last_error()); }
     return asset;
 }
 
@@ -187,9 +173,7 @@ authoring_source_presentation *scene_source_projection_path(
     }
     source_catalog_edit edit = { .path = path, .text = text };
     authoring_sources *sources = preview_sources_candidate(scene->live, &edit, 1, false, error, size);
-    if (!sources) {
-        return NULL;
-    }
+    if (!sources) { return NULL; }
     const authoring_source *source = NULL;
     for (int i = 0; i < authoring_sources_count(sources); i++) {
         const authoring_source *candidate = authoring_sources_at(sources, i);
@@ -252,9 +236,7 @@ int save_content_file(app_scene_authoring *scene, const char *path, const char *
     }
     int result = write_asset_file(path, text);
     free(updated);
-    if (!result) {
-        scene_disk_note(scene, path);
-    }
+    if (!result) { scene_disk_note(scene, path); }
     return result;
 }
 
@@ -322,13 +304,9 @@ static void refresh_prototype_choices(app_scene_authoring *scene)
             scene->prototypes[i].prototype->name
         );
     }
-    if (unchanged) {
-        return;
-    }
+    if (unchanged) { return; }
     free_prototype_choices(scene);
-    if (!count) {
-        return;
-    }
+    if (!count) { return; }
     editor_choice *choices = xmalloc((size_t)count * sizeof *choices);
     for (int i = 0; i < count; i++) {
         const char *name = xstrdup(scene->prototypes[i].prototype->name);
@@ -356,13 +334,9 @@ static void refresh_global_choices(app_scene_authoring *scene)
         const char *name = entities_global_name_at(entities, i);
         unchanged = name && !strcmp(scene->global_choices.items[i].name, name);
     }
-    if (unchanged) {
-        return;
-    }
+    if (unchanged) { return; }
     free_global_choices(scene);
-    if (!count) {
-        return;
-    }
+    if (!count) { return; }
     editor_choice *choices = xmalloc((size_t)count * sizeof *choices);
     for (int i = 0; i < count; i++) {
         const char *name = entities_global_name_at(entities, i);
@@ -383,9 +357,7 @@ static bool format_entity_value(const pin_value *value, uint64_t owner, char *bu
         snprintf(buf, cap, "None");
         return true;
     }
-    if (!owner) {
-        return false;
-    }
+    if (!owner) { return false; }
     app_scene_authoring *scene = user;
     ecs_world *world = scene->debug_target == APP_RUNTIME_PREVIEW
                          ? prototype_preview_world(scene->prototype_preview)
@@ -464,14 +436,10 @@ static bool content_image_path(const char *path)
 static void content_scan_directory(app_scene_authoring *scene, const char *path)
 {
     DIR *directory = opendir(path);
-    if (!directory) {
-        return;
-    }
+    if (!directory) { return; }
     struct dirent *entry;
     while ((entry = readdir(directory))) {
-        if (entry->d_name[0] == '.') {
-            continue;
-        }
+        if (entry->d_name[0] == '.') { continue; }
         char *child = content_path_join(path, entry->d_name);
         struct stat info;
         if (lstat(child, &info) != 0) {
@@ -485,9 +453,7 @@ static void content_scan_directory(app_scene_authoring *scene, const char *path)
                                     .directory = is_directory,
                                     .image = !is_directory && content_image_path(child) })
         );
-        if (is_directory) {
-            content_scan_directory(scene, child);
-        }
+        if (is_directory) { content_scan_directory(scene, child); }
     }
     closedir(directory);
 }
@@ -623,9 +589,7 @@ bool content_refresh(app_scene_authoring *scene)
         }
         refreshed = relationships && prototypes;
     }
-    if (!acount(scene->content)) {
-        return refreshed;
-    }
+    if (!acount(scene->content)) { return refreshed; }
     editor_choice *images = xmalloc((size_t)acount(scene->content) * sizeof *images);
     for (int i = 0; i < acount(scene->content); i++) {
         const scene_content_entry *entry = &scene->content[i];
@@ -642,9 +606,7 @@ bool content_refresh(app_scene_authoring *scene)
 
 void asset_index_invalidate(app_scene_authoring *scene)
 {
-    if (scene) {
-        scene->asset_index_generation++;
-    }
+    if (scene) { scene->asset_index_generation++; }
 }
 
 const char *content_basename(const char *path)
@@ -727,9 +689,7 @@ scene_prototype_asset *prototype_at(app_scene_authoring *scene, int index)
 
 scene_prototype_asset *find_prototype(app_scene_authoring *scene, const char *name)
 {
-    if (!scene || !name) {
-        return NULL;
-    }
+    if (!scene || !name) { return NULL; }
     for (int i = 0; i < acount(scene->prototypes); i++) {
         if (strcmp(scene->prototypes[i].prototype->name, name) == 0) {
             return &scene->prototypes[i];
@@ -739,15 +699,11 @@ scene_prototype_asset *find_prototype(app_scene_authoring *scene, const char *na
 }
 
 scene_prototype_asset *selected_prototype(app_scene_authoring *scene)
-{
-    return prototype_at(scene, scene ? scene->selected_prototype : -1);
-}
+{ return prototype_at(scene, scene ? scene->selected_prototype : -1); }
 
 scene_prototype_asset *previewed_prototype(app_scene_authoring *scene)
 {
-    if (!scene->preview_prototype_id) {
-        return NULL;
-    }
+    if (!scene->preview_prototype_id) { return NULL; }
     for (int i = 0; i < acount(scene->prototypes); i++) {
         scene_prototype_asset *asset = &scene->prototypes[i];
         if (strcmp(prototype_identity(asset->prototype), scene->preview_prototype_id) ==
@@ -772,15 +728,11 @@ void clear_prototype_history(scene_prototype_asset *asset)
 
 void prototype_history_before(app_scene_authoring *scene, prototype *prototype)
 {
-    if (!collab_record_history()) {
-        return;
-    }
+    if (!collab_record_history()) { return; }
     scene_prototype_asset *asset = find_prototype(scene, prototype->name);
     assert(asset && asset->prototype == prototype);
     av_value *value = prototype_to_value(prototype);
-    if (value) {
-        apush(asset->undo, value);
-    }
+    if (value) { apush(asset->undo, value); }
     for (int i = 0; i < acount(asset->redo); i++) {
         av_value_free(asset->redo[i]);
     }
@@ -841,15 +793,11 @@ static int behavior_prototype_index(app_scene_authoring *scene, const char *asse
 }
 
 void set_behavior_component_context(app_scene_authoring *scene, const char *asset_name)
-{
-    scene->selected_prototype = behavior_prototype_index(scene, asset_name);
-}
+{ scene->selected_prototype = behavior_prototype_index(scene, asset_name); }
 
 static int selected_behavior_attachment(app_scene_authoring *scene, scene_debug_attachment *out)
 {
-    if (!scene->definition || !scene->definition->name || !out) {
-        return 0;
-    }
+    if (!scene->definition || !scene->definition->name || !out) { return 0; }
     source_registry *behaviors = scene->live->runtime->sources;
     ecs_entity entity;
     if (scene->active_runtime_target == APP_RUNTIME_PREVIEW) {
@@ -857,9 +805,7 @@ static int selected_behavior_attachment(app_scene_authoring *scene, scene_debug_
         entity = prototype_preview_entity(scene->prototype_preview);
     } else {
         entity = selected_scene_entity(scene);
-        if (!entity.slot) {
-            return 0;
-        }
+        if (!entity.slot) { return 0; }
     }
     int count = scene_debug_attachment_count_for_entity(behaviors, entity);
     for (int i = 0; i < count; i++) {
@@ -887,9 +833,7 @@ static int selected_behavior_attachment(app_scene_authoring *scene, scene_debug_
 
 void select_prototype(app_scene_authoring *scene, int index)
 {
-    if (index < 0 || index >= acount(scene->prototypes)) {
-        return;
-    }
+    if (index < 0 || index >= acount(scene->prototypes)) { return; }
     scene->selected_prototype = index;
     snprintf(
         scene->prototype_message,
@@ -901,9 +845,7 @@ void select_prototype(app_scene_authoring *scene, int index)
 
 static void open_prototype(app_scene_authoring *scene, int index)
 {
-    if (index < 0 || index >= acount(scene->prototypes)) {
-        return;
-    }
+    if (index < 0 || index >= acount(scene->prototypes)) { return; }
     select_prototype(scene, index);
     scene_authoring_select_document(
         scene,
@@ -915,9 +857,7 @@ static void open_prototype(app_scene_authoring *scene, int index)
 int app_scene_authoring_open_prototype(app_scene_authoring *scene, const char *name)
 {
     scene_prototype_asset *asset = find_prototype(scene, name);
-    if (!asset) {
-        return -1;
-    }
+    if (!asset) { return -1; }
     yyjson_mut_doc *doc = NULL;
     yyjson_mut_val *root = scene_action_root(scene, "tab.open_prototype", &doc);
     yyjson_mut_obj_add_strcpy(doc, root, "prototype", name);
@@ -948,9 +888,7 @@ int app_scene_authoring_open_prototype(app_scene_authoring *scene, const char *n
 
 void select_instance(app_scene_authoring *scene, int actor_index)
 {
-    if (actor_index < 0 || actor_index >= acount(scene->actors)) {
-        return;
-    }
+    if (actor_index < 0 || actor_index >= acount(scene->actors)) { return; }
     if (scene->selected != actor_index) {
         finish_transform_edit(scene, scene->dragging_actor);
     }
@@ -965,9 +903,7 @@ void select_instance(app_scene_authoring *scene, int actor_index)
 }
 
 bool scene_instance_selected(const app_scene_authoring *scene, int index)
-{
-    return scene->actors[index].marked || index == scene->selected;
-}
+{ return scene->actors[index].marked || index == scene->selected; }
 
 int scene_selection_count(const app_scene_authoring *scene)
 {
@@ -983,9 +919,7 @@ void scene_toggle_instance(app_scene_authoring *scene, int index)
     assert(index >= 0 && index < acount(scene->actors));
     finish_transform_edit(scene, false);
     scene->runtime_selected = (ecs_entity){ 0 };
-    if (scene->selected >= 0) {
-        scene->actors[scene->selected].marked = true;
-    }
+    if (scene->selected >= 0) { scene->actors[scene->selected].marked = true; }
     bool selected = !scene->actors[index].marked;
     scene->actors[index].marked = selected;
     if (selected) {
@@ -1041,9 +975,7 @@ int app_scene_authoring_select_entity(app_scene_authoring *scene, ecs_entity ent
             return 0;
         }
     }
-    if (!entities_owns(scene->live->runtime->entities, entity)) {
-        return -1;
-    }
+    if (!entities_owns(scene->live->runtime->entities, entity)) { return -1; }
     select_spawned(scene, entity);
     if (scene->document.kind != APP_EDITOR_DOCUMENT_BEHAVIOR) {
         scene_authoring_select_document(scene, APP_EDITOR_DOCUMENT_SCENE, APP_SCENE_DOCUMENT_ID);
@@ -1059,15 +991,11 @@ bool scene_can_move(const app_scene_authoring *scene)
 }
 
 bool scene_editing(const app_scene_authoring *scene)
-{
-    return scene_can_move(scene) && !scene->runtime_snapshot_valid;
-}
+{ return scene_can_move(scene) && !scene->runtime_snapshot_valid; }
 
 void write_position(app_scene_authoring *scene, ecs_entity entity, Transform position)
 {
-    if (!isfinite(position.x) || !isfinite(position.y)) {
-        return;
-    }
+    if (!isfinite(position.x) || !isfinite(position.y)) { return; }
     ecs_component_write_field(
         scene->world,
         entity,
@@ -1086,9 +1014,7 @@ void write_position(app_scene_authoring *scene, ecs_entity entity, Transform pos
 
 bool editable_scalar(const pin_value *value)
 {
-    if (value->container != PIN_CONTAINER_SINGLE) {
-        return false;
-    }
+    if (value->container != PIN_CONTAINER_SINGLE) { return false; }
     switch (value->type) {
         case PIN_BOOL:
         case PIN_I8:
@@ -1116,12 +1042,21 @@ bool scene_property_value_copy(pin_value *out, pin_value value)
 {
     assert(out);
     *out = (pin_value){ 0 };
-    if (value.container != PIN_CONTAINER_SINGLE) {
-        return false;
-    }
+    if (value.container != PIN_CONTAINER_SINGLE) { return false; }
     *out = value;
     out->type_name = value.type_name ? xstrdup(value.type_name) : NULL;
-    if (value.type == PIN_STR || value.type == PIN_NAME) {
+    if (value.type == PIN_STR) {
+        pin_string text = pin_text(value);
+        pin_value copy = { 0 };
+        if (pin_value_text(NULL, &copy, text.bytes, text.length)) {
+            free((void *)out->type_name);
+            *out = (pin_value){ 0 };
+            return false;
+        }
+        out->text = copy.text;
+        return true;
+    }
+    if (value.type == PIN_NAME) {
         out->str = xstrdup(value.str ? value.str : "");
         return true;
     }
@@ -1142,12 +1077,9 @@ void scene_property_value_free(pin_value *value)
 {
     assert(value);
     free((void *)value->type_name);
-    if (value->type == PIN_STR || value->type == PIN_NAME) {
-        free((void *)value->str);
-    }
-    if (value->type == PIN_STRUCT) {
-        free(value->ptr);
-    }
+    if (value->type == PIN_STR) { free((void *)value->text); }
+    if (value->type == PIN_NAME) { free((void *)value->str); }
+    if (value->type == PIN_STRUCT) { free(value->ptr); }
     *value = (pin_value){ 0 };
 }
 
@@ -1220,9 +1152,7 @@ static void commit_property_edit(app_scene_authoring *scene)
     if (!recorded && scene_collab_can_write_locally()) {
         scene->scene_dirty = scene->property_dirty;
     }
-    if (action) {
-        scene_action_finish(scene, action, success);
-    }
+    if (action) { scene_action_finish(scene, action, success); }
     free(action);
     scene_property_value_free(&edit->before);
     scene_property_value_free(&edit->after);
@@ -1238,9 +1168,11 @@ static void commit_property_others(
     int field
 )
 {
+    arena storage = { 0 };
     for (int i = 0; i < acount(others); i++) {
+        arena_reset(&storage);
         pin_value after = { 0 };
-        if (ecs_component_read_field(scene->world, others[i].entity, component, field, &after) ==
+        if (ecs_component_read_field(&storage, scene->world, others[i].entity, component, field, &after) ==
                 ECS_OK &&
             !pin_value_equal(&others[i].before, &after)) {
             scene->property_actor = others[i].entity;
@@ -1258,25 +1190,20 @@ static void commit_property_others(
         }
         scene_property_value_free(&others[i].before);
     }
+    arena_free(&storage);
 }
 
 void finish_property_edit(app_scene_authoring *scene)
 {
-    if (!scene->property_actor.slot) {
-        return;
-    }
+    if (!scene->property_actor.slot) { return; }
     scene_field_target *others = scene->property_others;
     scene->property_others = NULL;
     ecs_component_id component = scene->property_edit.component;
     int field = scene->property_edit.field;
-    if (acount(others)) {
-        scene_history_begin_group(scene->history);
-    }
+    if (acount(others)) { scene_history_begin_group(scene->history); }
     commit_property_edit(scene);
     commit_property_others(scene, others, component, field);
-    if (acount(others)) {
-        scene_history_end_group(scene->history);
-    }
+    if (acount(others)) { scene_history_end_group(scene->history); }
     afree(others);
 }
 
@@ -1320,9 +1247,7 @@ void finish_transform_edit(app_scene_authoring *scene, bool cancel)
 {
     finish_property_edit(scene);
     scene_gizmo_finish(scene, cancel);
-    if (!scene->edit_actor.slot) {
-        return;
-    }
+    if (!scene->edit_actor.slot) { return; }
     if (scene->runtime_snapshot_valid) {
         finish_live_move(scene, cancel);
         return;
@@ -1366,9 +1291,7 @@ void finish_transform_edit(app_scene_authoring *scene, bool cancel)
         }
         bool success = gate != COLLAB_ACTION_REJECT &&
                        (recorded || !collab_record_history() || editor);
-        if (action) {
-            scene_action_finish(scene, action, success);
-        }
+        if (action) { scene_action_finish(scene, action, success); }
         free(action);
         if (!success && scene_collab_can_write_locally()) {
             scene->scene_dirty = scene->edit_dirty;
@@ -1608,9 +1531,7 @@ static bool source_breakpoint_enabled(const authoring_source_presentation *view,
     const behavior_asset *asset = authoring_source_presentation_view(view);
     for (int i = 0; i < authoring_source_presentation_origin_count(view); i++) {
         const source_presentation_origin *origin = authoring_source_presentation_origin_at(view, i);
-        if (origin->pin || origin->node_occurrence != occurrence) {
-            continue;
-        }
+        if (origin->pin || origin->node_occurrence != occurrence) { continue; }
         const graph *g = behavior_asset_find_graph(asset, origin->graph);
         const node *n = g ? graph_node_by_id(g, origin->node) : NULL;
         if (n && n->breakpoint && node_behavior_for(n) != NODE_BEHAVIOR_PURE) {
@@ -1623,9 +1544,7 @@ static bool source_breakpoint_enabled(const authoring_source_presentation *view,
 static void sync_source_breakpoints(app_scene_authoring *scene)
 {
     const authoring_source_presentation *view = editor_presentation(scene->graph_editor);
-    if (!view) {
-        return;
-    }
+    if (!view) { return; }
     const behavior_asset *asset = authoring_source_presentation_view(view);
     bool enabled = false;
     for (int i = 0; i < acount(asset->graphs); i++) {
@@ -1646,32 +1565,22 @@ static void sync_source_breakpoints(app_scene_authoring *scene)
             break;
         }
     }
-    if (!compiled) {
-        return;
-    }
+    if (!compiled) { return; }
     for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
         const authoring_source *source = authoring_sources_at(sources, i);
         execution_program *program = source_program(
             debug_behaviors(scene, scene->active_runtime_target),
             source->analysis->name
         );
-        if (!program) {
-            continue;
-        }
+        if (!program) { continue; }
         execution_inspector *inspector = execution_program_inspection(program);
         bool retained = !inspector && enabled;
-        if (retained) {
-            inspector = execution_program_inspector(program);
-        }
-        if (!inspector) {
-            continue;
-        }
+        if (retained) { inspector = execution_program_inspector(program); }
+        if (!inspector) { continue; }
         for (int j = 0; j < authoring_source_presentation_origin_count(view); j++) {
             const source_presentation_origin
                 *origin = authoring_source_presentation_origin_at(view, j);
-            if (origin->pin || !origin->node_occurrence) {
-                continue;
-            }
+            if (origin->pin || !origin->node_occurrence) { continue; }
             const graph *g = behavior_asset_find_graph(asset, origin->graph);
             const node *n = g ? graph_node_by_id(g, origin->node) : NULL;
             if (n && node_behavior_for(n) != NODE_BEHAVIOR_PURE) {
@@ -1683,9 +1592,7 @@ static void sync_source_breakpoints(app_scene_authoring *scene)
                 );
             }
         }
-        if (retained) {
-            execution_inspector_free(inspector);
-        }
+        if (retained) { execution_inspector_free(inspector); }
     }
 }
 
@@ -1703,9 +1610,7 @@ static void stop_source_recording(app_scene_authoring *scene, app_runtime_target
         execution_inspector *inspector = program
                                            ? execution_program_inspection(program)
                                            : NULL;
-        if (inspector) {
-            execution_inspector_recording(inspector, false, 0);
-        }
+        if (inspector) { execution_inspector_recording(inspector, false, 0); }
     }
 }
 
@@ -1790,9 +1695,7 @@ int app_scene_authoring_choose_debug_target(app_scene_authoring *scene, ecs_enti
             preview_definition_path(scene->definition),
             true
         );
-        if (!source || !source->module) {
-            return -1;
-        }
+        if (!source || !source->module) { return -1; }
         info.module = source->module;
     }
     stop_following_newest(scene);
@@ -1815,9 +1718,7 @@ void app_scene_authoring_follow_newest(app_scene_authoring *scene, const char *p
 }
 
 void app_scene_authoring_set_debug_hidden(app_scene_authoring *scene, bool hidden)
-{
-    scene->debug_hidden = hidden;
-}
+{ scene->debug_hidden = hidden; }
 
 int app_scene_authoring_set_debug_target(
     app_scene_authoring *scene,
@@ -1961,9 +1862,7 @@ app_scene_authoring *app_scene_authoring_new_with_content_root(
     editor_choice *type_choices = NULL;
     for (int i = 0; i < registry_node_count(); i++) {
         const node_desc *make = registry_node(i);
-        if (make->pure_kind != NODE_PURE_MAKE || !make->type) {
-            continue;
-        }
+        if (make->pure_kind != NODE_PURE_MAKE || !make->type) { continue; }
         char label[128];
         editor_component_label(make->type->name, label, sizeof label);
         apush(
@@ -2014,9 +1913,7 @@ app_scene_authoring *app_scene_authoring_new(
 
 void app_scene_authoring_set_editor_working(app_scene_authoring *scene, const behavior_asset *editor_working)
 {
-    if (scene && editor_working) {
-        scene->editor_working = editor_working;
-    }
+    if (scene && editor_working) { scene->editor_working = editor_working; }
 }
 
 static void queue_behavior_apply(app_scene_authoring *scene)
@@ -2027,16 +1924,12 @@ static void queue_behavior_apply(app_scene_authoring *scene)
                    scene->editor_definition_seen != scene->definition ||
                    scene->editor_behavior_asset_seen != scene->editor_working ||
                    scene->editor_revision_seen != revision;
-    if (!changed && !editor_has_pending_edits(scene->graph_editor)) {
-        return;
-    }
+    if (!changed && !editor_has_pending_edits(scene->graph_editor)) { return; }
     scene->editor_state_seen = true;
     scene->editor_definition_seen = scene->definition;
     scene->editor_behavior_asset_seen = scene->editor_working;
     scene->editor_revision_seen = revision;
-    if (changed) {
-        asset_index_invalidate(scene);
-    }
+    if (changed) { asset_index_invalidate(scene); }
     scene->behavior_apply_pending = true;
 }
 
@@ -2061,14 +1954,14 @@ int sync_behavior_working(app_scene_authoring *scene)
             scene->editor_revision_seen == editor_edit_revision(scene->graph_editor)) {
             return 0;
         }
-        assert(scene->definition->registered && scene->definition->path &&
-               scene->definition->path[0]);
+        assert(
+            scene->definition->registered && scene->definition->path &&
+            scene->definition->path[0]
+        );
         authoring_source_presentation *copy = authoring_source_presentation_clone(presentation);
         int result = preview_projection_set(scene->definition, copy, false);
         authoring_source_presentation_free(copy);
-        if (result) {
-            return result;
-        }
+        if (result) { return result; }
         const authoring_source
             *working = preview_source_find(scene->live, scene->definition->path, false);
         const authoring_source
@@ -2087,9 +1980,7 @@ int sync_behavior_working(app_scene_authoring *scene)
         return 0;
     }
     queue_behavior_apply(scene);
-    if (!scene->behavior_apply_pending) {
-        return 0;
-    }
+    if (!scene->behavior_apply_pending) { return 0; }
     if (!scene->definition || !scene->editor_working ||
         preview_sync_working(scene->definition, scene->editor_working) != 0) {
         snprintf(scene->message, sizeof scene->message, "Could not synchronize behavior graph.");
@@ -2113,9 +2004,7 @@ static int apply_behavior_definition(app_scene_authoring *scene, preview_definit
             sizeof scene->message
         );
         free(path);
-        if (!result) {
-            editor_set_inspector(scene->graph_editor, NULL, 0);
-        }
+        if (!result) { editor_set_inspector(scene->graph_editor, NULL, 0); }
         return result;
     }
     int dirty = definition->dirty;
@@ -2145,14 +2034,10 @@ void preview_behavior_edits(app_scene_authoring *scene)
     }
     queue_behavior_apply(scene);
     if (scene->behavior_apply_pending) {
-        if (sync_behavior_working(scene) != 0) {
-            return;
-        }
+        if (sync_behavior_working(scene) != 0) { return; }
         scene->preview_retry = true;
     }
-    if (!scene->preview_retry) {
-        return;
-    }
+    if (!scene->preview_retry) { return; }
     if (scene->definition->working_presentation) {
         if (preview_sources_working(scene->live) ==
             preview_sources_applied(scene->live)) {
@@ -2224,17 +2109,13 @@ void preview_behavior_edits(app_scene_authoring *scene)
 
 int app_scene_authoring_apply_pending(app_scene_authoring *scene)
 {
-    if (!scene) {
-        return -1;
-    }
+    if (!scene) { return -1; }
     /* Scratch presentations have no project document or executable publication. */
     if (!scene->graph_document_id ||
         scene->graph_document_kind != APP_EDITOR_DOCUMENT_BEHAVIOR) {
         return 0;
     }
-    if (sync_behavior_working(scene) != 0 || !scene->definition) {
-        return -1;
-    }
+    if (sync_behavior_working(scene) != 0 || !scene->definition) { return -1; }
     if (scene->definition->working_presentation) {
         int result = apply_behavior_definition(scene, scene->definition);
         sync_editor_inspection(scene);
@@ -2249,9 +2130,7 @@ int app_scene_authoring_apply_pending(app_scene_authoring *scene)
             scene->preview_message,
             sizeof scene->preview_message
         );
-        if (ready != 0) {
-            return ready;
-        }
+        if (ready != 0) { return ready; }
     }
     int result = scene->definition->dirty
                    ? apply_behavior_definition(scene, scene->definition)
@@ -2272,9 +2151,7 @@ int app_scene_authoring_apply_pending(app_scene_authoring *scene)
 
 int app_scene_authoring_set_content_root(app_scene_authoring *scene, const char *path)
 {
-    if (!scene || !path || !path[0]) {
-        return -1;
-    }
+    if (!scene || !path || !path[0]) { return -1; }
     char *copy = xstrdup(path);
     free(scene->content_root);
     scene->content_root = copy;
@@ -2283,15 +2160,11 @@ int app_scene_authoring_set_content_root(app_scene_authoring *scene, const char 
 }
 
 bool app_scene_authoring_refresh_content(app_scene_authoring *scene)
-{
-    return scene && content_refresh(scene);
-}
+{ return scene && content_refresh(scene); }
 
 void app_scene_authoring_free(app_scene_authoring *scene)
 {
-    if (!scene) {
-        return;
-    }
+    if (!scene) { return; }
     scene_source_input_free(scene);
     scene_kept_clear(scene);
     scene_field_previews_clear(scene);
@@ -2380,9 +2253,7 @@ void app_scene_authoring_free(app_scene_authoring *scene)
 static int open_library_source(void *user, const char *name, uint64_t graph_id)
 {
     app_scene_authoring *scene = user;
-    if (open_behavior_asset(scene, name) != 0) {
-        return -1;
-    }
+    if (open_behavior_asset(scene, name) != 0) { return -1; }
     return editor_open_graph(scene->graph_editor, graph_id);
 }
 

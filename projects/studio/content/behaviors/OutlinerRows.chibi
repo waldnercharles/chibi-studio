@@ -4,31 +4,31 @@
 // view.
 OutlinerRows :: behavior {
     // Window
-    First: int = 0
-    Count: int = 0
+    WindowFirst: retain int = 0
+    WindowCount: retain int = 0
     // View
-    Collapsed := false
-    ShownOpen := true
-    action scene_objects_action = scene_objects(convert<To_Integer>(max_First_1_0(First)), convert<To_Integer>(Count_1_step_1_First(Count, First)))
+    Collapsed: retain bool = false
+    ShownOpen: retain bool = true
+    action scene_objects_action = scene_objects(convert<To_Integer>(max_First_1_0(WindowFirst)), convert<To_Integer>(Count_1_step_1_First(WindowCount, WindowFirst)))
     action branch_3 = branch_if(convert<To_Real>(scene_objects_action.Shown) > 0)
-    on Begin {
-        await set_ui_data(0, "root.icon", string(""))
-        await set_ui_data(0, "root.parent", bool(true))
-        set_ui_data(0, "root.depth", integer(0))
+    on Begin :: () {
+        await set_ui_data(0, "root.icon", "")
+        await set_ui_data(0, "root.parent", true)
+        set_ui_data(0, "root.depth", 0)
     }
     // The List's window, in list rows: the scene's root is row 0, so objects
     // start at First - 1.
-    on ShowRows {
-        state.First = event.First
-        state.Count = event.Count
+    on ShowRows :: (First: int, Count: int) {
+        WindowFirst = First
+        WindowCount = Count
     }
     // Each UI refresh, after the panel's events: Set UI Data changes nothing
     // when a value is the same.
-    on Refresh {
+    on Refresh :: () {
         scene_objects_action()
     }
     after scene_objects_action {
-        await set_ui_data(0, "rootShown", double(First) == 0)
+        await set_ui_data(0, "rootShown", WindowFirst == 0)
         Shown := scene_objects_action.Shown
         await set_ui_data(0, "count", Shown)
         await set_ui_data(0, "root.label", scene_info().Title)
@@ -36,7 +36,7 @@ OutlinerRows :: behavior {
         ShownOpen = !Collapsed
         if Collapsed {
             await set_ui_data(0, "rows", clear(scene_objects_action.Rows))
-            await set_ui_data(0, "total", integer(1))
+            await set_ui_data(0, "total", 1)
             branch_3()
         } else {
             await set_ui_data(0, "rows", scene_objects_action.Rows)
@@ -45,40 +45,40 @@ OutlinerRows :: behavior {
         }
     }
     after branch_3.True {
-        await set_ui_data(0, "filtered", bool(false))
-        set_ui_data(0, "notice", string(""))
+        await set_ui_data(0, "filtered", false)
+        set_ui_data(0, "notice", "")
     }
     after branch_3.False {
         if text_equal(scene_info().Filter, "") {
-            await set_ui_data(0, "filtered", bool(false))
-            set_ui_data(0, "notice", string("No objects. Add a prototype to start."))
+            await set_ui_data(0, "filtered", false)
+            set_ui_data(0, "notice", "No objects. Add a prototype to start.")
         } else {
-            await set_ui_data(0, "filtered", bool(true))
+            await set_ui_data(0, "filtered", true)
             set_ui_data(0, "notice", format_text("No objects match “{}”", scene_info().Filter))
         }
     }
-    on FoldRoot {
+    on FoldRoot :: () {
         Collapsed = true
     }
-    on UnfoldRoot {
+    on UnfoldRoot :: () {
         Collapsed = false
     }
-    on ToggleRoot {
+    on ToggleRoot :: () {
         Collapsed = !Collapsed
     }
-    on RootClicked {
+    on RootClicked :: (Open: bool) {
         // Only a click on the twisty flips the state the row sends; a click
         // elsewhere on the root sends the one shown.
-        if (event.Open && !ShownOpen) || (!event.Open && ShownOpen) {
-            Collapsed = !event.Open
+        if (Open && !ShownOpen) || (!Open && ShownOpen) {
+            Collapsed = !Open
         }
     }
     // Studio pings an object after Up, Down, a Find jump or F2: unfold, then
     // scroll its row (list row + 1) into view.
-    on RevealObject {
+    on RevealObject :: (Object: string) {
         Collapsed = false
-        if convert<To_Real>(object_row(event.Object)) >= 0 {
-            reveal_ui_list_row(0, "#outliner-list", convert<To_Integer>(Row_1(object_row(event.Object))))
+        if convert<To_Real>(object_row(Object)) >= 0 {
+            reveal_ui_list_row(0, "#outliner-list", convert<To_Integer>(Row_1(object_row(Object))))
         }
     }
     max_First_1_0 :: (First: int = 0) -> (Result: double = 0.0) {

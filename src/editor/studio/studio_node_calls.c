@@ -4,9 +4,11 @@
  * click on a row removed meanwhile does nothing. */
 #include "editor/studio/studio_internal.h"
 #include "editor/studio/studio_nodes.h"
-#include "types/array.h"
 #include "support/array.h"
+#include "types/array.h"
+#include "types/text.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,27 +25,24 @@ static const char *copy_text(arena *storage, const char *text)
 
 static pin_value text_value(arena *storage, const char *text)
 {
-    return (pin_value){ .type = PIN_STR,
-                        .type_name = "const char *",
-                        .str = copy_text(storage, text) };
+    pin_value value;
+    const char *error = pin_value_text(storage, &value, text, strlen(text));
+    assert(!error);
+    (void)error;
+    value.type_name = "const char *";
+    return value;
 }
 
 static pin_value int_value(int i)
-{
-    return (pin_value){ .type = PIN_I32, .type_name = "int", .i = i };
-}
+{ return (pin_value){ .type = PIN_I32, .type_name = "int", .i = i }; }
 
 static pin_value bool_value(bool b)
-{
-    return (pin_value){ .type = PIN_BOOL, .type_name = "bool", .b = b };
-}
+{ return (pin_value){ .type = PIN_BOOL, .type_name = "bool", .b = b }; }
 
 static const char *glyph_text(arena *storage, uint32_t icon)
 {
     char glyph[5] = "";
-    if (icon) {
-        studio_glyph(glyph, icon);
-    }
+    if (icon) { studio_glyph(glyph, icon); }
     return copy_text(storage, glyph);
 }
 
@@ -60,9 +59,7 @@ static void key_of(char out[24], const scene_actor *actor)
 static int row_in(const int *rows, int index)
 {
     for (int r = 0; index >= 0 && r < acount(rows); r++) {
-        if (rows[r] == index) {
-            return r;
-        }
+        if (rows[r] == index) { return r; }
     }
     return -1;
 }
@@ -168,9 +165,7 @@ static void prototype_choices(studio *s, arena *storage, pin_value *out)
     pin_array *items = pin_array_snapshot_allocate(storage, PIN_STRUCT, STUDIO_CHOICE_TYPE, count);
     for (int i = 0, at = 0; i < acount(s->scene->prototypes); i++) {
         const prototype *prototype = s->scene->prototypes[i].prototype;
-        if (!prototype || !prototype->name) {
-            continue;
-        }
+        if (!prototype || !prototype->name) { continue; }
         studio_choice *choice = arena_alloc(storage, sizeof *choice);
         const char *name = copy_text(storage, prototype->name);
         *choice = (studio_choice){
@@ -191,15 +186,11 @@ static void prototype_choices(studio *s, arena *storage, pin_value *out)
 /* ---------- Revision ---------- */
 
 static uint64_t mix(uint64_t hash, uint64_t value)
-{
-    return (hash ^ value) * 1099511628211ull;
-}
+{ return (hash ^ value) * 1099511628211ull; }
 
 static uint64_t mix_text(uint64_t hash, const char *text)
 {
-    for (const char *c = text; *c; c++) {
-        hash = mix(hash, (unsigned char)*c);
-    }
+    for (const char *c = text; *c; c++) { hash = mix(hash, (unsigned char)*c); }
     return mix(hash, 0);
 }
 
@@ -246,9 +237,9 @@ uint64_t studio_nodes_stamp(const studio *s)
 /* Selects the object as a click on its row does: alone, Toggle in or out
    of the selection, or with Extend every object the object filter shows
    from the anchor through it. */
-static void select_object(studio *s, const pin_value *a)
+static void select_object(studio *s, const pin_value *a, const char *object)
 {
-    int index = studio_object_index(s, a[0].str);
+    int index = studio_object_index(s, object);
     int *rows = studio_outliner_rows(s), row = row_in(rows, index);
     if (row >= 0) {
         finish_transform_edit(s->scene, false);
@@ -265,29 +256,51 @@ static void select_object(studio *s, const pin_value *a)
     afree(rows);
 }
 
-static void set_view(studio *s, const pin_value *a, unsigned flag)
+static void set_view(studio *s, const pin_value *a, const char *object, unsigned flag)
 {
-    int index = studio_object_index(s, a[0].str);
-    if (index >= 0) {
-        studio_set_object_view(s, index, flag, a[1].b);
+    int index = studio_object_index(s, object);
+    if (index >= 0) { studio_set_object_view(s, index, flag, a[1].b); }
+}
+
+static void drop_on_object(studio *s, const char *const *text)
+{
+    int index = studio_object_index(s, text[0]);
+    if (index >= 0 && studio_editable(s)) {
+        studio_drop_on(s, index, text[1], text[2]);
     }
 }
 
-static void drop_on_object(studio *s, const pin_value *a)
+static int text_input_count(studio_node_op op)
 {
-    int index = studio_object_index(s, a[0].str);
-    if (index >= 0 && studio_editable(s) && a[1].str && a[2].str) {
-        studio_drop_on(s, index, a[1].str, a[2].str);
+    switch (op) {
+        case STUDIO_NODE_DROP_ON_OBJECT:
+        case STUDIO_NODE_MOVE_OBJECTS: return 3;
+        case STUDIO_NODE_RENAME_OBJECT: return 2;
+        case STUDIO_NODE_OBJECT_SELECTED:
+        case STUDIO_NODE_OBJECT_ROW:
+        case STUDIO_NODE_SPAWN_BREAK:
+        case STUDIO_NODE_SELECT_OBJECT:
+        case STUDIO_NODE_SET_HIDDEN:
+        case STUDIO_NODE_SET_LOCKED:
+        case STUDIO_NODE_ISOLATE:
+        case STUDIO_NODE_ADD_OBJECT:
+        case STUDIO_NODE_SET_FILTER:
+        case STUDIO_NODE_TOGGLE_SPAWN_BREAK: return 1;
+        default: return 0;
     }
-}
-
-static const char *text_of(const pin_value *v)
-{
-    return v->str ? v->str : "";
 }
 
 const char *studio_node_run(studio *s, studio_node_op op, const pin_value *in, arena *storage, pin_value *out)
 {
+    arena scratch = { 0 };
+    const char *text[3];
+    for (int i = 0; i < text_input_count(op); i++) {
+        const char *error = pin_text_cstring(&scratch, in[i], &text[i], NULL);
+        if (error) {
+            arena_free(&scratch);
+            return error;
+        }
+    }
     int index;
     switch (op) {
         case STUDIO_NODE_COUNT: return "Invalid Studio operation";
@@ -297,12 +310,12 @@ const char *studio_node_run(studio *s, studio_node_op op, const pin_value *in, a
         case STUDIO_NODE_SCENE_INFO: scene_info(s, storage, out); break;
         case STUDIO_NODE_SELECTION: selection(s, storage, out); break;
         case STUDIO_NODE_OBJECT_SELECTED:
-            index = studio_object_index(s, in[0].str);
+            index = studio_object_index(s, text[0]);
             out[0] = bool_value(index >= 0 && scene_instance_selected(s->scene, index));
             break;
         case STUDIO_NODE_OBJECT_ROW: {
             int *rows = studio_outliner_rows(s);
-            out[0] = int_value(row_in(rows, studio_object_index(s, in[0].str)));
+            out[0] = int_value(row_in(rows, studio_object_index(s, text[0])));
             afree(rows);
             break;
         }
@@ -314,49 +327,43 @@ const char *studio_node_run(studio *s, studio_node_op op, const pin_value *in, a
             break;
         case STUDIO_NODE_SPAWN_BREAK:
             out[0] = bool_value(
-                text_of(&in[0])[0] &&
-                app_scene_authoring_spawn_break(s->scene, in[0].str)
+                text[0][0] && app_scene_authoring_spawn_break(s->scene, text[0])
             );
             break;
         case STUDIO_NODE_PROTOTYPE_CHOICES:
             prototype_choices(s, storage, out);
             break;
-        case STUDIO_NODE_SELECT_OBJECT: select_object(s, in); break;
+        case STUDIO_NODE_SELECT_OBJECT: select_object(s, in, text[0]); break;
         case STUDIO_NODE_RENAME_OBJECT:
-            if (studio_object_index(s, in[0].str) >= 0) {
-                studio_rename_commit(s, strtoull(in[0].str, NULL, 10), text_of(&in[1]));
+            if (studio_object_index(s, text[0]) >= 0) {
+                studio_rename_commit(s, strtoull(text[0], NULL, 10), text[1]);
             }
             break;
         case STUDIO_NODE_END_RENAME: s->rename.entity = 0; break;
         case STUDIO_NODE_SET_HIDDEN:
-            set_view(s, in, APP_SCENE_VIEW_HIDDEN);
+            set_view(s, in, text[0], APP_SCENE_VIEW_HIDDEN);
             break;
         case STUDIO_NODE_SET_LOCKED:
-            set_view(s, in, APP_SCENE_VIEW_LOCKED);
+            set_view(s, in, text[0], APP_SCENE_VIEW_LOCKED);
             break;
         case STUDIO_NODE_ISOLATE:
-            index = studio_object_index(s, in[0].str);
-            if (index >= 0) {
-                studio_isolate(s, index);
-            }
+            index = studio_object_index(s, text[0]);
+            if (index >= 0) { studio_isolate(s, index); }
             break;
         case STUDIO_NODE_ADD_OBJECT:
-            if (text_of(&in[0])[0]) {
-                studio_add_object(s, in[0].str);
-            }
+            if (text[0][0]) { studio_add_object(s, text[0]); }
             break;
-        case STUDIO_NODE_DROP_ON_OBJECT: drop_on_object(s, in); break;
+        case STUDIO_NODE_DROP_ON_OBJECT: drop_on_object(s, text); break;
         case STUDIO_NODE_MOVE_OBJECTS:
-            studio_outliner_drop(s, text_of(&in[0]), text_of(&in[1]), text_of(&in[2]));
+            studio_outliner_drop(s, text[0], text[1], text[2]);
             break;
         case STUDIO_NODE_SET_FILTER:
-            snprintf(s->outliner_filter, sizeof s->outliner_filter, "%s", text_of(&in[0]));
+            snprintf(s->outliner_filter, sizeof s->outliner_filter, "%s", text[0]);
             break;
         case STUDIO_NODE_TOGGLE_SPAWN_BREAK:
-            if (text_of(&in[0])[0]) {
-                studio_toggle_spawn_break(s, in[0].str);
-            }
+            if (text[0][0]) { studio_toggle_spawn_break(s, text[0]); }
             break;
     }
+    arena_free(&scratch);
     return NULL;
 }

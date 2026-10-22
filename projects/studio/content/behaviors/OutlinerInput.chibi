@@ -6,52 +6,52 @@
 OutlinerInput :: behavior {
     menu_at: struct<CF_V2> = null
     action show_ui_popover_action = show_ui_popover(0, "#outliner-menu", menu_at)
-    on RowClicked {
-        select_object(event.Key, event.Mod, event.Shift)
+    on RowClicked :: (Key: string, Mod: bool, Shift: bool) {
+        select_object(Key, Mod, Shift)
     }
     // A right click keeps a selection it lands in (Unity), then opens the row
     // menu at the pointer.
-    on RowMenu as rowmenu {
-        menu_at = rowmenu.Pointer
-        if object_selected(rowmenu.Key) {
+    on RowMenu :: (Key: string, Pointer: struct<CF_V2>) {
+        menu_at = Pointer
+        if object_selected(Key) {
             show_ui_popover_action()
         } else {
-            await select_object(rowmenu.Key, false, false)
+            await select_object(Key, false, false)
             show_ui_popover_action()
         }
     }
-    on EyeClicked {
-        if event.Alt {
-            isolate_object(event.Key)
+    on EyeClicked :: (Key: string, Alt: bool, Hidden: bool) {
+        if Alt {
+            isolate_object(Key)
         } else {
-            set_object_hidden(event.Key, !event.Hidden)
+            set_object_hidden(Key, !Hidden)
         }
     }
-    on LockClicked {
-        set_object_locked(event.Key, !event.Locked)
+    on LockClicked :: (Key: string, Locked: bool) {
+        set_object_locked(Key, !Locked)
     }
-    on RowDropped {
-        if text_equal(event.Type, "object") {
-            move_objects(event.Payload, event.Key, event.Zone)
+    on RowDropped :: (Key: string, Type: string, Payload: string, Zone: string) {
+        if text_equal(Type, "object") {
+            move_objects(Payload, Key, Zone)
         } else {
-            drop_on_object(event.Key, event.Type, event.Payload)
+            drop_on_object(Key, Type, Payload)
         }
     }
     // A row's drop stops at the row (RowDropped), so the list takes only
     // prototypes.
-    on ListDropped {
-        if text_equal(event.Type, "prototype") {
-            add_object(event.Payload)
+    on ListDropped :: (Type: string, Payload: string) {
+        if text_equal(Type, "prototype") {
+            add_object(Payload)
         } else {
-            if text_equal(event.Type, "object") {
-                move_objects(event.Payload, "", "root")
+            if text_equal(Type, "object") {
+                move_objects(Payload, "", "root")
             }
         }
     }
-    on ClearFilter {
+    on ClearFilter :: () {
         set_object_filter("")
     }
-    on SpawnBreak {
+    on SpawnBreak :: () {
         toggle_spawn_break(selection().Prototype)
     }
 }

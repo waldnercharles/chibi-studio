@@ -22,6 +22,7 @@
 #include "graph/nodes/core_nodes.h"
 #include "graph/nodes/vector_nodes.h"
 #include "runtime/scenes/physics3d.h"
+#include "support/arena.h"
 #include "support/array.h"
 #include "support/file_io.h"
 #include "support/text_overlay.h"
@@ -40,6 +41,13 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+/* Own native-string projections until the selected acceptance command exits. */
+static arena acceptance_field_reads;
+static void acceptance_field_reads_free()
+{
+    arena_free(&acceptance_field_reads);
+}
 
 #include "scene_read.h"
 
@@ -2932,7 +2940,14 @@ static bool links(app_scene_authoring *scene, int actor, int target)
 {
     pin_value value = { 0 };
     REQUIRE(
-        ecs_component_read_field(scene->world, scene->actors[actor].entity, link_id(scene), 0, &value) == ECS_OK
+        ecs_component_read_field(
+            &acceptance_field_reads,
+            scene->world,
+            scene->actors[actor].entity,
+            link_id(scene),
+            0,
+            &value
+        ) == ECS_OK
     );
     return value.u64 ==
            (target < 0 ? 0 : ecs_entity_to_u64(scene->actors[target].entity));
@@ -5326,6 +5341,7 @@ TEST_CASE(debugger_source_history)
 
 int main(int argc, char **argv)
 {
+    atexit(acceptance_field_reads_free);
     if (argc == 2 && !strcmp(argv[1], "--compiled-asset-edit-model")) {
         pu_setup(NULL, compiled_model_cleanup);
         RUN_TEST_CASE(compiled_asset_edit_model);

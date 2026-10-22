@@ -9,8 +9,9 @@
 #include "editor/documents/component_properties.h"
 #include "editor/studio/studio_internal.h"
 #include "editor/ui/labels.h"
-#include "types/value_format.h"
+#include "support/arena.h"
 #include "support/array.h"
+#include "types/value_format.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,9 +48,7 @@ static void default_name(studio *s, const scene_actor *actor, char *out, size_t 
 void studio_prototype_action_open(studio *s, bool saving)
 {
     scene_actor *actor = studio_prototype_action_actor(s);
-    if (!actor) {
-        return;
-    }
+    if (!actor) { return; }
     struct studio_prototype_action *a = &s->prototype_action;
     afree(a->skipped);
     a->skipped = NULL;
@@ -80,9 +79,7 @@ static void offer_undo(studio *s, const char *title, const char *description)
 static void undo_toast(studio *s)
 {
     struct studio_prototype_action *a = &s->prototype_action;
-    if (!a->toast) {
-        return;
-    }
+    if (!a->toast) { return; }
     bool current = scene_history_step_id(s->scene->history, false) == a->step &&
                    s->scene->document.kind == APP_EDITOR_DOCUMENT_SCENE;
     if (kit_toast_action(s->kit, a->toast)) {
@@ -147,7 +144,9 @@ static prototype_field *field_rows(studio *s, scene_actor *actor, const prototyp
     kit *k = s->kit;
     struct studio_prototype_action *a = &s->prototype_action;
     prototype_field *checked = NULL;
+    arena storage = { 0 };
     for (int i = 0; i < acount(fields); i++) {
+        arena_reset(&storage);
         const ecs_component_desc *desc = fields[i].component;
         const type_field *field = &desc->type->fields[fields[i].field];
         prototype_component component = { .desc = desc };
@@ -157,13 +156,16 @@ static prototype_field *field_rows(studio *s, scene_actor *actor, const prototyp
         snprintf(label, sizeof label, "%s \xc2\xb7 %s", component_label, field_label);
         snprintf(key, sizeof key, "f%d", i);
         pin_value value = { 0 };
-        ecs_component_read_field(
-            s->scene->world,
-            actor->entity,
-            desc->id,
-            fields[i].field,
-            &value
-        );
+        if (ecs_component_read_field(
+                &storage,
+                s->scene->world,
+                actor->entity,
+                desc->id,
+                fields[i].field,
+                &value
+            ) != ECS_OK) {
+            continue;
+        }
         bool on = !skipped(a->skipped, fields[i]);
         kit_push(k, key, NULL, "prototype-field");
         if (kit_checkbox(k, "check", &on, label, 0) && on) {
@@ -179,10 +181,9 @@ static prototype_field *field_rows(studio *s, scene_actor *actor, const prototyp
         }
         kit_label(k, "value", "kbd", pin_value_to_string(&value));
         kit_pop(k);
-        if (on) {
-            apush(checked, fields[i]);
-        }
+        if (on) { apush(checked, fields[i]); }
     }
+    arena_free(&storage);
     return checked;
 }
 
@@ -229,9 +230,7 @@ static void apply_popover(studio *s)
                               .disabled = !count };
     bool chosen = kit_menu_item(k, "apply", &go);
     kit_popup_end(k);
-    if (chosen) {
-        apply(s, actor, checked, count);
-    }
+    if (chosen) { apply(s, actor, checked, count); }
     afree(fields);
     afree(checked);
 }
@@ -298,9 +297,7 @@ static void save_popover(studio *s)
     bool entered = a->shown && enter_pressed(s);
     kit_popup_end(k);
     a->shown = true;
-    if (chosen || entered) {
-        save_actor(s, actor);
-    }
+    if (chosen || entered) { save_actor(s, actor); }
 }
 
 void studio_prototype_actions_frame(studio *s)

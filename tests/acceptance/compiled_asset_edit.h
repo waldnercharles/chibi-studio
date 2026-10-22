@@ -9,9 +9,14 @@ static bool compiled_edit_file, compiled_edit_directory_created;
 static bool compiled_edit_x(studio *s, float expected)
 {
     pin_value value;
-    REQUIRE(
-        !app_scene_authoring_read_prototype_field(s->scene, "CompiledEdit", "Transform", "x", &value)
-    );
+    REQUIRE(!app_scene_authoring_read_prototype_field(
+        &acceptance_field_reads,
+        s->scene,
+        "CompiledEdit",
+        "Transform",
+        "x",
+        &value
+    ));
     REQUIRE(value.type == PIN_F32 && value.f == expected);
     return true;
 }
@@ -141,6 +146,21 @@ static bool compiled_asset_edit_frame(void *state)
 {
     studio *s = studio_acceptance_studio(state);
     REQUIRE(s && ++frames <= 2);
+    /* Editor model actions remain usable when authored UI startup fails.
+     * Require the actual Studio world and shell before exercising edits. */
+    REQUIRE(s->ui);
+    REQUIRE(!strcmp(studio_ui_page(s->ui), "StudioShell"));
+    int panels = studio_ui_panel_count(s);
+    REQUIRE(panels > 0);
+    bool properties = false;
+    for (int i = 0; i < panels; i++) {
+        properties |= !strcmp(studio_ui_panel_name(s, i), "Properties");
+    }
+    REQUIRE(properties);
+    REQUIRE(
+        !strcmp(s->page.name, "StudioShell") && s->page.document.rml &&
+        !s->page.error[0]
+    );
     if (frames == 1) {
         return compiled_edit_contract(s);
     }

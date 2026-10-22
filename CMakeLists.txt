@@ -120,7 +120,13 @@ get_filename_component(sdk_bin "${Chibi_RESOURCE_DIR}/../../bin" ABSOLUTE)
 foreach(tool chibi chibi-compile chibi-player)
     file(COPY "${sdk_bin}/${tool}${CMAKE_EXECUTABLE_SUFFIX}" DESTINATION "${CMAKE_BINARY_DIR}/bin")
 endforeach()
-file(COPY projects/studio DESTINATION "${CMAKE_BINARY_DIR}/share/chibi")
+# Reconfigure when authored project files change, are added, or are removed.
+# Replace the disposable staged copy so deleted sources cannot survive a rebuild.
+file(GLOB_RECURSE studio_project_files CONFIGURE_DEPENDS LIST_DIRECTORIES false
+    "${CMAKE_CURRENT_SOURCE_DIR}/projects/studio/*")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${studio_project_files})
+file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/share/chibi/studio")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/projects/studio" DESTINATION "${CMAKE_BINARY_DIR}/share/chibi")
 file(COPY src/editor/rmlui/resources/ DESTINATION "${CMAKE_BINARY_DIR}/share/chibi/ui")
 install(TARGETS chibi-studio RUNTIME DESTINATION bin)
 install(DIRECTORY projects/studio/ DESTINATION share/chibi/studio)

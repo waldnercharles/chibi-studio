@@ -206,15 +206,19 @@ static void keep_component(
     scene_kept *kept
 )
 {
+    arena storage = { 0 };
     const ecs_component_desc *desc = authored->desc;
     for (int f = 0; f < desc->type->field_count; f++) {
         pin_value running = { 0 };
-        if (ecs_component_read_field(scene->world, entity, desc->id, f, &running) != ECS_OK ||
+        if (ecs_component_read_field(&storage, scene->world, entity, desc->id, f, &running) !=
+                ECS_OK ||
             !editable_scalar(&running)) {
             continue;
         }
         pin_value before = running;
-        pin_read_field(authored->data, &desc->type->fields[f], &before);
+        if (pin_read_field(&storage, authored->data, &desc->type->fields[f], &before)) {
+            continue;
+        }
         if (pin_value_equal(&running, &before)) {
             continue;
         }
@@ -224,6 +228,7 @@ static void keep_component(
         }
         apush(kept->fields, edit);
     }
+    arena_free(&storage);
 }
 
 int scene_keep_changes(app_scene_authoring *scene, const ecs_component_desc *only)
@@ -292,9 +297,11 @@ int scene_kept_values(app_scene_authoring *scene, int *objects, const char **nam
    Properties records one. */
 static void apply_kept_field(app_scene_authoring *scene, ecs_entity entity, const scene_field_edit *kept)
 {
+    arena storage = { 0 };
     pin_value before = { 0 };
-    if (ecs_component_read_field(scene->world, entity, kept->component, kept->field, &before) !=
+    if (ecs_component_read_field(&storage, scene->world, entity, kept->component, kept->field, &before) !=
         ECS_OK) {
+        arena_free(&storage);
         return;
     }
     scene->property_actor = entity;
@@ -311,6 +318,7 @@ static void apply_kept_field(app_scene_authoring *scene, ecs_entity entity, cons
         scene->scene_dirty = true;
     }
     finish_property_edit(scene);
+    arena_free(&storage);
 }
 
 /* After Stop restored the authored scene: each value its latest record

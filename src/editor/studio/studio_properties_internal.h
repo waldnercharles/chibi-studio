@@ -75,8 +75,11 @@ bool properties_row_parse(const char *id, properties_row *out);
 void properties_parameter_row(const char *path, const char *name, size_t index, properties_row *);
 const char *properties_parameter_name(const av_value *, const char *path, const properties_row *);
 
-/* Read a syntax-only scalar parameter into its ordinary Chibi type. */
-bool properties_parameter_value(const av_value *, pin_value *);
+/* Read a syntax-only scalar parameter; text lives in storage. */
+bool properties_parameter_value(arena *, const av_value *, pin_value *);
+/* C text for a control, escaped when the value contains embedded NUL.
+ * Converted text lives in storage or the formatter's temporary buffer. */
+const char *properties_text(arena *, const pin_value *);
 
 /* The registry's component `id`, or NULL. */
 const ecs_component_desc *properties_component(const app_scene_authoring *scene, ecs_component_id id);

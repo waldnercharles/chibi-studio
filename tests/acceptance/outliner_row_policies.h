@@ -239,10 +239,11 @@ static bool outliner_policy_text(
         { .type = PIN_BOOL, .b = editable },
     };
     REQUIRE(outliner_policy_invoke(name, arguments, !strcmp(name, "Drop") ? 2 : 1, call, backend));
-    REQUIRE(call->result.type == PIN_STR && call->result.str);
+    REQUIRE(call->result.type == PIN_STR && call->result.text);
     /* Scalar literal returns borrow the module; publication into a row record
      * owns its strings. Inspect these direct returns before module retirement. */
-    REQUIRE(!strcmp(call->result.str, expected));
+    REQUIRE(pin_text(call->result).length == strlen(expected));
+    REQUIRE(!memcmp(pin_text(call->result).bytes, expected, strlen(expected)));
     REQUIRE(outliner_policy_unchanged(arguments[0], values, count));
     return true;
 }
@@ -351,7 +352,7 @@ static bool outliner_policy_flags(outliner_policy_call *call, const bool expecte
         const type_field *field = &value->record->type.fields[i];
         REQUIRE(!strcmp(field->name, names[i]));
         pin_value member;
-        pin_read_field(value->ptr, field, &member);
+        REQUIRE(!pin_read_field(&call->storage, value->ptr, field, &member));
         REQUIRE(member.type == PIN_BOOL && member.b == expected[i]);
     }
     return true;
@@ -478,9 +479,21 @@ TEST_CASE(outliner_row_policy_contract)
         REQUIRE(outliner_policy_flags(&outliner_policy.calls[2], retained_flags));
         REQUIRE(arena_contains(
             &outliner_policy.calls[1].storage,
-            outliner_policy.calls[1].result.str
+            outliner_policy.calls[1].result.text
         ));
-        REQUIRE(!strcmp(outliner_policy.calls[1].result.str, "object behavior shape field"));
+        REQUIRE(arena_contains(
+            &outliner_policy.calls[1].storage,
+            pin_text(outliner_policy.calls[1].result).bytes
+        ));
+        REQUIRE(
+            pin_text(outliner_policy.calls[1].result).length ==
+            sizeof("object behavior shape field") - 1
+        );
+        REQUIRE(!memcmp(
+            pin_text(outliner_policy.calls[1].result).bytes,
+            "object behavior shape field",
+            sizeof("object behavior shape field") - 1
+        ));
         printf(
             "Outliner row policies accepted: backend=%s calls=41\n",
             behavior_backend_name(backends[i])

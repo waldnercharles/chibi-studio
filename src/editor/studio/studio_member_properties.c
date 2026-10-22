@@ -18,6 +18,7 @@
 #include "support/arena.h"
 #include "support/array.h"
 #include "support/xalloc.h"
+#include "types/text.h"
 
 #include <assert.h>
 #include <inttypes.h>
@@ -74,19 +75,13 @@ const char *sm_type_label(const pin_spec *pin, char *out, size_t size)
 /* ---------- Shared parts ---------- */
 
 static editor *member_editor(const studio *s)
-{
-    return sg_graph_editor(s);
-}
+{ return sg_graph_editor(s); }
 
 static bool locked(const studio *s)
-{
-    return !behavior_asset_mutable(member_editor(s)->asset);
-}
+{ return !behavior_asset_mutable(member_editor(s)->asset); }
 
 static void row_id(char out[GD_ROW_ID], char owner, uint64_t id, const char *part)
-{
-    snprintf(out, GD_ROW_ID, "%c%" PRIu64 ".%s", owner, id, part);
-}
+{ snprintf(out, GD_ROW_ID, "%c%" PRIu64 ".%s", owner, id, part); }
 
 static void text_row(
     gd_rows *r,
@@ -135,15 +130,9 @@ static bool value_editable(const pin_spec *pin)
    values: numbers and vectors scrub. */
 static const char *default_control(const pin_spec *pin)
 {
-    if (pin->type == PIN_ENUM) {
-        return "choice";
-    }
-    if (pin->type == PIN_BOOL) {
-        return "bool";
-    }
-    if (pin_vector_width(pin) > 0) {
-        return "vector";
-    }
+    if (pin->type == PIN_ENUM) { return "choice"; }
+    if (pin->type == PIN_BOOL) { return "bool"; }
+    if (pin_vector_width(pin) > 0) { return "vector"; }
     return pin->type == PIN_STR || pin->type == PIN_NAME ? "text" : "number";
 }
 
@@ -166,9 +155,7 @@ static void put_default(gd_rows *r, yyjson_mut_val *row, const pin_spec *pin, co
     if (pin_vector_width(pin) > 0) {
         double axes[4] = { 0 };
         const float *v = value->ptr;
-        for (int a = 0; v && a < pin_vector_width(pin); a++) {
-            axes[a] = v[a];
-        }
+        for (int a = 0; v && a < pin_vector_width(pin); a++) { axes[a] = v[a]; }
         gd_number_shape shape = { .step = 0.1,
                                   .precision = 2,
                                   .single = true,
@@ -178,8 +165,16 @@ static void put_default(gd_rows *r, yyjson_mut_val *row, const pin_spec *pin, co
         return;
     }
     if (pin->type == PIN_STR || pin->type == PIN_NAME) {
-        gd_put_text(r, row, "text", value->str ? value->str : "");
-        gd_put_text(r, row, "placeholder", "");
+        arena scratch = { 0 };
+        const char *text = NULL;
+        const char *error = pin_text_cstring(&scratch, *value, &text, NULL);
+        gd_put_text(r, row, "text", error ? "" : text);
+        gd_put_text(r, row, "placeholder", error ? error : "");
+        if (error) {
+            gd_put_flag(r, row, "readonly", true);
+            gd_put_flag(r, row, "invalid", true);
+        }
+        arena_free(&scratch);
         return;
     }
     bool integer = pin->type < PIN_F32;
@@ -273,17 +268,13 @@ static void variable_details(gd_view *v, studio *s, const behavior_variable *var
 /* ---------- Functions and macros ---------- */
 
 static node *signature_node(const graph *g, bool result)
-{
-    return graph_node_by_id(g, result ? g->return_id : g->entry_id);
-}
+{ return graph_node_by_id(g, result ? g->return_id : g->entry_id); }
 
 bool sm_move_signature_pin(editor *e, graph *g, bool result, uint64_t dragged, int to)
 {
     int output, from = -1;
     graph_pin_by_id(signature_node(g, result), dragged, &output, &from);
-    if (from < 0 || from == to) {
-        return false;
-    }
+    if (from < 0 || from == to) { return false; }
     behavior_asset *before = ed_snapshot(e);
     return sm_record(e, before, graph_signature_move(e->asset, g, result, from, to) == 0);
 }
@@ -308,9 +299,7 @@ static void signature_row(gd_rows *r, studio *s, graph *g, bool result, const pi
     gd_put_text(r, row, "drop", fixed ? "" : result ? "result" : "parameter");
     put_type(r, row, pin);
     gd_put_int(r, row, "container", pin->container);
-    if (defaults) {
-        put_default(r, row, pin, &pin->default_value);
-    }
+    if (defaults) { put_default(r, row, pin, &pin->default_value); }
 }
 
 static void signature_panel(gd_view *v, studio *s, graph *g, bool result)
@@ -497,9 +486,7 @@ static void set_default(studio *s, graph *g, int index, uint64_t variable, const
 {
     studio_members *m = &s->members;
     editor *e = member_editor(s);
-    if (step == SG_STEP_ONCE || !m->value_editing) {
-        ed_snapshot_before(e);
-    }
+    if (step == SG_STEP_ONCE || !m->value_editing) { ed_snapshot_before(e); }
     m->value_editing = step == SG_STEP_LIVE;
     if (g) {
         graph_signature_set_default(e->asset, g, index, value);
@@ -522,9 +509,7 @@ static bool add_signature_pin(editor *e, graph *g, bool result)
         for (int p = 0; p < count && !taken; p++) {
             taken = pins[p].name && !strcmp(pins[p].name, name);
         }
-        if (!taken) {
-            break;
-        }
+        if (!taken) { break; }
         snprintf(name, sizeof name, "%s %d", base, i);
     }
     pin_spec pin = { .name = name, .kind = PIN_DATA, .type = PIN_F32, .type_name = "float" };
@@ -539,9 +524,7 @@ static bool rename_signature_pin(studio *s, graph *g, uint64_t pin_id, const cha
     bool result = false;
     int index = -1;
     const pin_spec *pin = signature_pin(g, pin_id, &result, &index);
-    if (!pin || !name[0] || !strcmp(name, pin->name)) {
-        return true;
-    }
+    if (!pin || !name[0] || !strcmp(name, pin->name)) { return true; }
     reference_symbol parameter = { .kind = REFERENCE_SYMBOL_PARAMETER,
                                    .asset = studio_refresh_document_asset(s),
                                    .graph_id = g->graph_id,
@@ -559,9 +542,7 @@ static bool retype_signature_pin(editor *e, graph *g, uint64_t pin_id, const pin
 {
     bool result = false;
     int index = -1;
-    if (!signature_pin(g, pin_id, &result, &index)) {
-        return false;
-    }
+    if (!signature_pin(g, pin_id, &result, &index)) { return false; }
     behavior_asset *before = ed_snapshot(e);
     return sm_record(e, before, graph_signature_retype(e->asset, g, result, index, with) == 0);
 }
@@ -570,18 +551,14 @@ static bool remove_signature_pin(editor *e, graph *g, uint64_t pin_id)
 {
     bool result = false;
     int index = -1;
-    if (!signature_pin(g, pin_id, &result, &index)) {
-        return false;
-    }
+    if (!signature_pin(g, pin_id, &result, &index)) { return false; }
     behavior_asset *before = ed_snapshot(e);
     return sm_record(e, before, graph_signature_remove(e->asset, g, result, index) == 0);
 }
 
 static bool set_pure(editor *e, graph *g, bool pure)
 {
-    if (pure == graph_signature_pure(g)) {
-        return true;
-    }
+    if (pure == graph_signature_pure(g)) { return true; }
     behavior_asset *before = ed_snapshot(e);
     return sm_record(e, before, graph_signature_set_pure(e->asset, g, pure) == 0);
 }
@@ -593,12 +570,8 @@ static bool set_pure(editor *e, graph *g, bool pure)
 static type_choice *type_choices(bool exec)
 {
     type_choice *choices = NULL;
-    if (exec) {
-        apush(choices, EXEC);
-    }
-    for (int i = 0; i < TYPE_COUNT; i++) {
-        apush(choices, TYPES[i]);
-    }
+    if (exec) { apush(choices, EXEC); }
+    for (int i = 0; i < TYPE_COUNT; i++) { apush(choices, TYPES[i]); }
     for (int i = 0; i < type_catalog_count(); i++) {
         const type_desc *type = type_catalog_at(i);
         apush(choices, ((type_choice){ type->name, PIN_STRUCT, type->name }));
@@ -629,9 +602,7 @@ void studio_member_type_entries(studio *s, studio_palette_entry **entries)
     const source_presentation_origin *source = !m->pick.pin_id
                                                  ? sm_source_variable(s, m->pick.id)
                                                  : NULL;
-    if (source) {
-        pin = &sm_source_variable_node(s, source)->output_pins[0];
-    }
+    if (source) { pin = &sm_source_variable_node(s, source)->output_pins[0]; }
     const behavior_variable *variable = m->pick.pin_id
                                           ? NULL
                                           : behavior_asset_find_variable_by_id(
@@ -689,9 +660,7 @@ void studio_member_type_choose(studio *s, const studio_palette_entry *entry)
 static void pick_type(studio *s, uint64_t id, uint64_t pin_id, const ui_activation *a)
 {
     rml_element *button = a->anchor ? rml_element_ref_get(a->anchor) : NULL;
-    if (!button || locked(s)) {
-        return;
-    }
+    if (!button || locked(s)) { return; }
     if (s->palette.client && studio_palette_anchor(s) == button) {
         studio_palette_close(s);
         return;
@@ -742,9 +711,7 @@ static bool sent_value(
         const char *axis = a->argc > 3 ? a->args[3] : "";
         const char *key = axis[0] ? strchr("xyzw", axis[0]) : NULL;
         int at = key ? (int)(key - "xyzw") : -1;
-        if (at < 0 || at >= pin_vector_width(pin)) {
-            return false;
-        }
+        if (at < 0 || at >= pin_vector_width(pin)) { return false; }
         float *vector = arena_alloc(scratch, 4 * sizeof *vector);
         memset(vector, 0, 4 * sizeof *vector);
         if (was->ptr) {
@@ -755,6 +722,13 @@ static bool sent_value(
         return true;
     }
     if (pin->type == PIN_STR || pin->type == PIN_NAME) {
+        if (pin->type == PIN_STR) {
+            if (pin_value_text(scratch, out, text, strlen(text))) {
+                return false;
+            }
+            out->type_name = was->type_name;
+            return true;
+        }
         size_t length = strlen(text) + 1;
         char *copy = arena_alloc(scratch, length);
         memcpy(copy, text, length);
@@ -763,9 +737,7 @@ static bool sent_value(
     }
     char *end;
     double number = strtod(text, &end);
-    if (end == text) {
-        return false;
-    }
+    if (end == text) { return false; }
     sg_set_literal_number(out, number);
     return true;
 }
@@ -827,9 +799,7 @@ static void signature_edit(studio *s, graph *g, uint64_t pin_id, const char *act
     bool result = false;
     int index = -1;
     const pin_spec *pin = signature_pin(g, pin_id, &result, &index);
-    if (!pin) {
-        return;
-    }
+    if (!pin) { return; }
     const char *text = a->argc > 1 ? a->args[1] : "";
     if (!strcmp(action, "type")) {
         pick_type(s, g->graph_id, pin_id, a);
@@ -871,9 +841,7 @@ void studio_member_details_action(studio *s, const char *action, const ui_activa
     const char *id = a->args[0];
     char *dot;
     uint64_t member = strtoull(id + 1, &dot, 10);
-    if (*dot != '.' || locked(s)) {
-        return;
-    }
+    if (*dot != '.' || locked(s)) { return; }
     const char *part = dot + 1;
     if (id[0] == 'v' && s->members.kind == STUDIO_MEMBER_VARIABLE &&
         s->members.id == member && sm_source_variable(s, member)) {

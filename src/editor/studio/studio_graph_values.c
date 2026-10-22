@@ -1,6 +1,6 @@
-#include "graph/nodes/core_nodes.h"
 #include "graph/authoring/graph_edit.h"
 #include "graph/authoring/local_edit.h"
+#include "graph/nodes/core_nodes.h"
 /* Typed value and source editors shared by graph nodes and Properties. */
 #include "ecs/ecs.h"
 #include "editor/collab/actions_internal.h"
@@ -12,6 +12,7 @@
 #include "graph/model/local.h"
 #include "graph/model/pin_conv.h"
 #include "graph/model/registry.h"
+#include "graph/model/value_copy.h"
 #include "graph/nodes/behavior_expression.h"
 #include "graph/nodes/conv_nodes.h"
 #include "runtime/declared_components.h"
@@ -62,6 +63,7 @@ typedef struct studio_graph_source
     char meta[80];
     char description[80];
     char literal_text[256];
+    uint32_t literal_length;
 } source_choice;
 
 static bool compatible(const pin_spec *source, const pin_spec *target)
@@ -71,9 +73,7 @@ static bool compatible(const pin_spec *source, const pin_spec *target)
 
 static bool binding_equal(const pin_binding *a, const pin_binding *b)
 {
-    if (a->kind != b->kind) {
-        return false;
-    }
+    if (a->kind != b->kind) { return false; }
     switch (a->kind) {
         case PIN_BINDING_LOCAL: return a->local_id == b->local_id;
         case PIN_BINDING_VARIABLE:
@@ -158,10 +158,13 @@ static pin_binding choice_binding(const source_choice *choice)
     return binding;
 }
 
-static pin_value choice_literal(const source_choice *choice)
+static pin_value choice_literal(graph *g, const source_choice *choice)
 {
     pin_value value = choice->literal;
-    if (value.type == PIN_STR || value.type == PIN_NAME) {
+    if (value.type == PIN_STR) {
+        value = graph_text_value(g, choice->literal_text, choice->literal_length);
+        value.type_name = choice->literal.type_name;
+    } else if (value.type == PIN_NAME) {
         value.str = choice->literal_text;
     }
     return value;
@@ -179,6 +182,11 @@ static void add_literal_choice(
     const pin_value *value
 )
 {
+    pin_string text = { 0 };
+    if (value->type == PIN_STR || value->type == PIN_NAME) {
+        text = pin_text(*value);
+        if (text.length >= sizeof((source_choice *)0)->literal_text) { return; }
+    }
     add_choice(
         choices,
         SOURCE_TYPED_LITERAL,
@@ -198,13 +206,10 @@ static void add_literal_choice(
     choice->typed_literal = true;
     choice->literal = *value;
     if (value->type == PIN_STR || value->type == PIN_NAME) {
-        snprintf(
-            choice->literal_text,
-            sizeof choice->literal_text,
-            "%s",
-            value->str ? value->str : ""
-        );
-        choice->literal.str = NULL;
+        memcpy(choice->literal_text, text.bytes, text.length);
+        choice->literal_text[text.length] = 0;
+        choice->literal_length = text.length;
+        choice->literal.ptr = NULL;
     }
 }
 
@@ -227,29 +232,21 @@ static double numeric_value(const pin_value *value)
 
 static bool trailing_space(const char **text)
 {
-    while (isspace((unsigned char)**text)) {
-        (*text)++;
-    }
+    while (isspace((unsigned char)**text)) { (*text)++; }
     return !**text;
 }
 
 static bool only_space(const char *text)
 {
-    while (isspace((unsigned char)*text)) {
-        text++;
-    }
+    while (isspace((unsigned char)*text)) { text++; }
     return !*text;
 }
 
 static bool parse_integer_text(const char *text, bool is_unsigned, intmax_t *signed_value, uintmax_t *unsigned_value)
 {
-    while (isspace((unsigned char)*text)) {
-        text++;
-    }
+    while (isspace((unsigned char)*text)) { text++; }
     if (is_unsigned) {
-        if (*text == '-') {
-            return false;
-        }
+        if (*text == '-') { return false; }
         errno = 0;
         char *end = NULL;
         uintmax_t value = strtoumax(text, &end, 10);
@@ -262,21 +259,15 @@ static bool parse_integer_text(const char *text, bool is_unsigned, intmax_t *sig
     errno = 0;
     char *end = NULL;
     intmax_t value = strtoimax(text, &end, 10);
-    if (end == text || errno == ERANGE || !only_space(end)) {
-        return false;
-    }
+    if (end == text || errno == ERANGE || !only_space(end)) { return false; }
     *signed_value = value;
     return true;
 }
 
 static bool quoted_text(const char *text, char *out, size_t size)
 {
-    while (isspace((unsigned char)*text)) {
-        text++;
-    }
-    if (*text++ != '"' || size < 1) {
-        return false;
-    }
+    while (isspace((unsigned char)*text)) { text++; }
+    if (*text++ != '"' || size < 1) { return false; }
     size_t used = 0;
     bool closed = false;
     while (*text) {
@@ -297,9 +288,7 @@ static bool quoted_text(const char *text, char *out, size_t size)
                 default: return false;
             }
         }
-        if (!c || used + 1 >= size) {
-            return false;
-        }
+        if (!c || used + 1 >= size) { return false; }
         out[used++] = c;
     }
     out[used] = '\0';
@@ -308,9 +297,7 @@ static bool quoted_text(const char *text, char *out, size_t size)
 
 static bool parse_input_literal(const pin_spec *spec, const char *text, pin_value *out)
 {
-    if (spec->container != PIN_CONTAINER_SINGLE) {
-        return false;
-    }
+    if (spec->container != PIN_CONTAINER_SINGLE) { return false; }
     pin_value value = { .type = spec->type,
                         .type_name = spec->type_name,
                         .container = spec->container };
@@ -332,14 +319,10 @@ static bool parse_input_literal(const pin_spec *spec, const char *text, pin_valu
         }
         if (!exact) {
             if (is_unsigned) {
-                if (number < 0 || number >= 0x1p64) {
-                    return false;
-                }
+                if (number < 0 || number >= 0x1p64) { return false; }
                 unsigned_value = (uintmax_t)number;
             } else {
-                if (number < -0x1p63 || number >= 0x1p63) {
-                    return false;
-                }
+                if (number < -0x1p63 || number >= 0x1p63) { return false; }
                 signed_value = (intmax_t)number;
             }
         }
@@ -351,9 +334,7 @@ static bool parse_input_literal(const pin_spec *spec, const char *text, pin_valu
                 value.i8 = (int8_t)signed_value;
                 break;
             case PIN_U8:
-                if (unsigned_value > UINT8_MAX) {
-                    return false;
-                }
+                if (unsigned_value > UINT8_MAX) { return false; }
                 value.u8 = (uint8_t)unsigned_value;
                 break;
             case PIN_I16:
@@ -363,9 +344,7 @@ static bool parse_input_literal(const pin_spec *spec, const char *text, pin_valu
                 value.i16 = (int16_t)signed_value;
                 break;
             case PIN_U16:
-                if (unsigned_value > UINT16_MAX) {
-                    return false;
-                }
+                if (unsigned_value > UINT16_MAX) { return false; }
                 value.u16 = (uint16_t)unsigned_value;
                 break;
             case PIN_I32:
@@ -375,9 +354,7 @@ static bool parse_input_literal(const pin_spec *spec, const char *text, pin_valu
                 value.i = (int32_t)signed_value;
                 break;
             case PIN_U32:
-                if (unsigned_value > UINT32_MAX) {
-                    return false;
-                }
+                if (unsigned_value > UINT32_MAX) { return false; }
                 value.u = (uint32_t)unsigned_value;
                 break;
             case PIN_I64:
@@ -387,9 +364,7 @@ static bool parse_input_literal(const pin_spec *spec, const char *text, pin_valu
                 value.i64 = (int64_t)signed_value;
                 break;
             case PIN_U64:
-                if (unsigned_value > UINT64_MAX) {
-                    return false;
-                }
+                if (unsigned_value > UINT64_MAX) { return false; }
                 value.u64 = (uint64_t)unsigned_value;
                 break;
             default: assert(0); return false;
@@ -404,9 +379,7 @@ static bool parse_input_literal(const pin_spec *spec, const char *text, pin_valu
         }
         if (spec->type == PIN_F32) {
             float rounded = (float)number;
-            if (!isfinite(rounded)) {
-                return false;
-            }
+            if (!isfinite(rounded)) { return false; }
             value.f = rounded;
         } else {
             value.d = number;
@@ -415,9 +388,7 @@ static bool parse_input_literal(const pin_spec *spec, const char *text, pin_valu
         return true;
     }
     if (spec->type == PIN_BOOL) {
-        while (isspace((unsigned char)*text)) {
-            text++;
-        }
+        while (isspace((unsigned char)*text)) { text++; }
         if (!strcasecmp(text, "true")) {
             value.b = true;
         } else if (!strcasecmp(text, "false")) {
@@ -430,20 +401,20 @@ static bool parse_input_literal(const pin_spec *spec, const char *text, pin_valu
     }
     if (spec->type == PIN_STR || spec->type == PIN_NAME) {
         static char decoded[256];
-        if (!quoted_text(text, decoded, sizeof decoded)) {
-            return false;
+        static pin_string string;
+        if (!quoted_text(text, decoded, sizeof decoded)) { return false; }
+        if (spec->type == PIN_STR) {
+            string = (pin_string){ decoded, (uint32_t)strlen(decoded) };
+            value.text = &string;
+        } else {
+            value.str = decoded;
         }
-        value.str = decoded;
         *out = value;
         return true;
     }
     if (spec->type == PIN_HANDLE) {
-        while (isspace((unsigned char)*text)) {
-            text++;
-        }
-        if (strcasecmp(text, "none")) {
-            return false;
-        }
+        while (isspace((unsigned char)*text)) { text++; }
+        if (strcasecmp(text, "none")) { return false; }
         value.u64 = 0;
         *out = value;
         return true;
@@ -452,9 +423,7 @@ static bool parse_input_literal(const pin_spec *spec, const char *text, pin_valu
 }
 
 static void component_label(const ecs_component_desc *component, char *out, size_t size)
-{
-    editor_component_label(component->name, out, size);
-}
+{ editor_component_label(component->name, out, size); }
 
 static bool component_query_separator(
     const ecs_component_desc *component,
@@ -463,34 +432,24 @@ static bool component_query_separator(
 )
 {
     const char *separator = query ? strchr(query, '.') : NULL;
-    if (!separator || separator == query) {
-        return false;
-    }
+    if (!separator || separator == query) { return false; }
     char scope[96], label[96];
     size_t scope_length = (size_t)(separator - query);
-    if (scope_length >= sizeof scope) {
-        return false;
-    }
+    if (scope_length >= sizeof scope) { return false; }
     snprintf(scope, sizeof scope, "%.*s", (int)scope_length, query);
     component_label(component, label, sizeof label);
-    if (strcasecmp(scope, label)) {
-        return false;
-    }
+    if (strcasecmp(scope, label)) { return false; }
 
     int visible_matches = 0;
     ecs_component_catalog project = project_components();
     for (int i = 0; i < project.component_count; i++) {
         const ecs_component_desc *candidate = project.components[i];
-        if (!candidate || !candidate->name) {
-            continue;
-        }
+        if (!candidate || !candidate->name) { continue; }
         char candidate_label[96];
         component_label(candidate, candidate_label, sizeof candidate_label);
         visible_matches += !strcasecmp(scope, candidate_label);
     }
-    if (visible_matches != 1) {
-        return false;
-    }
+    if (visible_matches != 1) { return false; }
 
     *separator_out = separator;
     return true;
@@ -576,9 +535,7 @@ static void add_component_fields(
     const pin_binding *current
 )
 {
-    if (!type || depth >= 6) {
-        return;
-    }
+    if (!type || depth >= 6) { return; }
     char group[96];
     component_label(component, group, sizeof group);
     for (int i = 0; i < type->field_count; i++) {
@@ -592,9 +549,7 @@ static void add_component_fields(
             prefix[0] ? "." : "",
             field->name
         );
-        if (written < 0 || (size_t)written >= sizeof path) {
-            continue;
-        }
+        if (written < 0 || (size_t)written >= sizeof path) { continue; }
         pin_spec source_spec = { .type = field->type,
                                  .type_name = field->type_name,
                                  .kind = PIN_DATA,
@@ -632,9 +587,7 @@ static void add_component_fields(
                 -1
             );
         }
-        if (field->type != PIN_STRUCT || !field->type_name) {
-            continue;
-        }
+        if (field->type != PIN_STRUCT || !field->type_name) { continue; }
         const type_desc *nested = type_catalog_find(field->type_name);
         add_component_fields(choices, component, nested, target, query, path, depth + 1, current);
     }
@@ -643,9 +596,7 @@ static void add_component_fields(
 static bool id_in(const uint64_t *ids, uint64_t id)
 {
     for (int i = 0; i < acount(ids); i++) {
-        if (ids[i] == id) {
-            return true;
-        }
+        if (ids[i] == id) { return true; }
     }
     return false;
 }
@@ -667,9 +618,7 @@ static const pin_binding *current_binding(
 )
 {
     const pin_binding *binding = graph_pin_binding(gr, target, 0, pin);
-    if (binding && binding->kind == PIN_BINDING_LOCAL) {
-        return binding;
-    }
+    if (binding && binding->kind == PIN_BINDING_LOCAL) { return binding; }
     if (source && source_pin >= 0) {
         return graph_resolve_reference(gr, source, source_pin, resolved) == 0
                  ? resolved
@@ -704,9 +653,7 @@ static void add_sources(
                                      .type_name = variable->type_name,
                                      .kind = PIN_DATA,
                                      .container = variable->container };
-            if (!compatible(&source_spec, target_spec)) {
-                continue;
-            }
+            if (!compatible(&source_spec, target_spec)) { continue; }
             char label[192], keywords[192];
             snprintf(label, sizeof label, "Variable \xE2\x80\xBA %s", variable->name);
             snprintf(
@@ -1014,13 +961,9 @@ static void add_typed_choices(
         );
         return;
     }
-    if (!query || !query[0]) {
-        return;
-    }
+    if (!query || !query[0]) { return; }
     pin_value value;
-    if (!parse_input_literal(spec, query, &value)) {
-        return;
-    }
+    if (!parse_input_literal(spec, query, &value)) { return; }
     add_literal_choice(choices, query, "", query, ed_pin_type_name(spec), KIT_ICON_CONSTANT, 10000, false, &value);
 }
 
@@ -1047,12 +990,8 @@ static kit_command_item *autocomplete_items(const source_choice *choices)
 static void forget_inline_node(editor *e, node *part, uint64_t id)
 {
     ed_remove_selected(e, part);
-    if (e->front_node == part) {
-        e->front_node = NULL;
-    }
-    if (e->spawn_link_pin.n == part) {
-        e->spawn_link_pin = (ed_pin_view){ 0 };
-    }
+    if (e->front_node == part) { e->front_node = NULL; }
+    if (e->spawn_link_pin.n == part) { e->spawn_link_pin = (ed_pin_view){ 0 }; }
     for (int i = acount(e->selected_links) - 1; i >= 0; i--) {
         ed_link_ref link = e->selected_links[i];
         if (link.from_id == id || link.to_id == id) {
@@ -1116,9 +1055,7 @@ static bool replace_input_binding(editor *e, node *target, int pin, const pin_bi
         int removed = old_inline
                         ? remove_inline_source(e, old_source)
                         : graph_remove_edge(gr, old_source, old_source_pin, target, pin);
-        if (removed != 0) {
-            return false;
-        }
+        if (removed != 0) { return false; }
     }
     if (graph_pin_binding(gr, target, 0, pin) &&
         graph_set_pin_binding(gr, target, 0, pin, NULL) != 0) {
@@ -1131,9 +1068,7 @@ static bool apply_binding_choice(studio *s, node *target, int pin, const pin_bin
 {
     editor *e = sg_graph_editor(s);
     char *action = graph_collab_action_set_binding(e, target, pin, binding);
-    if (!action && collab_active() && !collab_replaying()) {
-        return false;
-    }
+    if (!action && collab_active() && !collab_replaying()) { return false; }
     collab_action_gate gate = action ? collab_actions_begin(action) : COLLAB_ACTION_APPLY;
     if (gate != COLLAB_ACTION_APPLY) {
         free(action);
@@ -1161,9 +1096,7 @@ static bool apply_input_constant(studio *s, node *target, int pin, const pin_val
     editor *e = sg_graph_editor(s);
     graph *gr = sg_active_graph(s);
     char *action = graph_collab_action_set_input_default(e, target, pin, value);
-    if (!action && collab_active() && !collab_replaying()) {
-        return false;
-    }
+    if (!action && collab_active() && !collab_replaying()) { return false; }
     collab_action_gate gate = action ? collab_actions_begin(action) : COLLAB_ACTION_APPLY;
     if (gate != COLLAB_ACTION_APPLY) {
         free(action);
@@ -1192,9 +1125,7 @@ static bool apply_expand_inline(studio *s, node *target, int pin)
     editor *e = sg_graph_editor(s);
     graph *gr = sg_active_graph(s);
     char *action = graph_collab_action_expand_inline(e, target, pin);
-    if (!action && collab_active() && !collab_replaying()) {
-        return false;
-    }
+    if (!action && collab_active() && !collab_replaying()) { return false; }
     collab_action_gate gate = action ? collab_actions_begin(action) : COLLAB_ACTION_APPLY;
     if (gate != COLLAB_ACTION_APPLY) {
         free(action);
@@ -1252,19 +1183,15 @@ static node *inline_expression(graph *gr, node *target, int pin)
 static bool apply_choice(studio *s, kit *k, node *target, int pin, const source_choice *choice)
 {
     graph *gr = sg_active_graph(s);
-    if (choice->current) {
-        return false;
-    }
+    if (choice->current) { return false; }
     studio_graph *state = &s->graph;
     if (choice->typed_literal) {
-        pin_value value = choice_literal(choice);
+        pin_value value = choice_literal(gr, choice);
         return apply_input_constant(s, target, pin, &value);
     }
     if (choice->kind == SOURCE_EDIT_EXPRESSION) {
         node *expression = inline_expression(gr, target, pin);
-        if (!expression) {
-            return false;
-        }
+        if (!expression) { return false; }
         sg_begin_expression_edit(s, k, expression, target->input_pins[pin].id);
         return true;
     }
@@ -1452,9 +1379,7 @@ static void emit_inline_values_popup(studio *s, kit *k, node *target, int pin)
         node *part = graph_node_by_id(gr, ids[i]);
         /* Editing an input can remove a nested inline source that appears
            later in this captured tree. Skip it after the mutation. */
-        if (!part) {
-            continue;
-        }
+        if (!part) { continue; }
         char title[128], section[48];
         ed_node_title(e, part, title, sizeof title);
         snprintf(section, sizeof section, "node-%llu", (unsigned long long)part->id);
@@ -1502,9 +1427,7 @@ static bool private_expression_source(
     int pin
 )
 {
-    if (!source || source->desc != &NODE_BehaviorExpression) {
-        return false;
-    }
+    if (!source || source->desc != &NODE_BehaviorExpression) { return false; }
     for (int i = 0; i < acount(asset->graphs); i++) {
         const graph *caller = asset->graphs[i];
         for (int j = 0; j < acount(caller->nodes); j++) {
@@ -1521,9 +1444,7 @@ static bool private_expression_source(
         if (wire->kind != GRAPH_EDGE_DATA || wire->from_id != source->id) {
             continue;
         }
-        if (only) {
-            return false;
-        }
+        if (only) { return false; }
         only = wire;
     }
     return only && only->to_id == target->id &&
@@ -1653,9 +1574,7 @@ void sg_emit_graph_input(studio *s, kit *k, node *n, int p)
 {
     editor *e = sg_graph_editor(s);
     graph *gr = sg_active_graph(s);
-    if (!e || !gr || !n || p < 0 || p >= n->input_count) {
-        return;
-    }
+    if (!e || !gr || !n || p < 0 || p >= n->input_count) { return; }
     uint64_t node_id = n->id;
     const pin_spec *spec = &n->input_pins[p];
     if (spec->kind != PIN_DATA) {
@@ -1728,9 +1647,7 @@ void sg_emit_graph_input(studio *s, kit *k, node *n, int p)
                 refuse_text(s, spec, query);
             }
         }
-        if (bind) {
-            bind_follow(s, k, query);
-        }
+        if (bind) { bind_follow(s, k, query); }
         afree(items);
         afree(choices);
     } else if (parts.value == VALUE_CHIP) {
@@ -1738,9 +1655,7 @@ void sg_emit_graph_input(studio *s, kit *k, node *n, int p)
     } else if (parts.value != VALUE_NONE) {
         uint64_t pin = spec->id; /* an edit may move the node's pins */
         sg_emit_value_in(s, k, n, 0, p);
-        if (compound_literal && can_choose_source) {
-            bind_button(s, k, pin);
-        }
+        if (compound_literal && can_choose_source) { bind_button(s, k, pin); }
     } else if (source) {
         char label[256];
         graph_input_display(s, spec, &parts, source, source_pin, expression_source, binding, label, sizeof label);
@@ -1782,9 +1697,7 @@ sg_input_kind sg_input_view(studio *s, node *n, int p, char *text, size_t size)
     graph *gr = sg_active_graph(s);
     const pin_spec *spec = &n->input_pins[p];
     text[0] = '\0';
-    if (spec->kind != PIN_DATA) {
-        return SG_INPUT_EXEC;
-    }
+    if (spec->kind != PIN_DATA) { return SG_INPUT_EXEC; }
     if (spec->type == PIN_STR && spec->type_name &&
         !strcmp(spec->type_name, "MaterialAsset")) {
         return SG_INPUT_VALUE;
@@ -1812,9 +1725,7 @@ sg_input_kind sg_input_view(studio *s, node *n, int p, char *text, size_t size)
         snprintf(text, size, "%s", parts.chip);
         return SG_INPUT_CHIP;
     }
-    if (parts.value != VALUE_NONE) {
-        return SG_INPUT_VALUE;
-    }
+    if (parts.value != VALUE_NONE) { return SG_INPUT_VALUE; }
     if (source) {
         graph_input_display(s, spec, &parts, source, source_pin, expression, binding, text, size);
         return SG_INPUT_CHIP;
@@ -1853,9 +1764,7 @@ void studio_graph_source_entries(studio *s, const char *query, studio_palette_en
     g->details.source_choices = NULL;
     int p;
     node *n = listed_input(s, &p);
-    if (!n) {
-        return;
-    }
+    if (!n) { return; }
     editor *e = sg_graph_editor(s);
     graph *gr = sg_active_graph(s);
     source_choice **choices = &g->details.source_choices;

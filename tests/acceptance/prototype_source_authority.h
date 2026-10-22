@@ -44,7 +44,10 @@ static bool authority_model_x(authority_fixture *test, float expected)
 {
     pin_value value = { 0 };
     scene_prototype_asset *asset = authority_asset(test);
-    REQUIRE(asset && !prototype_read_field(asset->prototype, "Transform", "x", &value));
+    REQUIRE(
+        asset &&
+        !prototype_read_field(&acceptance_field_reads, asset->prototype, "Transform", "x", &value)
+    );
     REQUIRE(value.type == PIN_F32 && value.f == expected);
     return true;
 }
@@ -313,7 +316,13 @@ static bool authority_entry_probes(authority_fixture *test)
     authority_code_paste(test, AUTHORITY_SOURCE(91, 2));
     authority_code_draw(test);
     pin_value value = { 0 };
-    bool model = !prototype_read_field(authority_asset(test)->prototype, "Transform", "x", &value) &&
+    bool model = !prototype_read_field(
+                     &acceptance_field_reads,
+                     authority_asset(test)->prototype,
+                     "Transform",
+                     "x",
+                     &value
+                 ) &&
                  value.type == PIN_F32 && value.f == 1;
     test->code_authority = model &&
                            !strcmp(
@@ -334,7 +343,13 @@ static bool authority_entry_probes(authority_fixture *test)
     REQUIRE(scalar >= 0 && authority_start(test, "editor"));
     step = asset_code_step(authority_asset(test)->source);
     REQUIRE(bridge_property(test->s, transform, scalar, "AuthoritySource", "", "92", false));
-    model = !prototype_read_field(authority_asset(test)->prototype, "Transform", "x", &value) &&
+    model = !prototype_read_field(
+                &acceptance_field_reads,
+                authority_asset(test)->prototype,
+                "Transform",
+                "x",
+                &value
+            ) &&
             value.type == PIN_F32 && value.f == 1;
     test->property_authority = model &&
                                !strcmp(
@@ -418,7 +433,10 @@ static bool authority_pending_and_history(authority_fixture *test)
     REQUIRE(bridge_field(scene, "AuthoritySource", "x", 2));
     const prototype *preview = scene_source_input_preview(scene, authority_asset(test));
     pin_value preview_x = { 0 };
-    REQUIRE(preview && !prototype_read_field(preview, "Transform", "x", &preview_x));
+    REQUIRE(
+        preview &&
+        !prototype_read_field(&acceptance_field_reads, preview, "Transform", "x", &preview_x)
+    );
     REQUIRE(preview_x.type == PIN_F32 && preview_x.f == 4);
     REQUIRE(scene_source_input_save(scene, authority_asset(test)) == APP_PROTOTYPE_EDIT_PENDING);
     REQUIRE(!studio_code_history(test->s, false, true));
@@ -557,7 +575,14 @@ static bool authority_conflicts(authority_fixture *test)
         REQUIRE(asset_code_error(authority_asset(test)->source)[0]);
         pin_value rejected = { 0 };
         REQUIRE(
-            app_scene_authoring_read_prototype_field(scene, "AuthoritySource", "Transform", "x", &rejected) < 0
+            app_scene_authoring_read_prototype_field(
+                &acceptance_field_reads,
+                scene,
+                "AuthoritySource",
+                "Transform",
+                "x",
+                &rejected
+            ) < 0
         );
         REQUIRE(authority_model_x(test, 10));
         REQUIRE(
@@ -593,6 +618,7 @@ static bool authority_properties(authority_fixture *test)
     const type_desc *vector_type = NULL;
     for (int i = 0; i < visual->type->field_count && !vector_type; i++) {
         REQUIRE(!prototype_read_field(
+            &acceptance_field_reads,
             authority_asset(test)->prototype,
             visual->name,
             visual->type->fields[i].name,
@@ -607,8 +633,12 @@ static bool authority_properties(authority_fixture *test)
     const char *axis0 = vector_type->fields[0].name,
                *axis1 = vector_type->fields[1].name;
     pin_value before0 = { 0 }, before1 = { 0 };
-    pin_read_field(vector.ptr, &vector_type->fields[0], &before0);
-    pin_read_field(vector.ptr, &vector_type->fields[1], &before1);
+    REQUIRE(
+        !pin_read_field(&acceptance_field_reads, vector.ptr, &vector_type->fields[0], &before0)
+    );
+    REQUIRE(
+        !pin_read_field(&acceptance_field_reads, vector.ptr, &vector_type->fields[1], &before1)
+    );
     REQUIRE(before0.type == PIN_F32 && before1.type == PIN_F32);
     REQUIRE(bridge_property(test->s, transform, scalar, "AuthoritySource", "", "11", true));
     REQUIRE(bridge_property(test->s, transform, scalar, "AuthoritySource", "", "12", false));
@@ -634,29 +664,42 @@ static bool authority_properties(authority_fixture *test)
     REQUIRE(bridge_field(scene, "AuthoritySource", "x", 10));
     pin_value first = { 0 }, second = { 0 };
     REQUIRE(!prototype_read_field(
+        &acceptance_field_reads,
         authority_asset(test)->prototype,
         visual->name,
         visual->type->fields[vector_field].name,
         &vector
     ));
-    pin_read_field(vector.ptr, &vector_type->fields[0], &first);
-    pin_read_field(vector.ptr, &vector_type->fields[1], &second);
+    REQUIRE(
+        !pin_read_field(&acceptance_field_reads, vector.ptr, &vector_type->fields[0], &first)
+    );
+    REQUIRE(
+        !pin_read_field(&acceptance_field_reads, vector.ptr, &vector_type->fields[1], &second)
+    );
     REQUIRE(
         first.type == PIN_F32 && first.f == before0.f &&
         second.type == PIN_F32 && second.f == before1.f
     );
     const prototype *preview = scene_source_input_preview(scene, authority_asset(test));
     pin_value preview_x = { 0 };
-    REQUIRE(preview && !prototype_read_field(preview, "Transform", "x", &preview_x));
+    REQUIRE(
+        preview &&
+        !prototype_read_field(&acceptance_field_reads, preview, "Transform", "x", &preview_x)
+    );
     REQUIRE(preview_x.type == PIN_F32 && preview_x.f == 12);
     REQUIRE(!prototype_read_field(
+        &acceptance_field_reads,
         preview,
         visual->name,
         visual->type->fields[vector_field].name,
         &vector
     ));
-    pin_read_field(vector.ptr, &vector_type->fields[0], &first);
-    pin_read_field(vector.ptr, &vector_type->fields[1], &second);
+    REQUIRE(
+        !pin_read_field(&acceptance_field_reads, vector.ptr, &vector_type->fields[0], &first)
+    );
+    REQUIRE(
+        !pin_read_field(&acceptance_field_reads, vector.ptr, &vector_type->fields[1], &second)
+    );
     REQUIRE(first.type == PIN_F32 && first.f == 8 && second.type == PIN_F32 && second.f == 7);
     REQUIRE(authority_echo(test));
     REQUIRE(authority_echo(test));
@@ -672,13 +715,18 @@ static bool authority_properties(authority_fixture *test)
     REQUIRE(authority_text(test, both_axes, NULL));
     REQUIRE(bridge_field(scene, "AuthoritySource", "x", 12));
     REQUIRE(!prototype_read_field(
+        &acceptance_field_reads,
         authority_asset(test)->prototype,
         visual->name,
         visual->type->fields[vector_field].name,
         &vector
     ));
-    pin_read_field(vector.ptr, &vector_type->fields[0], &first);
-    pin_read_field(vector.ptr, &vector_type->fields[1], &second);
+    REQUIRE(
+        !pin_read_field(&acceptance_field_reads, vector.ptr, &vector_type->fields[0], &first)
+    );
+    REQUIRE(
+        !pin_read_field(&acceptance_field_reads, vector.ptr, &vector_type->fields[1], &second)
+    );
     REQUIRE(first.type == PIN_F32 && first.f == 8 && second.type == PIN_F32 && second.f == 7);
     REQUIRE(authority_history(test, false, axis0_text));
     REQUIRE(authority_history(test, false, scalar_text));

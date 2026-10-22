@@ -55,6 +55,7 @@
 typedef struct view
 {
     studio *s;
+    arena storage;
     yyjson_mut_doc *doc;
     yyjson_mut_val *root;
     yyjson_mut_val *values; /* propertyValues */
@@ -886,7 +887,9 @@ static void struct_row(rows *r, const field_source *f)
     axis_desc axes[4];
     for (int i = 0; i < type->field_count; i++) {
         pin_value axis = { 0 };
-        pin_read_field(f->value.ptr, &type->fields[i], &axis);
+        if (pin_read_field(&r->v->storage, f->value.ptr, &type->fields[i], &axis)) {
+            return;
+        }
         double value = axis.type == PIN_F32 ? axis.f : axis.d;
         axes[i] = (axis_desc){ .key = type->fields[i].name,
                                .label = LABELS[i],
@@ -939,7 +942,7 @@ static void value_row(rows *r, const field_source *f)
         case PIN_STR:
             d.control = "text";
             /* A mixed text stays empty, its placeholder a dash. */
-            text_row(r, &d, d.mixed || !value->str ? "" : value->str);
+            text_row(r, &d, d.mixed ? "" : properties_text(&r->v->storage, value));
             return;
         case PIN_HANDLE:
             entity_row(r, d, value->u64, f->path, f->path && f->placed && !value->u64);
@@ -964,7 +967,9 @@ static void field_row(rows *r, const field_source *f)
     asset_row(
         r,
         d,
-        &(asset_desc){ .kind = named, .value = f->value.str ? f->value.str : "", .none = "None" }
+        &(asset_desc){ .kind = named,
+                       .value = properties_text(&r->v->storage, &f->value),
+                       .none = "None" }
     );
 }
 
@@ -978,7 +983,7 @@ static void object_field(rows *r, scene_actor *actor, const prototype_component 
     const type_field *field = &desc->type->fields[index];
     char label[128], id[PROPERTIES_ROW_ID];
     pin_value value = { 0 };
-    if (ecs_component_read_field(scene->world, actor->entity, desc->id, index, &value) !=
+    if (ecs_component_read_field(&r->v->storage, scene->world, actor->entity, desc->id, index, &value) !=
             ECS_OK ||
         !properties_label(s, component, field, label, sizeof label)) {
         return;
@@ -1231,12 +1236,19 @@ static void show_prototype_field(
         f.row.reset_override = source.overridden;
         f.row.overridden = source.overridden;
     }
-    pin_read_field(component->data, field, &f.value);
+    if (pin_read_field(&r->v->storage, component->data, field, &f.value)) {
+        return;
+    }
     const prototype *shown = scene_source_input_preview(s->scene, asset);
     if (shown != asset->prototype) {
         pin_value pending = { 0 };
-        if (prototype_read_field(shown, component->desc->name, field->name, &pending) ==
-            0) {
+        if (prototype_read_field(
+                &r->v->storage,
+                shown,
+                component->desc->name,
+                field->name,
+                &pending
+            ) == 0) {
             f.value = pending;
             f.path = scene_link_path(shown->links, component->desc->id, index);
         }
@@ -1277,7 +1289,7 @@ static void prototype_parameters(view *v, scene_prototype_asset *asset, bool loc
             continue;
         }
         pin_value value;
-        if (!properties_parameter_value(av_obj_value_at(parameters, i), &value)) {
+        if (!properties_parameter_value(&v->storage, av_obj_value_at(parameters, i), &value)) {
             continue;
         }
         properties_row key;
@@ -1288,7 +1300,7 @@ static void prototype_parameters(view *v, scene_prototype_asset *asset, bool loc
         row_desc row = { .id = id, .label = label, .readonly = locked };
         if (value.type == PIN_STR || value.type == PIN_I64 || value.type == PIN_U64) {
             row.control = "text";
-            text_row(&r, &row, value.type == PIN_STR ? value.str : pin_value_to_string(&value));
+            text_row(&r, &row, properties_text(&v->storage, &value));
         } else if (value.type == PIN_BOOL) {
             row.control = "bool";
             bool_row(&r, &row, value.b);
@@ -1858,5 +1870,6 @@ bool studio_properties_sync(studio *s, const studio_panel_sync *at)
     if (v.values_changed) {
         rml_data_model_dirty(at->model, "propertyValues");
     }
+    arena_free(&v.storage);
     return v.changed;
 }

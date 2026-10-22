@@ -81,9 +81,7 @@ int studio_refresh_document_asset(studio *s)
 }
 
 static reference_symbol asset_symbol(int asset)
-{
-    return (reference_symbol){ .kind = REFERENCE_SYMBOL_ASSET, .asset = asset };
-}
+{ return (reference_symbol){ .kind = REFERENCE_SYMBOL_ASSET, .asset = asset }; }
 
 /* A target the index lacks lists no references rather than nothing at all. */
 void studio_find_document_references(studio *s)
@@ -96,9 +94,7 @@ void studio_find_asset_references(studio *s, int asset)
     app_scene_authoring_refresh_asset_index(s->scene);
     const reference_asset *
         found = reference_index_asset_at(app_scene_authoring_asset_index(s->scene), asset);
-    if (found) {
-        studio_find_references(s, found->name, asset_symbol(asset));
-    }
+    if (found) { studio_find_references(s, found->name, asset_symbol(asset)); }
 }
 
 void studio_find_graph_references(studio *s, const graph *gr)
@@ -139,13 +135,11 @@ static bool event_node(const node *n)
 
 static const char *spawned_prototype(const node *n)
 {
-    if (strcmp(n->desc->name, "Spawn Prototype")) {
-        return NULL;
-    }
+    if (strcmp(n->desc->name, "Spawn Prototype")) { return NULL; }
     for (int p = 0; p < n->input_count; p++) {
         const pin_spec *pin = &n->input_pins[p];
-        if (!strcmp(pin->name, "Prototype") && pin->default_value.str &&
-            pin->default_value.str[0]) {
+        if (!strcmp(pin->name, "Prototype") && pin->type == PIN_NAME &&
+            pin->default_value.str && pin->default_value.str[0]) {
             return pin->default_value.str;
         }
     }
@@ -185,9 +179,7 @@ bool studio_node_referable(const studio *s, const node *n)
 }
 
 bool studio_node_traceable(const studio *s, const node *n)
-{
-    return !studio_node_reactive(s, n) && (graph_call(n) || event_node(n));
-}
+{ return !studio_node_reactive(s, n) && (graph_call(n) || event_node(n)); }
 
 /* What a node references: the function it calls, the variable it reads or
    writes, the event it sends or handles, the prototype it spawns, or the
@@ -275,9 +267,7 @@ void studio_open_reference(studio *s, const studio_reference *row)
             return;
         }
     }
-    if (row->node_id) {
-        studio_reveal_node(s, row->graph_id, row->node_id);
-    }
+    if (row->node_id) { studio_reveal_node(s, row->graph_id, row->node_id); }
     for (int i = 0; row->object && i < acount(scene->actors); i++) {
         if (scene->actors[i].name && !strcmp(scene->actors[i].name, row->place)) {
             select_instance(scene, i);
@@ -290,9 +280,7 @@ int *studio_find_rows(const studio *s)
 {
     int *shown = NULL;
     for (int i = 0; i < acount(s->references); i++) {
-        if (matches(&s->references[i], s->output_filter)) {
-            apush(shown, i);
-        }
+        if (matches(&s->references[i], s->output_filter)) { apush(shown, i); }
     }
     return shown;
 }
