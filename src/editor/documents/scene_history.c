@@ -8,6 +8,7 @@
 #include "support/asset_json.h"
 #include "support/xalloc.h"
 #include "types/array.h"
+#include "types/text.h"
 #include "types/type.h"
 #include "types/value_document.h"
 
@@ -62,8 +63,8 @@ static void clear_edits(scene_edit **edits)
             free((void *)fields[j].before.type_name);
             free((void *)fields[j].after.type_name);
             if (fields[j].before.type == PIN_STR || fields[j].before.type == PIN_NAME) {
-                free((void *)fields[j].before.str);
-                free((void *)fields[j].after.str);
+                pin_value_destroy(&fields[j].before);
+                pin_value_destroy(&fields[j].after);
             }
             if (fields[j].before.type == PIN_STRUCT) {
                 free(fields[j].before.ptr);
@@ -239,7 +240,7 @@ static bool same_value(pin_value a, pin_value b)
         case PIN_F64: return a.d == b.d;
         case PIN_ENUM: return a.e == b.e;
         case PIN_STR:
-        case PIN_NAME: return !strcmp(a.str ? a.str : "", b.str ? b.str : "");
+        case PIN_NAME: return pin_value_equal(&a, &b);
         case PIN_STRUCT: return pin_value_equal(&a, &b);
         default: return false;
     }
@@ -275,8 +276,11 @@ bool scene_history_push_fields(
     for (int i = 0; i < count; i++) {
         scene_field_edit field = fields[i];
         if (field.before.type == PIN_STR || field.before.type == PIN_NAME) {
-            field.before.str = xstrdup(field.before.str ? field.before.str : "");
-            field.after.str = xstrdup(field.after.str ? field.after.str : "");
+            int before_error = pin_value_copy(&field.before, &fields[i].before);
+            int after_error = pin_value_copy(&field.after, &fields[i].after);
+            assert(!before_error && !after_error);
+            (void)before_error;
+            (void)after_error;
         }
         if (field.before.type == PIN_STRUCT) {
             const type_desc *type = type_catalog_find(field.before.type_name);
@@ -869,7 +873,6 @@ static av_value *history_value(av_doc *doc, pin_value value)
     history_text(doc, object, "name", value.type_name);
     switch (value.type) {
         case PIN_BOOL: av_obj_add_bool(doc, object, "value", value.b); break;
-        case PIN_STR:
         case PIN_NAME:
             history_text(doc, object, "value", value.str ? value.str : "");
             break;
@@ -891,6 +894,7 @@ static av_value *history_value(av_doc *doc, pin_value value)
         case PIN_F64:
             av_obj_add_val(doc, object, "value", av_real(doc, value.d));
             break;
+        case PIN_STR:
         case PIN_STRUCT: {
             pin_value_write_document(doc, object, "value", value.type, value.type_name, &value);
             break;
@@ -922,7 +926,8 @@ static bool history_read_typed_value(pin_type type, const char *type_name, av_va
         *out = value;
         out->type_name = type_name;
         if (type == PIN_STR || type == PIN_NAME) {
-            out->str = xstrdup(value.str);
+            valid = pin_value_copy(out, &value) == 0;
+            out->type_name = type_name;
         }
         if (type == PIN_STRUCT) {
             out->ptr = xmalloc(shape->size);
@@ -950,8 +955,14 @@ static bool history_read_value(av_value *object, pin_value *out)
         out->ptr = value.ptr;
         return scalar(*out);
     }
-    if (out->type == PIN_STR || out->type == PIN_NAME) {
+    if (out->type == PIN_STR) {
+        return history_read_typed_value(PIN_STR, out->type_name, value, out);
+    }
+    if (out->type == PIN_NAME) {
         if (!av_is_str(value)) {
+            return false;
+        }
+        if (memchr(av_get_str(value), 0, av_get_len(value))) {
             return false;
         }
         out->str = xstrdup(av_get_str(value));

@@ -1,10 +1,11 @@
 #include "authoring/material_prepare.h"
-#include "execution/status.h"
 #include "editor/collab/actions_scene.h"
 #include "editor/workspace/model_preview.h"
 #include "editor/workspace/scene_internal.h"
+#include "execution/status.h"
 #include "render/shader_catalog.h"
 #include "runtime/component_catalog.h"
+#include "support/arena.h"
 #include "types/array.h"
 #include "types/type.h"
 
@@ -207,15 +208,18 @@ static void keep_component(
 )
 {
     const ecs_component_desc *desc = authored->desc;
+    arena storage = { 0 };
     for (int f = 0; f < desc->type->field_count; f++) {
+        arena_reset(&storage);
         pin_value running = { 0 };
-        if (ecs_component_read_field(scene->world, entity, desc->id, f, &running) != ECS_OK ||
+        if (ecs_component_read_field(&storage, scene->world, entity, desc->id, f, &running) !=
+                ECS_OK ||
             !editable_scalar(&running)) {
             continue;
         }
-        pin_value before = running;
-        pin_read_field(authored->data, &desc->type->fields[f], &before);
-        if (pin_value_equal(&running, &before)) {
+        pin_value before = { 0 };
+        if (pin_read_field(&storage, authored->data, &desc->type->fields[f], &before) ||
+            pin_value_equal(&running, &before)) {
             continue;
         }
         scene_field_edit edit = { .component = desc->id, .field = f };
@@ -224,6 +228,7 @@ static void keep_component(
         }
         apush(kept->fields, edit);
     }
+    arena_free(&storage);
 }
 
 int scene_keep_changes(app_scene_authoring *scene, const ecs_component_desc *only)
@@ -292,9 +297,11 @@ int scene_kept_values(app_scene_authoring *scene, int *objects, const char **nam
    Properties records one. */
 static void apply_kept_field(app_scene_authoring *scene, ecs_entity entity, const scene_field_edit *kept)
 {
+    arena storage = { 0 };
     pin_value before = { 0 };
-    if (ecs_component_read_field(scene->world, entity, kept->component, kept->field, &before) !=
+    if (ecs_component_read_field(&storage, scene->world, entity, kept->component, kept->field, &before) !=
         ECS_OK) {
+        arena_free(&storage);
         return;
     }
     scene->property_actor = entity;
@@ -304,6 +311,7 @@ static void apply_kept_field(app_scene_authoring *scene, ecs_entity entity, cons
         !scene_property_value_copy(&scene->property_edit.after, kept->after)) {
         abort();
     }
+    arena_free(&storage);
     scene->property_dirty = scene->scene_dirty;
     if (scene_collab_can_write_locally() &&
         ecs_component_write_field(scene->world, entity, kept->component, kept->field, kept->after) ==

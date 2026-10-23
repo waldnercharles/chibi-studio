@@ -40,14 +40,26 @@ static const prototype_component *base_component(const scene_actor *actor, ecs_c
 static bool overrides(const app_scene_authoring *scene, const scene_actor *actor, prototype_field o)
 {
     const prototype_component *component = base_component(actor, o.component->id);
+    arena storage = { 0 };
     pin_value value = { 0 }, inherited = { 0 };
-    if (!component ||
-        ecs_component_read_field(scene->world, actor->entity, o.component->id, o.field, &value) !=
-            ECS_OK) {
-        return false;
-    }
-    pin_read_field(component->data, &o.component->type->fields[o.field], &inherited);
-    return !pin_value_equal(&value, &inherited);
+    bool changed = component &&
+                   ecs_component_read_field(
+                       &storage,
+                       scene->world,
+                       actor->entity,
+                       o.component->id,
+                       o.field,
+                       &value
+                   ) == ECS_OK &&
+                   !pin_read_field(
+                       &storage,
+                       component->data,
+                       &o.component->type->fields[o.field],
+                       &inherited
+                   ) &&
+                   !pin_value_equal(&value, &inherited);
+    arena_free(&storage);
+    return changed;
 }
 
 /* Whether `actor` inherits one of the fields: has its component and keeps
@@ -195,6 +207,7 @@ static bool follow_prototype(
 )
 {
     scene_field_edit *edits = NULL;
+    arena storage = { 0 };
     bool complete = true;
     for (int i = 0; i < count; i++) {
         prototype_field o = fields[i];
@@ -210,12 +223,18 @@ static bool follow_prototype(
             continue;
         }
         pin_value now = { 0 }, next = { 0 };
-        if (ecs_component_read_field(scene->world, actor->entity, o.component->id, o.field, &now) !=
-            ECS_OK) {
+        if (ecs_component_read_field(
+                &storage,
+                scene->world,
+                actor->entity,
+                o.component->id,
+                o.field,
+                &now
+            ) != ECS_OK ||
+            pin_read_field(&storage, after->data, &o.component->type->fields[o.field], &next)) {
             complete = false;
             continue;
         }
-        pin_read_field(after->data, &o.component->type->fields[o.field], &next);
         if (pin_value_equal(&now, &next)) {
             continue;
         }
@@ -245,6 +264,7 @@ static bool follow_prototype(
         scene_property_value_free(&edits[i].after);
     }
     afree(edits);
+    arena_free(&storage);
     return complete;
 }
 
@@ -271,16 +291,24 @@ static int apply_source_overrides(
         return -1;
     }
     authoring_prototype_edit *edits = NULL;
+    arena storage = { 0 };
     for (int i = 0; i < count; i++) {
         const ecs_component_desc *component = fields[i].component;
         int field = fields[i].field;
         pin_value value = { 0 };
         if (!component || !component->type || field < 0 ||
             field >= component->type->field_count ||
-            ecs_component_read_field(scene->world, source->entity, component->id, field, &value) !=
-                ECS_OK) {
+            ecs_component_read_field(
+                &storage,
+                scene->world,
+                source->entity,
+                component->id,
+                field,
+                &value
+            ) != ECS_OK) {
             snprintf(scene->prototype_message, sizeof scene->prototype_message, "Could not read the selected instance fields.");
             afree(edits);
+            arena_free(&storage);
             return -1;
         }
         apush(
@@ -304,6 +332,7 @@ static int apply_source_overrides(
         sizeof scene->prototype_message
     );
     afree(edits);
+    arena_free(&storage);
     if (!valid || !candidate.changed) {
         authoring_prototype_edit_result_free(&candidate);
         free(before_text);

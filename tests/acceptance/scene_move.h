@@ -151,7 +151,8 @@ static bool source_history_reopens(
                              ? prototype_load_value(av_doc_root(document), registry, error, sizeof error)
                              : NULL;
         pin_value field;
-        valid = value && !prototype_read_field(value, "Transform", "x", &field) &&
+        valid = value &&
+                !prototype_read_field(NULL, value, "Transform", "x", &field) &&
                 field.type == PIN_F32 && field.f == (changed ? 2 : 1);
         prototype_free(value);
         av_doc_free(document);
@@ -596,21 +597,21 @@ static bool static_prototype_refresh(void)
     int passive_tabs = acount(scene->tabs), passive_active = scene->active_tab;
     pin_value value;
     REQUIRE(
-        !app_scene_authoring_read_prototype_field(scene, names[2], "Transform", "x", &value)
+        !app_scene_authoring_read_prototype_field(NULL, scene, names[2], "Transform", "x", &value)
     );
     REQUIRE(value.type == PIN_F32 && value.f == 1);
     REQUIRE(!write_file_atomic(paths[0], "AcceptanceBase :: prototype { Transform {x:2, y:0} }"));
     REQUIRE(app_scene_authoring_reload_path(scene, paths[0]) == APP_DISK_RELOADED);
     for (int i = 0; i < 3; i++) {
         REQUIRE(
-            !app_scene_authoring_read_prototype_field(scene, names[i], "Transform", "x", &value)
+            !app_scene_authoring_read_prototype_field(NULL, scene, names[i], "Transform", "x", &value)
         );
         REQUIRE(value.type == PIN_F32 && value.f == 2);
     }
     scene_prototype_asset *nest = find_prototype(scene, names[3]);
     REQUIRE(nest && acount(nest->prototype->child_prototypes) == 1);
     REQUIRE(
-        !prototype_read_field(nest->prototype->child_prototypes[0], "Transform", "x", &value)
+        !prototype_read_field(NULL, nest->prototype->child_prototypes[0], "Transform", "x", &value)
     );
     REQUIRE(value.type == PIN_F32 && value.f == 2);
     REQUIRE(acount(scene->tabs) == passive_tabs && scene->active_tab == passive_active);
@@ -626,7 +627,7 @@ static bool static_prototype_refresh(void)
     float refreshed[4] = { 0 };
     bool propagated = true, reloaded = false;
     for (int i = 0; i < 3; i++) {
-        bool read = !app_scene_authoring_read_prototype_field(scene, names[i], "Transform", "x", &value) &&
+        bool read = !app_scene_authoring_read_prototype_field(NULL, scene, names[i], "Transform", "x", &value) &&
                     value.type == PIN_F32;
         if (read) {
             refreshed[i] = value.f;
@@ -635,7 +636,7 @@ static bool static_prototype_refresh(void)
     }
     nest = find_prototype(scene, names[3]);
     bool child = nest && acount(nest->prototype->child_prototypes) == 1 &&
-                 !prototype_read_field(nest->prototype->child_prototypes[0], "Transform", "x", &value) &&
+                 !prototype_read_field(NULL, nest->prototype->child_prototypes[0], "Transform", "x", &value) &&
                  value.type == PIN_F32;
     if (child) {
         refreshed[3] = value.f;
@@ -681,11 +682,11 @@ static bool static_prototype_refresh(void)
     REQUIRE(!write_file_atomic(paths[0], "AcceptanceBase :: prototype { Transform {x:3, y:0} }"));
     REQUIRE(app_scene_authoring_reload_path(scene, paths[0]) == APP_DISK_UNSAVED);
     REQUIRE(
-        !app_scene_authoring_read_prototype_field(scene, names[1], "Transform", "x", &value)
+        !app_scene_authoring_read_prototype_field(NULL, scene, names[1], "Transform", "x", &value)
     );
     REQUIRE(value.f == 9 && middle->dirty);
     REQUIRE(
-        !app_scene_authoring_read_prototype_field(scene, names[2], "Transform", "x", &value)
+        !app_scene_authoring_read_prototype_field(NULL, scene, names[2], "Transform", "x", &value)
     );
     REQUIRE(value.f == 3);
     REQUIRE(strstr(app_scene_authoring_message(scene), "unsaved edits"));

@@ -67,7 +67,10 @@ static bool compact_struct(const pin_value *v, const pin_spec *spec, char *buf, 
     for (int i = 0; i < type->field_count && used < cap; i++) {
         pin_value field;
         double number;
-        pin_read_field(v->ptr, &type->fields[i], &field);
+        if (type->fields[i].type < PIN_I8 || type->fields[i].type > PIN_F64 ||
+            pin_read_field(NULL, v->ptr, &type->fields[i], &field)) {
+            return false;
+        }
         if (!number_of(&field, &number)) {
             return false;
         }

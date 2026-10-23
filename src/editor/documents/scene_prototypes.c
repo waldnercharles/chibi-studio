@@ -134,6 +134,7 @@ static bool source_import_model(
         return false;
     }
     authoring_prototype_edit *ops = NULL;
+    arena values = { 0 };
     for (int i = 0; i < acount(asset->prototype->components); i++) {
         const prototype_component *next = &asset->prototype->components[i];
         const prototype_component
@@ -153,8 +154,17 @@ static bool source_import_model(
         for (int field = 0; field < next->desc->type->field_count; field++) {
             const type_field *desc = &next->desc->type->fields[field];
             pin_value before = { 0 }, after = { 0 };
-            pin_read_field(prior->data, desc, &before);
-            pin_read_field(next->data, desc, &after);
+            const char *read_error = pin_read_field(&values, prior->data, desc, &before);
+            if (!read_error) {
+                read_error = pin_read_field(&values, next->data, desc, &after);
+            }
+            if (read_error) {
+                snprintf(error, size, "%s", read_error);
+                arena_free(&values);
+                afree(ops);
+                authoring_prototype_edit_result_free(&disk);
+                return false;
+            }
             if (!pin_value_equal(&before, &after)) {
                 apush(
                     ops,
@@ -220,6 +230,7 @@ static bool source_import_model(
         ok = asset_code_edit_source(code, text, edited.source, NULL, false);
     }
     afree(ops);
+    arena_free(&values);
     authoring_prototype_edit_result_free(&disk);
     authoring_prototype_edit_result_free(&edited);
     return ok;
@@ -761,15 +772,23 @@ static int refresh_prototype_actor(
     for (int i = 0; i < acount(native_prototype->components); i++) {
         const prototype_component *component = &native_prototype->components[i];
         for (int field = 0; field < component->desc->type->field_count; field++) {
+            arena storage = { 0 };
             pin_value value;
-            pin_read_field(component->data, &component->desc->type->fields[field], &value);
-            if (ecs_component_write_field(
-                    scene->world,
-                    actor->entity,
-                    component->desc->id,
-                    field,
-                    value
-                ) != ECS_OK) {
+            bool written = !pin_read_field(
+                               &storage,
+                               component->data,
+                               &component->desc->type->fields[field],
+                               &value
+                           ) &&
+                           ecs_component_write_field(
+                               scene->world,
+                               actor->entity,
+                               component->desc->id,
+                               field,
+                               value
+                           ) == ECS_OK;
+            arena_free(&storage);
+            if (!written) {
                 av_value_free(overrides);
                 return -1;
             }
@@ -868,6 +887,7 @@ int write_prototype_field(
 }
 
 int app_scene_authoring_read_prototype_field(
+    arena *storage,
     app_scene_authoring *scene,
     const char *prototype_name,
     const char *component,
@@ -884,8 +904,9 @@ int app_scene_authoring_read_prototype_field(
         ) < 0) {
         return -1;
     }
-    return asset ? prototype_read_field(asset->prototype, component, field, value)
-                 : -1;
+    return asset
+             ? prototype_read_field(storage, asset->prototype, component, field, value)
+             : -1;
 }
 
 static int set_prototype_field(

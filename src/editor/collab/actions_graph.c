@@ -100,9 +100,12 @@ static bool action_value_valid(const pin_value *value, int depth)
             return true; /* Authored null structs represent their typed zero default. */
         }
         for (int i = 0; i < type->field_count; i++) {
+            arena storage = { 0 };
             pin_value field;
-            pin_read_field(value->ptr, &type->fields[i], &field);
-            if (!action_value_valid(&field, depth + 1)) {
+            bool valid = !pin_read_field(&storage, value->ptr, &type->fields[i], &field) &&
+                         action_value_valid(&field, depth + 1);
+            arena_free(&storage);
+            if (!valid) {
                 return false;
             }
         }
@@ -117,7 +120,7 @@ static bool action_value_valid(const pin_value *value, int depth)
     if (value->type == PIN_HANDLE) {
         return !value->u64;
     }
-    return (value->type != PIN_STR && value->type != PIN_NAME) || value->str;
+    return value->type != PIN_NAME || value->str;
 }
 
 static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const char *key, const pin_value *value)
@@ -180,12 +183,16 @@ static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const cha
             yyjson_mut_obj_add_real(doc, item, "data", value->d);
             break;
         case PIN_NAME:
-        case PIN_STR:
             if (!value->str) {
                 return false;
             }
             yyjson_mut_obj_add_strcpy(doc, item, "data", value->str);
             break;
+        case PIN_STR: {
+            pin_string text = pin_text(*value);
+            yyjson_mut_obj_add_strncpy(doc, item, "data", text.bytes, text.length);
+            break;
+        }
         case PIN_ENUM:
             yyjson_mut_obj_add_int(doc, item, "data", value->e);
             break;
@@ -319,11 +326,17 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
             value.d = yyjson_get_real(data);
             break;
         case PIN_NAME:
-        case PIN_STR:
             if (!yyjson_is_str(data)) {
                 return false;
             }
             value.str = yyjson_get_str(data);
+            break;
+        case PIN_STR:
+            if (!yyjson_is_str(data)) {
+                return false;
+            }
+            value = graph_text_value(storage, yyjson_get_str(data), yyjson_get_len(data));
+            value.type_name = type_name;
             break;
         case PIN_ENUM:
             if (!yyjson_is_int(data) || yyjson_get_sint(data) < INT32_MIN ||
