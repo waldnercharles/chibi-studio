@@ -5,6 +5,21 @@ The optional native `studio-acceptance` target compiles the actual application a
 host in test wrappers. The production binary has no fixture CLI or test hooks.
 Build with `-DCHIBI_STUDIO_BUILD_ACCEPTANCE=ON` against an installed SDK.
 
+`studio-acceptance --sdk-values` runs twelve renderer-free C cases without a
+project or compiler preparation. Property copies retain embedded NUL and
+non-UTF-8 bytes after their input arena retires. UTF-8 and non-UTF-8 field edits
+survive a JSON history checkpoint, retirement of the original history and input
+arena, and real ECS Undo/Redo through the restored history. An explicit
+descriptor field retains embedded NUL and non-UTF-8 bytes through Undo/Redo.
+Checkpoints with embedded NUL in either value of a native C-string field reject
+without replacing prior history. Replay rejects a mixed field batch before its
+first write when a later native string cannot be represented. Real graph
+collaboration actions preserve UTF-8, embedded NUL and non-UTF-8 text after the
+input arena and action JSON retire, and reject a payload beyond the shared
+codec's value budget. The installed native and language catalogs
+expose a bound `prototype_choices` action when optional
+Studio services are selected, and omit it from the ordinary application catalog.
+
 `studio-acceptance --source-edit --project-root PATH` accepts a disposable copy of
 this directory's `project`. Preferences and thumbnail cache are pinned inside that
 disposable project; initial Counter bytes are checked before and after. It checks that the project remembered last leads the recent projects, once, and that

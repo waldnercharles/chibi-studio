@@ -40,7 +40,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+/* Test bodies require the application and pico_unit declarations above. */
 #include "scene_read.h"
+#include "sdk_values.h"
 
 studio *studio_acceptance_studio(void *);
 int studio_acceptance_host_main(int, char **);
@@ -2535,7 +2537,8 @@ static bool links(app_scene_authoring *scene, int actor, int target)
 {
     pin_value value = { 0 };
     REQUIRE(
-        ecs_component_read_field(scene->world, scene->actors[actor].entity, link_id(scene), 0, &value) == ECS_OK
+        ecs_component_read_field(NULL, scene->world, scene->actors[actor].entity, link_id(scene), 0, &value) ==
+        ECS_OK
     );
     return value.u64 ==
            (target < 0 ? 0 : ecs_entity_to_u64(scene->actors[target].entity));
@@ -4574,6 +4577,9 @@ TEST_CASE(debugger_source_history)
 
 int main(int argc, char **argv)
 {
+    if (argc == 2 && !strcmp(argv[1], "--sdk-values")) {
+        return sdk_values_main();
+    }
     if (argc == 2 && !strcmp(argv[1], "--scene-read")) {
         studio_scene_read_tests();
         pu_print_stats();
@@ -4648,7 +4654,7 @@ int main(int argc, char **argv)
             "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
             "history "
             "--project-root PATH | --scene-cursors | --scene-read | "
-            "--project-open | "
+            "--project-open | --sdk-values | "
             "--outliner-row-policies --source PATH\n"
         );
         return 2;

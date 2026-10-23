@@ -29,12 +29,14 @@
 #include "runtime/behaviors/entities.h"
 #include "runtime/component_catalog.h"
 #include "runtime/declared_components.h"
+#include "support/arena.h"
 #include "support/array.h"
 #include "support/asset_json.h"
 #include "support/asset_text.h"
 #include "support/text_file.h"
 #include "support/xalloc.h"
 #include "types/array.h"
+#include "types/text.h"
 #include "types/type.h"
 #include "types/value_document.h"
 #include "types/value_format.h"
@@ -1123,7 +1125,18 @@ bool scene_property_value_copy(pin_value *out, pin_value value)
     }
     *out = value;
     out->type_name = value.type_name ? xstrdup(value.type_name) : NULL;
-    if (value.type == PIN_STR || value.type == PIN_NAME) {
+    if (value.type == PIN_STR) {
+        pin_string text = pin_text(value);
+        pin_value copy = { 0 };
+        if (pin_value_text(NULL, &copy, text.bytes, text.length)) {
+            free((void *)out->type_name);
+            *out = (pin_value){ 0 };
+            return false;
+        }
+        out->text = copy.text;
+        return true;
+    }
+    if (value.type == PIN_NAME) {
         out->str = xstrdup(value.str ? value.str : "");
         return true;
     }
@@ -1144,7 +1157,10 @@ void scene_property_value_free(pin_value *value)
 {
     assert(value);
     free((void *)value->type_name);
-    if (value->type == PIN_STR || value->type == PIN_NAME) {
+    if (value->type == PIN_STR) {
+        free((void *)value->text);
+    }
+    if (value->type == PIN_NAME) {
         free((void *)value->str);
     }
     if (value->type == PIN_STRUCT) {
@@ -1240,9 +1256,11 @@ static void commit_property_others(
     int field
 )
 {
+    arena storage = { 0 };
     for (int i = 0; i < acount(others); i++) {
+        arena_reset(&storage);
         pin_value after = { 0 };
-        if (ecs_component_read_field(scene->world, others[i].entity, component, field, &after) ==
+        if (ecs_component_read_field(&storage, scene->world, others[i].entity, component, field, &after) ==
                 ECS_OK &&
             !pin_value_equal(&others[i].before, &after)) {
             scene->property_actor = others[i].entity;
@@ -1260,6 +1278,7 @@ static void commit_property_others(
         }
         scene_property_value_free(&others[i].before);
     }
+    arena_free(&storage);
 }
 
 void finish_property_edit(app_scene_authoring *scene)

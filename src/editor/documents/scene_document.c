@@ -693,7 +693,7 @@ static void link_path(app_scene_authoring *scene, const scene_actor *actor, cons
 {
     const ecs_component_desc *desc = link->component;
     pin_value held = { 0 };
-    if (ecs_component_read_field(scene->world, actor->entity, desc->id, link->field, &held) !=
+    if (ecs_component_read_field(NULL, scene->world, actor->entity, desc->id, link->field, &held) !=
         ECS_OK) {
         return;
     }

@@ -9,8 +9,9 @@
 #include "editor/documents/component_properties.h"
 #include "editor/studio/studio_internal.h"
 #include "editor/ui/labels.h"
-#include "types/value_format.h"
+#include "support/arena.h"
 #include "support/array.h"
+#include "types/value_format.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -147,7 +148,9 @@ static prototype_field *field_rows(studio *s, scene_actor *actor, const prototyp
     kit *k = s->kit;
     struct studio_prototype_action *a = &s->prototype_action;
     prototype_field *checked = NULL;
+    arena storage = { 0 };
     for (int i = 0; i < acount(fields); i++) {
+        arena_reset(&storage);
         const ecs_component_desc *desc = fields[i].component;
         const type_field *field = &desc->type->fields[fields[i].field];
         prototype_component component = { .desc = desc };
@@ -157,13 +160,16 @@ static prototype_field *field_rows(studio *s, scene_actor *actor, const prototyp
         snprintf(label, sizeof label, "%s \xc2\xb7 %s", component_label, field_label);
         snprintf(key, sizeof key, "f%d", i);
         pin_value value = { 0 };
-        ecs_component_read_field(
-            s->scene->world,
-            actor->entity,
-            desc->id,
-            fields[i].field,
-            &value
-        );
+        if (ecs_component_read_field(
+                &storage,
+                s->scene->world,
+                actor->entity,
+                desc->id,
+                fields[i].field,
+                &value
+            ) != ECS_OK) {
+            continue;
+        }
         bool on = !skipped(a->skipped, fields[i]);
         kit_push(k, key, NULL, "prototype-field");
         if (kit_checkbox(k, "check", &on, label, 0) && on) {
@@ -183,6 +189,7 @@ static prototype_field *field_rows(studio *s, scene_actor *actor, const prototyp
             apush(checked, fields[i]);
         }
     }
+    arena_free(&storage);
     return checked;
 }
 

@@ -100,9 +100,12 @@ static bool action_value_valid(const pin_value *value, int depth)
             return true; /* Authored null structs represent their typed zero default. */
         }
         for (int i = 0; i < type->field_count; i++) {
+            arena storage = { 0 };
             pin_value field;
-            pin_read_field(value->ptr, &type->fields[i], &field);
-            if (!action_value_valid(&field, depth + 1)) {
+            bool valid = !pin_read_field(&storage, value->ptr, &type->fields[i], &field) &&
+                         action_value_valid(&field, depth + 1);
+            arena_free(&storage);
+            if (!valid) {
                 return false;
             }
         }
@@ -117,7 +120,7 @@ static bool action_value_valid(const pin_value *value, int depth)
     if (value->type == PIN_HANDLE) {
         return !value->u64;
     }
-    return (value->type != PIN_STR && value->type != PIN_NAME) || value->str;
+    return value->type != PIN_NAME || value->str;
 }
 
 static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const char *key, const pin_value *value)
@@ -130,14 +133,16 @@ static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const cha
     if (value->type_name) {
         yyjson_mut_obj_add_strcpy(doc, item, "type_name", value->type_name);
     }
-    if (value->container != PIN_CONTAINER_SINGLE || value->type == PIN_STRUCT) {
+    if (value->container != PIN_CONTAINER_SINGLE || value->type == PIN_STRUCT ||
+        value->type == PIN_STR) {
         yyjson_mut_obj_add_int(doc, item, "container", value->container);
         av_doc *native = av_doc_new();
         av_value *data = av_obj(native);
         pin_value_write_document(native, data, "data", value->type, value->type_name, value);
-        yyjson_mut_obj_add_val(doc, item, "data", av_to_json(doc, av_obj_get(data, "data")));
+        yyjson_mut_val *payload = av_to_json(doc, av_obj_get(data, "data"));
+        bool valid = payload && yyjson_mut_obj_add_val(doc, item, "data", payload);
         av_doc_free(native);
-        return true;
+        return valid;
     }
     switch (value->type) {
         case PIN_BOOL:
@@ -180,7 +185,6 @@ static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const cha
             yyjson_mut_obj_add_real(doc, item, "data", value->d);
             break;
         case PIN_NAME:
-        case PIN_STR:
             if (!value->str) {
                 return false;
             }
@@ -196,6 +200,7 @@ static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const cha
             yyjson_mut_obj_add_uint(doc, item, "data", 0);
             break;
         case PIN_FLOW:
+        case PIN_STR:
         case PIN_STRUCT: return false;
     }
     return true;
@@ -222,7 +227,8 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
     if (value.type <= PIN_FLOW || value.type > PIN_ENUM) {
         return false;
     }
-    if (value.container != PIN_CONTAINER_SINGLE || value.type == PIN_STRUCT) {
+    if (value.container != PIN_CONTAINER_SINGLE || value.type == PIN_STRUCT ||
+        value.type == PIN_STR) {
         if (value.type == PIN_STRUCT && !type_is_plain(type_catalog_find(type_name))) {
             return false;
         }
@@ -233,6 +239,7 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
         char error[192];
         int result = pin_value_read_document(&owned, value, native_data, &decoded, error, sizeof error);
         if (!result) {
+            decoded.type_name = type_name;
             result = pin_value_copy_to_graph(storage, &value, &decoded);
         }
         arena_free(&owned);
@@ -319,7 +326,6 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
             value.d = yyjson_get_real(data);
             break;
         case PIN_NAME:
-        case PIN_STR:
             if (!yyjson_is_str(data)) {
                 return false;
             }
@@ -339,6 +345,7 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
             value.u64 = 0;
             break;
         case PIN_FLOW:
+        case PIN_STR:
         case PIN_STRUCT: return false;
     }
     *out = value;

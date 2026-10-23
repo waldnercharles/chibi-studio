@@ -35,7 +35,9 @@
 #include "editor/ui/labels.h"
 #include "graph/model/registry.h"
 #include "runtime/component_catalog.h"
+#include "support/arena.h"
 #include "support/array.h"
+#include "types/text.h"
 #include "types/value_format.h"
 #include "ui/drag.h"
 #include "ui/popover.h"
@@ -61,6 +63,7 @@ typedef struct view
     int slots;              /* the values written this refresh */
     bool changed;           /* properties changed */
     bool values_changed;
+    arena storage;
 } view;
 
 /* ---------- Members, written in place ---------- */
@@ -879,7 +882,7 @@ static void struct_row(rows *r, const field_source *f)
     axis_desc axes[4];
     for (int i = 0; i < type->field_count; i++) {
         pin_value axis = { 0 };
-        pin_read_field(f->value.ptr, &type->fields[i], &axis);
+        pin_read_field(&r->v->storage, f->value.ptr, &type->fields[i], &axis);
         double value = axis.type == PIN_F32 ? axis.f : axis.d;
         axes[i] = (axis_desc){ .key = type->fields[i].name,
                                .label = LABELS[i],
@@ -929,11 +932,22 @@ static void value_row(rows *r, const field_source *f)
         case PIN_F64: float_row(r, f); return;
         case PIN_STRUCT: struct_row(r, f); return;
         case PIN_NAME:
-        case PIN_STR:
+        case PIN_STR: {
+            const char *text = "";
+            const char *error = pin_text_cstring(&r->v->storage, *value, &text, NULL);
             d.control = "text";
+            if (error) {
+                d.readonly = true;
+                d.invalid = true;
+                d.control = "label";
+                text = pin_value_to_string(value);
+            }
             /* A mixed text stays empty, its placeholder a dash. */
-            text_row(r, &d, d.mixed || !value->str ? "" : value->str);
+            yyjson_mut_val *row = next_row(r, &d);
+            put_text(r->v, row, "text", d.mixed ? "" : text);
+            put_text(r->v, row, "problem", error ? error : "");
             return;
+        }
         case PIN_HANDLE:
             entity_row(r, d, value->u64, f->path, f->path && f->placed && !value->u64);
             return;
@@ -954,11 +968,12 @@ static void field_row(rows *r, const field_source *f)
     }
     row_desc d = f->row;
     d.control = "asset";
-    asset_row(
-        r,
-        d,
-        &(asset_desc){ .kind = named, .value = f->value.str ? f->value.str : "", .none = "None" }
-    );
+    const char *text = "";
+    if (pin_text_cstring(&r->v->storage, f->value, &text, NULL)) {
+        value_row(r, f);
+        return;
+    }
+    asset_row(r, d, &(asset_desc){ .kind = named, .value = text, .none = "None" });
 }
 
 /* An object's field, edited in its world: the running one while the scene
@@ -971,7 +986,7 @@ static void object_field(rows *r, scene_actor *actor, const prototype_component 
     const type_field *field = &desc->type->fields[index];
     char label[128], id[PROPERTIES_ROW_ID];
     pin_value value = { 0 };
-    if (ecs_component_read_field(scene->world, actor->entity, desc->id, index, &value) !=
+    if (ecs_component_read_field(&r->v->storage, scene->world, actor->entity, desc->id, index, &value) !=
             ECS_OK ||
         !properties_label(s, component, field, label, sizeof label)) {
         return;
@@ -1204,12 +1219,19 @@ static void show_prototype_field(
         .row = { .id = id, .label = label, .about = field->description, .readonly = locked },
         .path = scene_link_path(asset->prototype->links, component->desc->id, index)
     };
-    pin_read_field(component->data, field, &f.value);
+    if (pin_read_field(&r->v->storage, component->data, field, &f.value)) {
+        return;
+    }
     const prototype *shown = scene_source_input_preview(s->scene, asset);
     if (shown != asset->prototype) {
         pin_value pending = { 0 };
-        if (prototype_read_field(shown, component->desc->name, field->name, &pending) ==
-            0) {
+        if (prototype_read_field(
+                &r->v->storage,
+                shown,
+                component->desc->name,
+                field->name,
+                &pending
+            ) == 0) {
             f.value = pending;
             f.path = scene_link_path(shown->links, component->desc->id, index);
         }
@@ -1768,5 +1790,6 @@ bool studio_properties_sync(studio *s, const studio_panel_sync *at)
     if (v.values_changed) {
         rml_data_model_dirty(at->model, "propertyValues");
     }
+    arena_free(&v.storage);
     return v.changed;
 }

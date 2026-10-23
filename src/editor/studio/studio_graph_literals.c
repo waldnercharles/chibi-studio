@@ -8,11 +8,12 @@
 #include "graph/model/local.h"
 #include "graph/model/pin_conv.h"
 #include "graph/model/registry.h"
-#include "types/type.h"
-#include "types/array.h"
 #include "graph/shader/shader_graph.h"
 #include "support/arena.h"
 #include "support/array.h"
+#include "types/array.h"
+#include "types/text.h"
+#include "types/type.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -68,9 +69,26 @@ static void value_edit_set(studio_graph *g, const node *n, int output, uint64_t 
     g->value_edit_kit = active ? k : NULL;
 }
 
-static bool pin_string(pin_type type)
+static bool pin_is_string(pin_type type)
 {
     return type == PIN_STR || type == PIN_NAME;
+}
+
+static bool set_text(arena *scratch, pin_value *value, const char *text)
+{
+    if (value->type == PIN_STR) {
+        const char *type_name = value->type_name;
+        if (pin_value_text(scratch, value, text, strlen(text))) {
+            return false;
+        }
+        value->type_name = type_name;
+        return true;
+    }
+    size_t length = strlen(text) + 1;
+    char *copy = arena_alloc(scratch, length);
+    memcpy(copy, text, length);
+    value->str = copy;
+    return true;
 }
 
 /* ---------- The canvas's pickers ---------- */
@@ -407,7 +425,10 @@ uint32_t sg_literal_color(const pin_spec *spec, const pin_value *value)
     uint32_t channels[4] = { 0, 0, 0, 255 };
     for (int i = 0; i < type->field_count; i++) {
         pin_value component;
-        pin_read_field(value->ptr, &type->fields[i], &component);
+        if (type->fields[i].type < PIN_I8 || type->fields[i].type > PIN_F64 ||
+            pin_read_field(NULL, value->ptr, &type->fields[i], &component)) {
+            return 0x000000ffu;
+        }
         channels[i] = color_channel(&component);
     }
     return (channels[0] << 24) | (channels[1] << 16) | (channels[2] << 8) |
@@ -434,23 +455,31 @@ bool sg_write_literal_color(const pin_spec *spec, pin_value *value, arena *scrat
         value->type_name = type->name;
         if (type->field_count == 4) {
             pin_value alpha;
-            pin_read_field(value->ptr, &type->fields[3], &alpha);
+            if (pin_read_field(scratch, value->ptr, &type->fields[3], &alpha)) {
+                return false;
+            }
             sg_set_literal_number(&alpha, alpha.type == PIN_F32 || alpha.type == PIN_F64 ? 1 : 255);
-            pin_write_field(value->ptr, &type->fields[3], alpha);
+            if (pin_write_field(scratch, value->ptr, &type->fields[3], alpha)) {
+                return false;
+            }
         }
     }
     uint32_t channels[] = { rgba >> 24, (rgba >> 16) & 255, (rgba >> 8) & 255 };
     for (int i = 0; i < 3; i++) {
         const type_field *field = &type->fields[i];
         pin_value previous, component;
-        pin_read_field(value->ptr, field, &previous);
+        if (pin_read_field(scratch, value->ptr, field, &previous)) {
+            return false;
+        }
         double channel = channels[i];
         if (previous.type == PIN_F32 || previous.type == PIN_F64) {
             channel /= 255;
         }
         component = previous;
         sg_set_literal_number(&component, channel);
-        pin_write_field(value->ptr, field, component);
+        if (pin_write_field(scratch, value->ptr, field, component)) {
+            return false;
+        }
     }
     return true;
 }
@@ -462,7 +491,10 @@ double sg_literal_alpha(const pin_spec *spec, const pin_value *value)
         return 1;
     }
     pin_value alpha;
-    pin_read_field(value->ptr, &type->fields[3], &alpha);
+    if (type->fields[3].type < PIN_I8 || type->fields[3].type > PIN_F64 ||
+        pin_read_field(NULL, value->ptr, &type->fields[3], &alpha)) {
+        return 1;
+    }
     double number = sg_literal_number(&alpha);
     if (alpha.type != PIN_F32 && alpha.type != PIN_F64) {
         number /= 255;
@@ -481,13 +513,15 @@ void sg_write_literal_alpha(const pin_spec *spec, pin_value *value, arena *scrat
     }
     const type_field *field = &type->fields[3];
     pin_value previous, component;
-    pin_read_field(value->ptr, field, &previous);
+    if (pin_read_field(scratch, value->ptr, field, &previous)) {
+        return;
+    }
     if (previous.type != PIN_F32 && previous.type != PIN_F64) {
         alpha *= 255;
     }
     component = previous;
     sg_set_literal_number(&component, alpha);
-    pin_write_field(value->ptr, field, component);
+    pin_write_field(scratch, value->ptr, field, component);
 }
 
 static bool enum_control(studio *s, kit *k, const char *key, const pin_spec *shape, pin_value *value, unsigned flags)
@@ -567,7 +601,11 @@ static bool edit_struct_fields(
         snprintf(control, sizeof control, "%s-field-%d", path, i);
         editor_identifier_label(field->name, label, sizeof label);
         pin_value member;
-        pin_read_field(value->ptr, field, &member);
+        const char *error = pin_read_field(scratch, value->ptr, field, &member);
+        if (error) {
+            kit_label(k, key, "muted", error);
+            continue;
+        }
         if (!member.type_name) {
             member.type_name = field->type_name;
         }
@@ -600,11 +638,10 @@ static bool edit_struct_fields(
             range && range->valid ? range : NULL
         );
         kit_prop_end(k);
-        merge_edit(state, child);
-        if (changed) {
-            pin_write_field(value->ptr, field, member);
-            state->changed = true;
+        if (changed && pin_write_field(scratch, value->ptr, field, member)) {
+            child.changed = false;
         }
+        merge_edit(state, child);
     }
     return state->changed;
 }
@@ -817,7 +854,7 @@ pin_array *sg_array_edit(arena *scratch, const pin_value *value, const pin_spec 
             added.ptr = arena_alloc(scratch, type->size);
             memset(added.ptr, 0, type->size);
         }
-    } else if (append && pin_string(added.type)) {
+    } else if (append && added.type == PIN_NAME) {
         added.str = "";
     }
     return array_with_count(scratch, array, remove, append, added.type, added.type_name, at, &added);
@@ -1022,7 +1059,9 @@ static bool edit_literal_value(
             kit_push(k, "vector", NULL, "joined");
             for (int i = 0; i < width; i++) {
                 pin_value component;
-                pin_read_field(value->ptr, &type->fields[i], &component);
+                if (pin_read_field(scratch, value->ptr, &type->fields[i], &component)) {
+                    continue;
+                }
                 double number = sg_literal_number(&component);
                 double min = 0, max = 0;
                 sg_literal_bounds(component.type, &min, &max);
@@ -1044,8 +1083,9 @@ static bool edit_literal_value(
                 state->committed |= committed;
                 if (edited) {
                     sg_set_literal_number(&component, number);
-                    pin_write_field(value->ptr, &type->fields[i], component);
-                    changed = true;
+                    if (!pin_write_field(scratch, value->ptr, &type->fields[i], component)) {
+                        changed = true;
+                    }
                 }
             }
             kit_pop(k);
@@ -1068,37 +1108,36 @@ static bool edit_literal_value(
         state->changed |= changed;
         return changed;
     }
-    if (pin_string(shape->type)) {
+    if (pin_is_string(shape->type)) {
+        const char *current;
+        const char *error = pin_text_cstring(scratch, *value, &current, NULL);
+        if (error) {
+            kit_label(k, key, "muted", error);
+            return false;
+        }
         reference_asset_kind
             asset = owner && field
                       ? reference_named_field_kind(owner->name, field->name)
                       : REFERENCE_ASSET_KIND_COUNT;
         if (asset != REFERENCE_ASSET_KIND_COUNT) {
-            const char *chosen = graph_asset_field(s, k, key, value->str, asset, flags);
-            if (!chosen) {
+            const char *chosen = graph_asset_field(s, k, key, current, asset, flags);
+            if (!chosen || !set_text(scratch, value, chosen)) {
                 return false;
             }
-            size_t length = strlen(chosen) + 1;
-            char *copy = arena_alloc(scratch, length);
-            memcpy(copy, chosen, length);
-            value->str = copy;
             state->changed = true;
             return true;
         }
         char text[256];
-        snprintf(text, sizeof text, "%s", value->str ? value->str : "");
+        snprintf(text, sizeof text, "%s", current);
         bool changed = kit_text_field(k, key, text, sizeof text, NULL, flags);
+        if (changed) {
+            changed = set_text(scratch, value, text);
+        }
         bool committed = kit_item_committed(k);
         bool active = kit_item_active(k) && !committed;
         state->changed |= changed;
         state->streaming |= changed || active;
         state->active |= active;
-        if (changed) {
-            size_t length = strlen(text) + 1;
-            char *copy = arena_alloc(scratch, length);
-            memcpy(copy, text, length);
-            value->str = copy;
-        }
         state->committed |= committed;
         return changed;
     }
@@ -1343,6 +1382,7 @@ void sg_emit_value_in(studio *s, kit *k, node *n, int output, int p)
         return;
     }
     pin_value value = spec->default_value;
+    arena scratch = { 0 };
     bool changed = false, streaming = false, committed = false;
     bool active = false;
     const editor_choices *choices = ed_pin_choices(e, n, output, p);
@@ -1392,21 +1432,28 @@ void sg_emit_value_in(studio *s, kit *k, node *n, int output, int p)
             value.ptr = vector;
         }
     } else if (spec->type == PIN_STR || spec->type == PIN_NAME) {
+        const char *current;
+        const char *error = pin_text_cstring(&scratch, value, &current, NULL);
+        if (error) {
+            kit_label(k, "v", "muted", error);
+            arena_free(&scratch);
+            return;
+        }
         if (spec->type_name && !strcmp(spec->type_name, "MaterialAsset")) {
-            const char *picked = sg_material_picker(s, k, value.str, flags);
-            changed = picked && (!value.str || strcmp(picked, value.str));
+            const char *picked = sg_material_picker(s, k, current, flags);
+            changed = picked && strcmp(picked, current);
             committed = changed;
             if (changed) {
-                value.str = picked;
+                changed = set_text(&scratch, &value, picked);
             }
         } else {
-            snprintf(text, sizeof text, "%s", value.str ? value.str : "");
+            snprintf(text, sizeof text, "%s", current);
             changed = kit_text_field(k, "v", text, sizeof text, NULL, flags);
             committed = kit_item_committed(k);
             active = kit_item_active(k) && !committed;
             streaming = changed || active;
             if (changed) {
-                value.str = text;
+                changed = set_text(&scratch, &value, text);
             }
         }
     } else if (spec->type == PIN_I64 || spec->type == PIN_U64) {
@@ -1458,6 +1505,7 @@ void sg_emit_value_in(studio *s, kit *k, node *n, int output, int p)
         if (same_edit && (readonly || committed || !active)) {
             value_edit_set(g, n, output, spec->id, k, false);
         }
+        arena_free(&scratch);
         return;
     }
     int edited = write_literal(s, n, output, p, &value, streaming && same_edit);
@@ -1465,4 +1513,5 @@ void sg_emit_value_in(studio *s, kit *k, node *n, int output, int p)
     if (edited == 0) {
         touched(e);
     }
+    arena_free(&scratch);
 }
