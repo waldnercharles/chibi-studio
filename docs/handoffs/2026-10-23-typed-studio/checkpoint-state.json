@@ -1,0 +1,23 @@
+{
+  "active_source_commit": "466e2cc3545927261cf68f88d54caed0093f7cc4",
+  "dirty": false,
+  "engine_source_checkpoint": {
+    "checkpoint_kind": "single-parent WIP snapshot; original merge/index/worktree unchanged",
+    "preserved_pending_merge_head": "fa1b7b2bb297eacbbed6aec6f03c4260355db97c",
+    "source_branch": "codex/typed-assets-source-handoff-20261023",
+    "source_commit": "2227496827abb8ef59578216b65573f8cc6fae39",
+    "source_parent": "30cd287d1b86250d13b42c3716a94d747fa87a9b",
+    "source_tree": "6ef6b76e5c7e83b328e2973cc15c42fc79804043"
+  },
+  "ignored_or_untracked_source": false,
+  "implementation_handoff": "No further overlapping local implementation after handoff; original clean worktree held pending cloud confirmation.",
+  "original_branch": "codex/typed-prototype-editor-20261021",
+  "parents": [
+    "521b666a62406fabae8e1d23bad00765717b3635",
+    "df050886dd7721db63b40fdf5435f1cb20ceeb34"
+  ],
+  "publication_state_at_capture": "Local WIP preparation; verify the remote branch tips named by the final handoff response.",
+  "repository": "https://github.com/waldnercharles/chibi-studio.git",
+  "source_tree": "3352628508469dbce5db9c24bf0b7df027f124e7",
+  "status": "WIP; latest paired narrower native evidence model1/261 and values12/163 historical SDK68e625; final SDK/postcommit/full cold/Web/platform evidence pending"
+}
