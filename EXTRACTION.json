@@ -2428,7 +2428,7 @@
       "source_path": "src/editor/studio/studio_projects.c"
     },
     "src/editor/studio/studio_properties.c": {
-      "consumer_sha256": "a35736260db94d916e69e15dd623edff13d56c1b8824f80e9e755d820edb0d29",
+      "consumer_sha256": "6ce2e7e5516c15f0ea663d063875bbde6647b294450330e85e86e02ccadf53b8",
       "current_source_sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
       "sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
       "source_path": "src/editor/studio/studio_properties.c"
@@ -2440,7 +2440,7 @@
       "source_path": "src/editor/studio/studio_properties_internal.h"
     },
     "src/editor/studio/studio_properties_view.c": {
-      "consumer_sha256": "aec82fe87da57596106cebda4ba2828a3a16ce1c6f6e56ac4d3782d51c13db25",
+      "consumer_sha256": "dc2db3a40cec99b97397cd2bc2c5611ef1c1c610d0cad62309c2101e0ba8a2d6",
       "current_source_sha256": "a0579bb794e0d93710c7c4e3c18b328c8fb94b5c2bb40b07304923167aef3130",
       "sha256": "a0579bb794e0d93710c7c4e3c18b328c8fb94b5c2bb40b07304923167aef3130",
       "source_path": "src/editor/studio/studio_properties_view.c"

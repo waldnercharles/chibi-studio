@@ -37,6 +37,7 @@
 #include "graph/model/registry.h"
 #include "runtime/component_catalog.h"
 #include "support/array.h"
+#include "types/text.h"
 #include "types/value_format.h"
 #include "ui/drag.h"
 #include "ui/popover.h"
@@ -939,11 +940,22 @@ static void value_row(rows *r, const field_source *f)
         case PIN_F64: float_row(r, f); return;
         case PIN_STRUCT: struct_row(r, f); return;
         case PIN_NAME:
-        case PIN_STR:
+        case PIN_STR: {
+            const char *text = "";
+            const char *error = pin_text_cstring(&r->v->storage, *value, &text, NULL);
             d.control = "text";
+            if (error) {
+                d.readonly = true;
+                d.invalid = true;
+                d.control = "label";
+                text = pin_value_to_string(value);
+            }
             /* A mixed text stays empty, its placeholder a dash. */
-            text_row(r, &d, d.mixed ? "" : properties_text(&r->v->storage, value));
+            yyjson_mut_val *row = next_row(r, &d);
+            put_text(r->v, row, "text", d.mixed ? "" : text);
+            put_text(r->v, row, "problem", error ? error : "");
             return;
+        }
         case PIN_HANDLE:
             entity_row(r, d, value->u64, f->path, f->path && f->placed && !value->u64);
             return;
@@ -964,13 +976,12 @@ static void field_row(rows *r, const field_source *f)
     }
     row_desc d = f->row;
     d.control = "asset";
-    asset_row(
-        r,
-        d,
-        &(asset_desc){ .kind = named,
-                       .value = properties_text(&r->v->storage, &f->value),
-                       .none = "None" }
-    );
+    const char *text = "";
+    if (pin_text_cstring(&r->v->storage, f->value, &text, NULL)) {
+        value_row(r, f);
+        return;
+    }
+    asset_row(r, d, &(asset_desc){ .kind = named, .value = text, .none = "None" });
 }
 
 /* An object's field, edited in its world: the running one while the scene

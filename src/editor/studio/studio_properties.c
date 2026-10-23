@@ -1203,6 +1203,7 @@ static void check(studio *s, const properties_row *row, bool on)
     }
     arena storage = { 0 };
     pin_value value = { 0 };
+    bool read = false;
     properties_subject subject;
     properties_subject_of(s, &subject);
     if (row->kind == PROPERTIES_PROTOTYPE) {
@@ -1215,6 +1216,7 @@ static void check(studio *s, const properties_row *row, bool on)
                     arena_free(&storage);
                     return;
                 }
+                read = true;
             }
         }
     } else if (subject.actor) {
@@ -1229,6 +1231,11 @@ static void check(studio *s, const properties_row *row, bool on)
             arena_free(&storage);
             return;
         }
+        read = true;
+    }
+    if (!read || value.type != PIN_BOOL) {
+        arena_free(&storage);
+        return;
     }
     bool mixed = row->kind == PROPERTIES_OBJECT && subject.actor &&
                  properties_mixed(s, subject.actor, row->component, row->field, &value);

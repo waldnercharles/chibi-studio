@@ -1,6 +1,7 @@
 #include "authoring/asset_compiler_host.h"
 #include "studio_registry.h"
 #include "support/resources.h"
+#include "types/text.h"
 
 /* One independent editor contract, with no actors or checkpoint restore. */
 static char compiled_edit_path[1024], compiled_edit_directory[1024];
@@ -233,6 +234,174 @@ static void compiled_model_cleanup(void)
     rmdir(compiled_model_root);
 }
 
+/* Runtime text can contain bytes that the C-string controls cannot edit. This
+ * fixture uses the existing model world/kit; no asset compilation is involved. */
+typedef struct
+{
+    const pin_string *label, *asset;
+} compiled_nul_fields;
+
+static const type_field compiled_nul_type_fields[] = {
+    { .name = "label",
+      .type = PIN_STR,
+      .offset = offsetof(compiled_nul_fields, label),
+      .size = sizeof(const pin_string *),
+      .text_descriptor = true },
+    { .name = "asset",
+      .type = PIN_STR,
+      .offset = offsetof(compiled_nul_fields, asset),
+      .size = sizeof(const pin_string *),
+      .text_descriptor = true },
+};
+static const type_desc compiled_nul_type = {
+    /* Exercise the ordinary named-system asset field as well as plain text. */
+    .name = "EngineSystem",
+    .size = sizeof(compiled_nul_fields),
+    .fields = compiled_nul_type_fields,
+    .field_count = 2,
+};
+static const ecs_component_desc compiled_nul_component = {
+    .id = UINT64_C(0x6e756c74657874),
+    .key = "acceptance.nul-text",
+    .name = "NulText",
+    .element_size = sizeof(compiled_nul_fields),
+    .type = &compiled_nul_type,
+};
+
+static bool compiled_model_nul_controls(studio *s)
+{
+    app_scene_authoring *scene = s->scene;
+    prototype_registry registry = scene->registry;
+    app_editor_document_context document = scene->document;
+    int selected = scene->selected, actors = acount(scene->actors);
+    studio_tab tab = s->tab;
+    char added[sizeof s->components.added];
+    memcpy(added, s->components.added, sizeof added);
+    const ecs_component_desc **components = xmalloc(
+        (size_t)(registry.component_count + 1) * sizeof *components
+    );
+    memcpy(components, registry.components, (size_t)registry.component_count * sizeof *components);
+    components[registry.component_count] = &compiled_nul_component;
+    ecs_entity entity = { 0 };
+    yyjson_mut_doc *doc = NULL;
+    rml_data_model *model = NULL;
+    arena reads = { 0 };
+    bool ready = false, pushed = false, cleaned = true, no_history = false;
+    bool label[2] = { 0 }, readonly[2] = { 0 }, diagnostic[2] = { 0 };
+    bool escaped[2] = { 0 }, unchanged[2] = { 0 };
+    const pin_string text = { .bytes = "a\0b", .length = 3 };
+    compiled_nul_fields initial = { &text, &text };
+    if (actors ||
+        ecs_world_register_component(scene->world, &compiled_nul_component, NULL) !=
+            ECS_OK) {
+        goto cleanup;
+    }
+    entity = ecs_world_create_entity(scene->world);
+    if (!entity.slot ||
+        ecs_world_record_add(scene->world, entity, compiled_nul_component.id, &initial, 0) !=
+            ECS_OK ||
+        ecs_world_apply_commands(scene->world) != ECS_OK) {
+        goto cleanup;
+    }
+    scene->registry.components = components;
+    scene->registry.component_count++;
+    apush(
+        scene->actors,
+        ((scene_actor){ .identity = 1, .entity = entity, .name = "NulText", .prototype_name = "NulText" })
+    );
+    pushed = true;
+    scene->selected = actors;
+    scene->document = (app_editor_document_context){ APP_EDITOR_DOCUMENT_SCENE, NULL };
+    s->tab = STUDIO_TAB_OBJECT;
+    snprintf(s->components.added, sizeof s->components.added, "NulText");
+    doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_doc_set_root(doc, yyjson_mut_obj(doc));
+    studio_properties_add(doc);
+    model = rml_data_model_create(rml_backend_context(compiled_model_backend), "nul_controls", doc, NULL, NULL);
+    if (!model) {
+        goto cleanup;
+    }
+    yyjson_mut_val *root = yyjson_mut_obj_get(yyjson_mut_doc_get_root(doc), "properties");
+    studio_properties_sync(
+        s,
+        &(studio_panel_sync){ .doc = doc, .variable = root, .model = model, .preview = true }
+    );
+    yyjson_mut_val *panels = yyjson_mut_obj_get(root, "panels");
+    yyjson_mut_val *panel = yyjson_mut_arr_get(panels, 0);
+    yyjson_mut_val *rows = yyjson_mut_obj_get(panel, "rows");
+    ready = yyjson_mut_arr_size(panels) == 1 && yyjson_mut_arr_size(rows) == 2 &&
+            properties_named(
+                &compiled_nul_component,
+                &compiled_nul_type_fields[1],
+                &(pin_value){ .type = PIN_STR, .text = &text }
+            ) == REFERENCE_ASSET_SYSTEM;
+    for (int i = 0; ready && i < 2; i++) {
+        yyjson_mut_val *row = yyjson_mut_arr_get(rows, (size_t)i);
+        const char *control = yyjson_mut_get_str(yyjson_mut_obj_get(row, "control"));
+        const char *problem = yyjson_mut_get_str(yyjson_mut_obj_get(row, "problem"));
+        const char *shown = yyjson_mut_get_str(yyjson_mut_obj_get(row, "text"));
+        label[i] = control && !strcmp(control, "label");
+        readonly[i] = yyjson_mut_get_bool(yyjson_mut_obj_get(row, "readonly")) &&
+                      yyjson_mut_get_bool(yyjson_mut_obj_get(row, "invalid"));
+        diagnostic[i] = problem && strstr(problem, "embedded NUL");
+        escaped[i] = shown && !strcmp(shown, "a\\x00b");
+        ui_activation activation = { .argc = 2 };
+        properties_row_id(
+            &(properties_row){ .kind = PROPERTIES_OBJECT,
+                               .entity = ecs_entity_to_u64(entity),
+                               .component = compiled_nul_component.id,
+                               .field = i },
+            activation.args[0]
+        );
+        /* Both checkbox states must be refused for a non-bool field. */
+        studio_properties_action(s, "check", &activation);
+        snprintf(activation.args[1], sizeof activation.args[1], "1");
+        studio_properties_action(s, "check", &activation);
+        pin_value value = { 0 };
+        unchanged[i] = ecs_component_read_field(
+                           &reads,
+                           scene->world,
+                           entity,
+                           compiled_nul_component.id,
+                           i,
+                           &value
+                       ) == ECS_OK &&
+                       value.type == PIN_STR && pin_text(value).length == 3 &&
+                       !memcmp(pin_text(value).bytes, "a\0b", 3);
+    }
+    no_history = !scene->property_actor.slot && !scene->scene_dirty;
+cleanup:
+    if (model) {
+        rml_data_model_destroy(model);
+    }
+    yyjson_mut_doc_free(doc);
+    if (pushed) {
+        (void)apop(scene->actors);
+    }
+    scene->registry = registry;
+    scene->document = document;
+    scene->selected = selected;
+    s->tab = tab;
+    memcpy(s->components.added, added, sizeof added);
+    ecs_world_clear_commands(scene->world);
+    if (entity.slot) {
+        cleaned = ecs_world_destroy_entity(scene->world, entity) == ECS_OK;
+    }
+    free(components);
+    arena_free(&reads);
+    REQUIRE(ready);
+    for (int i = 0; i < 2; i++) {
+        REQUIRE(label[i]);
+        REQUIRE(readonly[i]);
+        REQUIRE(diagnostic[i]);
+        REQUIRE(escaped[i]);
+        REQUIRE(unchanged[i]);
+    }
+    REQUIRE(no_history);
+    REQUIRE(cleaned && acount(scene->actors) == actors);
+    return true;
+}
+
 TEST_CASE(compiled_asset_edit_model)
 {
     REQUIRE(mkdtemp(compiled_model_root));
@@ -260,12 +429,14 @@ TEST_CASE(compiled_asset_edit_model)
     s->kit = kit_create(rml_backend_context(compiled_model_backend), "studio.rml");
     REQUIRE(s->kit && s->scene && studio_editable(s));
     REQUIRE(compiled_edit_contract(s));
+    REQUIRE(compiled_model_nul_controls(s));
     REQUIRE(generic_asset_source_refresh(project));
     REQUIRE(acount(s->records) == 0);
     asset_compiler_cache_stats after = asset_source_cache_stats();
     printf(
         "\nCompiled asset model: frames=0 renders=0 files=2 actors=0 "
-        "checkpoints=0 properties_edits=3 undo=2 redo=2 saved=2 "
+        "checkpoints=0 properties_edits=3 nul_view_actors=1 nul_rows=2 "
+        "stale_checks=4 undo=2 redo=2 saved=2 "
         "save_rejected=1 reload=1 disk_refreshes=2 attempts=%" PRIu64
         " memory_hits=%" PRIu64 " persistent_hits=%" PRIu64 "\n",
         after.compile_attempts - before.compile_attempts,

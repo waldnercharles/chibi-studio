@@ -770,8 +770,7 @@ transport envelopes or actors to either invocation.
 
 `studio-acceptance --typed-prototype-preview --project-root PATH --screenshot PATH`
 uses an isolated acceptance-project copy and the installed typed-assets SDK.
-Build the acceptance target separately and run the complete selector with an
-appropriate command timeout.
+Build the acceptance target separately and run the complete selector.
 It runs one process and two hidden frames, creates one tiny prototype file,
 and adds no actors, worlds or checkpoints. Frame one registers and opens the
 source, selects Code and Properties in the normal layout, and clears search.
@@ -788,8 +787,9 @@ review of spacing, baselines and controls. This selector does not expand
 
 `studio-acceptance --compiled-asset-edit --project-root PATH` uses a fresh disposable
 copy of this directory's `project` fixture. Build the acceptance target separately.
-Set `CHIBI_ASSET_CACHE_DIR` to a new empty cache directory for a cold startup; keep
-preferences and project files isolated from the working project.
+Set `CHIBI_ASSET_CACHE_DIR` to an empty string to disable persistent caching,
+or use a new empty cache directory for a cold startup. Keep preferences and
+project files isolated from the working project.
 
 This independent two-frame contract creates one approximately 1 KiB prototype
 and adds no actors or checkpoints beyond ordinary host startup.
@@ -801,20 +801,32 @@ exact source Undo/Redo, helper/comment retention, Save and Reload. The second
 frame verifies the final value. The source and newly created prototypes directory
 are removed after host shutdown. It opens no behavior graph and captures no PNG.
 
-On 2026-10-22, the complete cold Release run passed one case and 62 assertions
-in 43.770 seconds, with 69 compile attempts, 161 memory hits and no persistent
-hits. The retained engine log is `.chibi/asset-main-cold-studio-staged.log`.
+The latest flow-checkpoint validation on 2026-10-22 used Release SDK
+`cb8e0b94d607789e9f7e8871a08e3f6834ee59392212be9f88595029c00e1c38`,
+with sanitizers off and persistent caching disabled. The complete cold run
+passed one case and 62 assertions in 64.030 seconds: 69 compile attempts,
+161 memory hits and no persistent hits. The project was a fresh copy-on-write
+fixture copy, removed after evidence capture. The log in the paired engine
+checkout is `../chibi/.chibi/asset-final-flow-studio-cold.log`; shared build and
+run metadata is `../chibi/.chibi/asset-final-flow-studio-evidence.json`.
+Final main integration is still pending at this checkpoint.
+
+An earlier 2026-10-22 Release run passed the same 62 assertions in 43.770 seconds,
+with 69 compile attempts, 161 memory hits and no persistent hits. Its engine log
+is `../chibi/.chibi/asset-main-cold-studio-staged.log`.
 This proves the asserted startup and edit contract on that native configuration;
 it does not establish pointer hit testing, visual approval or browser coverage.
 
-Earlier Debug and Release cold runs timed out after 60.076 and 60.057 seconds
+Earlier migration checks on 2026-10-21–22 timed out in Debug and Release
+after 60.076 and 60.057 seconds
 before their first callback. A later 38.065-second run printed
 `Studio UI: Unexpected syntax` despite passing its original 52 assertions.
 The UI assertions then reproduced that failure in 34.806 seconds; that run failed
 at `s->ui`. These remain failed outcomes. They are superseded for the current
 Release startup contract by the complete successful run, not by a relaxed timing
 threshold. The former universal 60-second limit and hash-based test admissions
-were removed; these durations describe the recorded runs.
+were removed. Durations describe the recorded runs, not a global acceptance cap;
+the latest model and startup checks ran under concurrent validation load.
 
 ### CPU Properties model contract
 
@@ -836,8 +848,25 @@ helper edit, checks exact Undo/Redo and Save, then rejects an overlapping extern
 helper change without overwriting disk. It adds one file, two refreshes, one
 successful Save and one rejected Save, and removes its file before teardown.
 
-On 2026-10-22, the complete Release model run passed one case and 73 assertions
-in 5.346 seconds: eight compile attempts, 39 memory hits and no persistent hits.
-The retained engine log is `.chibi/asset-main-model-first.log`. This result covers
-the model contract above, including the external-source merge regression; it
-does not exercise application startup or rendering.
+The Properties view regression temporarily adds one runtime actor with two
+descriptor-backed strings containing `a\0b`. The generic text and asset rows
+must be read-only error labels showing escaped bytes. Four stale checkbox
+events must preserve the exact bytes without history or dirty state. The actor,
+view model and selection are removed or restored before the edit contract
+continues. This adds no files or host frames. Synchronizing the view also reaches
+the engine's lazily loaded presentation document.
+
+The latest 2026-10-22 model run against the Release SDK above passed one case
+and 87 assertions in 20.047 seconds: nine compile attempts, 39 memory hits and
+no persistent hits. Those nine compile attempts include the view's lazy embedded
+engine presentation load; the earlier 73-assertion model did not synchronize this
+view.
+The log is `../chibi/.chibi/asset-final-flow-studio-model.log`. The native Studio
+and acceptance build log is `../chibi/.chibi/asset-final-flow-studio-build.log`.
+
+Earlier on 2026-10-22, the expanded model passed the same 87 assertions in
+6.315 seconds with the same compile/cache counts against SDK
+`30e5efa41c50ae3214bc74de2da76c1464f1d2ffa26a4ea69432196c9bb26d8b`.
+That log is `../chibi/.chibi/asset-main659-studio-model.log`.
+This covers the model contract, including the external-source merge and NUL
+regressions. It does not exercise application startup or rendering.
