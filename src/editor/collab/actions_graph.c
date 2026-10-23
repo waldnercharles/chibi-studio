@@ -133,14 +133,16 @@ static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const cha
     if (value->type_name) {
         yyjson_mut_obj_add_strcpy(doc, item, "type_name", value->type_name);
     }
-    if (value->container != PIN_CONTAINER_SINGLE || value->type == PIN_STRUCT) {
+    if (value->container != PIN_CONTAINER_SINGLE || value->type == PIN_STRUCT ||
+        value->type == PIN_STR) {
         yyjson_mut_obj_add_int(doc, item, "container", value->container);
         av_doc *native = av_doc_new();
         av_value *data = av_obj(native);
         pin_value_write_document(native, data, "data", value->type, value->type_name, value);
-        yyjson_mut_obj_add_val(doc, item, "data", av_to_json(doc, av_obj_get(data, "data")));
+        yyjson_mut_val *payload = av_to_json(doc, av_obj_get(data, "data"));
+        bool valid = payload && yyjson_mut_obj_add_val(doc, item, "data", payload);
         av_doc_free(native);
-        return true;
+        return valid;
     }
     switch (value->type) {
         case PIN_BOOL:
@@ -188,11 +190,6 @@ static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const cha
             }
             yyjson_mut_obj_add_strcpy(doc, item, "data", value->str);
             break;
-        case PIN_STR: {
-            pin_string text = pin_text(*value);
-            yyjson_mut_obj_add_strncpy(doc, item, "data", text.bytes, text.length);
-            break;
-        }
         case PIN_ENUM:
             yyjson_mut_obj_add_int(doc, item, "data", value->e);
             break;
@@ -203,6 +200,7 @@ static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const cha
             yyjson_mut_obj_add_uint(doc, item, "data", 0);
             break;
         case PIN_FLOW:
+        case PIN_STR:
         case PIN_STRUCT: return false;
     }
     return true;
@@ -229,7 +227,8 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
     if (value.type <= PIN_FLOW || value.type > PIN_ENUM) {
         return false;
     }
-    if (value.container != PIN_CONTAINER_SINGLE || value.type == PIN_STRUCT) {
+    if (value.container != PIN_CONTAINER_SINGLE || value.type == PIN_STRUCT ||
+        value.type == PIN_STR) {
         if (value.type == PIN_STRUCT && !type_is_plain(type_catalog_find(type_name))) {
             return false;
         }
@@ -240,6 +239,7 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
         char error[192];
         int result = pin_value_read_document(&owned, value, native_data, &decoded, error, sizeof error);
         if (!result) {
+            decoded.type_name = type_name;
             result = pin_value_copy_to_graph(storage, &value, &decoded);
         }
         arena_free(&owned);
@@ -331,13 +331,6 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
             }
             value.str = yyjson_get_str(data);
             break;
-        case PIN_STR:
-            if (!yyjson_is_str(data)) {
-                return false;
-            }
-            value = graph_text_value(storage, yyjson_get_str(data), yyjson_get_len(data));
-            value.type_name = type_name;
-            break;
         case PIN_ENUM:
             if (!yyjson_is_int(data) || yyjson_get_sint(data) < INT32_MIN ||
                 yyjson_get_sint(data) > INT32_MAX) {
@@ -352,6 +345,7 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
             value.u64 = 0;
             break;
         case PIN_FLOW:
+        case PIN_STR:
         case PIN_STRUCT: return false;
     }
     *out = value;

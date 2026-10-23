@@ -223,6 +223,19 @@ static bool same_type(pin_value a, pin_value b)
     return a.type_name && b.type_name && strcmp(a.type_name, b.type_name) == 0;
 }
 
+static bool field_value_valid(const type_field *field, pin_value value)
+{
+    pin_value expected = { .type = field->type, .type_name = field->type_name };
+    if (!scalar(value) || !same_type(expected, value)) {
+        return false;
+    }
+    if (field->type != PIN_STR || field->text_descriptor) {
+        return true;
+    }
+    pin_string text = pin_text(value);
+    return !text.length || !memchr(text.bytes, 0, text.length);
+}
+
 static bool same_value(pin_value a, pin_value b)
 {
     switch (a.type) {
@@ -322,13 +335,14 @@ static bool valid_fields(ecs_world *world, const scene_edit *edit)
     for (int i = 0; i < acount(edit->fields); i++) {
         const scene_field_edit *field = &edit->fields[i];
         const ecs_component_desc *desc = ecs_world_component(world, field->component);
-        if (!desc || !desc->type || field->field >= desc->type->field_count ||
+        if (!desc || !desc->type || field->field < 0 ||
+            field->field >= desc->type->field_count ||
             !ecs_component_has(world, edit->entity, field->component)) {
             return false;
         }
         const type_field *type = &desc->type->fields[field->field];
-        pin_value expected = { .type = type->type, .type_name = type->type_name };
-        if (!same_type(expected, field->before) || !same_type(expected, field->after)) {
+        if (!field_value_valid(type, field->before) ||
+            !field_value_valid(type, field->after)) {
             return false;
         }
     }
@@ -1242,9 +1256,8 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
                 return false;
             }
             const type_field *type = &component->type->fields[index];
-            pin_value expected = { .type = type->type, .type_name = type->type_name };
-            if (!same_type(expected, stored->before) ||
-                !same_type(expected, stored->after)) {
+            if (!field_value_valid(type, stored->before) ||
+                !field_value_valid(type, stored->after)) {
                 return false;
             }
         }
