@@ -1,0 +1,4306 @@
+diff --git a/EXTRACTION.json b/EXTRACTION.json
+index 2de71bc..fa1b2ea 100644
+--- a/EXTRACTION.json
++++ b/EXTRACTION.json
+@@ -78,7 +78,7 @@
+       "current_source_sha256": "2112944826b9cc4d3b46d2f3a9d8b4d63f1bc7817e3079c17cbf0b55b00359c3",
+       "sha256": "2112944826b9cc4d3b46d2f3a9d8b4d63f1bc7817e3079c17cbf0b55b00359c3",
+       "source_path": "cmake/zep_dependencies.cmake",
+-      "consumer_sha256": "886951581b6d735199b209ca49638467c0849ead6e58ec4d109e3f1a6250d3c8"
++      "consumer_sha256": "14e2c0b03fed9990cb51746386c315ac76b8fcba5a59fc5cfb64c225193cf0d0"
+     },
+     "include/chibi/application.h": {
+       "current_source_sha256": "e1a89898f27f81623f1d6b5935ae64db6f7b68842961e774c74bc0cc3e1fa5e7",
+@@ -1473,7 +1473,7 @@
+       "current_source_sha256": "d653edabdd9b9bf566aebd6b8a9af54edd155c5aab146ab61376c43161550c75",
+       "sha256": "ad5f7bf0fdad510eb1770521e58aa9f2eda84220e82d9db68bf75f29475ebcc9",
+       "source_path": "src/editor/collab/actions_graph.c",
+-      "consumer_sha256": "810b530d99efffae37ac51e5faa00b6ba2f9fd2c7bbf6b36115e531ca73ba64d"
++      "consumer_sha256": "656383d01234cd6b9c2d397bf3bc7d147ccae750cddccd2a66197af2b0c2de69"
+     },
+     "src/editor/collab/actions_internal.h": {
+       "current_source_sha256": "a740221aeca4a89a67df5a234d269b5c596b5ec28a2fafdf762d307a8bc0746d",
+@@ -1484,7 +1484,7 @@
+       "current_source_sha256": "19ddcb8ed8f796c0dcc5a972e5c4ddc02aedc001de5c4d1d76769cafe1d9d34a",
+       "sha256": "19ddcb8ed8f796c0dcc5a972e5c4ddc02aedc001de5c4d1d76769cafe1d9d34a",
+       "source_path": "src/editor/collab/actions_scene.c",
+-      "consumer_sha256": "ccd7e001355c6b1e00641b3190e995f951ded077c77d6569743d91f312ca6d6e"
++      "consumer_sha256": "4c62d63bfa6222e4dfe693ef21884b9af887ad7b8f2ec75fa6c10f47691c53d8"
+     },
+     "src/editor/collab/actions_scene.h": {
+       "current_source_sha256": "0750590697691399d5b65bca467f6caa0f535a232a590fc17925455697ad98e2",
+@@ -1586,7 +1586,7 @@
+       "current_source_sha256": "98dcf951fd9aa56b582ff9de36ddfe2bf0ae0ea22b64f16179bbc1d9bb2762de",
+       "sha256": "f85160094ed7aec755eaa8f5db4dc40000de7e786cb3ad8e501822b7e76acffb",
+       "source_path": "src/editor/documents/scene_document.c",
+-      "consumer_sha256": "84507598ad222e94eb699c974080b7061930342629781217b1dbc2040d62228c"
++      "consumer_sha256": "015041a0cac925e12f7fd374c2c78272597d838dd0a7befd6ba50e20d2fd5a01"
+     },
+     "src/editor/documents/scene_documents.c": {
+       "current_source_sha256": "0edc732289f4ae30ac2cd901bcb663a6daee4f38a83d517446b35a16cdbfff61",
+@@ -1598,7 +1598,7 @@
+       "current_source_sha256": "c4d1eb0517f158231bd435974e3f127a011630df89d1057fb59d1bb6a81ef523",
+       "sha256": "c4d1eb0517f158231bd435974e3f127a011630df89d1057fb59d1bb6a81ef523",
+       "source_path": "src/editor/documents/scene_history.c",
+-      "consumer_sha256": "c85f0c20e977bb1e679a6904b0812eee01e148b2f1390469f6a509355bccc7ab"
++      "consumer_sha256": "408302f1f495e496d4056f35fa4b80d2b11c6e8885ab2b72d46adaec1103d12d"
+     },
+     "src/editor/documents/scene_history.h": {
+       "current_source_sha256": "2ad5c6be1789579df003c7df4b4ae15e0a364a25855550bcb64ad0760cb161c6",
+@@ -1610,13 +1610,13 @@
+       "current_source_sha256": "3271207bf0f329054742ebd367b80ab51f801e8cd1e71219395fc4892d139004",
+       "sha256": "3271207bf0f329054742ebd367b80ab51f801e8cd1e71219395fc4892d139004",
+       "source_path": "src/editor/documents/scene_prototype_actions.c",
+-      "consumer_sha256": "02184147bc3e50eecf4703520ca13435f1128b1f95f9a4c498fbf1a908cabba3"
++      "consumer_sha256": "7563bab5603c80ff0306bf15a095f0982176be62b96e0bac701a1a27033e3cd1"
+     },
+     "src/editor/documents/scene_prototypes.c": {
+       "current_source_sha256": "a724d0af657b5ab587528c2d1f475b7d303938d5a5e2c8e897122829748fa68d",
+       "sha256": "3ac2e12fa9e512325a07c336a9ea0c908bbd8447098aa6ec4b52d6b80366041b",
+       "source_path": "src/editor/documents/scene_prototypes.c",
+-      "consumer_sha256": "1207d742b108ed245272481b29ed3e2a06757e8234f8eec098f4b8300b92f92e"
++      "consumer_sha256": "cac29af62f2a0a26799fabc115997e650093c3dc91e60176b433f9266944c540"
+     },
+     "src/editor/documents/scene_retention.c": {
+       "current_source_sha256": "0b6d547334a3b7ccf89d76e832172e1a8ae997755d1d1e37ffe4d33887cf6941",
+@@ -1728,7 +1728,7 @@
+       "current_source_sha256": "221e28db084147124738f1a531f1300861183944dd87ee8fc7584e446b348c7c",
+       "sha256": "221e28db084147124738f1a531f1300861183944dd87ee8fc7584e446b348c7c",
+       "source_path": "src/editor/rmlui/kit_code.c",
+-      "consumer_sha256": "016c119d178244be34a533813629c03879062a88dcca418d8586f03a4a681c0e"
++      "consumer_sha256": "2e2715e0ef9f0a6154d52e9bfb846ba912717283c7a8373da2489043d9abdabf"
+     },
+     "src/editor/rmlui/kit_command.c": {
+       "current_source_sha256": "4f0d2ec71b0f088df1e9ba442cdd679f7084d79f0de121adf83684b3ff58b3d1",
+@@ -1837,7 +1837,7 @@
+       "current_source_sha256": "2bc7f3689067a8ad2916dfa0dfc0ec0147a874721d165ec20f1be8f202867690",
+       "sha256": "9129512614d262430a863e4cf6ccac6f161691d62449660f709ced5dfa89421c",
+       "source_path": "src/editor/studio/studio_code.c",
+-      "consumer_sha256": "ca54a346b21a9d19db9540b2c57285cd01b52532b856df54100bcf23bfb65a9d"
++      "consumer_sha256": "10f1bcef88c7886ca16884361ff279129d3ad7d5f9e1283aedd29f29d85a3a19"
+     },
+     "src/editor/studio/studio_collab.c": {
+       "current_source_sha256": "a9eb6419e86730bd61449fef5116d2575a54ae5d21887d5d31c740c84313ddd6",
+@@ -1931,7 +1931,7 @@
+       "current_source_sha256": "6061bc599a17a3b61c3d6b99729d57e410befff06b346c3d188081cc7e54d725",
+       "sha256": "5913a02f13074c1fb1f5fff80ec3f2fc341f3811ccbaf53762f98840bc87990e",
+       "source_path": "src/editor/studio/studio_graph.c",
+-      "consumer_sha256": "4922d01c51ce76f50909c7469ffc6ef4dbcefde41d6f88d05bacac5d37a65d26"
++      "consumer_sha256": "53e3b9fb76c97dbfc3fc3cbaf20e0dc89cdf616ac15c5a33d30f5d46ec83dfc3"
+     },
+     "src/editor/studio/studio_graph_comment.c": {
+       "current_source_sha256": "b5c125313cda03fa83f768970ca4fb6450cd99679004986b0f5573efa962ad1f",
+@@ -1948,7 +1948,7 @@
+       "current_source_sha256": "c627457f73b9bb0e27ed7086b6b3f4b7a09bdcfcb1fab0640ae8d42b02880e18",
+       "sha256": "c6fba37f751b4d1cd8c898e63e7aea935d644cf67cc4ad00315c1da4cc7f2dbe",
+       "source_path": "src/editor/studio/studio_graph_draw.c",
+-      "consumer_sha256": "1ea70c236cf757eae28bfc8af27626feef3c8a810020c9d87d30b6d5ecf57dbb"
++      "consumer_sha256": "ae118e30a9996df883acdacdfb160e596cd18e0dfed80c6f9acbb204c337051a"
+     },
+     "src/editor/studio/studio_graph_edit.c": {
+       "current_source_sha256": "e16956dd076e838f2808b55155d79aa977d0195d3d6411691440735a8ac4b52c",
+@@ -1972,13 +1972,13 @@
+       "current_source_sha256": "4ab3aff5082e6bfeb7bfc08c1363d5f8c5d30e189feb565c213e8f50e11d5cc8",
+       "sha256": "951968eb62515a5ee2304ebd38fe32eb81b120dd964e199a5795b7a5a784e4f7",
+       "source_path": "src/editor/studio/studio_graph_input.c",
+-      "consumer_sha256": "e334e00fc0e651efb9d302d4facd6ea3a4986296a533a3a58cdf766a0af164f5"
++      "consumer_sha256": "44ee05974e6086c5986bbb0c01f2d529d11df6ab77e2bfbabfa23498b9be2a9e"
+     },
+     "src/editor/studio/studio_graph_internal.h": {
+       "current_source_sha256": "4829efbcf63d8f0dc0fdb59e42c726d591b1ab070873b946a77ba2753586abc5",
+       "sha256": "4829efbcf63d8f0dc0fdb59e42c726d591b1ab070873b946a77ba2753586abc5",
+       "source_path": "src/editor/studio/studio_graph_internal.h",
+-      "consumer_sha256": "e2c9865d20383f3d05d4a47a72679a93b34ee8bea0f0f2379b00a6a4bb5ce65c"
++      "consumer_sha256": "0f358500fd2053fbb01e2ba8da119f6d6746c625d8786bbab373a051af6bece9"
+     },
+     "src/editor/studio/studio_graph_layout.c": {
+       "current_source_sha256": "cdad54d6795f752687015c9d5a85d75417bd0b69be7ad57026e1e28ec3abe519",
+@@ -1990,12 +1990,13 @@
+       "current_source_sha256": "1d8ce15646219e1fa5a84810ff2d1fb91e76f9846216a246aac391275156ffc1",
+       "sha256": "2c1bc02e122ca02cf52ca673d44c48902a363428aff1808e573ea4fdd7f5e8e0",
+       "source_path": "src/editor/studio/studio_graph_literals.c",
+-      "consumer_sha256": "da36a845d7ae7b599fd629980d60f5a4b0c9dfd92f2d21f9c80f5e0a0272b065"
++      "consumer_sha256": "7883cd6a2ce721789ea692160dff472819febc07df7513503d2e32d3c520a06a"
+     },
+     "src/editor/studio/studio_graph_live.c": {
+       "current_source_sha256": "960098ffd026e0250c3c06f67de1f2f7f3fc4ebfa18edd5769fdbcc285a186df",
+       "sha256": "960098ffd026e0250c3c06f67de1f2f7f3fc4ebfa18edd5769fdbcc285a186df",
+-      "source_path": "src/editor/studio/studio_graph_live.c"
++      "source_path": "src/editor/studio/studio_graph_live.c",
++      "consumer_sha256": "d502d2a8a7a9a19a103ae76e0fe41311ed78a7252f5a168b4da14b5f93bc3cee"
+     },
+     "src/editor/studio/studio_graph_menu.c": {
+       "current_source_sha256": "f84572f6d3f4cdfa15a3e1b681508592aad4d12ade199ba0d5a0058c7606596c",
+@@ -2019,19 +2020,19 @@
+       "current_source_sha256": "a276621639c97c357f70b5ecb8f2497e6604915fef946db10796fd7a4a7e1b1f",
+       "sha256": "653a4bfe5021362ac29f28e7eb28d8e6f7dff9412ac890b1465d6c028ece8176",
+       "source_path": "src/editor/studio/studio_graph_properties.c",
+-      "consumer_sha256": "802bb1bd3aeaf3330509b701b61ca62aca077d4b90901ef72d3d5683ef4cc51e"
++      "consumer_sha256": "f1d9297a5145b2db743b0e225ce91d414c30656d2920bac3d67cc73f6c1b89fb"
+     },
+     "src/editor/studio/studio_graph_values.c": {
+       "current_source_sha256": "741fd7736678afc5b6dc17902d468a95f6e748961b91a42f8b68e5e473647f02",
+       "sha256": "1346be855e518fb3d7db152181a1d95613da0eb42d2879849ced9b5b0f634c3b",
+       "source_path": "src/editor/studio/studio_graph_values.c",
+-      "consumer_sha256": "42ecf94901bc01ba542f7915bb9f6442f2d709511bfd00c2441ae1650dcf1988"
++      "consumer_sha256": "90459878d610113ab40cdc034e3296fabf8c81db5f1e5d48092863be7ce63afb"
+     },
+     "src/editor/studio/studio_graph_view.c": {
+       "current_source_sha256": "8b550c6e068a35094eb7bf3a2c6e504584d3d5f8d093faba44abd1a43c310087",
+       "sha256": "8b550c6e068a35094eb7bf3a2c6e504584d3d5f8d093faba44abd1a43c310087",
+       "source_path": "src/editor/studio/studio_graph_view.c",
+-      "consumer_sha256": "d272fbc4afa24084fcb9d36110a55d7a68b0af43d118e89abd2b22e2d4bee20b"
++      "consumer_sha256": "0291cbda2fbfb5390fbb4a62010942e0b6ff073039e240475ff57cc398757280"
+     },
+     "src/editor/studio/studio_host.c": {
+       "consumer_replacements": [
+@@ -2055,7 +2056,7 @@
+       "current_source_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
+       "sha256": "a01a22cf19a858e983159029166fe7d9086a883aa6e864bfa9a359b78048a1e6",
+       "source_path": "src/editor/studio/studio_internal.h",
+-      "consumer_sha256": "1520ed15cc07ee8347e096472884e3b6e15c088ca82d9403f5d39ce7b5fd42d4"
++      "consumer_sha256": "e9d35a2c11d799e03cfcaad9d54fbe4d7df5fafe685981409155021e3131b55e"
+     },
+     "src/editor/studio/studio_keymap.c": {
+       "current_source_sha256": "8b5d145d9512c78e41ef18d71680421e8da299c9aa6c6b5585d00d6b5b23d88a",
+@@ -2073,7 +2074,7 @@
+       "current_source_sha256": "0d345e02baae1cb501fb3788b52b38902547694e9cba9c52c4f8c9ae542e5ffa",
+       "sha256": "e366052eea9670b6d87c3b2a6f50bc93de4d7b2ec632bc8d73ae0b4f2a3fddc8",
+       "source_path": "src/editor/studio/studio_member_properties.c",
+-      "consumer_sha256": "808e4d2d0080885bd0787152eac0e45a65bdc70a3caa105dcd32b932f443e4b3"
++      "consumer_sha256": "c86763348875435dc6da2e055fc2b637e69dce515ae120ccc90cea5d9d35cacf"
+     },
+     "src/editor/studio/studio_members.c": {
+       "current_source_sha256": "933131e66da01f6e413de6e43cede46e041c2733b52e169671c85aa6f928b3ad",
+@@ -2097,7 +2098,7 @@
+       "current_source_sha256": "c512a78fda114be112fab7d6fa5e9e417720f964e61a2941f77cb3ad6e33500d",
+       "sha256": "c512a78fda114be112fab7d6fa5e9e417720f964e61a2941f77cb3ad6e33500d",
+       "source_path": "src/editor/studio/studio_node_calls.c",
+-      "consumer_sha256": "ecb18ceb7f3056f6c0abaaee58c1aca4908c82c2d5849ea7067a0db30d8c4676"
++      "consumer_sha256": "e42522967f4be179c430cc0e541ff8dea004bd41e9746833b0ac1512bf870672"
+     },
+     "src/editor/studio/studio_nodes.h": {
+       "current_source_sha256": "f6f9ea26d635804f7c7a633a3fd5010cbe9dc89a81eb917003098e0141bad885",
+@@ -2159,7 +2160,7 @@
+       "current_source_sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
+       "sha256": "e8fbc165c4c7717a11566265e0b7dc717e19f27f7166260ee4f1b1dd62600b4f",
+       "source_path": "src/editor/studio/studio_properties.c",
+-      "consumer_sha256": "d20368e746e6070e7fdc8942c5e73d5504f89ffafd62e107998a4bf4e45e34a4"
++      "consumer_sha256": "618c02992d580dda4e270790cd44d0ca3f93c8a6177f8dfabd2b9c3a6738e777"
+     },
+     "src/editor/studio/studio_properties_internal.h": {
+       "current_source_sha256": "14c5ed4a4d38c1ca484be50e70be0cb1d3ec85d62a70185612d365659bcbd236",
+@@ -2171,13 +2172,13 @@
+       "current_source_sha256": "a0579bb794e0d93710c7c4e3c18b328c8fb94b5c2bb40b07304923167aef3130",
+       "sha256": "a0579bb794e0d93710c7c4e3c18b328c8fb94b5c2bb40b07304923167aef3130",
+       "source_path": "src/editor/studio/studio_properties_view.c",
+-      "consumer_sha256": "728ddaa0c20b1806bf0a8e375cd2c39b8bf6a2f3f63bb5c9cede856ac40374cb"
++      "consumer_sha256": "e13cc7ed2c314bbda4b6f595aa194e1175b01f41894b074a0be85b14abf60a2a"
+     },
+     "src/editor/studio/studio_prototype_actions.c": {
+       "current_source_sha256": "2d69a48bc7c1cb006a19e11a9b0df180defa389464e0eeeac40fc04adb0b345d",
+       "sha256": "2d69a48bc7c1cb006a19e11a9b0df180defa389464e0eeeac40fc04adb0b345d",
+       "source_path": "src/editor/studio/studio_prototype_actions.c",
+-      "consumer_sha256": "61f768872d015bb3d9ea9e140a077434b86cb5e29e88607cd408fd730fb5373f"
++      "consumer_sha256": "9e47db02661bd031417dab9a34dc6242b72eb8243a32a3cc63d990647dad51af"
+     },
+     "src/editor/studio/studio_refactor.c": {
+       "current_source_sha256": "86ca21a29ce092333dc2f80f310cddf4ab081178fb015eafde0aae69ef20123b",
+@@ -2252,13 +2253,13 @@
+       "current_source_sha256": "1fa3d063bd2ac8d2cbdfaa1146cf52d31d87dc2cff5c7412af9db7953092dc03",
+       "sha256": "1fa3d063bd2ac8d2cbdfaa1146cf52d31d87dc2cff5c7412af9db7953092dc03",
+       "source_path": "src/editor/text/zep_bridge.cpp",
+-      "consumer_sha256": "849c8a08a3c4dce47283005bdc6fbb47bdf0e9e0be5fc3fc945a093f388456ce"
++      "consumer_sha256": "7d8768702ce3295eb96fe043f9f5881edc444da0bd59b50476ee11fbd7818bc8"
+     },
+     "src/editor/text/zep_bridge.h": {
+       "current_source_sha256": "c00d916fadd81518f710272ec3b65394bfb757f00256ed1a42a8c8664ffd1e2b",
+       "sha256": "c00d916fadd81518f710272ec3b65394bfb757f00256ed1a42a8c8664ffd1e2b",
+       "source_path": "src/editor/text/zep_bridge.h",
+-      "consumer_sha256": "49788ccc1157c2113d6a80b289a5f1715675c826f42a1847abdf194d0153e1ef"
++      "consumer_sha256": "b8584de1a28e295f9270fcdc8157f15323cf970426a472bac8d12c557d66bcb7"
+     },
+     "src/editor/ui/choices.c": {
+       "current_source_sha256": "445249cccfbeca102738e53ca9bc1c0081b39b431ae2b39421901bb44dc24638",
+@@ -2285,7 +2286,7 @@
+       "current_source_sha256": "0971a1fa08b4407bd6f7b275384c1ccc97235a0b00c4c883235554bbd340962c",
+       "sha256": "0971a1fa08b4407bd6f7b275384c1ccc97235a0b00c4c883235554bbd340962c",
+       "source_path": "src/editor/ui/kit.h",
+-      "consumer_sha256": "2ca4e9a4609b1917aba7d77e67373fd1d87728e10e0aebef36b6d8037aa3ae92"
++      "consumer_sha256": "2391a71b42ce28ab80cefd41aeb38232234018d32106e5376fe9c1bb76fef11c"
+     },
+     "src/editor/ui/kit_icons.h": {
+       "current_source_sha256": "d48b0fd19d34495e5d0f0f9dff1848213fbc440ab3b0aad4afc32645cdcd73a3",
+@@ -2444,19 +2445,20 @@
+     "src/editor/workspace/scene_asset_drop.c": {
+       "current_source_sha256": "068cafc2d0558fcccba9dc115eae52ef648c9f72aa134636f949b8ef9319df13",
+       "sha256": "068cafc2d0558fcccba9dc115eae52ef648c9f72aa134636f949b8ef9319df13",
+-      "source_path": "src/editor/workspace/scene_asset_drop.c"
++      "source_path": "src/editor/workspace/scene_asset_drop.c",
++      "consumer_sha256": "dc1f5c366b75eb47e75fd24921c6ffc1727848d1ee33fafc144cda90f30f857b"
+     },
+     "src/editor/workspace/scene_authoring.c": {
+       "current_source_sha256": "b60c6ff2f94a8a5733efdb4ec8fe811f89d0d02e8d1635b0ec68dc73588f9612",
+       "sha256": "0e6389b4bfcaf9c1f64637bf80918284091122a81e90e2efa2c77e99f36c1421",
+       "source_path": "src/editor/workspace/scene_authoring.c",
+-      "consumer_sha256": "0378261b805a2853c78070b06d0812cdb46e2a9026ab8c18fb7968fb9bdd6701"
++      "consumer_sha256": "2978a60d61c5346a8af7afff9851bc64aad8d6bd31218d99a1d0fbeb7db1a504"
+     },
+     "src/editor/workspace/scene_authoring.h": {
+       "current_source_sha256": "8b5270dfd0df43786a42529669ece1f70460727a5fb805aefabab953e5139a1f",
+       "sha256": "9afa2c3ec87823c00dba8784a603989decd5078097704a2fba076d5d8c16028c",
+       "source_path": "src/editor/workspace/scene_authoring.h",
+-      "consumer_sha256": "73d7890233f253eca58066ce9aa1b44b4ac2c47f9a30a4ec42ff457dd89e3c47"
++      "consumer_sha256": "340b350a79c656732f1d45bcbcf95887b563673459f0c0f35c6c7de5a4676583"
+     },
+     "src/editor/workspace/scene_checkpoint.c": {
+       "current_source_sha256": "522d8bca7bdbc2d4229fdeacb30168ef853fc55e2689ded5ecb7c123d26e9ab1",
+@@ -2480,7 +2482,7 @@
+       "current_source_sha256": "d5169b852ed4f14906f72e71a02c3ae67da8655b51fc678f2666a243819e4483",
+       "sha256": "d5169b852ed4f14906f72e71a02c3ae67da8655b51fc678f2666a243819e4483",
+       "source_path": "src/editor/workspace/scene_gizmo.c",
+-      "consumer_sha256": "64c885f9eb589521e248c894baaca6436930de7cc828782c37e4678e67f19498"
++      "consumer_sha256": "4b696845fa720c2b1835dd5cd2e59dfdf068df6d053dd1e66c0058c7243c8c34"
+     },
+     "src/editor/workspace/scene_gizmo.h": {
+       "current_source_sha256": "0e46bb27044d1fa98f416d6148c6b87d41b2ad6ab6c9a36763d216a5e7c57c3d",
+@@ -2510,7 +2512,7 @@
+       "current_source_sha256": "c13c72958fa5e50bbf97919ac212f5a41a824d69aedc5d89fa9d9ce37ab7e77d",
+       "sha256": "6046e226fe5e17ded4a1c01e38cf220faaafa6bd91c9e6d669f5bbecb53f4c91",
+       "source_path": "src/editor/workspace/scene_runtime.c",
+-      "consumer_sha256": "4272c413643a5bad0d4ce6967cbf60d6a1d15ea174fc5d8c646ba68b1ef4c2b2"
++      "consumer_sha256": "5c89330124eea67e5c9d54f2179ca6fef49a36687532b09653511c2bbbc593e1"
+     },
+     "src/editor/workspace/scene_tabs.c": {
+       "current_source_sha256": "01c0e112b7d69f71c359833c32b7e25f6520744648ff5ed76f3ec427df7038d3",
+diff --git a/cmake/patches/zep-smooth-reveal.patch b/cmake/patches/zep-smooth-reveal.patch
+new file mode 100644
+index 0000000..038b6d7
+--- /dev/null
++++ b/cmake/patches/zep-smooth-reveal.patch
+@@ -0,0 +1,35 @@
++--- a/include/zep/window.h
+++++ b/include/zep/window.h
++@@ -209,6 +209,8 @@
++     // region spans x to y.
++     void SetTextOffsetX(float offset);
++     NVec2f GetTextRegionX() const;
+++    NVec4f GetTextScrollInfo();
+++    void SetTextOffsetY(float offset);
++ 
++ private:
++ 
++--- a/src/window.cpp
+++++ b/src/window.cpp
++@@ -1506,6 +1506,21 @@
++     return NVec2f(m_textRegion->rect.Left(), m_textRegion->rect.Right());
++ }
++ 
+++NVec4f ZepWindow::GetTextScrollInfo()
+++{
+++    UpdateLayout();
+++    return NVec4f(m_textOffsetPx, std::max(0.0f, m_textSizePx.y - m_textRegion->rect.Height()),
+++        m_textRegion->rect.Top(), m_textRegion->rect.Bottom());
+++}
+++
+++void ZepWindow::SetTextOffsetY(float offset)
+++{
+++    UpdateLayout();
+++    m_textOffsetPx = std::max(0.0f, std::min(offset, m_textSizePx.y - m_textRegion->rect.Height()));
+++    m_cursorMoved = false;
+++    UpdateVisibleLineRange();
+++}
+++
++ NVec2f ZepWindow::GetSpanPixelRange(SpanInfo& span) const
++ {
++     // Need to take account of the text rect offset
+diff --git a/cmake/zep_dependencies.cmake b/cmake/zep_dependencies.cmake
+index f1aa14a..3f311e0 100644
+--- a/cmake/zep_dependencies.cmake
++++ b/cmake/zep_dependencies.cmake
+@@ -41,6 +41,7 @@ chibi_apply_patches("${zep_SOURCE_DIR}"
+     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-undo-pop.patch"
+     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-change-inner-word.patch"
+     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-host-view.patch"
++    "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-smooth-reveal.patch"
+     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-marker-self-clear.patch"
+     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-indicator-dot.patch"
+     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-flat-underline.patch")
+diff --git a/src/editor/collab/actions_graph.c b/src/editor/collab/actions_graph.c
+index aaa63ac..d45d417 100644
+--- a/src/editor/collab/actions_graph.c
++++ b/src/editor/collab/actions_graph.c
+@@ -100,9 +100,12 @@ static bool action_value_valid(const pin_value *value, int depth)
+             return true; /* Authored null structs represent their typed zero default. */
+         }
+         for (int i = 0; i < type->field_count; i++) {
++            arena storage = { 0 };
+             pin_value field;
+-            pin_read_field(value->ptr, &type->fields[i], &field);
+-            if (!action_value_valid(&field, depth + 1)) {
++            bool valid = !pin_read_field(&storage, value->ptr, &type->fields[i], &field) &&
++                         action_value_valid(&field, depth + 1);
++            arena_free(&storage);
++            if (!valid) {
+                 return false;
+             }
+         }
+@@ -117,7 +120,7 @@ static bool action_value_valid(const pin_value *value, int depth)
+     if (value->type == PIN_HANDLE) {
+         return !value->u64;
+     }
+-    return (value->type != PIN_STR && value->type != PIN_NAME) || value->str;
++    return value->type != PIN_NAME || value->str;
+ }
+ 
+ static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const char *key, const pin_value *value)
+@@ -130,14 +133,16 @@ static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const cha
+     if (value->type_name) {
+         yyjson_mut_obj_add_strcpy(doc, item, "type_name", value->type_name);
+     }
+-    if (value->container != PIN_CONTAINER_SINGLE || value->type == PIN_STRUCT) {
++    if (value->container != PIN_CONTAINER_SINGLE || value->type == PIN_STRUCT ||
++        value->type == PIN_STR) {
+         yyjson_mut_obj_add_int(doc, item, "container", value->container);
+         av_doc *native = av_doc_new();
+         av_value *data = av_obj(native);
+         pin_value_write_document(native, data, "data", value->type, value->type_name, value);
+-        yyjson_mut_obj_add_val(doc, item, "data", av_to_json(doc, av_obj_get(data, "data")));
++        yyjson_mut_val *payload = av_to_json(doc, av_obj_get(data, "data"));
++        bool valid = payload && yyjson_mut_obj_add_val(doc, item, "data", payload);
+         av_doc_free(native);
+-        return true;
++        return valid;
+     }
+     switch (value->type) {
+         case PIN_BOOL:
+@@ -180,7 +185,6 @@ static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const cha
+             yyjson_mut_obj_add_real(doc, item, "data", value->d);
+             break;
+         case PIN_NAME:
+-        case PIN_STR:
+             if (!value->str) {
+                 return false;
+             }
+@@ -196,6 +200,7 @@ static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const cha
+             yyjson_mut_obj_add_uint(doc, item, "data", 0);
+             break;
+         case PIN_FLOW:
++        case PIN_STR:
+         case PIN_STRUCT: return false;
+     }
+     return true;
+@@ -222,7 +227,8 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
+     if (value.type <= PIN_FLOW || value.type > PIN_ENUM) {
+         return false;
+     }
+-    if (value.container != PIN_CONTAINER_SINGLE || value.type == PIN_STRUCT) {
++    if (value.container != PIN_CONTAINER_SINGLE || value.type == PIN_STRUCT ||
++        value.type == PIN_STR) {
+         if (value.type == PIN_STRUCT && !type_is_plain(type_catalog_find(type_name))) {
+             return false;
+         }
+@@ -233,6 +239,7 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
+         char error[192];
+         int result = pin_value_read_document(&owned, value, native_data, &decoded, error, sizeof error);
+         if (!result) {
++            decoded.type_name = type_name;
+             result = pin_value_copy_to_graph(storage, &value, &decoded);
+         }
+         arena_free(&owned);
+@@ -319,7 +326,6 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
+             value.d = yyjson_get_real(data);
+             break;
+         case PIN_NAME:
+-        case PIN_STR:
+             if (!yyjson_is_str(data)) {
+                 return false;
+             }
+@@ -339,6 +345,7 @@ static bool read_pin_value(yyjson_val *item, pin_value *out, graph *storage)
+             value.u64 = 0;
+             break;
+         case PIN_FLOW:
++        case PIN_STR:
+         case PIN_STRUCT: return false;
+     }
+     *out = value;
+diff --git a/src/editor/collab/actions_scene.c b/src/editor/collab/actions_scene.c
+index 10097c4..151737e 100644
+--- a/src/editor/collab/actions_scene.c
++++ b/src/editor/collab/actions_scene.c
+@@ -8,6 +8,7 @@
+ #include "support/array.h"
+ #include "support/asset_json.h"
+ #include "support/xalloc.h"
++#include "types/array.h"
+ #include "types/type.h"
+ #include "types/value_document.h"
+ 
+@@ -238,7 +239,8 @@ static bool read_plain_value(pin_type type, const char *type_name, yyjson_val *j
+         *out = value;
+         out->type_name = type_name;
+         if (type == PIN_STR || type == PIN_NAME) {
+-            out->str = xstrdup(value.str);
++            valid = pin_value_copy(out, &value) == 0;
++            out->type_name = type_name;
+         }
+         if (type == PIN_STRUCT) {
+             out->ptr = xmalloc(shape->size);
+@@ -253,7 +255,7 @@ static bool read_plain_value(pin_type type, const char *type_name, yyjson_val *j
+ static void free_action_value(pin_value *value)
+ {
+     if (value->type == PIN_STR || value->type == PIN_NAME) {
+-        free((void *)value->str);
++        pin_value_destroy(value);
+     }
+     if (value->type == PIN_STRUCT) {
+         free(value->ptr);
+diff --git a/src/editor/documents/scene_document.c b/src/editor/documents/scene_document.c
+index 977f93a..936d700 100644
+--- a/src/editor/documents/scene_document.c
++++ b/src/editor/documents/scene_document.c
+@@ -693,7 +693,7 @@ static void link_path(app_scene_authoring *scene, const scene_actor *actor, cons
+ {
+     const ecs_component_desc *desc = link->component;
+     pin_value held = { 0 };
+-    if (ecs_component_read_field(scene->world, actor->entity, desc->id, link->field, &held) !=
++    if (ecs_component_read_field(NULL, scene->world, actor->entity, desc->id, link->field, &held) !=
+         ECS_OK) {
+         return;
+     }
+diff --git a/src/editor/documents/scene_history.c b/src/editor/documents/scene_history.c
+index 4cd4978..d01b32b 100644
+--- a/src/editor/documents/scene_history.c
++++ b/src/editor/documents/scene_history.c
+@@ -8,6 +8,7 @@
+ #include "support/asset_json.h"
+ #include "support/xalloc.h"
+ #include "types/array.h"
++#include "types/text.h"
+ #include "types/type.h"
+ #include "types/value_document.h"
+ 
+@@ -62,8 +63,8 @@ static void clear_edits(scene_edit **edits)
+             free((void *)fields[j].before.type_name);
+             free((void *)fields[j].after.type_name);
+             if (fields[j].before.type == PIN_STR || fields[j].before.type == PIN_NAME) {
+-                free((void *)fields[j].before.str);
+-                free((void *)fields[j].after.str);
++                pin_value_destroy(&fields[j].before);
++                pin_value_destroy(&fields[j].after);
+             }
+             if (fields[j].before.type == PIN_STRUCT) {
+                 free(fields[j].before.ptr);
+@@ -222,6 +223,19 @@ static bool same_type(pin_value a, pin_value b)
+     return a.type_name && b.type_name && strcmp(a.type_name, b.type_name) == 0;
+ }
+ 
++static bool field_value_valid(const type_field *field, pin_value value)
++{
++    pin_value expected = { .type = field->type, .type_name = field->type_name };
++    if (!scalar(value) || !same_type(expected, value)) {
++        return false;
++    }
++    if (field->type != PIN_STR || field->text_descriptor) {
++        return true;
++    }
++    pin_string text = pin_text(value);
++    return !text.length || !memchr(text.bytes, 0, text.length);
++}
++
+ static bool same_value(pin_value a, pin_value b)
+ {
+     switch (a.type) {
+@@ -239,7 +253,7 @@ static bool same_value(pin_value a, pin_value b)
+         case PIN_F64: return a.d == b.d;
+         case PIN_ENUM: return a.e == b.e;
+         case PIN_STR:
+-        case PIN_NAME: return !strcmp(a.str ? a.str : "", b.str ? b.str : "");
++        case PIN_NAME: return pin_value_equal(&a, &b);
+         case PIN_STRUCT: return pin_value_equal(&a, &b);
+         default: return false;
+     }
+@@ -275,8 +289,11 @@ bool scene_history_push_fields(
+     for (int i = 0; i < count; i++) {
+         scene_field_edit field = fields[i];
+         if (field.before.type == PIN_STR || field.before.type == PIN_NAME) {
+-            field.before.str = xstrdup(field.before.str ? field.before.str : "");
+-            field.after.str = xstrdup(field.after.str ? field.after.str : "");
++            int before_error = pin_value_copy(&field.before, &fields[i].before);
++            int after_error = pin_value_copy(&field.after, &fields[i].after);
++            assert(!before_error && !after_error);
++            (void)before_error;
++            (void)after_error;
+         }
+         if (field.before.type == PIN_STRUCT) {
+             const type_desc *type = type_catalog_find(field.before.type_name);
+@@ -318,13 +335,14 @@ static bool valid_fields(ecs_world *world, const scene_edit *edit)
+     for (int i = 0; i < acount(edit->fields); i++) {
+         const scene_field_edit *field = &edit->fields[i];
+         const ecs_component_desc *desc = ecs_world_component(world, field->component);
+-        if (!desc || !desc->type || field->field >= desc->type->field_count ||
++        if (!desc || !desc->type || field->field < 0 ||
++            field->field >= desc->type->field_count ||
+             !ecs_component_has(world, edit->entity, field->component)) {
+             return false;
+         }
+         const type_field *type = &desc->type->fields[field->field];
+-        pin_value expected = { .type = type->type, .type_name = type->type_name };
+-        if (!same_type(expected, field->before) || !same_type(expected, field->after)) {
++        if (!field_value_valid(type, field->before) ||
++            !field_value_valid(type, field->after)) {
+             return false;
+         }
+     }
+@@ -869,7 +887,6 @@ static av_value *history_value(av_doc *doc, pin_value value)
+     history_text(doc, object, "name", value.type_name);
+     switch (value.type) {
+         case PIN_BOOL: av_obj_add_bool(doc, object, "value", value.b); break;
+-        case PIN_STR:
+         case PIN_NAME:
+             history_text(doc, object, "value", value.str ? value.str : "");
+             break;
+@@ -891,6 +908,7 @@ static av_value *history_value(av_doc *doc, pin_value value)
+         case PIN_F64:
+             av_obj_add_val(doc, object, "value", av_real(doc, value.d));
+             break;
++        case PIN_STR:
+         case PIN_STRUCT: {
+             pin_value_write_document(doc, object, "value", value.type, value.type_name, &value);
+             break;
+@@ -922,7 +940,8 @@ static bool history_read_typed_value(pin_type type, const char *type_name, av_va
+         *out = value;
+         out->type_name = type_name;
+         if (type == PIN_STR || type == PIN_NAME) {
+-            out->str = xstrdup(value.str);
++            valid = pin_value_copy(out, &value) == 0;
++            out->type_name = type_name;
+         }
+         if (type == PIN_STRUCT) {
+             out->ptr = xmalloc(shape->size);
+@@ -950,10 +969,16 @@ static bool history_read_value(av_value *object, pin_value *out)
+         out->ptr = value.ptr;
+         return scalar(*out);
+     }
+-    if (out->type == PIN_STR || out->type == PIN_NAME) {
++    if (out->type == PIN_STR) {
++        return history_read_typed_value(PIN_STR, out->type_name, value, out);
++    }
++    if (out->type == PIN_NAME) {
+         if (!av_is_str(value)) {
+             return false;
+         }
++        if (memchr(av_get_str(value), 0, av_get_len(value))) {
++            return false;
++        }
+         out->str = xstrdup(av_get_str(value));
+         return true;
+     }
+@@ -1231,9 +1256,8 @@ static bool history_read_edits(av_value *array, scene_edit **edits, uint64_t **b
+                 return false;
+             }
+             const type_field *type = &component->type->fields[index];
+-            pin_value expected = { .type = type->type, .type_name = type->type_name };
+-            if (!same_type(expected, stored->before) ||
+-                !same_type(expected, stored->after)) {
++            if (!field_value_valid(type, stored->before) ||
++                !field_value_valid(type, stored->after)) {
+                 return false;
+             }
+         }
+diff --git a/src/editor/documents/scene_prototype_actions.c b/src/editor/documents/scene_prototype_actions.c
+index cfce346..bca406e 100644
+--- a/src/editor/documents/scene_prototype_actions.c
++++ b/src/editor/documents/scene_prototype_actions.c
+@@ -40,14 +40,26 @@ static const prototype_component *base_component(const scene_actor *actor, ecs_c
+ static bool overrides(const app_scene_authoring *scene, const scene_actor *actor, prototype_field o)
+ {
+     const prototype_component *component = base_component(actor, o.component->id);
++    arena storage = { 0 };
+     pin_value value = { 0 }, inherited = { 0 };
+-    if (!component ||
+-        ecs_component_read_field(scene->world, actor->entity, o.component->id, o.field, &value) !=
+-            ECS_OK) {
+-        return false;
+-    }
+-    pin_read_field(component->data, &o.component->type->fields[o.field], &inherited);
+-    return !pin_value_equal(&value, &inherited);
++    bool changed = component &&
++                   ecs_component_read_field(
++                       &storage,
++                       scene->world,
++                       actor->entity,
++                       o.component->id,
++                       o.field,
++                       &value
++                   ) == ECS_OK &&
++                   !pin_read_field(
++                       &storage,
++                       component->data,
++                       &o.component->type->fields[o.field],
++                       &inherited
++                   ) &&
++                   !pin_value_equal(&value, &inherited);
++    arena_free(&storage);
++    return changed;
+ }
+ 
+ /* Whether `actor` inherits one of the fields: has its component and keeps
+@@ -195,6 +207,7 @@ static bool follow_prototype(
+ )
+ {
+     scene_field_edit *edits = NULL;
++    arena storage = { 0 };
+     bool complete = true;
+     for (int i = 0; i < count; i++) {
+         prototype_field o = fields[i];
+@@ -210,12 +223,18 @@ static bool follow_prototype(
+             continue;
+         }
+         pin_value now = { 0 }, next = { 0 };
+-        if (ecs_component_read_field(scene->world, actor->entity, o.component->id, o.field, &now) !=
+-            ECS_OK) {
++        if (ecs_component_read_field(
++                &storage,
++                scene->world,
++                actor->entity,
++                o.component->id,
++                o.field,
++                &now
++            ) != ECS_OK ||
++            pin_read_field(&storage, after->data, &o.component->type->fields[o.field], &next)) {
+             complete = false;
+             continue;
+         }
+-        pin_read_field(after->data, &o.component->type->fields[o.field], &next);
+         if (pin_value_equal(&now, &next)) {
+             continue;
+         }
+@@ -245,6 +264,7 @@ static bool follow_prototype(
+         scene_property_value_free(&edits[i].after);
+     }
+     afree(edits);
++    arena_free(&storage);
+     return complete;
+ }
+ 
+@@ -271,16 +291,24 @@ static int apply_source_overrides(
+         return -1;
+     }
+     authoring_prototype_edit *edits = NULL;
++    arena storage = { 0 };
+     for (int i = 0; i < count; i++) {
+         const ecs_component_desc *component = fields[i].component;
+         int field = fields[i].field;
+         pin_value value = { 0 };
+         if (!component || !component->type || field < 0 ||
+             field >= component->type->field_count ||
+-            ecs_component_read_field(scene->world, source->entity, component->id, field, &value) !=
+-                ECS_OK) {
++            ecs_component_read_field(
++                &storage,
++                scene->world,
++                source->entity,
++                component->id,
++                field,
++                &value
++            ) != ECS_OK) {
+             snprintf(scene->prototype_message, sizeof scene->prototype_message, "Could not read the selected instance fields.");
+             afree(edits);
++            arena_free(&storage);
+             return -1;
+         }
+         apush(
+@@ -304,6 +332,7 @@ static int apply_source_overrides(
+         sizeof scene->prototype_message
+     );
+     afree(edits);
++    arena_free(&storage);
+     if (!valid || !candidate.changed) {
+         authoring_prototype_edit_result_free(&candidate);
+         free(before_text);
+diff --git a/src/editor/documents/scene_prototypes.c b/src/editor/documents/scene_prototypes.c
+index e1068bb..211d610 100644
+--- a/src/editor/documents/scene_prototypes.c
++++ b/src/editor/documents/scene_prototypes.c
+@@ -134,6 +134,7 @@ static bool source_import_model(
+         return false;
+     }
+     authoring_prototype_edit *ops = NULL;
++    arena values = { 0 };
+     for (int i = 0; i < acount(asset->prototype->components); i++) {
+         const prototype_component *next = &asset->prototype->components[i];
+         const prototype_component
+@@ -153,8 +154,17 @@ static bool source_import_model(
+         for (int field = 0; field < next->desc->type->field_count; field++) {
+             const type_field *desc = &next->desc->type->fields[field];
+             pin_value before = { 0 }, after = { 0 };
+-            pin_read_field(prior->data, desc, &before);
+-            pin_read_field(next->data, desc, &after);
++            const char *read_error = pin_read_field(&values, prior->data, desc, &before);
++            if (!read_error) {
++                read_error = pin_read_field(&values, next->data, desc, &after);
++            }
++            if (read_error) {
++                snprintf(error, size, "%s", read_error);
++                arena_free(&values);
++                afree(ops);
++                authoring_prototype_edit_result_free(&disk);
++                return false;
++            }
+             if (!pin_value_equal(&before, &after)) {
+                 apush(
+                     ops,
+@@ -220,6 +230,7 @@ static bool source_import_model(
+         ok = asset_code_edit_source(code, text, edited.source, NULL, false);
+     }
+     afree(ops);
++    arena_free(&values);
+     authoring_prototype_edit_result_free(&disk);
+     authoring_prototype_edit_result_free(&edited);
+     return ok;
+@@ -761,15 +772,23 @@ static int refresh_prototype_actor(
+     for (int i = 0; i < acount(native_prototype->components); i++) {
+         const prototype_component *component = &native_prototype->components[i];
+         for (int field = 0; field < component->desc->type->field_count; field++) {
++            arena storage = { 0 };
+             pin_value value;
+-            pin_read_field(component->data, &component->desc->type->fields[field], &value);
+-            if (ecs_component_write_field(
+-                    scene->world,
+-                    actor->entity,
+-                    component->desc->id,
+-                    field,
+-                    value
+-                ) != ECS_OK) {
++            bool written = !pin_read_field(
++                               &storage,
++                               component->data,
++                               &component->desc->type->fields[field],
++                               &value
++                           ) &&
++                           ecs_component_write_field(
++                               scene->world,
++                               actor->entity,
++                               component->desc->id,
++                               field,
++                               value
++                           ) == ECS_OK;
++            arena_free(&storage);
++            if (!written) {
+                 av_value_free(overrides);
+                 return -1;
+             }
+@@ -868,6 +887,7 @@ int write_prototype_field(
+ }
+ 
+ int app_scene_authoring_read_prototype_field(
++    arena *storage,
+     app_scene_authoring *scene,
+     const char *prototype_name,
+     const char *component,
+@@ -884,8 +904,9 @@ int app_scene_authoring_read_prototype_field(
+         ) < 0) {
+         return -1;
+     }
+-    return asset ? prototype_read_field(asset->prototype, component, field, value)
+-                 : -1;
++    return asset
++             ? prototype_read_field(storage, asset->prototype, component, field, value)
++             : -1;
+ }
+ 
+ static int set_prototype_field(
+diff --git a/src/editor/rmlui/kit_code.c b/src/editor/rmlui/kit_code.c
+index d583de0..b45c556 100644
+--- a/src/editor/rmlui/kit_code.c
++++ b/src/editor/rmlui/kit_code.c
+@@ -218,6 +218,10 @@ struct kit_code_editor
+     bool no_wrap;
+     float scroll_x; /* lines scrolled left, pixels */
+     long followed;  /* the cursor last scrolled into view sideways */
++    bool reveal_pending, revealing;
++    spring reveal_x, reveal_y;
++    float reveal_target_x, reveal_target_y, reveal_max_x;
++    double reveal_time, frame_time;
+     /* The pointer: where it last moved, in the context's pixels, and since
+        when it rests there. A key or a press hides the card until it moves. */
+     bool pointer_in, pointer_moved, hover_blocked;
+@@ -712,8 +716,16 @@ void kit_code_editor_destroy(kit_code_editor *e)
+     free(e);
+ }
+ 
++static void cancel_reveal(kit_code_editor *e)
++{
++    e->reveal_pending = false;
++    e->revealing = false;
++    e->reveal_x = e->reveal_y = (spring){ 0 };
++}
++
+ void kit_code_set_text(kit_code_editor *e, const char *text)
+ {
++    cancel_reveal(e);
+     e->quiet = true;
+     zep_set_text(e->zep, text ? text : "");
+     e->quiet = false;
+@@ -826,13 +838,32 @@ int kit_code_cursor(const kit_code_editor *e)
+ }
+ 
+ void kit_code_set_cursor(kit_code_editor *e, int byte)
++{
++    cancel_reveal(e);
++    zep_set_cursor(e->zep, byte);
++    e->cursor = zep_cursor(e->zep);
++}
++
++void kit_code_reveal(kit_code_editor *e, int byte)
+ {
+     zep_set_cursor(e->zep, byte);
+     e->cursor = zep_cursor(e->zep);
++    e->reveal_pending = true;
++}
++
++void kit_code_scroll(kit_code_editor *e, float *x, float *y)
++{
++    *x = e->scroll_x;
++    *y = 0;
++    if (e->view && e->view->rendered) {
++        float maximum, top, bottom;
++        zep_scroll_info(e->zep, y, &maximum, &top, &bottom);
++    }
+ }
+ 
+ void kit_code_set_selection(kit_code_editor *e, int anchor, int cursor)
+ {
++    cancel_reveal(e);
+     if (e->vim) {
+         if (cursor > anchor) {
+             cursor--;
+@@ -1910,6 +1941,13 @@ static void on_view_event(void *user, const rml_event *event)
+         return;
+     }
+     rml_vec2 at = local(v, event);
++    switch (event->id) {
++        case RML_EVENT_KEYDOWN:
++        case RML_EVENT_TEXTINPUT:
++        case RML_EVENT_MOUSEDOWN:
++        case RML_EVENT_MOUSESCROLL: cancel_reveal(e); break;
++        default: break;
++    }
+     switch (event->id) {
+         case RML_EVENT_KEYDOWN:
+         case RML_EVENT_KEYUP:
+@@ -2156,7 +2194,8 @@ static void follow_cursor(code_view *v)
+ {
+     kit_code_editor *e = v->editor;
+     long cursor = zep_cursor(e->zep);
+-    if (!e->no_wrap || !v->rendered || cursor == e->followed) {
++    if (e->reveal_pending || e->revealing || !e->no_wrap || !v->rendered ||
++        cursor == e->followed) {
+         return;
+     }
+     e->followed = cursor;
+@@ -2172,6 +2211,61 @@ static void follow_cursor(code_view *v)
+     }
+ }
+ 
++/* Reuse the shared exact spring: reveal only the distance needed to leave
++   context around the caret, and retarget an in-flight reveal from its current
++   rendered offset and velocity. Zep's regular input keeps its own following. */
++static void reveal_cursor(code_view *v)
++{
++    kit_code_editor *e = v->editor;
++    if (!e->reveal_pending && !e->revealing) {
++        return;
++    }
++    float offset, maximum, top, bottom;
++    zep_scroll_info(e->zep, &offset, &maximum, &top, &bottom);
++    if (e->reveal_pending) {
++        float x, y, w, h, left, right;
++        zep_cursor_rect(e->zep, &x, &y, &w, &h);
++        zep_text_region_x(e->zep, &left, &right);
++        float margin_y = math_min(3 * e->line, (bottom - top) / 4);
++        float move_y = y < top + margin_y        ? y - top - margin_y
++                     : y + h > bottom - margin_y ? y + h - bottom + margin_y
++                                                 : 0;
++        float margin_x = math_min(SCROLL_MARGIN_CELLS * e->advance, (right - left) / 4);
++        float move_x = x < left + margin_x      ? x - left - margin_x
++                     : x + w > right - margin_x ? x + w - right + margin_x
++                                                : 0;
++        e->reveal_target_y = math_clamp(offset + move_y, 0, maximum);
++        e->reveal_max_x = math_max(0, longest_line(e) - (right - left) + margin_x);
++        e->reveal_target_x = e->no_wrap
++                               ? math_clamp(e->scroll_x + move_x, 0, e->reveal_max_x)
++                               : 0;
++        e->reveal_y.x = offset - e->reveal_target_y;
++        e->reveal_x.x = e->scroll_x - e->reveal_target_x;
++        if (!e->revealing) {
++            e->reveal_time = e->frame_time;
++        }
++        e->reveal_pending = false;
++        e->revealing = true;
++        e->followed = zep_cursor(e->zep);
++    }
++    double dt = math_clamp(e->frame_time - e->reveal_time, 0.0, 0.1);
++    e->reveal_time = e->frame_time;
++    if (motion_reduced(v->el)) {
++        e->reveal_x = e->reveal_y = (spring){ 0 };
++    }
++    spring_params params = spring_for(0.22, 0);
++    spring_step(&e->reveal_x, params, dt);
++    spring_step(&e->reveal_y, params, dt);
++    e->scroll_x = math_clamp(e->reveal_target_x + (float)e->reveal_x.x, 0, e->reveal_max_x);
++    zep_set_text_offset_x(e->zep, e->scroll_x);
++    zep_set_text_offset_y(e->zep, e->reveal_target_y + (float)e->reveal_y.x);
++    e->revealing = e->reveal_x.x != 0 || e->reveal_y.x != 0 ||
++                   e->reveal_x.v != 0 || e->reveal_y.v != 0;
++    if (e->revealing) {
++        rml_context_request_next_update(rml_element_context(v->el), 0);
++    }
++}
++
+ static void view_render(rml_element *el, void *user)
+ {
+     code_view *v = user;
+@@ -2190,8 +2284,9 @@ static void view_render(rml_element *el, void *user)
+         v->height = size.y;
+         zep_set_region(e->zep, 0, 0, size.x, size.y);
+     }
+-    follow_cursor(v);
+     sync_face(v);
++    reveal_cursor(v);
++    follow_cursor(v);
+     v->render++;
+     v->clipped = false;
+     zep_render(e->zep);
+@@ -2296,6 +2391,9 @@ static void set_wrap(kit_code_editor *e, bool no_wrap)
+     if (no_wrap == e->no_wrap) {
+         return;
+     }
++    bool reveal = e->reveal_pending || e->revealing;
++    cancel_reveal(e);
++    e->reveal_pending = reveal;
+     e->no_wrap = no_wrap;
+     e->scroll_x = 0;
+     e->followed = -1;
+@@ -2313,6 +2411,7 @@ static void configure(kit *k, kit_code_editor *e, const kit_code_desc *d)
+         e->vim = d->vim;
+         zep_set_vim(e->zep, e->vim);
+     }
++    e->frame_time = k->in.time;
+     e->mac = d->mac;
+     e->host_history = d->history;
+     asetlen(e->chords, 0);
+@@ -2820,6 +2919,9 @@ kit_code_result kit_code(kit *k, const char *key, kit_code_editor *e, const kit_
+     code_view *v = view_of(n);
+     attach(v, e);
+     configure(k, e, d);
++    if (e->reveal_pending || e->revealing) {
++        rml_context_request_next_update(k->context, 0);
++    }
+     set_flag(n, "data-link", d->link_end > d->link_start);
+     highlight(v, e, d);
+     sync_colors(v);
+diff --git a/src/editor/studio/studio_code.c b/src/editor/studio/studio_code.c
+index e34b580..a00508c 100644
+--- a/src/editor/studio/studio_code.c
++++ b/src/editor/studio/studio_code.c
+@@ -1267,7 +1267,7 @@ void studio_behavior_show(studio *s, int view)
+ static void move_caret(asset_code *code, int byte)
+ {
+     kit_code_editor *e = asset_code_editor(code);
+-    kit_code_set_cursor(e, byte);
++    kit_code_reveal(e, byte);
+     kit_code_post(e, KIT_CODE_CURSOR);
+     asset_code_end_typing(code);
+ }
+diff --git a/src/editor/studio/studio_graph.c b/src/editor/studio/studio_graph.c
+index 18c51c3..881449e 100644
+--- a/src/editor/studio/studio_graph.c
++++ b/src/editor/studio/studio_graph.c
+@@ -666,6 +666,19 @@ void studio_graph_frame(studio *s, double delta_seconds)
+         sg_calculations_invalidate(s);
+     }
+     sg_replay(s);
++    uint64_t focused = sg_focused_node(s);
++    if (focused && focused != g->focused_node) {
++        node *n = sg_node_by_id(s, focused);
++        if (n) {
++            sg_select_only(e, n);
++            e->front_node = n;
++            studio_node_ref at = { .graph_id = e->active_graph->graph_id,
++                                   .node_id = focused };
++            snprintf(at.asset, sizeof at.asset, "%s", s->scene->graph_document_id);
++            studio_code_reveal_node(s, &at);
++        }
++    }
++    g->focused_node = focused;
+     /* Source/debug navigation may select a maintenance node. Present its
+        semantic Set before gestures or mutation commands consume selection. */
+     int selected = 0;
+diff --git a/src/editor/studio/studio_graph_draw.c b/src/editor/studio/studio_graph_draw.c
+index d017859..468c85e 100644
+--- a/src/editor/studio/studio_graph_draw.c
++++ b/src/editor/studio/studio_graph_draw.c
+@@ -132,7 +132,7 @@ static bool keep_node(const studio *s, node *n, uint64_t focused)
+     return in_view(s, box[0], box[1], box[2], box[3]);
+ }
+ 
+-static uint64_t focused_node(const studio *s)
++uint64_t sg_focused_node(const studio *s)
+ {
+     rml_element *el = rml_context_focus_element(rml_backend_context(s->graph.backend));
+     if (!el) {
+@@ -1005,7 +1005,7 @@ void sg_emit_canvas(studio *s)
+     }
+     emit_conversions(s);
+     emit_reroutes(s);
+-    uint64_t focused = focused_node(s);
++    uint64_t focused = sg_focused_node(s);
+     for (int i = 0; i < acount(gr->nodes); i++) {
+         if (sg_node_visible(gr, gr->nodes[i]) && keep_node(s, gr->nodes[i], focused)) {
+             emit_node(s, gr->nodes[i]);
+diff --git a/src/editor/studio/studio_graph_input.c b/src/editor/studio/studio_graph_input.c
+index 9a5d0bc..e292332 100644
+--- a/src/editor/studio/studio_graph_input.c
++++ b/src/editor/studio/studio_graph_input.c
+@@ -450,6 +450,7 @@ static bool press_comment(studio *s, graph_comment_box *box, graph_hit hit)
+ static void press(studio *s, int button, graph_hit hit, bool on_control)
+ {
+     studio_graph *g = &s->graph;
++    g->camera.active = false;
+     editor *e = sg_graph_editor(s);
+     graph *gr = sg_active_graph(s);
+     unsigned mods = g->in.modifiers;
+diff --git a/src/editor/studio/studio_graph_internal.h b/src/editor/studio/studio_graph_internal.h
+index 9c6997a..7edb241 100644
+--- a/src/editor/studio/studio_graph_internal.h
++++ b/src/editor/studio/studio_graph_internal.h
+@@ -300,6 +300,7 @@ void sg_find_panel(studio *s);
+    it differs from the one last seen; the Behavior header does as it shows. */
+ void sg_nav_track(studio *s);
+ void sg_nav_follow_source(studio *s);
++uint64_t sg_focused_node(const studio *s);
+ void sg_nav_keys(studio *s);
+ 
+ /* Live values (studio_graph_live.c). */
+diff --git a/src/editor/studio/studio_graph_literals.c b/src/editor/studio/studio_graph_literals.c
+index 7bb83eb..126b2cf 100644
+--- a/src/editor/studio/studio_graph_literals.c
++++ b/src/editor/studio/studio_graph_literals.c
+@@ -8,11 +8,12 @@
+ #include "graph/model/local.h"
+ #include "graph/model/pin_conv.h"
+ #include "graph/model/registry.h"
+-#include "types/type.h"
+-#include "types/array.h"
+ #include "graph/shader/shader_graph.h"
+ #include "support/arena.h"
+ #include "support/array.h"
++#include "types/array.h"
++#include "types/text.h"
++#include "types/type.h"
+ 
+ #include <ctype.h>
+ #include <errno.h>
+@@ -68,11 +69,28 @@ static void value_edit_set(studio_graph *g, const node *n, int output, uint64_t
+     g->value_edit_kit = active ? k : NULL;
+ }
+ 
+-static bool pin_string(pin_type type)
++static bool pin_is_string(pin_type type)
+ {
+     return type == PIN_STR || type == PIN_NAME;
+ }
+ 
++static bool set_text(arena *scratch, pin_value *value, const char *text)
++{
++    if (value->type == PIN_STR) {
++        const char *type_name = value->type_name;
++        if (pin_value_text(scratch, value, text, strlen(text))) {
++            return false;
++        }
++        value->type_name = type_name;
++        return true;
++    }
++    size_t length = strlen(text) + 1;
++    char *copy = arena_alloc(scratch, length);
++    memcpy(copy, text, length);
++    value->str = copy;
++    return true;
++}
++
+ /* ---------- The canvas's pickers ---------- */
+ 
+ /* The last control's box in Studio's pixels, where its picker hangs: the
+@@ -407,7 +425,10 @@ uint32_t sg_literal_color(const pin_spec *spec, const pin_value *value)
+     uint32_t channels[4] = { 0, 0, 0, 255 };
+     for (int i = 0; i < type->field_count; i++) {
+         pin_value component;
+-        pin_read_field(value->ptr, &type->fields[i], &component);
++        if (type->fields[i].type < PIN_I8 || type->fields[i].type > PIN_F64 ||
++            pin_read_field(NULL, value->ptr, &type->fields[i], &component)) {
++            return 0x000000ffu;
++        }
+         channels[i] = color_channel(&component);
+     }
+     return (channels[0] << 24) | (channels[1] << 16) | (channels[2] << 8) |
+@@ -434,23 +455,31 @@ bool sg_write_literal_color(const pin_spec *spec, pin_value *value, arena *scrat
+         value->type_name = type->name;
+         if (type->field_count == 4) {
+             pin_value alpha;
+-            pin_read_field(value->ptr, &type->fields[3], &alpha);
++            if (pin_read_field(scratch, value->ptr, &type->fields[3], &alpha)) {
++                return false;
++            }
+             sg_set_literal_number(&alpha, alpha.type == PIN_F32 || alpha.type == PIN_F64 ? 1 : 255);
+-            pin_write_field(value->ptr, &type->fields[3], alpha);
++            if (pin_write_field(scratch, value->ptr, &type->fields[3], alpha)) {
++                return false;
++            }
+         }
+     }
+     uint32_t channels[] = { rgba >> 24, (rgba >> 16) & 255, (rgba >> 8) & 255 };
+     for (int i = 0; i < 3; i++) {
+         const type_field *field = &type->fields[i];
+         pin_value previous, component;
+-        pin_read_field(value->ptr, field, &previous);
++        if (pin_read_field(scratch, value->ptr, field, &previous)) {
++            return false;
++        }
+         double channel = channels[i];
+         if (previous.type == PIN_F32 || previous.type == PIN_F64) {
+             channel /= 255;
+         }
+         component = previous;
+         sg_set_literal_number(&component, channel);
+-        pin_write_field(value->ptr, field, component);
++        if (pin_write_field(scratch, value->ptr, field, component)) {
++            return false;
++        }
+     }
+     return true;
+ }
+@@ -462,7 +491,10 @@ double sg_literal_alpha(const pin_spec *spec, const pin_value *value)
+         return 1;
+     }
+     pin_value alpha;
+-    pin_read_field(value->ptr, &type->fields[3], &alpha);
++    if (type->fields[3].type < PIN_I8 || type->fields[3].type > PIN_F64 ||
++        pin_read_field(NULL, value->ptr, &type->fields[3], &alpha)) {
++        return 1;
++    }
+     double number = sg_literal_number(&alpha);
+     if (alpha.type != PIN_F32 && alpha.type != PIN_F64) {
+         number /= 255;
+@@ -481,13 +513,15 @@ void sg_write_literal_alpha(const pin_spec *spec, pin_value *value, arena *scrat
+     }
+     const type_field *field = &type->fields[3];
+     pin_value previous, component;
+-    pin_read_field(value->ptr, field, &previous);
++    if (pin_read_field(scratch, value->ptr, field, &previous)) {
++        return;
++    }
+     if (previous.type != PIN_F32 && previous.type != PIN_F64) {
+         alpha *= 255;
+     }
+     component = previous;
+     sg_set_literal_number(&component, alpha);
+-    pin_write_field(value->ptr, field, component);
++    pin_write_field(scratch, value->ptr, field, component);
+ }
+ 
+ static bool enum_control(studio *s, kit *k, const char *key, const pin_spec *shape, pin_value *value, unsigned flags)
+@@ -567,7 +601,11 @@ static bool edit_struct_fields(
+         snprintf(control, sizeof control, "%s-field-%d", path, i);
+         editor_identifier_label(field->name, label, sizeof label);
+         pin_value member;
+-        pin_read_field(value->ptr, field, &member);
++        const char *error = pin_read_field(scratch, value->ptr, field, &member);
++        if (error) {
++            kit_label(k, key, "muted", error);
++            continue;
++        }
+         if (!member.type_name) {
+             member.type_name = field->type_name;
+         }
+@@ -600,11 +638,10 @@ static bool edit_struct_fields(
+             range && range->valid ? range : NULL
+         );
+         kit_prop_end(k);
+-        merge_edit(state, child);
+-        if (changed) {
+-            pin_write_field(value->ptr, field, member);
+-            state->changed = true;
++        if (changed && pin_write_field(scratch, value->ptr, field, member)) {
++            child.changed = false;
+         }
++        merge_edit(state, child);
+     }
+     return state->changed;
+ }
+@@ -817,7 +854,7 @@ pin_array *sg_array_edit(arena *scratch, const pin_value *value, const pin_spec
+             added.ptr = arena_alloc(scratch, type->size);
+             memset(added.ptr, 0, type->size);
+         }
+-    } else if (append && pin_string(added.type)) {
++    } else if (append && added.type == PIN_NAME) {
+         added.str = "";
+     }
+     return array_with_count(scratch, array, remove, append, added.type, added.type_name, at, &added);
+@@ -1022,7 +1059,9 @@ static bool edit_literal_value(
+             kit_push(k, "vector", NULL, "joined");
+             for (int i = 0; i < width; i++) {
+                 pin_value component;
+-                pin_read_field(value->ptr, &type->fields[i], &component);
++                if (pin_read_field(scratch, value->ptr, &type->fields[i], &component)) {
++                    continue;
++                }
+                 double number = sg_literal_number(&component);
+                 double min = 0, max = 0;
+                 sg_literal_bounds(component.type, &min, &max);
+@@ -1044,8 +1083,9 @@ static bool edit_literal_value(
+                 state->committed |= committed;
+                 if (edited) {
+                     sg_set_literal_number(&component, number);
+-                    pin_write_field(value->ptr, &type->fields[i], component);
+-                    changed = true;
++                    if (!pin_write_field(scratch, value->ptr, &type->fields[i], component)) {
++                        changed = true;
++                    }
+                 }
+             }
+             kit_pop(k);
+@@ -1068,37 +1108,36 @@ static bool edit_literal_value(
+         state->changed |= changed;
+         return changed;
+     }
+-    if (pin_string(shape->type)) {
++    if (pin_is_string(shape->type)) {
++        const char *current;
++        const char *error = pin_text_cstring(scratch, *value, &current, NULL);
++        if (error) {
++            kit_label(k, key, "muted", error);
++            return false;
++        }
+         reference_asset_kind
+             asset = owner && field
+                       ? reference_named_field_kind(owner->name, field->name)
+                       : REFERENCE_ASSET_KIND_COUNT;
+         if (asset != REFERENCE_ASSET_KIND_COUNT) {
+-            const char *chosen = graph_asset_field(s, k, key, value->str, asset, flags);
+-            if (!chosen) {
++            const char *chosen = graph_asset_field(s, k, key, current, asset, flags);
++            if (!chosen || !set_text(scratch, value, chosen)) {
+                 return false;
+             }
+-            size_t length = strlen(chosen) + 1;
+-            char *copy = arena_alloc(scratch, length);
+-            memcpy(copy, chosen, length);
+-            value->str = copy;
+             state->changed = true;
+             return true;
+         }
+         char text[256];
+-        snprintf(text, sizeof text, "%s", value->str ? value->str : "");
++        snprintf(text, sizeof text, "%s", current);
+         bool changed = kit_text_field(k, key, text, sizeof text, NULL, flags);
++        if (changed) {
++            changed = set_text(scratch, value, text);
++        }
+         bool committed = kit_item_committed(k);
+         bool active = kit_item_active(k) && !committed;
+         state->changed |= changed;
+         state->streaming |= changed || active;
+         state->active |= active;
+-        if (changed) {
+-            size_t length = strlen(text) + 1;
+-            char *copy = arena_alloc(scratch, length);
+-            memcpy(copy, text, length);
+-            value->str = copy;
+-        }
+         state->committed |= committed;
+         return changed;
+     }
+@@ -1343,6 +1382,7 @@ void sg_emit_value_in(studio *s, kit *k, node *n, int output, int p)
+         return;
+     }
+     pin_value value = spec->default_value;
++    arena scratch = { 0 };
+     bool changed = false, streaming = false, committed = false;
+     bool active = false;
+     const editor_choices *choices = ed_pin_choices(e, n, output, p);
+@@ -1392,21 +1432,28 @@ void sg_emit_value_in(studio *s, kit *k, node *n, int output, int p)
+             value.ptr = vector;
+         }
+     } else if (spec->type == PIN_STR || spec->type == PIN_NAME) {
++        const char *current;
++        const char *error = pin_text_cstring(&scratch, value, &current, NULL);
++        if (error) {
++            kit_label(k, "v", "muted", error);
++            arena_free(&scratch);
++            return;
++        }
+         if (spec->type_name && !strcmp(spec->type_name, "MaterialAsset")) {
+-            const char *picked = sg_material_picker(s, k, value.str, flags);
+-            changed = picked && (!value.str || strcmp(picked, value.str));
++            const char *picked = sg_material_picker(s, k, current, flags);
++            changed = picked && strcmp(picked, current);
+             committed = changed;
+             if (changed) {
+-                value.str = picked;
++                changed = set_text(&scratch, &value, picked);
+             }
+         } else {
+-            snprintf(text, sizeof text, "%s", value.str ? value.str : "");
++            snprintf(text, sizeof text, "%s", current);
+             changed = kit_text_field(k, "v", text, sizeof text, NULL, flags);
+             committed = kit_item_committed(k);
+             active = kit_item_active(k) && !committed;
+             streaming = changed || active;
+             if (changed) {
+-                value.str = text;
++                changed = set_text(&scratch, &value, text);
+             }
+         }
+     } else if (spec->type == PIN_I64 || spec->type == PIN_U64) {
+@@ -1458,6 +1505,7 @@ void sg_emit_value_in(studio *s, kit *k, node *n, int output, int p)
+         if (same_edit && (readonly || committed || !active)) {
+             value_edit_set(g, n, output, spec->id, k, false);
+         }
++        arena_free(&scratch);
+         return;
+     }
+     int edited = write_literal(s, n, output, p, &value, streaming && same_edit);
+@@ -1465,4 +1513,5 @@ void sg_emit_value_in(studio *s, kit *k, node *n, int output, int p)
+     if (edited == 0) {
+         touched(e);
+     }
++    arena_free(&scratch);
+ }
+diff --git a/src/editor/studio/studio_graph_live.c b/src/editor/studio/studio_graph_live.c
+index 307e365..47ff3b6 100644
+--- a/src/editor/studio/studio_graph_live.c
++++ b/src/editor/studio/studio_graph_live.c
+@@ -67,7 +67,10 @@ static bool compact_struct(const pin_value *v, const pin_spec *spec, char *buf,
+     for (int i = 0; i < type->field_count && used < cap; i++) {
+         pin_value field;
+         double number;
+-        pin_read_field(v->ptr, &type->fields[i], &field);
++        if (type->fields[i].type < PIN_I8 || type->fields[i].type > PIN_F64 ||
++            pin_read_field(NULL, v->ptr, &type->fields[i], &field)) {
++            return false;
++        }
+         if (!number_of(&field, &number)) {
+             return false;
+         }
+diff --git a/src/editor/studio/studio_graph_properties.c b/src/editor/studio/studio_graph_properties.c
+index ff97849..9178fc4 100644
+--- a/src/editor/studio/studio_graph_properties.c
++++ b/src/editor/studio/studio_graph_properties.c
+@@ -21,6 +21,7 @@
+ #include "support/array.h"
+ #include "support/xalloc.h"
+ #include "types/array.h"
++#include "types/text.h"
+ #include "ui/popover.h"
+ 
+ #include <errno.h>
+@@ -81,7 +82,7 @@ static bool target_of(const char *id, target *out)
+ 
+ /* ---------- Values ---------- */
+ 
+-static bool pin_string(pin_type type)
++static bool pin_is_string(pin_type type)
+ {
+     return type == PIN_STR || type == PIN_NAME;
+ }
+@@ -162,7 +163,13 @@ typedef struct
+     const type_field *field;
+ } leaf;
+ 
+-static bool leaf_at(const pin_value *value, const pin_spec *shape, const char *path, leaf *out)
++static bool leaf_at(
++    arena *scratch,
++    const pin_value *value,
++    const pin_spec *shape,
++    const char *path,
++    leaf *out
++)
+ {
+     *out = (leaf){ .value = *value, .shape = *shape };
+     for (const char *at = path; at && *at;) {
+@@ -186,7 +193,9 @@ static bool leaf_at(const pin_value *value, const pin_spec *shape, const char *p
+                 return false;
+             }
+             const type_field *field = &type->fields[index];
+-            pin_read_field(out->value.ptr, field, &out->value);
++            if (pin_read_field(scratch, out->value.ptr, field, &out->value)) {
++                return false;
++            }
+             out->value.type_name = out->value.type_name ? out->value.type_name
+                                                         : field->type_name;
+             out->shape = (pin_spec){ .type = field->type,
+@@ -206,7 +215,13 @@ static bool leaf_at(const pin_value *value, const pin_spec *shape, const char *p
+ }
+ 
+ /* Writes `with` at `path` in `value`, in place. */
+-static bool write_at(pin_value *value, const pin_spec *shape, const char *path, const pin_value *with)
++static bool write_at(
++    arena *scratch,
++    pin_value *value,
++    const pin_spec *shape,
++    const char *path,
++    const pin_value *with
++)
+ {
+     if (!path || !*path) {
+         *value = *with;
+@@ -225,7 +240,7 @@ static bool write_at(pin_value *value, const pin_spec *shape, const char *path,
+             return false;
+         }
+         pin_value entry = pin_array_get(array, index);
+-        return write_at(&entry, &item, rest, with) &&
++        return write_at(scratch, &entry, &item, rest, with) &&
+                !pin_array_set(array, index, &entry);
+     }
+     const type_desc *type = type_catalog_find(shape->type_name);
+@@ -234,17 +249,18 @@ static bool write_at(pin_value *value, const pin_spec *shape, const char *path,
+     }
+     const type_field *field = &type->fields[index];
+     pin_value inner;
+-    pin_read_field(value->ptr, field, &inner);
++    if (pin_read_field(scratch, value->ptr, field, &inner)) {
++        return false;
++    }
+     inner.type_name = inner.type_name ? inner.type_name : field->type_name;
+     pin_spec inner_shape = { .type = field->type,
+                              .type_name = field->type_name,
+                              .kind = PIN_DATA,
+                              .container = PIN_CONTAINER_SINGLE };
+-    if (!write_at(&inner, &inner_shape, rest, with)) {
++    if (!write_at(scratch, &inner, &inner_shape, rest, with)) {
+         return false;
+     }
+-    pin_write_field(value->ptr, field, inner);
+-    return true;
++    return !pin_write_field(scratch, value->ptr, field, inner);
+ }
+ 
+ static const char *arena_text(arena *scratch, const char *text)
+@@ -305,7 +321,9 @@ static void vector_row(gd_rows *r, const gd_row *d, const pin_value *value, cons
+     gd_number_shape axis = number_shape(PIN_F32);
+     for (int i = 0; type && value->ptr && i < width; i++) {
+         pin_value component;
+-        pin_read_field(value->ptr, &type->fields[i], &component);
++        if (pin_read_field(NULL, value->ptr, &type->fields[i], &component)) {
++            continue;
++        }
+         values[i] = sg_literal_number(&component);
+         axis = number_shape(component.type);
+     }
+@@ -333,8 +351,10 @@ static void field_rows(gd_rows *r, const pin_row *pr, const leaf *l, const char
+         step_path(at, path, 'f', i);
+         leaf_id(id, pr, at);
+         editor_identifier_label(type->fields[i].name, label, sizeof label);
++        arena scratch = { 0 };
+         leaf field;
+-        if (!leaf_at(&l->value, &l->shape, step, &field)) {
++        if (!leaf_at(&scratch, &l->value, &l->shape, step, &field)) {
++            arena_free(&scratch);
+             continue;
+         }
+         /* A ramp stop's Position stays between its neighbours'. */
+@@ -343,6 +363,7 @@ static void field_rows(gd_rows *r, const pin_row *pr, const leaf *l, const char
+                        .label = label,
+                        .readonly = pr->readonly || (position && range[0] > range[1]) };
+         leaf_row(r, pr, &row, &field, at, position ? range : NULL);
++        arena_free(&scratch);
+     }
+ }
+ 
+@@ -358,7 +379,9 @@ static void item_rows(gd_rows *r, const pin_row *pr, const leaf *l)
+         leaf_id(id, pr, step);
+         snprintf(label, sizeof label, "Item %d", i + 1);
+         leaf item;
+-        leaf_at(&l->value, &l->shape, step, &item);
++        if (!leaf_at(NULL, &l->value, &l->shape, step, &item)) {
++            continue;
++        }
+         double range[2] = { 1, 0 };
+         if (ramp) {
+             sg_ramp_range(array, i, &range[0], &range[1]);
+@@ -419,20 +442,31 @@ static void leaf_row(
+         gd_put_flag(r, gd_next_row(r, &row), "checked", value->b);
+         return;
+     }
+-    if (pin_string(shape->type)) {
++    if (pin_is_string(shape->type)) {
+         reference_asset_kind
+             asset = l->owner && l->field
+                       ? reference_named_field_kind(l->owner->name, l->field->name)
+                       : REFERENCE_ASSET_KIND_COUNT;
+         char problem[192];
++        arena scratch = { 0 };
++        const char *text;
++        const char *error = pin_text_cstring(&scratch, *value, &text, NULL);
++        if (error) {
++            row.control = "label";
++            row.readonly = true;
++            gd_put_text(r, gd_next_row(r, &row), "text", error);
++            arena_free(&scratch);
++            return;
++        }
+         row.control = asset != REFERENCE_ASSET_KIND_COUNT ? "asset" : "text";
+         row.invalid = asset != REFERENCE_ASSET_KIND_COUNT &&
+-                      gd_asset_problem(pr->s, asset, value->str ? value->str : "", problem);
++                      gd_asset_problem(pr->s, asset, text, problem);
+         item = gd_next_row(r, &row);
+-        gd_put_text(r, item, "text", value->str ? value->str : "");
++        gd_put_text(r, item, "text", text);
+         if (asset != REFERENCE_ASSET_KIND_COUNT) {
+-            gd_put_asset(r, item, asset, value->str ? value->str : "");
++            gd_put_asset(r, item, asset, text);
+         }
++        arena_free(&scratch);
+         return;
+     }
+     if (shape->type == PIN_I64 || shape->type == PIN_U64) {
+@@ -525,17 +559,27 @@ static void value_row(gd_rows *r, const pin_row *pr, const gd_row *d)
+     if (spec->type == PIN_STR && spec->type_name &&
+         !strcmp(spec->type_name, "MaterialAsset")) {
+         reference_asset_kind kind = REFERENCE_ASSET_MATERIAL;
+-        const char *asset = spec->default_value.str ? spec->default_value.str : "";
++        arena scratch = { 0 };
++        const char *asset;
++        const char *error = pin_text_cstring(&scratch, spec->default_value, &asset, NULL);
++        if (error) {
++            row.control = "label";
++            row.readonly = true;
++            gd_put_text(r, gd_next_row(r, &row), "text", error);
++            arena_free(&scratch);
++            return;
++        }
+         char problem[192];
+         row.control = "asset";
+         row.invalid = gd_asset_problem(s, kind, asset, problem);
+         yyjson_mut_val *item = gd_next_row(r, &row);
+         gd_put_text(r, item, "text", asset);
+         gd_put_asset(r, item, kind, asset);
++        arena_free(&scratch);
+         return;
+     }
+     if (spec->type == PIN_BOOL || (width > 0 && !(spec->flags & PIN_FLAG_COLOR)) ||
+-        pin_string(spec->type) || (spec->type >= PIN_I8 && spec->type <= PIN_F64)) {
++        pin_is_string(spec->type) || (spec->type >= PIN_I8 && spec->type <= PIN_F64)) {
+         leaf_row(r, pr, &row, &l, "", NULL);
+         return;
+     }
+@@ -1475,16 +1519,24 @@ static bool edited_leaf(
+             out->type_name = type->name;
+         }
+         pin_value component;
+-        pin_read_field(out->ptr, &type->fields[axis], &component);
++        if (pin_read_field(scratch, out->ptr, &type->fields[axis], &component)) {
++            return false;
++        }
+         sg_set_literal_number(&component, strtod(text, NULL));
+-        pin_write_field(out->ptr, &type->fields[axis], component);
+-        return true;
++        return !pin_write_field(scratch, out->ptr, &type->fields[axis], component);
+     }
+     if (l->shape.type == PIN_BOOL) {
+         out->b = text[0] && strcmp(text, "0") && strcmp(text, "false");
+         return true;
+     }
+-    if (pin_string(l->shape.type)) {
++    if (l->shape.type == PIN_STR) {
++        if (pin_value_text(scratch, out, text, strlen(text))) {
++            return false;
++        }
++        out->type_name = l->value.type_name;
++        return true;
++    }
++    if (l->shape.type == PIN_NAME) {
+         out->str = arena_text(scratch, text);
+         return true;
+     }
+@@ -1512,12 +1564,12 @@ static bool edit_items(const target *t, const char *action, arena *scratch, pin_
+         item = atoi(step + 1);
+     }
+     leaf l;
+-    if (!leaf_at(value, shape, parent, &l)) {
++    if (!leaf_at(scratch, value, shape, parent, &l)) {
+         return false;
+     }
+     pin_value edited = l.value;
+     edited.ptr = sg_array_edit(scratch, &l.value, &l.shape, item, item < 0);
+-    return edited.ptr && write_at(value, shape, parent, &edited);
++    return edited.ptr && write_at(scratch, value, shape, parent, &edited);
+ }
+ 
+ /* The default in `value` with the control's edit written in; false when it
+@@ -1540,12 +1592,12 @@ static bool edited_value(
+         return edit_items(t, action, scratch, value, shape);
+     }
+     leaf l;
+-    if (!leaf_at(value, shape, t->path, &l)) {
++    if (!leaf_at(scratch, value, shape, t->path, &l)) {
+         return false;
+     }
+     int output = t->part == 'o';
+     const editor_choices *choices = choices_of(s, n, output, t->index, t->path, &l);
+-    if (choices || pin_string(l.shape.type) || l.shape.type == PIN_I64 ||
++    if (choices || pin_is_string(l.shape.type) || l.shape.type == PIN_I64 ||
+         l.shape.type == PIN_U64) {
+         *step = SG_STEP_ONCE;
+     }
+@@ -1557,7 +1609,7 @@ static bool edited_value(
+     if (l.shape.type == PIN_BOOL && !choices && with.b == l.value.b) {
+         return false;
+     }
+-    return write_at(value, shape, t->path, &with);
++    return write_at(scratch, value, shape, t->path, &with);
+ }
+ 
+ /* An edit of pin `t`'s default, or of a place inside it: the control's
+diff --git a/src/editor/studio/studio_graph_values.c b/src/editor/studio/studio_graph_values.c
+index fbc92ec..9390d63 100644
+--- a/src/editor/studio/studio_graph_values.c
++++ b/src/editor/studio/studio_graph_values.c
+@@ -12,6 +12,7 @@
+ #include "graph/model/local.h"
+ #include "graph/model/pin_conv.h"
+ #include "graph/model/registry.h"
++#include "graph/model/value_copy.h"
+ #include "graph/nodes/behavior_expression.h"
+ #include "graph/nodes/conv_nodes.h"
+ #include "runtime/declared_components.h"
+@@ -62,6 +63,7 @@ typedef struct studio_graph_source
+     char meta[80];
+     char description[80];
+     char literal_text[256];
++    uint32_t literal_length;
+ } source_choice;
+ 
+ static bool compatible(const pin_spec *source, const pin_spec *target)
+@@ -158,10 +160,13 @@ static pin_binding choice_binding(const source_choice *choice)
+     return binding;
+ }
+ 
+-static pin_value choice_literal(const source_choice *choice)
++static pin_value choice_literal(graph *g, const source_choice *choice)
+ {
+     pin_value value = choice->literal;
+-    if (value.type == PIN_STR || value.type == PIN_NAME) {
++    if (value.type == PIN_STR) {
++        value = graph_text_value(g, choice->literal_text, choice->literal_length);
++        value.type_name = choice->literal.type_name;
++    } else if (value.type == PIN_NAME) {
+         value.str = choice->literal_text;
+     }
+     return value;
+@@ -179,6 +184,13 @@ static void add_literal_choice(
+     const pin_value *value
+ )
+ {
++    pin_string text = { 0 };
++    if (value->type == PIN_STR || value->type == PIN_NAME) {
++        text = pin_text(*value);
++        if (text.length >= sizeof((source_choice *)0)->literal_text) {
++            return;
++        }
++    }
+     add_choice(
+         choices,
+         SOURCE_TYPED_LITERAL,
+@@ -198,13 +210,10 @@ static void add_literal_choice(
+     choice->typed_literal = true;
+     choice->literal = *value;
+     if (value->type == PIN_STR || value->type == PIN_NAME) {
+-        snprintf(
+-            choice->literal_text,
+-            sizeof choice->literal_text,
+-            "%s",
+-            value->str ? value->str : ""
+-        );
+-        choice->literal.str = NULL;
++        memcpy(choice->literal_text, text.bytes, text.length);
++        choice->literal_text[text.length] = 0;
++        choice->literal_length = text.length;
++        choice->literal.ptr = NULL;
+     }
+ }
+ 
+@@ -430,10 +439,16 @@ static bool parse_input_literal(const pin_spec *spec, const char *text, pin_valu
+     }
+     if (spec->type == PIN_STR || spec->type == PIN_NAME) {
+         static char decoded[256];
++        static pin_string string;
+         if (!quoted_text(text, decoded, sizeof decoded)) {
+             return false;
+         }
+-        value.str = decoded;
++        if (spec->type == PIN_STR) {
++            string = (pin_string){ decoded, (uint32_t)strlen(decoded) };
++            value.text = &string;
++        } else {
++            value.str = decoded;
++        }
+         *out = value;
+         return true;
+     }
+@@ -1257,7 +1272,7 @@ static bool apply_choice(studio *s, kit *k, node *target, int pin, const source_
+     }
+     studio_graph *state = &s->graph;
+     if (choice->typed_literal) {
+-        pin_value value = choice_literal(choice);
++        pin_value value = choice_literal(gr, choice);
+         return apply_input_constant(s, target, pin, &value);
+     }
+     if (choice->kind == SOURCE_EDIT_EXPRESSION) {
+diff --git a/src/editor/studio/studio_graph_view.c b/src/editor/studio/studio_graph_view.c
+index 3eace3b..ddea41b 100644
+--- a/src/editor/studio/studio_graph_view.c
++++ b/src/editor/studio/studio_graph_view.c
+@@ -65,9 +65,30 @@ static void camera_to(studio *s, float zoom, float x, float y, bool animate)
+     g->camera.x = x;
+     g->camera.y = y;
+     g->camera.start = s->time;
++    g->camera.pan = false;
+     g->camera.active = true;
+ }
+ 
++/* A reveal keeps the current scale and carries its velocity to a new target. */
++static void pan_to(studio *s, float x, float y)
++{
++    studio_graph *g = &s->graph;
++    if (s->prefs.reduced_motion) {
++        camera_to(s, g->zoom, x, y, false);
++        return;
++    }
++    bool continuing = g->camera.active && g->camera.pan;
++    g->camera.pan_x = (spring){ g->x - x, continuing ? g->camera.pan_x.v : 0 };
++    g->camera.pan_y = (spring){ g->y - y, continuing ? g->camera.pan_y.v : 0 };
++    g->camera.zoom = g->zoom;
++    g->camera.x = x;
++    g->camera.y = y;
++    g->camera.updated = s->time;
++    g->camera.pan = true;
++    g->camera.active = g->camera.pan_x.x || g->camera.pan_y.x ||
++                       g->camera.pan_x.v || g->camera.pan_y.v;
++}
++
+ void sg_zoom_actual(studio *s)
+ {
+     studio_graph *g = &s->graph;
+@@ -96,6 +117,22 @@ void sg_camera_step(studio *s)
+     if (!g->camera.active) {
+         return;
+     }
++    if (s->prefs.reduced_motion) {
++        camera_to(s, g->camera.zoom, g->camera.x, g->camera.y, false);
++        return;
++    }
++    if (g->camera.pan) {
++        double dt = fmax(0, fmin(s->time - g->camera.updated, 0.1));
++        g->camera.updated = s->time;
++        spring_params p = spring_for(0.22, 0);
++        spring_step(&g->camera.pan_x, p, dt);
++        spring_step(&g->camera.pan_y, p, dt);
++        g->x = g->camera.x + (float)g->camera.pan_x.x;
++        g->y = g->camera.y + (float)g->camera.pan_y.x;
++        g->camera.active = g->camera.pan_x.x || g->camera.pan_y.x ||
++                           g->camera.pan_x.v || g->camera.pan_y.v;
++        return;
++    }
+     double t = fmin((s->time - g->camera.start) / FIT_SECONDS, 1);
+     float u = (float)(t < 0.5 ? 4 * t * t * t : 1 - pow(-2 * t + 2, 3) / 2);
+     float w = g->surface.rect.w, h = g->surface.rect.h;
+@@ -218,26 +255,48 @@ void sg_frame_open(studio *s)
+     camera_to(s, zoom, lo[0] - OPEN_MARGIN, lo[1] - OPEN_MARGIN, false);
+ }
+ 
+-/* Source and keyboard navigation reveal immediately. A node near the edges,
+-   where overlays sit, is not in view. */
++/* Move only far enough to reveal the node with room around it. A node wider
++   than the comfortable region is centered rather than chased edge to edge. */
++static float reveal_axis(float at, float span, float start, float size)
++{
++    float inset = span * 0.2f;
++    if (size > span - 2 * inset) {
++        return start + size / 2 - span / 2;
++    }
++    if (start < at + inset) {
++        return start - inset;
++    }
++    if (start + size > at + span - inset) {
++        return start + size - span + inset;
++    }
++    return at;
++}
++
++/* Source and keyboard navigation move the receiving view without changing
++   its zoom. Repeated caret moves in one node keep the current transition. */
+ void sg_show_node(studio *s, node *n, bool frame)
+ {
+-    static const float INSET = 0.2f;
+     studio_graph *g = &s->graph;
+-    g->camera.active = false;
+     if (frame) {
+-        sg_frame_nodes(s, true, false);
++        sg_frame_nodes(s, true, true);
+         return;
+     }
++    /* A previous fit must not carry this new selection away after it is
++       already visible. Direct reveals keep the scale currently on screen. */
++    if (g->camera.active && !g->camera.pan) {
++        g->camera.active = false;
++    }
+     float zoom = sg_zoom(s);
+     float box[4], w = g->surface.rect.w / zoom, h = g->surface.rect.h / zoom;
+     sg_node_box(s, n, box);
+-    if (box[0] >= g->x + w * INSET && box[1] >= g->y + h * INSET &&
+-        box[0] + box[2] <= g->x + w * (1 - INSET) &&
+-        box[1] + box[3] <= g->y + h * (1 - INSET)) {
++    float x = g->camera.active && g->camera.pan ? g->camera.x : g->x;
++    float y = g->camera.active && g->camera.pan ? g->camera.y : g->y;
++    float to_x = reveal_axis(x, w, box[0], box[2]);
++    float to_y = reveal_axis(y, h, box[1], box[3]);
++    if (fabsf(to_x - x) < 0.5f / zoom && fabsf(to_y - y) < 0.5f / zoom) {
+         return;
+     }
+-    camera_to(s, g->zoom, box[0] + box[2] / 2 - w / 2, box[1] + box[3] / 2 - h / 2, false);
++    pan_to(s, to_x, to_y);
+ }
+ 
+ static studio_graph_view *view_for(studio_graph *g, uint64_t graph_id)
+@@ -301,6 +360,10 @@ void sg_follow_graph(studio *s)
+     g->bind_focus = false;
+     g->details.bind[0] = '\0';
+     g->gesture = STUDIO_GRAPH_IDLE;
++    /* The retained fields still belong to the old graph until the next emit.
++       Node IDs can repeat, so release their focus before following the new graph. */
++    kit_blur(g->kit);
++    g->focused_node = 0;
+     g->camera.active = false;
+     studio_graph_view *view = view_for(g, id);
+     g->framed = view != NULL;
+diff --git a/src/editor/studio/studio_internal.h b/src/editor/studio/studio_internal.h
+index 05acfd4..bd2c203 100644
+--- a/src/editor/studio/studio_internal.h
++++ b/src/editor/studio/studio_internal.h
+@@ -1,10 +1,10 @@
+ #ifndef CHIBI_EDITOR_STUDIO_INTERNAL_H
+ #define CHIBI_EDITOR_STUDIO_INTERNAL_H
+ 
+-#include "authoring/component_presentation.h"
+ #include "assets/new_asset.h"
+ #include "assets/project.h"
+ #include "assets/ui_source.h"
++#include "authoring/component_presentation.h"
+ #include "editor/documents/asset_code.h"
+ #include "editor/documents/ui_code.h"
+ #include "editor/studio/studio.h"
+@@ -20,6 +20,7 @@
+ #include "support/file_watch.h"
+ #include "support/resources.h"
+ #include "ui/list.h"
++#include "ui/motion.h"
+ #include "ui/rml_backend.h"
+ 
+ #include <SDL3/SDL_events.h>
+@@ -479,11 +480,15 @@ typedef struct
+         float zoom, x, y;
+         float from_zoom, from_x, from_y;
+         double start;
++        spring pan_x, pan_y;
++        double updated;
++        bool pan;
+         bool active;
+     } camera;
+     studio_graph_view *views; /* camera per graph, restored on return */
+     uint64_t graph_id;
+     bool framed;
++    uint64_t focused_node; /* field focus last followed into the source */
+     studio_graph_gesture gesture;
+     float press_x, press_y;   /* window px */
+     float press_wx, press_wy; /* the press in graph units */
+diff --git a/src/editor/studio/studio_member_properties.c b/src/editor/studio/studio_member_properties.c
+index 5b513d7..cc7a9ef 100644
+--- a/src/editor/studio/studio_member_properties.c
++++ b/src/editor/studio/studio_member_properties.c
+@@ -18,6 +18,7 @@
+ #include "support/arena.h"
+ #include "support/array.h"
+ #include "support/xalloc.h"
++#include "types/text.h"
+ 
+ #include <assert.h>
+ #include <inttypes.h>
+@@ -178,8 +179,16 @@ static void put_default(gd_rows *r, yyjson_mut_val *row, const pin_spec *pin, co
+         return;
+     }
+     if (pin->type == PIN_STR || pin->type == PIN_NAME) {
+-        gd_put_text(r, row, "text", value->str ? value->str : "");
+-        gd_put_text(r, row, "placeholder", "");
++        arena scratch = { 0 };
++        const char *text = NULL;
++        const char *error = pin_text_cstring(&scratch, *value, &text, NULL);
++        gd_put_text(r, row, "text", error ? "" : text);
++        gd_put_text(r, row, "placeholder", error ? error : "");
++        if (error) {
++            gd_put_flag(r, row, "readonly", true);
++            gd_put_flag(r, row, "invalid", true);
++        }
++        arena_free(&scratch);
+         return;
+     }
+     bool integer = pin->type < PIN_F32;
+@@ -755,6 +764,13 @@ static bool sent_value(
+         return true;
+     }
+     if (pin->type == PIN_STR || pin->type == PIN_NAME) {
++        if (pin->type == PIN_STR) {
++            if (pin_value_text(scratch, out, text, strlen(text))) {
++                return false;
++            }
++            out->type_name = was->type_name;
++            return true;
++        }
+         size_t length = strlen(text) + 1;
+         char *copy = arena_alloc(scratch, length);
+         memcpy(copy, text, length);
+diff --git a/src/editor/studio/studio_node_calls.c b/src/editor/studio/studio_node_calls.c
+index e2808e0..b1c5e2b 100644
+--- a/src/editor/studio/studio_node_calls.c
++++ b/src/editor/studio/studio_node_calls.c
+@@ -4,9 +4,11 @@
+  * click on a row removed meanwhile does nothing. */
+ #include "editor/studio/studio_internal.h"
+ #include "editor/studio/studio_nodes.h"
+-#include "types/array.h"
+ #include "support/array.h"
++#include "types/array.h"
++#include "types/text.h"
+ 
++#include <assert.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -23,9 +25,12 @@ static const char *copy_text(arena *storage, const char *text)
+ 
+ static pin_value text_value(arena *storage, const char *text)
+ {
+-    return (pin_value){ .type = PIN_STR,
+-                        .type_name = "const char *",
+-                        .str = copy_text(storage, text) };
++    pin_value value;
++    const char *error = pin_value_text(storage, &value, text, strlen(text));
++    assert(!error);
++    (void)error;
++    value.type_name = "const char *";
++    return value;
+ }
+ 
+ static pin_value int_value(int i)
+@@ -246,9 +251,9 @@ uint64_t studio_nodes_stamp(const studio *s)
+ /* Selects the object as a click on its row does: alone, Toggle in or out
+    of the selection, or with Extend every object the object filter shows
+    from the anchor through it. */
+-static void select_object(studio *s, const pin_value *a)
++static void select_object(studio *s, const pin_value *a, const char *object)
+ {
+-    int index = studio_object_index(s, a[0].str);
++    int index = studio_object_index(s, object);
+     int *rows = studio_outliner_rows(s), row = row_in(rows, index);
+     if (row >= 0) {
+         finish_transform_edit(s->scene, false);
+@@ -265,29 +270,53 @@ static void select_object(studio *s, const pin_value *a)
+     afree(rows);
+ }
+ 
+-static void set_view(studio *s, const pin_value *a, unsigned flag)
++static void set_view(studio *s, const pin_value *a, const char *object, unsigned flag)
+ {
+-    int index = studio_object_index(s, a[0].str);
++    int index = studio_object_index(s, object);
+     if (index >= 0) {
+         studio_set_object_view(s, index, flag, a[1].b);
+     }
+ }
+ 
+-static void drop_on_object(studio *s, const pin_value *a)
++static void drop_on_object(studio *s, const char *const *text)
+ {
+-    int index = studio_object_index(s, a[0].str);
+-    if (index >= 0 && studio_editable(s) && a[1].str && a[2].str) {
+-        studio_drop_on(s, index, a[1].str, a[2].str);
++    int index = studio_object_index(s, text[0]);
++    if (index >= 0 && studio_editable(s)) {
++        studio_drop_on(s, index, text[1], text[2]);
+     }
+ }
+ 
+-static const char *text_of(const pin_value *v)
++static int text_input_count(studio_node_op op)
+ {
+-    return v->str ? v->str : "";
++    switch (op) {
++        case STUDIO_NODE_DROP_ON_OBJECT:
++        case STUDIO_NODE_MOVE_OBJECTS: return 3;
++        case STUDIO_NODE_RENAME_OBJECT: return 2;
++        case STUDIO_NODE_OBJECT_SELECTED:
++        case STUDIO_NODE_OBJECT_ROW:
++        case STUDIO_NODE_SPAWN_BREAK:
++        case STUDIO_NODE_SELECT_OBJECT:
++        case STUDIO_NODE_SET_HIDDEN:
++        case STUDIO_NODE_SET_LOCKED:
++        case STUDIO_NODE_ISOLATE:
++        case STUDIO_NODE_ADD_OBJECT:
++        case STUDIO_NODE_SET_FILTER:
++        case STUDIO_NODE_TOGGLE_SPAWN_BREAK: return 1;
++        default: return 0;
++    }
+ }
+ 
+ const char *studio_node_run(studio *s, studio_node_op op, const pin_value *in, arena *storage, pin_value *out)
+ {
++    arena scratch = { 0 };
++    const char *text[3];
++    for (int i = 0; i < text_input_count(op); i++) {
++        const char *error = pin_text_cstring(&scratch, in[i], &text[i], NULL);
++        if (error) {
++            arena_free(&scratch);
++            return error;
++        }
++    }
+     int index;
+     switch (op) {
+         case STUDIO_NODE_COUNT: return "Invalid Studio operation";
+@@ -297,12 +326,12 @@ const char *studio_node_run(studio *s, studio_node_op op, const pin_value *in, a
+         case STUDIO_NODE_SCENE_INFO: scene_info(s, storage, out); break;
+         case STUDIO_NODE_SELECTION: selection(s, storage, out); break;
+         case STUDIO_NODE_OBJECT_SELECTED:
+-            index = studio_object_index(s, in[0].str);
++            index = studio_object_index(s, text[0]);
+             out[0] = bool_value(index >= 0 && scene_instance_selected(s->scene, index));
+             break;
+         case STUDIO_NODE_OBJECT_ROW: {
+             int *rows = studio_outliner_rows(s);
+-            out[0] = int_value(row_in(rows, studio_object_index(s, in[0].str)));
++            out[0] = int_value(row_in(rows, studio_object_index(s, text[0])));
+             afree(rows);
+             break;
+         }
+@@ -314,49 +343,49 @@ const char *studio_node_run(studio *s, studio_node_op op, const pin_value *in, a
+             break;
+         case STUDIO_NODE_SPAWN_BREAK:
+             out[0] = bool_value(
+-                text_of(&in[0])[0] &&
+-                app_scene_authoring_spawn_break(s->scene, in[0].str)
++                text[0][0] && app_scene_authoring_spawn_break(s->scene, text[0])
+             );
+             break;
+         case STUDIO_NODE_PROTOTYPE_CHOICES:
+             prototype_choices(s, storage, out);
+             break;
+-        case STUDIO_NODE_SELECT_OBJECT: select_object(s, in); break;
++        case STUDIO_NODE_SELECT_OBJECT: select_object(s, in, text[0]); break;
+         case STUDIO_NODE_RENAME_OBJECT:
+-            if (studio_object_index(s, in[0].str) >= 0) {
+-                studio_rename_commit(s, strtoull(in[0].str, NULL, 10), text_of(&in[1]));
++            if (studio_object_index(s, text[0]) >= 0) {
++                studio_rename_commit(s, strtoull(text[0], NULL, 10), text[1]);
+             }
+             break;
+         case STUDIO_NODE_END_RENAME: s->rename.entity = 0; break;
+         case STUDIO_NODE_SET_HIDDEN:
+-            set_view(s, in, APP_SCENE_VIEW_HIDDEN);
++            set_view(s, in, text[0], APP_SCENE_VIEW_HIDDEN);
+             break;
+         case STUDIO_NODE_SET_LOCKED:
+-            set_view(s, in, APP_SCENE_VIEW_LOCKED);
++            set_view(s, in, text[0], APP_SCENE_VIEW_LOCKED);
+             break;
+         case STUDIO_NODE_ISOLATE:
+-            index = studio_object_index(s, in[0].str);
++            index = studio_object_index(s, text[0]);
+             if (index >= 0) {
+                 studio_isolate(s, index);
+             }
+             break;
+         case STUDIO_NODE_ADD_OBJECT:
+-            if (text_of(&in[0])[0]) {
+-                studio_add_object(s, in[0].str);
++            if (text[0][0]) {
++                studio_add_object(s, text[0]);
+             }
+             break;
+-        case STUDIO_NODE_DROP_ON_OBJECT: drop_on_object(s, in); break;
++        case STUDIO_NODE_DROP_ON_OBJECT: drop_on_object(s, text); break;
+         case STUDIO_NODE_MOVE_OBJECTS:
+-            studio_outliner_drop(s, text_of(&in[0]), text_of(&in[1]), text_of(&in[2]));
++            studio_outliner_drop(s, text[0], text[1], text[2]);
+             break;
+         case STUDIO_NODE_SET_FILTER:
+-            snprintf(s->outliner_filter, sizeof s->outliner_filter, "%s", text_of(&in[0]));
++            snprintf(s->outliner_filter, sizeof s->outliner_filter, "%s", text[0]);
+             break;
+         case STUDIO_NODE_TOGGLE_SPAWN_BREAK:
+-            if (text_of(&in[0])[0]) {
+-                studio_toggle_spawn_break(s, in[0].str);
++            if (text[0][0]) {
++                studio_toggle_spawn_break(s, text[0]);
+             }
+             break;
+     }
++    arena_free(&scratch);
+     return NULL;
+ }
+diff --git a/src/editor/studio/studio_properties.c b/src/editor/studio/studio_properties.c
+index fca4fb1..b227b71 100644
+--- a/src/editor/studio/studio_properties.c
++++ b/src/editor/studio/studio_properties.c
+@@ -10,11 +10,13 @@
+ #include "editor/documents/component_properties.h"
+ #include "editor/studio/studio_properties_internal.h"
+ #include "editor/ui/labels.h"
+-#include "types/value_format.h"
+ #include "graph/model/registry.h"
+ #include "runtime/component_catalog.h"
++#include "support/arena.h"
+ #include "support/array.h"
+ #include "support/xalloc.h"
++#include "types/text.h"
++#include "types/value_format.h"
+ #include "ui/popover.h"
+ 
+ #include <assert.h>
+@@ -326,16 +328,29 @@ bool properties_overridden(
+     int field
+ )
+ {
++    arena storage = { 0 };
+     pin_value value = { 0 }, inherited = { 0 };
+-    if (ecs_component_read_field(scene->world, actor->entity, component->desc->id, field, &value) !=
+-        ECS_OK) {
++    if (ecs_component_read_field(
++            &storage,
++            scene->world,
++            actor->entity,
++            component->desc->id,
++            field,
++            &value
++        ) != ECS_OK) {
++        arena_free(&storage);
+         return false;
+     }
+     inherited = value;
+     if (component->data) {
+-        pin_read_field(component->data, &component->desc->type->fields[field], &inherited);
++        if (pin_read_field(&storage, component->data, &component->desc->type->fields[field], &inherited)) {
++            arena_free(&storage);
++            return false;
++        }
+     }
+-    return !pin_value_equal(&value, &inherited);
++    bool overridden = !pin_value_equal(&value, &inherited);
++    arena_free(&storage);
++    return overridden;
+ }
+ 
+ const type_desc *properties_vector(const pin_value *value)
+@@ -438,6 +453,8 @@ bool properties_mixed(
+         return false;
+     }
+     app_scene_authoring *scene = s->scene;
++    arena storage = { 0 };
++    bool mixed = false;
+     /* Objects naming different paths differ though none resolves. */
+     const char *path = scene_link_path(actor->paths, component, field);
+     for (int i = 0; i < acount(scene->actors); i++) {
+@@ -448,14 +465,16 @@ bool properties_mixed(
+         const scene_actor *each = &scene->actors[i];
+         const char *named = scene_link_path(each->paths, component, field);
+         pin_value other = { 0 };
+-        if ((ecs_component_read_field(scene->world, each->entity, component, field, &other) ==
++        if ((ecs_component_read_field(&storage, scene->world, each->entity, component, field, &other) ==
+                  ECS_OK &&
+              !pin_value_equal(&other, value)) ||
+             !same_path(path, named)) {
+-            return true;
++            mixed = true;
++            break;
+         }
+     }
+-    return false;
++    arena_free(&storage);
++    return mixed;
+ }
+ 
+ /* ---------- Writes ---------- */
+@@ -482,17 +501,30 @@ static void write_merged(ecs_world *world, ecs_entity entity, const field_change
+         return;
+     }
+     void *merged = xmalloc(type->size);
++    arena storage = { 0 };
+     memcpy(merged, current.ptr, type->size);
+     for (int i = 0; i < type->field_count; i++) {
+         pin_value before, after;
+-        pin_read_field(c->before.ptr, &type->fields[i], &before);
+-        pin_read_field(c->value.ptr, &type->fields[i], &after);
++        const char *error = pin_read_field(&storage, c->before.ptr, &type->fields[i], &before);
++        if (!error) {
++            error = pin_read_field(&storage, c->value.ptr, &type->fields[i], &after);
++        }
++        if (error) {
++            arena_free(&storage);
++            free(merged);
++            return;
++        }
+         if (!pin_value_equal(&before, &after)) {
+-            pin_write_field(merged, &type->fields[i], after);
++            if (pin_write_field(&storage, merged, &type->fields[i], after)) {
++                arena_free(&storage);
++                free(merged);
++                return;
++            }
+         }
+     }
+     pin_value value = { .type = PIN_STRUCT, .type_name = type->name, .ptr = merged };
+     ecs_component_write_field(world, entity, c->component, c->field, value);
++    arena_free(&storage);
+     free(merged);
+ }
+ 
+@@ -501,11 +533,12 @@ static void write_merged(ecs_world *world, ecs_entity entity, const field_change
+ static void write_others(studio *s, const field_change *c, bool record)
+ {
+     app_scene_authoring *scene = s->scene;
++    arena storage = { 0 };
+     int *others = properties_others(s, c->component);
+     for (int i = 0; i < acount(others); i++) {
+         ecs_entity entity = scene->actors[others[i]].entity;
+         pin_value current = { 0 };
+-        if (ecs_component_read_field(scene->world, entity, c->component, c->field, &current) !=
++        if (ecs_component_read_field(&storage, scene->world, entity, c->component, c->field, &current) !=
+             ECS_OK) {
+             continue;
+         }
+@@ -523,6 +556,7 @@ static void write_others(studio *s, const field_change *c, bool record)
+         write_merged(scene->world, entity, c, current);
+     }
+     afree(others);
++    arena_free(&storage);
+ }
+ 
+ /* One Undo step per gesture: the first input opens an edit, the change
+@@ -560,7 +594,8 @@ static void write_field(studio *s, scene_actor *actor, field_change c)
+         if (ecs_component_write_field(scene->world, actor->entity, c.component, c.field, c.value) ==
+             ECS_OK) {
+             pin_value written = { 0 };
+-            if (ecs_component_read_field(scene->world, actor->entity, c.component, c.field, &written) !=
++            arena storage = { 0 };
++            if (ecs_component_read_field(&storage, scene->world, actor->entity, c.component, c.field, &written) !=
+                 ECS_OK) {
+                 abort();
+             }
+@@ -568,6 +603,7 @@ static void write_field(studio *s, scene_actor *actor, field_change c)
+             if (!scene_property_value_copy(&scene->property_edit.after, written)) {
+                 abort();
+             }
++            arena_free(&storage);
+             scene->scene_dirty = true;
+             asset_index_invalidate(scene);
+         }
+@@ -587,18 +623,29 @@ static void write_field(studio *s, scene_actor *actor, field_change c)
+ 
+ void studio_set_field(studio *s, scene_actor *actor, ecs_component_id component, int field, const char *text)
+ {
++    arena storage = { 0 };
+     pin_value before = { 0 };
+-    if (ecs_component_read_field(s->scene->world, actor->entity, component, field, &before) !=
++    if (ecs_component_read_field(&storage, s->scene->world, actor->entity, component, field, &before) !=
+         ECS_OK) {
++        arena_free(&storage);
+         return;
+     }
+     pin_value value = before;
+-    value.str = text;
++    if (value.type == PIN_STR) {
++        if (pin_value_text(&storage, &value, text, strlen(text))) {
++            arena_free(&storage);
++            return;
++        }
++        value.type_name = before.type_name;
++    } else {
++        value.str = text;
++    }
+     write_field(
+         s,
+         actor,
+         (field_change){ .component = component, .field = field, .before = before, .value = value }
+     );
++    arena_free(&storage);
+ }
+ 
+ /* Moves an object by one axis of its Position, as the Scene's drag does: a
+@@ -701,6 +748,7 @@ static void set_integer(pin_value *value, double v)
+    `axis` a vector's; a struct's storage, which the caller frees, holds a
+    vector. False when the text names no value of the field's type. */
+ static bool parse_field(
++    arena *storage,
+     const ecs_component_desc *desc,
+     const type_field *field,
+     const char *text,
+@@ -745,22 +793,34 @@ static bool parse_field(
+                 if (strcmp(f->name, axis)) {
+                     continue;
+                 }
+-                void *storage = xmalloc(type->size);
+-                memcpy(storage, value->ptr, type->size);
++                void *copy = xmalloc(type->size);
++                memcpy(copy, value->ptr, type->size);
+                 double v = strtod(text, NULL);
+-                pin_write_field(
++                const char *error = pin_write_field(
+                     storage,
++                    copy,
+                     f,
+                     f->type == PIN_F32 ? (pin_value){ .type = PIN_F32, .f = (float)v }
+                                        : (pin_value){ .type = PIN_F64, .d = v }
+                 );
+-                value->ptr = storage;
++                if (error) {
++                    free(copy);
++                    return false;
++                }
++                value->ptr = copy;
+                 return true;
+             }
+             return false;
+         }
+-        case PIN_NAME:
+-        case PIN_STR: value->str = text; return true;
++        case PIN_NAME: value->str = text; return true;
++        case PIN_STR: {
++            const char *type_name = value->type_name;
++            if (pin_value_text(storage, value, text, strlen(text))) {
++                return false;
++            }
++            value->type_name = type_name;
++            return true;
++        }
+         default: return false;
+     }
+ }
+@@ -790,19 +850,23 @@ static void edit_object(studio *s, const edit *e)
+         move(s, actor, !strcmp(e->axis, "y"), strtod(e->text, NULL), e->active, e->canceled);
+         return;
+     }
++    arena storage = { 0 };
+     pin_value before = { 0 };
+     if (e->row.field < 0 || e->row.field >= desc->type->field_count ||
+         ecs_component_read_field(
++            &storage,
+             s->scene->world,
+             actor->entity,
+             desc->id,
+             e->row.field,
+             &before
+         ) != ECS_OK) {
++        arena_free(&storage);
+         return;
+     }
+     pin_value value = before;
+-    if (!parse_field(desc, &desc->type->fields[e->row.field], e->text, e->axis, &value)) {
++    if (!parse_field(&storage, desc, &desc->type->fields[e->row.field], e->text, e->axis, &value)) {
++        arena_free(&storage);
+         return;
+     }
+     write_field(
+@@ -818,6 +882,7 @@ static void edit_object(studio *s, const edit *e)
+     if (value.type == PIN_STRUCT && value.ptr != before.ptr) {
+         free(value.ptr);
+     }
++    arena_free(&storage);
+ }
+ 
+ /* Prototype edits preview live and record one Undo step per gesture, on the
+@@ -837,8 +902,12 @@ static void edit_prototype(studio *s, const edit *e)
+         return;
+     }
+     const type_field *field = &desc->type->fields[e->row.field];
++    arena storage = { 0 };
+     pin_value value = { 0 };
+-    pin_read_field(component->data, field, &value);
++    if (pin_read_field(&storage, component->data, field, &value)) {
++        arena_free(&storage);
++        return;
++    }
+     const void *original = value.ptr;
+     char key[192];
+     snprintf(
+@@ -850,7 +919,8 @@ static void edit_prototype(studio *s, const edit *e)
+         field->name,
+         e->axis
+     );
+-    if (parse_field(desc, field, e->text, e->axis, &value) && editable_scalar(&value)) {
++    if (parse_field(&storage, desc, field, e->text, e->axis, &value) &&
++        editable_scalar(&value)) {
+         if (scene_prototype_source_owned(asset)) {
+             char path[192];
+             snprintf(path, sizeof path, "%s", field->name);
+@@ -859,7 +929,7 @@ static void edit_prototype(studio *s, const edit *e)
+             for (int i = 0; vector && i < vector->field_count; i++) {
+                 if (!strcmp(vector->fields[i].name, e->axis)) {
+                     snprintf(path, sizeof path, "%s.%s", field->name, e->axis);
+-                    pin_read_field(value.ptr, &vector->fields[i], &leaf);
++                    pin_read_field(&storage, value.ptr, &vector->fields[i], &leaf);
+                     break;
+                 }
+             }
+@@ -900,6 +970,7 @@ static void edit_prototype(studio *s, const edit *e)
+     if (value.type == PIN_STRUCT && value.ptr != original) {
+         free(value.ptr);
+     }
++    arena_free(&storage);
+ }
+ 
+ /* The Scene tab's settings change once a gesture ends, one Undo step. */
+@@ -958,7 +1029,9 @@ static void check(studio *s, const properties_row *row, bool on)
+         edit_scene(s, &e);
+         return;
+     }
++    arena storage = { 0 };
+     pin_value value = { 0 };
++    bool read = false;
+     properties_subject subject;
+     properties_subject_of(s, &subject);
+     if (row->kind == PROPERTIES_PROTOTYPE) {
+@@ -967,15 +1040,28 @@ static void check(studio *s, const properties_row *row, bool on)
+         for (int i = 0; asset && desc && i < acount(asset->prototype->components); i++) {
+             const prototype_component *c = &asset->prototype->components[i];
+             if (c->desc == desc && c->data && row->field < desc->type->field_count) {
+-                pin_read_field(c->data, &desc->type->fields[row->field], &value);
++                read = !pin_read_field(&storage, c->data, &desc->type->fields[row->field], &value);
+             }
+         }
+     } else if (subject.actor) {
+-        ecs_component_read_field(s->scene->world, subject.actor->entity, row->component, row->field, &value);
++        read = ecs_component_read_field(
++                   &storage,
++                   s->scene->world,
++                   subject.actor->entity,
++                   row->component,
++                   row->field,
++                   &value
++               ) == ECS_OK;
++    }
++    if (!read || value.type != PIN_BOOL) {
++        arena_free(&storage);
++        return;
+     }
+     bool mixed = row->kind == PROPERTIES_OBJECT && subject.actor &&
+                  properties_mixed(s, subject.actor, row->component, row->field, &value);
+-    if (mixed || value.b != on) {
++    bool changed = mixed || value.b != on;
++    arena_free(&storage);
++    if (changed) {
+         edit_row(s, &e);
+     }
+ }
+@@ -995,8 +1081,8 @@ static void drop(studio *s, const properties_row *row, const char *asset)
+ static Transform inherited_position(const prototype_component *component, Transform at)
+ {
+     pin_value x = { .type = PIN_F32, .f = at.x }, y = { .type = PIN_F32, .f = at.y };
+-    pin_read_field(component->data, &component->desc->type->fields[0], &x);
+-    pin_read_field(component->data, &component->desc->type->fields[1], &y);
++    pin_read_field(NULL, component->data, &component->desc->type->fields[0], &x);
++    pin_read_field(NULL, component->data, &component->desc->type->fields[1], &y);
+     at.x = x.f;
+     at.y = y.f;
+     return at;
+@@ -1012,18 +1098,24 @@ static void reset_field(studio *s, scene_actor *actor)
+     }
+     prototype_component added;
+     const prototype_component *component = properties_base(actor, desc, &added);
++    arena storage = { 0 };
+     pin_value before = { 0 }, inherited = { 0 };
+     if (!component->data || ecs_component_read_field(
++                                &storage,
+                                 scene->world,
+                                 actor->entity,
+                                 desc->id,
+                                 s->context.field,
+                                 &before
+                             ) != ECS_OK) {
++        arena_free(&storage);
+         return;
+     }
+     inherited = before;
+-    pin_read_field(component->data, &desc->type->fields[s->context.field], &inherited);
++    if (pin_read_field(&storage, component->data, &desc->type->fields[s->context.field], &inherited)) {
++        arena_free(&storage);
++        return;
++    }
+     if (desc->id == COMPONENT_Transform.id) {
+         Transform after = inherited_position(
+             component,
+@@ -1035,6 +1127,7 @@ static void reset_field(studio *s, scene_actor *actor)
+             scene->scene_dirty = true;
+         }
+         finish_transform_edit(scene, false);
++        arena_free(&storage);
+         return;
+     }
+     write_field(
+@@ -1045,6 +1138,7 @@ static void reset_field(studio *s, scene_actor *actor)
+                         .before = before,
+                         .value = inherited }
+     );
++    arena_free(&storage);
+ }
+ 
+ /* Reset to Prototype resets each selected object, to its own prototype's
+@@ -1492,11 +1586,13 @@ static void narrow_selection(studio *s, const char *prototype)
+    objects name different ones. */
+ static void reveal(studio *s, const properties_row *row)
+ {
++    arena storage = { 0 };
+     pin_value value = { 0 };
+     properties_subject subject;
+     properties_subject_of(s, &subject);
+     if (row->kind != PROPERTIES_OBJECT ||
+         ecs_component_read_field(
++            &storage,
+             s->scene->world,
+             ecs_entity_from_u64(row->entity),
+             row->component,
+@@ -1506,8 +1602,10 @@ static void reveal(studio *s, const properties_row *row)
+         value.type != PIN_HANDLE || !value.u64 ||
+         (subject.actor &&
+          properties_mixed(s, subject.actor, row->component, row->field, &value))) {
++        arena_free(&storage);
+         return;
+     }
++    arena_free(&storage);
+     /* A placed object selects as the Outliner selects it; a spawned one as
+        a pick in the Scene does. */
+     app_scene_authoring_select_entity(s->scene, ecs_entity_from_u64(value.u64));
+@@ -1588,6 +1686,7 @@ static void settle(studio *s, rml_element *field, const char *id)
+     properties_subject subject;
+     properties_subject_of(s, &subject);
+     properties_row row;
++    arena storage = { 0 };
+     pin_value value = { 0 };
+     char text[512] = "";
+     if (!strcmp(id, "name") && subject.actor) {
+@@ -1595,17 +1694,23 @@ static void settle(studio *s, rml_element *field, const char *id)
+     } else if (
+         properties_row_parse(id, &row) && row.kind == PROPERTIES_OBJECT &&
+         subject.actor &&
+-        ecs_component_read_field(s->scene->world, subject.actor->entity, row.component, row.field, &value) ==
+-            ECS_OK
++        ecs_component_read_field(
++            &storage,
++            s->scene->world,
++            subject.actor->entity,
++            row.component,
++            row.field,
++            &value
++        ) == ECS_OK
+     ) {
+         bool text_value = value.type == PIN_STR || value.type == PIN_NAME;
+-        snprintf(
+-            text,
+-            sizeof text,
+-            "%s",
+-            text_value ? (value.str ? value.str : "") : pin_value_to_string(&value)
+-        );
++        const char *shown = pin_value_to_string(&value);
++        if (text_value) {
++            pin_text_cstring(&storage, value, &shown, NULL);
++        }
++        snprintf(text, sizeof text, "%s", shown);
+     }
++    arena_free(&storage);
+     rml_element_set_value(field, text);
+     rml_element_blur(field);
+ }
+diff --git a/src/editor/studio/studio_properties_view.c b/src/editor/studio/studio_properties_view.c
+index f1f64cf..d05117a 100644
+--- a/src/editor/studio/studio_properties_view.c
++++ b/src/editor/studio/studio_properties_view.c
+@@ -35,7 +35,9 @@
+ #include "editor/ui/labels.h"
+ #include "graph/model/registry.h"
+ #include "runtime/component_catalog.h"
++#include "support/arena.h"
+ #include "support/array.h"
++#include "types/text.h"
+ #include "types/value_format.h"
+ #include "ui/drag.h"
+ #include "ui/popover.h"
+@@ -61,6 +63,7 @@ typedef struct view
+     int slots;              /* the values written this refresh */
+     bool changed;           /* properties changed */
+     bool values_changed;
++    arena storage;
+ } view;
+ 
+ /* ---------- Members, written in place ---------- */
+@@ -879,7 +882,7 @@ static void struct_row(rows *r, const field_source *f)
+     axis_desc axes[4];
+     for (int i = 0; i < type->field_count; i++) {
+         pin_value axis = { 0 };
+-        pin_read_field(f->value.ptr, &type->fields[i], &axis);
++        pin_read_field(&r->v->storage, f->value.ptr, &type->fields[i], &axis);
+         double value = axis.type == PIN_F32 ? axis.f : axis.d;
+         axes[i] = (axis_desc){ .key = type->fields[i].name,
+                                .label = LABELS[i],
+@@ -929,11 +932,22 @@ static void value_row(rows *r, const field_source *f)
+         case PIN_F64: float_row(r, f); return;
+         case PIN_STRUCT: struct_row(r, f); return;
+         case PIN_NAME:
+-        case PIN_STR:
++        case PIN_STR: {
++            const char *text = "";
++            const char *error = pin_text_cstring(&r->v->storage, *value, &text, NULL);
+             d.control = "text";
++            if (error) {
++                d.readonly = true;
++                d.invalid = true;
++                d.control = "label";
++                text = pin_value_to_string(value);
++            }
+             /* A mixed text stays empty, its placeholder a dash. */
+-            text_row(r, &d, d.mixed || !value->str ? "" : value->str);
++            yyjson_mut_val *row = next_row(r, &d);
++            put_text(r->v, row, "text", d.mixed ? "" : text);
++            put_text(r->v, row, "problem", error ? error : "");
+             return;
++        }
+         case PIN_HANDLE:
+             entity_row(r, d, value->u64, f->path, f->path && f->placed && !value->u64);
+             return;
+@@ -954,11 +968,12 @@ static void field_row(rows *r, const field_source *f)
+     }
+     row_desc d = f->row;
+     d.control = "asset";
+-    asset_row(
+-        r,
+-        d,
+-        &(asset_desc){ .kind = named, .value = f->value.str ? f->value.str : "", .none = "None" }
+-    );
++    const char *text = "";
++    if (pin_text_cstring(&r->v->storage, f->value, &text, NULL)) {
++        value_row(r, f);
++        return;
++    }
++    asset_row(r, d, &(asset_desc){ .kind = named, .value = text, .none = "None" });
+ }
+ 
+ /* An object's field, edited in its world: the running one while the scene
+@@ -971,7 +986,7 @@ static void object_field(rows *r, scene_actor *actor, const prototype_component
+     const type_field *field = &desc->type->fields[index];
+     char label[128], id[PROPERTIES_ROW_ID];
+     pin_value value = { 0 };
+-    if (ecs_component_read_field(scene->world, actor->entity, desc->id, index, &value) !=
++    if (ecs_component_read_field(&r->v->storage, scene->world, actor->entity, desc->id, index, &value) !=
+             ECS_OK ||
+         !properties_label(s, component, field, label, sizeof label)) {
+         return;
+@@ -1204,12 +1219,19 @@ static void show_prototype_field(
+         .row = { .id = id, .label = label, .about = field->description, .readonly = locked },
+         .path = scene_link_path(asset->prototype->links, component->desc->id, index)
+     };
+-    pin_read_field(component->data, field, &f.value);
++    if (pin_read_field(&r->v->storage, component->data, field, &f.value)) {
++        return;
++    }
+     const prototype *shown = scene_source_input_preview(s->scene, asset);
+     if (shown != asset->prototype) {
+         pin_value pending = { 0 };
+-        if (prototype_read_field(shown, component->desc->name, field->name, &pending) ==
+-            0) {
++        if (prototype_read_field(
++                &r->v->storage,
++                shown,
++                component->desc->name,
++                field->name,
++                &pending
++            ) == 0) {
+             f.value = pending;
+             f.path = scene_link_path(shown->links, component->desc->id, index);
+         }
+@@ -1768,5 +1790,6 @@ bool studio_properties_sync(studio *s, const studio_panel_sync *at)
+     if (v.values_changed) {
+         rml_data_model_dirty(at->model, "propertyValues");
+     }
++    arena_free(&v.storage);
+     return v.changed;
+ }
+diff --git a/src/editor/studio/studio_prototype_actions.c b/src/editor/studio/studio_prototype_actions.c
+index b9aeefe..732cadc 100644
+--- a/src/editor/studio/studio_prototype_actions.c
++++ b/src/editor/studio/studio_prototype_actions.c
+@@ -9,8 +9,9 @@
+ #include "editor/documents/component_properties.h"
+ #include "editor/studio/studio_internal.h"
+ #include "editor/ui/labels.h"
+-#include "types/value_format.h"
++#include "support/arena.h"
+ #include "support/array.h"
++#include "types/value_format.h"
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -147,7 +148,9 @@ static prototype_field *field_rows(studio *s, scene_actor *actor, const prototyp
+     kit *k = s->kit;
+     struct studio_prototype_action *a = &s->prototype_action;
+     prototype_field *checked = NULL;
++    arena storage = { 0 };
+     for (int i = 0; i < acount(fields); i++) {
++        arena_reset(&storage);
+         const ecs_component_desc *desc = fields[i].component;
+         const type_field *field = &desc->type->fields[fields[i].field];
+         prototype_component component = { .desc = desc };
+@@ -157,13 +160,16 @@ static prototype_field *field_rows(studio *s, scene_actor *actor, const prototyp
+         snprintf(label, sizeof label, "%s \xc2\xb7 %s", component_label, field_label);
+         snprintf(key, sizeof key, "f%d", i);
+         pin_value value = { 0 };
+-        ecs_component_read_field(
+-            s->scene->world,
+-            actor->entity,
+-            desc->id,
+-            fields[i].field,
+-            &value
+-        );
++        if (ecs_component_read_field(
++                &storage,
++                s->scene->world,
++                actor->entity,
++                desc->id,
++                fields[i].field,
++                &value
++            ) != ECS_OK) {
++            continue;
++        }
+         bool on = !skipped(a->skipped, fields[i]);
+         kit_push(k, key, NULL, "prototype-field");
+         if (kit_checkbox(k, "check", &on, label, 0) && on) {
+@@ -183,6 +189,7 @@ static prototype_field *field_rows(studio *s, scene_actor *actor, const prototyp
+             apush(checked, fields[i]);
+         }
+     }
++    arena_free(&storage);
+     return checked;
+ }
+ 
+diff --git a/src/editor/text/zep_bridge.cpp b/src/editor/text/zep_bridge.cpp
+index f59aeeb..94949a2 100644
+--- a/src/editor/text/zep_bridge.cpp
++++ b/src/editor/text/zep_bridge.cpp
+@@ -579,6 +579,20 @@ void zep_set_text_offset_x(zep_editor *z, float offset)
+     z->window().SetTextOffsetX(offset);
+ }
+ 
++void zep_scroll_info(zep_editor *z, float *offset, float *maximum, float *top, float *bottom)
++{
++    Zep::NVec4f info = z->window().GetTextScrollInfo();
++    *offset = info.x;
++    *maximum = info.y;
++    *top = info.z;
++    *bottom = info.w;
++}
++
++void zep_set_text_offset_y(zep_editor *z, float offset)
++{
++    z->window().SetTextOffsetY(offset);
++}
++
+ void zep_text_region_x(const zep_editor *z, float *left, float *right)
+ {
+     Zep::NVec2f x = z->window().GetTextRegionX();
+diff --git a/src/editor/text/zep_bridge.h b/src/editor/text/zep_bridge.h
+index 7c47040..c0f1a24 100644
+--- a/src/editor/text/zep_bridge.h
++++ b/src/editor/text/zep_bridge.h
+@@ -237,6 +237,10 @@ extern "C"
+     /* Lines that do not wrap scroll left by `offset` pixels; the text region
+      * spans left to right. */
+     void zep_set_text_offset_x(zep_editor *z, float offset);
++    /* Current vertical offset, maximum offset, and laid-out text bounds. */
++    void zep_scroll_info(zep_editor *z, float *offset, float *maximum, float *top, float *bottom);
++    /* Overrides automatic cursor following for the next display. */
++    void zep_set_text_offset_y(zep_editor *z, float offset);
+     void zep_text_region_x(const zep_editor *z, float *left, float *right);
+     /* With `hide`, the command line and the status line under the text take
+      * no room while the command line is empty, as outside an ex command. */
+diff --git a/src/editor/ui/kit.h b/src/editor/ui/kit.h
+index 025345b..f947ea3 100644
+--- a/src/editor/ui/kit.h
++++ b/src/editor/ui/kit.h
+@@ -652,6 +652,11 @@ extern "C"
+     void kit_code_redo(kit_code_editor *e);
+     int kit_code_cursor(const kit_code_editor *e);
+     void kit_code_set_cursor(kit_code_editor *e, int byte);
++    /* Moves the caret and smoothly reveals it only when outside the comfortable
++     * viewport. Keeps keyboard focus; direct editor input cancels the motion. */
++    void kit_code_reveal(kit_code_editor *e, int byte);
++    /* Current viewport offsets in display pixels; zero before the first view. */
++    void kit_code_scroll(kit_code_editor *e, float *x, float *y);
+     /* Selects [start, end), the cursor at its end, as Find shows a match. */
+     void kit_code_select(kit_code_editor *e, int start, int end);
+     /* The active visual selection's ordered byte range; false without one. */
+diff --git a/src/editor/workspace/scene_asset_drop.c b/src/editor/workspace/scene_asset_drop.c
+index ad6119a..22d8090 100644
+--- a/src/editor/workspace/scene_asset_drop.c
++++ b/src/editor/workspace/scene_asset_drop.c
+@@ -5,10 +5,13 @@
+  * save, history or runtime ever reads it. */
+ #include "authoring/reference_index.h"
+ #include "editor/workspace/scene_internal.h"
++#include "support/arena.h"
+ #include "support/array.h"
+ #include "support/xalloc.h"
++#include "types/text.h"
+ 
+ #include <stdlib.h>
++#include <string.h>
+ 
+ int scene_asset_field(
+     const app_scene_authoring *scene,
+@@ -60,19 +63,35 @@ void scene_preview_field(
+ 
+ void scene_field_previews_apply(app_scene_authoring *scene)
+ {
++    arena storage = { 0 };
+     for (int i = 0; i < acount(scene->field_previews); i++) {
++        arena_reset(&storage);
+         scene_field_preview *p = &scene->field_previews[i];
+         pin_value value = { 0 };
+         if (!ecs_entity_is_alive(scene->world, p->entity) ||
+-            ecs_component_read_field(scene->world, p->entity, p->component, p->field, &value) !=
++            ecs_component_read_field(&storage, scene->world, p->entity, p->component, p->field, &value) !=
+                 ECS_OK ||
+             !scene_property_value_copy(&p->before, value)) {
+             continue;
+         }
+-        value.str = p->text;
+-        ecs_component_write_field(scene->world, p->entity, p->component, p->field, value);
+-        p->shown = true;
++        if (value.type == PIN_STR) {
++            pin_value preview = { 0 };
++            if (pin_value_text(&storage, &preview, p->text, strlen(p->text))) {
++                scene_property_value_free(&p->before);
++                continue;
++            }
++            preview.type_name = value.type_name;
++            value = preview;
++        } else {
++            value.str = p->text;
++        }
++        p->shown = ecs_component_write_field(scene->world, p->entity, p->component, p->field, value) ==
++                   ECS_OK;
++        if (!p->shown) {
++            scene_property_value_free(&p->before);
++        }
+     }
++    arena_free(&storage);
+ }
+ 
+ void scene_field_previews_clear(app_scene_authoring *scene)
+diff --git a/src/editor/workspace/scene_authoring.c b/src/editor/workspace/scene_authoring.c
+index 21f2a13..d6e3296 100644
+--- a/src/editor/workspace/scene_authoring.c
++++ b/src/editor/workspace/scene_authoring.c
+@@ -29,12 +29,14 @@
+ #include "runtime/behaviors/entities.h"
+ #include "runtime/component_catalog.h"
+ #include "runtime/declared_components.h"
++#include "support/arena.h"
+ #include "support/array.h"
+ #include "support/asset_json.h"
+ #include "support/asset_text.h"
+ #include "support/text_file.h"
+ #include "support/xalloc.h"
+ #include "types/array.h"
++#include "types/text.h"
+ #include "types/type.h"
+ #include "types/value_document.h"
+ #include "types/value_format.h"
+@@ -1123,7 +1125,18 @@ bool scene_property_value_copy(pin_value *out, pin_value value)
+     }
+     *out = value;
+     out->type_name = value.type_name ? xstrdup(value.type_name) : NULL;
+-    if (value.type == PIN_STR || value.type == PIN_NAME) {
++    if (value.type == PIN_STR) {
++        pin_string text = pin_text(value);
++        pin_value copy = { 0 };
++        if (pin_value_text(NULL, &copy, text.bytes, text.length)) {
++            free((void *)out->type_name);
++            *out = (pin_value){ 0 };
++            return false;
++        }
++        out->text = copy.text;
++        return true;
++    }
++    if (value.type == PIN_NAME) {
+         out->str = xstrdup(value.str ? value.str : "");
+         return true;
+     }
+@@ -1144,7 +1157,10 @@ void scene_property_value_free(pin_value *value)
+ {
+     assert(value);
+     free((void *)value->type_name);
+-    if (value->type == PIN_STR || value->type == PIN_NAME) {
++    if (value->type == PIN_STR) {
++        free((void *)value->text);
++    }
++    if (value->type == PIN_NAME) {
+         free((void *)value->str);
+     }
+     if (value->type == PIN_STRUCT) {
+@@ -1240,9 +1256,11 @@ static void commit_property_others(
+     int field
+ )
+ {
++    arena storage = { 0 };
+     for (int i = 0; i < acount(others); i++) {
++        arena_reset(&storage);
+         pin_value after = { 0 };
+-        if (ecs_component_read_field(scene->world, others[i].entity, component, field, &after) ==
++        if (ecs_component_read_field(&storage, scene->world, others[i].entity, component, field, &after) ==
+                 ECS_OK &&
+             !pin_value_equal(&others[i].before, &after)) {
+             scene->property_actor = others[i].entity;
+@@ -1260,6 +1278,7 @@ static void commit_property_others(
+         }
+         scene_property_value_free(&others[i].before);
+     }
++    arena_free(&storage);
+ }
+ 
+ void finish_property_edit(app_scene_authoring *scene)
+diff --git a/src/editor/workspace/scene_authoring.h b/src/editor/workspace/scene_authoring.h
+index 96bb37a..92fb94a 100644
+--- a/src/editor/workspace/scene_authoring.h
++++ b/src/editor/workspace/scene_authoring.h
+@@ -131,8 +131,10 @@ int app_scene_authoring_save_prototype(
+     const char *prototype_name,
+     const char *path
+ );
+-/* Field storage is borrowed from the authored prototype until its next edit. */
++/* Native string reads copy into storage (NULL selects heap ownership).
++ * Aggregate and authored descriptor reads borrow until the prototype changes. */
+ int app_scene_authoring_read_prototype_field(
++    arena *storage,
+     app_scene_authoring *scene,
+     const char *prototype_name,
+     const char *component,
+diff --git a/src/editor/workspace/scene_gizmo.c b/src/editor/workspace/scene_gizmo.c
+index aec2bc4..a9d9af2 100644
+--- a/src/editor/workspace/scene_gizmo.c
++++ b/src/editor/workspace/scene_gizmo.c
+@@ -131,7 +131,14 @@ static pin_value read_field(
+ )
+ {
+     pin_value value = { 0 };
+-    int read = ecs_component_read_field(world, entity, component->id, field_named(component, name), &value);
++    int read = ecs_component_read_field(
++        NULL,
++        world,
++        entity,
++        component->id,
++        field_named(component, name),
++        &value
++    );
+     assert(read == ECS_OK && value.type == PIN_F32);
+     return value;
+ }
+@@ -366,6 +373,7 @@ int scene_gizmo_record(
+                                 .field = field_named(component, name) };
+     pin_value value = { 0 };
+     int read = ecs_component_read_field(
++        NULL,
+         scene->world,
+         entity,
+         component->id,
+diff --git a/src/editor/workspace/scene_runtime.c b/src/editor/workspace/scene_runtime.c
+index 1194733..c6a626f 100644
+--- a/src/editor/workspace/scene_runtime.c
++++ b/src/editor/workspace/scene_runtime.c
+@@ -1,10 +1,11 @@
+ #include "authoring/material_prepare.h"
+-#include "execution/status.h"
+ #include "editor/collab/actions_scene.h"
+ #include "editor/workspace/model_preview.h"
+ #include "editor/workspace/scene_internal.h"
++#include "execution/status.h"
+ #include "render/shader_catalog.h"
+ #include "runtime/component_catalog.h"
++#include "support/arena.h"
+ #include "types/array.h"
+ #include "types/type.h"
+ 
+@@ -207,15 +208,18 @@ static void keep_component(
+ )
+ {
+     const ecs_component_desc *desc = authored->desc;
++    arena storage = { 0 };
+     for (int f = 0; f < desc->type->field_count; f++) {
++        arena_reset(&storage);
+         pin_value running = { 0 };
+-        if (ecs_component_read_field(scene->world, entity, desc->id, f, &running) != ECS_OK ||
++        if (ecs_component_read_field(&storage, scene->world, entity, desc->id, f, &running) !=
++                ECS_OK ||
+             !editable_scalar(&running)) {
+             continue;
+         }
+-        pin_value before = running;
+-        pin_read_field(authored->data, &desc->type->fields[f], &before);
+-        if (pin_value_equal(&running, &before)) {
++        pin_value before = { 0 };
++        if (pin_read_field(&storage, authored->data, &desc->type->fields[f], &before) ||
++            pin_value_equal(&running, &before)) {
+             continue;
+         }
+         scene_field_edit edit = { .component = desc->id, .field = f };
+@@ -224,6 +228,7 @@ static void keep_component(
+         }
+         apush(kept->fields, edit);
+     }
++    arena_free(&storage);
+ }
+ 
+ int scene_keep_changes(app_scene_authoring *scene, const ecs_component_desc *only)
+@@ -292,9 +297,11 @@ int scene_kept_values(app_scene_authoring *scene, int *objects, const char **nam
+    Properties records one. */
+ static void apply_kept_field(app_scene_authoring *scene, ecs_entity entity, const scene_field_edit *kept)
+ {
++    arena storage = { 0 };
+     pin_value before = { 0 };
+-    if (ecs_component_read_field(scene->world, entity, kept->component, kept->field, &before) !=
++    if (ecs_component_read_field(&storage, scene->world, entity, kept->component, kept->field, &before) !=
+         ECS_OK) {
++        arena_free(&storage);
+         return;
+     }
+     scene->property_actor = entity;
+@@ -304,6 +311,7 @@ static void apply_kept_field(app_scene_authoring *scene, ecs_entity entity, cons
+         !scene_property_value_copy(&scene->property_edit.after, kept->after)) {
+         abort();
+     }
++    arena_free(&storage);
+     scene->property_dirty = scene->scene_dirty;
+     if (scene_collab_can_write_locally() &&
+         ecs_component_write_field(scene->world, entity, kept->component, kept->field, kept->after) ==
+diff --git a/tests/acceptance/README.md b/tests/acceptance/README.md
+index 501ad0d..09a1a86 100644
+--- a/tests/acceptance/README.md
++++ b/tests/acceptance/README.md
+@@ -5,6 +5,21 @@ The optional native `studio-acceptance` target compiles the actual application a
+ host in test wrappers. The production binary has no fixture CLI or test hooks.
+ Build with `-DCHIBI_STUDIO_BUILD_ACCEPTANCE=ON` against an installed SDK.
+ 
++`studio-acceptance --sdk-values` runs twelve renderer-free C cases without a
++project or compiler preparation. Property copies retain embedded NUL and
++non-UTF-8 bytes after their input arena retires. UTF-8 and non-UTF-8 field edits
++survive a JSON history checkpoint, retirement of the original history and input
++arena, and real ECS Undo/Redo through the restored history. An explicit
++descriptor field retains embedded NUL and non-UTF-8 bytes through Undo/Redo.
++Checkpoints with embedded NUL in either value of a native C-string field reject
++without replacing prior history. Replay rejects a mixed field batch before its
++first write when a later native string cannot be represented. Real graph
++collaboration actions preserve UTF-8, embedded NUL and non-UTF-8 text after the
++input arena and action JSON retire, and reject a payload beyond the shared
++codec's value budget. The installed native and language catalogs
++expose a bound `prototype_choices` action when optional
++Studio services are selected, and omit it from the ordinary application catalog.
++
+ `studio-acceptance --source-edit --project-root PATH` accepts a disposable copy of
+ this directory's `project`. Preferences and thumbnail cache are pinned inside that
+ disposable project; initial Counter bytes are checked before and after. It checks that the project remembered last leads the recent projects, once, and that
+@@ -136,6 +151,20 @@ regression assertion; the expected read-error notice remains host-owned until
+ normal shutdown. The four-frame invocation is unchanged. This exercises the
+ production handlers, not pointer hit testing.
+ 
++`studio-acceptance --code-wrap-reveal --project-root PATH` takes another
++fresh disposable copy and runs five hidden fixed-1/60 frames. It prepends one
++fixed 512-byte comment line to Counter, shows code only with wrapping and reduced
++motion off, and reveals the last comment byte. After checking a positive, advancing
++horizontal animation step, it enables Word Wrap without another reveal or code
++input. The next two frames require zero horizontal offset, unchanged source and
++caret, retained code focus, and a clean document. Counter's original file is
++restored even when the host reports failure. This is one pico_unit case in the
++existing acceptance binary, with the same three-file project, isolated preferences
++and thumbnail cache; it adds no playback, screenshots or helper executable.
++A fixture-only old-product control must fail the first post-wrap zero-offset
++assertion after setup succeeds. This registration records the workload; runtime
++results must identify the exact source and installed SDK used.
++
+ `studio-acceptance --code-keys --project-root PATH` takes another disposable copy.
+ It shows Counter in the Text Editor, focuses it and places the cursor after the
+ event's closing brace, then queues two Enter key presses through SDL, as the
+@@ -312,8 +341,11 @@ before two handlers: the initial graph still opens on Tick, the picker groups
+ Events before Variables and Functions, and the root is labeled Variables.
+ Selecting Begin in Both reveals its declaration; revealing a statement selects
+ its node and corresponding source while a graph field keeps keyboard focus.
+-Source reveals and keyboard framing interrupt camera motion immediately; framing
+-also settles immediately with reduced motion enabled.
++Source reveals preserve zoom and ease into view, including when retargeted during
++motion. Intermediate positions, velocity continuity, already-visible targets and
++manual interruption are checked. An offscreen handler also checks intermediate
++code scroll offsets, retargeting without a jump, reduced motion and manual-wheel
++cancellation. Reduced motion settles either reveal immediately.
+ Moving the focused source caret to a statement selects its graph/node without
+ moving the caret back to the declaration or taking focus from the text.
+ A temporary distant statement tests that initial framing keeps the handler's
+diff --git a/tests/acceptance/main.c b/tests/acceptance/main.c
+index 743a862..2af42a6 100644
+--- a/tests/acceptance/main.c
++++ b/tests/acceptance/main.c
+@@ -40,7 +40,9 @@
+ #include <sys/stat.h>
+ #include <unistd.h>
+ 
++/* Test bodies require the application and pico_unit declarations above. */
+ #include "scene_read.h"
++#include "sdk_values.h"
+ 
+ studio *studio_acceptance_studio(void *);
+ int studio_acceptance_host_main(int, char **);
+@@ -55,6 +57,7 @@ static enum {
+     KDL_KEYS,
+     EXPORT_GAME,
+     GRAPH_VISIBILITY,
++    CODE_WRAP_REVEAL,
+     GRAPH_KEYS,
+     GRAPH_POINTER,
+     DEBUGGER_SOURCE_HISTORY,
+@@ -1471,36 +1474,62 @@ static bool behavior_graph_source(studio *s, rml_context *context, rml_element *
+     studio_reveal_node(s, selected.graph_id, selected.node_id);
+     REQUIRE(acount(e->selected) == 1 && e->selected[0]->id == selected.node_id);
+     REQUIRE(kit_code_cursor(text) == start);
+-    /* Repeated source/keyboard navigation reveals its target immediately,
+-       including while a pointer-initiated camera transition is in flight. */
++    /* A source reveal starts at the visible camera and moves toward its node.
++       Retargeting preserves that position and velocity, without changing zoom. */
+     bool reduced_motion = s->prefs.reduced_motion;
++    double time = s->time;
+     s->prefs.reduced_motion = false;
+     s->graph.x -= 10000;
+     s->graph.y -= 10000;
+-    sg_frame_nodes(s, false, true);
+-    REQUIRE(s->graph.camera.active);
++    float from_x = s->graph.x, from_y = s->graph.y, zoom = s->graph.zoom;
+     sg_show_node(s, e->selected[0], false);
++    REQUIRE(s->graph.camera.active);
++    REQUIRE(s->graph.x == from_x && s->graph.y == from_y);
++    float to_x = s->graph.camera.x, to_y = s->graph.camera.y;
++    s->time += 1.0 / 60;
++    sg_camera_step(s);
++    REQUIRE(s->graph.x > from_x && s->graph.x < to_x);
++    REQUIRE(s->graph.y > from_y && s->graph.y < to_y);
++    REQUIRE(s->graph.zoom == zoom);
++    float moving_x = s->graph.x, moving_y = s->graph.y;
++    double velocity = s->graph.camera.pan_x.v;
++    sg_show_node(s, entry, false);
++    REQUIRE(s->graph.x == moving_x && s->graph.y == moving_y);
++    REQUIRE(s->graph.camera.pan_x.v == velocity);
++    for (int i = 0; i < 90; i++) {
++        s->time += 1.0 / 60;
++        sg_camera_step(s);
++    }
+     REQUIRE(!s->graph.camera.active);
+-    float selected_box[4];
+-    REQUIRE(sg_node_box(s, e->selected[0], selected_box));
+-    REQUIRE(selected_box[0] >= s->graph.x && selected_box[1] >= s->graph.y);
+-    REQUIRE(
+-        selected_box[0] + selected_box[2] <=
+-        s->graph.x + s->graph.surface.rect.w / sg_zoom(s)
+-    );
+-    REQUIRE(
+-        selected_box[1] + selected_box[3] <=
+-        s->graph.y + s->graph.surface.rect.h / sg_zoom(s)
+-    );
++    float settled_x = s->graph.x, settled_y = s->graph.y;
++    sg_show_node(s, entry, false);
++    REQUIRE(!s->graph.camera.active);
++    REQUIRE(s->graph.x == settled_x && s->graph.y == settled_y);
++    REQUIRE(s->graph.zoom == zoom);
+     sg_frame_nodes(s, false, true);
+     REQUIRE(s->graph.camera.active);
+-    sg_show_node(s, e->selected[0], false);
++    sg_show_node(s, entry, false);
+     REQUIRE(!s->graph.camera.active);
+-    sg_frame_again(s);
++    s->time += 1.0 / 60;
++    sg_camera_step(s);
++    REQUIRE(s->graph.x == settled_x && s->graph.y == settled_y);
++    /* Direct zoom takes over the camera, and reduced motion settles a reveal. */
++    s->graph.x -= 10000;
++    sg_show_node(s, entry, false);
++    REQUIRE(s->graph.camera.active);
++    sg_zoom_at(s, zoom, s->graph.surface.rect.x, s->graph.surface.rect.y);
+     REQUIRE(!s->graph.camera.active);
++    moving_x = s->graph.x;
++    s->time += 1.0 / 60;
++    sg_camera_step(s);
++    REQUIRE(s->graph.x == moving_x);
+     s->prefs.reduced_motion = true;
++    sg_show_node(s, entry, false);
++    REQUIRE(!s->graph.camera.active);
++    REQUIRE(s->graph.x != moving_x);
+     sg_frame_nodes(s, false, true);
+     REQUIRE(!s->graph.camera.active);
++    s->time = time;
+     s->prefs.reduced_motion = reduced_motion;
+     REQUIRE(rml_context_focus_element(context) == input);
+     REQUIRE(!asset_code_dirty(code));
+@@ -1540,6 +1569,70 @@ static bool behavior_empty_variables(studio *s)
+     return check_counter(s, 1, false, NULL);
+ }
+ 
++static rml_element *find_element(studio *s, const char *selector);
++
++#define CODE_WRAP_FRAMES 5
++static const char code_wrap_comment
++    [] = "// aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
++         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
++         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
++         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
++         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
++         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
++         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
++         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
++         "\n";
++static char code_wrap_source[sizeof code_wrap_comment + sizeof counter_bytes - 1];
++
++/* A wrap change must reflow an in-flight reveal without restoring its old
++   horizontal spring. No second reveal or code input follows the change. */
++static bool code_wrap_reveal_frame(void *state)
++{
++    static float first_x;
++    static rml_element *focus;
++    studio *s = studio_acceptance_studio(state);
++    REQUIRE(s && s->ui);
++    frames++;
++    REQUIRE(frames <= CODE_WRAP_FRAMES);
++    asset_code *code = counter_source(s);
++    REQUIRE(code);
++    kit_code_editor *text = asset_code_editor(code);
++    REQUIRE(text);
++    if (frames == 1) {
++        studio_behavior_show(s, 1);
++        s->prefs.reduced_motion = false;
++        s->prefs.code_wrap = false;
++        s->code.find.refocus = true;
++        kit_code_reveal(text, (int)sizeof code_wrap_comment - 3);
++    }
++    REQUIRE(!strcmp(asset_code_text(code), code_wrap_source));
++    REQUIRE(!strcmp(kit_code_text(text, NULL), code_wrap_source));
++    REQUIRE(kit_code_cursor(text) == (int)sizeof code_wrap_comment - 3);
++    REQUIRE(!asset_code_dirty(code));
++    if (frames == 1) {
++        return true;
++    }
++    rml_context *context = rml_backend_context(s->backend);
++    if (frames == 2) {
++        focus = find_element(s, "kit-code");
++        REQUIRE(focus);
++    }
++    REQUIRE(rml_context_focus_element(context) == focus);
++    float x, y;
++    kit_code_scroll(text, &x, &y);
++    if (frames == 2) {
++        first_x = x;
++    } else if (frames == 3) {
++        REQUIRE(x > 0 && x > first_x);
++        s->prefs.code_wrap = true;
++        s->ui_schedule.wake = true;
++    } else {
++        REQUIRE(s->prefs.code_wrap);
++        REQUIRE(x == 0);
++    }
++    return true;
++}
++
+ /* Hidden graphs do no UI work. Both views follow one document, without
+    losing the scene source draft selected between visits to the graph. */
+ static bool graph_visibility_frame(void *state)
+@@ -1553,6 +1646,8 @@ static bool graph_visibility_frame(void *state)
+     static rml_element *focus_document;
+     static uint64_t source_graph, source_node;
+     static int source_cursor;
++    static float code_y, moving_code_y, manual_code_y;
++    static bool reduced_motion;
+     studio *s = studio_acceptance_studio(state);
+     REQUIRE(s && s->ui);
+     frames++;
+@@ -1560,9 +1655,32 @@ static bool graph_visibility_frame(void *state)
+     if (frames == 1) {
+         REQUIRE(opens_on_handler(s));
+         studio_behavior_show(s, 2);
++        sg_nav_track(s);
++        reduced_motion = s->prefs.reduced_motion;
++        s->prefs.reduced_motion = false;
++        asset_code *code = counter_source(s);
++        const char *source = asset_code_text(code);
++        const char *begin = strstr(source, "on Begin");
++        REQUIRE(begin);
++        kit_code_reveal(asset_code_editor(code), (int)(begin - source));
+     } else if (frames == 2) {
+         REQUIRE(tilemap_viewport(s));
++        float x;
++        kit_code_scroll(asset_code_editor(counter_source(s)), &x, &code_y);
+     } else if (frames == 3) {
++        kit_code_editor *text = asset_code_editor(counter_source(s));
++        float x, y;
++        kit_code_scroll(text, &x, &moving_code_y);
++        printf(
++            "Code reveal scroll: first=%.2f next=%.2f caret=%d\n",
++            code_y,
++            moving_code_y,
++            kit_code_cursor(text)
++        );
++        REQUIRE(moving_code_y > code_y);
++        kit_code_reveal(text, 0);
++        kit_code_scroll(text, &x, &y);
++        REQUIRE(y == moving_code_y);
+         REQUIRE(s->graph.backend);
+         hidden = rml_backend_get_stats(s->graph.backend);
+         REQUIRE(hidden.context_updates && hidden.render_captures);
+@@ -1582,7 +1700,34 @@ static bool graph_visibility_frame(void *state)
+         REQUIRE(behavior_graph_choices(s));
+         REQUIRE(behavior_graph_source(s, context, input));
+         studio_behavior_show(s, 1);
++        sg_nav_track(s);
++        asset_code *code = counter_source(s);
++        const char *source = asset_code_text(code);
++        kit_code_reveal(text, (int)(strstr(source, "on Begin") - source));
++        s->prefs.reduced_motion = true;
+     } else if (frames == 4 || frames == 5 || frames == 10) {
++        if (frames == 4) {
++            kit_code_editor *text = asset_code_editor(counter_source(s));
++            float x, y;
++            kit_code_scroll(text, &x, &y);
++            printf("Reduced-motion scroll: %.2f caret=%d\n", y, kit_code_cursor(text));
++            REQUIRE(y > moving_code_y);
++            s->prefs.reduced_motion = reduced_motion;
++            kit_code_reveal(text, 0);
++            rml_element *view = find_element(s, "kit-code");
++            REQUIRE(view);
++            rml_vec2 at = rml_element_absolute_offset(view, RML_BOX_CONTENT);
++            rml_context *context = rml_element_context(view);
++            rml_context_process_mouse_move(context, (int)at.x + 100, (int)at.y + 100, 0);
++            rml_context_process_mouse_wheel(context, (rml_vec2){ 0, -1 }, 0);
++            kit_code_scroll(text, &x, &manual_code_y);
++            REQUIRE(manual_code_y < y && manual_code_y > 0);
++        }
++        if (frames == 5) {
++            float x, y;
++            kit_code_scroll(asset_code_editor(counter_source(s)), &x, &y);
++            REQUIRE(y == manual_code_y);
++        }
+         rml_backend_stats now = rml_backend_get_stats(s->graph.backend);
+         REQUIRE(now.context_updates == hidden.context_updates);
+         REQUIRE(now.render_captures == hidden.render_captures);
+@@ -2535,7 +2680,8 @@ static bool links(app_scene_authoring *scene, int actor, int target)
+ {
+     pin_value value = { 0 };
+     REQUIRE(
+-        ecs_component_read_field(scene->world, scene->actors[actor].entity, link_id(scene), 0, &value) == ECS_OK
++        ecs_component_read_field(NULL, scene->world, scene->actors[actor].entity, link_id(scene), 0, &value) ==
++        ECS_OK
+     );
+     return value.u64 ==
+            (target < 0 ? 0 : ecs_entity_to_u64(scene->actors[target].entity));
+@@ -3455,21 +3601,29 @@ static rml_element *find_element(studio *s, const char *selector)
+     return NULL;
+ }
+ 
+-/* Click the visible node title, away from sockets and editable fields.
+-   The surface's element places the canvas as this frame laid it out; the
+-   graph's own rectangle follows a frame later. */
++/* Click the rendered title or operator symbol. The surface element carries
++   this frame's layout; the graph's rectangle follows a frame later. */
+ static bool point_node(studio *s, node *n)
+ {
+     const node_layout *layout = sg_layout_of(s, n);
+-    REQUIRE(layout && layout->w > 0 && layout->top > 0);
++    REQUIRE(layout && layout->w > 0);
++    char path[96];
++    snprintf(
++        path,
++        sizeof path,
++        "world/stage/n%llu/%s",
++        (unsigned long long)n->id,
++        layout->form == FORM_OPERATOR ? "b/sym" : "h/t"
++    );
++    kit_rect title;
++    REQUIRE(kit_find(s->graph.kit, path, &title));
+     rml_element *surface = find_element(s, ".graph-surface");
+     REQUIRE(surface);
+     rml_vec2 at = rml_element_absolute_offset(surface, RML_BOX_BORDER);
+     rml_vec2 size = rml_element_box_size(surface, RML_BOX_BORDER);
+     float to_points = s->prefs.ui_scale / studio_pixel_ratio(s),
+           scale = sg_zoom(s) * s->prefs.ui_scale;
+-    float dx = (n->x + layout->w / 2 - s->graph.x) * scale,
+-          dy = (n->y + layout->top / 2 - s->graph.y) * scale;
++    float dx = (title.x + title.w / 2) * scale, dy = (title.y + title.h / 2) * scale;
+     REQUIRE(dx > 0 && dx < size.x * to_points && dy > 0 && dy < size.y * to_points);
+     return click_at(at.x * to_points + dx, at.y * to_points + dy);
+ }
+@@ -3484,10 +3638,11 @@ static bool graph_pointer_frame(void *state)
+     editor *e = s->scene->graph_editor;
+     switch (frames) {
+         case 1:
+-            studio_show_editor(s, STUDIO_EDITOR_BEHAVIOR);
+             s->prefs.reduced_motion = true;
++            studio_show_editor(s, STUDIO_EDITOR_BEHAVIOR);
+             return true;
+-        case 3: {
++        /* Opening the pane finishes its host layout before queuing a click. */
++        case 4: {
+             graph *gr = sg_active_graph(s);
+             REQUIRE(gr);
+             for (int i = 0; i < acount(gr->edges) && !to; i++) {
+@@ -3501,13 +3656,13 @@ static bool graph_pointer_frame(void *state)
+             REQUIRE(from && to);
+             return point_node(s, sg_node_by_id(s, from));
+         }
+-        case 4:
++        case 5:
+             REQUIRE(selected_only(e, from) && s->focus_area == s->graph.area);
+             return press_key(SDLK_RIGHT);
+-        case 5:
++        case 6:
+             REQUIRE(selected_only(e, to));
+             return press_chord(SDLK_F, primary_mod(s));
+-        case 7: REQUIRE(s->graph.find.open); return type_text("count");
++        case 8: REQUIRE(s->graph.find.open); return type_text("count");
+         case 9:
+             REQUIRE(
+                 !strcmp(s->graph.find.query, "count") && acount(s->graph.find.hits) > 1
+@@ -4175,6 +4330,9 @@ bool studio_acceptance_frame(void *state)
+         case GRAPH_VISIBILITY:
+             callback_ok = graph_visibility_frame(state);
+             break;
++        case CODE_WRAP_REVEAL:
++            callback_ok = code_wrap_reveal_frame(state);
++            break;
+         case GRAPH_KEYS: callback_ok = graph_keys_frame(state); break;
+         case GRAPH_POINTER: callback_ok = graph_pointer_frame(state); break;
+         case DEBUGGER_SOURCE_HISTORY:
+@@ -4284,6 +4442,26 @@ static bool write_graph_counter(const char *bytes)
+     return true;
+ }
+ 
++TEST_CASE(code_wrap_retargets_reveal)
++{
++    REQUIRE(unchanged_source());
++    REQUIRE(sizeof code_wrap_comment == 514);
++    int length = snprintf(code_wrap_source, sizeof code_wrap_source, "%s%s", code_wrap_comment, counter_bytes);
++    REQUIRE(length > 0 && (size_t)length + 1 == sizeof code_wrap_source);
++    REQUIRE(write_graph_counter(code_wrap_source));
++    char *args[] = { (char *)executable, "--headless",
++                     "--frames",         FRAMES_TEXT(CODE_WRAP_FRAMES),
++                     "--fixed-dt",       "0.016666666666666666",
++                     "--project-root",   (char *)project,
++                     "--open",           "Counter" };
++    int result = studio_acceptance_host_main(sizeof args / sizeof *args, args);
++    REQUIRE(write_graph_counter(counter_bytes));
++    REQUIRE(unchanged_source());
++    REQUIRE(result == 0 && callback_ok && frames == CODE_WRAP_FRAMES);
++    printf("\nStudio code wrap reveal accepted: frames=%d\n", frames);
++    return true;
++}
++
+ TEST_CASE(graph_visibility_and_document_pair)
+ {
+     REQUIRE(unchanged_source());
+@@ -4296,6 +4474,10 @@ TEST_CASE(graph_visibility_and_document_pair)
+         "    on Tick :: () {\n"
+         "        count = count + 1\n"
+         "    }\n"
++        /* Keep Begin offscreen to exercise the receiving code viewport. */
++        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
++        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
++        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+         "    on Begin :: () {\n"
+         "        count = 1\n"
+         "    }\n"
+@@ -4574,6 +4756,9 @@ TEST_CASE(debugger_source_history)
+ 
+ int main(int argc, char **argv)
+ {
++    if (argc == 2 && !strcmp(argv[1], "--sdk-values")) {
++        return sdk_values_main();
++    }
+     if (argc == 2 && !strcmp(argv[1], "--scene-read")) {
+         studio_scene_read_tests();
+         pu_print_stats();
+@@ -4600,6 +4785,7 @@ int main(int argc, char **argv)
+     bool kdl_keys = argc == 4 && !strcmp(argv[1], "--kdl-keys");
+     bool exporting = argc == 4 && !strcmp(argv[1], "--export-game");
+     bool visibility = argc == 4 && !strcmp(argv[1], "--graph-visibility");
++    bool wrap_reveal = argc == 4 && !strcmp(argv[1], "--code-wrap-reveal");
+     bool keys_mode = argc == 4 && !strcmp(argv[1], "--graph-keys");
+     bool graph_pointer_mode = argc == 4 && !strcmp(argv[1], "--graph-pointer");
+     bool asset_pointer_mode = argc == 4 && !strcmp(argv[1], "--asset-pointer");
+@@ -4630,13 +4816,14 @@ int main(int argc, char **argv)
+          !outliner_move_mode && !outliner_rows_mode && !physics && !assets &&
+          !viewport && !camera && !playing && !prompting && !followups &&
+          !glyphs && !idle && !graph_pointer_mode && !asset_pointer_mode &&
+-         !debugging && !gizmo && !colliders) ||
++         !debugging && !gizmo && !colliders && !wrap_reveal) ||
+         strcmp(argv[2], "--project-root")) {
+         fprintf(
+             stderr,
+             "Usage: studio-acceptance "
+             "--source-edit|--code-keys|--kdl-keys|--export-game|"
+-            "--graph-visibility|--graph-keys|--graph-pointer|--asset-pointer|--"
++            "--graph-visibility|--code-wrap-reveal|--graph-keys|--graph-"
++            "pointer|--asset-pointer|--"
+             "graph-labels|--unit-warnings|"
+             "--scene-hierarchy|--scene-move|--prototype-source|--prototype-"
+             "source-authority|--outliner-move|"
+@@ -4648,7 +4835,7 @@ int main(int argc, char **argv)
+             "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
+             "history "
+             "--project-root PATH | --scene-cursors | --scene-read | "
+-            "--project-open | "
++            "--project-open | --sdk-values | "
+             "--outliner-row-policies --source PATH\n"
+         );
+         return 2;
+@@ -4678,6 +4865,7 @@ int main(int argc, char **argv)
+          : kdl_keys                        ? KDL_KEYS
+          : exporting                       ? EXPORT_GAME
+          : visibility                      ? GRAPH_VISIBILITY
++         : wrap_reveal                     ? CODE_WRAP_REVEAL
+          : keys_mode                       ? GRAPH_KEYS
+          : debugging                       ? DEBUGGER_SOURCE_HISTORY
+          : graph_pointer_mode              ? GRAPH_POINTER
+@@ -4709,6 +4897,7 @@ int main(int argc, char **argv)
+         case GRAPH_VISIBILITY:
+             RUN_TEST_CASE(graph_visibility_and_document_pair);
+             break;
++        case CODE_WRAP_REVEAL: RUN_TEST_CASE(code_wrap_retargets_reveal); break;
+         case GRAPH_KEYS: RUN_TEST_CASE(graph_keys); break;
+         case GRAPH_POINTER: RUN_TEST_CASE(graph_pointer); break;
+         case DEBUGGER_SOURCE_HISTORY:
+diff --git a/tests/acceptance/outliner_row_policies.h b/tests/acceptance/outliner_row_policies.h
+index 71ca338..709efdb 100644
+--- a/tests/acceptance/outliner_row_policies.h
++++ b/tests/acceptance/outliner_row_policies.h
+@@ -9,6 +9,7 @@
+ #include "runtime/arrays.h"
+ #include "runtime/text_format.h"
+ #include "types/record.h"
++#include "types/text.h"
+ 
+ /* Renderer-free exact-source check. One source preparation and 41 direct
+  * helper invocations per backend: four depths, 19 icons, ten drop strings and
+@@ -239,10 +240,11 @@ static bool outliner_policy_text(
+         { .type = PIN_BOOL, .b = editable },
+     };
+     REQUIRE(outliner_policy_invoke(name, arguments, !strcmp(name, "Drop") ? 2 : 1, call, backend));
+-    REQUIRE(call->result.type == PIN_STR && call->result.str);
++    REQUIRE(call->result.type == PIN_STR);
+     /* Scalar literal returns borrow the module; publication into a row record
+      * owns its strings. Inspect these direct returns before module retirement. */
+-    REQUIRE(!strcmp(call->result.str, expected));
++    pin_string text = pin_text(call->result);
++    REQUIRE(text.length == strlen(expected) && !memcmp(text.bytes, expected, text.length));
+     REQUIRE(outliner_policy_unchanged(arguments[0], values, count));
+     return true;
+ }
+@@ -351,7 +353,7 @@ static bool outliner_policy_flags(outliner_policy_call *call, const bool expecte
+         const type_field *field = &value->record->type.fields[i];
+         REQUIRE(!strcmp(field->name, names[i]));
+         pin_value member;
+-        pin_read_field(value->ptr, field, &member);
++        REQUIRE(!pin_read_field(&call->storage, value->ptr, field, &member));
+         REQUIRE(member.type == PIN_BOOL && member.b == expected[i]);
+     }
+     return true;
+@@ -478,9 +480,12 @@ TEST_CASE(outliner_row_policy_contract)
+         REQUIRE(outliner_policy_flags(&outliner_policy.calls[2], retained_flags));
+         REQUIRE(arena_contains(
+             &outliner_policy.calls[1].storage,
+-            outliner_policy.calls[1].result.str
++            outliner_policy.calls[1].result.text
+         ));
+-        REQUIRE(!strcmp(outliner_policy.calls[1].result.str, "object behavior shape field"));
++        pin_string text = pin_text(outliner_policy.calls[1].result);
++        REQUIRE(arena_contains(&outliner_policy.calls[1].storage, text.bytes));
++        const char *expected = "object behavior shape field";
++        REQUIRE(text.length == strlen(expected) && !memcmp(text.bytes, expected, text.length));
+         printf(
+             "Outliner row policies accepted: backend=%s calls=41\n",
+             behavior_backend_name(backends[i])
+diff --git a/tests/acceptance/prototype_source.h b/tests/acceptance/prototype_source.h
+index 153ba45..5bdcd1c 100644
+--- a/tests/acceptance/prototype_source.h
++++ b/tests/acceptance/prototype_source.h
+@@ -6,7 +6,9 @@
+ static bool bridge_field(app_scene_authoring *scene, const char *name, const char *field, float expected)
+ {
+     pin_value value = { 0 };
+-    REQUIRE(!app_scene_authoring_read_prototype_field(scene, name, "Transform", field, &value));
++    REQUIRE(
++        !app_scene_authoring_read_prototype_field(NULL, scene, name, "Transform", field, &value)
++    );
+     REQUIRE(value.type == PIN_F32 && value.f == expected);
+     return true;
+ }
+@@ -273,10 +275,11 @@ static bool prototype_source_contract(studio *s)
+     }
+     REQUIRE(component);
+     int vector_field = -1;
++    arena storage = { 0 };
+     pin_value vector = { 0 };
+     const type_desc *vector_type = NULL;
+     for (int i = 0; i < visual->type->field_count && !vector_type; i++) {
+-        pin_read_field(component->data, &visual->type->fields[i], &vector);
++        REQUIRE(!pin_read_field(&storage, component->data, &visual->type->fields[i], &vector));
+         vector_type = properties_vector(&vector);
+         if (vector_type) {
+             vector_field = i;
+@@ -284,18 +287,19 @@ static bool prototype_source_contract(studio *s)
+     }
+     REQUIRE(vector_type && vector_type->field_count >= 2);
+     pin_value sibling = { 0 };
+-    pin_read_field(vector.ptr, &vector_type->fields[1], &sibling);
++    REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[1], &sibling));
+     const char *axis = vector_type->fields[0].name;
+     REQUIRE(bridge_property(s, visual, vector_field, names[1], axis, "6", true));
+     REQUIRE(bridge_property(s, visual, vector_field, names[1], axis, "8", false));
+     REQUIRE(!prototype_read_field(
++        &storage,
+         asset->prototype,
+         visual->name,
+         visual->type->fields[vector_field].name,
+         &vector
+     ));
+     pin_value after_sibling = { 0 };
+-    pin_read_field(vector.ptr, &vector_type->fields[1], &after_sibling);
++    REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[1], &after_sibling));
+     REQUIRE(pin_value_equal(&sibling, &after_sibling));
+     const ecs_component_desc *motion = component_descriptor(scene, "VisualMotion");
+     REQUIRE(motion);
+@@ -305,10 +309,11 @@ static bool prototype_source_contract(studio *s)
+     for (int i = 0; i < motion->type->field_count; i++) {
+         pin_value expected = { 0 }, actual = { 0 };
+         const char *field = motion->type->fields[i].name;
+-        REQUIRE(!prototype_read_field(native, motion->name, field, &expected));
+-        REQUIRE(!prototype_read_field(asset->prototype, motion->name, field, &actual));
++        REQUIRE(!prototype_read_field(&storage, native, motion->name, field, &expected));
++        REQUIRE(!prototype_read_field(&storage, asset->prototype, motion->name, field, &actual));
+         REQUIRE(pin_value_equal(&expected, &actual));
+     }
++    arena_free(&storage);
+     prototype_free(native);
+     REQUIRE(!prototype_undo(scene));
+     REQUIRE(!prototype_undo(scene));
+diff --git a/tests/acceptance/prototype_source_authority.h b/tests/acceptance/prototype_source_authority.h
+index ab50d71..720f256 100644
+--- a/tests/acceptance/prototype_source_authority.h
++++ b/tests/acceptance/prototype_source_authority.h
+@@ -38,7 +38,7 @@ static bool authority_model_x(authority_fixture *test, float expected)
+ {
+     pin_value value = { 0 };
+     scene_prototype_asset *asset = authority_asset(test);
+-    REQUIRE(asset && !prototype_read_field(asset->prototype, "Transform", "x", &value));
++    REQUIRE(asset && !prototype_read_field(NULL, asset->prototype, "Transform", "x", &value));
+     REQUIRE(value.type == PIN_F32 && value.f == expected);
+     return true;
+ }
+@@ -306,7 +306,7 @@ static bool authority_entry_probes(authority_fixture *test)
+     authority_code_paste(test, AUTHORITY_SOURCE(91, 2));
+     authority_code_draw(test);
+     pin_value value = { 0 };
+-    bool model = !prototype_read_field(authority_asset(test)->prototype, "Transform", "x", &value) &&
++    bool model = !prototype_read_field(NULL, authority_asset(test)->prototype, "Transform", "x", &value) &&
+                  value.type == PIN_F32 && value.f == 1;
+     test->code_authority = model &&
+                            !strcmp(
+@@ -327,7 +327,7 @@ static bool authority_entry_probes(authority_fixture *test)
+     REQUIRE(scalar >= 0 && authority_start(test, "editor"));
+     step = asset_code_step(authority_asset(test)->source);
+     REQUIRE(bridge_property(test->s, transform, scalar, "AuthoritySource", "", "92", false));
+-    model = !prototype_read_field(authority_asset(test)->prototype, "Transform", "x", &value) &&
++    model = !prototype_read_field(NULL, authority_asset(test)->prototype, "Transform", "x", &value) &&
+             value.type == PIN_F32 && value.f == 1;
+     test->property_authority = model &&
+                                !strcmp(
+@@ -411,7 +411,7 @@ static bool authority_pending_and_history(authority_fixture *test)
+     REQUIRE(bridge_field(scene, "AuthoritySource", "x", 2));
+     const prototype *preview = scene_source_input_preview(scene, authority_asset(test));
+     pin_value preview_x = { 0 };
+-    REQUIRE(preview && !prototype_read_field(preview, "Transform", "x", &preview_x));
++    REQUIRE(preview && !prototype_read_field(NULL, preview, "Transform", "x", &preview_x));
+     REQUIRE(preview_x.type == PIN_F32 && preview_x.f == 4);
+     REQUIRE(scene_source_input_save(scene, authority_asset(test)) == APP_PROTOTYPE_EDIT_PENDING);
+     REQUIRE(!studio_code_history(test->s, false, true));
+@@ -531,7 +531,8 @@ static bool authority_conflicts(authority_fixture *test)
+         REQUIRE(asset_code_error(authority_asset(test)->source)[0]);
+         pin_value rejected = { 0 };
+         REQUIRE(
+-            app_scene_authoring_read_prototype_field(scene, "AuthoritySource", "Transform", "x", &rejected) < 0
++            app_scene_authoring_read_prototype_field(NULL, scene, "AuthoritySource", "Transform", "x", &rejected) <
++            0
+         );
+         REQUIRE(authority_model_x(test, 10));
+         REQUIRE(
+@@ -563,10 +564,12 @@ static bool authority_properties(authority_fixture *test)
+             scalar = i;
+         }
+     }
++    arena storage = { 0 };
+     pin_value vector = { 0 };
+     const type_desc *vector_type = NULL;
+     for (int i = 0; i < visual->type->field_count && !vector_type; i++) {
+         REQUIRE(!prototype_read_field(
++            &storage,
+             authority_asset(test)->prototype,
+             visual->name,
+             visual->type->fields[i].name,
+@@ -581,8 +584,8 @@ static bool authority_properties(authority_fixture *test)
+     const char *axis0 = vector_type->fields[0].name,
+                *axis1 = vector_type->fields[1].name;
+     pin_value before0 = { 0 }, before1 = { 0 };
+-    pin_read_field(vector.ptr, &vector_type->fields[0], &before0);
+-    pin_read_field(vector.ptr, &vector_type->fields[1], &before1);
++    REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[0], &before0));
++    REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[1], &before1));
+     REQUIRE(before0.type == PIN_F32 && before1.type == PIN_F32);
+     REQUIRE(bridge_property(test->s, transform, scalar, "AuthoritySource", "", "11", true));
+     REQUIRE(bridge_property(test->s, transform, scalar, "AuthoritySource", "", "12", false));
+@@ -603,34 +606,37 @@ static bool authority_properties(authority_fixture *test)
+     );
+     test->source_guard &= !strcmp(asset_code_text(authority_asset(test)->source), before);
+     if (!test->source_guard) {
++        arena_free(&storage);
+         return false;
+     }
+     REQUIRE(bridge_field(scene, "AuthoritySource", "x", 10));
+     pin_value first = { 0 }, second = { 0 };
+     REQUIRE(!prototype_read_field(
++        &storage,
+         authority_asset(test)->prototype,
+         visual->name,
+         visual->type->fields[vector_field].name,
+         &vector
+     ));
+-    pin_read_field(vector.ptr, &vector_type->fields[0], &first);
+-    pin_read_field(vector.ptr, &vector_type->fields[1], &second);
++    REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[0], &first));
++    REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[1], &second));
+     REQUIRE(
+         first.type == PIN_F32 && first.f == before0.f &&
+         second.type == PIN_F32 && second.f == before1.f
+     );
+     const prototype *preview = scene_source_input_preview(scene, authority_asset(test));
+     pin_value preview_x = { 0 };
+-    REQUIRE(preview && !prototype_read_field(preview, "Transform", "x", &preview_x));
++    REQUIRE(preview && !prototype_read_field(&storage, preview, "Transform", "x", &preview_x));
+     REQUIRE(preview_x.type == PIN_F32 && preview_x.f == 12);
+     REQUIRE(!prototype_read_field(
++        &storage,
+         preview,
+         visual->name,
+         visual->type->fields[vector_field].name,
+         &vector
+     ));
+-    pin_read_field(vector.ptr, &vector_type->fields[0], &first);
+-    pin_read_field(vector.ptr, &vector_type->fields[1], &second);
++    REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[0], &first));
++    REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[1], &second));
+     REQUIRE(first.type == PIN_F32 && first.f == 8 && second.type == PIN_F32 && second.f == 7);
+     REQUIRE(authority_echo(test));
+     REQUIRE(authority_echo(test));
+@@ -646,14 +652,16 @@ static bool authority_properties(authority_fixture *test)
+     REQUIRE(authority_text(test, both_axes, NULL));
+     REQUIRE(bridge_field(scene, "AuthoritySource", "x", 12));
+     REQUIRE(!prototype_read_field(
++        &storage,
+         authority_asset(test)->prototype,
+         visual->name,
+         visual->type->fields[vector_field].name,
+         &vector
+     ));
+-    pin_read_field(vector.ptr, &vector_type->fields[0], &first);
+-    pin_read_field(vector.ptr, &vector_type->fields[1], &second);
++    REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[0], &first));
++    REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[1], &second));
+     REQUIRE(first.type == PIN_F32 && first.f == 8 && second.type == PIN_F32 && second.f == 7);
++    arena_free(&storage);
+     REQUIRE(authority_history(test, false, axis0_text));
+     REQUIRE(authority_history(test, false, scalar_text));
+     REQUIRE(authority_history(test, false, before));
+diff --git a/tests/acceptance/scene_move.h b/tests/acceptance/scene_move.h
+index f93a46b..742d514 100644
+--- a/tests/acceptance/scene_move.h
++++ b/tests/acceptance/scene_move.h
+@@ -151,7 +151,8 @@ static bool source_history_reopens(
+                              ? prototype_load_value(av_doc_root(document), registry, error, sizeof error)
+                              : NULL;
+         pin_value field;
+-        valid = value && !prototype_read_field(value, "Transform", "x", &field) &&
++        valid = value &&
++                !prototype_read_field(NULL, value, "Transform", "x", &field) &&
+                 field.type == PIN_F32 && field.f == (changed ? 2 : 1);
+         prototype_free(value);
+         av_doc_free(document);
+@@ -596,21 +597,21 @@ static bool static_prototype_refresh(void)
+     int passive_tabs = acount(scene->tabs), passive_active = scene->active_tab;
+     pin_value value;
+     REQUIRE(
+-        !app_scene_authoring_read_prototype_field(scene, names[2], "Transform", "x", &value)
++        !app_scene_authoring_read_prototype_field(NULL, scene, names[2], "Transform", "x", &value)
+     );
+     REQUIRE(value.type == PIN_F32 && value.f == 1);
+     REQUIRE(!write_file_atomic(paths[0], "AcceptanceBase :: prototype { Transform {x:2, y:0} }"));
+     REQUIRE(app_scene_authoring_reload_path(scene, paths[0]) == APP_DISK_RELOADED);
+     for (int i = 0; i < 3; i++) {
+         REQUIRE(
+-            !app_scene_authoring_read_prototype_field(scene, names[i], "Transform", "x", &value)
++            !app_scene_authoring_read_prototype_field(NULL, scene, names[i], "Transform", "x", &value)
+         );
+         REQUIRE(value.type == PIN_F32 && value.f == 2);
+     }
+     scene_prototype_asset *nest = find_prototype(scene, names[3]);
+     REQUIRE(nest && acount(nest->prototype->child_prototypes) == 1);
+     REQUIRE(
+-        !prototype_read_field(nest->prototype->child_prototypes[0], "Transform", "x", &value)
++        !prototype_read_field(NULL, nest->prototype->child_prototypes[0], "Transform", "x", &value)
+     );
+     REQUIRE(value.type == PIN_F32 && value.f == 2);
+     REQUIRE(acount(scene->tabs) == passive_tabs && scene->active_tab == passive_active);
+@@ -626,7 +627,7 @@ static bool static_prototype_refresh(void)
+     float refreshed[4] = { 0 };
+     bool propagated = true, reloaded = false;
+     for (int i = 0; i < 3; i++) {
+-        bool read = !app_scene_authoring_read_prototype_field(scene, names[i], "Transform", "x", &value) &&
++        bool read = !app_scene_authoring_read_prototype_field(NULL, scene, names[i], "Transform", "x", &value) &&
+                     value.type == PIN_F32;
+         if (read) {
+             refreshed[i] = value.f;
+@@ -635,7 +636,7 @@ static bool static_prototype_refresh(void)
+     }
+     nest = find_prototype(scene, names[3]);
+     bool child = nest && acount(nest->prototype->child_prototypes) == 1 &&
+-                 !prototype_read_field(nest->prototype->child_prototypes[0], "Transform", "x", &value) &&
++                 !prototype_read_field(NULL, nest->prototype->child_prototypes[0], "Transform", "x", &value) &&
+                  value.type == PIN_F32;
+     if (child) {
+         refreshed[3] = value.f;
+@@ -681,11 +682,11 @@ static bool static_prototype_refresh(void)
+     REQUIRE(!write_file_atomic(paths[0], "AcceptanceBase :: prototype { Transform {x:3, y:0} }"));
+     REQUIRE(app_scene_authoring_reload_path(scene, paths[0]) == APP_DISK_UNSAVED);
+     REQUIRE(
+-        !app_scene_authoring_read_prototype_field(scene, names[1], "Transform", "x", &value)
++        !app_scene_authoring_read_prototype_field(NULL, scene, names[1], "Transform", "x", &value)
+     );
+     REQUIRE(value.f == 9 && middle->dirty);
+     REQUIRE(
+-        !app_scene_authoring_read_prototype_field(scene, names[2], "Transform", "x", &value)
++        !app_scene_authoring_read_prototype_field(NULL, scene, names[2], "Transform", "x", &value)
+     );
+     REQUIRE(value.f == 3);
+     REQUIRE(strstr(app_scene_authoring_message(scene), "unsaved edits"));
+diff --git a/tests/acceptance/sdk_values.h b/tests/acceptance/sdk_values.h
+new file mode 100644
+index 0000000..2532f4e
+--- /dev/null
++++ b/tests/acceptance/sdk_values.h
+@@ -0,0 +1,383 @@
++#include "authoring/application_catalog.h"
++#include "authoring/language_catalog.h"
++#include "editor/collab/actions_internal.h"
++#include "runtime/declared_components.h"
++#include "types/text.h"
++
++/* Renderer-free ownership and checkpoint checks for the installed SDK's
++ * length-carrying strings. No project loading or compiler preparation. */
++static struct
++{
++    arena input, reads;
++    declared_components *components;
++    ecs_world *world;
++    scene_history *history, *restored;
++    native_capabilities *native[2];
++    authoring_language_catalog *language[2];
++    pin_value copy;
++    char *checkpoint;
++    editor *graph_editor;
++    char *action;
++} sdk_values;
++
++static void sdk_values_cleanup()
++{
++    for (int i = 0; i < 2; i++) {
++        authoring_language_catalog_free(sdk_values.language[i]);
++        native_capabilities_free(sdk_values.native[i]);
++    }
++    scene_property_value_free(&sdk_values.copy);
++    editor_free(sdk_values.graph_editor);
++    free(sdk_values.action);
++    scene_history_free(sdk_values.history);
++    scene_history_free(sdk_values.restored);
++    ecs_world_free(sdk_values.world);
++    declared_components_free(sdk_values.components);
++    arena_free(&sdk_values.input);
++    arena_free(&sdk_values.reads);
++    free(sdk_values.checkpoint);
++    memset(&sdk_values, 0, sizeof sdk_values);
++}
++
++static bool sdk_values_equal(pin_value value, const char *bytes, size_t length)
++{
++    REQUIRE(value.type == PIN_STR);
++    pin_string text = pin_text(value);
++    REQUIRE(text.length == length && !memcmp(text.bytes, bytes, length));
++    return true;
++}
++
++TEST_CASE(sdk_property_copy_keeps_string_bytes)
++{
++    static const char bytes[] = { 'a', 0, (char)0xff, 'b' };
++    pin_value source;
++    REQUIRE(!pin_value_text(&sdk_values.input, &source, bytes, sizeof bytes));
++    source.type_name = "SdkText";
++    REQUIRE(scene_property_value_copy(&sdk_values.copy, source));
++    REQUIRE(sdk_values.copy.text != source.text);
++    REQUIRE(sdk_values.copy.type_name != source.type_name);
++    arena_free(&sdk_values.input);
++    REQUIRE(sdk_values_equal(sdk_values.copy, bytes, sizeof bytes));
++    REQUIRE(!strcmp(sdk_values.copy.type_name, "SdkText"));
++    return true;
++}
++
++static bool sdk_history_round_trip(const char *bytes, size_t length)
++{
++    const declared_field field = { .name = "text", .type = "string" };
++    const declared_component component = { .name = "SdkText",
++                                           .fields = &field,
++                                           .field_count = 1 };
++    char error[256];
++    sdk_values.components = declared_components_new(&component, 1, error, sizeof error);
++    REQUIRE(sdk_values.components);
++    ecs_component_catalog catalog = declared_components_ecs(sdk_values.components);
++    REQUIRE(catalog.component_count == 1);
++    const ecs_component_desc *desc = catalog.components[0];
++    sdk_values.world = ecs_world_new();
++    REQUIRE(ecs_world_register_component(sdk_values.world, desc, NULL) == ECS_OK);
++    ecs_entity entity = ecs_world_create_entity(sdk_values.world);
++    REQUIRE(ecs_world_record_add(sdk_values.world, entity, desc->id, NULL, 0) == ECS_OK);
++    REQUIRE(ecs_world_apply_commands(sdk_values.world) == ECS_OK);
++    pin_value before, after;
++    REQUIRE(!pin_value_text(&sdk_values.input, &before, "before", 6));
++    REQUIRE(!pin_value_text(&sdk_values.input, &after, bytes, length));
++    REQUIRE(ecs_component_write_field(sdk_values.world, entity, desc->id, 0, after) == ECS_OK);
++    sdk_values.history = scene_history_new();
++    REQUIRE(scene_history_push_field(sdk_values.history, entity, desc->id, 0, before, after));
++    sdk_values.checkpoint = scene_history_checkpoint(sdk_values.history);
++    REQUIRE(sdk_values.checkpoint);
++    scene_history_free(sdk_values.history);
++    sdk_values.history = NULL;
++    arena_free(&sdk_values.input);
++    sdk_values.restored = scene_history_new();
++    uint64_t identity = ecs_entity_to_u64(entity);
++    REQUIRE(
++        scene_history_restore_checkpoint(sdk_values.restored, sdk_values.checkpoint, &identity, &identity, 1)
++    );
++    REQUIRE(scene_history_undo(sdk_values.restored, sdk_values.world, NULL) == 1);
++    pin_value actual;
++    REQUIRE(
++        ecs_component_read_field(&sdk_values.reads, sdk_values.world, entity, desc->id, 0, &actual) == ECS_OK
++    );
++    REQUIRE(sdk_values_equal(actual, "before", 6));
++    REQUIRE(scene_history_redo(sdk_values.restored, sdk_values.world, NULL) == 1);
++    REQUIRE(
++        ecs_component_read_field(&sdk_values.reads, sdk_values.world, entity, desc->id, 0, &actual) == ECS_OK
++    );
++    REQUIRE(sdk_values_equal(actual, bytes, length));
++    return true;
++}
++
++TEST_CASE(sdk_history_keeps_utf8_text)
++{
++    static const char bytes[] = "Cr\xc3\xaapes";
++    REQUIRE(sdk_history_round_trip(bytes, sizeof bytes - 1));
++    return true;
++}
++
++TEST_CASE(sdk_history_keeps_non_utf8_bytes)
++{
++    static const char bytes[] = { 'a', (char)0xff, 'b' };
++    REQUIRE(sdk_history_round_trip(bytes, sizeof bytes));
++    return true;
++}
++
++TEST_CASE(sdk_history_keeps_descriptor_nul_bytes)
++{
++    static const char bytes[] = { 'a', 0, (char)0xff, 'b' };
++    static const type_field field = { .name = "text",
++                                      .type = PIN_STR,
++                                      .size = sizeof(const pin_string *),
++                                      .text_descriptor = true };
++    static const type_desc type = { .name = "SdkDescriptor",
++                                    .size = sizeof(const pin_string *),
++                                    .fields = &field,
++                                    .field_count = 1 };
++    ecs_component_desc desc = { .id = UINT64_C(0x9e7a8c83212e1400),
++                                .key = "SdkDescriptor",
++                                .name = "SdkDescriptor",
++                                .type = &type,
++                                .element_size = type.size,
++                                .layout_hash = type_layout_hash(&type),
++                                .index = ECS_INDEX_DENSE };
++    sdk_values.world = ecs_world_new();
++    REQUIRE(ecs_world_register_component(sdk_values.world, &desc, NULL) == ECS_OK);
++    ecs_entity entity = ecs_world_create_entity(sdk_values.world);
++    REQUIRE(ecs_world_record_add(sdk_values.world, entity, desc.id, NULL, 0) == ECS_OK);
++    REQUIRE(ecs_world_apply_commands(sdk_values.world) == ECS_OK);
++    pin_value before, after;
++    REQUIRE(!pin_value_text(&sdk_values.input, &before, "before", 6));
++    REQUIRE(!pin_value_text(&sdk_values.input, &after, bytes, sizeof bytes));
++    REQUIRE(ecs_component_write_field(sdk_values.world, entity, desc.id, 0, after) == ECS_OK);
++    sdk_values.history = scene_history_new();
++    REQUIRE(scene_history_push_field(sdk_values.history, entity, desc.id, 0, before, after));
++    arena_free(&sdk_values.input);
++    REQUIRE(scene_history_undo(sdk_values.history, sdk_values.world, NULL) == 1);
++    pin_value actual;
++    REQUIRE(
++        ecs_component_read_field(&sdk_values.reads, sdk_values.world, entity, desc.id, 0, &actual) == ECS_OK
++    );
++    REQUIRE(sdk_values_equal(actual, "before", 6));
++    REQUIRE(scene_history_redo(sdk_values.history, sdk_values.world, NULL) == 1);
++    REQUIRE(
++        ecs_component_read_field(&sdk_values.reads, sdk_values.world, entity, desc.id, 0, &actual) == ECS_OK
++    );
++    REQUIRE(sdk_values_equal(actual, bytes, sizeof bytes));
++    return true;
++}
++
++static bool sdk_native_history(ecs_entity *entity, bool invalid_after)
++{
++    sdk_values.world = ecs_world_new();
++    REQUIRE(ecs_world_register_component(sdk_values.world, &COMPONENT_Transform, NULL) == ECS_OK);
++    REQUIRE(
++        ecs_world_register_component(sdk_values.world, &COMPONENT_GlobalBinding, NULL) == ECS_OK
++    );
++    *entity = ecs_world_create_entity(sdk_values.world);
++    Transform transform = { 20, 30 };
++    GlobalBinding binding = { "after" };
++    REQUIRE(
++        ecs_world_record_add(sdk_values.world, *entity, COMPONENT_Transform.id, &transform, sizeof transform) ==
++        ECS_OK
++    );
++    REQUIRE(
++        ecs_world_record_add(sdk_values.world, *entity, COMPONENT_GlobalBinding.id, &binding, sizeof binding) ==
++        ECS_OK
++    );
++    REQUIRE(ecs_world_apply_commands(sdk_values.world) == ECS_OK);
++    REQUIRE(!COMPONENT_GlobalBinding.type->fields[0].text_descriptor);
++    pin_value bad, valid;
++    static const char bytes[] = { 'A', 0, 'B' };
++    REQUIRE(!pin_value_text(&sdk_values.input, &bad, bytes, sizeof bytes));
++    REQUIRE(!pin_value_text(&sdk_values.input, &valid, "after", 5));
++    scene_field_edit fields[] = {
++        { COMPONENT_Transform.id, 0, { .type = PIN_F32, .f = 10 }, { .type = PIN_F32, .f = 20 } },
++        { COMPONENT_GlobalBinding.id, 0, invalid_after ? valid : bad, invalid_after ? bad : valid },
++    };
++    sdk_values.history = scene_history_new();
++    REQUIRE(scene_history_push_fields(sdk_values.history, *entity, fields, 2));
++    return true;
++}
++
++static bool sdk_native_checkpoint_rejects_nul(bool invalid_after)
++{
++    ecs_entity entity;
++    REQUIRE(sdk_native_history(&entity, invalid_after));
++    sdk_values.checkpoint = scene_history_checkpoint(sdk_values.history);
++    REQUIRE(sdk_values.checkpoint);
++    sdk_values.restored = scene_history_new();
++    REQUIRE(scene_history_push_field(
++        sdk_values.restored,
++        entity,
++        COMPONENT_Transform.id,
++        0,
++        (pin_value){ .type = PIN_F32, .f = 15 },
++        (pin_value){ .type = PIN_F32, .f = 20 }
++    ));
++    uint64_t identity = ecs_entity_to_u64(entity);
++    REQUIRE(
++        !scene_history_restore_checkpoint(sdk_values.restored, sdk_values.checkpoint, &identity, &identity, 1)
++    );
++    REQUIRE(scene_history_can_undo(sdk_values.restored));
++    REQUIRE(!scene_history_can_redo(sdk_values.restored));
++    REQUIRE(Transform_get_const(sdk_values.world, entity)->x == 20);
++    REQUIRE(!strcmp(GlobalBinding_get_const(sdk_values.world, entity)->name, "after"));
++    REQUIRE(scene_history_undo(sdk_values.restored, sdk_values.world, NULL) == 1);
++    REQUIRE(Transform_get_const(sdk_values.world, entity)->x == 15);
++    return true;
++}
++
++TEST_CASE(sdk_checkpoint_rejects_native_nul_before)
++{
++    REQUIRE(sdk_native_checkpoint_rejects_nul(false));
++    return true;
++}
++
++TEST_CASE(sdk_checkpoint_rejects_native_nul_after)
++{
++    REQUIRE(sdk_native_checkpoint_rejects_nul(true));
++    return true;
++}
++
++TEST_CASE(sdk_history_preflights_the_complete_field_batch)
++{
++    ecs_entity entity;
++    REQUIRE(sdk_native_history(&entity, false));
++    ecs_entity output = { 0 };
++    int result = scene_history_undo(sdk_values.history, sdk_values.world, &output);
++    REQUIRE(Transform_get_const(sdk_values.world, entity)->x == 20);
++    REQUIRE(result == -1);
++    REQUIRE(!output.slot);
++    REQUIRE(!strcmp(GlobalBinding_get_const(sdk_values.world, entity)->name, "after"));
++    REQUIRE(scene_history_can_undo(sdk_values.history));
++    REQUIRE(!scene_history_can_redo(sdk_values.history));
++    return true;
++}
++
++static bool sdk_graph_string_round_trip(const char *bytes, size_t length)
++{
++    behavior_asset *asset = behavior_asset_new("SdkValues");
++    sdk_values.graph_editor = editor_new(asset);
++    node *target = graph_add_node(asset->graph, &NODE_PrintString);
++    REQUIRE(target && target->input_count == 2 && target->input_pins[1].type == PIN_STR);
++    pin_value value;
++    REQUIRE(!pin_value_text(&sdk_values.input, &value, bytes, length));
++    sdk_values.action = graph_collab_action_for_command(
++        sdk_values.graph_editor,
++        (editor_command){ .kind = EDITOR_COMMAND_SET_PIN_DEFAULT,
++                          .data.set_pin_default = { target->id, 0, 1, &value, false } }
++    );
++    REQUIRE(sdk_values.action);
++    arena_free(&sdk_values.input);
++    char error[256];
++    REQUIRE(
++        graph_collab_apply_action(sdk_values.graph_editor, sdk_values.action, error, sizeof error)
++    );
++    free(sdk_values.action);
++    sdk_values.action = NULL;
++    REQUIRE(sdk_values_equal(target->input_pins[1].default_value, bytes, length));
++    REQUIRE(!strcmp(
++        target->input_pins[1].default_value.type_name,
++        target->input_pins[1].type_name
++    ));
++    return true;
++}
++
++TEST_CASE(sdk_graph_action_keeps_utf8_text)
++{
++    static const char bytes[] = "Cr\xc3\xaapes";
++    REQUIRE(sdk_graph_string_round_trip(bytes, sizeof bytes - 1));
++    return true;
++}
++
++TEST_CASE(sdk_graph_action_keeps_nul_bytes)
++{
++    static const char bytes[] = { 'A', 0, 'B' };
++    REQUIRE(sdk_graph_string_round_trip(bytes, sizeof bytes));
++    return true;
++}
++
++TEST_CASE(sdk_graph_action_keeps_non_utf8_bytes)
++{
++    static const char bytes[] = { 'A', (char)0xff, 'B' };
++    REQUIRE(sdk_graph_string_round_trip(bytes, sizeof bytes));
++    return true;
++}
++
++TEST_CASE(sdk_graph_action_refuses_codec_rejection)
++{
++    behavior_asset *asset = behavior_asset_new("SdkValues");
++    sdk_values.graph_editor = editor_new(asset);
++    node *target = graph_add_node(asset->graph, &NODE_PrintString);
++    REQUIRE(target && target->input_count == 2 && target->input_pins[1].type == PIN_STR);
++    /* The shared document codec refuses a byte envelope beyond its value
++     * budget. That must refuse the action, rather than omit its payload. */
++    const size_t length = 1000000;
++    char *bytes = arena_alloc(&sdk_values.input, length);
++    memset(bytes, 0xff, length);
++    pin_value value;
++    REQUIRE(!pin_value_text(&sdk_values.input, &value, bytes, length));
++    sdk_values.action = graph_collab_action_for_command(
++        sdk_values.graph_editor,
++        (editor_command){ .kind = EDITOR_COMMAND_SET_PIN_DEFAULT,
++                          .data.set_pin_default = { target->id, 0, 1, &value, false } }
++    );
++    REQUIRE(!sdk_values.action);
++    REQUIRE(pin_text(target->input_pins[1].default_value).length == 0);
++    return true;
++}
++
++TEST_CASE(sdk_application_catalog_has_optional_studio_actions)
++{
++    char error[256];
++    for (int studio = 0; studio < 2; studio++) {
++        sdk_values.native[studio] = authoring_application_catalog_new(studio != 0, error, sizeof error);
++        REQUIRE(sdk_values.native[studio]);
++        authoring_language_catalog_input input = { .native = sdk_values.native[studio] };
++        sdk_values.language[studio] = authoring_language_catalog_new(&input, error, sizeof error);
++        REQUIRE(sdk_values.language[studio]);
++        const script_catalog *catalog = authoring_language_catalog_view(
++            sdk_values.language[studio]
++        );
++        int found = script_catalog_find_capability(catalog, "prototype_choices", SCRIPT_CAPABILITY_ACTION);
++        REQUIRE((found >= 0) == (studio != 0));
++        if (found >= 0) {
++            const script_catalog_capability *capability = &catalog->capabilities[found];
++            const native_capability_binding *binding = native_capabilities_find(
++                sdk_values.native[studio],
++                capability->id,
++                script_catalog_capability_abi(catalog, capability)
++            );
++            REQUIRE(binding && binding->call);
++        }
++        printf(
++            "SDK application catalog: studio=%d capabilities=%d "
++            "prototype_choices=%d\n",
++            studio,
++            catalog->capability_count,
++            found >= 0
++        );
++    }
++    return true;
++}
++
++static int sdk_values_main()
++{
++    pu_setup(NULL, sdk_values_cleanup);
++    RUN_TEST_CASE(sdk_property_copy_keeps_string_bytes);
++    RUN_TEST_CASE(sdk_history_keeps_utf8_text);
++    RUN_TEST_CASE(sdk_history_keeps_non_utf8_bytes);
++    RUN_TEST_CASE(sdk_history_keeps_descriptor_nul_bytes);
++    RUN_TEST_CASE(sdk_checkpoint_rejects_native_nul_before);
++    RUN_TEST_CASE(sdk_checkpoint_rejects_native_nul_after);
++    RUN_TEST_CASE(sdk_history_preflights_the_complete_field_batch);
++    RUN_TEST_CASE(sdk_graph_action_keeps_utf8_text);
++    RUN_TEST_CASE(sdk_graph_action_keeps_nul_bytes);
++    RUN_TEST_CASE(sdk_graph_action_keeps_non_utf8_bytes);
++    RUN_TEST_CASE(sdk_graph_action_refuses_codec_rejection);
++    RUN_TEST_CASE(sdk_application_catalog_has_optional_studio_actions);
++    pu_clear_setup();
++    pu_print_stats();
++    return pu_test_failed() ? 1 : 0;
++}

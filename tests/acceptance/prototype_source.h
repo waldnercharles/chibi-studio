@@ -6,7 +6,9 @@
 static bool bridge_field(app_scene_authoring *scene, const char *name, const char *field, float expected)
 {
     pin_value value = { 0 };
-    REQUIRE(!app_scene_authoring_read_prototype_field(scene, name, "Transform", field, &value));
+    REQUIRE(
+        !app_scene_authoring_read_prototype_field(NULL, scene, name, "Transform", field, &value)
+    );
     REQUIRE(value.type == PIN_F32 && value.f == expected);
     return true;
 }
@@ -273,10 +275,11 @@ static bool prototype_source_contract(studio *s)
     }
     REQUIRE(component);
     int vector_field = -1;
+    arena storage = { 0 };
     pin_value vector = { 0 };
     const type_desc *vector_type = NULL;
     for (int i = 0; i < visual->type->field_count && !vector_type; i++) {
-        pin_read_field(component->data, &visual->type->fields[i], &vector);
+        REQUIRE(!pin_read_field(&storage, component->data, &visual->type->fields[i], &vector));
         vector_type = properties_vector(&vector);
         if (vector_type) {
             vector_field = i;
@@ -284,18 +287,19 @@ static bool prototype_source_contract(studio *s)
     }
     REQUIRE(vector_type && vector_type->field_count >= 2);
     pin_value sibling = { 0 };
-    pin_read_field(vector.ptr, &vector_type->fields[1], &sibling);
+    REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[1], &sibling));
     const char *axis = vector_type->fields[0].name;
     REQUIRE(bridge_property(s, visual, vector_field, names[1], axis, "6", true));
     REQUIRE(bridge_property(s, visual, vector_field, names[1], axis, "8", false));
     REQUIRE(!prototype_read_field(
+        &storage,
         asset->prototype,
         visual->name,
         visual->type->fields[vector_field].name,
         &vector
     ));
     pin_value after_sibling = { 0 };
-    pin_read_field(vector.ptr, &vector_type->fields[1], &after_sibling);
+    REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[1], &after_sibling));
     REQUIRE(pin_value_equal(&sibling, &after_sibling));
     const ecs_component_desc *motion = component_descriptor(scene, "VisualMotion");
     REQUIRE(motion);
@@ -305,10 +309,11 @@ static bool prototype_source_contract(studio *s)
     for (int i = 0; i < motion->type->field_count; i++) {
         pin_value expected = { 0 }, actual = { 0 };
         const char *field = motion->type->fields[i].name;
-        REQUIRE(!prototype_read_field(native, motion->name, field, &expected));
-        REQUIRE(!prototype_read_field(asset->prototype, motion->name, field, &actual));
+        REQUIRE(!prototype_read_field(&storage, native, motion->name, field, &expected));
+        REQUIRE(!prototype_read_field(&storage, asset->prototype, motion->name, field, &actual));
         REQUIRE(pin_value_equal(&expected, &actual));
     }
+    arena_free(&storage);
     prototype_free(native);
     REQUIRE(!prototype_undo(scene));
     REQUIRE(!prototype_undo(scene));

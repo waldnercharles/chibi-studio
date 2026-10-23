@@ -1,0 +1,79 @@
+{
+  "state": "pending final dependency, no build launched",
+  "ordered_steps": [
+    {
+      "step": 1,
+      "owner": "typed-assets/compiler/build coordination",
+      "requirement": "Provide final clean ABI20 engine candidate including engine main1bc97b7305ee91102d3ee035e4852aa5341df31c/PR660 and named-result checkpoint, plus its compatible Studio candidate.",
+      "exact_engine_sha": null,
+      "exact_typed_studio_sha": null
+    },
+    {
+      "step": 2,
+      "owner": "PR77 recovery",
+      "requirement": "Integrate the final paired Studio checkpoint into staged local recovery. Re-resolve only conflicts preserving typed edits, named syntax and source ownership. Regenerate affected EXTRACTION consumer hashes and pin exact dependencies only if current CI needs it."
+    },
+    {
+      "step": 3,
+      "owner": "independent reviewer/coordinator",
+      "requirement": "Review complete combined source and acceptance workload, final fixture/preflight/resource contract, then freeze exact clean candidate. Current b93437b tree is only a preparatory reviewed-source checkpoint."
+    },
+    {
+      "step": 4,
+      "owner": "SDK packaging owner",
+      "requirement": "Produce native and serial web SDK packages from that exact engine tree; record package build IDs, compiler/runtime/ABI identity, manifests and package hashes; do not rebuild unrelated shared SDKs in primary checkouts."
+    },
+    {
+      "step": 5,
+      "owner": "PR77 recovery after root schedules GPU slot",
+      "requirement": "Build Studio and existing acceptance target in scratch against the exact installed native SDK; create fresh isolated fixture/preferences/cache for each selector; restore build UI resource source before each run; capture complete source/resource/compile-input/binary provenance."
+    },
+    {
+      "step": 6,
+      "owner": "PR77 recovery after root schedules GPU slot",
+      "requirement": "Run startup plus source-edit, graph-visibility, graph-pointer and code-wrap-reveal using supported supervisor/preflight routes verified on the final paired checkpoint. The old KDL fixture contract was observed on main only. Typed engine commit a504d8e59 already migrates tools/agent.py to project.chibi, Start.chibi data.Object scene version UInt1 and Counter.chibi, and external_project recognizes Build data. Verify the final fixture membership, bytes and preflight together; this migration is implemented in the typed candidate. Wrap remains a direct Studio acceptance selector until an owner adds a dispatcher route."
+    },
+    {
+      "step": 7,
+      "owner": "PR77 recovery after root schedules GPU slot",
+      "requirement": "Build web Studio from exact same final combined source with matching serial web SDK, preload final tests/acceptance/project as a local sample, serve at127.0.0.1 using tools/serve_web.py on an unused port, and perform browser matrix through trusted real input. No upload/deploy is needed."
+    },
+    {
+      "step": 8,
+      "owner": "coordinator",
+      "requirement": "Review exact evidence and remaining required checks, recheck browser hold, approvals/protections/current remote heads, then decide eligibility. An authorization to coordinate never clears the earlier denied upload action."
+    }
+  ],
+  "scratch_paths": {
+    "studio_source": "/tmp/chibi-integration-20261022/studio77/chibi-studio",
+    "native_build": "/tmp/chibi-integration-20261022/studio77/build-native",
+    "web_build": "/tmp/chibi-integration-20261022/studio77/build-web",
+    "web_output": "/tmp/chibi-integration-20261022/studio77/web-product",
+    "fixtures": "/tmp/chibi-integration-20261022/studio77/fixtures",
+    "evidence": "/tmp/chibi-integration-20261022/studio77/evidence"
+  },
+  "future_build_templates": [
+    "cmake -S <final-studio-source> -B <scratch>/build-native -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCHIBI_STUDIO_BUILD_ACCEPTANCE=ON -DChibi_DIR=<exact-native-sdk>/lib/cmake/Chibi",
+    "cmake --build <scratch>/build-native --target chibi-studio studio-acceptance --parallel <agreed-jobs>",
+    "emcmake cmake -S <final-studio-source> -B <scratch>/build-web -G Ninja -DCMAKE_BUILD_TYPE=Release -DChibi_DIR=<exact-web-sdk>/lib/cmake/Chibi -DCHIBI_STUDIO_WEB_PROJECTS=<final-studio-source>/tests/acceptance/project",
+    "cmake --build <scratch>/build-web --target chibi-studio --parallel <agreed-jobs>",
+    "cmake --install <scratch>/build-web --prefix <scratch>/web-product",
+    "python3 <final-studio-source>/tools/serve_web.py --directory <scratch>/web-product --bind 127.0.0.1 --port <unused-port>",
+    "http://127.0.0.1:<unused-port>/chibi-studio.html?project-root=projects/project"
+  ],
+  "unexecuted_all": true,
+  "holds": [
+    "No untested merge commit. Keep recovery staged until dependency and current validation.",
+    "No push, workflow dispatch, upload, deployment, publication or landing authorization in this checkpoint.",
+    "Existing current browser acceptance HOLD remains."
+  ],
+  "typed_owner_correction_2026_10_22": {
+    "typed_engine_commit_prefix": "a504d8e59",
+    "reported_implemented_contract": "tools/agent.py uses project.chibi, Start.chibi data.Object scene version UInt1 and Counter.chibi; external_project recognizes Build data.",
+    "old_KDL_preflight_status": "main-only historical observation, not an unimplemented typed migration defect",
+    "final_fixture_identities": "pending verification against final clean paired engine and Studio checkpoints",
+    "interim_native_sdk_build_id_prefix": "cb8e0b94",
+    "interim_native_sdk_status": "packaged; paired checks running; not the final clean dependency checkpoint and not authorized as the SDK for PR77 builds",
+    "build_instruction": "Do not build until the final clean compatible dependency checkpoint is supplied."
+  }
+}

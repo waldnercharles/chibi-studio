@@ -8,6 +8,7 @@
 #include "support/array.h"
 #include "support/asset_json.h"
 #include "support/xalloc.h"
+#include "types/array.h"
 #include "types/type.h"
 #include "types/value_document.h"
 
@@ -238,7 +239,8 @@ static bool read_plain_value(pin_type type, const char *type_name, yyjson_val *j
         *out = value;
         out->type_name = type_name;
         if (type == PIN_STR || type == PIN_NAME) {
-            out->str = xstrdup(value.str);
+            valid = pin_value_copy(out, &value) == 0;
+            out->type_name = type_name;
         }
         if (type == PIN_STRUCT) {
             out->ptr = xmalloc(shape->size);
@@ -253,7 +255,7 @@ static bool read_plain_value(pin_type type, const char *type_name, yyjson_val *j
 static void free_action_value(pin_value *value)
 {
     if (value->type == PIN_STR || value->type == PIN_NAME) {
-        free((void *)value->str);
+        pin_value_destroy(value);
     }
     if (value->type == PIN_STRUCT) {
         free(value->ptr);

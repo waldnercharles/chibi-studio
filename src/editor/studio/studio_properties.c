@@ -10,11 +10,13 @@
 #include "editor/documents/component_properties.h"
 #include "editor/studio/studio_properties_internal.h"
 #include "editor/ui/labels.h"
-#include "types/value_format.h"
 #include "graph/model/registry.h"
 #include "runtime/component_catalog.h"
+#include "support/arena.h"
 #include "support/array.h"
 #include "support/xalloc.h"
+#include "types/text.h"
+#include "types/value_format.h"
 #include "ui/popover.h"
 
 #include <assert.h>
@@ -326,16 +328,29 @@ bool properties_overridden(
     int field
 )
 {
+    arena storage = { 0 };
     pin_value value = { 0 }, inherited = { 0 };
-    if (ecs_component_read_field(scene->world, actor->entity, component->desc->id, field, &value) !=
-        ECS_OK) {
+    if (ecs_component_read_field(
+            &storage,
+            scene->world,
+            actor->entity,
+            component->desc->id,
+            field,
+            &value
+        ) != ECS_OK) {
+        arena_free(&storage);
         return false;
     }
     inherited = value;
     if (component->data) {
-        pin_read_field(component->data, &component->desc->type->fields[field], &inherited);
+        if (pin_read_field(&storage, component->data, &component->desc->type->fields[field], &inherited)) {
+            arena_free(&storage);
+            return false;
+        }
     }
-    return !pin_value_equal(&value, &inherited);
+    bool overridden = !pin_value_equal(&value, &inherited);
+    arena_free(&storage);
+    return overridden;
 }
 
 const type_desc *properties_vector(const pin_value *value)
@@ -438,6 +453,8 @@ bool properties_mixed(
         return false;
     }
     app_scene_authoring *scene = s->scene;
+    arena storage = { 0 };
+    bool mixed = false;
     /* Objects naming different paths differ though none resolves. */
     const char *path = scene_link_path(actor->paths, component, field);
     for (int i = 0; i < acount(scene->actors); i++) {
@@ -448,14 +465,16 @@ bool properties_mixed(
         const scene_actor *each = &scene->actors[i];
         const char *named = scene_link_path(each->paths, component, field);
         pin_value other = { 0 };
-        if ((ecs_component_read_field(scene->world, each->entity, component, field, &other) ==
+        if ((ecs_component_read_field(&storage, scene->world, each->entity, component, field, &other) ==
                  ECS_OK &&
              !pin_value_equal(&other, value)) ||
             !same_path(path, named)) {
-            return true;
+            mixed = true;
+            break;
         }
     }
-    return false;
+    arena_free(&storage);
+    return mixed;
 }
 
 /* ---------- Writes ---------- */
@@ -482,17 +501,30 @@ static void write_merged(ecs_world *world, ecs_entity entity, const field_change
         return;
     }
     void *merged = xmalloc(type->size);
+    arena storage = { 0 };
     memcpy(merged, current.ptr, type->size);
     for (int i = 0; i < type->field_count; i++) {
         pin_value before, after;
-        pin_read_field(c->before.ptr, &type->fields[i], &before);
-        pin_read_field(c->value.ptr, &type->fields[i], &after);
+        const char *error = pin_read_field(&storage, c->before.ptr, &type->fields[i], &before);
+        if (!error) {
+            error = pin_read_field(&storage, c->value.ptr, &type->fields[i], &after);
+        }
+        if (error) {
+            arena_free(&storage);
+            free(merged);
+            return;
+        }
         if (!pin_value_equal(&before, &after)) {
-            pin_write_field(merged, &type->fields[i], after);
+            if (pin_write_field(&storage, merged, &type->fields[i], after)) {
+                arena_free(&storage);
+                free(merged);
+                return;
+            }
         }
     }
     pin_value value = { .type = PIN_STRUCT, .type_name = type->name, .ptr = merged };
     ecs_component_write_field(world, entity, c->component, c->field, value);
+    arena_free(&storage);
     free(merged);
 }
 
@@ -501,11 +533,12 @@ static void write_merged(ecs_world *world, ecs_entity entity, const field_change
 static void write_others(studio *s, const field_change *c, bool record)
 {
     app_scene_authoring *scene = s->scene;
+    arena storage = { 0 };
     int *others = properties_others(s, c->component);
     for (int i = 0; i < acount(others); i++) {
         ecs_entity entity = scene->actors[others[i]].entity;
         pin_value current = { 0 };
-        if (ecs_component_read_field(scene->world, entity, c->component, c->field, &current) !=
+        if (ecs_component_read_field(&storage, scene->world, entity, c->component, c->field, &current) !=
             ECS_OK) {
             continue;
         }
@@ -523,6 +556,7 @@ static void write_others(studio *s, const field_change *c, bool record)
         write_merged(scene->world, entity, c, current);
     }
     afree(others);
+    arena_free(&storage);
 }
 
 /* One Undo step per gesture: the first input opens an edit, the change
@@ -560,7 +594,8 @@ static void write_field(studio *s, scene_actor *actor, field_change c)
         if (ecs_component_write_field(scene->world, actor->entity, c.component, c.field, c.value) ==
             ECS_OK) {
             pin_value written = { 0 };
-            if (ecs_component_read_field(scene->world, actor->entity, c.component, c.field, &written) !=
+            arena storage = { 0 };
+            if (ecs_component_read_field(&storage, scene->world, actor->entity, c.component, c.field, &written) !=
                 ECS_OK) {
                 abort();
             }
@@ -568,6 +603,7 @@ static void write_field(studio *s, scene_actor *actor, field_change c)
             if (!scene_property_value_copy(&scene->property_edit.after, written)) {
                 abort();
             }
+            arena_free(&storage);
             scene->scene_dirty = true;
             asset_index_invalidate(scene);
         }
@@ -587,18 +623,29 @@ static void write_field(studio *s, scene_actor *actor, field_change c)
 
 void studio_set_field(studio *s, scene_actor *actor, ecs_component_id component, int field, const char *text)
 {
+    arena storage = { 0 };
     pin_value before = { 0 };
-    if (ecs_component_read_field(s->scene->world, actor->entity, component, field, &before) !=
+    if (ecs_component_read_field(&storage, s->scene->world, actor->entity, component, field, &before) !=
         ECS_OK) {
+        arena_free(&storage);
         return;
     }
     pin_value value = before;
-    value.str = text;
+    if (value.type == PIN_STR) {
+        if (pin_value_text(&storage, &value, text, strlen(text))) {
+            arena_free(&storage);
+            return;
+        }
+        value.type_name = before.type_name;
+    } else {
+        value.str = text;
+    }
     write_field(
         s,
         actor,
         (field_change){ .component = component, .field = field, .before = before, .value = value }
     );
+    arena_free(&storage);
 }
 
 /* Moves an object by one axis of its Position, as the Scene's drag does: a
@@ -701,6 +748,7 @@ static void set_integer(pin_value *value, double v)
    `axis` a vector's; a struct's storage, which the caller frees, holds a
    vector. False when the text names no value of the field's type. */
 static bool parse_field(
+    arena *storage,
     const ecs_component_desc *desc,
     const type_field *field,
     const char *text,
@@ -745,22 +793,34 @@ static bool parse_field(
                 if (strcmp(f->name, axis)) {
                     continue;
                 }
-                void *storage = xmalloc(type->size);
-                memcpy(storage, value->ptr, type->size);
+                void *copy = xmalloc(type->size);
+                memcpy(copy, value->ptr, type->size);
                 double v = strtod(text, NULL);
-                pin_write_field(
+                const char *error = pin_write_field(
                     storage,
+                    copy,
                     f,
                     f->type == PIN_F32 ? (pin_value){ .type = PIN_F32, .f = (float)v }
                                        : (pin_value){ .type = PIN_F64, .d = v }
                 );
-                value->ptr = storage;
+                if (error) {
+                    free(copy);
+                    return false;
+                }
+                value->ptr = copy;
                 return true;
             }
             return false;
         }
-        case PIN_NAME:
-        case PIN_STR: value->str = text; return true;
+        case PIN_NAME: value->str = text; return true;
+        case PIN_STR: {
+            const char *type_name = value->type_name;
+            if (pin_value_text(storage, value, text, strlen(text))) {
+                return false;
+            }
+            value->type_name = type_name;
+            return true;
+        }
         default: return false;
     }
 }
@@ -790,19 +850,23 @@ static void edit_object(studio *s, const edit *e)
         move(s, actor, !strcmp(e->axis, "y"), strtod(e->text, NULL), e->active, e->canceled);
         return;
     }
+    arena storage = { 0 };
     pin_value before = { 0 };
     if (e->row.field < 0 || e->row.field >= desc->type->field_count ||
         ecs_component_read_field(
+            &storage,
             s->scene->world,
             actor->entity,
             desc->id,
             e->row.field,
             &before
         ) != ECS_OK) {
+        arena_free(&storage);
         return;
     }
     pin_value value = before;
-    if (!parse_field(desc, &desc->type->fields[e->row.field], e->text, e->axis, &value)) {
+    if (!parse_field(&storage, desc, &desc->type->fields[e->row.field], e->text, e->axis, &value)) {
+        arena_free(&storage);
         return;
     }
     write_field(
@@ -818,6 +882,7 @@ static void edit_object(studio *s, const edit *e)
     if (value.type == PIN_STRUCT && value.ptr != before.ptr) {
         free(value.ptr);
     }
+    arena_free(&storage);
 }
 
 /* Prototype edits preview live and record one Undo step per gesture, on the
@@ -837,8 +902,12 @@ static void edit_prototype(studio *s, const edit *e)
         return;
     }
     const type_field *field = &desc->type->fields[e->row.field];
+    arena storage = { 0 };
     pin_value value = { 0 };
-    pin_read_field(component->data, field, &value);
+    if (pin_read_field(&storage, component->data, field, &value)) {
+        arena_free(&storage);
+        return;
+    }
     const void *original = value.ptr;
     char key[192];
     snprintf(
@@ -850,7 +919,8 @@ static void edit_prototype(studio *s, const edit *e)
         field->name,
         e->axis
     );
-    if (parse_field(desc, field, e->text, e->axis, &value) && editable_scalar(&value)) {
+    if (parse_field(&storage, desc, field, e->text, e->axis, &value) &&
+        editable_scalar(&value)) {
         if (scene_prototype_source_owned(asset)) {
             char path[192];
             snprintf(path, sizeof path, "%s", field->name);
@@ -859,7 +929,7 @@ static void edit_prototype(studio *s, const edit *e)
             for (int i = 0; vector && i < vector->field_count; i++) {
                 if (!strcmp(vector->fields[i].name, e->axis)) {
                     snprintf(path, sizeof path, "%s.%s", field->name, e->axis);
-                    pin_read_field(value.ptr, &vector->fields[i], &leaf);
+                    pin_read_field(&storage, value.ptr, &vector->fields[i], &leaf);
                     break;
                 }
             }
@@ -900,6 +970,7 @@ static void edit_prototype(studio *s, const edit *e)
     if (value.type == PIN_STRUCT && value.ptr != original) {
         free(value.ptr);
     }
+    arena_free(&storage);
 }
 
 /* The Scene tab's settings change once a gesture ends, one Undo step. */
@@ -958,7 +1029,9 @@ static void check(studio *s, const properties_row *row, bool on)
         edit_scene(s, &e);
         return;
     }
+    arena storage = { 0 };
     pin_value value = { 0 };
+    bool read = false;
     properties_subject subject;
     properties_subject_of(s, &subject);
     if (row->kind == PROPERTIES_PROTOTYPE) {
@@ -967,15 +1040,28 @@ static void check(studio *s, const properties_row *row, bool on)
         for (int i = 0; asset && desc && i < acount(asset->prototype->components); i++) {
             const prototype_component *c = &asset->prototype->components[i];
             if (c->desc == desc && c->data && row->field < desc->type->field_count) {
-                pin_read_field(c->data, &desc->type->fields[row->field], &value);
+                read = !pin_read_field(&storage, c->data, &desc->type->fields[row->field], &value);
             }
         }
     } else if (subject.actor) {
-        ecs_component_read_field(s->scene->world, subject.actor->entity, row->component, row->field, &value);
+        read = ecs_component_read_field(
+                   &storage,
+                   s->scene->world,
+                   subject.actor->entity,
+                   row->component,
+                   row->field,
+                   &value
+               ) == ECS_OK;
+    }
+    if (!read || value.type != PIN_BOOL) {
+        arena_free(&storage);
+        return;
     }
     bool mixed = row->kind == PROPERTIES_OBJECT && subject.actor &&
                  properties_mixed(s, subject.actor, row->component, row->field, &value);
-    if (mixed || value.b != on) {
+    bool changed = mixed || value.b != on;
+    arena_free(&storage);
+    if (changed) {
         edit_row(s, &e);
     }
 }
@@ -995,8 +1081,8 @@ static void drop(studio *s, const properties_row *row, const char *asset)
 static Transform inherited_position(const prototype_component *component, Transform at)
 {
     pin_value x = { .type = PIN_F32, .f = at.x }, y = { .type = PIN_F32, .f = at.y };
-    pin_read_field(component->data, &component->desc->type->fields[0], &x);
-    pin_read_field(component->data, &component->desc->type->fields[1], &y);
+    pin_read_field(NULL, component->data, &component->desc->type->fields[0], &x);
+    pin_read_field(NULL, component->data, &component->desc->type->fields[1], &y);
     at.x = x.f;
     at.y = y.f;
     return at;
@@ -1012,18 +1098,24 @@ static void reset_field(studio *s, scene_actor *actor)
     }
     prototype_component added;
     const prototype_component *component = properties_base(actor, desc, &added);
+    arena storage = { 0 };
     pin_value before = { 0 }, inherited = { 0 };
     if (!component->data || ecs_component_read_field(
+                                &storage,
                                 scene->world,
                                 actor->entity,
                                 desc->id,
                                 s->context.field,
                                 &before
                             ) != ECS_OK) {
+        arena_free(&storage);
         return;
     }
     inherited = before;
-    pin_read_field(component->data, &desc->type->fields[s->context.field], &inherited);
+    if (pin_read_field(&storage, component->data, &desc->type->fields[s->context.field], &inherited)) {
+        arena_free(&storage);
+        return;
+    }
     if (desc->id == COMPONENT_Transform.id) {
         Transform after = inherited_position(
             component,
@@ -1035,6 +1127,7 @@ static void reset_field(studio *s, scene_actor *actor)
             scene->scene_dirty = true;
         }
         finish_transform_edit(scene, false);
+        arena_free(&storage);
         return;
     }
     write_field(
@@ -1045,6 +1138,7 @@ static void reset_field(studio *s, scene_actor *actor)
                         .before = before,
                         .value = inherited }
     );
+    arena_free(&storage);
 }
 
 /* Reset to Prototype resets each selected object, to its own prototype's
@@ -1492,11 +1586,13 @@ static void narrow_selection(studio *s, const char *prototype)
    objects name different ones. */
 static void reveal(studio *s, const properties_row *row)
 {
+    arena storage = { 0 };
     pin_value value = { 0 };
     properties_subject subject;
     properties_subject_of(s, &subject);
     if (row->kind != PROPERTIES_OBJECT ||
         ecs_component_read_field(
+            &storage,
             s->scene->world,
             ecs_entity_from_u64(row->entity),
             row->component,
@@ -1506,8 +1602,10 @@ static void reveal(studio *s, const properties_row *row)
         value.type != PIN_HANDLE || !value.u64 ||
         (subject.actor &&
          properties_mixed(s, subject.actor, row->component, row->field, &value))) {
+        arena_free(&storage);
         return;
     }
+    arena_free(&storage);
     /* A placed object selects as the Outliner selects it; a spawned one as
        a pick in the Scene does. */
     app_scene_authoring_select_entity(s->scene, ecs_entity_from_u64(value.u64));
@@ -1588,6 +1686,7 @@ static void settle(studio *s, rml_element *field, const char *id)
     properties_subject subject;
     properties_subject_of(s, &subject);
     properties_row row;
+    arena storage = { 0 };
     pin_value value = { 0 };
     char text[512] = "";
     if (!strcmp(id, "name") && subject.actor) {
@@ -1595,17 +1694,23 @@ static void settle(studio *s, rml_element *field, const char *id)
     } else if (
         properties_row_parse(id, &row) && row.kind == PROPERTIES_OBJECT &&
         subject.actor &&
-        ecs_component_read_field(s->scene->world, subject.actor->entity, row.component, row.field, &value) ==
-            ECS_OK
+        ecs_component_read_field(
+            &storage,
+            s->scene->world,
+            subject.actor->entity,
+            row.component,
+            row.field,
+            &value
+        ) == ECS_OK
     ) {
         bool text_value = value.type == PIN_STR || value.type == PIN_NAME;
-        snprintf(
-            text,
-            sizeof text,
-            "%s",
-            text_value ? (value.str ? value.str : "") : pin_value_to_string(&value)
-        );
+        const char *shown = pin_value_to_string(&value);
+        if (text_value) {
+            pin_text_cstring(&storage, value, &shown, NULL);
+        }
+        snprintf(text, sizeof text, "%s", shown);
     }
+    arena_free(&storage);
     rml_element_set_value(field, text);
     rml_element_blur(field);
 }

@@ -450,6 +450,7 @@ static bool press_comment(studio *s, graph_comment_box *box, graph_hit hit)
 static void press(studio *s, int button, graph_hit hit, bool on_control)
 {
     studio_graph *g = &s->graph;
+    g->camera.active = false;
     editor *e = sg_graph_editor(s);
     graph *gr = sg_active_graph(s);
     unsigned mods = g->in.modifiers;

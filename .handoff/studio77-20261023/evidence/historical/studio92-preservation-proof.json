@@ -1,0 +1,303 @@
+{
+  "created_at_utc": "2026-10-23T04:24:30.546371+00:00",
+  "state": "source-only prospective snapshot, before authorized apply",
+  "base": "305053fc6d8db4ba9a73c50f09f474c6fde1c1eb",
+  "pending_HEAD": "305053fc6d8db4ba9a73c50f09f474c6fde1c1eb",
+  "pending_MERGE_HEAD": "854d19acad786b6c9640002597a3f98a7f3ca791",
+  "before_tree": "b93437b561e4ef757d6ce30de312b2196e7fb717",
+  "studio92_merge_commit": "df050886dd7721db63b40fdf5435f1cb20ceeb34",
+  "studio92_tree": "a3639ed69dc67a79c225b0f10c961941b7624e39",
+  "prospective_tree": "f9b93d7c81749344a8a16d4994c5f8c90cf518da",
+  "overlap_paths": [
+    "EXTRACTION.json",
+    "tests/acceptance/README.md",
+    "tests/acceptance/main.c"
+  ],
+  "focus_only_paths_preserved_exactly": {
+    "cmake/patches/zep-smooth-reveal.patch": true,
+    "cmake/zep_dependencies.cmake": true,
+    "src/editor/rmlui/kit_code.c": true,
+    "src/editor/studio/studio_code.c": true,
+    "src/editor/studio/studio_graph.c": true,
+    "src/editor/studio/studio_graph_draw.c": true,
+    "src/editor/studio/studio_graph_input.c": true,
+    "src/editor/studio/studio_graph_internal.h": true,
+    "src/editor/studio/studio_graph_view.c": true,
+    "src/editor/studio/studio_internal.h": true,
+    "src/editor/text/zep_bridge.cpp": true,
+    "src/editor/text/zep_bridge.h": true,
+    "src/editor/ui/kit.h": true
+  },
+  "repair_only_paths_preserved_exactly": {
+    "src/editor/collab/actions_graph.c": true,
+    "src/editor/collab/actions_scene.c": true,
+    "src/editor/documents/scene_document.c": true,
+    "src/editor/documents/scene_history.c": true,
+    "src/editor/documents/scene_prototype_actions.c": true,
+    "src/editor/documents/scene_prototypes.c": true,
+    "src/editor/studio/studio_graph_literals.c": true,
+    "src/editor/studio/studio_graph_live.c": true,
+    "src/editor/studio/studio_graph_properties.c": true,
+    "src/editor/studio/studio_graph_values.c": true,
+    "src/editor/studio/studio_member_properties.c": true,
+    "src/editor/studio/studio_node_calls.c": true,
+    "src/editor/studio/studio_properties.c": true,
+    "src/editor/studio/studio_properties_view.c": true,
+    "src/editor/studio/studio_prototype_actions.c": true,
+    "src/editor/workspace/scene_asset_drop.c": true,
+    "src/editor/workspace/scene_authoring.c": true,
+    "src/editor/workspace/scene_authoring.h": true,
+    "src/editor/workspace/scene_gizmo.c": true,
+    "src/editor/workspace/scene_runtime.c": true,
+    "tests/acceptance/outliner_row_policies.h": true,
+    "tests/acceptance/prototype_source.h": true,
+    "tests/acceptance/prototype_source_authority.h": true,
+    "tests/acceptance/scene_move.h": true,
+    "tests/acceptance/sdk_values.h": true
+  },
+  "manifest_focus_entries": [
+    "cmake/zep_dependencies.cmake",
+    "src/editor/rmlui/kit_code.c",
+    "src/editor/studio/studio_code.c",
+    "src/editor/studio/studio_graph.c",
+    "src/editor/studio/studio_graph_draw.c",
+    "src/editor/studio/studio_graph_input.c",
+    "src/editor/studio/studio_graph_internal.h",
+    "src/editor/studio/studio_graph_view.c",
+    "src/editor/studio/studio_internal.h",
+    "src/editor/text/zep_bridge.cpp",
+    "src/editor/text/zep_bridge.h",
+    "src/editor/ui/kit.h"
+  ],
+  "manifest_repair_entries": [
+    "src/editor/collab/actions_graph.c",
+    "src/editor/collab/actions_scene.c",
+    "src/editor/documents/scene_document.c",
+    "src/editor/documents/scene_history.c",
+    "src/editor/documents/scene_prototype_actions.c",
+    "src/editor/documents/scene_prototypes.c",
+    "src/editor/studio/studio_graph_literals.c",
+    "src/editor/studio/studio_graph_live.c",
+    "src/editor/studio/studio_graph_properties.c",
+    "src/editor/studio/studio_graph_values.c",
+    "src/editor/studio/studio_member_properties.c",
+    "src/editor/studio/studio_node_calls.c",
+    "src/editor/studio/studio_properties.c",
+    "src/editor/studio/studio_properties_view.c",
+    "src/editor/studio/studio_prototype_actions.c",
+    "src/editor/workspace/scene_asset_drop.c",
+    "src/editor/workspace/scene_authoring.c",
+    "src/editor/workspace/scene_authoring.h",
+    "src/editor/workspace/scene_gizmo.c",
+    "src/editor/workspace/scene_runtime.c"
+  ],
+  "manifest_entry_overlap": [],
+  "manifest_composition": "Exact union of each branch changed file records over base; other metadata unchanged.",
+  "affected_consumer_hashes": {
+    "cmake/zep_dependencies.cmake": {
+      "consumer_sha256": "14e2c0b03fed9990cb51746386c315ac76b8fcba5a59fc5cfb64c225193cf0d0",
+      "content_sha256": "14e2c0b03fed9990cb51746386c315ac76b8fcba5a59fc5cfb64c225193cf0d0",
+      "match": true
+    },
+    "src/editor/collab/actions_graph.c": {
+      "consumer_sha256": "656383d01234cd6b9c2d397bf3bc7d147ccae750cddccd2a66197af2b0c2de69",
+      "content_sha256": "656383d01234cd6b9c2d397bf3bc7d147ccae750cddccd2a66197af2b0c2de69",
+      "match": true
+    },
+    "src/editor/collab/actions_scene.c": {
+      "consumer_sha256": "4c62d63bfa6222e4dfe693ef21884b9af887ad7b8f2ec75fa6c10f47691c53d8",
+      "content_sha256": "4c62d63bfa6222e4dfe693ef21884b9af887ad7b8f2ec75fa6c10f47691c53d8",
+      "match": true
+    },
+    "src/editor/documents/scene_document.c": {
+      "consumer_sha256": "015041a0cac925e12f7fd374c2c78272597d838dd0a7befd6ba50e20d2fd5a01",
+      "content_sha256": "015041a0cac925e12f7fd374c2c78272597d838dd0a7befd6ba50e20d2fd5a01",
+      "match": true
+    },
+    "src/editor/documents/scene_history.c": {
+      "consumer_sha256": "408302f1f495e496d4056f35fa4b80d2b11c6e8885ab2b72d46adaec1103d12d",
+      "content_sha256": "408302f1f495e496d4056f35fa4b80d2b11c6e8885ab2b72d46adaec1103d12d",
+      "match": true
+    },
+    "src/editor/documents/scene_prototype_actions.c": {
+      "consumer_sha256": "7563bab5603c80ff0306bf15a095f0982176be62b96e0bac701a1a27033e3cd1",
+      "content_sha256": "7563bab5603c80ff0306bf15a095f0982176be62b96e0bac701a1a27033e3cd1",
+      "match": true
+    },
+    "src/editor/documents/scene_prototypes.c": {
+      "consumer_sha256": "cac29af62f2a0a26799fabc115997e650093c3dc91e60176b433f9266944c540",
+      "content_sha256": "cac29af62f2a0a26799fabc115997e650093c3dc91e60176b433f9266944c540",
+      "match": true
+    },
+    "src/editor/rmlui/kit_code.c": {
+      "consumer_sha256": "2e2715e0ef9f0a6154d52e9bfb846ba912717283c7a8373da2489043d9abdabf",
+      "content_sha256": "2e2715e0ef9f0a6154d52e9bfb846ba912717283c7a8373da2489043d9abdabf",
+      "match": true
+    },
+    "src/editor/studio/studio_code.c": {
+      "consumer_sha256": "10f1bcef88c7886ca16884361ff279129d3ad7d5f9e1283aedd29f29d85a3a19",
+      "content_sha256": "10f1bcef88c7886ca16884361ff279129d3ad7d5f9e1283aedd29f29d85a3a19",
+      "match": true
+    },
+    "src/editor/studio/studio_graph.c": {
+      "consumer_sha256": "53e3b9fb76c97dbfc3fc3cbaf20e0dc89cdf616ac15c5a33d30f5d46ec83dfc3",
+      "content_sha256": "53e3b9fb76c97dbfc3fc3cbaf20e0dc89cdf616ac15c5a33d30f5d46ec83dfc3",
+      "match": true
+    },
+    "src/editor/studio/studio_graph_draw.c": {
+      "consumer_sha256": "ae118e30a9996df883acdacdfb160e596cd18e0dfed80c6f9acbb204c337051a",
+      "content_sha256": "ae118e30a9996df883acdacdfb160e596cd18e0dfed80c6f9acbb204c337051a",
+      "match": true
+    },
+    "src/editor/studio/studio_graph_input.c": {
+      "consumer_sha256": "44ee05974e6086c5986bbb0c01f2d529d11df6ab77e2bfbabfa23498b9be2a9e",
+      "content_sha256": "44ee05974e6086c5986bbb0c01f2d529d11df6ab77e2bfbabfa23498b9be2a9e",
+      "match": true
+    },
+    "src/editor/studio/studio_graph_internal.h": {
+      "consumer_sha256": "0f358500fd2053fbb01e2ba8da119f6d6746c625d8786bbab373a051af6bece9",
+      "content_sha256": "0f358500fd2053fbb01e2ba8da119f6d6746c625d8786bbab373a051af6bece9",
+      "match": true
+    },
+    "src/editor/studio/studio_graph_literals.c": {
+      "consumer_sha256": "7883cd6a2ce721789ea692160dff472819febc07df7513503d2e32d3c520a06a",
+      "content_sha256": "7883cd6a2ce721789ea692160dff472819febc07df7513503d2e32d3c520a06a",
+      "match": true
+    },
+    "src/editor/studio/studio_graph_live.c": {
+      "consumer_sha256": "d502d2a8a7a9a19a103ae76e0fe41311ed78a7252f5a168b4da14b5f93bc3cee",
+      "content_sha256": "d502d2a8a7a9a19a103ae76e0fe41311ed78a7252f5a168b4da14b5f93bc3cee",
+      "match": true
+    },
+    "src/editor/studio/studio_graph_properties.c": {
+      "consumer_sha256": "f1d9297a5145b2db743b0e225ce91d414c30656d2920bac3d67cc73f6c1b89fb",
+      "content_sha256": "f1d9297a5145b2db743b0e225ce91d414c30656d2920bac3d67cc73f6c1b89fb",
+      "match": true
+    },
+    "src/editor/studio/studio_graph_values.c": {
+      "consumer_sha256": "90459878d610113ab40cdc034e3296fabf8c81db5f1e5d48092863be7ce63afb",
+      "content_sha256": "90459878d610113ab40cdc034e3296fabf8c81db5f1e5d48092863be7ce63afb",
+      "match": true
+    },
+    "src/editor/studio/studio_graph_view.c": {
+      "consumer_sha256": "0291cbda2fbfb5390fbb4a62010942e0b6ff073039e240475ff57cc398757280",
+      "content_sha256": "0291cbda2fbfb5390fbb4a62010942e0b6ff073039e240475ff57cc398757280",
+      "match": true
+    },
+    "src/editor/studio/studio_internal.h": {
+      "consumer_sha256": "e9d35a2c11d799e03cfcaad9d54fbe4d7df5fafe685981409155021e3131b55e",
+      "content_sha256": "e9d35a2c11d799e03cfcaad9d54fbe4d7df5fafe685981409155021e3131b55e",
+      "match": true
+    },
+    "src/editor/studio/studio_member_properties.c": {
+      "consumer_sha256": "c86763348875435dc6da2e055fc2b637e69dce515ae120ccc90cea5d9d35cacf",
+      "content_sha256": "c86763348875435dc6da2e055fc2b637e69dce515ae120ccc90cea5d9d35cacf",
+      "match": true
+    },
+    "src/editor/studio/studio_node_calls.c": {
+      "consumer_sha256": "e42522967f4be179c430cc0e541ff8dea004bd41e9746833b0ac1512bf870672",
+      "content_sha256": "e42522967f4be179c430cc0e541ff8dea004bd41e9746833b0ac1512bf870672",
+      "match": true
+    },
+    "src/editor/studio/studio_properties.c": {
+      "consumer_sha256": "618c02992d580dda4e270790cd44d0ca3f93c8a6177f8dfabd2b9c3a6738e777",
+      "content_sha256": "618c02992d580dda4e270790cd44d0ca3f93c8a6177f8dfabd2b9c3a6738e777",
+      "match": true
+    },
+    "src/editor/studio/studio_properties_view.c": {
+      "consumer_sha256": "e13cc7ed2c314bbda4b6f595aa194e1175b01f41894b074a0be85b14abf60a2a",
+      "content_sha256": "e13cc7ed2c314bbda4b6f595aa194e1175b01f41894b074a0be85b14abf60a2a",
+      "match": true
+    },
+    "src/editor/studio/studio_prototype_actions.c": {
+      "consumer_sha256": "9e47db02661bd031417dab9a34dc6242b72eb8243a32a3cc63d990647dad51af",
+      "content_sha256": "9e47db02661bd031417dab9a34dc6242b72eb8243a32a3cc63d990647dad51af",
+      "match": true
+    },
+    "src/editor/text/zep_bridge.cpp": {
+      "consumer_sha256": "7d8768702ce3295eb96fe043f9f5881edc444da0bd59b50476ee11fbd7818bc8",
+      "content_sha256": "7d8768702ce3295eb96fe043f9f5881edc444da0bd59b50476ee11fbd7818bc8",
+      "match": true
+    },
+    "src/editor/text/zep_bridge.h": {
+      "consumer_sha256": "b8584de1a28e295f9270fcdc8157f15323cf970426a472bac8d12c557d66bcb7",
+      "content_sha256": "b8584de1a28e295f9270fcdc8157f15323cf970426a472bac8d12c557d66bcb7",
+      "match": true
+    },
+    "src/editor/ui/kit.h": {
+      "consumer_sha256": "2391a71b42ce28ab80cefd41aeb38232234018d32106e5376fe9c1bb76fef11c",
+      "content_sha256": "2391a71b42ce28ab80cefd41aeb38232234018d32106e5376fe9c1bb76fef11c",
+      "match": true
+    },
+    "src/editor/workspace/scene_asset_drop.c": {
+      "consumer_sha256": "dc1f5c366b75eb47e75fd24921c6ffc1727848d1ee33fafc144cda90f30f857b",
+      "content_sha256": "dc1f5c366b75eb47e75fd24921c6ffc1727848d1ee33fafc144cda90f30f857b",
+      "match": true
+    },
+    "src/editor/workspace/scene_authoring.c": {
+      "consumer_sha256": "2978a60d61c5346a8af7afff9851bc64aad8d6bd31218d99a1d0fbeb7db1a504",
+      "content_sha256": "2978a60d61c5346a8af7afff9851bc64aad8d6bd31218d99a1d0fbeb7db1a504",
+      "match": true
+    },
+    "src/editor/workspace/scene_authoring.h": {
+      "consumer_sha256": "340b350a79c656732f1d45bcbcf95887b563673459f0c0f35c6c7de5a4676583",
+      "content_sha256": "340b350a79c656732f1d45bcbcf95887b563673459f0c0f35c6c7de5a4676583",
+      "match": true
+    },
+    "src/editor/workspace/scene_gizmo.c": {
+      "consumer_sha256": "4b696845fa720c2b1835dd5cd2e59dfdf068df6d053dd1e66c0058c7243c8c34",
+      "content_sha256": "4b696845fa720c2b1835dd5cd2e59dfdf068df6d053dd1e66c0058c7243c8c34",
+      "match": true
+    },
+    "src/editor/workspace/scene_runtime.c": {
+      "consumer_sha256": "5c89330124eea67e5c9d54f2179ca6fef49a36687532b09653511c2bbbc593e1",
+      "content_sha256": "5c89330124eea67e5c9d54f2179ca6fef49a36687532b09653511c2bbbc593e1",
+      "match": true
+    }
+  },
+  "acceptance_composition": [
+    "sdk_values.h include remains after application/pico declarations.",
+    "--sdk-values early dispatcher composes with --code-wrap-reveal selector.",
+    "Current-main named Begin syntax and offscreen source spacing retained.",
+    "Combined graph-pointer helper/frame schedule and primary_mod helper retained."
+  ],
+  "semantic_assessment": "No new source interaction blocker found. PR77 focus/camera/code/Zep production blobs and PR92 arena/PIN_STR repair production blobs are disjoint and preserved exactly. PR92 temporary arenas remain alive through control composition/write/history cloning; focus-follow stores node IDs and cursor intent rather than pin_value pointers.",
+  "tree_only_proofs": {
+    "forward_merge_tree": "f9b93d7c81749344a8a16d4994c5f8c90cf518da",
+    "reverse_merge_tree": "f9b93d7c81749344a8a16d4994c5f8c90cf518da",
+    "merge_repair_again": "f9b93d7c81749344a8a16d4994c5f8c90cf518da"
+  },
+  "later_ordinary_ancestry_merge": {
+    "status": "Not performed; no commit created.",
+    "preconditions": [
+      "An eventual authorized ordinary commit of this pending merge retains parents305053fc and854d19 and has treef9b93d7c.",
+      "Studio92 ancestry is subsequently recorded with an ordinary merge ofdf050886 before unrelated source changes, or equality is re-evaluated against the then-current reviewed tree."
+    ],
+    "actual_common_base": "305053fc6d8db4ba9a73c50f09f474c6fde1c1eb",
+    "reason": "Studio92 descends from305053fc. The other pending parent854d19 contributes only ancestors already dominated by305053fc for this common-base comparison. The tree-only idempotent merge proves a future ordinary merge with these preconditions retainsf9b93d7c.",
+    "later_commands": [
+      "git merge-base --all <committed-pending-merge> df050886dd7721db63b40fdf5435f1cb20ceeb34",
+      "git merge-tree --write-tree <committed-pending-merge> df050886dd7721db63b40fdf5435f1cb20ceeb34",
+      "After authorized ordinary ancestry merge, git rev-parse HEAD^{tree} must equalf9b93d7c81749344a8a16d4994c5f8c90cf518da."
+    ]
+  },
+  "backup": {
+    "index_path": "/tmp/chibi-integration-20261022/studio77/studio77-before92.index",
+    "index_source_path": "/Users/cwaldner/Personal/chibi/chibi-studio/.git/worktrees/chibi-studio10/index",
+    "index_sha256": "597f37df5d8276afb7dd96a272b15d8bf62e04f59c62343d0f2a729816f0d8a4",
+    "patch_path": "/tmp/chibi-integration-20261022/studio77/studio77-before92.patch",
+    "patch_sha256": "23bc2304d678fc8ac0e46717bdae298490ed4ed116d21a371e6d6d54c0aad855",
+    "tree": "b93437b561e4ef757d6ce30de312b2196e7fb717"
+  },
+  "prospective_patch": {
+    "path": "/tmp/chibi-integration-20261022/studio77/studio92-prospective.patch",
+    "sha256": "aa7513bed502db2ef59696e980d867d227383aa5044b51e9e832a4287d687f03"
+  },
+  "runtime_checks_run": [],
+  "holds": [
+    "No commit or tests authorized.",
+    "No browser/upload/deploy/shared lane use.",
+    "Current browser acceptance HOLD remains.",
+    "Final compatible paired typed SDK is still required."
+  ]
+}

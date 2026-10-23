@@ -131,8 +131,10 @@ int app_scene_authoring_save_prototype(
     const char *prototype_name,
     const char *path
 );
-/* Field storage is borrowed from the authored prototype until its next edit. */
+/* Native string reads copy into storage (NULL selects heap ownership).
+ * Aggregate and authored descriptor reads borrow until the prototype changes. */
 int app_scene_authoring_read_prototype_field(
+    arena *storage,
     app_scene_authoring *scene,
     const char *prototype_name,
     const char *component,

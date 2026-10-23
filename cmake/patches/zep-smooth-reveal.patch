@@ -1,0 +1,35 @@
+--- a/include/zep/window.h
++++ b/include/zep/window.h
+@@ -209,6 +209,8 @@
+     // region spans x to y.
+     void SetTextOffsetX(float offset);
+     NVec2f GetTextRegionX() const;
++    NVec4f GetTextScrollInfo();
++    void SetTextOffsetY(float offset);
+ 
+ private:
+ 
+--- a/src/window.cpp
++++ b/src/window.cpp
+@@ -1506,6 +1506,21 @@
+     return NVec2f(m_textRegion->rect.Left(), m_textRegion->rect.Right());
+ }
+ 
++NVec4f ZepWindow::GetTextScrollInfo()
++{
++    UpdateLayout();
++    return NVec4f(m_textOffsetPx, std::max(0.0f, m_textSizePx.y - m_textRegion->rect.Height()),
++        m_textRegion->rect.Top(), m_textRegion->rect.Bottom());
++}
++
++void ZepWindow::SetTextOffsetY(float offset)
++{
++    UpdateLayout();
++    m_textOffsetPx = std::max(0.0f, std::min(offset, m_textSizePx.y - m_textRegion->rect.Height()));
++    m_cursorMoved = false;
++    UpdateVisibleLineRange();
++}
++
+ NVec2f ZepWindow::GetSpanPixelRange(SpanInfo& span) const
+ {
+     // Need to take account of the text rect offset

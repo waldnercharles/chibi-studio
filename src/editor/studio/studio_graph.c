@@ -666,6 +666,19 @@ void studio_graph_frame(studio *s, double delta_seconds)
         sg_calculations_invalidate(s);
     }
     sg_replay(s);
+    uint64_t focused = sg_focused_node(s);
+    if (focused && focused != g->focused_node) {
+        node *n = sg_node_by_id(s, focused);
+        if (n) {
+            sg_select_only(e, n);
+            e->front_node = n;
+            studio_node_ref at = { .graph_id = e->active_graph->graph_id,
+                                   .node_id = focused };
+            snprintf(at.asset, sizeof at.asset, "%s", s->scene->graph_document_id);
+            studio_code_reveal_node(s, &at);
+        }
+    }
+    g->focused_node = focused;
     /* Source/debug navigation may select a maintenance node. Present its
        semantic Set before gestures or mutation commands consume selection. */
     int selected = 0;

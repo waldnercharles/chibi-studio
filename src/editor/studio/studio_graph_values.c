@@ -12,6 +12,7 @@
 #include "graph/model/local.h"
 #include "graph/model/pin_conv.h"
 #include "graph/model/registry.h"
+#include "graph/model/value_copy.h"
 #include "graph/nodes/behavior_expression.h"
 #include "graph/nodes/conv_nodes.h"
 #include "runtime/declared_components.h"
@@ -62,6 +63,7 @@ typedef struct studio_graph_source
     char meta[80];
     char description[80];
     char literal_text[256];
+    uint32_t literal_length;
 } source_choice;
 
 static bool compatible(const pin_spec *source, const pin_spec *target)
@@ -158,10 +160,13 @@ static pin_binding choice_binding(const source_choice *choice)
     return binding;
 }
 
-static pin_value choice_literal(const source_choice *choice)
+static pin_value choice_literal(graph *g, const source_choice *choice)
 {
     pin_value value = choice->literal;
-    if (value.type == PIN_STR || value.type == PIN_NAME) {
+    if (value.type == PIN_STR) {
+        value = graph_text_value(g, choice->literal_text, choice->literal_length);
+        value.type_name = choice->literal.type_name;
+    } else if (value.type == PIN_NAME) {
         value.str = choice->literal_text;
     }
     return value;
@@ -179,6 +184,13 @@ static void add_literal_choice(
     const pin_value *value
 )
 {
+    pin_string text = { 0 };
+    if (value->type == PIN_STR || value->type == PIN_NAME) {
+        text = pin_text(*value);
+        if (text.length >= sizeof((source_choice *)0)->literal_text) {
+            return;
+        }
+    }
     add_choice(
         choices,
         SOURCE_TYPED_LITERAL,
@@ -198,13 +210,10 @@ static void add_literal_choice(
     choice->typed_literal = true;
     choice->literal = *value;
     if (value->type == PIN_STR || value->type == PIN_NAME) {
-        snprintf(
-            choice->literal_text,
-            sizeof choice->literal_text,
-            "%s",
-            value->str ? value->str : ""
-        );
-        choice->literal.str = NULL;
+        memcpy(choice->literal_text, text.bytes, text.length);
+        choice->literal_text[text.length] = 0;
+        choice->literal_length = text.length;
+        choice->literal.ptr = NULL;
     }
 }
 
@@ -430,10 +439,16 @@ static bool parse_input_literal(const pin_spec *spec, const char *text, pin_valu
     }
     if (spec->type == PIN_STR || spec->type == PIN_NAME) {
         static char decoded[256];
+        static pin_string string;
         if (!quoted_text(text, decoded, sizeof decoded)) {
             return false;
         }
-        value.str = decoded;
+        if (spec->type == PIN_STR) {
+            string = (pin_string){ decoded, (uint32_t)strlen(decoded) };
+            value.text = &string;
+        } else {
+            value.str = decoded;
+        }
         *out = value;
         return true;
     }
@@ -1257,7 +1272,7 @@ static bool apply_choice(studio *s, kit *k, node *target, int pin, const source_
     }
     studio_graph *state = &s->graph;
     if (choice->typed_literal) {
-        pin_value value = choice_literal(choice);
+        pin_value value = choice_literal(gr, choice);
         return apply_input_constant(s, target, pin, &value);
     }
     if (choice->kind == SOURCE_EDIT_EXPRESSION) {

@@ -1,0 +1,304 @@
+{
+  "id": "studio77",
+  "url": "https://github.com/waldnercharles/chibi-studio",
+  "branch": "codex/studio77-recovery-handoff-20261023",
+  "tree": "f9b93d7c81749344a8a16d4994c5f8c90cf518da",
+  "base": "305053fc6d8db4ba9a73c50f09f474c6fde1c1eb",
+  "eligible": "df050886dd7721db63b40fdf5435f1cb20ceeb34",
+  "legacy": "854d19acad786b6c9640002597a3f98a7f3ca791",
+  "summary": "Smooth graph/source focus recovery, preserving springs, reduced motion, typing focus and direct-input interruption; source-folded Studio92 arena/PIN_STR SDK compatibility repairs. EXTRACTION consumer hashes verified for affected files; source-folded main92 ancestry remains pending.",
+  "tests": "CURRENTf9b: source/conflict/composition review and extraction hash checks clear, no builds/runtime/browser acceptance. Earlier b934 formatting/source checks only; published854 native/Web and historical43-frame/5-invocation continuation evidence are historical, not current acceptance. Studio92 baseline hosted proof belongs to its exact baseline, not this recovery. No upload/deployment occurred.",
+  "holds": [
+    "Current browser node-field to source reveal, typing focus, reverse reveal and direct-input interruption acceptance required",
+    "Compiled-preview upload/deployment remains explicitly DENIED; checkpoint source push does not authorize it",
+    "Final exact paired typed SDK/compiler/source remains required; no source-root SDK header fallback",
+    "Original pending305/854 merge remains incomplete; main92 content is present but ordinary92 ancestry integration still pending",
+    "Required review/server protections and final commit/binary/manifest currency remain"
+  ],
+  "dependencies": [
+    "Installed matching engine SDK must be regenerated; local SDK/build outputs excluded",
+    "Typed asset migration and paired engine SDK are separate owner work, not composed into this snapshot",
+    "Source of Studio92 compatibility repairs is included; old pin_read_field3to4args failure is documented and fixed by that source fold, not independently retested here"
+  ],
+  "next": "Verify source manifest and preserved pending ancestry. Pair exact typed SDK, run required native checks and actual local/cloud browser interaction acceptance. Do not upload/deploy. Settle ordinary ancestry and final binary/config identity only after validation.",
+  "status": "WIP RECOVERY ONLY - UNVALIDATED - NOT MERGE/RELEASE ELIGIBLE",
+  "date": "2026-10-23",
+  "checkpoint_parent": "305053fc6d8db4ba9a73c50f09f474c6fde1c1eb",
+  "original_pending_merge_heads": [
+    "854d19acad786b6c9640002597a3f98a7f3ca791"
+  ],
+  "pending_merge_completed": false,
+  "original_worktree_preserved": true,
+  "checkpoint_ancestry": "Linear WIP snapshot; original pending merge heads recorded and already reachable on retained published branches. No merge completed.",
+  "active_source": {
+    "EXTRACTION.json": {
+      "git_blob": "fa1b2ea732b081b3130b6b7190c0e09c4e935970",
+      "sha256": "f822e07f27987f71ea5fa207354198714c2b12ed973f2349177b776745bc42d3",
+      "bytes": 166148
+    },
+    "cmake/patches/zep-smooth-reveal.patch": {
+      "git_blob": "038b6d766f69e71b46fec068526b124552a37a76",
+      "sha256": "0daf6f5f1291b8fb293e1c164ea3191308d839a3ae77f473e1e5065f8976af0b",
+      "bytes": 992
+    },
+    "cmake/zep_dependencies.cmake": {
+      "git_blob": "3f311e054fe238ea42bd913140a171709278a0c0",
+      "sha256": "14e2c0b03fed9990cb51746386c315ac76b8fcba5a59fc5cfb64c225193cf0d0",
+      "bytes": 3959
+    },
+    "src/editor/collab/actions_graph.c": {
+      "git_blob": "d45d417e1fe93cae92d3d60e8887b948255cca7d",
+      "sha256": "656383d01234cd6b9c2d397bf3bc7d147ccae750cddccd2a66197af2b0c2de69",
+      "bytes": 61177
+    },
+    "src/editor/collab/actions_scene.c": {
+      "git_blob": "151737efea04ff3f4ddfcb4907c177715aaa46a8",
+      "sha256": "4c62d63bfa6222e4dfe693ef21884b9af887ad7b8f2ec75fa6c10f47691c53d8",
+      "bytes": 24073
+    },
+    "src/editor/documents/scene_document.c": {
+      "git_blob": "936d700d5324c7e35aff6715795f4602996ad5ef",
+      "sha256": "015041a0cac925e12f7fd374c2c78272597d838dd0a7befd6ba50e20d2fd5a01",
+      "bytes": 31266
+    },
+    "src/editor/documents/scene_history.c": {
+      "git_blob": "d01b32bd14e5a06c18e14ffc561c0a1260b48577",
+      "sha256": "408302f1f495e496d4056f35fa4b80d2b11c6e8885ab2b72d46adaec1103d12d",
+      "bytes": 48753
+    },
+    "src/editor/documents/scene_prototype_actions.c": {
+      "git_blob": "bca406e20dceabf9ca5871c7a7220a72f24e52fa",
+      "sha256": "7563bab5603c80ff0306bf15a095f0982176be62b96e0bac701a1a27033e3cd1",
+      "bytes": 18583
+    },
+    "src/editor/documents/scene_prototypes.c": {
+      "git_blob": "211d610509595ff90854bfcd077557c1da5ef6c6",
+      "sha256": "cac29af62f2a0a26799fabc115997e650093c3dc91e60176b433f9266944c540",
+      "bytes": 50053
+    },
+    "src/editor/rmlui/kit_code.c": {
+      "git_blob": "b45c556674a025d849b2c16acd7a198e59040ccb",
+      "sha256": "2e2715e0ef9f0a6154d52e9bfb846ba912717283c7a8373da2489043d9abdabf",
+      "bytes": 95545
+    },
+    "src/editor/studio/studio_code.c": {
+      "git_blob": "a00508cac7b93026ff90dbedecd0a072ffff6b9c",
+      "sha256": "10f1bcef88c7886ca16884361ff279129d3ad7d5f9e1283aedd29f29d85a3a19",
+      "bytes": 121192
+    },
+    "src/editor/studio/studio_graph.c": {
+      "git_blob": "881449e2ea2ca0ec5dbb64807e596abfebad2a11",
+      "sha256": "53e3b9fb76c97dbfc3fc3cbaf20e0dc89cdf616ac15c5a33d30f5d46ec83dfc3",
+      "bytes": 31932
+    },
+    "src/editor/studio/studio_graph_draw.c": {
+      "git_blob": "468c85ed71ea104b121b81b8da48c0958d083448",
+      "sha256": "ae118e30a9996df883acdacdfb160e596cd18e0dfed80c6f9acbb204c337051a",
+      "bytes": 41080
+    },
+    "src/editor/studio/studio_graph_input.c": {
+      "git_blob": "e29233215be9423850807620c63cf14871c9be2f",
+      "sha256": "44ee05974e6086c5986bbb0c01f2d529d11df6ab77e2bfbabfa23498b9be2a9e",
+      "bytes": 47442
+    },
+    "src/editor/studio/studio_graph_internal.h": {
+      "git_blob": "7edb241728551ea7402325043455189927fc5ee5",
+      "sha256": "0f358500fd2053fbb01e2ba8da119f6d6746c625d8786bbab373a051af6bece9",
+      "bytes": 20183
+    },
+    "src/editor/studio/studio_graph_literals.c": {
+      "git_blob": "126b2cfda0481a3f063c59ce5692fe64e48ac0bb",
+      "sha256": "7883cd6a2ce721789ea692160dff472819febc07df7513503d2e32d3c520a06a",
+      "bytes": 53075
+    },
+    "src/editor/studio/studio_graph_live.c": {
+      "git_blob": "47ff3b6210a72df2cdce8c8fb711694a1315d3e7",
+      "sha256": "d502d2a8a7a9a19a103ae76e0fe41311ed78a7252f5a168b4da14b5f93bc3cee",
+      "bytes": 4706
+    },
+    "src/editor/studio/studio_graph_properties.c": {
+      "git_blob": "9178fc43cf5b21bb89ebb0991219f6fb91b37c1b",
+      "sha256": "f1d9297a5145b2db743b0e225ce91d414c30656d2920bac3d67cc73f6c1b89fb",
+      "bytes": 64925
+    },
+    "src/editor/studio/studio_graph_values.c": {
+      "git_blob": "9390d63f22e13be9559d7be9e9a5c5928e6c51ff",
+      "sha256": "90459878d610113ab40cdc034e3296fabf8c81db5f1e5d48092863be7ce63afb",
+      "bytes": 66745
+    },
+    "src/editor/studio/studio_graph_view.c": {
+      "git_blob": "ddea41beeb72128c4d007a950a5930b41746a30f",
+      "sha256": "0291cbda2fbfb5390fbb4a62010942e0b6ff073039e240475ff57cc398757280",
+      "bytes": 17160
+    },
+    "src/editor/studio/studio_internal.h": {
+      "git_blob": "bd2c203167832891f36d90bc6bf82daaa306c4cd",
+      "sha256": "e9d35a2c11d799e03cfcaad9d54fbe4d7df5fafe685981409155021e3131b55e",
+      "bytes": 148389
+    },
+    "src/editor/studio/studio_member_properties.c": {
+      "git_blob": "cc7a9efd469bb6c67d2cb663ab49b4e324b8c903",
+      "sha256": "c86763348875435dc6da2e055fc2b637e69dce515ae120ccc90cea5d9d35cacf",
+      "bytes": 34429
+    },
+    "src/editor/studio/studio_node_calls.c": {
+      "git_blob": "b1c5e2be16ba6494d5d5559a52b3a01dfcb25bda",
+      "sha256": "e42522967f4be179c430cc0e541ff8dea004bd41e9746833b0ac1512bf870672",
+      "bytes": 13849
+    },
+    "src/editor/studio/studio_properties.c": {
+      "git_blob": "b227b715d842fc4347bef3a5bfab71971b6cd02c",
+      "sha256": "618c02992d580dda4e270790cd44d0ca3f93c8a6177f8dfabd2b9c3a6738e777",
+      "bytes": 67769
+    },
+    "src/editor/studio/studio_properties_view.c": {
+      "git_blob": "d05117a5253ea40cfabdc42f9fa011e23447a74d",
+      "sha256": "e13cc7ed2c314bbda4b6f595aa194e1175b01f41894b074a0be85b14abf60a2a",
+      "bytes": 66925
+    },
+    "src/editor/studio/studio_prototype_actions.c": {
+      "git_blob": "732cadc5bffdcf5a66336319cf9a2a7e538b5c00",
+      "sha256": "9e47db02661bd031417dab9a34dc6242b72eb8243a32a3cc63d990647dad51af",
+      "bytes": 11550
+    },
+    "src/editor/text/zep_bridge.cpp": {
+      "git_blob": "94949a2c033917de58b4c9ab2655bbdd280e27c3",
+      "sha256": "7d8768702ce3295eb96fe043f9f5881edc444da0bd59b50476ee11fbd7818bc8",
+      "bytes": 17480
+    },
+    "src/editor/text/zep_bridge.h": {
+      "git_blob": "c0f1a24c1b1d8232bb33b5d1e37fe3f2875e9ff0",
+      "sha256": "b8584de1a28e295f9270fcdc8157f15323cf970426a472bac8d12c557d66bcb7",
+      "bytes": 10288
+    },
+    "src/editor/ui/kit.h": {
+      "git_blob": "f947ea3b527f1996d3edfd596521129d925efcd4",
+      "sha256": "2391a71b42ce28ab80cefd41aeb38232234018d32106e5376fe9c1bb76fef11c",
+      "bytes": 41247
+    },
+    "src/editor/workspace/scene_asset_drop.c": {
+      "git_blob": "22d809014ff9ea2e3cd5b578c5082b72eb04e7ef",
+      "sha256": "dc1f5c366b75eb47e75fd24921c6ffc1727848d1ee33fafc144cda90f30f857b",
+      "bytes": 3810
+    },
+    "src/editor/workspace/scene_authoring.c": {
+      "git_blob": "d6e329643cef6e95f7134c524c7e34d3a1e6537b",
+      "sha256": "2978a60d61c5346a8af7afff9851bc64aad8d6bd31218d99a1d0fbeb7db1a504",
+      "bytes": 88990
+    },
+    "src/editor/workspace/scene_authoring.h": {
+      "git_blob": "92fb94afeabea9f983e20fd883c695b3ccd3162c",
+      "sha256": "340b350a79c656732f1d45bcbcf95887b563673459f0c0f35c6c7de5a4676583",
+      "bytes": 17016
+    },
+    "src/editor/workspace/scene_gizmo.c": {
+      "git_blob": "a9d9af2c5bfbf57e2d738a86850448b9efd301c6",
+      "sha256": "4b696845fa720c2b1835dd5cd2e59dfdf068df6d053dd1e66c0058c7243c8c34",
+      "bytes": 37993
+    },
+    "src/editor/workspace/scene_runtime.c": {
+      "git_blob": "c6a626fa39032b90e6ee7bd09c36320a73caee5f",
+      "sha256": "5c89330124eea67e5c9d54f2179ca6fef49a36687532b09653511c2bbbc593e1",
+      "bytes": 31332
+    },
+    "tests/acceptance/README.md": {
+      "git_blob": "09a1a86b7f249c5445c912a4d6ff2cee5ffcb782",
+      "sha256": "ec11a462e251f288abe26a8817006af5f6a85d3a3d59c95a6a242783b825e3e2",
+      "bytes": 51748
+    },
+    "tests/acceptance/main.c": {
+      "git_blob": "2af42a6c0af68c38ae9095d07f563d7b450d9d2d",
+      "sha256": "c71fce386dff671b39bf9cddbe7cd6440f66250a06a54d4a5115cada8ccb8593",
+      "bytes": 209239
+    },
+    "tests/acceptance/outliner_row_policies.h": {
+      "git_blob": "709efdb6c1810d7a6577a7f806fc4a43f56ec589",
+      "sha256": "1ba2bab1bd6ebb93df8c001137227a558812a2e9cf1a0ff0768712a173123f5d",
+      "bytes": 19775
+    },
+    "tests/acceptance/prototype_source.h": {
+      "git_blob": "5bdcd1c26cdf2370165fa39d0385447f7b295e8c",
+      "sha256": "be135b8d9955d4d974feb6152fed134595582f535a84100d42fff43069a6b04b",
+      "bytes": 33049
+    },
+    "tests/acceptance/prototype_source_authority.h": {
+      "git_blob": "720f256790cab7d7e65834755efa064016210df9",
+      "sha256": "39e1d23c999a2407b4c615609a7678860b651aacc3a20be6a544a33d5c831467",
+      "bytes": 36611
+    },
+    "tests/acceptance/scene_move.h": {
+      "git_blob": "742d51497b1b941e568cb19452138fc462817a93",
+      "sha256": "1f155baea5c9d3f2c1e555da34843c6ea859619091bf0c6cd13d27b194e63b9d",
+      "bytes": 52934
+    },
+    "tests/acceptance/sdk_values.h": {
+      "git_blob": "2532f4e5adde5422d7988ed323e5cc52c2f9ceb5",
+      "sha256": "86742a4b8c1243c6bfd77507eff33f110d1c7dad40a32254d0a5246f67df3566",
+      "bytes": 15980
+    }
+  },
+  "unapplied_drafts": "Typed clay draft is preserved on a separate branch, never imported here.",
+  "ignored_paths_excluded": [],
+  "excluded": "Machine binaries, archives, build outputs, downloaded dependencies, raw Git indexes, locks, caches and credentials. Tracked portable compiler.chibip seed remains part of source tree. Historical text receipts may name local paths; they are provenance, not portable build dependencies.",
+  "receipt_classification": "All evidence/historical files describe their own historical sources. Do not apply historical patches or reinterpret old passes as current validation. Current source and required status are this manifest and README.",
+  "handoff_confirmation": "Pending cloud remote verification; local owner will make no overlapping implementation changes.",
+  "no_tests_run_for_checkpoint": true,
+  "remote_equivalence": [
+    {
+      "candidate": "407",
+      "source_tree": "fa24367aa5284d67160118716c538207d3672cd8",
+      "remote_refs_compared": 447,
+      "equivalents": []
+    },
+    {
+      "candidate": "460",
+      "source_tree": "3f9ea39c2fccad0c5550c2fca64ce0b06dc9210e",
+      "remote_refs_compared": 447,
+      "equivalents": []
+    },
+    {
+      "candidate": "77",
+      "source_tree": "f9b93d7c81749344a8a16d4994c5f8c90cf518da",
+      "remote_refs_compared": 40,
+      "equivalents": []
+    }
+  ],
+  "preserved_evidence": {
+    "evidence/historical/acceptance-map.json": {
+      "sha256": "82e3e7d0165a6cab07e481f1de148299bdb19c2394441efd9aedac2d7ca50e15",
+      "bytes": 5687
+    },
+    "evidence/historical/checkpoint.json": {
+      "sha256": "a341db28e27f83cc8338cdb45f1ce226b98d8d8ccbc1a6eaa13dee32d658b556",
+      "bytes": 3592
+    },
+    "evidence/historical/consumer-api-diagnosis.json": {
+      "sha256": "295a0eaea37f560f897430b6db52aafb72b205ff2a2a49fa2a2554e52eabd7d9",
+      "bytes": 6136
+    },
+    "evidence/historical/dependency-plan.json": {
+      "sha256": "b93a5e8b207b0ef3eebb7fa932d01c3c192caa98b0bab6ff4e737787522d0a53",
+      "bytes": 5757
+    },
+    "evidence/historical/format-check.log": {
+      "sha256": "abc07078597158b78506ec468bafc9ea7fe7ec1c82e2559e5766f823634bf85e",
+      "bytes": 38
+    },
+    "evidence/historical/studio92-apply-check.json": {
+      "sha256": "77cc4e3122807b6e3fdba49527cc5309d255b9b04ae1bdd4b23a008c5a406f92",
+      "bytes": 223
+    },
+    "evidence/historical/studio92-apply-receipt.json": {
+      "sha256": "4be80c1fe667c9e5dca53e4dcedded746060c255cc29949a32ce2350f423a1c4",
+      "bytes": 3596
+    },
+    "evidence/historical/studio92-preservation-proof.json": {
+      "sha256": "48917f73802c81bfd66e53bf1268120dedec3739ae0304be69eeee616ab15630",
+      "bytes": 15658
+    },
+    "candidate.patch": {
+      "sha256": "40908f3dffc4630cb42250b6d0c980ba2eb423b39524cc79efce7a063aa4765d",
+      "bytes": 189474
+    }
+  }
+}

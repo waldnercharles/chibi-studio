@@ -1,10 +1,10 @@
 #ifndef CHIBI_EDITOR_STUDIO_INTERNAL_H
 #define CHIBI_EDITOR_STUDIO_INTERNAL_H
 
-#include "authoring/component_presentation.h"
 #include "assets/new_asset.h"
 #include "assets/project.h"
 #include "assets/ui_source.h"
+#include "authoring/component_presentation.h"
 #include "editor/documents/asset_code.h"
 #include "editor/documents/ui_code.h"
 #include "editor/studio/studio.h"
@@ -20,6 +20,7 @@
 #include "support/file_watch.h"
 #include "support/resources.h"
 #include "ui/list.h"
+#include "ui/motion.h"
 #include "ui/rml_backend.h"
 
 #include <SDL3/SDL_events.h>
@@ -479,11 +480,15 @@ typedef struct
         float zoom, x, y;
         float from_zoom, from_x, from_y;
         double start;
+        spring pan_x, pan_y;
+        double updated;
+        bool pan;
         bool active;
     } camera;
     studio_graph_view *views; /* camera per graph, restored on return */
     uint64_t graph_id;
     bool framed;
+    uint64_t focused_node; /* field focus last followed into the source */
     studio_graph_gesture gesture;
     float press_x, press_y;   /* window px */
     float press_wx, press_wy; /* the press in graph units */

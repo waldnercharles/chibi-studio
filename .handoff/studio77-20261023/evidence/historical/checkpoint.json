@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-22",
+  "repository": "waldnercharles/chibi-studio",
+  "worktree": "/tmp/chibi-integration-20261022/studio77/chibi-studio",
+  "branch": "codex/recover-studio77-20261022",
+  "published_pr": 77,
+  "published_head": "854d19acad786b6c9640002597a3f98a7f3ca791",
+  "main_base": "305053fc6d8db4ba9a73c50f09f474c6fde1c1eb",
+  "candidate_tree": "b93437b561e4ef757d6ce30de312b2196e7fb717",
+  "candidate_commit": null,
+  "state": "locally staged merge; uncommitted and unbuilt",
+  "source_review": "No new production defect found in focused reveal, focus, direct-input interruption, and Zep bridge review; independent review pending.",
+  "conflict_resolution": [
+    "Retain current-main named Begin event form and PR offscreen source spacing.",
+    "Retain main primary_mod helper with PR pointer frame schedule.",
+    "Combine PR rendered title/operator targeting with main current-layout surface coordinates.",
+    "Regenerate consumer_sha256 from current-main extraction metadata for affected entries.",
+    "Do not import the retired timing-admission wording in new wrap-test documentation."
+  ],
+  "static_checks": {
+    "clang_format_version": "22.1.8",
+    "changed_C_CPP_header_lines": "passed",
+    "whitespace_excluding_unified_patch_context": "passed",
+    "conflicts": [],
+    "extraction_consumer_hash_mismatches": []
+  },
+  "recovery_evidence": {
+    "original_saved_file_count": 16,
+    "matching_original_commit_hashes": 13,
+    "different_original_commit_files": [
+      "EXTRACTION.json",
+      "tests/acceptance/README.md",
+      "tests/acceptance/main.c"
+    ],
+    "dirty_focus_adaptations_found": false,
+    "missing_stale_worktree": "/Users/cwaldner/.codex/worktrees/behavior-authoring-main/chibi-studio"
+  },
+  "runtime_checks_run": [],
+  "dependency": "Final clean typed-compatible engine and Studio pair, including engine main 1bc/PR660 and upcoming named-result checkpoint, ABI20 only. Integrate paired Studio checkpoint before final builds and interaction acceptance.",
+  "required_next_validation": [
+    "Independent source review of exact combined final tree.",
+    "Installed matching native SDK; native build/startup and graph-visibility, graph-pointer, source-edit, code-wrap-reveal acceptance.",
+    "Matching web SDK; web build and localhost browser acceptance of pre-Play Both view, graph/source bidirectional reveal, field focus, zoom, reduced motion, wrap and direct-input cancellation.",
+    "Applicable required repository groups and exact-tree provenance."
+  ],
+  "holds": [
+    "Current browser acceptance remains explicitly held until actual current-candidate acceptance.",
+    "Prior denied upload/deployment/publication action remains unauthorized.",
+    "No push, remote branch update, hosted workflow dispatch, upload, deployment, publication or merge-to-main performed."
+  ],
+  "local_browser_route": "tools/serve_web.py --directory <final local web product> --bind 127.0.0.1 --port <unused port>; supplies COOP/COEP. No upload is needed.",
+  "scratch_retained": [
+    "chibi-studio worktree",
+    "candidate.patch",
+    "checkpoint.json",
+    "format-check.log",
+    "format-env tooling",
+    "acceptance-map.json",
+    "dependency-plan.json",
+    "conflict-resolution.patch"
+  ],
+  "independent_source_review": "Root independently reviewed production focus/reveal/Zep diff and current shared spring snapping on2026-10-22; no additional source blocker found. Runtime remains pending.",
+  "coordinator_direction": "Keep recovery staged, preserve evidence, await final SDK/typed checkpoint, continue static mapping without builds."
+}

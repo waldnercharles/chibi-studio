@@ -18,6 +18,7 @@
 #include "support/arena.h"
 #include "support/array.h"
 #include "support/xalloc.h"
+#include "types/text.h"
 
 #include <assert.h>
 #include <inttypes.h>
@@ -178,8 +179,16 @@ static void put_default(gd_rows *r, yyjson_mut_val *row, const pin_spec *pin, co
         return;
     }
     if (pin->type == PIN_STR || pin->type == PIN_NAME) {
-        gd_put_text(r, row, "text", value->str ? value->str : "");
-        gd_put_text(r, row, "placeholder", "");
+        arena scratch = { 0 };
+        const char *text = NULL;
+        const char *error = pin_text_cstring(&scratch, *value, &text, NULL);
+        gd_put_text(r, row, "text", error ? "" : text);
+        gd_put_text(r, row, "placeholder", error ? error : "");
+        if (error) {
+            gd_put_flag(r, row, "readonly", true);
+            gd_put_flag(r, row, "invalid", true);
+        }
+        arena_free(&scratch);
         return;
     }
     bool integer = pin->type < PIN_F32;
@@ -755,6 +764,13 @@ static bool sent_value(
         return true;
     }
     if (pin->type == PIN_STR || pin->type == PIN_NAME) {
+        if (pin->type == PIN_STR) {
+            if (pin_value_text(scratch, out, text, strlen(text))) {
+                return false;
+            }
+            out->type_name = was->type_name;
+            return true;
+        }
         size_t length = strlen(text) + 1;
         char *copy = arena_alloc(scratch, length);
         memcpy(copy, text, length);

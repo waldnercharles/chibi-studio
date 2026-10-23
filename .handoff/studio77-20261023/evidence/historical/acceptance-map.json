@@ -1,0 +1,109 @@
+{
+  "candidate_tree": "b93437b561e4ef757d6ce30de312b2196e7fb717",
+  "state": "static assertion mapping only; no runtime execution",
+  "native_selectors": [
+    {
+      "selector": "--graph-visibility",
+      "frames": 10,
+      "entry": "tests/acceptance/main.c:4462",
+      "assertions": [
+        {
+          "behavior": "Graph navigation reveals handler/node source without taking the graph-context input focus or dirtying source.",
+          "location": "tests/acceptance/main.c:1413"
+        },
+        {
+          "behavior": "Reveal starts from visible camera; first step lies between start and target; zoom remains equal.",
+          "location": "tests/acceptance/main.c:1483"
+        },
+        {
+          "behavior": "In-flight retarget retains camera position and x velocity; spring settles; already-visible reveal stays still.",
+          "location": "tests/acceptance/main.c:1493"
+        },
+        {
+          "behavior": "Direct zoom cancels pan; reduced motion settles reveal and framing.",
+          "location": "tests/acceptance/main.c:1514"
+        },
+        {
+          "behavior": "Code vertical scroll advances; retarget does not jump; reduced motion settles; wheel cancels pending reveal and following frame retains manual offset.",
+          "location": "tests/acceptance/main.c:1669"
+        },
+        {
+          "behavior": "Source-caret semantic navigation selects graph node while retaining source caret and kit-code focus.",
+          "location": "tests/acceptance/main.c:1744"
+        },
+        {
+          "behavior": "Hidden graph does no UI updates/captures; scene draft undo/redo and document Both view remain intact.",
+          "location": "tests/acceptance/main.c:1729"
+        }
+      ],
+      "limitations": [
+        "Focus-preservation input is a synthetic graph-context input, not a production node field.",
+        "Camera interpolation and direct-zoom cases invoke production helpers, not physical browser gestures."
+      ]
+    },
+    {
+      "selector": "--graph-pointer",
+      "frames": 19,
+      "entry": "tests/acceptance/main.c:4708",
+      "assertions": [
+        {
+          "behavior": "Rendered node title/operator click lands on node; arrow navigation follows edge; Find opens/steps/selects; Escape and Home frame without dirtying source.",
+          "location": "tests/acceptance/main.c:3628"
+        }
+      ],
+      "limitations": [
+        "Reduced motion is enabled in this selector, so it cannot prove pointer interruption during animated pan."
+      ]
+    },
+    {
+      "selector": "--code-wrap-reveal",
+      "frames": 5,
+      "entry": "tests/acceptance/main.c:4442",
+      "assertions": [
+        {
+          "behavior": "Horizontal reveal begins and advances; enabling wrap without new reveal/input yields zero horizontal offset on following two frames, retaining source/caret/focus and clean state.",
+          "location": "tests/acceptance/main.c:1587"
+        }
+      ],
+      "limitations": [
+        "Registered in Studio acceptance binary, not in current engine agent selector table.",
+        "A historical old-product counterfactual exists; it must not be reused as current-candidate runtime proof."
+      ]
+    },
+    {
+      "selector": "--source-edit",
+      "frames": 4,
+      "assertions": [
+        {
+          "behavior": "Shared source-edit, undo/redo, source ownership and graph/source integration remain intact on final paired tree.",
+          "location": "tests/acceptance/README.md:8"
+        }
+      ],
+      "limitations": [
+        "This shared selector also includes typed-owner fixtures and prerequisites. Validate only after their final compatible checkpoint."
+      ]
+    }
+  ],
+  "required_browser_interactions": [
+    "Load final local candidate and final compatible web SDK in an isolated browser profile; record actual adapter/WebGPU initialization.",
+    "Open local final acceptance fixture before Play; select Counter and Both. Confirm graph and source show the same declaration and statement.",
+    "Select a node or its real editable input; confirm source reveals its corresponding declaration/statement and the input retains focus. Type/edit, undo and redo, checking source and graph agreement.",
+    "Move the source caret to another graph/node including offscreen content; confirm graph reveals without moving the caret back or taking typing focus.",
+    "Retarget during graph and code motion; preserve graph zoom; verify direct pointer/keyboard/wheel input takes over without a later jump.",
+    "Toggle reduced motion and Word Wrap during an active code reveal; verify immediate settled state and zero horizontal wrapped offset.",
+    "Inspect rendered transition and settled state. Record screenshots/logs and exact Studio tree/commit, SDK metadata, binary/web hashes and fixture bytes."
+  ],
+  "not_proven_by_static_mapping": [
+    "Any runtime pass on this recovery tree.",
+    "Real node-field focus-follow path in studio_graph.c:669.",
+    "Current browser acceptance or hold clearance.",
+    "Cross-browser or worker-mode acceptance."
+  ],
+  "fixture_preflight_dependency": {
+    "old_KDL_contract": "Observed in main tools/agent.py only; historical for this recovery, not an unimplemented typed migration defect.",
+    "typed_candidate_commit_prefix": "a504d8e59",
+    "typed_candidate_contract": "project.chibi, Start.chibi data.Object scene version UInt1 and Counter.chibi; external_project recognizes Build data.",
+    "final_fixture_identities": "pending verification with final clean paired checkpoints",
+    "interim_sdk": "cb8e0b94 prefix is a packaged interim native SDK with checks running; not the final clean dependency and not used for builds."
+  }
+}

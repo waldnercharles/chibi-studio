@@ -5,6 +5,21 @@ The optional native `studio-acceptance` target compiles the actual application a
 host in test wrappers. The production binary has no fixture CLI or test hooks.
 Build with `-DCHIBI_STUDIO_BUILD_ACCEPTANCE=ON` against an installed SDK.
 
+`studio-acceptance --sdk-values` runs twelve renderer-free C cases without a
+project or compiler preparation. Property copies retain embedded NUL and
+non-UTF-8 bytes after their input arena retires. UTF-8 and non-UTF-8 field edits
+survive a JSON history checkpoint, retirement of the original history and input
+arena, and real ECS Undo/Redo through the restored history. An explicit
+descriptor field retains embedded NUL and non-UTF-8 bytes through Undo/Redo.
+Checkpoints with embedded NUL in either value of a native C-string field reject
+without replacing prior history. Replay rejects a mixed field batch before its
+first write when a later native string cannot be represented. Real graph
+collaboration actions preserve UTF-8, embedded NUL and non-UTF-8 text after the
+input arena and action JSON retire, and reject a payload beyond the shared
+codec's value budget. The installed native and language catalogs
+expose a bound `prototype_choices` action when optional
+Studio services are selected, and omit it from the ordinary application catalog.
+
 `studio-acceptance --source-edit --project-root PATH` accepts a disposable copy of
 this directory's `project`. Preferences and thumbnail cache are pinned inside that
 disposable project; initial Counter bytes are checked before and after. It checks that the project remembered last leads the recent projects, once, and that
@@ -135,6 +150,20 @@ frames, sleeps or watcher times. Files and buffers are removed before the final
 regression assertion; the expected read-error notice remains host-owned until
 normal shutdown. The four-frame invocation is unchanged. This exercises the
 production handlers, not pointer hit testing.
+
+`studio-acceptance --code-wrap-reveal --project-root PATH` takes another
+fresh disposable copy and runs five hidden fixed-1/60 frames. It prepends one
+fixed 512-byte comment line to Counter, shows code only with wrapping and reduced
+motion off, and reveals the last comment byte. After checking a positive, advancing
+horizontal animation step, it enables Word Wrap without another reveal or code
+input. The next two frames require zero horizontal offset, unchanged source and
+caret, retained code focus, and a clean document. Counter's original file is
+restored even when the host reports failure. This is one pico_unit case in the
+existing acceptance binary, with the same three-file project, isolated preferences
+and thumbnail cache; it adds no playback, screenshots or helper executable.
+A fixture-only old-product control must fail the first post-wrap zero-offset
+assertion after setup succeeds. This registration records the workload; runtime
+results must identify the exact source and installed SDK used.
 
 `studio-acceptance --code-keys --project-root PATH` takes another disposable copy.
 It shows Counter in the Text Editor, focuses it and places the cursor after the
@@ -312,8 +341,11 @@ before two handlers: the initial graph still opens on Tick, the picker groups
 Events before Variables and Functions, and the root is labeled Variables.
 Selecting Begin in Both reveals its declaration; revealing a statement selects
 its node and corresponding source while a graph field keeps keyboard focus.
-Source reveals and keyboard framing interrupt camera motion immediately; framing
-also settles immediately with reduced motion enabled.
+Source reveals preserve zoom and ease into view, including when retargeted during
+motion. Intermediate positions, velocity continuity, already-visible targets and
+manual interruption are checked. An offscreen handler also checks intermediate
+code scroll offsets, retargeting without a jump, reduced motion and manual-wheel
+cancellation. Reduced motion settles either reveal immediately.
 Moving the focused source caret to a statement selects its graph/node without
 moving the caret back to the declaration or taking focus from the text.
 A temporary distant statement tests that initial framing keeps the handler's

@@ -1,0 +1,107 @@
+{
+  "state": "actual hosted consumer compile failure identified; exact call already adapted in typed Studio; no duplicate patch needed",
+  "engine_commit": "fa1b7b2bb297eacbbed6aec6f03c4260355db97c",
+  "engine_pr": 664,
+  "typed_studio_commit": "7f49051eec192f15c99aa8830a8f53ccd67886c8",
+  "studio77_tree": "b93437b561e4ef757d6ce30de312b2196e7fb717",
+  "project_compile_API_findings": [
+    "PR664 does not change public C signatures in src/authoring/project_compile.h.",
+    "authoring_project_compile_modules keeps its four arguments; its contract now accepts zero modules for resource-only assembly and refuses executable sources in that mode.",
+    "Neither staged Studio77 source nor typed Studio7f49051 source calls authoring_project_compile, authoring_project_compile_modules or authoring_application_begin.",
+    "Studio export invokes the SDK chibi export process rather than these C functions.",
+    "Both Studio trees call authoring_project_open with five arguments in studio_ui.c and workspace/application.c; these match immutable fa1 public project_open.h.",
+    "Both Studio trees call authoring_application_catalog_new with three arguments; these match immutable fa1 public application_catalog.h."
+  ],
+  "known_relevant_calls": [
+    {
+      "file": "src/editor/studio/studio_ui.c",
+      "line": 384,
+      "call": "authoring_project_open(&project, project_root, native, error, size)",
+      "same_in_typed_branch": true
+    },
+    {
+      "file": "src/editor/workspace/application.c",
+      "line": 325,
+      "call": "authoring_project_open(&project, project_path, native, error, error_size)",
+      "same_in_typed_branch": true
+    },
+    {
+      "file": "src/studio_registry.c",
+      "line": 70,
+      "call": "authoring_application_catalog_new(true, error, sizeof error)",
+      "same_in_typed_branch": true
+    }
+  ],
+  "separate_hosted_evidence": {
+    "run": 39870659893,
+    "head": "fa1b7b2bb297eacbbed6aec6f03c4260355db97c",
+    "job": 120143958650,
+    "url": "https://github.com/waldnercharles/chibi/actions/runs/39870659893/job/120143958650",
+    "failure_step": "Require Studio checkout access",
+    "reason": "Missing CHIBI_STUDIO_TOKEN secret; Studio checkout/package/build steps skipped.",
+    "scope": "This hosted preflight failure cannot establish the newer local consumer compile cause."
+  },
+  "local_failure": {
+    "correction": "The actual reported failure is hosted consumer compilation, not a local project_compile API failure."
+  },
+  "constraints": "No builds, GPU, uploads, commits or edits to candidate/owner files; browser hold and final-compatible SDK dependency remain.",
+  "initial_project_compile_hypothesis": "Not causal: PR664 does not change a Studio-used compile function signature. The actual diagnostic is pin_read_field arena/PIN_STR API compatibility.",
+  "actual_failure": {
+    "engine_commit": "025d3fbb97a9f205e765410d6bda8780a31a4408",
+    "engine_tree": "4180b18f00d6385601cb0efc20b6ccd96d67dc83",
+    "hosted_synthetic_commit": "d83ac543f3bdbf748c6dc5d7299d7973a37b6e25",
+    "hosted_synthetic_tree": "4180b18f00d6385601cb0efc20b6ccd96d67dc83",
+    "tree_match_verified": true,
+    "studio_commit": "305053fc6d8db4ba9a73c50f09f474c6fde1c1eb",
+    "run": 39878459025,
+    "job": 120169783344,
+    "url": "https://github.com/waldnercharles/chibi/actions/runs/39878459025/job/120169783344",
+    "log_path": "/Users/cwaldner/Personal/chibi/.worktrees/ci-publication-recovery/chibi/.chibi/ci-recovery/hosted-025d-studio.log",
+    "log_sha256": "869c76e2ff25cf32b0241ad55d1b445a5b5e19eb6f9af5b82b170a69b9e13130",
+    "log_sha256_verified": true,
+    "log_lines": [
+      2635,
+      2636,
+      2637,
+      2638,
+      2639
+    ],
+    "diagnostic": "src/editor/collab/actions_graph.c:104:64: error: too few arguments to function call, expected 4, have 3",
+    "old_call": "pin_read_field(value->ptr, &type->fields[i], &field);",
+    "installed_sdk_header": "dist/sdk/include/chibi/types/types/type.h:94",
+    "required_signature": "const char *pin_read_field(arena *, const void *base, const type_field *f, pin_value *out);",
+    "sdk_package_succeeded": "The run compiled Studio against its packaged actual Linux dist/sdk; package success does not establish Studio compile success.",
+    "reported_local_sdk_package_identity": "ab0a49fde6958d36671f637efaa586fdbd0c8b2a2c754954ce027f6548f5d36a",
+    "reported_local_sdk_identity_scope": "Reported by CI owner; not claimed as the package identity extracted from the hosted failing job."
+  },
+  "typed_branch_fix": {
+    "studio_commit": "7f49051eec192f15c99aa8830a8f53ccd67886c8",
+    "file": "src/editor/collab/actions_graph.c",
+    "lines": [
+      105,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111
+    ],
+    "introduced_commit_prefix": "1c522495",
+    "fix": "Creates a per-field arena, calls pin_read_field with four arguments, checks its error before recursive validation, frees the arena after the recursive use, and rejects failed reads/validation.",
+    "includes": "support/arena.h and types/text.h are present in the typed source.",
+    "source_verified": true,
+    "runtime_claim": false,
+    "staged_studio77_status": "Retains current-main three-argument call at line104; awaits integration of owned compatibility repair or final paired typed checkpoint."
+  },
+  "repair_ownership": {
+    "owner": "Coordinator/compiler owner is isolating an independently reviewed 26-file Studio arena/PIN_STR compatibility repair separately from KDL migration.",
+    "action": "Do not duplicate edits, extract a competing patch, or cherry-pick the broader typed source into this recovery.",
+    "minimal_patch_plan": null,
+    "reason": "Exact failing call is already adapted in typed Studio and an owner is integrating the main-facing compatibility repair."
+  },
+  "next_steps": [
+    "Wait for the owned compatibility checkpoint and final compatible SDK/Studio pair.",
+    "Integrate only the eligible owner-approved checkpoint while preserving PR77 focus merge and named Begin syntax.",
+    "Re-run exact current native and browser proof once dependencies are ready and root schedules GPU use."
+  ]
+}

@@ -131,7 +131,14 @@ static pin_value read_field(
 )
 {
     pin_value value = { 0 };
-    int read = ecs_component_read_field(world, entity, component->id, field_named(component, name), &value);
+    int read = ecs_component_read_field(
+        NULL,
+        world,
+        entity,
+        component->id,
+        field_named(component, name),
+        &value
+    );
     assert(read == ECS_OK && value.type == PIN_F32);
     return value;
 }
@@ -366,6 +373,7 @@ int scene_gizmo_record(
                                 .field = field_named(component, name) };
     pin_value value = { 0 };
     int read = ecs_component_read_field(
+        NULL,
         scene->world,
         entity,
         component->id,
