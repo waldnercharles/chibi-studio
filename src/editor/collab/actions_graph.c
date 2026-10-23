@@ -141,9 +141,10 @@ static bool write_pin_value(yyjson_mut_doc *doc, yyjson_mut_val *root, const cha
         av_doc *native = av_doc_new();
         av_value *data = av_obj(native);
         pin_value_write_document(native, data, "data", value->type, value->type_name, value);
-        yyjson_mut_obj_add_val(doc, item, "data", av_to_json(doc, av_obj_get(data, "data")));
+        yyjson_mut_val *payload = av_to_json(doc, av_obj_get(data, "data"));
+        bool valid = payload && yyjson_mut_obj_add_val(doc, item, "data", payload);
         av_doc_free(native);
-        return true;
+        return valid;
     }
     switch (value->type) {
         case PIN_BOOL:

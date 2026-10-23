@@ -856,7 +856,41 @@ view model and selection are removed or restored before the edit contract
 continues. This adds no files or host frames. Synchronizing the view also reaches
 the engine's lazily loaded presentation document.
 
-The latest 2026-10-22 model run against the Release SDK above passed one case
+The model also sends UTF-8, embedded NUL and invalid UTF-8 strings through the
+real graph constant action, collaboration envelope and action consumer. It
+checks exact destination bytes after retiring the input arena, action JSON and
+protocol message, including the owned type name on the decoded value. A further
+action attempts to serialize one million invalid UTF-8 bytes, checks that the
+codec budget rejects it, and preserves the destination descriptor and its last
+value. This adds three round trips and one refused action, with no files, actors
+or host frames.
+
+Six separate native worlds exercise the history boundary. Declared UTF-8 and
+invalid UTF-8 strings survive checkpoint restore after the input arena,
+original history and serialized checkpoint retire. An explicit descriptor field
+retains embedded NUL and invalid UTF-8 bytes through direct Undo/Redo. Native
+C-string checkpoints reject embedded NUL on either side while preserving prior
+history and world values. A numeric-first field batch also rejects before its
+first write when a later string cannot be represented. These cases perform ten
+checkpoint writes and four restore attempts without project files, scene actors,
+compiler evaluations or rendered frames.
+
+The 2026-10-22 model run against Release SDK
+`c676e3cc48e8a3fb2110d57477d5d83875a0ac8b337d4e549129eeb3caf274d9`
+passed one case and 261 assertions in 6.174 seconds. It made nine compile
+attempts, 39 memory hits and no persistent hits, with zero host frames and
+renders. This SDK was packaged from the current typed integration, including
+the completed compiler and native asset resource generation. Its source is
+local and uncommitted; this result does not establish final main, cold-start or
+Web acceptance. The log and exact source/SDK/binary receipt are
+`../chibi/.chibi/asset-main-integration/focused-studio-model-final.log` and
+`../chibi/.chibi/asset-main-integration/focused-model-final-result.json`.
+Five temporary controls restored the earlier codec-refusal, byte-decoding and
+history-validation behavior. Each failed at its expected assertion. Their
+source overlays, commands and logs remain in
+`../chibi/.chibi/asset-main-integration/studio-controls`.
+
+The earlier 2026-10-22 model run against the Release SDK above passed one case
 and 87 assertions in 20.047 seconds: nine compile attempts, 39 memory hits and
 no persistent hits. Those nine compile attempts include the view's lazy embedded
 engine presentation load; the earlier 73-assertion model did not synchronize this

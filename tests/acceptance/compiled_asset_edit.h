@@ -1,4 +1,7 @@
 #include "authoring/asset_compiler_host.h"
+#include "compiled_asset_history.h"
+#include "editor/collab/actions_internal.h"
+#include "editor/collab/protocol.h"
 #include "studio_registry.h"
 #include "support/resources.h"
 #include "types/text.h"
@@ -201,9 +204,119 @@ static studio *compiled_model_studio;
 static rml_backend *compiled_model_backend;
 static bool compiled_model_registry;
 static char compiled_model_root[] = "/tmp/chibi-compiled-edit-model-XXXXXX";
+static editor *compiled_collab_editor;
+static arena compiled_collab_source;
+static char *compiled_collab_action, *compiled_collab_envelope;
+static collab_message compiled_collab_message;
+
+static void compiled_collab_cleanup(void)
+{
+    free(compiled_collab_action);
+    compiled_collab_action = NULL;
+    free(compiled_collab_envelope);
+    compiled_collab_envelope = NULL;
+    collab_message_free(&compiled_collab_message);
+    arena_free(&compiled_collab_source);
+    editor_free(compiled_collab_editor);
+    compiled_collab_editor = NULL;
+}
+
+/* Use the graph constant producer and action consumer without source compilation
+ * or a session handshake. The destination must outlive every wire temporary. */
+static bool compiled_model_collab_bytes(void)
+{
+    static const char utf8[] = "caf\xc3\xa9";
+    static const char nul[] = { 'A', 0, 'B' };
+    static const char invalid[] = { 'A', (char)0xff, (char)0xc0, (char)0xaf };
+    const char *inputs[] = { utf8, nul, invalid };
+    size_t lengths[] = { sizeof utf8 - 1, sizeof nul, sizeof invalid };
+    compiled_collab_editor = editor_new(behavior_asset_new("CollabBytes"));
+    editor *e = compiled_collab_editor;
+    node *target = graph_add_node(e->active_graph, &NODE_PrintString);
+    REQUIRE(target && target->input_count == 2 && target->input_pins[1].type == PIN_STR);
+    REQUIRE(target->input_pins[1].type_name);
+    uint64_t id = target->id;
+    for (int i = 0; i < 3; i++) {
+        pin_value source;
+        REQUIRE(!pin_value_text(&compiled_collab_source, &source, inputs[i], lengths[i]));
+        target = graph_node_by_id(e->active_graph, id);
+        source.type_name = target->input_pins[1].type_name;
+        compiled_collab_action = graph_collab_action_set_input_default(e, target, 1, &source);
+        REQUIRE(compiled_collab_action);
+        arena_free(&compiled_collab_source);
+        compiled_collab_envelope = collab_message_write(
+            "byte-room",
+            "producer",
+            (uint64_t)i + 1,
+            (uint64_t)i + 1,
+            "accepted",
+            compiled_collab_action
+        );
+        free(compiled_collab_action);
+        compiled_collab_action = NULL;
+        REQUIRE(compiled_collab_envelope);
+        REQUIRE(collab_message_read(compiled_collab_envelope, &compiled_collab_message));
+        free(compiled_collab_envelope);
+        compiled_collab_envelope = NULL;
+        yyjson_val *data = yyjson_obj_get(
+            yyjson_obj_get(compiled_collab_message.payload, "default"),
+            "data"
+        );
+        REQUIRE(
+            i == 2 ? yyjson_is_obj(data) && yyjson_is_arr(yyjson_obj_get(data, "bytes"))
+                   : yyjson_is_str(data)
+        );
+        compiled_collab_action = yyjson_val_write(compiled_collab_message.payload, 0, NULL);
+        REQUIRE(compiled_collab_action);
+        collab_message_free(&compiled_collab_message);
+        char error[192];
+        bool applied = collab_actions_apply(NULL, e, compiled_collab_action, error, sizeof error);
+        free(compiled_collab_action);
+        compiled_collab_action = NULL;
+        REQUIRE(applied);
+        REQUIRE(!error[0]);
+        target = graph_node_by_id(e->active_graph, id);
+        REQUIRE(target && target->input_pins[1].default_value.type == PIN_STR);
+        pin_string actual = pin_text(target->input_pins[1].default_value);
+        REQUIRE(actual.length == lengths[i]);
+        REQUIRE(!memcmp(actual.bytes, inputs[i], lengths[i]));
+        REQUIRE(
+            target->input_pins[1].default_value.type_name &&
+            !strcmp(
+                target->input_pins[1].default_value.type_name,
+                target->input_pins[1].type_name
+            )
+        );
+    }
+    const size_t length = 1000000;
+    char *bytes = arena_alloc(&compiled_collab_source, length);
+    memset(bytes, 0xff, length);
+    pin_value rejected;
+    REQUIRE(!pin_value_text(&compiled_collab_source, &rejected, bytes, length));
+    rejected.type_name = target->input_pins[1].type_name;
+    pin_value previous = target->input_pins[1].default_value;
+    compiled_collab_action = graph_collab_action_for_command(
+        e,
+        (editor_command){ .kind = EDITOR_COMMAND_SET_PIN_DEFAULT,
+                          .data.set_pin_default = { id, 0, 1, &rejected, false } }
+    );
+    arena_free(&compiled_collab_source);
+    REQUIRE(!compiled_collab_action);
+    REQUIRE(
+        target->input_pins[1].default_value.type == PIN_STR &&
+        target->input_pins[1].default_value.text == previous.text
+    );
+    pin_string actual = pin_text(target->input_pins[1].default_value);
+    REQUIRE(actual.length == sizeof invalid);
+    REQUIRE(!memcmp(actual.bytes, invalid, sizeof invalid));
+    compiled_collab_cleanup();
+    return true;
+}
 
 static void compiled_model_cleanup(void)
 {
+    compiled_collab_cleanup();
+    compiled_history_cleanup();
     generic_asset_source_cleanup();
     if (compiled_model_fixture.scene) {
         move_fixture_free(&compiled_model_fixture);
@@ -430,13 +543,19 @@ TEST_CASE(compiled_asset_edit_model)
     REQUIRE(s->kit && s->scene && studio_editable(s));
     REQUIRE(compiled_edit_contract(s));
     REQUIRE(compiled_model_nul_controls(s));
+    REQUIRE(compiled_model_collab_bytes());
+    REQUIRE(compiled_model_history());
     REQUIRE(generic_asset_source_refresh(project));
     REQUIRE(acount(s->records) == 0);
     asset_compiler_cache_stats after = asset_source_cache_stats();
     printf(
         "\nCompiled asset model: frames=0 renders=0 files=2 actors=0 "
-        "checkpoints=0 properties_edits=3 nul_view_actors=1 nul_rows=2 "
-        "stale_checks=4 undo=2 redo=2 saved=2 "
+        "checkpoints=10 checkpoint_restores=4 properties_edits=3 "
+        "nul_view_actors=1 nul_rows=2 "
+        "stale_checks=4 collab_byte_roundtrips=3 collab_budget_refusals=1 "
+        "history_byte_cases=3 "
+        "history_rejection_cases=3 history_worlds=6 history_undo_attempts=6 "
+        "history_redo=3 source_undo=2 source_redo=2 saved=2 "
         "save_rejected=1 reload=1 disk_refreshes=2 attempts=%" PRIu64
         " memory_hits=%" PRIu64 " persistent_hits=%" PRIu64 "\n",
         after.compile_attempts - before.compile_attempts,

@@ -1729,7 +1729,7 @@
       "source_path": "src/editor/collab/actions_gate.c"
     },
     "src/editor/collab/actions_graph.c": {
-      "consumer_sha256": "ae631c452a688b10e7ed089815be5a740b18b0004b5ffe5ae7dec5fd3166722e",
+      "consumer_sha256": "233e86db49b97f118894ccc13d6f5ec8559e71a4953b65d9b760d7e2d5da8ec8",
       "current_source_sha256": "d653edabdd9b9bf566aebd6b8a9af54edd155c5aab146ab61376c43161550c75",
       "sha256": "ad5f7bf0fdad510eb1770521e58aa9f2eda84220e82d9db68bf75f29475ebcc9",
       "source_path": "src/editor/collab/actions_graph.c"
@@ -1856,7 +1856,7 @@
       "source_path": "src/editor/documents/scene_documents.c"
     },
     "src/editor/documents/scene_history.c": {
-      "consumer_sha256": "2b5e14d03044efc83a899822a0dac42ea8e075d399836a5d850be14d86a18907",
+      "consumer_sha256": "5d2547d607865a31cfb8ac13d7ba1f6202a85c57d6ccc44d490e01530f872534",
       "current_source_sha256": "c4d1eb0517f158231bd435974e3f127a011630df89d1057fb59d1bb6a81ef523",
       "sha256": "c4d1eb0517f158231bd435974e3f127a011630df89d1057fb59d1bb6a81ef523",
       "source_path": "src/editor/documents/scene_history.c"
