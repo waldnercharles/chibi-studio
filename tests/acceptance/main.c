@@ -50,6 +50,7 @@ static void acceptance_field_reads_free()
 }
 
 #include "scene_read.h"
+#include "sdk_values.h"
 
 studio *studio_acceptance_studio(void *);
 int studio_acceptance_host_main(int, char **);
@@ -5342,6 +5343,9 @@ TEST_CASE(debugger_source_history)
 int main(int argc, char **argv)
 {
     atexit(acceptance_field_reads_free);
+    if (argc == 2 && !strcmp(argv[1], "--sdk-values")) {
+        return sdk_values_main();
+    }
     if (argc == 2 && !strcmp(argv[1], "--compiled-asset-edit-model")) {
         pu_setup(NULL, compiled_model_cleanup);
         RUN_TEST_CASE(compiled_asset_edit_model);
@@ -5428,7 +5432,7 @@ int main(int argc, char **argv)
             "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
             "history "
             "--project-root PATH | --scene-cursors | --scene-read | "
-            "--project-open | "
+            "--project-open | --sdk-values | "
             "--outliner-row-policies --source PATH | "
             "--typed-prototype-preview --project-root PATH --screenshot PATH\n"
         );
