@@ -5,6 +5,35 @@ The optional native `studio-acceptance` target compiles the actual application a
 host in test wrappers. The production binary has no fixture CLI or test hooks.
 Build with `-DCHIBI_STUDIO_BUILD_ACCEPTANCE=ON` against an installed SDK.
 
+`studio-acceptance --project-location` runs five renderer-free pico cases for
+New Project's native folder selection. Existing directories, regular files and
+symlinks keep their names occupied, including dangling and looping symlinks.
+The chosen folder can be created without changing the dangling link or its
+target. The cases also retain path-length and invalid-parent errors. They do
+not initialize Studio, load a project, prepare sources or render a frame.
+
+On macOS, the same C cases can run without an SDK through a disposable driver
+from the repository root:
+
+```sh
+scratch=$(mktemp -d)
+trap 'rm -f "$scratch/driver.c" "$scratch/project-location"; rmdir "$scratch"' EXIT
+cat > "$scratch/driver.c" <<'EOF'
+#define PICO_UNIT_IMPLEMENTATION
+#include "vendor/pico_unit.h"
+#include "project_location.h"
+int main() {
+    project_location_tests();
+    pu_print_stats();
+    return pu_test_failed() ? 1 : 0;
+}
+EOF
+cc -std=c23 -Wall -Wextra -Werror -Wl,-dead_strip -Isrc -Itests/acceptance \
+  "$scratch/driver.c" src/editor/studio/project_location.c \
+  -o "$scratch/project-location"
+"$scratch/project-location"
+```
+
 `studio-acceptance --sdk-values` runs twelve renderer-free C cases without a
 project or compiler preparation. Property copies retain embedded NUL and
 non-UTF-8 bytes after their input arena retires. UTF-8 and non-UTF-8 field edits
