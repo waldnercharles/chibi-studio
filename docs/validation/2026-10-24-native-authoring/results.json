@@ -1,0 +1,93 @@
+{
+  "studio": "824d3112f6f7a4da6bd785d015f106fd11b41cca",
+  "studio_tree": "2f93a663f10b7925239a0d92483fb7024eaaec42",
+  "engine": "845367848547b9d04612744fa70c65545717525d",
+  "sdk_build_id": "5ecad31eb406b3f49e5f283f6a010b497b4ad799711beb5d3536297f0bf21655",
+  "sdk_manifest_sha256": "eab2353498dc488d6a0104705f71fdbfd00d762474444e7439e185eff34c7bb5",
+  "sdk_files_verified": 1252,
+  "sdk_unchanged_after_checks": true,
+  "compiler": "Clang 22.1.8",
+  "configuration": "Release",
+  "build_jobs": 2,
+  "tests": [
+    {
+      "selector": "--project-location",
+      "passed_cases": 5,
+      "assertions": 32,
+      "wall_time_seconds": 0.812,
+      "hidden_frames": 0
+    },
+    {
+      "selector": "--sdk-values",
+      "passed_cases": 12,
+      "assertions": 163,
+      "wall_time_seconds": 0.238,
+      "hidden_frames": 0
+    },
+    {
+      "selector": "--scene-cursors",
+      "passed_cases": 1,
+      "assertions": 29,
+      "wall_time_seconds": 0.092,
+      "hidden_frames": 0
+    },
+    {
+      "selector": "--scene-read",
+      "passed_cases": 6,
+      "assertions": 1141,
+      "wall_time_seconds": 0.093,
+      "hidden_frames": 0
+    },
+    {
+      "selector": "--project-open",
+      "passed_cases": 1,
+      "assertions": 50,
+      "wall_time_seconds": 0.093,
+      "hidden_frames": 0
+    },
+    {
+      "selector": "--outliner-row-policies",
+      "passed_cases": 1,
+      "assertions": 1940,
+      "wall_time_seconds": 0.1,
+      "hidden_frames": 0
+    },
+    {
+      "selector": "--source-edit",
+      "passed_cases": 1,
+      "assertions": 8935,
+      "wall_time_seconds": 2.39,
+      "hidden_frames": 4
+    },
+    {
+      "selector": "--prototype-source",
+      "passed_cases": 1,
+      "assertions": 270,
+      "wall_time_seconds": 1.175,
+      "hidden_frames": 2
+    },
+    {
+      "selector": "--prototype-source-authority",
+      "passed_cases": 1,
+      "assertions": 881,
+      "wall_time_seconds": 0.919,
+      "hidden_frames": 2
+    }
+  ],
+  "totals": {
+    "selectors": 9,
+    "cases": 29,
+    "assertions": 13441,
+    "hidden_frames": 8
+  },
+  "binaries": {
+    "chibi-dev": "c5578ff6c16019938e9640b424b173651a9a97f7eee00a7ed51cfa56419d42ae",
+    "studio-acceptance": "4f832be92c4ae4e967a36e41f091b1d9e0e27b659aa8588d8cfef2b2512001c9"
+  },
+  "runner": {
+    "checkout_revision": "d0de4a84ecf50badcab661411470bdf6f3da5fa2",
+    "sha256": "8e51a66ee7b52f072cabebf91a1381b06f18c9cbfd3aca9b543fd02ced329f07",
+    "direct_native_execution_and_cleanup_identical_to_engine845": true,
+    "differences": "Only named selector inventory and aggregate group entries, outside the direct native route used here."
+  }
+}
