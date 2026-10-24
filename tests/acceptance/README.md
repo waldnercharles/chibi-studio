@@ -12,8 +12,8 @@ The chosen folder can be created without changing the dangling link or its
 target. The cases also retain path-length and invalid-parent errors. They do
 not initialize Studio, load a project, prepare sources or render a frame.
 
-The same C cases can run without an SDK through a disposable driver from the
-repository root:
+On macOS, the same C cases can run without an SDK through a disposable driver
+from the repository root:
 
 ```sh
 scratch=$(mktemp -d)
@@ -28,7 +28,7 @@ int main() {
     return pu_test_failed() ? 1 : 0;
 }
 EOF
-cc -std=c23 -Wall -Wextra -Werror -Isrc -Itests/acceptance \
+cc -std=c23 -Wall -Wextra -Werror -Wl,-dead_strip -Isrc -Itests/acceptance \
   "$scratch/driver.c" src/editor/studio/project_location.c \
   -o "$scratch/project-location"
 "$scratch/project-location"
