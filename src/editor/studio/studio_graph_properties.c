@@ -902,8 +902,8 @@ static void model_node_properties(studio *s, editor *e, graph *gr, node *n, bool
             kit_prop_end(k);
         }
         if (parameter) {
-            static const char *const names[] = { "Float", "Vector 2", "Vector 3", "Vector 4" };
-            static const char *const types[] = { "float", "ShaderVec2", "ShaderVec3", "ShaderVec4" };
+            static const char *const names[] = { "Number", "Vector 2", "Vector 3", "Vector 4" };
+            static const char *const types[] = { "number", "ShaderVec2", "ShaderVec3", "ShaderVec4" };
             model_parameter_decl declaration;
             shader_error error = { 0 };
             bool valid = model_parameter_get(n, &declaration, &error);
