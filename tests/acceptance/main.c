@@ -41,6 +41,7 @@
 #include <unistd.h>
 
 /* Test bodies require the application and pico_unit declarations above. */
+#include "project_location.h"
 #include "scene_read.h"
 #include "sdk_values.h"
 
@@ -4577,6 +4578,11 @@ TEST_CASE(debugger_source_history)
 
 int main(int argc, char **argv)
 {
+    if (argc == 2 && !strcmp(argv[1], "--project-location")) {
+        project_location_tests();
+        pu_print_stats();
+        return pu_test_failed() ? 1 : 0;
+    }
     if (argc == 2 && !strcmp(argv[1], "--sdk-values")) {
         return sdk_values_main();
     }
@@ -4654,7 +4660,7 @@ int main(int argc, char **argv)
             "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
             "history "
             "--project-root PATH | --scene-cursors | --scene-read | "
-            "--project-open | --sdk-values | "
+            "--project-open | --project-location | --sdk-values | "
             "--outliner-row-policies --source PATH\n"
         );
         return 2;

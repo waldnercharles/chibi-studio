@@ -46,6 +46,7 @@ set(STUDIO_SOURCES
     src/editor/rmlui/kit_text.c
     src/editor/rmlui/kit_toast.c
     src/editor/rmlui/kit_wires.c
+    src/editor/studio/project_location.c
     src/editor/studio/studio_assets.c
     src/editor/studio/studio_calls.c
     src/editor/studio/studio_canvas.c

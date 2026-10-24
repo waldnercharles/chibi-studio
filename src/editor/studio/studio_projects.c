@@ -1,4 +1,5 @@
 #include "editor/documents/prototype_source_input.h"
+#include "editor/studio/project_location.h"
 /* The projects Studio opens: those opened recently, most recent first, then
  * the workspace's own and those in its projects directory, and any folder
  * File ▸ Open Project… picks. Opening one rebuilds the editor, so the
@@ -550,33 +551,6 @@ static void trim(char *text)
 }
 
 #ifndef __EMSCRIPTEN__
-static void project_slug(const char *name, char *out, size_t size)
-{
-    size_t at = 0;
-    bool separator = false;
-    for (const unsigned char *c = (const unsigned char *)name; *c; c++) {
-        bool alphanumeric = (*c >= 'a' && *c <= 'z') ||
-                            (*c >= 'A' && *c <= 'Z') || (*c >= '0' && *c <= '9');
-        if (alphanumeric) {
-            if (separator && at && at + 1 < size) {
-                out[at++] = '-';
-            }
-            if (at + 1 >= size) {
-                break;
-            }
-            out[at++] = (char)tolower(*c);
-            separator = false;
-        } else {
-            separator = true;
-        }
-    }
-    if (!at) {
-        snprintf(out, size, "project");
-        return;
-    }
-    out[at] = '\0';
-}
-
 /* Where New Project creates unless another folder is chosen: the workspace's
    projects, else beside the external project an installed editor opened. */
 static bool default_location(const studio *s, char *folder, size_t size)
@@ -610,8 +584,6 @@ static bool default_location(const studio *s, char *folder, size_t size)
 
 static char *native_project_root(const studio *s, const char *name)
 {
-    char base[128];
-    project_slug(name, base, sizeof base);
     char folder[4096];
     if (s->new_project.folder[0]) {
         snprintf(folder, sizeof folder, "%s", s->new_project.folder);
@@ -620,23 +592,10 @@ static char *native_project_root(const studio *s, const char *name)
         return NULL;
     }
     char path[4096];
-    struct stat info;
-    for (int index = 1;; index++) {
-        int length = index == 1
-                       ? snprintf(path, sizeof path, "%s/%s", folder, base)
-                       : snprintf(path, sizeof path, "%s/%s-%d", folder, base, index);
-        if (length < 0 || (size_t)length >= sizeof path) {
-            errno = ENAMETOOLONG;
-            return NULL;
-        }
-        if (stat(path, &info) == 0) {
-            continue;
-        }
-        if (errno == ENOENT) {
-            return xstrdup(path);
-        }
+    if (!studio_project_location(folder, name, path, sizeof path)) {
         return NULL;
     }
+    return xstrdup(path);
 }
 #endif
 
