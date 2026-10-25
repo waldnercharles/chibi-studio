@@ -9,6 +9,7 @@
 #include "authoring/source_presentation.h"
 #include "editor/studio/studio_graph_internal.h"
 #include "editor/ui/labels.h"
+#include "execution/integer_report.h"
 #include "execution/status.h"
 #include "graph/document/library.h"
 #include "support/array.h"
@@ -163,79 +164,150 @@ static void add_error(studio *s, const studio_runtime_error *error)
     apush(s->runtime_errors, *error);
 }
 
+/* Adds a run's error, or a warning that keeps it running, at its authored
+ * source: the source module with that id, and the smallest node whose range
+ * holds the failing one. */
+static void add_located(
+    studio *s,
+    const authoring_source *source,
+    uint64_t module_id,
+    const char *asset_name,
+    int start,
+    int end,
+    int line,
+    const char *message,
+    bool warning
+)
+{
+    const authoring_sources *sources = preview_sources_applied(s->scene->live);
+    studio_runtime_error error = { .count = 1,
+                                   .start = start,
+                                   .end = end,
+                                   .line = line,
+                                   .warning = warning };
+    const char *name = asset_name && asset_name[0] ? asset_name
+                                                   : source->analysis->name;
+    snprintf(error.behavior, sizeof error.behavior, "%s", source->analysis->name);
+    snprintf(error.at.asset, sizeof error.at.asset, "%s", name);
+    snprintf(error.message, sizeof error.message, "%s", message);
+    const authoring_source *origin_source = NULL;
+    for (int j = 0; j < authoring_sources_count(sources); j++) {
+        const authoring_source *candidate = authoring_sources_at(sources, j);
+        if (candidate->module && execution_module_id(candidate->module) == module_id) {
+            origin_source = candidate;
+            break;
+        }
+    }
+    if (origin_source) {
+        snprintf(
+            error.at.asset,
+            sizeof error.at.asset,
+            "%s",
+            origin_source->analysis->name
+        );
+        snprintf(error.path, sizeof error.path, "%s", origin_source->path);
+    }
+    snprintf(error.node, sizeof error.node, "line %d", line);
+    preview_definition *definition = origin_source ? preview_find_definition(
+                                                         s->scene->live,
+                                                         origin_source->analysis->name
+                                                     )
+                                                   : NULL;
+    const authoring_source_presentation *presentation = definition ? definition->applied_presentation
+                                                                   : NULL;
+    const source_presentation_origin *chosen = NULL;
+    for (int j = 0; presentation &&
+                    j < authoring_source_presentation_origin_count(presentation);
+         j++) {
+        const source_presentation_origin
+            *origin = authoring_source_presentation_origin_at(presentation, j);
+        if (end <= start || origin->pin || origin->range.start > start ||
+            origin->range.end < end) {
+            continue;
+        }
+        if (!chosen || origin->range.end - origin->range.start <
+                           chosen->range.end - chosen->range.start) {
+            chosen = origin;
+        }
+    }
+    if (chosen) {
+        error.at.graph_id = chosen->graph;
+        error.at.node_id = chosen->node;
+    }
+    add_error(s, &error);
+}
+
+/* Each program's first failure, then the integer overflows, zero divisors
+ * and clamping conversions its modules reported since the last frame. */
 static void collect_source_errors(studio *s, source_registry *sources_registry)
 {
     const authoring_sources *sources = preview_sources_applied(s->scene->live);
+    execution_integer_report *reports = NULL;
     for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
         const authoring_source *source = authoring_sources_at(sources, i);
         execution_program
             *program = source_program(sources_registry, source->analysis->name);
-        const execution_program_failure *failure = program
-                                                     ? execution_program_error(program)
-                                                     : NULL;
-        if (!failure) {
+        if (!program) {
             continue;
         }
-        studio_runtime_error error = { .count = 1,
-                                       .start = failure->start,
-                                       .end = failure->end,
-                                       .line = failure->line };
-        const char *name = failure->asset_name[0] ? failure->asset_name
-                                                  : source->analysis->name;
-        snprintf(error.behavior, sizeof error.behavior, "%s", source->analysis->name);
-        snprintf(error.at.asset, sizeof error.at.asset, "%s", name);
-        snprintf(error.message, sizeof error.message, "%s", failure->message);
-        const authoring_source *origin_source = NULL;
-        for (int j = 0; j < authoring_sources_count(sources); j++) {
-            const authoring_source *candidate = authoring_sources_at(sources, j);
-            if (candidate->module &&
-                execution_module_id(candidate->module) == failure->module_id) {
-                origin_source = candidate;
-                break;
-            }
-        }
-        if (origin_source) {
-            snprintf(
-                error.at.asset,
-                sizeof error.at.asset,
-                "%s",
-                origin_source->analysis->name
+        const execution_program_failure *failure = execution_program_error(program);
+        if (failure) {
+            add_located(
+                s,
+                source,
+                failure->module_id,
+                failure->asset_name,
+                failure->start,
+                failure->end,
+                failure->line,
+                failure->message,
+                false
             );
-            snprintf(error.path, sizeof error.path, "%s", origin_source->path);
+            execution_program_clear_error(program);
         }
-        snprintf(error.node, sizeof error.node, "line %d", failure->line);
-        preview_definition *definition = origin_source
-                                           ? preview_find_definition(
-                                                 s->scene->live,
-                                                 origin_source->analysis->name
-                                             )
-                                           : NULL;
-        const authoring_source_presentation *presentation = definition
-                                                              ? definition->applied_presentation
-                                                              : NULL;
-        const source_presentation_origin *chosen = NULL;
-        for (int j = 0; presentation &&
-                        j < authoring_source_presentation_origin_count(presentation);
-             j++) {
-            const source_presentation_origin
-                *origin = authoring_source_presentation_origin_at(presentation, j);
-            if (failure->end <= failure->start || origin->pin ||
-                origin->range.start > failure->start ||
-                origin->range.end < failure->end) {
-                continue;
-            }
-            if (!chosen || origin->range.end - origin->range.start <
-                               chosen->range.end - chosen->range.start) {
-                chosen = origin;
-            }
+        asetlen(reports, 0);
+        execution_module_take_integer_reports(execution_program_module(program), &reports);
+        for (int j = 0; j < acount(reports); j++) {
+            const execution_integer_report *report = &reports[j];
+            add_located(
+                s,
+                source,
+                report->module_id,
+                report->asset_name,
+                report->start,
+                report->end,
+                report->line,
+                execution_integer_report_text(report->kind),
+                true
+            );
         }
-        if (chosen) {
-            error.at.graph_id = chosen->graph;
-            error.at.node_id = chosen->node;
-        }
-        add_error(s, &error);
-        execution_program_clear_error(program);
     }
+    afree(reports);
+}
+
+/* Lets every site of the registry's programs report again. */
+static void reset_reports(studio *s, source_registry *sources_registry)
+{
+    const authoring_sources *sources = preview_sources_applied(s->scene->live);
+    for (int i = 0; sources && i < authoring_sources_count(sources); i++) {
+        execution_program *program = source_program(
+            sources_registry,
+            authoring_sources_at(sources, i)->analysis->name
+        );
+        if (program) {
+            execution_module_reset_integer_reports(execution_program_module(program));
+        }
+    }
+}
+
+void studio_debug_clear_runtime(studio *s)
+{
+    asetlen(s->runtime_errors, 0);
+    reset_reports(s, s->scene->live->runtime->sources);
+    reset_reports(
+        s,
+        prototype_preview_live(s->scene->prototype_preview)->runtime->sources
+    );
 }
 
 /* Copy log text into editor-owned rows before a publication retires its source
@@ -440,7 +512,7 @@ void studio_debug_frame(studio *s)
     app_scene_authoring *scene = s->scene;
     bool session = runtime_session(scene);
     if (session && !s->session) {
-        asetlen(s->runtime_errors, 0);
+        studio_debug_clear_runtime(s);
     }
     s->session = session;
     collect_errors(s, scene->live->runtime);

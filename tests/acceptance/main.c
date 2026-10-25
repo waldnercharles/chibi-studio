@@ -14,6 +14,7 @@
 #include "editor/studio/studio_thumbnails.h"
 #include "editor/workspace/asset_refactor.h"
 #include "editor/workspace/scene_internal.h"
+#include "execution/integer_report.h"
 #include "graph/authoring/graph_edit.h"
 #include "graph/authoring/local_edit.h"
 #include "graph/model/local.h"
@@ -80,7 +81,8 @@ static enum {
     PROMPTS,
     CODE_FOLLOWUPS,
     CODE_GLYPHS,
-    PANEL_IDLE
+    PANEL_IDLE,
+    INTEGER_REPORTS
 } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] = "Counter :: behavior {\n"
@@ -2254,6 +2256,90 @@ static bool play_keys_frame(void *state)
     return true;
 }
 
+#define INTEGER_REPORT_FRAMES 10
+
+/* Sets the last ticker's live count to the int maximum, so its next tick
+   overflows, and reads the count it had. */
+static bool max_count(studio *s, int *count)
+{
+    execution_program *program = source_program(s->scene->live->runtime->sources, "Counter");
+    REQUIRE(program && acount(s->scene->actors));
+    ecs_entity ticker = s->scene->actors[acount(s->scene->actors) - 1].entity;
+    execution_instance *instance = execution_program_instance(program, ecs_entity_to_u64(ticker));
+    REQUIRE(instance);
+    const authoring_sources *sources = preview_sources_applied(s->scene->live);
+    for (int i = 0; i < authoring_sources_count(sources); i++) {
+        const script_analysis *analysis = authoring_sources_at(sources, i)->analysis;
+        for (int j = 0; !strcmp(analysis->name, "Counter") && j < analysis->symbol_count;
+             j++) {
+            const script_symbol *symbol = &analysis->symbols[j];
+            if (symbol->kind != SCRIPT_STATE || strcmp(symbol->name, "count")) {
+                continue;
+            }
+            *count = execution_instance_state(instance, symbol->id)->i;
+            pin_value max = { .type = PIN_I32, .i = INT32_MAX };
+            REQUIRE(execution_instance_set_state(instance, symbol->id, max) == 0);
+            return true;
+        }
+    }
+    REQUIRE(false);
+    return false;
+}
+
+/* Studio shows the overflow once, as a warning at its line, while the
+   count wraps and keeps counting; clearing the output re-arms the site. */
+static bool reported_once(studio *s)
+{
+    REQUIRE(acount(s->runtime_errors) == 1);
+    const studio_runtime_error *error = &s->runtime_errors[0];
+    REQUIRE(error->warning && error->count == 1 && error->line == 4);
+    REQUIRE(!strcmp(error->message, execution_integer_report_text(EXECUTION_INTEGER_OVERFLOW)));
+    REQUIRE(!strcmp(error->behavior, "Counter") && error->start < error->end);
+    return true;
+}
+
+static bool integer_reports_frame(void *state)
+{
+    studio *s = studio_acceptance_studio(state);
+    REQUIRE(s && s->ui);
+    frames++;
+    REQUIRE(frames <= INTEGER_REPORT_FRAMES);
+    switch (frames) {
+        case 1:
+            REQUIRE(
+                app_scene_authoring_register_prototype(
+                    s->scene,
+                    "name \"Ticker\"\ncomponents {\n"
+                    "    Transform x=0 y=0\n}\n"
+                    "(array)behaviors \"Counter\"\n",
+                    NULL
+                ) == 0
+            );
+            REQUIRE(app_scene_authoring_add_instance(s->scene, "Ticker") == 0);
+            return press_key(SDLK_F5);
+        case 3: {
+            REQUIRE(studio_session(s) && !acount(s->runtime_errors));
+            int count;
+            return max_count(s, &count) && count > 0;
+        }
+        case 5: return reported_once(s);
+        case 6: {
+            REQUIRE(reported_once(s));
+            int count;
+            REQUIRE(max_count(s, &count) && count < 0);
+            studio_debug_clear_runtime(s);
+            break;
+        }
+        case 8:
+            return reported_once(s) && press_chord(SDLK_F5, SDL_KMOD_LSHIFT);
+        case INTEGER_REPORT_FRAMES:
+            REQUIRE(!studio_session(s));
+            keys = frames;
+            break;
+    }
+    return true;
+}
+
 #define PROMPT_FRAMES 19
 static bool quit_answered;
 
@@ -4210,6 +4296,7 @@ bool studio_acceptance_frame(void *state)
         case CODE_FOLLOWUPS: callback_ok = code_followups_frame(state); break;
         case CODE_GLYPHS: callback_ok = code_glyphs_frame(state); break;
         case PANEL_IDLE: callback_ok = panel_idle_frame(state); break;
+        case INTEGER_REPORTS: callback_ok = integer_reports_frame(state); break;
     }
     return callback_ok;
 }
@@ -4485,6 +4572,20 @@ TEST_CASE(play_keys)
     return true;
 }
 
+TEST_CASE(integer_reports)
+{
+    REQUIRE(unchanged_source());
+    char *args[] = { (char *)executable, "--headless",
+                     "--frames",         FRAMES_TEXT(INTEGER_REPORT_FRAMES),
+                     "--fixed-dt",       "0.016666666666666666",
+                     "--project-root",   (char *)project };
+    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
+    REQUIRE(callback_ok && keys == INTEGER_REPORT_FRAMES);
+    REQUIRE(unchanged_source());
+    printf("\nStudio integer reports accepted\n");
+    return true;
+}
+
 TEST_CASE(unsaved_prompts)
 {
     REQUIRE(unchanged_source());
@@ -4636,13 +4737,14 @@ int main(int argc, char **argv)
     bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
     bool idle = argc == 4 && !strcmp(argv[1], "--panel-idle");
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
+    bool integers = argc == 4 && !strcmp(argv[1], "--integer-reports");
     if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
          !keys_mode && !labels && !units && !hierarchy && !scene_move_mode &&
          !prototype_source_mode && !prototype_source_authority_mode &&
          !outliner_move_mode && !outliner_rows_mode && !physics && !assets &&
          !viewport && !camera && !playing && !prompting && !followups &&
          !glyphs && !idle && !graph_pointer_mode && !asset_pointer_mode &&
-         !debugging && !gizmo && !colliders) ||
+         !debugging && !gizmo && !colliders && !integers) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
@@ -4657,7 +4759,8 @@ int main(int argc, char **argv)
             "--asset-selection|--scene-viewport|--scene-camera|--scene-gizmo3d|"
             "--scene-collider3d|"
             "--play-keys|--unsaved-prompts|"
-            "--code-followups|--code-glyphs|--panel-idle|--debugger-source-"
+            "--code-followups|--code-glyphs|--panel-idle|--integer-reports|"
+            "--debugger-source-"
             "history "
             "--project-root PATH | --scene-cursors | --scene-read | "
             "--project-open | --project-location | --sdk-values | "
@@ -4712,6 +4815,7 @@ int main(int argc, char **argv)
          : prompting                       ? PROMPTS
          : followups                       ? CODE_FOLLOWUPS
          : idle                            ? PANEL_IDLE
+         : integers                        ? INTEGER_REPORTS
                                            : CODE_GLYPHS;
     switch (mode) {
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
@@ -4748,6 +4852,7 @@ int main(int argc, char **argv)
         case CODE_FOLLOWUPS: RUN_TEST_CASE(code_followups); break;
         case CODE_GLYPHS: RUN_TEST_CASE(code_glyphs); break;
         case PANEL_IDLE: RUN_TEST_CASE(panel_idle); break;
+        case INTEGER_REPORTS: RUN_TEST_CASE(integer_reports); break;
     }
     pu_print_stats();
     free(root);

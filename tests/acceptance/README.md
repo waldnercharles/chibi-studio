@@ -426,6 +426,14 @@ copy and runs six hidden frames, each queuing one key through SDL: F5 plays, Spa
 pauses, F10 steps while paused, F5 resumes and Shift+F5 stops. It also checks the
 File menu's Revert File label. It saves nothing.
 
+`studio-acceptance --integer-reports --project-root PATH` takes another
+disposable copy and runs ten hidden frames. It adds a ticker running Counter
+from a prototype only that run registers, plays the scene with F5 and sets the
+live count to the int maximum. The Output then holds one warning, "Integer
+overflow wrapped around", at Counter's line 4, while the count wraps and keeps
+counting. The warning stays single over later frames. Clearing the Output lets
+the site report again, and Shift+F5 stops. It saves nothing.
+
 `studio-acceptance --unsaved-prompts --project-root PATH` takes another disposable
 copy and runs at most nineteen hidden frames with reduced motion on, so toasts sit
 where layout puts them. Counter's clean tab closes without asking. With Counter

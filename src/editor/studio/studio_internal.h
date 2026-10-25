@@ -353,7 +353,8 @@ typedef struct
     char message[CMPL_MESSAGE_MAX];
 } studio_problem;
 
-/* Runs of the playing scene that failed at one node with one message. */
+/* Runs of the playing scene that failed, or reported an integer overflow, zero
+   divisor or clamping conversion, at one node with one message. */
 typedef struct
 {
     char behavior[128];
@@ -363,6 +364,7 @@ typedef struct
     char path[1024];
     int start, end, line;
     int count;
+    bool warning; /* The run kept going, as after an integer overflow. */
 } studio_runtime_error;
 
 /* A compile diagnostic or runtime failure drawn on a node of the open graph. */
@@ -1966,6 +1968,8 @@ typedef enum
 } studio_debug_command;
 /* Before the frame is emitted: runtime errors, problems and the paused run. */
 void studio_debug_frame(studio *s);
+/* Empties the Runtime list and lets every integer report site report again. */
+void studio_debug_clear_runtime(studio *s);
 /* Opens the node's behavior and graph in a Behavior area, then selects and
    frames the node. */
 void studio_reveal(studio *s, const studio_node_ref *at);

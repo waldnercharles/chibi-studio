@@ -393,7 +393,12 @@ static void runtime_row(studio *s, int64_t key, output_row *row)
         error->behavior,
         error->node
     );
-    located(row, KIT_TOAST_ERROR, place, error->message);
+    located(
+        row,
+        error->warning ? KIT_TOAST_WARNING : KIT_TOAST_ERROR,
+        place,
+        error->message
+    );
     if (error->count > 1) {
         snprintf(row->count, sizeof row->count, "\xc3\x97%d", error->count);
     }
@@ -950,7 +955,7 @@ static void clear(studio *s)
                 editor_clear_log(s->scene->graph_editor);
             }
             break;
-        case OUTPUT_RUNTIME: asetlen(s->runtime_errors, 0); break;
+        case OUTPUT_RUNTIME: studio_debug_clear_runtime(s); break;
         case OUTPUT_INFO:
             s->records_dropped += acount(s->records);
             asetlen(s->records, 0);
