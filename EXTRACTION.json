@@ -1855,7 +1855,7 @@
       "current_source_sha256": "4d8ef83a4ace1d2059f5dbffded88d7a73356d2b30b194e6ed69c371e0c185e3",
       "sha256": "4c07ef642ad0abf81b31795fe2120db257b5725456014ecf61a39bc323f6f561",
       "source_path": "src/editor/studio/studio_debug.c",
-      "consumer_sha256": "3616225cab21289e01dbdc9f82be21f10d41401056b48f9f5ce2992096d6297a"
+      "consumer_sha256": "85797eeb5a4913feba2b5bbf3cd4bc6dc34e0ca3f10d398edefd0d6eae6d5e2a"
     },
     "src/editor/studio/studio_definition.c": {
       "current_source_sha256": "ac5d51481a7852f684484641b1659c9ac2ad43abb04bd27798a08e806c3336fb",
@@ -2056,7 +2056,7 @@
       "current_source_sha256": "03b20104daf1567838283ed7332ee9492b388b9e52e508122f9246b53545f4e9",
       "sha256": "a01a22cf19a858e983159029166fe7d9086a883aa6e864bfa9a359b78048a1e6",
       "source_path": "src/editor/studio/studio_internal.h",
-      "consumer_sha256": "77ebc21ca198db32e5c476a6b2ca16e3ecd3eb8d283bfa8daadd406083ffef71"
+      "consumer_sha256": "6c9aff250559d2614ce895449309c5fb472ad92408a8d8793ef6785544dceade"
     },
     "src/editor/studio/studio_keymap.c": {
       "current_source_sha256": "8b5d145d9512c78e41ef18d71680421e8da299c9aa6c6b5585d00d6b5b23d88a",
@@ -2115,7 +2115,7 @@
       "current_source_sha256": "d721ca7f7709779e7162098aea06f313aead1e9949c8f3e054017b1eeabca469",
       "sha256": "7a30fc6f5e68a78f43575a4977ba80c9602449b29cf3a645cd12e4106dab40a1",
       "source_path": "src/editor/studio/studio_output.c",
-      "consumer_sha256": "971ca4213014608fb4758dfd8a8a5faa8b01e22cd37dfc4285d61f06f8b60904"
+      "consumer_sha256": "4a2f97af22dae72edf81cc3ac3df1d4c1024444447496e2d8f61d015a25e3deb"
     },
     "src/editor/studio/studio_palette.c": {
       "current_source_sha256": "950fea49f12d09b3bc70d606a9177c277aced6770dda7818242e42e8557cc45a",

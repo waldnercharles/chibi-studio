@@ -33,17 +33,6 @@
 
 enum
 {
-    OUTPUT_LOG,
-    OUTPUT_PROBLEMS,
-    OUTPUT_RUNTIME,
-    OUTPUT_INFO,
-    OUTPUT_FIND,  /* Find References (studio_find.c) */
-    OUTPUT_CALLS, /* Call Hierarchy (studio_calls.c) */
-    OUTPUT_VIEWS,
-};
-
-enum
-{
     PROBLEMS_ASSET,
     PROBLEMS_PROJECT,
 };

@@ -300,14 +300,19 @@ static void reset_reports(studio *s, source_registry *sources_registry)
     }
 }
 
-void studio_debug_clear_runtime(studio *s)
+static void rearm_reports(studio *s)
 {
-    asetlen(s->runtime_errors, 0);
     reset_reports(s, s->scene->live->runtime->sources);
     reset_reports(
         s,
         prototype_preview_live(s->scene->prototype_preview)->runtime->sources
     );
+}
+
+void studio_debug_clear_runtime(studio *s)
+{
+    asetlen(s->runtime_errors, 0);
+    rearm_reports(s);
 }
 
 /* Copy log text into editor-owned rows before a publication retires its source
@@ -510,13 +515,19 @@ bool studio_debug(studio *s, studio_debug_command command)
 void studio_debug_frame(studio *s)
 {
     app_scene_authoring *scene = s->scene;
-    bool session = runtime_session(scene);
+    bool session = runtime_session(scene), ended = s->session && !session;
+    /* Begin and the first step have already run, so a new session keeps
+       what they reported and drops only the last session's rows. */
     if (session && !s->session) {
-        studio_debug_clear_runtime(s);
+        asetlen(s->runtime_errors, 0);
     }
     s->session = session;
     collect_errors(s, scene->live->runtime);
     collect_errors(s, prototype_preview_live(scene->prototype_preview)->runtime);
+    /* Every site reports again in the next session, before it runs. */
+    if (ended) {
+        rearm_reports(s);
+    }
     compile_on_change(s);
     follow_pause(s);
 }

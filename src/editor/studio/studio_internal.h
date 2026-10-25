@@ -51,6 +51,18 @@ typedef enum
     STUDIO_AREA_COUNT,
 } studio_area_slot;
 
+/* The Output panel's views. */
+typedef enum
+{
+    OUTPUT_LOG,
+    OUTPUT_PROBLEMS,
+    OUTPUT_RUNTIME,
+    OUTPUT_INFO,
+    OUTPUT_FIND,  /* Find References (studio_find.c) */
+    OUTPUT_CALLS, /* Call Hierarchy (studio_calls.c) */
+    OUTPUT_VIEWS,
+} studio_output_view;
+
 typedef enum
 {
     STUDIO_TAB_SCENE,
@@ -1195,7 +1207,7 @@ struct studio
         int toast;
         uint64_t step; /* the Undo step the toast undoes */
     } prototype_action;
-    int output_view;
+    int output_view; /* studio_output_view */
     char output_filter[128];
     char references_title[160]; /* what Output's Find view lists references to */
     studio_reference *references;

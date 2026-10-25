@@ -2256,46 +2256,137 @@ static bool play_keys_frame(void *state)
     return true;
 }
 
-#define INTEGER_REPORT_FRAMES 10
+#define INTEGER_REPORT_FRAMES 16
 
-/* Sets the last ticker's live count to the int maximum, so its next tick
-   overflows, and reads the count it had. */
-static bool max_count(studio *s, int *count)
+/* Burst wraps, divides by zero and clamps once, in its Begin. */
+static const char burst_bytes[] = "Burst :: behavior {\n"
+                                  "    big: int = 2147483647\n"
+                                  "    zero: int = 0\n"
+                                  "    amount: double = 300\n"
+                                  "    wrapped: int = 0\n"
+                                  "    quotient: int = 7\n"
+                                  "    small: byte = 0\n"
+                                  "    on Begin :: () {\n"
+                                  "        wrapped = big + 1\n"
+                                  "        quotient = quotient / zero\n"
+                                  "        small = byte(amount)\n"
+                                  "    }\n"
+                                  "}\n";
+
+/* The last ticker's instance of behavior and the id of its state `name`. */
+static bool ticker_state(
+    studio *s,
+    const char *behavior,
+    const char *name,
+    execution_instance **instance,
+    uint64_t *id
+)
 {
-    execution_program *program = source_program(s->scene->live->runtime->sources, "Counter");
+    execution_program *program = source_program(s->scene->live->runtime->sources, behavior);
     REQUIRE(program && acount(s->scene->actors));
     ecs_entity ticker = s->scene->actors[acount(s->scene->actors) - 1].entity;
-    execution_instance *instance = execution_program_instance(program, ecs_entity_to_u64(ticker));
-    REQUIRE(instance);
+    *instance = execution_program_instance(program, ecs_entity_to_u64(ticker));
+    REQUIRE(*instance);
     const authoring_sources *sources = preview_sources_applied(s->scene->live);
     for (int i = 0; i < authoring_sources_count(sources); i++) {
         const script_analysis *analysis = authoring_sources_at(sources, i)->analysis;
-        for (int j = 0; !strcmp(analysis->name, "Counter") && j < analysis->symbol_count;
+        for (int j = 0; !strcmp(analysis->name, behavior) && j < analysis->symbol_count;
              j++) {
             const script_symbol *symbol = &analysis->symbols[j];
-            if (symbol->kind != SCRIPT_STATE || strcmp(symbol->name, "count")) {
-                continue;
+            if (symbol->kind == SCRIPT_STATE && !strcmp(symbol->name, name)) {
+                *id = symbol->id;
+                return true;
             }
-            *count = execution_instance_state(instance, symbol->id)->i;
-            pin_value max = { .type = PIN_I32, .i = INT32_MAX };
-            REQUIRE(execution_instance_set_state(instance, symbol->id, max) == 0);
-            return true;
         }
     }
     REQUIRE(false);
     return false;
 }
 
-/* Studio shows the overflow once, as a warning at its line, while the
-   count wraps and keeps counting; clearing the output re-arms the site. */
-static bool reported_once(studio *s)
+static const pin_value *burst_value(studio *s, const char *name)
 {
-    REQUIRE(acount(s->runtime_errors) == 1);
-    const studio_runtime_error *error = &s->runtime_errors[0];
-    REQUIRE(error->warning && error->count == 1 && error->line == 4);
-    REQUIRE(!strcmp(error->message, execution_integer_report_text(EXECUTION_INTEGER_OVERFLOW)));
-    REQUIRE(!strcmp(error->behavior, "Counter") && error->start < error->end);
+    execution_instance *instance;
+    uint64_t id;
+    return ticker_state(s, "Burst", name, &instance, &id)
+             ? execution_instance_state(instance, id)
+             : NULL;
+}
+
+/* Burst's Begin kept the values a shipped build computes. */
+static bool burst_values(studio *s)
+{
+    const pin_value *wrapped = burst_value(s, "wrapped"),
+                    *quotient = burst_value(s, "quotient"),
+                    *small = burst_value(s, "small");
+    REQUIRE(wrapped && wrapped->i == INT32_MIN);
+    REQUIRE(quotient && quotient->i == 0);
+    REQUIRE(small && small->u8 == 255);
     return true;
+}
+
+/* Sets the last ticker's live count to the int maximum, so its next tick
+   overflows, and reads the count it had. */
+static bool max_count(studio *s, int *count)
+{
+    execution_instance *instance;
+    uint64_t id;
+    REQUIRE(ticker_state(s, "Counter", "count", &instance, &id));
+    *count = execution_instance_state(instance, id)->i;
+    pin_value max = { .type = PIN_I32, .i = INT32_MAX };
+    REQUIRE(execution_instance_set_state(instance, id, max) == 0);
+    return true;
+}
+
+/* The Output holds one warning of kind at behavior's line, over the range
+   from start to end. */
+static bool warned_once(
+    studio *s,
+    const char *behavior,
+    execution_integer_report_kind kind,
+    int line,
+    int start,
+    int end
+)
+{
+    int found = 0;
+    for (int i = 0; i < acount(s->runtime_errors); i++) {
+        const studio_runtime_error *error = &s->runtime_errors[i];
+        if (!strcmp(error->behavior, behavior) &&
+            !strcmp(error->message, execution_integer_report_text(kind))) {
+            REQUIRE(error->line == line && error->start == start && error->end == end);
+            found++;
+        }
+    }
+    REQUIRE(found == 1);
+    return true;
+}
+
+/* The Output holds exactly Burst's three Begin reports when begun and
+   Counter's overflow when counted, each a warning shown once. */
+static bool reports_are(studio *s, bool begun, bool counted)
+{
+    REQUIRE(acount(s->runtime_errors) == (begun ? 3 : 0) + counted);
+    for (int i = 0; i < acount(s->runtime_errors); i++) {
+        REQUIRE(s->runtime_errors[i].warning && s->runtime_errors[i].count == 1);
+    }
+    if (begun) {
+        REQUIRE(warned_once(s, "Burst", EXECUTION_INTEGER_OVERFLOW, 9, 191, 198));
+        REQUIRE(warned_once(s, "Burst", EXECUTION_INTEGER_ZERO_DIVISOR, 10, 218, 233));
+        REQUIRE(warned_once(s, "Burst", EXECUTION_INTEGER_CLAMP, 11, 250, 262));
+    }
+    return !counted ||
+           warned_once(s, "Counter", EXECUTION_INTEGER_OVERFLOW, 4, 84, 93);
+}
+
+/* The Output's Clear on its Runtime view. */
+static bool clear_runtime_output(studio *s)
+{
+    ui_activation view = { .argc = 1 };
+    snprintf(view.args[0], sizeof view.args[0], "%d", OUTPUT_RUNTIME);
+    studio_output_action(s, "view", &view);
+    REQUIRE(s->output_view == OUTPUT_RUNTIME);
+    studio_output_action(s, "clear", &(ui_activation){ 0 });
+    return reports_are(s, false, false);
 }
 
 static bool integer_reports_frame(void *state)
@@ -2304,6 +2395,7 @@ static bool integer_reports_frame(void *state)
     REQUIRE(s && s->ui);
     frames++;
     REQUIRE(frames <= INTEGER_REPORT_FRAMES);
+    int count;
     switch (frames) {
         case 1:
             REQUIRE(
@@ -2311,29 +2403,32 @@ static bool integer_reports_frame(void *state)
                     s->scene,
                     "name \"Ticker\"\ncomponents {\n"
                     "    Transform x=0 y=0\n}\n"
-                    "(array)behaviors \"Counter\"\n",
+                    "(array)behaviors \"Counter\" \"Burst\"\n",
                     NULL
                 ) == 0
             );
             REQUIRE(app_scene_authoring_add_instance(s->scene, "Ticker") == 0);
             return press_key(SDLK_F5);
-        case 3: {
-            REQUIRE(studio_session(s) && !acount(s->runtime_errors));
-            int count;
+        case 3:
+        case 11:
+            REQUIRE(studio_session(s) && reports_are(s, true, false) && burst_values(s));
             return max_count(s, &count) && count > 0;
-        }
-        case 5: return reported_once(s);
-        case 6: {
-            REQUIRE(reported_once(s));
-            int count;
-            REQUIRE(max_count(s, &count) && count < 0);
-            studio_debug_clear_runtime(s);
-            break;
-        }
+        case 5: return reports_are(s, true, true);
+        case 6:
+            REQUIRE(reports_are(s, true, true) && max_count(s, &count) && count < 0);
+            return clear_runtime_output(s);
         case 8:
-            return reported_once(s) && press_chord(SDLK_F5, SDL_KMOD_LSHIFT);
+            /* Only Counter's tick runs again after the Clear. */
+            return reports_are(s, false, true) &&
+                   press_chord(SDLK_F5, SDL_KMOD_LSHIFT);
+        case 9:
+            /* Stop keeps the rows; Play shows the next session's own. */
+            REQUIRE(!studio_session(s) && reports_are(s, false, true));
+            return press_key(SDLK_F5);
+        case 13:
+            return reports_are(s, true, true) && press_chord(SDLK_F5, SDL_KMOD_LSHIFT);
         case INTEGER_REPORT_FRAMES:
-            REQUIRE(!studio_session(s));
+            REQUIRE(!studio_session(s) && reports_are(s, true, true));
             keys = frames;
             break;
     }
@@ -4575,12 +4670,20 @@ TEST_CASE(play_keys)
 TEST_CASE(integer_reports)
 {
     REQUIRE(unchanged_source());
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/content/behaviors/Burst.chibi", project);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    FILE *file = fopen(path, "wb");
+    REQUIRE(file);
+    bool written = fputs(burst_bytes, file) >= 0;
+    REQUIRE(fclose(file) == 0 && written);
     char *args[] = { (char *)executable, "--headless",
                      "--frames",         FRAMES_TEXT(INTEGER_REPORT_FRAMES),
                      "--fixed-dt",       "0.016666666666666666",
                      "--project-root",   (char *)project };
-    REQUIRE(studio_acceptance_host_main(sizeof args / sizeof *args, args) == 0);
-    REQUIRE(callback_ok && keys == INTEGER_REPORT_FRAMES);
+    int status = studio_acceptance_host_main(sizeof args / sizeof *args, args);
+    REQUIRE(remove(path) == 0);
+    REQUIRE(status == 0 && callback_ok && keys == INTEGER_REPORT_FRAMES);
     REQUIRE(unchanged_source());
     printf("\nStudio integer reports accepted\n");
     return true;
