@@ -51,6 +51,18 @@ typedef enum
     STUDIO_AREA_COUNT,
 } studio_area_slot;
 
+/* The Output panel's views. */
+typedef enum
+{
+    OUTPUT_LOG,
+    OUTPUT_PROBLEMS,
+    OUTPUT_RUNTIME,
+    OUTPUT_INFO,
+    OUTPUT_FIND,  /* Find References (studio_find.c) */
+    OUTPUT_CALLS, /* Call Hierarchy (studio_calls.c) */
+    OUTPUT_VIEWS,
+} studio_output_view;
+
 typedef enum
 {
     STUDIO_TAB_SCENE,
@@ -353,7 +365,8 @@ typedef struct
     char message[CMPL_MESSAGE_MAX];
 } studio_problem;
 
-/* Runs of the playing scene that failed at one node with one message. */
+/* Runs of the playing scene that failed, or reported an integer overflow, zero
+   divisor or clamping conversion, at one node with one message. */
 typedef struct
 {
     char behavior[128];
@@ -363,6 +376,7 @@ typedef struct
     char path[1024];
     int start, end, line;
     int count;
+    bool warning; /* The run kept going, as after an integer overflow. */
 } studio_runtime_error;
 
 /* A compile diagnostic or runtime failure drawn on a node of the open graph. */
@@ -1193,7 +1207,7 @@ struct studio
         int toast;
         uint64_t step; /* the Undo step the toast undoes */
     } prototype_action;
-    int output_view;
+    int output_view; /* studio_output_view */
     char output_filter[128];
     char references_title[160]; /* what Output's Find view lists references to */
     studio_reference *references;
@@ -1966,6 +1980,8 @@ typedef enum
 } studio_debug_command;
 /* Before the frame is emitted: runtime errors, problems and the paused run. */
 void studio_debug_frame(studio *s);
+/* Empties the Runtime list and lets every integer report site report again. */
+void studio_debug_clear_runtime(studio *s);
 /* Opens the node's behavior and graph in a Behavior area, then selects and
    frames the node. */
 void studio_reveal(studio *s, const studio_node_ref *at);

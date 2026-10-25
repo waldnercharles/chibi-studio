@@ -426,6 +426,17 @@ copy and runs six hidden frames, each queuing one key through SDL: F5 plays, Spa
 pauses, F10 steps while paused, F5 resumes and Shift+F5 stops. It also checks the
 File menu's Revert File label. It saves nothing.
 
+`studio-acceptance --integer-reports --project-root PATH` takes another
+disposable copy, writes a Burst behavior into it for the run and removes it
+afterwards. It runs sixteen hidden frames. A ticker runs Counter and Burst from
+a prototype only that run registers. Burst's Begin wraps, divides by zero and
+clamps once, so F5 shows three warnings at Burst's lines 9 to 11 and its state
+holds the values a shipped build computes. Setting the live count to the int
+maximum adds Counter's overflow at line 4. Each warning shows once over later
+frames. The Output's Clear on its Runtime view empties it, and only Counter's
+next tick reports again. Shift+F5 keeps the rows, and the next F5 shows that
+session's own four warnings, once each. It saves nothing else.
+
 `studio-acceptance --unsaved-prompts --project-root PATH` takes another disposable
 copy and runs at most nineteen hidden frames with reduced motion on, so toasts sit
 where layout puts them. Counter's clean tab closes without asking. With Counter

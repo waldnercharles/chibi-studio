@@ -569,7 +569,7 @@ static void add_problem(studio_graph *g, graph *gr, uint64_t id, bool error, con
 }
 
 /* The open behavior's compile diagnostics and, while the scene runs, the runs
-   that failed in this graph. */
+   that failed or reported an integer problem in this graph. */
 static void collect_problems(studio *s)
 {
     studio_graph *g = &s->graph;
@@ -590,7 +590,7 @@ static void collect_problems(studio *s)
         const studio_runtime_error *error = &s->runtime_errors[i];
         if (!strcmp(error->at.asset, s->scene->graph_document_id) &&
             behavior_asset_find_graph(e->asset, error->at.graph_id) == gr) {
-            add_problem(g, gr, error->at.node_id, true, error->message);
+            add_problem(g, gr, error->at.node_id, !error->warning, error->message);
         }
     }
 }

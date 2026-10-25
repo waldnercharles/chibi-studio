@@ -1,4 +1,5 @@
 #include "chibi/application.h"
+#include "execution/integer_report.h"
 #include "host/stacktrace.h"
 #include "platform/cute.h"
 #include "render/shader_dir.h"
@@ -154,6 +155,9 @@ int main(int argc, char **argv)
 {
     studio_registry_init();
     atexit(studio_registry_free);
+    /* Studio is a development build: its modules report integer overflow,
+     * zero divisors and clamping conversions. */
+    execution_integer_reports_enable(true);
     configure_resources();
     if (flag(argc, argv, "--engine-info")) {
         char *info = resource_info();
