@@ -652,6 +652,11 @@ extern "C"
     void kit_code_redo(kit_code_editor *e);
     int kit_code_cursor(const kit_code_editor *e);
     void kit_code_set_cursor(kit_code_editor *e, int byte);
+    /* Moves the caret and smoothly reveals it only when outside the comfortable
+     * viewport. Keeps keyboard focus; direct editor input cancels the motion. */
+    void kit_code_reveal(kit_code_editor *e, int byte);
+    /* Current viewport offsets in display pixels; zero before the first view. */
+    void kit_code_scroll(kit_code_editor *e, float *x, float *y);
     /* Selects [start, end), the cursor at its end, as Find shows a match. */
     void kit_code_select(kit_code_editor *e, int start, int end);
     /* The active visual selection's ordered byte range; false without one. */
