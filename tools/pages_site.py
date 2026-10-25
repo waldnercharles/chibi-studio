@@ -232,8 +232,7 @@ def restore(output):
                 successful.append((status['created_at'], status['id'], deployment, status))
     require(successful, 'No successful Pages deployment found; refusing an empty-site deployment')
     _, _, deployment, status = max(successful, key=lambda item: item[:2])
-    require(deployment['environment'] == 'github-pages' and deployment['ref'] == 'main',
-            'Latest successful Pages deployment is not trusted main')
+    require(deployment['environment'] == 'github-pages', 'Latest successful deployment is not Pages')
     # GitHub's environment status identifies the exact job, even when a later
     # workflow attempt failed. Do not use the jobs API's default filter=latest.
     job_url = re.fullmatch(re.escape(f'https://github.com/{REPOSITORY}/actions/runs/') +
@@ -241,10 +240,30 @@ def restore(output):
     require(job_url, 'Latest successful deployment has no exact trusted job URL')
     run_id, job_id = map(int, job_url.groups())
     run = read(f'actions/runs/{run_id}')
-    require(run['id'] == run_id and run['head_branch'] == 'main' and run['path'] == WORKFLOW and
+    require(run['id'] == run_id and run['path'] == WORKFLOW and
             run['head_repository']['full_name'] == REPOSITORY and run['head_sha'] == deployment['sha'] and
+            run['head_branch'] == deployment['ref'] and sha(run['head_sha']) and
             run['event'] in ('push', 'schedule', 'workflow_dispatch', 'pull_request_target'),
             'Latest successful deployment workflow is not trusted')
+    source = run['head_sha']
+    if run['event'] == 'pull_request_target':
+        # GitHub records the PR head in run/deployment/artifact metadata, while
+        # the closed/merged cleanup executes main's workflow at the merge SHA.
+        # Admit only this lane's merged PR; do not trust arbitrary PR sources.
+        pr = read('pulls/77')
+        require(pr['number'] == 77 and pr['state'] == 'closed' and pr['merged'] is True and
+                pr['base']['ref'] == 'main' and
+                pr['base']['repo']['full_name'] == REPOSITORY and
+                pr['head']['repo']['full_name'] == REPOSITORY and
+                pr['head']['ref'] == run['head_branch'] and pr['head']['sha'] == run['head_sha'] and
+                sha(pr['merge_commit_sha']), 'Cleanup deployment does not match merged PR77')
+        timestamp = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
+        require(isinstance(pr['merged_at'], str) and isinstance(run['created_at'], str) and
+                re.fullmatch(timestamp, pr['merged_at']) and re.fullmatch(timestamp, run['created_at']) and
+                run['created_at'] >= pr['merged_at'], 'Cleanup run predates the verified merge')
+        source = pr['merge_commit_sha']
+    else:
+        require(run['head_branch'] == 'main', 'Latest successful Pages deployment is not trusted main')
     job = read(f'actions/jobs/{job_id}')
     require(job['id'] == job_id and job['run_id'] == run_id and job['name'] == 'deploy' and
             type(job['run_attempt']) is int and 0 < job['run_attempt'] <= run['run_attempt'] and
@@ -260,12 +279,12 @@ def restore(output):
     payload = json.loads(payloads[0])
     artifact_id = payload['artifact_id']
     require(type(artifact_id) is int and artifact_id > 0 and
-            payload['pages_build_version'] == run['head_sha'], 'Invalid deployed artifact identity')
+            payload['pages_build_version'] == source, 'Invalid deployed artifact identity')
     artifact = read(f'actions/artifacts/{artifact_id}')
     require(artifact['id'] == artifact_id and artifact['name'] == 'github-pages' and
             artifact['workflow_run']['id'] == run_id and
             artifact['workflow_run']['head_sha'] == run['head_sha'] and
-            artifact['workflow_run']['head_branch'] == 'main', 'Deployed artifact provenance mismatch')
+            artifact['workflow_run']['head_branch'] == run['head_branch'], 'Deployed artifact provenance mismatch')
     require(artifact['expired'] is False, 'Last deployed Pages snapshot expired; refusing rollback')
     require(0 < artifact['size_in_bytes'] <= MAX_BYTES, 'Pages artifact exceeds download budget')
     checksum = artifact.get('digest', '')

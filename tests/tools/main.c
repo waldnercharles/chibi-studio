@@ -460,6 +460,115 @@ TEST_CASE(failed_rerun_does_not_hide_the_successful_attempt)
     return true;
 }
 
+static bool restored_cleanup_files()
+{
+    char *expected = join(temporary, "expected"),
+         *previews = join(expected, "previews"), *other = join(previews, "78");
+    assert(mkdir(expected, 0700) == 0 && mkdir(previews, 0700) == 0 && mkdir(other, 0700) == 0);
+    write_at(expected, "index.html", "current production\n");
+    write_at(other, "keep.txt", "current preview78\n");
+    bool equal = same_files(expected, output, "no-excluded-path/");
+    free(other);
+    free(previews);
+    free(expected);
+    return equal;
+}
+
+TEST_CASE(merged_target_cleanup_restores_exact_files)
+{
+    REQUIRE(api_fixture("cleanup-valid") == 0);
+    REQUIRE(has(temporary, "api-calls.json", "pulls/77"));
+    REQUIRE(restored_cleanup_files());
+    return true;
+}
+
+TEST_CASE(cleanup_failed_rerun_keeps_successful_attempt)
+{
+    REQUIRE(api_fixture("cleanup-failed-rerun") == 0);
+    REQUIRE(has(temporary, "command.log", "run 20, attempt 1, artifact 2000"));
+    REQUIRE(restored_cleanup_files());
+    return true;
+}
+
+TEST_CASE(ordinary_push_cannot_use_cleanup_provenance)
+{
+    REQUIRE(api_fixture("non-main-push") != 0);
+    REQUIRE(has(temporary, "command.log", "deployment is not trusted main"));
+    REQUIRE(!has(temporary, "api-calls.json", "pulls/77"));
+    REQUIRE(access(output, F_OK) != 0);
+    return true;
+}
+
+TEST_CASE(cleanup_rejects_mismatched_pr_metadata)
+{
+    const char *cases[] = {
+        "cleanup-wrong-pr",   "cleanup-unmerged",          "cleanup-open",
+        "cleanup-wrong-base", "cleanup-wrong-base-repo",   "cleanup-fork-head",
+        "cleanup-wrong-head", "cleanup-wrong-head-branch", "cleanup-wrong-merge"
+    };
+    for (int i = 0; i < 9; i++) {
+        REQUIRE(api_fixture(cases[i]) != 0);
+        REQUIRE(has(temporary, "command.log", "does not match merged PR77"));
+        REQUIRE(access(output, F_OK) != 0);
+    }
+    return true;
+}
+
+TEST_CASE(cleanup_requires_a_run_after_the_merge)
+{
+    const char *cases[] = { "cleanup-before-merge",
+                            "cleanup-missing-merge-time",
+                            "cleanup-invalid-run-time" };
+    for (int i = 0; i < 3; i++) {
+        REQUIRE(api_fixture(cases[i]) != 0);
+        REQUIRE(has(temporary, "command.log", "run predates the verified merge"));
+        REQUIRE(access(output, F_OK) != 0);
+    }
+    return true;
+}
+
+TEST_CASE(cleanup_binds_the_deployment_to_its_run)
+{
+    REQUIRE(api_fixture("cleanup-wrong-deployment") != 0);
+    REQUIRE(has(temporary, "command.log", "deployment workflow is not trusted"));
+    REQUIRE(access(output, F_OK) != 0);
+    return true;
+}
+
+TEST_CASE(cleanup_requires_the_main_merge_build_source)
+{
+    const char *cases[] = { "cleanup-head-as-build-source",
+                            "cleanup-wrong-build-source" };
+    for (int i = 0; i < 2; i++) {
+        REQUIRE(api_fixture(cases[i]) != 0);
+        REQUIRE(has(temporary, "command.log", "Invalid deployed artifact identity"));
+        REQUIRE(access(output, F_OK) != 0);
+    }
+    return true;
+}
+
+TEST_CASE(cleanup_binds_artifact_metadata_to_triggering_run)
+{
+    const char *cases[] = { "cleanup-wrong-artifact-branch",
+                            "cleanup-wrong-artifact-sha",
+                            "cleanup-wrong-artifact-run" };
+    for (int i = 0; i < 3; i++) {
+        REQUIRE(api_fixture(cases[i]) != 0);
+        REQUIRE(has(temporary, "command.log", "Deployed artifact provenance mismatch"));
+        REQUIRE(access(output, F_OK) != 0);
+    }
+    return true;
+}
+
+TEST_CASE(missing_cleanup_snapshot_cannot_restore_older_site)
+{
+    REQUIRE(api_fixture("cleanup-missing-latest") != 0);
+    REQUIRE(has(temporary, "command.log", "resource unavailable: actions/artifacts/2000"));
+    REQUIRE(!has(temporary, "api-calls.json", "artifacts/1000"));
+    REQUIRE(access(output, F_OK) != 0);
+    return true;
+}
+
 TEST_CASE(restore_reads_status_pagination)
 {
     REQUIRE(api_fixture("pagination") == 0);
@@ -623,6 +732,15 @@ int main(int argc, char **argv)
     RUN_PAGES_CASE(restore_uses_the_exact_successful_deployment);
     RUN_PAGES_CASE(missing_latest_snapshot_cannot_restore_an_older_upload);
     RUN_PAGES_CASE(failed_rerun_does_not_hide_the_successful_attempt);
+    RUN_PAGES_CASE(merged_target_cleanup_restores_exact_files);
+    RUN_PAGES_CASE(cleanup_failed_rerun_keeps_successful_attempt);
+    RUN_PAGES_CASE(ordinary_push_cannot_use_cleanup_provenance);
+    RUN_PAGES_CASE(cleanup_rejects_mismatched_pr_metadata);
+    RUN_PAGES_CASE(cleanup_requires_a_run_after_the_merge);
+    RUN_PAGES_CASE(cleanup_binds_the_deployment_to_its_run);
+    RUN_PAGES_CASE(cleanup_requires_the_main_merge_build_source);
+    RUN_PAGES_CASE(cleanup_binds_artifact_metadata_to_triggering_run);
+    RUN_PAGES_CASE(missing_cleanup_snapshot_cannot_restore_older_site);
     RUN_PAGES_CASE(restore_reads_status_pagination);
     RUN_PAGES_CASE(restore_reads_deployment_pagination);
     RUN_PAGES_CASE(truncated_history_cannot_choose_an_older_snapshot);
