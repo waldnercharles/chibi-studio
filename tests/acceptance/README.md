@@ -180,6 +180,20 @@ regression assertion; the expected read-error notice remains host-owned until
 normal shutdown. The four-frame invocation is unchanged. This exercises the
 production handlers, not pointer hit testing.
 
+`studio-acceptance --code-wrap-reveal --project-root PATH` takes another
+fresh disposable copy and runs five hidden fixed-1/60 frames. It prepends one
+fixed 512-byte comment line to Counter, shows code only with wrapping and reduced
+motion off, and reveals the last comment byte. After checking a positive, advancing
+horizontal animation step, it enables Word Wrap without another reveal or code
+input. The next two frames require zero horizontal offset, unchanged source and
+caret, retained code focus, and a clean document. Counter's original file is
+restored even when the host reports failure. This is one pico_unit case in the
+existing acceptance binary, with the same three-file project, isolated preferences
+and thumbnail cache; it adds no playback, screenshots or helper executable.
+A fixture-only old-product control must fail the first post-wrap zero-offset
+assertion after setup succeeds. This registration records the workload; runtime
+results must identify the exact source and installed SDK used.
+
 `studio-acceptance --code-keys --project-root PATH` takes another disposable copy.
 It shows Counter in the Text Editor, focuses it and places the cursor after the
 event's closing brace, then queues two Enter key presses through SDL, as the
@@ -356,8 +370,11 @@ before two handlers: the initial graph still opens on Tick, the picker groups
 Events before Variables and Functions, and the root is labeled Variables.
 Selecting Begin in Both reveals its declaration; revealing a statement selects
 its node and corresponding source while a graph field keeps keyboard focus.
-Source reveals and keyboard framing interrupt camera motion immediately; framing
-also settles immediately with reduced motion enabled.
+Source reveals preserve zoom and ease into view, including when retargeted during
+motion. Intermediate positions, velocity continuity, already-visible targets and
+manual interruption are checked. An offscreen handler also checks intermediate
+code scroll offsets, retargeting without a jump, reduced motion and manual-wheel
+cancellation. Reduced motion settles either reveal immediately.
 Moving the focused source caret to a statement selects its graph/node without
 moving the caret back to the declaration or taking focus from the text.
 A temporary distant statement tests that initial framing keeps the handler's
@@ -579,13 +596,18 @@ selection and active runtime sessions preserve the scene and history. It checks
 the session guard directly; Play/Stop hierarchy restoration depends on Studio
 PR #54 and is not covered by this selector.
 
-`studio-acceptance --graph-pointer --project-root PATH` runs nineteen hidden
+`studio-acceptance --graph-pointer --project-root PATH` runs twenty-nine hidden
 frames on Counter. It clicks a rendered node title through SDL, follows its
 wire with Right, opens Find with Mod+F, types `count`, and checks Down/Up result
 selection and wraparound across graphs. Clicking a result selects its
 node; Escape closes Find and then clears the graph selection. Home must bring
 every visible node into the viewport from an offscreen camera. Source bytes and
-dirty state stay unchanged.
+dirty state stay unchanged. It then clicks the real retained node input through
+SDL, requires source reveal at that node while the field keeps focus, types a
+draft and cancels it. Source caret navigation selects the entry without taking
+code focus, and another field click repeats the reveal. These ten extra frames
+check field hit testing and typing. A click into code releases graph focus, then
+the production caret notification places the exact declaration.
 
 `studio-acceptance --asset-pointer --project-root PATH` runs twenty hidden
 frames with four disposable prototypes. SDL input types the Assets filter,

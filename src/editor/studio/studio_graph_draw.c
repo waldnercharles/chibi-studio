@@ -132,7 +132,7 @@ static bool keep_node(const studio *s, node *n, uint64_t focused)
     return in_view(s, box[0], box[1], box[2], box[3]);
 }
 
-static uint64_t focused_node(const studio *s)
+uint64_t sg_focused_node(const studio *s)
 {
     rml_element *el = rml_context_focus_element(rml_backend_context(s->graph.backend));
     if (!el) {
@@ -1005,7 +1005,7 @@ void sg_emit_canvas(studio *s)
     }
     emit_conversions(s);
     emit_reroutes(s);
-    uint64_t focused = focused_node(s);
+    uint64_t focused = sg_focused_node(s);
     for (int i = 0; i < acount(gr->nodes); i++) {
         if (sg_node_visible(gr, gr->nodes[i]) && keep_node(s, gr->nodes[i], focused)) {
             emit_node(s, gr->nodes[i]);
