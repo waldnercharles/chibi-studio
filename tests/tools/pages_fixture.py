@@ -15,6 +15,7 @@ kind, output = sys.argv[2], Path(sys.argv[3])
 
 
 def restore():
+    case = kind.removeprefix('cleanup-')
     def bundle(label):
         raw = io.BytesIO()
         with tarfile.open(fileobj=raw, mode='w') as archive:
@@ -41,18 +42,71 @@ def restore():
     artifact = dict(id=2000, name='github-pages', expired=False, size_in_bytes=len(data),
                     digest='sha256:' + hashlib.sha256(data).hexdigest(),
                     workflow_run=dict(id=20, head_sha=pages.STUDIO, head_branch='main'))
-    if kind == 'failed-rerun':
+    pr = None
+    if kind.startswith('cleanup-') or kind == 'non-main-push':
+        # Real PR77 cleanup metadata: API records name the PR head, but the
+        # successful deploy-pages payload names the main execution/merge SHA.
+        head = '2112e991ea403c7e38b4777230ef8fda5a2c9a02'
+        branch = 'cwaldner/smooth-graph-code-focus'
+        merged = 'b0519dc09d630bd71a29790aef9660d610427e92'
+        deployments[1].update(ref=branch, sha=head)
+        status['created_at'] = '2026-10-25T15:09:35Z'
+        run.update(event='pull_request_target', head_branch=branch, head_sha=head,
+                   created_at='2026-10-25T15:04:50Z', pull_requests=[])
+        payload['pages_build_version'] = merged
+        artifact['workflow_run'].update(head_sha=head, head_branch=branch)
+        pr = dict(number=77, state='closed', merged=True, merged_at='2026-10-25T15:04:47Z',
+                  merge_commit_sha=merged,
+                  base=dict(ref='main', repo=dict(full_name=pages.REPOSITORY)),
+                  head=dict(ref=branch, sha=head, repo=dict(full_name=pages.REPOSITORY)))
+        if kind == 'non-main-push':
+            run['event'] = 'push'
+        if case == 'wrong-pr':
+            pr['number'] = 78
+        if case == 'unmerged':
+            pr['merged'] = False
+        if case == 'open':
+            pr['state'] = 'open'
+        if case == 'wrong-base':
+            pr['base']['ref'] = 'untrusted'
+        if case == 'wrong-base-repo':
+            pr['base']['repo']['full_name'] = 'other/repository'
+        if case == 'fork-head':
+            pr['head']['repo']['full_name'] = 'other/repository'
+        if case == 'wrong-head':
+            pr['head']['sha'] = '0' * 40
+        if case == 'wrong-head-branch':
+            pr['head']['ref'] = 'other-branch'
+        if case == 'wrong-merge':
+            pr['merge_commit_sha'] = 'not-a-sha'
+        if case == 'before-merge':
+            run['created_at'] = '2026-10-25T15:04:46Z'
+        if case == 'missing-merge-time':
+            pr['merged_at'] = None
+        if case == 'invalid-run-time':
+            run['created_at'] = 'invalid'
+        if case == 'wrong-deployment':
+            deployments[1]['ref'] = 'main'
+        if case == 'head-as-build-source':
+            payload['pages_build_version'] = head
+        if case == 'wrong-build-source':
+            payload['pages_build_version'] = '0' * 40
+        if case == 'wrong-artifact-branch':
+            artifact['workflow_run']['head_branch'] = 'main'
+        if case == 'wrong-artifact-sha':
+            artifact['workflow_run']['head_sha'] = merged
+    if case == 'failed-rerun':
         run['run_attempt'] = 2  # Attempt 2 failed; its newer upload is not the live site.
-    if kind == 'untrusted-workflow':
+    if case == 'untrusted-workflow':
         run['path'] = '.github/workflows/untrusted.yml'
-    if kind == 'wrong-job-run':
+    if case == 'wrong-job-run':
         job['run_id'] = 21
-    if kind == 'wrong-artifact-run':
+    if case == 'wrong-artifact-run':
         artifact['workflow_run']['id'] = 21
-    if kind == 'expired-snapshot':
+    if case == 'expired-snapshot':
         artifact['expired'] = True
     statuses = [status]
-    if kind == 'pagination':
+    if case == 'pagination':
         statuses = [dict(id=300 + i, state='inactive') for i in range(20)] + statuses
     older = dict(artifact, id=1000, created_at='2026-10-24T09:59:00Z',
                  workflow_run=dict(artifact['workflow_run'], id=10),
@@ -80,22 +134,24 @@ def restore():
         # These uploads exist but must never be considered. One is older than
         # the live deployment, the other belongs to a newer failed attempt.
         'actions/artifacts?name=github-pages&per_page=100': {
-            'artifacts': [older, newer] if kind == 'missing-latest' else [older, current, newer]},
+            'artifacts': [older, newer] if case == 'missing-latest' else [older, current, newer]},
         'actions/runs/10': dict(run, id=10),
         'actions/runs/30': dict(run, id=30),
         'actions/runs/10/jobs?per_page=100': {'jobs': [dict(job, id=100, run_id=10)]},
         'actions/runs/30/jobs?per_page=100': {'jobs': [dict(job, id=300, run_id=30, steps=[])]},
         'actions/runs/20/jobs?per_page=100': {
-            'jobs': [dict(job, run_attempt=2, steps=[]) if kind == 'failed-rerun' else job]},
+            'jobs': [dict(job, run_attempt=2, steps=[]) if case == 'failed-rerun' else job]},
         'actions/artifacts/1000/zip': older_data,
     }
+    if pr is not None:
+        routes['pulls/77'] = pr
     if kind == 'deployment-pagination':
         routes['deployments?environment=github-pages&per_page=20&page=1'] = [
             dict(deployments[0], id=100 + i) for i in range(20)]
         routes['deployments?environment=github-pages&per_page=20&page=2'] = deployments
         for i in range(20):
             routes[f'deployments/{100 + i}/statuses?per_page=20&page=1'] = [dict(state='failure')]
-    if kind == 'missing-latest':
+    if case == 'missing-latest':
         routes.pop('actions/artifacts/2000')
     if kind == 'missing-log':
         routes.pop('actions/jobs/200/logs')

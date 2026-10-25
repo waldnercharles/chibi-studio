@@ -40,6 +40,14 @@ cannot publish a preview. A metadata-only `pull_request_target: closed` event wi
 checks out PR code. An unmerged close does not remove the preview. This trigger does
 not authorize merging PR77.
 
+GitHub's `pull_request_target` run, deployment and artifact metadata name the PR
+head even though its workflow executes on the default branch. Restoration admits
+only the merged PR77 cleanup: its same-repository head must match those records,
+its base must be main, and the run must follow the recorded merge. The successful
+job's Pages build version must equal PR77's merge commit, while its exact artifact
+must match the triggering run. Ordinary publications still require main metadata.
+Unexpected identities stop restoration; they never select an older snapshot.
+
 Complete site artifacts are retained for 90 days. Missing, expired, corrupt or
 untrusted snapshots and unavailable deployment logs stop publication instead of
 reconstructing an incomplete site. Deployment history requires read access to
