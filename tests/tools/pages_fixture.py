@@ -149,7 +149,26 @@ def package():
         for name in pages.FILES}, sort_keys=True))
 
 
-if kind.startswith('package-'):
+def capture():
+    binary = kind == 'api-binary'
+    payload = b'\x1b[32mremote log\x1b[0m\n' if binary else b'{"id": 200}'
+
+    def command(arguments, timeout):
+        (output.parent / 'api-arguments.json').write_text(json.dumps(arguments))
+        if binary and '--allow-escape-sequences' not in arguments:
+            raise ValueError('Mock gh refuses terminal escape sequences')
+        if not binary and '--allow-escape-sequences' in arguments:
+            raise ValueError('JSON requests must keep default output protection')
+        return payload
+
+    pages.subprocess.check_output = command
+    result = pages.api('actions/jobs/200/logs' if binary else 'actions/jobs/200', binary)
+    output.write_bytes(result if binary else json.dumps(result).encode())
+
+
+if kind.startswith('api-'):
+    capture()
+elif kind.startswith('package-'):
     package()
 else:
     restore()
