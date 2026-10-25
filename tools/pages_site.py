@@ -195,32 +195,80 @@ def unpack(data, expected, output):
 
 
 def restore(output):
-    # No caller-supplied artifact IDs or URLs. Select only a completed deployment
-    # from the trusted main workflow, never a PR build or a failed publish.
-    artifacts = api('actions/artifacts?name=github-pages&per_page=100')['artifacts']
-    for artifact in sorted(artifacts, key=lambda a: a['created_at'], reverse=True):
-        run_id = artifact['workflow_run']['id']
-        require(type(run_id) is int and run_id > 0 and type(artifact['id']) is int and artifact['id'] > 0,
-                'Invalid GitHub artifact/run identity')
-        run = api(f'actions/runs/{run_id}')
-        if (run['head_branch'] != 'main' or run['path'] != WORKFLOW or
-                run['head_repository']['full_name'] != REPOSITORY or
-                run['event'] not in ('push', 'schedule', 'workflow_dispatch', 'pull_request_target')):
-            continue
-        jobs = api(f'actions/runs/{run_id}/jobs?per_page=100')['jobs']
-        deployed = any(job['name'] == 'deploy' and any(
-            step['name'] == 'Deploy the reusable editor' and step['conclusion'] == 'success'
-            for step in job.get('steps', [])) for job in jobs)
-        if not deployed:
-            continue
-        require(not artifact['expired'], 'Last deployed Pages snapshot expired; refusing rollback')
-        require(artifact['size_in_bytes'] <= MAX_BYTES, 'Pages artifact exceeds download budget')
-        checksum = artifact.get('digest', '')
-        require(re.fullmatch('sha256:[0-9a-f]{64}', checksum), 'Pages artifact digest is missing')
-        unpack(api(f"actions/artifacts/{artifact['id']}/zip", binary=True), checksum[7:], output)
-        print(f"Restored deployed Pages artifact {artifact['id']} from run {run_id}")
-        return
-    raise ValueError('No verified deployed Pages snapshot found; refusing an empty-site deployment')
+    # Deployment history survives artifact deletion. Establish the live site's
+    # identity first; never search surviving uploads for a plausible predecessor.
+    requests = 0
+
+    def read(path, binary=False):
+        nonlocal requests
+        requests += 1
+        require(requests <= 100, 'Pages provenance exceeds the 100-request budget')
+        return api(path, binary)
+
+    def pages(path):
+        for page in range(1, 6):
+            separator = '&' if '?' in path else '?'
+            records = read(f'{path}{separator}per_page=20&page={page}')
+            require(isinstance(records, list) and len(records) <= 20,
+                    'Invalid deployment history response')
+            yield from records
+            if len(records) < 20:
+                return
+        raise ValueError('Pages provenance history truncated; refusing rollback')
+
+    successful = []
+    for deployment in list(pages('deployments?environment=github-pages')):
+        deployment_id = deployment['id']
+        require(type(deployment_id) is int and deployment_id > 0,
+                'Invalid deployment identity')
+        for status in pages(f'deployments/{deployment_id}/statuses'):
+            if status['state'] == 'success':
+                require(re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', status['created_at'])
+                        and type(status['id']) is int, 'Invalid deployment success identity')
+                successful.append((status['created_at'], status['id'], deployment, status))
+    require(successful, 'No successful Pages deployment found; refusing an empty-site deployment')
+    _, _, deployment, status = max(successful, key=lambda item: item[:2])
+    require(deployment['environment'] == 'github-pages' and deployment['ref'] == 'main',
+            'Latest successful Pages deployment is not trusted main')
+    # GitHub's environment status identifies the exact job, even when a later
+    # workflow attempt failed. Do not use the jobs API's default filter=latest.
+    job_url = re.fullmatch(re.escape(f'https://github.com/{REPOSITORY}/actions/runs/') +
+                           r'([1-9][0-9]*)/job/([1-9][0-9]*)', status['log_url'])
+    require(job_url, 'Latest successful deployment has no exact trusted job URL')
+    run_id, job_id = map(int, job_url.groups())
+    run = read(f'actions/runs/{run_id}')
+    require(run['id'] == run_id and run['head_branch'] == 'main' and run['path'] == WORKFLOW and
+            run['head_repository']['full_name'] == REPOSITORY and run['head_sha'] == deployment['sha'] and
+            run['event'] in ('push', 'schedule', 'workflow_dispatch', 'pull_request_target'),
+            'Latest successful deployment workflow is not trusted')
+    job = read(f'actions/jobs/{job_id}')
+    require(job['id'] == job_id and job['run_id'] == run_id and job['name'] == 'deploy' and
+            type(job['run_attempt']) is int and 0 < job['run_attempt'] <= run['run_attempt'] and
+            any(step['name'] == 'Deploy the reusable editor' and step['conclusion'] == 'success'
+                for step in job.get('steps', [])), 'Exact Pages deployment job did not succeed')
+    # deploy-pages v4 records the immutable artifact ID in its request payload.
+    # A missing log or deleted artifact is a stop, including a same-run reupload.
+    logs = read(f'actions/jobs/{job_id}/logs', binary=True)
+    require(len(logs) <= 4 * 1024 * 1024, 'Pages job log exceeds the 4 MiB budget')
+    logs = re.sub(r'^\ufeff?\d{4}-\d{2}-\d{2}T[0-9:.]+Z ', '', logs.decode('utf-8-sig'), flags=re.M)
+    payloads = re.findall(r'^Creating Pages deployment with payload:\n(\{.*?^\})$', logs, re.M | re.S)
+    require(len(payloads) == 1, 'Exact deployed artifact payload is missing or ambiguous')
+    payload = json.loads(payloads[0])
+    artifact_id = payload['artifact_id']
+    require(type(artifact_id) is int and artifact_id > 0 and
+            payload['pages_build_version'] == run['head_sha'], 'Invalid deployed artifact identity')
+    artifact = read(f'actions/artifacts/{artifact_id}')
+    require(artifact['id'] == artifact_id and artifact['name'] == 'github-pages' and
+            artifact['workflow_run']['id'] == run_id and
+            artifact['workflow_run']['head_sha'] == run['head_sha'] and
+            artifact['workflow_run']['head_branch'] == 'main', 'Deployed artifact provenance mismatch')
+    require(artifact['expired'] is False, 'Last deployed Pages snapshot expired; refusing rollback')
+    require(0 < artifact['size_in_bytes'] <= MAX_BYTES, 'Pages artifact exceeds download budget')
+    checksum = artifact.get('digest', '')
+    require(re.fullmatch('sha256:[0-9a-f]{64}', checksum), 'Pages artifact digest is missing')
+    unpack(read(f'actions/artifacts/{artifact_id}/zip', binary=True), checksum[7:], output)
+    print(f"Restored deployment {deployment['id']}, run {run_id}, attempt {job['run_attempt']}, "
+          f"artifact {artifact_id}")
 
 
 def main():

@@ -24,7 +24,7 @@ static const char *fixture_hash = "e80b71cd14d3cbd65f4173abcbfcf01a545dbca32a72"
                                   "d575108b553a648cc96f";
 static const char *empty_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b93"
                                 "4ca495991b7852b855";
-static char *script, *tools, *previous, *built, *output, *pr, *log_path;
+static char *script, *fixture, *tools, *previous, *built, *output, *pr, *log_path;
 static char temporary[128];
 
 static char *join(const char *a, const char *b)
@@ -85,13 +85,44 @@ static int run(char *const arguments[], bool quiet)
     return WIFEXITED(status) ? WEXITSTATUS(status) : 128;
 }
 
+/* Compare complete file maps without using the publisher's inventory helper. */
+static bool same_files(const char *before, const char *after, const char *skip)
+{
+    static char
+        code[] = "import sys,json,pathlib; "
+                 "root=pathlib.Path(sys.argv[1]); skip=sys.argv[3]; "
+                 "files={p.relative_to(root).as_posix():p.read_bytes().hex() "
+                 "for p in root.rglob('*') if p.is_file() and not "
+                 "p.relative_to(root).as_posix().startswith(skip)}; "
+                 "pathlib.Path(sys.argv[2]).write_text(json.dumps(files,sort_"
+                 "keys=True))";
+    char *maps[2] = { join(temporary, "before-map.json"),
+                      join(temporary, "after-map.json") };
+    const char *roots[2] = { before, after };
+    for (int i = 0; i < 2; i++) {
+        char *arguments[] = { "python3", "-c",         code, (char *)roots[i],
+                              maps[i],   (char *)skip, NULL };
+        assert(run(arguments, true) == 0);
+    }
+    char *arguments[] = { "cmp", "-s", maps[0], maps[1], NULL };
+    bool equal = run(arguments, true) == 0;
+    free(maps[0]);
+    free(maps[1]);
+    return equal;
+}
+
 static void site(const char *directory, const char *revision)
 {
     assert(mkdir(directory, 0700) == 0);
+    bool old = !strcmp(revision, old_studio);
+    const char *content = old ? "old production\n" : "fixture\n";
+    const char *hash = old ? "16520192a87a4dc95cf65d6d602ff5035f3ce8f31f34e61a4"
+                             "a3377ae52d3d9ae"
+                           : fixture_hash;
     for (int i = 0; i < 5; i++) {
-        write_at(directory, files[i], "fixture\n");
+        write_at(directory, files[i], content);
     }
-    write_at(directory, "index.html", "fixture\n");
+    write_at(directory, "index.html", content);
     write_at(directory, ".nojekyll", "");
     char archive[160], identity[4096];
     snprintf(archive, sizeof archive, "editor-%s-%s.tar.gz", revision, engine);
@@ -116,7 +147,7 @@ static void site(const char *directory, const char *revision)
             "%s\"%s\":\"%s\"",
             i ? "," : "",
             files[i],
-            fixture_hash
+            hash
         );
     }
     assert(at > 0 && (size_t)at + 4 < sizeof identity);
@@ -183,7 +214,8 @@ TEST_CASE(preview_preserves_production_and_other_previews)
 {
     REQUIRE(compose("preview77", old_studio) == 0);
     REQUIRE(has(output, "studio.json", old_studio));
-    REQUIRE(has(output, "chibi-studio.js", "fixture\n"));
+    REQUIRE(has(output, "chibi-studio.js", "old production\n"));
+    REQUIRE(same_files(previous, output, "previews/77/"));
     REQUIRE(has(output, "previews/78/keep.txt", "other preview78\n"));
     REQUIRE(has(output, "previews/77/studio.json", studio));
     REQUIRE(!exists(output, "previews/77/old.txt"));
@@ -198,6 +230,12 @@ TEST_CASE(production_preserves_every_preview)
     REQUIRE(has(output, "previews/77/old.txt", "old preview77\n"));
     REQUIRE(has(output, "previews/78/keep.txt", "other preview78\n"));
     REQUIRE(has(previous, "studio.json", old_studio));
+    REQUIRE(same_files(built, output, "previews/"));
+    char *before_previews = join(previous, "previews"),
+         *after_previews = join(output, "previews");
+    REQUIRE(same_files(before_previews, after_previews, "never-skipped/"));
+    free(before_previews);
+    free(after_previews);
     return true;
 }
 
@@ -209,6 +247,7 @@ TEST_CASE(merge_cleanup_changes_only_77)
     REQUIRE(has(output, "studio.json", old_studio));
     REQUIRE(has(output, "previews/78/keep.txt", "other preview78\n"));
     REQUIRE(has(previous, "previews/77/old.txt", "old preview77\n"));
+    REQUIRE(same_files(previous, output, "previews/77/"));
     return true;
 }
 
@@ -370,6 +409,165 @@ TEST_CASE(fresh_composition_keeps_interleaved_changes)
     return true;
 }
 
+static int api_fixture(const char *kind)
+{
+    char *arguments[] = { "python3", fixture, tools, (char *)kind, output, NULL };
+    return run(arguments, true);
+}
+
+TEST_CASE(restore_uses_the_exact_successful_deployment)
+{
+    REQUIRE(api_fixture("valid") == 0);
+    REQUIRE(has(output, "index.html", "current production\n"));
+    REQUIRE(has(output, "previews/78/keep.txt", "current preview78\n"));
+    REQUIRE(!has(temporary, "api-calls.json", "actions/artifacts?"));
+    REQUIRE(!has(temporary, "api-calls.json", "artifacts/3000"));
+    return true;
+}
+
+TEST_CASE(missing_latest_snapshot_cannot_restore_an_older_upload)
+{
+    REQUIRE(api_fixture("missing-latest") != 0);
+    REQUIRE(has(temporary, "command.log", "resource unavailable: actions/artifacts/2000"));
+    REQUIRE(access(output, F_OK) != 0);
+    REQUIRE(!has(temporary, "api-calls.json", "artifacts/1000"));
+    return true;
+}
+
+TEST_CASE(failed_rerun_does_not_hide_the_successful_attempt)
+{
+    REQUIRE(api_fixture("failed-rerun") == 0);
+    REQUIRE(has(temporary, "command.log", "run 20, attempt 1, artifact 2000"));
+    REQUIRE(has(output, "index.html", "current production\n"));
+    REQUIRE(!has(temporary, "api-calls.json", "runs/20/jobs"));
+    return true;
+}
+
+TEST_CASE(restore_reads_status_pagination)
+{
+    REQUIRE(api_fixture("pagination") == 0);
+    REQUIRE(has(temporary, "api-calls.json", "deployments/2/statuses?per_page=20&page=2"));
+    return true;
+}
+
+TEST_CASE(restore_reads_deployment_pagination)
+{
+    REQUIRE(api_fixture("deployment-pagination") == 0);
+    REQUIRE(has(temporary, "api-calls.json", "deployments?environment=github-pages&per_page=20&page=2"));
+    return true;
+}
+
+TEST_CASE(truncated_history_cannot_choose_an_older_snapshot)
+{
+    REQUIRE(api_fixture("truncated-history") != 0);
+    REQUIRE(has(temporary, "command.log", "provenance history truncated"));
+    REQUIRE(access(output, F_OK) != 0);
+    return true;
+}
+
+TEST_CASE(missing_job_log_stops_restore)
+{
+    REQUIRE(api_fixture("missing-log") != 0);
+    REQUIRE(has(temporary, "command.log", "resource unavailable: actions/jobs/200/logs"));
+    REQUIRE(access(output, F_OK) != 0);
+    return true;
+}
+
+TEST_CASE(untrusted_deployment_workflow_stops_restore)
+{
+    REQUIRE(api_fixture("untrusted-workflow") != 0);
+    REQUIRE(has(temporary, "command.log", "deployment workflow is not trusted"));
+    REQUIRE(access(output, F_OK) != 0);
+    return true;
+}
+
+TEST_CASE(artifact_run_mismatch_stops_restore)
+{
+    REQUIRE(api_fixture("wrong-artifact-run") != 0);
+    REQUIRE(has(temporary, "command.log", "Deployed artifact provenance mismatch"));
+    REQUIRE(access(output, F_OK) != 0);
+    return true;
+}
+
+TEST_CASE(job_run_mismatch_stops_restore)
+{
+    REQUIRE(api_fixture("wrong-job-run") != 0);
+    REQUIRE(has(temporary, "command.log", "Exact Pages deployment job did not succeed"));
+    REQUIRE(access(output, F_OK) != 0);
+    return true;
+}
+
+TEST_CASE(expired_current_snapshot_stops_restore)
+{
+    REQUIRE(api_fixture("expired-snapshot") != 0);
+    REQUIRE(has(temporary, "command.log", "snapshot expired; refusing rollback"));
+    REQUIRE(access(output, F_OK) != 0);
+    return true;
+}
+
+TEST_CASE(ambiguous_deployment_payload_stops_restore)
+{
+    REQUIRE(api_fixture("ambiguous-payload") != 0);
+    REQUIRE(has(temporary, "command.log", "payload is missing or ambiguous"));
+    REQUIRE(access(output, F_OK) != 0);
+    return true;
+}
+
+TEST_CASE(package_records_exact_source_sdk_and_file_digests)
+{
+    REQUIRE(api_fixture("package-valid") == 0);
+    REQUIRE(has(output, "studio.json", studio));
+    REQUIRE(has(output, "studio.json", tree));
+    REQUIRE(has(output, "studio.json", engine));
+    char *actual = join(temporary, "actual.json"),
+         *recorded = join(temporary, "recorded.json");
+    char *arguments[] = { "cmp", "-s", actual, recorded, NULL };
+    REQUIRE(run(arguments, true) == 0);
+    free(actual);
+    free(recorded);
+    return true;
+}
+
+TEST_CASE(package_rejects_dirty_source)
+{
+    REQUIRE(api_fixture("package-dirty-source") != 0);
+    REQUIRE(has(temporary, "command.log", "Application source must be clean"));
+    REQUIRE(!exists(output, "studio.json"));
+    return true;
+}
+
+TEST_CASE(package_rejects_wrong_tree)
+{
+    REQUIRE(api_fixture("package-wrong-tree") != 0);
+    REQUIRE(has(temporary, "command.log", "Unapproved preview input"));
+    REQUIRE(!exists(output, "studio.json"));
+    return true;
+}
+
+TEST_CASE(package_rejects_dirty_sdk)
+{
+    REQUIRE(api_fixture("package-dirty-sdk") != 0);
+    REQUIRE(has(temporary, "command.log", "SDK source must be exact and clean"));
+    REQUIRE(!exists(output, "studio.json"));
+    return true;
+}
+
+TEST_CASE(package_rejects_wrong_engine)
+{
+    REQUIRE(api_fixture("package-wrong-engine") != 0);
+    REQUIRE(has(temporary, "command.log", "Unapproved preview input"));
+    REQUIRE(!exists(output, "studio.json"));
+    return true;
+}
+
+TEST_CASE(package_rejects_threaded_sdk)
+{
+    REQUIRE(api_fixture("package-threaded") != 0);
+    REQUIRE(has(temporary, "command.log", "Expected the serial web SDK"));
+    REQUIRE(!exists(output, "studio.json"));
+    return true;
+}
+
 #define RUN_PAGES_CASE(test)                                                   \
     do {                                                                       \
         setup();                                                               \
@@ -386,6 +584,7 @@ int main(int argc, char **argv)
     assert(setenv("PYTHONDONTWRITEBYTECODE", "1", 1) == 0);
     tools = join(argv[2], "tools");
     script = join(tools, "pages_site.py");
+    fixture = join(argv[2], "tests/tools/pages_fixture.py");
     RUN_PAGES_CASE(preview_preserves_production_and_other_previews);
     RUN_PAGES_CASE(production_preserves_every_preview);
     RUN_PAGES_CASE(merge_cleanup_changes_only_77);
@@ -402,8 +601,27 @@ int main(int argc, char **argv)
     RUN_PAGES_CASE(archive_duplicates_are_rejected);
     RUN_PAGES_CASE(archive_checksum_is_verified);
     RUN_PAGES_CASE(fresh_composition_keeps_interleaved_changes);
+    RUN_PAGES_CASE(restore_uses_the_exact_successful_deployment);
+    RUN_PAGES_CASE(missing_latest_snapshot_cannot_restore_an_older_upload);
+    RUN_PAGES_CASE(failed_rerun_does_not_hide_the_successful_attempt);
+    RUN_PAGES_CASE(restore_reads_status_pagination);
+    RUN_PAGES_CASE(restore_reads_deployment_pagination);
+    RUN_PAGES_CASE(truncated_history_cannot_choose_an_older_snapshot);
+    RUN_PAGES_CASE(missing_job_log_stops_restore);
+    RUN_PAGES_CASE(untrusted_deployment_workflow_stops_restore);
+    RUN_PAGES_CASE(artifact_run_mismatch_stops_restore);
+    RUN_PAGES_CASE(job_run_mismatch_stops_restore);
+    RUN_PAGES_CASE(expired_current_snapshot_stops_restore);
+    RUN_PAGES_CASE(ambiguous_deployment_payload_stops_restore);
+    RUN_PAGES_CASE(package_records_exact_source_sdk_and_file_digests);
+    RUN_PAGES_CASE(package_rejects_dirty_source);
+    RUN_PAGES_CASE(package_rejects_wrong_tree);
+    RUN_PAGES_CASE(package_rejects_dirty_sdk);
+    RUN_PAGES_CASE(package_rejects_wrong_engine);
+    RUN_PAGES_CASE(package_rejects_threaded_sdk);
     pu_print_stats();
     free(script);
+    free(fixture);
     free(tools);
     return pu_test_failed() ? 1 : 0;
 }

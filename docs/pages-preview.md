@@ -22,9 +22,15 @@ restricted to `main`; deployment never executes the preview checkout's tools.
 
 Pages deploys a complete site. Production updates, preview updates and cleanup
 therefore share a publisher lock with `queue: max` and `cancel-in-progress: false`.
-After obtaining that lock, the publisher restores the last successfully deployed
-`github-pages` artifact from this repository's trusted main workflow and verifies
-its digest. It preserves the production root and every other preview when replacing
+After obtaining that lock, the publisher reads the `github-pages` environment's
+deployment/status history and selects the latest success by completion time. Its
+exact job URL identifies the successful attempt even if a later rerun failed. The
+trusted main job's deploy-pages log records the immutable artifact ID. The publisher
+downloads only that artifact and verifies its digest, source and run identity. It
+never selects a surviving upload as a substitute for a deleted deployed snapshot.
+History reads stop after five pages of 20 records each or 100 API requests; an
+incomplete history stops publication. It preserves the production root and every
+other preview when replacing
 `previews/77/`. Normal production updates preserve all previews. A stale production
 build cannot replace the current main revision.
 
@@ -35,7 +41,9 @@ checks out PR code. An unmerged close does not remove the preview. This trigger 
 not authorize merging PR77.
 
 Complete site artifacts are retained for 90 days. Missing, expired, corrupt or
-untrusted snapshots stop publication instead of reconstructing an incomplete site.
+untrusted snapshots and unavailable deployment logs stop publication instead of
+reconstructing an incomplete site. Deployment history requires read access to
+deployments; the job declares that read-only token scope alongside Actions read.
 If the site has been idle beyond retention, a reviewed recovery of its complete
 published contents is required before publishing again. Before the first deployment
 of this infrastructure, let any older publishing workflow finish so it cannot later
@@ -54,8 +62,12 @@ cc -std=c11 -Wall -Wextra -Werror -Itests/acceptance tests/tools/main.c -o /tmp/
 rm /tmp/studio-tools
 ```
 
-The C dispatcher exercises production preservation, preview replacement, interleaved
+The C dispatcher compares complete retained file maps using distinct before/incoming
+content. It exercises production preservation, preview replacement, interleaved
 updates, merged-only cleanup, stale builds, corrupt bundles and archive path/link
-rejection. It creates tiny disposable fixtures and runs no compiler SDK, browser,
+rejection. Offline API fixtures cover deleted latest snapshots, failed reruns,
+newer failed uploads, pagination, untrusted provenance and missing logs. Package
+fixtures check clean source/tree, serial SDK identity and recorded file checksums.
+It creates tiny disposable fixtures and runs no compiler SDK, browser,
 network request, upload or deployment. Browser acceptance must identify the deployed
 preview manifest and exercise physical node-field and source-caret input separately.
