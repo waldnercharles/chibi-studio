@@ -2,6 +2,14 @@ name: Publish reusable web editor
 
 on:
   workflow_dispatch:
+    inputs:
+      preview_77:
+        description: Build the reviewed PR77 checkpoint at /previews/77/
+        type: boolean
+        default: false
+  pull_request_target:
+    types: [closed]
+    branches: [main]
   push:
     branches: [main]
     paths:
@@ -13,6 +21,8 @@ on:
       - "CMakeLists.txt"
       - ".github/workflows/publish.yml"
       - ".github/engine-ref"
+      - "tools/pages_site.py"
+      - "tests/tools/**"
   pull_request:
     branches: [main]
     paths:
@@ -24,6 +34,8 @@ on:
       - "CMakeLists.txt"
       - ".github/workflows/publish.yml"
       - ".github/engine-ref"
+      - "tools/pages_site.py"
+      - "tests/tools/**"
   schedule:
     - cron: "23 6 * * *"
 
@@ -32,6 +44,7 @@ permissions:
 
 concurrency:
   group: publish-editor-${{ github.ref }}
+  queue: max
   cancel-in-progress: false
 
 env:
@@ -46,20 +59,55 @@ jobs:
       published: ${{ steps.version.outputs.published }}
       build: ${{ steps.version.outputs.build }}
       paired: ${{ steps.version.outputs.paired }}
+      mode: ${{ steps.version.outputs.mode }}
+      studio: ${{ steps.version.outputs.studio }}
     steps:
       - uses: actions/checkout@v4
+      - name: Check Pages tooling with small C fixtures
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -Itests/acceptance tests/tools/main.c -o "$RUNNER_TEMP/studio-tools"
+          "$RUNNER_TEMP/studio-tools" --pages-site "$GITHUB_WORKSPACE"
       - name: Select the exact engine SDK
         id: version
         env:
           GH_TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
           STUDIO: ${{ github.sha }}
+          EVENT: ${{ github.event_name }}
+          PREVIEW_77: ${{ inputs.preview_77 }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
           ALLOW_PIN: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         shell: bash
         run: |
+          mode=production
+          if [ "$EVENT" = pull_request_target ]; then
+            mode=skip
+            if [ "$PR_NUMBER" = 77 ] && [ "$PR_MERGED" = true ]; then mode=cleanup77; fi
+          elif [ "$EVENT" = pull_request ]; then
+            mode=check
+          elif [ "$PREVIEW_77" = true ]; then
+            mode=preview77
+            STUDIO=c28301748699a158fec08a475ca7dde872bb4960
+          fi
+          {
+            echo "mode=$mode"
+            echo "studio=$STUDIO"
+          } >> "$GITHUB_OUTPUT"
+          if [ "$mode" = cleanup77 ] || [ "$mode" = skip ]; then
+            {
+              echo 'build=false'
+              echo 'published=false'
+              echo 'paired=false'
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           test -n "$GH_TOKEN"
           # Match native CI's selected engine, resolved once for this workflow.
           paired=false
-          if [ "$ALLOW_PIN" = true ] && [ -f .github/engine-ref ]; then
+          if [ "$mode" = preview77 ]; then
+            ENGINE=d1154cdb8677cbfe479d4be40db7ca480d10f103
+            paired=true
+          elif [ "$ALLOW_PIN" = true ] && [ -f .github/engine-ref ]; then
             ENGINE=$(<.github/engine-ref)
             if [[ ! "$ENGINE" =~ ^[0-9a-f]{40}$ ]]; then
               echo "::error::.github/engine-ref must contain one full lowercase engine commit SHA."
@@ -71,6 +119,7 @@ jobs:
           fi
           echo "paired=$paired" >> "$GITHUB_OUTPUT"
           export ENGINE
+          export PAGES_MODE="$mode"
           gh api --paginate --slurp 'repos/waldnercharles/chibi/releases?per_page=100' > "$RUNNER_TEMP/engine-releases.json"
           python3 - <<'PY'
           import json, os, re
@@ -85,6 +134,8 @@ jobs:
           release = next((r for r in releases
                           if r["tag_name"] == "engine-" + engine and not r["draft"]), None)
           required = {"chibi-web-sdk.tar.gz", "chibi-export-linux-x64.tar.gz", "SHA256SUMS", "build.json"}
+          if os.environ["PAGES_MODE"] == "preview77" and release is None:
+              raise SystemExit("Preview77 requires its verified released engine SDK")
           if release:
               assets = {a["name"] for a in release["assets"]
                         if a["state"] == "uploaded" and a["size"] > 0}
@@ -96,7 +147,7 @@ jobs:
           PY
           engine=$ENGINE
           build=true
-          if [ "$GITHUB_REF" = refs/heads/main ]; then
+          if [ "$mode" = production ] && [ "$GITHUB_REF" = refs/heads/main ]; then
             if curl --fail --silent --show-error --retry 3 \
                 https://waldnercharles.github.io/chibi-studio/studio.json -o published.json; then
               if python3 -c 'import json,sys; p=json.load(open("published.json")); sys.exit(not (p.get("format")==1 and p.get("engine")==sys.argv[1] and p.get("studio")==sys.argv[2]))' "$engine" "$STUDIO"; then
@@ -114,7 +165,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.version.outputs.studio }}
+          path: app
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
           ref: ${{ github.sha }}
+          path: tooling
+          persist-credentials: false
+      - name: Require the selected application source
+        env:
+          STUDIO: ${{ needs.version.outputs.studio }}
+        run: |
+          test "$(git -C app rev-parse HEAD)" = "$STUDIO"
+          test -z "$(git -C app status --porcelain)"
       - name: Download and verify the installed web SDK
         if: needs.version.outputs.published == 'true'
         env:
@@ -185,47 +249,75 @@ jobs:
           PY
       - name: Build Studio against the installed SDK
         run: |
-          emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release \
+          emcmake cmake -S app -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release \
             -DChibi_DIR="$GITHUB_WORKSPACE/sdk/lib/cmake/Chibi"
           cmake --build build-web --target chibi-studio --parallel 2
           cmake --install build-web --prefix "$GITHUB_WORKSPACE/site"
-      - name: Package the reusable editor and its version
-        if: needs.version.outputs.paired != 'true'
+      - name: Package the selected serial application
+        if: needs.version.outputs.mode != 'check'
         env:
-          ENGINE: ${{ needs.version.outputs.engine }}
-          STUDIO: ${{ github.sha }}
+          MODE: ${{ needs.version.outputs.mode }}
         run: |
-          tar -czf "site/editor-$STUDIO-$ENGINE.tar.gz" -C site \
-            chibi-studio.html chibi-studio.js chibi-studio.wasm chibi-studio.data chibi-default.js
-          python3 - <<'PY'
-          import hashlib, json, os
-          from pathlib import Path
-          root = Path("site")
-          archive = f'editor-{os.environ["STUDIO"]}-{os.environ["ENGINE"]}.tar.gz'
-          manifest = dict(format=1, engine=os.environ["ENGINE"], studio=os.environ["STUDIO"],
-                          archive=archive, sha256=hashlib.sha256((root / archive).read_bytes()).hexdigest())
-          (root / "studio.json").write_text(json.dumps(manifest, indent=2) + "\n")
-          (root / "index.html").write_text('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=chibi-studio.html"><a href="chibi-studio.html">Open Chibi Studio</a>\n')
-          (root / ".nojekyll").touch()
-          PY
-      - uses: actions/upload-pages-artifact@v3
-        if: needs.version.outputs.paired != 'true'
+          preview=()
+          if [ "$MODE" = preview77 ]; then preview=(--preview77); fi
+          python3 tooling/tools/pages_site.py package --site site --source app --sdk sdk "${preview[@]}"
+      - uses: actions/upload-artifact@v4
+        if: needs.version.outputs.mode != 'check'
         with:
+          name: studio-web-input
           path: site
-          retention-days: 1
+          include-hidden-files: true
+          retention-days: 7
 
   deploy:
     needs: [version, editor]
-    if: github.ref == 'refs/heads/main' && needs.version.outputs.published == 'true'
+    if: >-
+      always() && github.ref == 'refs/heads/main' && needs.version.result == 'success' &&
+      (needs.version.outputs.mode == 'cleanup77' ||
+       (needs.editor.result == 'success' && needs.version.outputs.published == 'true' &&
+        (needs.version.outputs.mode == 'preview77' || needs.version.outputs.mode == 'production')))
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
+    concurrency:
+      group: studio-pages-publisher
+      queue: max
+      cancel-in-progress: false
     permissions:
+      contents: read
+      actions: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # This is the trusted workflow revision on main, never the preview checkout.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        if: needs.version.outputs.mode != 'cleanup77'
+        with:
+          name: studio-web-input
+          path: application
+      - name: Restore the last successfully deployed complete site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/pages_site.py restore --output previous
+      - name: Assemble only the approved change
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODE: ${{ needs.version.outputs.mode }}
+        run: |
+          gh api repos/waldnercharles/chibi-studio/pulls/77 > "$RUNNER_TEMP/pr77.json"
+          main=$(gh api repos/waldnercharles/chibi-studio/git/ref/heads/main --jq .object.sha)
+          python3 tools/pages_site.py compose --mode "$MODE" --previous previous \
+            --built application --output site --pr "$RUNNER_TEMP/pr77.json" --main "$main"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+          retention-days: 90
       - name: Deploy the reusable editor
         id: deployment
         uses: actions/deploy-pages@v4
