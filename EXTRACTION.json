@@ -2573,7 +2573,8 @@
     "src/host/main.c": {
       "current_source_sha256": "389025df33ac009b118f0831bac5ca79184aa75b2ceccfc7c7d99953ab301040",
       "sha256": "2b1f6f852119502267ec36d3a12c3e703906d631b0496f5d81133c5bc1bd9371",
-      "source_path": "src/host/main.c"
+      "source_path": "src/host/main.c",
+      "consumer_sha256": "fe11f77560ea4d9c84fbb3c4477145a1dd9f8a10fe7511afc65c9831cba302b2"
     },
     "src/host/stacktrace.c": {
       "consumer_replacements": [
