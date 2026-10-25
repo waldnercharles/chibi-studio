@@ -44,6 +44,9 @@ Complete site artifacts are retained for 90 days. Missing, expired, corrupt or
 untrusted snapshots and unavailable deployment logs stop publication instead of
 reconstructing an incomplete site. Deployment history requires read access to
 deployments; the job declares that read-only token scope alongside Actions read.
+Binary log/archive reads use `gh api --allow-escape-sequences` (GitHub CLI 2.97+
+as supplied by the runner). The helper captures these bytes for parsing and checksum
+verification; it never prints the remote log. JSON requests retain default protection.
 If the site has been idle beyond retention, a reviewed recovery of its complete
 published contents is required before publishing again. Before the first deployment
 of this infrastructure, let any older publishing workflow finish so it cannot later

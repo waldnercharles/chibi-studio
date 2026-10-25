@@ -152,7 +152,11 @@ def compose(mode, previous, built, output, pr, main):
 
 
 def api(path, binary=False):
-    result = subprocess.check_output(['gh', 'api', f'repos/{REPOSITORY}/{path}'], timeout=60)
+    arguments = ['gh', 'api', f'repos/{REPOSITORY}/{path}']
+    if binary:
+        # Capture log/archive bytes for parsing only; never render remote escapes.
+        arguments.append('--allow-escape-sequences')
+    result = subprocess.check_output(arguments, timeout=60)
     return result if binary else json.loads(result)
 
 

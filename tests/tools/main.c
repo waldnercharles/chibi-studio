@@ -415,6 +415,23 @@ static int api_fixture(const char *kind)
     return run(arguments, true);
 }
 
+TEST_CASE(binary_api_captures_remote_escapes_without_rendering)
+{
+    REQUIRE(api_fixture("api-binary") == 0);
+    REQUIRE(has(temporary, "output", "\033[32mremote log\033[0m\n"));
+    REQUIRE(has(temporary, "api-arguments.json", "--allow-escape-sequences"));
+    REQUIRE(!has(temporary, "command.log", "\033"));
+    return true;
+}
+
+TEST_CASE(json_api_keeps_default_output_protection)
+{
+    REQUIRE(api_fixture("api-json") == 0);
+    REQUIRE(has(temporary, "output", "{\"id\": 200}"));
+    REQUIRE(!has(temporary, "api-arguments.json", "--allow-escape-sequences"));
+    return true;
+}
+
 TEST_CASE(restore_uses_the_exact_successful_deployment)
 {
     REQUIRE(api_fixture("valid") == 0);
@@ -601,6 +618,8 @@ int main(int argc, char **argv)
     RUN_PAGES_CASE(archive_duplicates_are_rejected);
     RUN_PAGES_CASE(archive_checksum_is_verified);
     RUN_PAGES_CASE(fresh_composition_keeps_interleaved_changes);
+    RUN_PAGES_CASE(binary_api_captures_remote_escapes_without_rendering);
+    RUN_PAGES_CASE(json_api_keeps_default_output_protection);
     RUN_PAGES_CASE(restore_uses_the_exact_successful_deployment);
     RUN_PAGES_CASE(missing_latest_snapshot_cannot_restore_an_older_upload);
     RUN_PAGES_CASE(failed_rerun_does_not_hide_the_successful_attempt);
