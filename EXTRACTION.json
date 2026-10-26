@@ -2074,7 +2074,7 @@
       "current_source_sha256": "0d345e02baae1cb501fb3788b52b38902547694e9cba9c52c4f8c9ae542e5ffa",
       "sha256": "e366052eea9670b6d87c3b2a6f50bc93de4d7b2ec632bc8d73ae0b4f2a3fddc8",
       "source_path": "src/editor/studio/studio_member_properties.c",
-      "consumer_sha256": "c86763348875435dc6da2e055fc2b637e69dce515ae120ccc90cea5d9d35cacf"
+      "consumer_sha256": "77be0a63e74e19a3c0c286e323831cc73b67c7b01a7c709478c0732a04cc5fac"
     },
     "src/editor/studio/studio_members.c": {
       "current_source_sha256": "933131e66da01f6e413de6e43cede46e041c2733b52e169671c85aa6f928b3ad",

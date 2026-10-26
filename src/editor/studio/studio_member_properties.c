@@ -35,10 +35,10 @@ typedef struct
 } type_choice;
 
 static const type_choice TYPES[] = {
-    { "Boolean", PIN_BOOL, "bool" },   { "Integer", PIN_I32, "int" },
-    { "Float", PIN_F32, "float" },     { "Double", PIN_F64, "double" },
-    { "Name", PIN_NAME, "name" },      { "String", PIN_STR, "const char *" },
-    { "Vector", PIN_STRUCT, "CF_V2" }, { "Entity", PIN_HANDLE, "ecs.entity" },
+    { "Boolean", PIN_BOOL, "bool" },  { "Integer", PIN_I32, "int" },
+    { "Float", PIN_F32, "float" },    { "Double", PIN_F64, "double" },
+    { "Name", PIN_NAME, "name" },     { "String", PIN_STR, "const char *" },
+    { "Vector", PIN_STRUCT, "vec2" }, { "Entity", PIN_HANDLE, "ecs.entity" },
 };
 enum
 {
