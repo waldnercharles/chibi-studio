@@ -13,14 +13,12 @@ permissions:
   actions: write
   pull-requests: write
 
-concurrency:
-  group: ci-control-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
-
 jobs:
   rerun:
     name: Re-run failed checks
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.label.name == 'ci-rerun'
+    # Per job, so unrelated labels never replace a pending request.
+    concurrency: ci-control-rerun-${{ github.event.pull_request.number }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
