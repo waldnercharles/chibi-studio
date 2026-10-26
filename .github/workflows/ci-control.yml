@@ -1,0 +1,44 @@
+name: CI control
+
+# Re-runs failed checks for people and agents whose own GitHub access cannot,
+# such as a Studio PR whose engine dependency has since merged. Labels need
+# triage access, and only branches of this repository qualify, so outside
+# contributors cannot start these runs. pull_request_target runs this file
+# from main; it never checks out pull request code.
+on:
+  pull_request_target:
+    types: [labeled]
+
+permissions:
+  actions: write
+  pull-requests: write
+
+concurrency:
+  group: ci-control-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  rerun:
+    name: Re-run failed checks
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.label.name == 'ci-rerun'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Re-run failed runs of the head commit
+        run: |
+          gh run list --commit "$HEAD_SHA" --limit 100 \
+            --json databaseId,workflowName,event,status,conclusion \
+            --jq 'map(select(.event != "pull_request_target")) | group_by(.workflowName) | map(max_by(.databaseId))
+                  | .[] | select(.status == "completed" and (.conclusion | IN("failure", "cancelled", "timed_out"))) | .databaseId' |
+          while read -r run; do
+            echo "Re-running failed jobs of run $run"
+            gh run rerun "$run" --failed
+          done
+      - name: Remove the label
+        if: always()
+        run: gh api -X DELETE "repos/$GH_REPO/issues/$PR/labels/ci-rerun"
