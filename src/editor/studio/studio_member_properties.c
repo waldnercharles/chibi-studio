@@ -36,7 +36,7 @@ typedef struct
 
 static const type_choice TYPES[] = {
     { "Boolean", PIN_BOOL, "bool" },  { "Integer", PIN_I32, "int" },
-    { "Float", PIN_F32, "float" },    { "Double", PIN_F64, "double" },
+    { "Number", PIN_F32, "number" },  { "f64", PIN_F64, "f64" },
     { "Name", PIN_NAME, "name" },     { "String", PIN_STR, "const char *" },
     { "Vector", PIN_STRUCT, "vec2" }, { "Entity", PIN_HANDLE, "ecs.entity" },
 };
@@ -536,7 +536,7 @@ static bool add_signature_pin(editor *e, graph *g, bool result)
         }
         snprintf(name, sizeof name, "%s %d", base, i);
     }
-    pin_spec pin = { .name = name, .kind = PIN_DATA, .type = PIN_F32, .type_name = "float" };
+    pin_spec pin = { .name = name, .kind = PIN_DATA, .type = PIN_F32, .type_name = "number" };
     behavior_asset *before = ed_snapshot(e);
     return sm_record(e, before, graph_signature_add(e->asset, g, result, &pin) == 0);
 }

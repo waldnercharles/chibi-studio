@@ -2020,7 +2020,7 @@
       "current_source_sha256": "a276621639c97c357f70b5ecb8f2497e6604915fef946db10796fd7a4a7e1b1f",
       "sha256": "653a4bfe5021362ac29f28e7eb28d8e6f7dff9412ac890b1465d6c028ece8176",
       "source_path": "src/editor/studio/studio_graph_properties.c",
-      "consumer_sha256": "f1d9297a5145b2db743b0e225ce91d414c30656d2920bac3d67cc73f6c1b89fb"
+      "consumer_sha256": "32b8e29ea5243b7892c72f75b433efc6a08b7efdcdefb953acee26271dcdcf82"
     },
     "src/editor/studio/studio_graph_values.c": {
       "current_source_sha256": "741fd7736678afc5b6dc17902d468a95f6e748961b91a42f8b68e5e473647f02",
@@ -2074,7 +2074,7 @@
       "current_source_sha256": "0d345e02baae1cb501fb3788b52b38902547694e9cba9c52c4f8c9ae542e5ffa",
       "sha256": "e366052eea9670b6d87c3b2a6f50bc93de4d7b2ec632bc8d73ae0b4f2a3fddc8",
       "source_path": "src/editor/studio/studio_member_properties.c",
-      "consumer_sha256": "77be0a63e74e19a3c0c286e323831cc73b67c7b01a7c709478c0732a04cc5fac"
+      "consumer_sha256": "1b13049f2dc6d5d2f9b26883441979c1bc5dc967db02b23ce0be230f24af9665"
     },
     "src/editor/studio/studio_members.c": {
       "current_source_sha256": "933131e66da01f6e413de6e43cede46e041c2733b52e169671c85aa6f928b3ad",
