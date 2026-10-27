@@ -1,11 +1,16 @@
 name: CI control
 
-# Re-runs failed checks for people and agents whose own GitHub access cannot.
-# The ci-rerun label does it on request. On a schedule, a PR whose description
-# names an engine PR (chibi#N or its URL) gets its failed checks re-run once
-# after that engine PR merges, since CI builds against engine main. Labels need
-# triage access, and only branches of this repository qualify, so outside
-# contributors cannot start these runs. Neither job checks out PR code.
+# Re-runs failed checks for maintainers and agents whose own GitHub access
+# cannot. The ci-rerun label does it on request, for a sender with write access
+# (which GitHub requires for re-runs anyway). On a schedule, a PR whose
+# description names an engine PR (chibi#N or its URL) gets its failed checks
+# re-run once after that engine PR merges, since CI builds against engine main.
+# A PR that pins .github/engine-ref builds that engine commit instead, so it is
+# skipped. Only branches of this repository qualify, and only a PR's own
+# pull_request runs of CI and the web editor check are re-run, never a push or
+# publishing run that shares the commit. Neither job checks out PR code. A push
+# between listing a PR and re-running its run can re-run the older commit's
+# checks; the new commit's own checks still run and decide the PR.
 on:
   pull_request_target:
     types: [labeled]
@@ -14,7 +19,12 @@ on:
 
 permissions:
   actions: write
+  contents: read
   pull-requests: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
 
 jobs:
   rerun:
@@ -27,18 +37,33 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
       PR: ${{ github.event.pull_request.number }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      SENDER: ${{ github.event.sender.login }}
     steps:
-      - name: Re-run failed runs of the head commit
+      - name: Require write access and the event's head commit
         run: |
-          gh run list --commit "$HEAD_SHA" --limit 100 \
-            --json databaseId,workflowName,event,status,conclusion \
-            --jq 'map(select(.event != "pull_request_target")) | group_by(.workflowName) | map(max_by(.databaseId))
-                  | .[] | select(.status == "completed" and (.conclusion | IN("failure", "cancelled", "timed_out"))) | .databaseId' |
-          while read -r run; do
+          permission=$(gh api "repos/$GH_REPO/collaborators/$SENDER/permission" --jq .permission)
+          case $permission in
+            admin | write) ;;
+            *) echo "::error::$SENDER has $permission access; re-runs need write access."; exit 1 ;;
+          esac
+          head=$(gh api "repos/$GH_REPO/git/ref/heads/$HEAD_REF" --jq .object.sha)
+          if [ "$head" != "$HEAD_SHA" ]; then
+            echo "::error::$HEAD_REF moved from $HEAD_SHA to $head. Label the PR again for the new head."
+            exit 1
+          fi
+      - name: Re-run the PR's failed runs
+        run: |
+          # The latest pull_request run of each workflow on this branch only:
+          # a push or publishing run can share the commit.
+          for workflow in ci.yml publish.yml; do
+            gh run list --workflow "$workflow" --commit "$HEAD_SHA" --limit 100 \
+              --json databaseId,event,headBranch,status,conclusion \
+              --jq 'map(select(.event == "pull_request" and .headBranch == env.HEAD_REF)) | max_by(.databaseId) // empty
+                    | select(.status == "completed" and (.conclusion | IN("failure", "cancelled", "timed_out"))) | .databaseId'
+          done | while read -r run; do
             echo "Re-running failed jobs of run $run"
             gh run rerun "$run" --failed
           done
@@ -52,28 +77,35 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
       ENGINE_TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
     steps:
       - name: Re-run failed runs that started before a named engine PR merged
         run: |
           gh api "repos/$GH_REPO/pulls?state=open&per_page=100" \
             --jq '.[] | select(.head.repo.full_name == env.GH_REPO)
-                  | [.number, .head.sha, ([.body // "" | scan("\\bchibi#[0-9]+|github\\.com/waldnercharles/chibi/pull/[0-9]+")
-                  | scan("[0-9]+$")] | unique | join(","))] | select(.[2] != "") | @tsv' |
-          while IFS=$'\t' read -r pr sha engine_prs; do
+                  | [.number, .head.ref, .head.sha, ([.body // "" | scan("\\bchibi#[0-9]+|github\\.com/waldnercharles/chibi/pull/[0-9]+")
+                  | scan("[0-9]+$")] | unique | join(","))] | select(.[3] != "") | @tsv' |
+          while IFS=$'\t' read -r pr ref sha engine_prs; do
+            # Only a confirmed 404 means unpinned; any other failure skips the
+            # PR until a later run can check it.
+            if pin=$(gh api "repos/$GH_REPO/contents/.github/engine-ref?ref=$sha" --silent 2>&1); then
+              continue
+            fi
+            case $pin in
+              *"(HTTP 404)"*) ;;
+              *) echo "::warning::PR #$pr: skipped, couldn't check .github/engine-ref: $pin"; continue ;;
+            esac
             merged=$(for n in ${engine_prs//,/ }; do
               GH_TOKEN=$ENGINE_TOKEN gh api "repos/waldnercharles/chibi/pulls/$n" --jq '.merged_at // empty'
             done | sort | tail -n 1)
             [ -n "$merged" ] || continue
-            MERGED=$merged gh run list --commit "$sha" --limit 100 \
-              --json databaseId,workflowName,event,status,conclusion,startedAt \
-              --jq 'map(select(.event != "pull_request_target" and .event != "schedule"))
-                    | group_by(.workflowName) | map(max_by(.databaseId)) | .[]
-                    | select(.status == "completed" and (.conclusion | IN("failure", "cancelled", "timed_out")) and .startedAt < env.MERGED)
-                    | .databaseId' |
-            while read -r run; do
+            for workflow in ci.yml publish.yml; do
+              REF=$ref MERGED=$merged gh run list --workflow "$workflow" --commit "$sha" --limit 100 \
+                --json databaseId,event,headBranch,status,conclusion,startedAt \
+                --jq 'map(select(.event == "pull_request" and .headBranch == env.REF)) | max_by(.databaseId) // empty
+                      | select(.status == "completed" and (.conclusion | IN("failure", "cancelled", "timed_out")) and .startedAt < env.MERGED)
+                      | .databaseId'
+            done | while read -r run; do
               echo "PR #$pr: re-running failed jobs of run $run after an engine PR merged at $merged"
               gh run rerun "$run" --failed
             done
