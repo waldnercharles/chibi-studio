@@ -237,6 +237,10 @@ extern "C"
     /* Lines that do not wrap scroll left by `offset` pixels; the text region
      * spans left to right. */
     void zep_set_text_offset_x(zep_editor *z, float offset);
+    /* Current vertical offset, maximum offset, and laid-out text bounds. */
+    void zep_scroll_info(zep_editor *z, float *offset, float *maximum, float *top, float *bottom);
+    /* Overrides automatic cursor following for the next display. */
+    void zep_set_text_offset_y(zep_editor *z, float offset);
     void zep_text_region_x(const zep_editor *z, float *left, float *right);
     /* With `hide`, the command line and the status line under the text take
      * no room while the command line is empty, as outside an ex command. */

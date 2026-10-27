@@ -18,6 +18,10 @@ and shared UI backend code belong in the engine repository
 - `EXTRACTION.json` records each file copied from the engine. After editing one
   of those files, set its `consumer_sha256` to the new file's SHA-256 in the
   same commit. New Studio-only files are not listed there.
+- A PR's checks resolve engine `main` when they run. Name the engine PR it
+  needs in its description (`waldnercharles/chibi#N`): within 15 minutes of that
+  PR merging, failed checks that started before the merge re-run once. Label the
+  PR `ci-rerun` to re-run failed checks at any other time.
 
 ## Build and run
 

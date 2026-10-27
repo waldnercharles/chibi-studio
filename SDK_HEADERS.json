@@ -305,6 +305,10 @@
     "src/editor/workspace/editor.h",
     "src/editor/workspace/scene_debug.h"
   ],
+  "execution/integer_report.h": [
+    "src/editor/studio/studio_debug.c",
+    "src/host/main.c"
+  ],
   "execution/status.h": [
     "src/editor/studio/studio_debug.c",
     "src/editor/workspace/application.c",

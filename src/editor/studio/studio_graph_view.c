@@ -65,7 +65,28 @@ static void camera_to(studio *s, float zoom, float x, float y, bool animate)
     g->camera.x = x;
     g->camera.y = y;
     g->camera.start = s->time;
+    g->camera.pan = false;
     g->camera.active = true;
+}
+
+/* A reveal keeps the current scale and carries its velocity to a new target. */
+static void pan_to(studio *s, float x, float y)
+{
+    studio_graph *g = &s->graph;
+    if (s->prefs.reduced_motion) {
+        camera_to(s, g->zoom, x, y, false);
+        return;
+    }
+    bool continuing = g->camera.active && g->camera.pan;
+    g->camera.pan_x = (spring){ g->x - x, continuing ? g->camera.pan_x.v : 0 };
+    g->camera.pan_y = (spring){ g->y - y, continuing ? g->camera.pan_y.v : 0 };
+    g->camera.zoom = g->zoom;
+    g->camera.x = x;
+    g->camera.y = y;
+    g->camera.updated = s->time;
+    g->camera.pan = true;
+    g->camera.active = g->camera.pan_x.x || g->camera.pan_y.x ||
+                       g->camera.pan_x.v || g->camera.pan_y.v;
 }
 
 void sg_zoom_actual(studio *s)
@@ -94,6 +115,22 @@ void sg_camera_step(studio *s)
 {
     studio_graph *g = &s->graph;
     if (!g->camera.active) {
+        return;
+    }
+    if (s->prefs.reduced_motion) {
+        camera_to(s, g->camera.zoom, g->camera.x, g->camera.y, false);
+        return;
+    }
+    if (g->camera.pan) {
+        double dt = fmax(0, fmin(s->time - g->camera.updated, 0.1));
+        g->camera.updated = s->time;
+        spring_params p = spring_for(0.22, 0);
+        spring_step(&g->camera.pan_x, p, dt);
+        spring_step(&g->camera.pan_y, p, dt);
+        g->x = g->camera.x + (float)g->camera.pan_x.x;
+        g->y = g->camera.y + (float)g->camera.pan_y.x;
+        g->camera.active = g->camera.pan_x.x || g->camera.pan_y.x ||
+                           g->camera.pan_x.v || g->camera.pan_y.v;
         return;
     }
     double t = fmin((s->time - g->camera.start) / FIT_SECONDS, 1);
@@ -218,26 +255,48 @@ void sg_frame_open(studio *s)
     camera_to(s, zoom, lo[0] - OPEN_MARGIN, lo[1] - OPEN_MARGIN, false);
 }
 
-/* Source and keyboard navigation reveal immediately. A node near the edges,
-   where overlays sit, is not in view. */
+/* Move only far enough to reveal the node with room around it. A node wider
+   than the comfortable region is centered rather than chased edge to edge. */
+static float reveal_axis(float at, float span, float start, float size)
+{
+    float inset = span * 0.2f;
+    if (size > span - 2 * inset) {
+        return start + size / 2 - span / 2;
+    }
+    if (start < at + inset) {
+        return start - inset;
+    }
+    if (start + size > at + span - inset) {
+        return start + size - span + inset;
+    }
+    return at;
+}
+
+/* Source and keyboard navigation move the receiving view without changing
+   its zoom. Repeated caret moves in one node keep the current transition. */
 void sg_show_node(studio *s, node *n, bool frame)
 {
-    static const float INSET = 0.2f;
     studio_graph *g = &s->graph;
-    g->camera.active = false;
     if (frame) {
-        sg_frame_nodes(s, true, false);
+        sg_frame_nodes(s, true, true);
         return;
+    }
+    /* A previous fit must not carry this new selection away after it is
+       already visible. Direct reveals keep the scale currently on screen. */
+    if (g->camera.active && !g->camera.pan) {
+        g->camera.active = false;
     }
     float zoom = sg_zoom(s);
     float box[4], w = g->surface.rect.w / zoom, h = g->surface.rect.h / zoom;
     sg_node_box(s, n, box);
-    if (box[0] >= g->x + w * INSET && box[1] >= g->y + h * INSET &&
-        box[0] + box[2] <= g->x + w * (1 - INSET) &&
-        box[1] + box[3] <= g->y + h * (1 - INSET)) {
+    float x = g->camera.active && g->camera.pan ? g->camera.x : g->x;
+    float y = g->camera.active && g->camera.pan ? g->camera.y : g->y;
+    float to_x = reveal_axis(x, w, box[0], box[2]);
+    float to_y = reveal_axis(y, h, box[1], box[3]);
+    if (fabsf(to_x - x) < 0.5f / zoom && fabsf(to_y - y) < 0.5f / zoom) {
         return;
     }
-    camera_to(s, g->zoom, box[0] + box[2] / 2 - w / 2, box[1] + box[3] / 2 - h / 2, false);
+    pan_to(s, to_x, to_y);
 }
 
 static studio_graph_view *view_for(studio_graph *g, uint64_t graph_id)
@@ -301,6 +360,10 @@ void sg_follow_graph(studio *s)
     g->bind_focus = false;
     g->details.bind[0] = '\0';
     g->gesture = STUDIO_GRAPH_IDLE;
+    /* The retained fields still belong to the old graph until the next emit.
+       Node IDs can repeat, so release their focus before following the new graph. */
+    kit_blur(g->kit);
+    g->focused_node = 0;
     g->camera.active = false;
     studio_graph_view *view = view_for(g, id);
     g->framed = view != NULL;

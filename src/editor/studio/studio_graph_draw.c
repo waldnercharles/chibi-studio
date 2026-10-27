@@ -132,7 +132,7 @@ static bool keep_node(const studio *s, node *n, uint64_t focused)
     return in_view(s, box[0], box[1], box[2], box[3]);
 }
 
-static uint64_t focused_node(const studio *s)
+uint64_t sg_focused_node(const studio *s)
 {
     rml_element *el = rml_context_focus_element(rml_backend_context(s->graph.backend));
     if (!el) {
@@ -569,7 +569,7 @@ static void add_problem(studio_graph *g, graph *gr, uint64_t id, bool error, con
 }
 
 /* The open behavior's compile diagnostics and, while the scene runs, the runs
-   that failed in this graph. */
+   that failed or reported an integer problem in this graph. */
 static void collect_problems(studio *s)
 {
     studio_graph *g = &s->graph;
@@ -590,7 +590,7 @@ static void collect_problems(studio *s)
         const studio_runtime_error *error = &s->runtime_errors[i];
         if (!strcmp(error->at.asset, s->scene->graph_document_id) &&
             behavior_asset_find_graph(e->asset, error->at.graph_id) == gr) {
-            add_problem(g, gr, error->at.node_id, true, error->message);
+            add_problem(g, gr, error->at.node_id, !error->warning, error->message);
         }
     }
 }
@@ -1005,7 +1005,7 @@ void sg_emit_canvas(studio *s)
     }
     emit_conversions(s);
     emit_reroutes(s);
-    uint64_t focused = focused_node(s);
+    uint64_t focused = sg_focused_node(s);
     for (int i = 0; i < acount(gr->nodes); i++) {
         if (sg_node_visible(gr, gr->nodes[i]) && keep_node(s, gr->nodes[i], focused)) {
             emit_node(s, gr->nodes[i]);

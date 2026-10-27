@@ -41,6 +41,7 @@ chibi_apply_patches("${zep_SOURCE_DIR}"
     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-undo-pop.patch"
     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-change-inner-word.patch"
     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-host-view.patch"
+    "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-smooth-reveal.patch"
     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-marker-self-clear.patch"
     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-indicator-dot.patch"
     "${CHIBI_DEPENDENCY_SOURCE_ROOT}/cmake/patches/zep-flat-underline.patch")
