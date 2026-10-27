@@ -85,7 +85,7 @@ jobs:
           /tmp/cmake/bin/pip install 'cmake>=4.2,<5'
           echo /tmp/cmake/bin >> "$GITHUB_PATH"
           install -d -m 700 "$XDG_RUNTIME_DIR"
-      - name: Identify SDK and dependency sources
+      - name: Identify SDK sources
         id: deps
         working-directory: chibi
         env:
@@ -95,7 +95,6 @@ jobs:
             test "$(git rev-parse HEAD)" = "$ENGINE_REF"
           fi
           {
-            echo "key=$(python3 tools/fetchcontent_cache.py fingerprint --source-dir .)"
             echo "engine=$(git rev-parse HEAD)"
             echo "toolchain=$({ clang-18 --version; cmake --version; } | sha256sum | cut -d ' ' -f 1)"
           } >> "$GITHUB_OUTPUT"
@@ -140,19 +139,13 @@ jobs:
           test "$(wc -l < selected-sums)" -eq 1
           sha256sum --check selected-sums
           tar -xzf chibi-sdk-linux-x64.tar.gz -C "$GITHUB_WORKSPACE/chibi/dist/sdk"
-      - name: Restore dependencies
-        if: steps.sdk.outputs.cache-hit != 'true' && steps.published-sdk.outputs.available != 'true'
-        id: cache-deps
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/.cache/chibi-fetchcontent
-            ~/.cache/chibi-dependency-packages
-          key: studio-deps-${{ runner.os }}-clang18-${{ steps.deps.outputs.key }}
-          restore-keys: studio-deps-${{ runner.os }}-clang18-
       - name: Package the engine SDK
         if: steps.sdk.outputs.cache-hit != 'true' && steps.published-sdk.outputs.available != 'true'
         working-directory: chibi
+        # The engine build downloads its pinned third-party archive with the
+        # GitHub CLI; anonymous requests share the runner IP's API rate limit.
+        env:
+          GH_TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
         run: make package-sdk SDK_PREFIX=dist/sdk LIBCLANG_ROOT=/usr/lib/llvm-18
       # PRs consume main's caches without uploading another branch-scoped copy.
       - name: Save packaged engine SDK
@@ -161,14 +154,6 @@ jobs:
         with:
           path: chibi/dist/sdk
           key: ${{ steps.sdk.outputs.cache-primary-key }}
-      - name: Save dependencies
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.sdk.outputs.cache-hit != 'true' && steps.published-sdk.outputs.available != 'true' && steps.cache-deps.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/.cache/chibi-fetchcontent
-            ~/.cache/chibi-dependency-packages
-          key: ${{ steps.cache-deps.outputs.cache-primary-key }}
       - name: Build Studio against the packaged SDK
         working-directory: chibi
         run: make studio-build STUDIO_SOURCE="$GITHUB_WORKSPACE/chibi-studio" STUDIO_SDK_PREFIX=dist/sdk
