@@ -8,7 +8,9 @@ name: CI control
 # A PR that pins .github/engine-ref builds that engine commit instead, so it is
 # skipped. Only branches of this repository qualify, and only a PR's own
 # pull_request runs of CI and the web editor check are re-run, never a push or
-# publishing run that shares the commit. Neither job checks out PR code.
+# publishing run that shares the commit. Neither job checks out PR code. A push
+# between listing a PR and re-running its run can re-run the older commit's
+# checks; the new commit's own checks still run and decide the PR.
 on:
   pull_request_target:
     types: [labeled]
@@ -17,6 +19,7 @@ on:
 
 permissions:
   actions: write
+  contents: read
   pull-requests: write
 
 env:
@@ -83,9 +86,15 @@ jobs:
                   | [.number, .head.ref, .head.sha, ([.body // "" | scan("\\bchibi#[0-9]+|github\\.com/waldnercharles/chibi/pull/[0-9]+")
                   | scan("[0-9]+$")] | unique | join(","))] | select(.[3] != "") | @tsv' |
           while IFS=$'\t' read -r pr ref sha engine_prs; do
-            if gh api "repos/$GH_REPO/contents/.github/engine-ref?ref=$sha" --silent 2> /dev/null; then
+            # Only a confirmed 404 means unpinned; any other failure skips the
+            # PR until a later run can check it.
+            if pin=$(gh api "repos/$GH_REPO/contents/.github/engine-ref?ref=$sha" --silent 2>&1); then
               continue
             fi
+            case $pin in
+              *"(HTTP 404)"*) ;;
+              *) echo "::warning::PR #$pr: skipped, couldn't check .github/engine-ref: $pin"; continue ;;
+            esac
             merged=$(for n in ${engine_prs//,/ }; do
               GH_TOKEN=$ENGINE_TOKEN gh api "repos/waldnercharles/chibi/pulls/$n" --jq '.merged_at // empty'
             done | sort | tail -n 1)
