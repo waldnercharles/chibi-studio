@@ -222,6 +222,9 @@ jobs:
         working-directory: engine
         env:
           ENGINE: ${{ needs.version.outputs.engine }}
+          # The engine build downloads its pinned third-party archive with the
+          # GitHub CLI; anonymous requests share the runner IP's API rate limit.
+          GH_TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
         run: |
           test "$(git rev-parse HEAD)" = "$ENGINE"
           test -z "$(git status --porcelain --untracked-files=normal)"
