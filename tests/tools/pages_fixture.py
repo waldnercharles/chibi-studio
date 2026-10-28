@@ -1,5 +1,6 @@
 """Small offline API/package inputs for the pico_unit Pages dispatcher."""
 
+import contextlib
 import hashlib
 import io
 import json
@@ -222,9 +223,79 @@ def capture():
     output.write_bytes(result if binary else json.dumps(result).encode())
 
 
+def engine_selection():
+    source = output.parent / 'source'
+    config = source / '.github'
+    config.mkdir(parents=True, exist_ok=True)
+    release_pin, pr_pin = config / 'engine-release', config / 'engine-ref'
+    release_pin.write_text('1' * 40 + '\n')
+    pr_pin.unlink(missing_ok=True)
+    output.unlink(missing_ok=True)
+    mode = 'preview77' if kind.startswith('engine-preview') else (
+        'check' if kind.startswith('engine-check') else 'production')
+    allow_pin = kind != 'engine-check-fork'
+    selected = pages.ENGINE if mode == 'preview77' else ('2' if mode == 'check' else '1') * 40
+    if mode != 'check' or kind in ('engine-check-pin', 'engine-check-fork', 'engine-check-invalid-pin'):
+        pr_pin.write_text('3' * 40 + '\n')
+        if mode == 'check' and allow_pin:
+            selected = '3' * 40
+    if kind == 'engine-production-missing-pin':
+        release_pin.unlink()
+    if kind == 'engine-production-invalid-pin':
+        release_pin.write_text('A' * 40 + '\n')
+    if kind == 'engine-production-multiline-pin':
+        release_pin.write_text('1' * 40 + '\n' + '2' * 40 + '\n')
+    if kind == 'engine-check-invalid-pin':
+        pr_pin.write_text('not-a-sha\n')
+    if mode == 'preview77':
+        release_pin.write_text('ignored-invalid-production-pin\n')
+    release = dict(tag_name='engine-' + selected, draft=False, assets=[
+        dict(name=name, state='uploaded', size=1) for name in
+        ('chibi-web-sdk.tar.gz', 'chibi-export-linux-x64.tar.gz', 'SHA256SUMS', 'build.json')])
+    releases = [release]
+    if kind.endswith('-unreleased'):
+        releases = []
+    if kind == 'engine-production-draft':
+        release['draft'] = True
+    if kind.endswith('-incomplete'):
+        release['assets'].pop()
+    if kind == 'engine-production-empty-asset':
+        release['assets'][0]['size'] = 0
+    if kind == 'engine-production-pending-asset':
+        release['assets'][0]['state'] = 'new'
+    if kind == 'engine-production-ambiguous':
+        releases.append(release)
+    calls = []
+
+    def command(arguments, text, timeout):
+        calls.append(arguments)
+        (output.parent / 'engine-calls.json').write_text(json.dumps(calls))
+        if arguments == ['gh', 'api', 'repos/waldnercharles/chibi/commits/main', '--jq', '.sha']:
+            return ('invalid' if kind == 'engine-check-invalid-main' else '2' * 40) + '\n'
+        if arguments == ['gh', 'api', '--paginate', '--slurp',
+                         'repos/waldnercharles/chibi/releases?per_page=100']:
+            if kind == 'engine-production-api-failure':
+                raise pages.subprocess.CalledProcessError(1, arguments)
+            if kind == 'engine-production-invalid-response':
+                return '{}'
+            # The matching release is deliberately on a later page.
+            return json.dumps([[dict(release, tag_name='engine-' + '4' * 40)], releases])
+        raise ValueError('Unexpected engine selection subprocess')
+
+    pages.subprocess.check_output = command
+    sys.argv = ['pages_site.py', 'select-engine', '--mode', mode, '--source', str(source)]
+    if allow_pin:
+        sys.argv.append('--allow-pin')
+    with contextlib.redirect_stdout(io.StringIO()) as selected_output:
+        pages.main()
+    output.write_text(selected_output.getvalue())
+
+
 if kind.startswith('api-'):
     capture()
 elif kind.startswith('package-'):
     package()
+elif kind.startswith('engine-'):
+    engine_selection()
 else:
     restore()
