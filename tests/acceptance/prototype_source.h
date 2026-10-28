@@ -301,16 +301,16 @@ static bool prototype_source_contract(studio *s)
     pin_value after_sibling = { 0 };
     REQUIRE(!pin_read_field(&storage, vector.ptr, &vector_type->fields[1], &after_sibling));
     REQUIRE(pin_value_equal(&sibling, &after_sibling));
-    const ecs_component_desc *motion = component_descriptor(scene, "VisualMotion");
-    REQUIRE(motion);
+    const ecs_component_desc *camera = component_descriptor(scene, "Camera");
+    REQUIRE(camera);
     prototype *native = prototype_clone(asset->prototype, error, sizeof error);
-    REQUIRE(native && !prototype_add_native_component(native, motion));
-    REQUIRE(!app_scene_authoring_add_prototype_component(scene, names[1], motion->name));
-    for (int i = 0; i < motion->type->field_count; i++) {
+    REQUIRE(native && !prototype_add_native_component(native, camera));
+    REQUIRE(!app_scene_authoring_add_prototype_component(scene, names[1], camera->name));
+    for (int i = 0; i < camera->type->field_count; i++) {
         pin_value expected = { 0 }, actual = { 0 };
-        const char *field = motion->type->fields[i].name;
-        REQUIRE(!prototype_read_field(&storage, native, motion->name, field, &expected));
-        REQUIRE(!prototype_read_field(&storage, asset->prototype, motion->name, field, &actual));
+        const char *field = camera->type->fields[i].name;
+        REQUIRE(!prototype_read_field(&storage, native, camera->name, field, &expected));
+        REQUIRE(!prototype_read_field(&storage, asset->prototype, camera->name, field, &actual));
         REQUIRE(pin_value_equal(&expected, &actual));
     }
     arena_free(&storage);
