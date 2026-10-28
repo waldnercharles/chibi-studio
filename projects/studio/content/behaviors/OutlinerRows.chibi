@@ -9,7 +9,7 @@ OutlinerRows :: behavior {
     // View
     Collapsed := false
     ShownOpen := true
-    action scene_objects_action = scene_objects(convert<To_Integer>(max_First_1_0(First)), convert<To_Integer>(Count_1_step_1_First(Count, First)))
+    action scene_objects_action = scene_objects(convert<To_Integer>(max_First_1_0(First)), convert<To_Integer>(ObjectWindowCount(Count, First)))
     action branch_3 = branch_if(convert<To_Real>(scene_objects_action.Shown) > 0)
     on Begin {
         await set_ui_data(0, "root.icon", string(""))
@@ -84,8 +84,12 @@ OutlinerRows :: behavior {
     max_First_1_0 :: (First: int = 0) -> (Result: double = 0.0) {
         return max(convert<To_Real>(First) - real(1.0), real(0.0))
     }
-    Count_1_step_1_First :: (Count: int = 0, First: int = 0) -> (Result: double = 0.0) {
-        return convert<To_Real>(Count) - real(1.0) + step(convert<To_Real>(First), real(1.0))
+    ObjectWindowCount :: (Count: int = 0, First: int = 0) -> (Result: double = 0.0) {
+        offset: double = 0.0
+        if First >= 1 {
+            offset = 1.0
+        }
+        return convert<To_Real>(Count) - real(1.0) + offset
     }
     _1_Shown :: (Shown: int = 0) -> (Result: double = 0.0) {
         return real(1.0) + convert<To_Real>(Shown)
