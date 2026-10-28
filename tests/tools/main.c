@@ -694,6 +694,87 @@ TEST_CASE(package_rejects_threaded_sdk)
     return true;
 }
 
+TEST_CASE(production_uses_only_the_reviewed_release_pin)
+{
+    REQUIRE(api_fixture("engine-production") == 0);
+    REQUIRE(has(temporary, "output", "engine=1111111111111111111111111111111111111111\n"));
+    REQUIRE(has(temporary, "output", "published=true\npaired=false\n"));
+    REQUIRE(!has(temporary, "engine-calls.json", "commits/main"));
+    REQUIRE(has(temporary, "engine-calls.json", "--paginate"));
+    return true;
+}
+
+TEST_CASE(production_requires_a_single_lowercase_sha_pin)
+{
+    const char *cases[] = { "engine-production-missing-pin",
+                            "engine-production-invalid-pin",
+                            "engine-production-multiline-pin" };
+    for (int i = 0; i < 3; i++) {
+        REQUIRE(api_fixture(cases[i]) != 0);
+        REQUIRE(!exists(temporary, "output"));
+        REQUIRE(has(temporary, "command.log", ".github/engine-release"));
+        REQUIRE(!exists(temporary, "engine-calls.json"));
+    }
+    return true;
+}
+
+TEST_CASE(production_cannot_fall_back_to_an_unreleased_or_incomplete_sdk)
+{
+    const char *cases[] = {
+        "engine-production-unreleased",    "engine-production-draft",
+        "engine-production-incomplete",    "engine-production-empty-asset",
+        "engine-production-pending-asset", "engine-production-ambiguous",
+        "engine-production-api-failure",   "engine-production-invalid-response"
+    };
+    for (int i = 0; i < 8; i++) {
+        REQUIRE(api_fixture(cases[i]) != 0);
+        REQUIRE(!exists(temporary, "output"));
+        REQUIRE(!has(temporary, "engine-calls.json", "commits/main"));
+    }
+    return true;
+}
+
+TEST_CASE(pr_checks_still_resolve_engine_main)
+{
+    REQUIRE(api_fixture("engine-check") == 0);
+    REQUIRE(has(temporary, "output", "engine=2222222222222222222222222222222222222222\n"));
+    REQUIRE(has(temporary, "output", "published=true\npaired=false\n"));
+    REQUIRE(has(temporary, "engine-calls.json", "commits/main"));
+    REQUIRE(api_fixture("engine-check-unreleased") == 0);
+    REQUIRE(has(temporary, "output", "published=false\npaired=false\n"));
+    REQUIRE(api_fixture("engine-check-invalid-main") != 0);
+    REQUIRE(!exists(temporary, "output"));
+    REQUIRE(api_fixture("engine-check-incomplete") != 0);
+    REQUIRE(!exists(temporary, "output"));
+    return true;
+}
+
+TEST_CASE(only_allowed_pr_checks_can_select_their_engine_pin)
+{
+    REQUIRE(api_fixture("engine-check-pin") == 0);
+    REQUIRE(has(temporary, "output", "engine=3333333333333333333333333333333333333333\n"));
+    REQUIRE(has(temporary, "output", "published=true\npaired=true\n"));
+    REQUIRE(!has(temporary, "engine-calls.json", "commits/main"));
+    REQUIRE(api_fixture("engine-check-fork") == 0);
+    REQUIRE(has(temporary, "output", "engine=2222222222222222222222222222222222222222\n"));
+    REQUIRE(has(temporary, "output", "paired=false\n"));
+    REQUIRE(has(temporary, "engine-calls.json", "commits/main"));
+    REQUIRE(api_fixture("engine-check-invalid-pin") != 0);
+    REQUIRE(!exists(temporary, "output"));
+    return true;
+}
+
+TEST_CASE(preview_keeps_its_exact_released_engine)
+{
+    REQUIRE(api_fixture("engine-preview") == 0);
+    REQUIRE(has(temporary, "output", engine));
+    REQUIRE(has(temporary, "output", "published=true\npaired=true\n"));
+    REQUIRE(!has(temporary, "engine-calls.json", "commits/main"));
+    REQUIRE(api_fixture("engine-preview-unreleased") != 0);
+    REQUIRE(!exists(temporary, "output"));
+    return true;
+}
+
 #define RUN_PAGES_CASE(test)                                                   \
     do {                                                                       \
         setup();                                                               \
@@ -756,6 +837,12 @@ int main(int argc, char **argv)
     RUN_PAGES_CASE(package_rejects_dirty_sdk);
     RUN_PAGES_CASE(package_rejects_wrong_engine);
     RUN_PAGES_CASE(package_rejects_threaded_sdk);
+    RUN_PAGES_CASE(production_uses_only_the_reviewed_release_pin);
+    RUN_PAGES_CASE(production_requires_a_single_lowercase_sha_pin);
+    RUN_PAGES_CASE(production_cannot_fall_back_to_an_unreleased_or_incomplete_sdk);
+    RUN_PAGES_CASE(pr_checks_still_resolve_engine_main);
+    RUN_PAGES_CASE(only_allowed_pr_checks_can_select_their_engine_pin);
+    RUN_PAGES_CASE(preview_keeps_its_exact_released_engine);
     pu_print_stats();
     free(script);
     free(fixture);
