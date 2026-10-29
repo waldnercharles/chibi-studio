@@ -1,4 +1,4 @@
-version 28
+version 39
 name "Studio"
 content "content"
 start_scene "scenes/Studio.kdl"

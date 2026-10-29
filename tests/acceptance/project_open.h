@@ -10,7 +10,7 @@
 /* Two rejected projects exercise only project loading, before UI resources exist. */
 static const char *const project_open_bytes[] = {
     "version \"invalid\"\n",
-    "version 23\n"
+    "version 38\n"
     "name \"Rejected migration\"\n"
     "content \"content\"\n"
     "start_scene \"scenes/Start.kdl\"\n",
@@ -137,7 +137,12 @@ TEST_CASE(project_open_errors_stop_before_ui)
 
     char *source = realpath(project_open_files[2], NULL);
     REQUIRE(source);
-    length = snprintf(expected, sizeof expected, "%s: Cannot migrate invalid version 23 source", source);
+    length = snprintf(
+        expected,
+        sizeof expected,
+        "%s: fix invalid source before retiring rhythm and visual motion",
+        source
+    );
     free(source);
     REQUIRE(length > 0 && (size_t)length < sizeof expected);
     project_open_results[1] = studio_ui_new(&s, project_open_roots[1], error, sizeof error);
