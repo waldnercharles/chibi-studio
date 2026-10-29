@@ -104,7 +104,7 @@ if(WIN32)
 endif()
 # Build and installed hosts use the same executable-relative Studio layout.
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/share/chibi")
-foreach(resource shaders licenses)
+foreach(resource shaders licenses apps core)
     if(EXISTS "${Chibi_RESOURCE_DIR}/${resource}")
         file(COPY "${Chibi_RESOURCE_DIR}/${resource}" DESTINATION "${CMAKE_BINARY_DIR}/share/chibi")
         install(DIRECTORY "${Chibi_RESOURCE_DIR}/${resource}/" DESTINATION "share/chibi/${resource}")
