@@ -1,5 +1,5 @@
 Dismiss :: behavior {
-    on Close {
+    on Close :: () {
         self.Ui.hidden = true
     }
 }

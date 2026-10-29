@@ -3,7 +3,7 @@
 // prototypes and places the one chosen, while the scene is editable.
 OutlinerHeaderInput :: behavior {
     action prototype_choices_action = prototype_choices()
-    on Refresh {
+    on Refresh :: () {
         prototype_choices_action()
     }
     after prototype_choices_action {
@@ -11,10 +11,10 @@ OutlinerHeaderInput :: behavior {
         await set_ui_data(0, "filter", scene_info().Filter)
         set_ui_data(0, "prototypes", prototype_choices_action.Options)
     }
-    on FilterTyped {
-        set_object_filter(event.Filter)
+    on FilterTyped :: (Filter: string) {
+        set_object_filter(Filter)
     }
-    on AddObject {
-        add_object(event.Prototype)
+    on AddObject :: (Prototype: string) {
+        add_object(Prototype)
     }
 }

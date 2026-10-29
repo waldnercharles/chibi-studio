@@ -5,33 +5,32 @@
 OutlinerRename :: behavior {
     // Rename
     Left: string = ""
-    action left_3 = set_variable<Left>("")
     // Commits only while this row still renames: Escape ended the rename before
     // its field's blur commits.
-    on RenameCommitted {
-        if text_equal(renaming_object(), event.Key) {
-            await rename_object(event.Key, event.Name)
+    on RenameCommitted :: (Key: string, Name: string) {
+        if text_equal(renaming_object(), Key) {
+            await rename_object(Key, Name)
             end_rename()
         }
     }
-    on RenameCancel {
+    on RenameCancel :: () {
         await end_rename()
         focus_ui_element(0, "#outliner-list")
     }
-    on RenameEnter {
+    on RenameEnter :: () {
         focus_ui_element(0, "#outliner-list")
     }
-    on RenameLeft {
-        Left = event.Key
+    on RenameLeft :: (Key: string) {
+        Left = Key
     }
     // A field left without a commit closes here, after the commit its blur may
     // also send.
-    on Refresh {
+    on Refresh :: () {
         if text_equal(Left, renaming_object()) {
             await end_rename()
-            left_3()
+            Left = ""
         } else {
-            left_3()
+            Left = ""
         }
     }
 }

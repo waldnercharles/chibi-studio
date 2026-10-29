@@ -35,7 +35,7 @@ OutlinerRowPolicies :: library {
     // The input contains the complete validated hierarchy, including ancestors
     // outside the filtered row window. Roots use -1; index names a valid node.
     Depth :: (parents: int[], index: int) -> int {
-        depth: int = 1
+        depth := 1
         parent := parents[index]
         while parent >= 0 {
             depth = depth + 1
@@ -47,8 +47,8 @@ OutlinerRowPolicies :: library {
     // Inputs are raw component hints. An absent or unresolved prototype has no
     // hints. Selecting the minimum and choosing its glyph are authored policy.
     Icon :: (componentIcons: int[]) -> string {
-        first: int = IconCount
-        index: int = 0
+        first := IconCount
+        index := 0
         count := length(componentIcons)
         while index < count {
             icon := componentIcons[index]
@@ -79,7 +79,7 @@ OutlinerRowPolicies :: library {
         hasUi := false
         hasField := false
         hasSystem := false
-        index: int = 0
+        index := 0
         count := length(assignableKinds)
         while index < count {
             kind := assignableKinds[index]

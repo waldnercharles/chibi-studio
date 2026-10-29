@@ -4,24 +4,24 @@
 // self.rows and self.total.
 VirtualList :: behavior {
     // List
-    RowHeight: float = 24.0
-    Overscan: int = 6
+    RowHeight := 24.0
+    Overscan := 6
     // State
-    ShownFirst: int = -1
-    ShownCount: int = -1
-    on Tick {
-        if max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan) != convert<To_Real>(ShownFirst) || ceil_max_View_400_RowHeight_2_Overscan(get_ui_scroll(Element: "#list").View_Height, RowHeight, Overscan) != convert<To_Real>(ShownCount) {
-            ShownFirst = convert<To_Integer>(max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan))
-            ShownCount = convert<To_Integer>(ceil_max_View_400_RowHeight_2_Overscan(get_ui_scroll(Element: "#list").View_Height, RowHeight, Overscan))
+    ShownFirst := -1
+    ShownCount := -1
+    on Tick :: () {
+        if max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan) != To_Real(ShownFirst) || ceil_max_View_400_RowHeight_2_Overscan(get_ui_scroll(Element: "#list").View_Height, RowHeight, Overscan) != To_Real(ShownCount) {
+            ShownFirst = To_Integer(max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan))
+            ShownCount = To_Integer(ceil_max_View_400_RowHeight_2_Overscan(get_ui_scroll(Element: "#list").View_Height, RowHeight, Overscan))
             await set_ui_data(Name: "first", Value: max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan))
             await set_ui_data(Name: "row", Value: RowHeight)
-            send_event<ShowRows>(self, convert<To_Integer>(max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan)), convert<To_Integer>(ceil_max_View_400_RowHeight_2_Overscan(get_ui_scroll(Element: "#list").View_Height, RowHeight, Overscan)))
+            emit self.ShowRows(To_Integer(max_0_floor_Top_RowHeight_Overscan(get_ui_scroll(Element: "#list").Scroll_Top, RowHeight, Overscan)), To_Integer(ceil_max_View_400_RowHeight_2_Overscan(get_ui_scroll(Element: "#list").View_Height, RowHeight, Overscan)))
         }
     }
-    max_0_floor_Top_RowHeight_Overscan :: (Top: float = 0.0, RowHeight: float = 0.0, Overscan: int = 0) -> (Result: double = 0.0) {
-        return max(real(0.0), floor(Top / RowHeight) - convert<To_Real>(Overscan))
+    max_0_floor_Top_RowHeight_Overscan :: (Top: number = 0.0, RowHeight: number = 0.0, Overscan: int = 0) -> (Result: f64 = 0.0) {
+        return max(real(0.0), floor(Top / RowHeight) - To_Real(Overscan))
     }
-    ceil_max_View_400_RowHeight_2_Overscan :: (View: float = 0.0, RowHeight: float = 0.0, Overscan: int = 0) -> (Result: double = 0.0) {
-        return ceiling(max(View, real(400.0)) / RowHeight) + real(2.0) * convert<To_Real>(Overscan)
+    ceil_max_View_400_RowHeight_2_Overscan :: (View: number = 0.0, RowHeight: number = 0.0, Overscan: int = 0) -> (Result: f64 = 0.0) {
+        return ceiling(max(View, real(400.0)) / RowHeight) + real(2.0) * To_Real(Overscan)
     }
 }
