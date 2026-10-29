@@ -1,6 +1,5 @@
 #include "editor/studio/studio_internal.h"
 
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,8 +9,8 @@
 /* Two rejected projects exercise only project loading, before UI resources exist. */
 static const char *const project_open_bytes[] = {
     "version \"invalid\"\n",
-    "version 38\n"
-    "name \"Rejected migration\"\n"
+    "version 1000000\n"
+    "name \"Newer project\"\n"
     "content \"content\"\n"
     "start_scene \"scenes/Start.kdl\"\n",
     "behavior Broken {\n"
@@ -42,9 +41,6 @@ static void project_open_cleanup()
         if (!project_open_files[i][0]) {
             continue;
         }
-        char staged[400];
-        snprintf(staged, sizeof staged, "%s.migrating", project_open_files[i]);
-        unlink(staged);
         unlink(project_open_files[i]);
     }
     rmdir(project_open_content);
@@ -64,7 +60,7 @@ static bool project_open_prepare()
         project_open_path(project_open_roots[0], sizeof project_open_roots[0], project_open_directory, "manifest")
     );
     REQUIRE(
-        project_open_path(project_open_roots[1], sizeof project_open_roots[1], project_open_directory, "migration")
+        project_open_path(project_open_roots[1], sizeof project_open_roots[1], project_open_directory, "newer")
     );
     REQUIRE(
         project_open_path(project_open_content, sizeof project_open_content, project_open_roots[1], "content")
@@ -105,12 +101,6 @@ static bool project_open_unchanged()
         REQUIRE(complete && closed == 0);
         REQUIRE(length == strlen(project_open_bytes[i]));
         REQUIRE(!memcmp(actual, project_open_bytes[i], length));
-
-        char staged[400];
-        int size = snprintf(staged, sizeof staged, "%s.migrating", project_open_files[i]);
-        REQUIRE(size > 0 && (size_t)size < sizeof staged);
-        struct stat info;
-        REQUIRE(lstat(staged, &info) == -1 && errno == ENOENT);
     }
     return true;
 }
@@ -135,15 +125,17 @@ TEST_CASE(project_open_errors_stop_before_ui)
     REQUIRE(!project_open_results[0]);
     REQUIRE(!strcmp(error, expected));
 
-    char *source = realpath(project_open_files[2], NULL);
-    REQUIRE(source);
+    manifest = realpath(project_open_files[1], NULL);
+    REQUIRE(manifest);
     length = snprintf(
         expected,
         sizeof expected,
-        "%s: fix invalid source before retiring rhythm and visual motion",
-        source
+        "Project version 1000000 needs a newer build; this build opens version "
+        "%d: %s",
+        CHIBI_PROJECT_VERSION,
+        manifest
     );
-    free(source);
+    free(manifest);
     REQUIRE(length > 0 && (size_t)length < sizeof expected);
     project_open_results[1] = studio_ui_new(&s, project_open_roots[1], error, sizeof error);
     REQUIRE(!project_open_results[1]);

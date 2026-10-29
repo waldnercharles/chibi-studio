@@ -989,7 +989,7 @@ static studio *create(
     s->hosted = host != NULL;
     char error[256];
     /* A project that would not open shows empty Project settings. */
-    chibi_project_inspect(&s->project, project_root, error, sizeof error);
+    chibi_project_open(&s->project, project_root, error, sizeof error);
     char studio_root[PATH_MAX];
     s->own_project = realpath(STUDIO_PROJECT, studio_root) &&
                      !strcmp(studio_root, project_root);
