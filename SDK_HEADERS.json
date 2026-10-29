@@ -168,10 +168,6 @@
     "src/editor/workspace/scene_debug.h",
     "src/editor/workspace/scene_tabs.c"
   ],
-  "authoring/project_open.h": [
-    "src/editor/studio/studio_ui.c",
-    "src/editor/workspace/application.c"
-  ],
   "authoring/prototype_prepare.h": [
     "src/editor/documents/scene_prototypes.c",
     "src/editor/workspace/scene_checkpoint.c"

@@ -11,7 +11,6 @@
 #include "authoring/behavior_loader.h"
 #include "authoring/preview.h"
 #include "authoring/preview_source.h"
-#include "authoring/project_open.h"
 #include "authoring/prototype_preview.h"
 #include "editor/collab/collab.h"
 #include "editor/studio/studio_internal.h"
@@ -379,12 +378,7 @@ static void follow_disk(studio *s)
 studio_ui *studio_ui_new(studio *s, const char *project_root, char *error, size_t size)
 {
     chibi_project project = { 0 };
-    native_capabilities *native = authoring_application_catalog_new(true, error, size);
-    int opened = native
-                   ? authoring_project_open(&project, project_root, native, error, size)
-                   : -1;
-    native_capabilities_free(native);
-    if (opened != 0) {
+    if (chibi_project_open(&project, project_root, error, size) != 0) {
         chibi_project_free(&project);
         return NULL;
     }

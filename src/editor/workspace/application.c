@@ -8,7 +8,6 @@
 #include "authoring/image_prepare.h"
 #include "authoring/mesh_prepare.h"
 #include "authoring/preview.h"
-#include "authoring/project_open.h"
 #include "authoring/shader_prepare.h"
 #include "authoring/source_prepare.h"
 #include "authoring/source_presentation.h"
@@ -320,12 +319,7 @@ static bool open_workspace(
 {
     chibi_project project = { 0 };
     declared_components *declared = NULL;
-    native_capabilities *native = authoring_application_catalog_new(true, error, error_size);
-    int opened = native
-                   ? authoring_project_open(&project, project_path, native, error, error_size)
-                   : -1;
-    native_capabilities_free(native);
-    if (opened != 0) {
+    if (chibi_project_open(&project, project_path, error, error_size) != 0) {
         return false;
     }
     char *resolved_scene = chibi_project_scene_path(&project, scene_path);
@@ -762,7 +756,7 @@ static const char *openable(char **roots)
     for (int i = 0; i < acount(roots); i++) {
         chibi_project project = { 0 };
         char error[256];
-        if (chibi_project_inspect(&project, roots[i], error, sizeof error) == 0) {
+        if (chibi_project_open(&project, roots[i], error, sizeof error) == 0) {
             chibi_project_free(&project);
             return roots[i];
         }
