@@ -89,61 +89,61 @@
       "current_source_sha256": "6f75ff493e8eee9e3dfbee9a128969780027b5871dbf73599ad64e615236df33",
       "sha256": "6f75ff493e8eee9e3dfbee9a128969780027b5871dbf73599ad64e615236df33",
       "source_path": "projects/studio/content/behaviors/Dismiss.chibi",
-      "consumer_sha256": "af57ab518e03c88113581961e51cb3f91bfcc67a6b6c8e47f4e4bccdbf53de7b"
+      "consumer_sha256": "36abe68405038bc9a507c17b29d407a944d74b225c57ca2596665c1932b2c8bc"
     },
     "projects/studio/content/behaviors/NavKeys.chibi": {
       "current_source_sha256": "93f42d6877d8177aed784fb06df97bb4efe6b17d899c05b440832c5592d23237",
       "sha256": "93f42d6877d8177aed784fb06df97bb4efe6b17d899c05b440832c5592d23237",
       "source_path": "projects/studio/content/behaviors/NavKeys.chibi",
-      "consumer_sha256": "555eccdec9e630a59c3a0f381d97fc63d9b90076b3c22389f7bca1265b665b92"
+      "consumer_sha256": "6d49c08b59193cfac93f1723fea443b11782308a492f35e0005289180946f0a2"
     },
     "projects/studio/content/behaviors/NewProjectKeys.chibi": {
       "current_source_sha256": "2b2d2f5a34a1ec4cdb7a83ce0cc55a4591b4aa40256604f9ec642ca29d832d91",
       "sha256": "2b2d2f5a34a1ec4cdb7a83ce0cc55a4591b4aa40256604f9ec642ca29d832d91",
       "source_path": "projects/studio/content/behaviors/NewProjectKeys.chibi",
-      "consumer_sha256": "4b2a23b73d0d40ea7321b1b4d4ba6765b32480d6dbf91c5eace948ab99b9dc54"
+      "consumer_sha256": "3de1420c4a88ed41d541bb463239339349d7d23e8aeeafeead632c2361cd9604"
     },
     "projects/studio/content/behaviors/OutlinerHeaderInput.chibi": {
       "current_source_sha256": "ca29948d03beaf7a9ce6d57ef888cc6c3554458068c9f5fff87d7141edd8f5c2",
       "sha256": "ca29948d03beaf7a9ce6d57ef888cc6c3554458068c9f5fff87d7141edd8f5c2",
       "source_path": "projects/studio/content/behaviors/OutlinerHeaderInput.chibi",
-      "consumer_sha256": "71a788fcf6bc951beaab5880d0635acd46e81e27f4a50f096c2b5711c12f3a35"
+      "consumer_sha256": "6cffda564b84a85d25df727096486d530662507ef2507d98aad19d8a3a869889"
     },
     "projects/studio/content/behaviors/OutlinerInput.chibi": {
       "current_source_sha256": "f26b116058fb2d4f88893e206fd9212d0726d2f11a444116c594706c984111bc",
       "sha256": "f26b116058fb2d4f88893e206fd9212d0726d2f11a444116c594706c984111bc",
       "source_path": "projects/studio/content/behaviors/OutlinerInput.chibi",
-      "consumer_sha256": "3ca601fc1eda99e1d57e84e60e05b2192a30e35dbe841cb7b54ea579665e2f51"
+      "consumer_sha256": "dfcb18fb32e978785d32452401126a795afb2988dc59e668875698ae02a26c99"
     },
     "projects/studio/content/behaviors/OutlinerMenu.chibi": {
       "current_source_sha256": "cc9838ef4a4395c1bb2c7651333a6c73ba2f5254f65f66d1bf67de77cb6c765f",
       "sha256": "cc9838ef4a4395c1bb2c7651333a6c73ba2f5254f65f66d1bf67de77cb6c765f",
       "source_path": "projects/studio/content/behaviors/OutlinerMenu.chibi",
-      "consumer_sha256": "3b1e5d04cd8c96741845e66cd7228fe8278c9255b4b990a5b2eaece2f74993b1"
+      "consumer_sha256": "b3be4cbfe1fa013b33a3195a68c3ed5769a2249bf9ebd1d79f5edc5ea459a517"
     },
     "projects/studio/content/behaviors/OutlinerRename.chibi": {
       "current_source_sha256": "42170a3318be600cd7a33817c62f5de6d1c74f1139b4a36521885e89ae6e2336",
       "sha256": "42170a3318be600cd7a33817c62f5de6d1c74f1139b4a36521885e89ae6e2336",
       "source_path": "projects/studio/content/behaviors/OutlinerRename.chibi",
-      "consumer_sha256": "012379d17eceaca2a9e8156896e2fe61013acd26eefe5ecdf98978343899055b"
+      "consumer_sha256": "51cb6807d3f8a8752fa0fb8ad11011dee6f7435de6285049cd6588edf1e83a85"
     },
     "projects/studio/content/behaviors/OutlinerRows.chibi": {
       "current_source_sha256": "301c0d6ecd3846c145ae3472cf825fff08843921e592571541a9b93d2e776131",
       "sha256": "301c0d6ecd3846c145ae3472cf825fff08843921e592571541a9b93d2e776131",
       "source_path": "projects/studio/content/behaviors/OutlinerRows.chibi",
-      "consumer_sha256": "a31f97cd0a41ad8e406b2272abee44098d621a4e80b3043b0a5f8ff6b975709e"
+      "consumer_sha256": "a28672042df5d85eeb6c3821bda5aae22abb41f12aad638e26179d0a5ba1af78"
     },
     "projects/studio/content/behaviors/VirtualList.chibi": {
       "current_source_sha256": "9bd499b427da9ba05d3fbc2dbd0cc6838219147c9762b3dc7a6e4a5960d15272",
       "sha256": "9bd499b427da9ba05d3fbc2dbd0cc6838219147c9762b3dc7a6e4a5960d15272",
       "source_path": "projects/studio/content/behaviors/VirtualList.chibi",
-      "consumer_sha256": "e09538b402e0e35600e6beb393a9f1e31696d7d3de64459c8e94dbe9ebc5182d"
+      "consumer_sha256": "07870600279ee738c5088d3425f7aa25e5238329407102d020b40324406ae485"
     },
     "projects/studio/content/behaviors/WidgetGallery.chibi": {
       "current_source_sha256": "7863d213dd57ea861063728c5396f9a7951ef7417dd750cbd257ed119a50f11f",
       "sha256": "7863d213dd57ea861063728c5396f9a7951ef7417dd750cbd257ed119a50f11f",
       "source_path": "projects/studio/content/behaviors/WidgetGallery.chibi",
-      "consumer_sha256": "0acbb192221c28137ee433afc520b19b1f0eb87e9aaca8bf55d350e61a8da8bc"
+      "consumer_sha256": "8db68857ded50dfa2ab27b2835f52ff451ed58958c5d444389dc3b71ab023c6e"
     },
     "projects/studio/content/events/AddObject.kdl": {
       "current_source_sha256": "246b1b853a4d61cf35add2174b23fb48b9efafd7272c8c12c53306a465c7307a",
@@ -219,7 +219,8 @@
     "projects/studio/content/events/RowMenu.kdl": {
       "current_source_sha256": "6f23305f6c78da3677afd79a4c0e80a16f3a5be20ff8cb37d7b80c0aec7697d3",
       "sha256": "6f23305f6c78da3677afd79a4c0e80a16f3a5be20ff8cb37d7b80c0aec7697d3",
-      "source_path": "projects/studio/content/events/RowMenu.kdl"
+      "source_path": "projects/studio/content/events/RowMenu.kdl",
+      "consumer_sha256": "1b60a1b109ee7e50fdeb27a8163696a495291219c850ad94a55c7b4a65aa940d"
     },
     "projects/studio/content/events/ShowRows.kdl": {
       "current_source_sha256": "f41876f3373fdbe3384288f4f6d1b49d67d28cf7c0f2c3393da7fadf253cdf73",
@@ -1427,7 +1428,7 @@
       "current_source_sha256": "4036c43aa6c17dfbc3d383de7fd4489abd5fe666b8bd1682437d4cc724a397cc",
       "sha256": "4036c43aa6c17dfbc3d383de7fd4489abd5fe666b8bd1682437d4cc724a397cc",
       "source_path": "projects/studio/project.kdl",
-      "consumer_sha256": "0047755d46060eab09c3dda4e363204117f55775814294a5f54358f47e758273"
+      "consumer_sha256": "10af2d4158a182d0f4cc6403a654a7c22d44d2ba1dcce3df7e1284953525a11e"
     },
     "src/diagnostics/frame_log.c": {
       "current_source_sha256": "d170cf8927d1fcb08bf10a0251b64fe3240c41bac7c8dbabd9374c945de0d950",

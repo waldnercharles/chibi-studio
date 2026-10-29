@@ -1,8 +1,8 @@
 NewProjectKeys :: behavior {
-    on ConfirmDiscard {
+    on ConfirmDiscard :: () {
         move_ui_focus(Element: "#new-project-cancel", Step: 1)
     }
-    on InvalidName {
+    on InvalidName :: () {
         move_ui_focus(Element: "#new-project-name", Step: 1)
     }
 }
