@@ -116,6 +116,7 @@ endif()
 install(FILES "${Chibi_RESOURCE_DIR}/engine.json" DESTINATION share/chibi OPTIONAL)
 # Export Game runs the SDK's chibi, with the compiler and player beside it. The
 # build copies them next to chibi-dev; an installed Studio finds chibi on PATH.
+include(cmake/studio_asset_compiler.cmake)
 get_filename_component(sdk_bin "${Chibi_RESOURCE_DIR}/../../bin" ABSOLUTE)
 foreach(tool chibi chibi-compile chibi-player)
     file(COPY "${sdk_bin}/${tool}${CMAKE_EXECUTABLE_SUFFIX}" DESTINATION "${CMAKE_BINARY_DIR}/bin")

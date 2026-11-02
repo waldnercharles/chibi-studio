@@ -29,6 +29,11 @@ On Windows, install the SDK with `cmake --install` from a Windows engine build
 `-DCMAKE_PREFIX_PATH`; the build writes `build/bin/chibi-dev.exe` with the
 SDK's UTF-8 manifest.
 
+The native build copies the SDK's native `chibi-asset-compiler` beside
+`chibi-dev`; installation ships the same companion in `bin`. Authoring
+compilation keeps working when that installation moves, without environment
+setup or compiler hosts.
+
 The native build writes `build/bin/chibi-dev`. `chibi-dev PROJECT` opens a
 project directory or its `project.kdl`; without one it opens the project that
 contains the working directory. The SDK's `chibi PROJECT` plays the same project.
