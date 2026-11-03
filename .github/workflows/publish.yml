@@ -21,6 +21,7 @@ on:
       - "CMakeLists.txt"
       - ".github/workflows/publish.yml"
       - ".github/engine-ref"
+      - ".github/engine-release"
       - "tools/pages_site.py"
       - "tests/tools/**"
   pull_request:
@@ -34,6 +35,7 @@ on:
       - "CMakeLists.txt"
       - ".github/workflows/publish.yml"
       - ".github/engine-ref"
+      - ".github/engine-release"
       - "tools/pages_site.py"
       - "tests/tools/**"
   schedule:
@@ -102,50 +104,14 @@ jobs:
             exit 0
           fi
           test -n "$GH_TOKEN"
-          # Match native CI's selected engine, resolved once for this workflow.
-          paired=false
-          if [ "$mode" = preview77 ]; then
-            ENGINE=d1154cdb8677cbfe479d4be40db7ca480d10f103
-            paired=true
-          elif [ "$ALLOW_PIN" = true ] && [ -f .github/engine-ref ]; then
-            ENGINE=$(<.github/engine-ref)
-            if [[ ! "$ENGINE" =~ ^[0-9a-f]{40}$ ]]; then
-              echo "::error::.github/engine-ref must contain one full lowercase engine commit SHA."
-              exit 1
-            fi
-            paired=true
-          else
-            ENGINE=$(gh api repos/waldnercharles/chibi/commits/main --jq .sha)
-          fi
-          echo "paired=$paired" >> "$GITHUB_OUTPUT"
-          export ENGINE
-          export PAGES_MODE="$mode"
-          gh api --paginate --slurp 'repos/waldnercharles/chibi/releases?per_page=100' > "$RUNNER_TEMP/engine-releases.json"
-          python3 - <<'PY'
-          import json, os, re
-          from pathlib import Path
-          engine = os.environ["ENGINE"]
-          if not re.fullmatch(r"[0-9a-f]{40}", engine):
-              raise SystemExit("Invalid engine revision")
-          pages = json.loads((Path(os.environ["RUNNER_TEMP"]) / "engine-releases.json").read_text())
-          if not isinstance(pages, list) or any(not isinstance(page, list) for page in pages):
-              raise SystemExit("Invalid engine release response")
-          releases = [release for page in pages for release in page]
-          release = next((r for r in releases
-                          if r["tag_name"] == "engine-" + engine and not r["draft"]), None)
-          required = {"chibi-web-sdk.tar.gz", "chibi-export-linux-x64.tar.gz", "SHA256SUMS", "build.json"}
-          if os.environ["PAGES_MODE"] == "preview77" and release is None:
-              raise SystemExit("Preview77 requires its verified released engine SDK")
-          if release:
-              assets = {a["name"] for a in release["assets"]
-                        if a["state"] == "uploaded" and a["size"] > 0}
-              if not required <= assets:
-                  raise SystemExit("Published engine release is incomplete; refusing source fallback")
-          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-              print("engine=" + engine, file=output)
-              print("published=" + str(release is not None).lower(), file=output)
-          PY
-          engine=$ENGINE
+          # Production advances only through the reviewed release pin. PR checks
+          # still use engine main or a same-repository .github/engine-ref.
+          pin=()
+          if [ "$ALLOW_PIN" = true ]; then pin=(--allow-pin); fi
+          python3 tools/pages_site.py select-engine --mode "$mode" --source . "${pin[@]}" \
+            > "$RUNNER_TEMP/engine-selection"
+          cat "$RUNNER_TEMP/engine-selection" >> "$GITHUB_OUTPUT"
+          engine=$(sed -n 's/^engine=//p' "$RUNNER_TEMP/engine-selection")
           build=true
           if [ "$mode" = production ] && [ "$GITHUB_REF" = refs/heads/main ]; then
             if curl --fail --silent --show-error --retry 3 \

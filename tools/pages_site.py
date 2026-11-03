@@ -38,6 +38,46 @@ def sha(value):
     return isinstance(value, str) and re.fullmatch('[0-9a-f]{40}', value)
 
 
+def select_engine(mode, source, allow_pin):
+    require(mode in ('production', 'check', 'preview77'), 'Unknown engine selection mode')
+    paired = mode == 'preview77'
+    pin = source / '.github/engine-ref'
+    if mode == 'production':
+        release_pin = source / '.github/engine-release'
+        require(release_pin.is_file(), 'Production requires .github/engine-release')
+        value = release_pin.read_text()
+        require(re.fullmatch('[0-9a-f]{40}\n?', value),
+                '.github/engine-release must contain one full lowercase engine commit SHA')
+        engine = value.rstrip('\n')
+    elif mode == 'preview77':
+        engine = ENGINE
+    elif allow_pin and pin.is_file():
+        engine = pin.read_text().rstrip('\n')
+        require(sha(engine), '.github/engine-ref must contain one full lowercase engine commit SHA')
+        paired = True
+    else:
+        engine = subprocess.check_output(
+            ['gh', 'api', 'repos/waldnercharles/chibi/commits/main', '--jq', '.sha'],
+            text=True, timeout=60).strip()
+    require(sha(engine), 'Invalid engine revision')
+    pages = json.loads(subprocess.check_output(
+        ['gh', 'api', '--paginate', '--slurp', 'repos/waldnercharles/chibi/releases?per_page=100'],
+        text=True, timeout=60))
+    require(isinstance(pages, list) and all(isinstance(page, list) for page in pages),
+            'Invalid engine release response')
+    releases = [release for page in pages for release in page
+                if release['tag_name'] == 'engine-' + engine and not release['draft']]
+    require(len(releases) <= 1, 'Ambiguous engine release response')
+    if mode in ('production', 'preview77'):
+        require(releases, 'Publication requires its verified released engine SDK')
+    if releases:
+        required = {'chibi-web-sdk.tar.gz', 'chibi-export-linux-x64.tar.gz', 'SHA256SUMS', 'build.json'}
+        assets = {asset['name'] for asset in releases[0]['assets']
+                  if asset['state'] == 'uploaded' and asset['size'] > 0}
+        require(required <= assets, 'Published engine release is incomplete; refusing source fallback')
+    return dict(engine=engine, published=bool(releases), paired=paired)
+
+
 def inventory(root):
     require(root.is_dir() and not root.is_symlink(), 'Expected a regular site directory')
     files = {}
@@ -297,6 +337,10 @@ def restore(output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
+    engine = commands.add_parser('select-engine')
+    engine.add_argument('--mode', choices=('production', 'check', 'preview77'), required=True)
+    engine.add_argument('--source', type=Path, required=True)
+    engine.add_argument('--allow-pin', action='store_true')
     stamp = commands.add_parser('package')
     for name in ('site', 'source', 'sdk'):
         stamp.add_argument('--' + name, type=Path, required=True)
@@ -310,7 +354,10 @@ def main():
     merge.add_argument('--main', default='')
     args = parser.parse_args()
     try:
-        if args.command == 'package':
+        if args.command == 'select-engine':
+            for name, value in select_engine(args.mode, args.source, args.allow_pin).items():
+                print(name + '=' + (str(value).lower() if isinstance(value, bool) else value))
+        elif args.command == 'package':
             package(args.site, args.source, args.sdk, args.preview77)
         elif args.command == 'restore':
             restore(args.output)

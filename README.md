@@ -111,28 +111,28 @@ not validate the combined candidate or establish threaded/cross-browser acceptan
 
 ## Automatic browser distribution
 
-`.github/workflows/publish.yml` resolves engine `main` once per run and builds
-with Emscripten 6.0.10 against an installed web SDK for that exact revision.
-It verifies the published SDK when available; if the release is absent, it
-packages the SDK from the pinned engine source. Incomplete releases and
-verification failures stop the workflow rather than selecting another SDK.
+Production runs of `.github/workflows/publish.yml` use the full lowercase engine
+SHA in `.github/engine-release` and Emscripten 6.0.10. Advance that pin only through
+a reviewed source change after the matching engine release is complete. Missing
+or invalid pins, absent or incomplete releases, and verification failures stop
+publication; production never selects engine `main` or falls back to source.
 
 Changes to browser build inputs on `main` build automatically. A daily check
-also resolves current engine `main` and skips compilation when the published
-Studio/engine pair is unchanged. Pull requests build without deploying.
+uses the reviewed release pin and skips compilation when the published
+Studio/engine pair is unchanged. Pull requests still check engine `main` without
+deploying and may build its SDK from source when no matching release exists.
 The shared distribution updates only after a successful build on `main` with a
-complete matching engine release, including its export package. Source-fallback
-builds validate the editor without replacing the public distribution; a later
-daily check can publish once the matching release is available.
+complete matching engine release, including its export package. Keep that
+release and its tag while the production pin or published Studio manifest uses it.
 
 A same-repository PR that depends on an unmerged engine change can put its full
 lowercase 40-character commit SHA in `.github/engine-ref`. Desktop CI then
 packages that exact engine revision, and web CI builds and consumes its serial
 web SDK. These paired web builds do not create or upload distribution archives.
-The pin is ignored on main, scheduled runs and manual runs, which retain the
-normal main/released-SDK checks. Remove it after the engine dependency lands and
-the ordinary checks pass; a paired check is not evidence of compatibility with
-engine main or the latest released SDK.
+The PR pin is ignored on main, scheduled runs and manual runs; native CI checks
+engine main, while production uses `.github/engine-release`. Remove the PR pin
+after the engine dependency lands and the ordinary checks pass; a paired check
+is not evidence of compatibility with engine main or the latest released SDK.
 
 The public distribution is at
 <https://waldnercharles.github.io/chibi-studio/>. Its `studio.json` identifies
