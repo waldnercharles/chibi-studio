@@ -1,0 +1,33 @@
+name: Browser storage tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "web/web_storage.js"
+      - "web/web_shell.html"
+      - "src/editor/studio/studio_export.c"
+      - "tests/web/**"
+      - ".github/workflows/web-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "web/web_storage.js"
+      - "web/web_shell.html"
+      - "src/editor/studio/studio_export.c"
+      - "tests/web/**"
+      - ".github/workflows/web-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  storage:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check browser storage and browser export isolation
+        run: node --test tests/web/*.test.cjs
