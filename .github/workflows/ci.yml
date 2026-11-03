@@ -9,6 +9,7 @@ on:
       - "docs/**"
       - ".claude/**"
       - "web/**"
+      - "tests/web/**"
       - "EXTRACTION.json"
       - ".github/workflows/publish.yml"
   push:
@@ -19,6 +20,7 @@ on:
       - "docs/**"
       - ".claude/**"
       - "web/**"
+      - "tests/web/**"
       - "EXTRACTION.json"
       - ".github/workflows/publish.yml"
 
