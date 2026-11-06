@@ -1,8 +1,0 @@
-<rml>
-<head>
-    <title>Chibi Studio</title>
-</head>
-<body class="studio">
-    <div id="app"></div>
-</body>
-</rml>
