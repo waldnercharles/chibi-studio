@@ -1,3 +1,4 @@
+#include "editor/studio/studio_thumbnails.h"
 /* Properties' view: the `properties` variable Properties.rml and
  * PropertiesHeader.rml bind (docs/studio-rml-migration.md, Data):
  *
@@ -348,7 +349,9 @@ static yyjson_mut_val *option_new(yyjson_mut_doc *doc)
 
 void studio_properties_add(yyjson_mut_doc *doc)
 {
-    static const char *const TEXTS[] = { "query", "keepTip", "view", "note" };
+    static const char *const TEXTS[] = { "query",       "keepTip",
+                                         "view",        "note",
+                                         "textureName", "texturePreview" };
     static const char *const FLAGS[] = { "live", "readonly" };
     static const char *const IDENTITY_TEXTS[] = { "kind", "icon", "name",
                                                   "of",   "kbd",  "prototype",
@@ -1673,7 +1676,18 @@ static void body(view *v, const properties_subject *subject)
 {
     studio *s = v->s;
     shown out = { .view = "empty", .identity = "", .note = "" };
-    if (s->tab == STUDIO_TAB_NODE || s->tab == STUDIO_TAB_MEMBER) {
+    if (studio_texture_active(s)) {
+        const char *key = studio_texture_key(s);
+        const reference_index *index = app_scene_authoring_asset_index(s->scene);
+        int asset = reference_index_find_name(index, REFERENCE_ASSET_TEXTURE, key);
+        bool loading = false;
+        const char *preview = asset >= 0
+                                ? studio_thumb(s, asset, STUDIO_THUMB_LARGE, &loading)
+                                : NULL;
+        put_text(v, v->root, "textureName", content_basename(key));
+        put_text(v, v->root, "texturePreview", preview ? preview : "");
+        out.view = "texture";
+    } else if (s->tab == STUDIO_TAB_NODE || s->tab == STUDIO_TAB_MEMBER) {
         /* The Node and Member tabs are graph_details' (workstream G1). */
         out.view = "graph";
     } else if (s->tab == STUDIO_TAB_SCENE) {

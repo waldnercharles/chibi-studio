@@ -1,0 +1,94 @@
+behavior TextureImport {
+    Resolution: string = "1k"
+    Semantic: string = "color"
+    Destination: string = "content/images/Texture.png"
+    Operation: string = "poll"
+    Busy := false
+    Reviewed := false
+    Imported := false
+    Source: string = ""
+    Status: string = ""
+    Review: string = ""
+    action request = studio_image_import(Operation, Resolution, Semantic, Destination)
+
+    on Begin {
+        Publish()
+    }
+    on Refresh {
+        Publish()
+    }
+    on TextureImportChoose {
+        Imported = false
+        Reviewed = false
+        Operation = "choose"
+        request()
+    }
+    on TextureImportSetting {
+        if !Busy {
+            Imported = false
+            Reviewed = false
+            Review = ""
+            if text_equal(event.Id, "resolution") {
+                Resolution = event.Value
+            } else if text_equal(event.Id, "semantic") {
+                Semantic = event.Value
+            } else if text_equal(event.Id, "destination") {
+                Destination = event.Value
+            }
+            Status = ""
+            Publish()
+        }
+    }
+    on TextureImportReview {
+        if !Busy {
+            Reviewed = false
+            Operation = "review"
+            request()
+        }
+    }
+    on TextureImportConfirm {
+        if Reviewed && !Busy {
+            Operation = "commit"
+            request()
+        }
+    }
+    on TextureImportCancel {
+        Imported = false
+        Reviewed = false
+        Operation = "cancel"
+        request()
+    }
+    on Tick {
+        if Busy {
+            Operation = "poll"
+            request()
+        }
+    }
+    after request {
+        state.Busy = request.Busy
+        state.Source = request.Source
+        state.Status = request.Status
+        state.Review = request.Review
+        if text_equal(Operation, "review") {
+            Reviewed = request.Ok
+        }
+        if text_equal(Operation, "commit") {
+            Imported = request.Ok
+        }
+        if text_equal(Operation, "commit") || text_equal(Operation, "cancel") {
+            Reviewed = false
+        }
+        Publish()
+    }
+    Publish :: fn() {
+        await set_ui_data(Name: "textureImportBusy", Value: Busy)
+        await set_ui_data(Name: "textureImportReviewed", Value: Reviewed)
+        await set_ui_data(Name: "textureImportImported", Value: Imported)
+        await set_ui_data(Name: "textureImportSource", Value: Source)
+        await set_ui_data(Name: "textureImportStatus", Value: Status)
+        await set_ui_data(Name: "textureImportReview", Value: Review)
+        await set_ui_data(Name: "textureImportResolution", Value: Resolution)
+        await set_ui_data(Name: "textureImportSemantic", Value: Semantic)
+        set_ui_data(Name: "textureImportDestination", Value: Destination)
+    }
+}

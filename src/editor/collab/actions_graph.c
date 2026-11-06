@@ -463,11 +463,35 @@ char *graph_collab_action_open(const editor *e, uint64_t graph_id)
     return action_finish(doc);
 }
 
-char *graph_collab_action_spawn(const editor *e, const node_desc *desc, float x, float y)
+char *graph_collab_action_spawn(
+    const editor *e,
+    const node_desc *desc,
+    float x,
+    float y,
+    const editor_initial_default *defaults,
+    int count
+)
 {
     if (!e || !e->asset || !e->active_graph || !desc || !desc->name ||
-        registry_node_by_name(desc->name) != desc || !isfinite(x) || !isfinite(y)) {
+        registry_node_by_name(desc->name) != desc || !isfinite(x) || !isfinite(y) ||
+        count < 0 || count > desc->input_count || (count && !defaults)) {
         return NULL;
+    }
+    for (int i = 0; i < count; i++) {
+        int pin = defaults[i].pin_index;
+        if (pin < 0 || pin >= desc->input_count || desc->inputs[pin].kind != PIN_DATA ||
+            !action_value_matches(&desc->inputs[pin], &defaults[i].value) ||
+            ((desc->inputs[pin].type_name || defaults[i].value.type_name) &&
+             (!desc->inputs[pin].type_name || !defaults[i].value.type_name ||
+              strcmp(desc->inputs[pin].type_name, defaults[i].value.type_name))) ||
+            !action_value_valid(&defaults[i].value, 0)) {
+            return NULL;
+        }
+        for (int j = 0; j < i; j++) {
+            if (defaults[j].pin_index == pin) {
+                return NULL;
+            }
+        }
     }
     yyjson_mut_doc *doc = action_start(e, "spawn", e->active_graph->graph_id);
     yyjson_mut_val *root = action_root(doc);
@@ -475,6 +499,18 @@ char *graph_collab_action_spawn(const editor *e, const node_desc *desc, float x,
     yyjson_mut_obj_add_uint(doc, root, "node", next_asset_id(e));
     yyjson_mut_obj_add_real(doc, root, "x", x);
     yyjson_mut_obj_add_real(doc, root, "y", y);
+    if (count) {
+        yyjson_mut_val *values = yyjson_mut_obj_add_arr(doc, root, "defaults");
+        for (int i = 0; i < count; i++) {
+            yyjson_mut_val *item = yyjson_mut_obj(doc);
+            yyjson_mut_obj_add_int(doc, item, "pin", defaults[i].pin_index);
+            if (!write_pin_value(doc, item, "value", &defaults[i].value)) {
+                yyjson_mut_doc_free(doc);
+                return NULL;
+            }
+            yyjson_mut_arr_append(values, item);
+        }
+    }
     return action_finish(doc);
 }
 
@@ -1369,14 +1405,45 @@ bool graph_collab_apply_action(editor *e, const char *json, char *error, size_t 
         }
     } else if (!strcmp(op, "spawn")) {
         const char *descriptor = yyjson_get_str(yyjson_obj_get(root, "descriptor"));
-        yyjson_val *id = yyjson_obj_get(root, "node");
+        yyjson_val *id = yyjson_obj_get(root, "node"),
+                   *x_value = yyjson_obj_get(root, "x"),
+                   *y_value = yyjson_obj_get(root, "y"),
+                   *values = yyjson_obj_get(root, "defaults");
         const node_desc *desc = descriptor ? registry_node_by_name(descriptor) : NULL;
-        float x = (float)yyjson_get_real(yyjson_obj_get(root, "x"));
-        float y = (float)yyjson_get_real(yyjson_obj_get(root, "y"));
-        node *made = desc && yyjson_is_uint(id) && e->active_graph->graph_id == graph_id
-                       ? editor_spawn(e, desc, x, y)
-                       : NULL;
+        float x = (float)yyjson_get_num(x_value), y = (float)yyjson_get_num(y_value);
+        bool valid = desc && e->active_graph &&
+                     e->active_graph->graph_id == graph_id && yyjson_is_uint(id) &&
+                     yyjson_get_uint(id) == next_asset_id(e) &&
+                     yyjson_is_num(x_value) && yyjson_is_num(y_value) &&
+                     isfinite(x) && isfinite(y) &&
+                     (!values ||
+                      (yyjson_is_arr(values) &&
+                       yyjson_arr_size(values) <= (size_t)desc->input_count));
+        int count = valid && values ? (int)yyjson_arr_size(values) : 0;
+        editor_initial_default *defaults = NULL;
+        for (int i = 0; valid && i < count; i++) {
+            yyjson_val *item = yyjson_arr_get(values, (size_t)i),
+                       *pin = yyjson_obj_get(item, "pin");
+            editor_initial_default value = { 0 };
+            valid = yyjson_is_obj(item) && yyjson_is_int(pin) &&
+                    yyjson_get_sint(pin) >= 0 &&
+                    yyjson_get_sint(pin) < desc->input_count &&
+                    read_pin_value(yyjson_obj_get(item, "value"), &value.value, &storage);
+            if (!valid) {
+                break;
+            }
+            value.pin_index = (int)yyjson_get_sint(pin);
+            for (int j = 0; j < i; j++) {
+                if (defaults[j].pin_index == value.pin_index) {
+                    valid = false;
+                }
+            }
+            apush(defaults, value);
+        }
+        node *made = valid ? editor_spawn_with_defaults(e, desc, x, y, defaults, count)
+                           : NULL;
         result = made && made->id == yyjson_get_uint(id) ? 0 : -1;
+        afree(defaults);
     } else if (!strcmp(op, "spawn_match")) {
         if (e->active_graph->graph_id == graph_id) {
             result = replay_spawn_match(e, root, error, error_size) ? 0 : -1;

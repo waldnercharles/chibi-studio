@@ -1692,6 +1692,7 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
             studio_new_asset_start(s, command - STUDIO_COMMAND_NEW_SCENE);
             break;
         case STUDIO_COMMAND_SELECT_TAB:
+            studio_texture_close(s);
             finish_transform_edit(s->scene, false);
             scene_tabs_activate(s->scene, argument);
             break;
@@ -1700,6 +1701,7 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
             break;
         case STUDIO_COMMAND_PREVIOUS_TAB:
         case STUDIO_COMMAND_NEXT_TAB: {
+            studio_texture_close(s);
             finish_transform_edit(s->scene, false);
             int count = acount(s->scene->tabs);
             int direction = command == STUDIO_COMMAND_NEXT_TAB ? 1 : -1;
@@ -1707,6 +1709,7 @@ void studio_command_run_with(studio *s, studio_command command, int argument)
             break;
         }
         case STUDIO_COMMAND_CLOSE_TAB:
+            studio_texture_close(s);
             studio_close_tab(s, tab_at(s, argument));
             break;
         case STUDIO_COMMAND_CLOSE_DRAWER:

@@ -12,3 +12,29 @@ body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0
 .assets-view .seg[data-pressed] .icon { color: var(--primary-foreground); }
 .assets-size { width: 96dp; display: flex; margin-left: 4dp; }
 body > .btn { flex: 0 0 auto; }
+
+.texture-import {
+    width: 440dp; max-width: 90vw; max-height: 85vh; overflow-y: auto;
+    padding: 20dp;
+}
+.texture-import-body { display: flex; flex-direction: column; gap: 18dp; }
+.texture-import p { display: block; margin: 0dp; line-height: 20dp; }
+.texture-import-heading { display: flex; flex-direction: column; gap: 4dp; }
+.texture-import-heading .title { font-size: 16dp; line-height: 22dp; font-weight: 600; }
+.texture-import .texture-import-source { display: flex; align-items: center; gap: 10dp; height: 44dp; padding: 0dp 12dp; }
+.texture-import-source .icon { color: var(--muted-foreground); flex: 0 0 auto; }
+.texture-import-source .dim { flex: 0 0 auto; }
+.texture-import-filename { display: block; flex: 1 1 0dp; min-width: 0dp; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.texture-import-settings { display: flex; gap: 16dp; }
+.texture-import-field { display: flex; flex-direction: column; gap: 6dp; min-width: 0dp; flex: 0 0 auto; }
+.texture-import-settings > .texture-import-field { flex: 1 1 0dp; }
+.texture-import-field label { color: var(--muted-foreground); font-size: 12dp; line-height: 16dp; }
+.texture-import-field > use { display: flex; width: 100%; }
+.texture-import-field .field { height: 32dp; }
+.texture-import-summary { display: flex; flex-direction: column; gap: 4dp; padding-top: 14dp; border-top: 1dp var(--border); }
+#texture-import-review { white-space: pre-wrap; font-family: var(--font-numeric); }
+.texture-import .texture-import-note { font-size: 12dp; line-height: 16dp; }
+#texture-import-status { word-break: break-all; }
+.texture-import-footer { display: flex; align-items: center; justify-content: space-between; gap: 10dp; }
+.texture-import-actions { display: flex; gap: 6dp; }
+.texture-import-actions .btn { min-width: 72dp; height: 32dp; }

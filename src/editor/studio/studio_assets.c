@@ -29,17 +29,17 @@
 #include <sys/stat.h>
 
 static const char *const KIND_LABELS[REFERENCE_ASSET_KIND_COUNT] = {
-    "Scenes", "Prototypes", "Behaviors", "Events",  "Materials",
-    "Shapes", "Fields",     "Libraries", "Systems", "UI",
+    "Scenes", "Prototypes", "Behaviors", "Events", "Materials", "Shapes",
+    "Fields", "Libraries",  "Systems",   "UI",     "Textures",
 };
 static const char *const KIND_NAMES[REFERENCE_ASSET_KIND_COUNT] = {
-    "scene", "prototype", "behavior", "event",  "material",
-    "shape", "field",     "library",  "system", "ui",
+    "scene", "prototype", "behavior", "event", "material", "shape",
+    "field", "library",   "system",   "ui",    "texture",
 };
 static const uint32_t KIND_ICONS[REFERENCE_ASSET_KIND_COUNT] = {
     KIT_ICON_SCENE,    KIT_ICON_PROTOTYPE, KIT_ICON_GRAPH, KIT_ICON_EVENT,
     KIT_ICON_MATERIAL, KIT_ICON_HEXAGON,   KIT_ICON_GRID,  KIT_ICON_LIBRARY,
-    KIT_ICON_SYSTEM,   KIT_ICON_LAYOUT,
+    KIT_ICON_SYSTEM,   KIT_ICON_LAYOUT,    KIT_ICON_IMAGE,
 };
 
 /* A tile's padding around its picture, its label's line, the gap between
@@ -281,6 +281,12 @@ static void set_primary(studio *s, const studio_asset_ref *ref)
 {
     s->assets_selected_kind = ref->kind;
     snprintf(s->assets_selected, sizeof s->assets_selected, "%s", ref->name);
+    if (ref->kind == REFERENCE_ASSET_TEXTURE) {
+        studio_texture_open(s, ref->name);
+        studio_show_editor(s, STUDIO_EDITOR_PROPERTIES);
+    } else {
+        studio_texture_close(s);
+    }
 }
 
 static studio_asset_ref primary(const studio *s)
@@ -431,7 +437,7 @@ static bool usage(
 {
     int used = cache->uses[id];
     out[0] = '\0';
-    if (asset->kind == REFERENCE_ASSET_SCENE) {
+    if (asset->kind == REFERENCE_ASSET_SCENE || asset->kind == REFERENCE_ASSET_TEXTURE) {
         return false;
     }
     if (!used) {
@@ -492,6 +498,16 @@ static void move_selection(studio *s, int step, int lines, bool extend)
 
 static void open_asset(studio *s, int asset)
 {
+    const reference_asset *selected = reference_index_asset_at(
+        app_scene_authoring_asset_index(s->scene),
+        asset
+    );
+    if (selected && selected->kind == REFERENCE_ASSET_TEXTURE) {
+        studio_texture_open(s, selected->name);
+        studio_show_editor(s, STUDIO_EDITOR_PROPERTIES);
+        return;
+    }
+    studio_texture_close(s);
     finish_transform_edit(s->scene, false);
     if (app_scene_authoring_open_asset(s->scene, asset) == 0 &&
         s->scene->active_tab >= 0 && s->scene->tabs[s->scene->active_tab].source_only) {
@@ -885,8 +901,9 @@ typedef enum
     SHAPE_ENTRY,
 } item_shape;
 
-static const char *const ITEM_TEXTS[] = { "label", "icon",  "meta",  "drag",
-                                          "image", "badge", "about", "top" };
+static const char *const ITEM_TEXTS[] = { "label", "icon",  "meta",
+                                          "drag",  "image", "badge",
+                                          "about", "top",   "payload" };
 static const char *const ITEM_FLAGS[] = { "parent",  "open",       "selected",
                                           "active",  "marked",     "hidden",
                                           "loading", "unresolved", "unused",
@@ -958,7 +975,7 @@ static bool fit(yyjson_mut_doc *doc, yyjson_mut_val *items, int length, item_sha
 typedef struct
 {
     int id, kind, depth;
-    const char *label, *meta, *drag, *image, *about;
+    const char *label, *meta, *drag, *image, *about, *payload;
     uint32_t icon, badge;
     float top; /* a row's */
     bool parent, open, loading, unresolved, unused;
@@ -978,6 +995,7 @@ static bool show_item(yyjson_mut_doc *doc, yyjson_mut_val *item, const item_view
     changed |= ui_data_put_text(doc, item, "label", or_empty(v->label));
     changed |= ui_data_put_text(doc, item, "meta", or_empty(v->meta));
     changed |= ui_data_put_text(doc, item, "drag", or_empty(v->drag));
+    changed |= ui_data_put_text(doc, item, "payload", or_empty(v->payload ? v->payload : v->label));
     changed |= ui_data_put_text(doc, item, "image", or_empty(v->image));
     changed |= ui_data_put_text(doc, item, "about", or_empty(v->about));
     changed |= put_glyph(doc, item, "icon", v->icon);
@@ -1163,7 +1181,9 @@ static bool show_row(
         .id = row.asset,
         .kind = row.kind,
         .depth = grouped,
-        .label = asset->name,
+        .label = asset->kind == REFERENCE_ASSET_TEXTURE ? content_basename(asset->name)
+                                                        : asset->name,
+        .payload = asset->name,
         .icon = asset_icon(s, asset),
         .meta = grouped ? meta : KIND_NAMES[row.kind],
         .drag = studio_asset_draggable(asset) ? KIND_NAMES[row.kind] : "",
@@ -1270,7 +1290,9 @@ static bool show_tile(
     item_view v = {
         .id = id,
         .kind = (int)asset->kind,
-        .label = asset->name,
+        .label = asset->kind == REFERENCE_ASSET_TEXTURE ? content_basename(asset->name)
+                                                        : asset->name,
+        .payload = asset->name,
         .icon = asset_icon(s, asset),
         .badge = image ? KIND_ICONS[asset->kind] : 0,
         .image = image,
@@ -1414,9 +1436,11 @@ static bool show_menu(studio *s, yyjson_mut_doc *doc, yyjson_mut_val *menu)
                                              .label = "Preview",
                                              .icon = KIT_ICON_LAYOUT };
         }
-        entries[count++] = (entry_view){ .action = "references",
-                                         .label = "Find References",
-                                         .icon = KIT_ICON_REFERENCES };
+        if (asset->kind != REFERENCE_ASSET_TEXTURE) {
+            entries[count++] = (entry_view){ .action = "references",
+                                             .label = "Find References",
+                                             .icon = KIT_ICON_REFERENCES };
+        }
     }
     if (asset && asset->kind == REFERENCE_ASSET_PROTOTYPE) {
         entries[count++] = (entry_view){
@@ -1656,7 +1680,7 @@ void studio_assets_action(studio *s, const char *action, const ui_activation *a)
         queue_menu(s, a);
     } else if (!strcmp(action, "preview")) {
         studio_preview_ui(s, asset->name);
-    } else if (!strcmp(action, "references")) {
+    } else if (!strcmp(action, "references") && asset->kind != REFERENCE_ASSET_TEXTURE) {
         studio_find_asset_references(s, id);
     } else if (!strcmp(action, "spawnBreak")) {
         studio_toggle_spawn_break(s, asset->name);

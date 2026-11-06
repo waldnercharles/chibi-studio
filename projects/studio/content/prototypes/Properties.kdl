@@ -2,3 +2,4 @@ name "Properties"
 components {
     Ui document="Properties" hidden=#true
 }
+(array)behaviors "TextureAsset"

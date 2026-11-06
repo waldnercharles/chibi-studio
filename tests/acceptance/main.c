@@ -20,6 +20,8 @@
 #include "graph/nodes/core_nodes.h"
 #include "graph/nodes/vector_nodes.h"
 #include "runtime/scenes/physics3d.h"
+#include "runtime/shaders/program.h"
+#include "render/screenshot.h"
 #include "support/array.h"
 #include "support/file_io.h"
 #include "support/xalloc.h"
@@ -30,6 +32,7 @@
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,7 +71,8 @@ static enum {
     PROMPTS,
     CODE_FOLLOWUPS,
     CODE_GLYPHS,
-    PANEL_IDLE
+    PANEL_IDLE,
+    TEXTURE_IMPORT
 } mode;
 static char exported[1024]; /* the export Studio reported */
 static const char counter_bytes[] =
@@ -1945,6 +1949,9 @@ static bool graph_keys_frame(void *state)
 static bool element_says(studio *s, const char *selector, const char *text)
 {
     rml_element *element = studio_element(s, selector);
+    if (!element) {
+        fprintf(stderr, "Studio acceptance: missing text selector '%s' at frame=%d\n", selector, frames);
+    }
     REQUIRE(element);
     char markup[512];
     rml_element_inner_rml(element, markup, sizeof markup);
@@ -1988,21 +1995,52 @@ static bool click_at(float x, float y)
     return true;
 }
 
+/* Same-frame evidence. A successful workflow takes review plus final capture;
+ * a failing workflow takes at most review plus failure, each bounded to10s. */
+static bool texture_capture(const char *suffix)
+{
+    const char *base = getenv("CHIBI_STUDIO_TEXTURE_OUTPUT");
+    if (!base || !base[0]) {
+        return true;
+    }
+    char path[4096];
+    int length = snprintf(path, sizeof path, "%s.%s.png", base, suffix);
+    REQUIRE(length > 0 && (size_t)length < sizeof path);
+    REQUIRE(!app_save_screenshot(path));
+    return true;
+}
+
 /* RmlUi boxes are physical pixels; SDL pointer coordinates are window points. */
 static bool click(studio *s, const char *selector)
 {
     rml_element *element = NULL;
+    int matched = 0;
     rml_context *context = rml_backend_context(s->backend);
     for (int i = 0; i < rml_context_document_count(context) && !element; i++) {
         rml_element *matches[32];
         int count = rml_element_query_selector_all(rml_context_document(context, i), selector, matches, 32);
         REQUIRE(count <= 32);
+        matched += count;
         for (int j = 0; j < count; j++) {
             if (rml_element_is_visible(matches[j], true)) {
                 element = matches[j];
                 break;
             }
         }
+    }
+    if (!element) {
+        fprintf(
+            stderr,
+            "Studio acceptance: missing visible selector '%s' at frame=%d "
+            "documents=%d matches=%d\n",
+            selector,
+            frames,
+            rml_context_document_count(context),
+            matched
+        );
+    }
+    if (!element && mode == TEXTURE_IMPORT) {
+        (void)texture_capture("failure");
     }
     REQUIRE(element);
     rml_vec2 at = rml_element_absolute_offset(element, RML_BOX_BORDER);
@@ -3929,6 +3967,7 @@ static bool code_glyphs_frame(void *state)
 #include "scene_collider3d.h"
 #include "scene_gizmo3d.h"
 #include "scene_move.h"
+#include "texture_import.h"
 
 bool studio_acceptance_frame(void *state)
 {
@@ -3946,6 +3985,7 @@ bool studio_acceptance_frame(void *state)
             callback_ok = acceptance_debugger_frame(studio_acceptance_studio(state), ++frames);
             break;
         case ASSET_POINTER: callback_ok = asset_pointer_frame(state); break;
+        case TEXTURE_IMPORT: callback_ok = texture_import_frame(state); break;
         case GRAPH_LABELS: callback_ok = graph_labels_frame(state); break;
         case UNIT_WARNINGS: callback_ok = unit_warnings_frame(state); break;
         case SCENE_HIERARCHY: callback_ok = scene_hierarchy_frame(state); break;
@@ -4337,6 +4377,9 @@ int main(int argc, char **argv)
         pu_print_stats();
         return pu_test_failed() ? 1 : 0;
     }
+    bool texture_child = argc == 4 && !strcmp(argv[1], "--texture-import-reopen");
+    bool textures = texture_child ||
+                    (argc == 4 && !strcmp(argv[1], "--texture-import"));
     bool source_edit = argc == 4 && !strcmp(argv[1], "--source-edit");
     bool code_keys = argc == 4 && !strcmp(argv[1], "--code-keys");
     bool kdl_keys = argc == 4 && !strcmp(argv[1], "--kdl-keys");
@@ -4362,16 +4405,18 @@ int main(int argc, char **argv)
     bool followups = argc == 4 && !strcmp(argv[1], "--code-followups");
     bool idle = argc == 4 && !strcmp(argv[1], "--panel-idle");
     bool glyphs = argc == 4 && !strcmp(argv[1], "--code-glyphs");
-    if ((!source_edit && !code_keys && !kdl_keys && !exporting && !visibility &&
-         !keys_mode && !labels && !units && !hierarchy && !scene_move_mode &&
-         !outliner_move_mode && !physics && !assets && !viewport && !camera && !playing &&
-         !prompting && !followups && !glyphs && !idle && !graph_pointer_mode &&
-         !asset_pointer_mode && !debugging && !gizmo && !colliders) ||
+    if ((!textures && !source_edit && !code_keys && !kdl_keys && !exporting &&
+         !visibility && !keys_mode && !labels && !units && !hierarchy &&
+         !scene_move_mode && !outliner_move_mode && !physics && !assets &&
+         !viewport && !camera && !playing && !prompting && !followups &&
+         !glyphs && !idle && !graph_pointer_mode && !asset_pointer_mode &&
+         !debugging && !gizmo && !colliders) ||
         strcmp(argv[2], "--project-root")) {
         fprintf(
             stderr,
             "Usage: studio-acceptance "
-            "--source-edit|--code-keys|--kdl-keys|--export-game|"
+            "--texture-import|--source-edit|--code-keys|--kdl-keys|--export-"
+            "game|"
             "--graph-visibility|--graph-keys|--graph-pointer|--asset-pointer|--"
             "graph-labels|--unit-warnings|"
             "--scene-hierarchy|--scene-move|--outliner-move|--scene-physics|"
@@ -4396,7 +4441,8 @@ int main(int argc, char **argv)
         return 2;
     }
     pu_display_time(true);
-    mode = source_edit        ? SOURCE_EDIT
+    mode = textures           ? TEXTURE_IMPORT
+         : source_edit        ? SOURCE_EDIT
          : code_keys          ? CODE_KEYS
          : kdl_keys           ? KDL_KEYS
          : exporting          ? EXPORT_GAME
@@ -4422,6 +4468,13 @@ int main(int argc, char **argv)
          : idle               ? PANEL_IDLE
                               : CODE_GLYPHS;
     switch (mode) {
+        case TEXTURE_IMPORT:
+            if (texture_child) {
+                RUN_TEST_CASE(texture_import_reopen);
+            } else {
+                RUN_TEST_CASE(texture_import_workflow);
+            }
+            break;
         case SOURCE_EDIT: RUN_TEST_CASE(source_graph_edit_undo_redo); break;
         case CODE_KEYS: RUN_TEST_CASE(code_enter_types_newlines); break;
         case KDL_KEYS: RUN_TEST_CASE(kdl_enter_saves); break;

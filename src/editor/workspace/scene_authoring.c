@@ -628,14 +628,27 @@ void content_refresh(app_scene_authoring *scene)
     if (!acount(scene->content)) {
         return;
     }
-    editor_choice *images = xmalloc((size_t)acount(scene->content) * sizeof *images);
+    /* Labels borrow content paths; virtual image keys share the choices' owned
+       allocation and survive until the next content refresh. */
+    size_t keys_size = 0;
+    for (int i = 0; i < acount(scene->content); i++) {
+        if (scene->content[i].image) {
+            keys_size += strlen(scene->content[i].path + strlen(scene->content_root) + 1) +
+                         sizeof "content/";
+        }
+    }
+    size_t rows_size = (size_t)acount(scene->content) * sizeof(editor_choice);
+    editor_choice *images = xmalloc(rows_size + keys_size);
+    char *key = (char *)images + rows_size;
     for (int i = 0; i < acount(scene->content); i++) {
         const scene_content_entry *entry = &scene->content[i];
         if (entry->image) {
-            images[scene->image_choices.count++] = (editor_choice){
-                .label = entry->path + strlen(scene->content_root) + 1,
-                .name = entry->path
-            };
+            const char *label = entry->path + strlen(scene->content_root) + 1;
+            size_t length = strlen(label) + sizeof "content/";
+            snprintf(key, length, "content/%s", label);
+            images[scene->image_choices.count++] = (editor_choice){ .label = label,
+                                                                    .name = key };
+            key += length;
         }
     }
     scene->image_choices.items = images;

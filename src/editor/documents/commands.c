@@ -11,6 +11,7 @@
 #include "graph/shader/shader_graph.h"
 
 #include <assert.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -412,19 +413,94 @@ static node *editor_spawn_direct(editor *e, const node_desc *desc, float x, floa
     return n;
 }
 
-node *editor_spawn(editor *e, const node_desc *desc, float x, float y)
+/* Prepare every fallible edit before touching the document or its history. */
+static node *editor_spawn_initialized(
+    editor *e,
+    const node_desc *desc,
+    float x,
+    float y,
+    const editor_initial_default *defaults,
+    int count
+)
 {
-    if (e && e->presentation) {
-        ed_source_spawn_match(e, &(ed_search_match){ .desc = desc });
+    behavior_asset *candidate = ed_snapshot(e);
+    if (!candidate) {
         return NULL;
     }
-    uint64_t expected_id = e && e->asset ? e->asset->graph->id_counter : 0;
+    editor draft = *e;
+    draft.asset = candidate;
+    draft.active_graph = behavior_asset_find_graph(candidate, e->active_graph->graph_id);
+    node *made = draft.active_graph ? graph_add_node(draft.active_graph, desc) : NULL;
+    bool valid = made && shader_graph_init_node(draft.active_graph, made) &&
+                 ed_name_spawned_event(&draft, made) == 0;
+    for (int i = 0; valid && i < count; i++) {
+        int pin = defaults[i].pin_index;
+        const pin_spec *spec = pin >= 0 && pin < made->input_count
+                                 ? &made->input_pins[pin]
+                                 : NULL;
+        const pin_value *value = &defaults[i].value;
+        valid = spec && spec->kind == PIN_DATA && spec->type == value->type &&
+                spec->container == value->container &&
+                ((!spec->type_name && !value->type_name) ||
+                 (spec->type_name && value->type_name &&
+                  !strcmp(spec->type_name, value->type_name))) &&
+                graph_set_pin_default(draft.active_graph, made, 0, pin, value) == 0;
+    }
+    if (!valid) {
+        behavior_asset_free(candidate);
+        return NULL;
+    }
+    made->x = x;
+    made->y = y;
+    uint64_t id = made->id;
+    bool history = collab_record_history();
+    behavior_asset *before = history ? ed_snapshot(e) : NULL;
+    if ((history && !before) || ed_adopt_behavior_asset(e, candidate) != 0) {
+        behavior_asset_free(before);
+        behavior_asset_free(candidate);
+        return NULL;
+    }
+    behavior_asset_free(candidate);
+    if (history) {
+        ed_push_asset(&e->undo, before);
+        ed_free_asset_stack(&e->redo);
+    }
+    return graph_node_by_id(e->active_graph, id);
+}
+
+node *editor_spawn_with_defaults(
+    editor *e,
+    const node_desc *desc,
+    float x,
+    float y,
+    const editor_initial_default *defaults,
+    int count
+)
+{
+    if (!e || !e->asset || !e->active_graph || !desc || count < 0 ||
+        (count && !defaults) || !isfinite(x) || !isfinite(y)) {
+        return NULL;
+    }
+    if (e->presentation) {
+        if (!count) {
+            ed_source_spawn_match(e, &(ed_search_match){ .desc = desc });
+        }
+        return NULL;
+    }
+    if (!behavior_asset_mutable(e->asset) || e->active_graph->math_expression ||
+        (count && (e->pending_snapshot || e->active_graph->flow_pause_count ||
+                   !strcmp(behavior_asset_extension(e->asset->domain), ".chibi")))) {
+        return NULL;
+    }
+    uint64_t expected_id = e->asset->graph->id_counter;
     if (!expected_id) {
         expected_id = 1;
     }
-    char *action = graph_collab_action_spawn(e, desc, x, y);
+    /* The action codec validates all default shapes and portable values before
+     * either the local edit or a collaboration proposal can be published. */
+    char *action = graph_collab_action_spawn(e, desc, x, y, defaults, count);
     if (!action) {
-        return collab_active() && !collab_replaying()
+        return count || (collab_active() && !collab_replaying())
                  ? NULL
                  : editor_spawn_direct(e, desc, x, y);
     }
@@ -433,13 +509,19 @@ node *editor_spawn(editor *e, const node_desc *desc, float x, float y)
         free(action);
         return NULL;
     }
-    node *made = editor_spawn_direct(e, desc, x, y);
+    node *made = count ? editor_spawn_initialized(e, desc, x, y, defaults, count)
+                       : editor_spawn_direct(e, desc, x, y);
     if (made) {
         assert(made->id == expected_id);
     }
     collab_actions_finish(action, made != NULL);
     free(action);
     return made;
+}
+
+node *editor_spawn(editor *e, const node_desc *desc, float x, float y)
+{
+    return editor_spawn_with_defaults(e, desc, x, y, NULL, 0);
 }
 
 int editor_delete_graph(editor *e, uint64_t graph_id)

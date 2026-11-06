@@ -191,6 +191,10 @@ void properties_follow_tabs(studio *s, const properties_subject *subject, bool a
     uint64_t member = studio_member_shown(s);
     uint64_t node = studio_graph_node(s) ? studio_graph_node(s)
                                          : studio_graph_comment(s);
+    if (studio_texture_active(s) &&
+        ((node && node != s->shown_node) || scene->selected != s->shown_actor)) {
+        studio_texture_close(s);
+    }
     app_editor_document_kind kind = app_scene_authoring_document(scene).kind;
     bool graph = kind == APP_EDITOR_DOCUMENT_BEHAVIOR ||
                  kind == APP_EDITOR_DOCUMENT_SYSTEM;
@@ -1602,6 +1606,7 @@ void studio_properties_action(studio *s, const char *action, const ui_activation
     } else if (!strcmp(action, "componentAction")) {
         component_action(s);
     } else if (!strcmp(action, "tab") && a->has_value && a->value >= 0 && a->value < STUDIO_TAB_COUNT) {
+        studio_texture_close(s);
         s->tab = (studio_tab)a->value;
     } else if (!strcmp(action, "fold")) {
         fold(s, arg);

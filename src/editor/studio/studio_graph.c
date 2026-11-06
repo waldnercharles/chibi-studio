@@ -7,20 +7,26 @@
  * Behavior area; window input is replayed into it in graph units. Interaction
  * follows docs/editor-graph-references.md; edits go through the graph editor's
  * mutation helpers and history. */
+#include "authoring/image_import_commit.h"
 #include "diagnostics/tracy.h"
 #include "editor/studio/studio_graph_internal.h"
 #include "graph/authoring/expand.h"
 #include "graph/authoring/pin_edit.h"
 #include "graph/document/extract.h"
 #include "graph/model/reactive_presentation.h"
+#include "graph/model/registry.h"
 #include "graph/nodes/behavior_expression.h"
 #include "platform/cute.h"
+#include "runtime/shaders/program.h"
 #include "support/array.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
 
 /* Invalidation follows authored model revisions, never the camera. Pending
  * drafts have not received an edit revision yet, so frame boundaries explicitly
@@ -884,6 +890,69 @@ static void behavior_empty(studio *s)
     kit_pop(k);
 }
 
+/* Texture drops use the same surface and drag protocol as member drops. The
+ * initialized spawn commits the resource key and semantic default together. */
+static void texture_drop(studio *s)
+{
+    editor *e = sg_graph_editor(s);
+    if (sg_graph_readonly(s) || !e || e->asset->domain != BEHAVIOR_DOMAIN_MATERIAL) {
+        return;
+    }
+    char key[4096], type[32];
+    if (kit_drop_hover(s->kit, type, sizeof type, key, sizeof key) &&
+        !strcmp(type, "texture")) {
+        kit_drag_hint(s->kit, "Create Image Texture");
+    }
+    if (!kit_drop_target(s->kit, "texture", key, sizeof key)) {
+        return;
+    }
+    const reference_index *index = app_scene_authoring_asset_index(s->scene);
+    int id = reference_index_find_name(index, REFERENCE_ASSET_TEXTURE, key);
+    const reference_asset *asset = id >= 0 ? reference_index_asset_at(index, id) : NULL;
+    if (!asset || asset->unresolved || !asset->path) { return; }
+    image_import_texture settings = { 0 };
+    char error[256];
+    bool imported = image_import_texture_read(s->scene->content_root, key, &settings, error, sizeof error);
+    if (!imported) {
+        char path[4096];
+        struct stat info;
+        snprintf(path, sizeof path, "%s%s", asset->path, IMAGE_IMPORT_TEXTURE_SUFFIX);
+        if (!stat(path, &info) || errno != ENOENT) {
+            studio_error(s, "Could not create Image Texture", error);
+            image_import_texture_free(&settings);
+            return;
+        }
+    }
+    const node_desc *desc = registry_node_by_name("Shader Image Texture");
+    if (!desc) {
+        image_import_texture_free(&settings);
+        return;
+    }
+    editor_initial_default defaults[2] = {
+        { .pin_index = SHADER_IMAGE_INPUT_IMAGE,
+          .value = desc->inputs[SHADER_IMAGE_INPUT_IMAGE].default_value },
+        { .pin_index = SHADER_IMAGE_INPUT_COLOR_SPACE,
+          .value = desc->inputs[SHADER_IMAGE_INPUT_COLOR_SPACE].default_value }
+    };
+    defaults[0].value.str = key;
+    defaults[1].value.type_name = desc->inputs[SHADER_IMAGE_INPUT_COLOR_SPACE].type_name;
+    defaults[1].value.i = !imported || settings.options.semantic == IMAGE_IMPORT_COLOR
+                            ? SHADER_IMAGE_SRGB
+                            : SHADER_IMAGE_LINEAR;
+    float x, y;
+    sg_to_world(s, s->in.mouse_x, s->in.mouse_y, &x, &y);
+    node *made = editor_spawn_with_defaults(e, desc, x, y, defaults, 2);
+    image_import_texture_free(&settings);
+    if (made) {
+        made->placed = true;
+        studio_texture_close(s);
+        sg_select_only(e, made);
+        s->tab = STUDIO_TAB_NODE;
+        s->focus_area = s->graph.area;
+        e->edit_pending = 1;
+    }
+}
+
 void studio_behavior_body(studio *s, int area)
 {
     kit *k = s->kit;
@@ -895,6 +964,7 @@ void studio_behavior_body(studio *s, int area)
     }
     g->area = area;
     kit_surface(k, "graph", "graph-surface", "graph", &g->surface);
+    texture_drop(s);
     studio_members_drop(s);
     /* An empty graph says how to begin, where a node will go. */
     if (!visible_nodes(sg_active_graph(s))) {

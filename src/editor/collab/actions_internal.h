@@ -25,7 +25,14 @@ bool graph_collab_apply_action(editor *graph_editor, const char *json, char *err
 bool scene_collab_apply_action(app_scene_authoring *scene, const char *json, char *error, size_t error_size);
 char *graph_collab_action_for_command(const editor *graph_editor, editor_command command);
 char *graph_collab_action_open(const editor *graph_editor, uint64_t graph_id);
-char *graph_collab_action_spawn(const editor *graph_editor, const node_desc *desc, float x, float y);
+char *graph_collab_action_spawn(
+    const editor *graph_editor,
+    const node_desc *desc,
+    float x,
+    float y,
+    const editor_initial_default *defaults,
+    int count
+);
 char *graph_collab_action_spawn_match(
     const editor *graph_editor,
     const ed_search_match *match,

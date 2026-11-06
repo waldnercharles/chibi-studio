@@ -278,6 +278,10 @@ static void save_document(studio *s, bool graph)
 
 void studio_save(studio *s)
 {
+    if (studio_texture_active(s)) {
+        studio_texture_save(s);
+        return;
+    }
     save_document(s, graph_focused(s));
 }
 
@@ -331,6 +335,7 @@ static void report_save_all(studio *s, char *title, size_t size, int saved, int 
    running scene keeps only documents that do not apply live from saving. */
 bool studio_save_all(studio *s)
 {
+    bool textures_saved = studio_texture_save_all(s);
     app_scene_authoring *scene = s->scene;
     char *active = scene->active_tab >= 0
                      ? xstrdup(scene->tabs[scene->active_tab].key)
@@ -357,12 +362,15 @@ bool studio_save_all(studio *s)
     }
     free(active);
     report_save_all(s, title, sizeof title, saved, unsaved);
-    return !studio_unsaved(s);
+    return textures_saved && !studio_unsaved(s);
 }
 
 /* History and dirty state belong to the active document, not always the scene. */
 bool studio_can_replay(studio *s, bool redo)
 {
+    if (studio_texture_active(s)) {
+        return studio_texture_history(s, redo, false);
+    }
     app_scene_authoring *scene = s->scene;
     if ((scene->document.kind == APP_EDITOR_DOCUMENT_BEHAVIOR ||
          scene->document.kind == APP_EDITOR_DOCUMENT_SYSTEM) &&
@@ -386,6 +394,9 @@ bool studio_can_replay(studio *s, bool redo)
 
 bool studio_active_dirty(studio *s)
 {
+    if (studio_texture_active(s)) {
+        return studio_texture_dirty(s);
+    }
     app_scene_authoring *scene = s->scene;
     const scene_document_tab *tab = scene->active_tab >= 0 &&
                                             scene->active_tab < acount(scene->tabs)
@@ -408,6 +419,9 @@ bool studio_active_dirty(studio *s)
 
 bool studio_unsaved(studio *s)
 {
+    if (studio_texture_unsaved(s)) {
+        return true;
+    }
     app_scene_authoring *scene = s->scene;
     for (int i = 0; i < acount(scene->tabs); i++) {
         if (scene_tabs_dirty(scene, &scene->tabs[i])) {
@@ -431,6 +445,12 @@ static void document_history(studio *s, bool redo)
 
 void studio_history(studio *s, bool redo)
 {
+    if (studio_texture_active(s)) {
+        if (studio_texture_history(s, redo, true)) {
+            studio_report(s, redo ? "Redo" : "Undo");
+        }
+        return;
+    }
     if ((s->scene->document.kind == APP_EDITOR_DOCUMENT_BEHAVIOR ||
          s->scene->document.kind == APP_EDITOR_DOCUMENT_SYSTEM) &&
         behavior_history_focused(s)) {

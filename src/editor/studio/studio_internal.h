@@ -1,13 +1,15 @@
 #ifndef CHIBI_EDITOR_STUDIO_INTERNAL_H
 #define CHIBI_EDITOR_STUDIO_INTERNAL_H
 
-#include "authoring/component_presentation.h"
 #include "assets/new_asset.h"
 #include "assets/project.h"
 #include "assets/ui_source.h"
+#include "authoring/component_presentation.h"
 #include "editor/documents/asset_code.h"
 #include "editor/documents/ui_code.h"
 #include "editor/studio/studio.h"
+#include "editor/studio/studio_image_import.h"
+#include "editor/studio/studio_texture_asset.h"
 #include "editor/ui/kit.h"
 #include "editor/ui/kit_icons.h"
 #include "editor/workspace/asset_index.h"
@@ -968,7 +970,7 @@ typedef struct studio_gallery
 typedef struct studio_asset_ref
 {
     int kind; /* reference_asset_kind */
-    char name[128];
+    char name[4096];
 } studio_asset_ref;
 
 /* A Properties panel the user folded or opened (studio_properties.c). */
@@ -1072,6 +1074,8 @@ struct studio
     uint64_t scene_prefs_seen, preview_prefs_seen;
     studio_project *projects;
     studio_new_project new_project;
+    studio_image_import *image_import;
+    studio_texture_asset *texture_asset;
     char *open_project; /* root chosen to open, until the application takes it */
     char *tab_menu_key; /* the document under the tab context menu, owned */
     studio_disk_toast *disk_toasts; /* files that changed on disk under unsaved edits */
@@ -1161,7 +1165,7 @@ struct studio
     char assets_filter[128];
     int assets_menu;           /* the asset under the row menu */
     int assets_selected_kind;  /* the selected asset's reference_asset_kind */
-    char assets_selected[128]; /* the selected asset's name, or "" */
+    char assets_selected[4096];      /* the selected asset's name, or "" */
     studio_asset_ref *assets_marked; /* selected with it (support/array.h) */
     studio_asset_ref assets_anchor; /* where Shift extends the selection from */
     bool assets_reveal; /* scroll the selection into view on the next emission */

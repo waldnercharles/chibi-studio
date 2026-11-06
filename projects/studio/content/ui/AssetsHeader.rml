@@ -13,3 +13,46 @@
     <use ui="MenuItem" data-alias-item="entry" data-event-click="emit('studio.' + entry.id)"/>
   </div>
 </use>
+
+<button id="texture-import-open" class="btn icon-only" popovertarget="texture-import" aria-haspopup="dialog" aria-label="Import texture" data-tip="Import texture"><span class="icon">&#xf0976;</span></button>
+<div id="texture-import" popover class="popup popover texture-import" role="dialog" aria-labelledby="texture-import-title">
+ <div class="texture-import-body">
+  <div class="texture-import-heading">
+   <div id="texture-import-title" class="title">Import texture</div>
+   <p class="dim">Add a PNG or JPEG to your project.</p>
+  </div>
+  <button id="texture-import-choose" class="btn outline texture-import-source" data-attrif-data-disabled="self.textureImportBusy" data-event-click="emit('TextureImportChoose')">
+   <span class="icon">&#xf0976;</span>
+   <span class="texture-import-filename" data-attr-data-tip="self.textureImportSource">{{ self.textureImportSource != '' ? self.textureImportSource : 'Choose an image' }}</span>
+   <span class="dim">Browse…</span>
+  </button>
+  <div class="texture-import-settings">
+   <div class="texture-import-field">
+    <label for="texture-import-resolution">Maximum size</label>
+    <use ui="Select"><select id="texture-import-resolution" data-attr-value="self.textureImportResolution" data-attrif-disabled="self.textureImportBusy" data-event-change="emit('TextureImportSetting','resolution',ev.value)"><option value="1k">1K · 1024 px</option><option value="2k">2K · 2048 px</option><option value="source">Original · up to 2K</option></select></use>
+   </div>
+   <div class="texture-import-field">
+    <label for="texture-import-semantic">Texture type</label>
+    <use ui="Select"><select id="texture-import-semantic" data-attr-value="self.textureImportSemantic" data-attrif-disabled="self.textureImportBusy" data-event-change="emit('TextureImportSetting','semantic',ev.value)"><option value="color">Color · sRGB</option><option value="scalar">Data · linear</option><option value="normal">Normal map</option></select></use>
+   </div>
+  </div>
+  <div class="texture-import-field">
+   <label for="texture-import-destination">Save as</label>
+   <div class="field text"><input id="texture-import-destination" class="value" type="text" maxlength="511" data-attr-value="self.textureImportDestination" data-attrif-disabled="self.textureImportBusy" data-event-input="emit('TextureImportSetting','destination',ev.value)"/></div>
+  </div>
+  <div class="texture-import-summary" data-if="self.textureImportReview != ''">
+   <p id="texture-import-review">{{ self.textureImportReview }}</p>
+   <p class="dim texture-import-note" data-tip="Includes resident visual assets. Scene resources and parameter records are checked when exporting the complete project.">Estimate. Full project checked on export.</p>
+  </div>
+  <p id="texture-import-status" role="status" data-if="self.textureImportStatus != ''">{{ self.textureImportStatus }}</p>
+  <div class="texture-import-footer">
+   <span class="dim texture-import-note">Original file unchanged</span>
+   <div class="texture-import-actions">
+    <button id="texture-import-cancel" class="btn subtle" data-if="!self.textureImportImported" popovertarget="texture-import" data-event-click="emit('TextureImportCancel')">Cancel</button>
+    <button id="texture-import-prepare" class="btn primary" data-if="!self.textureImportReviewed &amp;&amp; !self.textureImportImported" data-attrif-data-disabled="self.textureImportBusy || self.textureImportSource == ''" data-event-click="emit('TextureImportReview')">Review</button>
+    <button id="texture-import-done" class="btn primary" data-if="self.textureImportImported" popovertarget="texture-import" data-event-click="emit('TextureImportCancel')">Done</button>
+    <button id="texture-import-confirm" class="btn primary" data-if="self.textureImportReviewed" data-attrif-data-disabled="self.textureImportBusy" data-event-click="emit('TextureImportConfirm')">Import</button>
+   </div>
+  </div>
+ </div>
+</div>

@@ -814,6 +814,9 @@ static void draw_viewport(studio *s)
         engine_viewport_set_host_input(s->viewport, NULL);
         return;
     }
+    if (s->surface.pressed[0]) {
+        studio_texture_close(s);
+    }
     /* The Scene renders in window points, as games' UI scales with the view
        and not with the editor's UI Scale. */
     float ui = s->prefs.ui_scale;
@@ -1144,6 +1147,8 @@ void studio_free(studio *s)
     /* Visual designer (workstream H). */
     studio_designer_free(s);
     kit_destroy(s->kit);
+    studio_image_import_free(s->image_import);
+    studio_texture_asset_free(s->texture_asset);
     studio_ui_free(s->ui);
     /* After the panels' data, which shows the Inspector's strings. */
     studio_inspect_free(s->inspect);

@@ -1,6 +1,7 @@
 #include "editor/documents/asset_code.h"
 
 #include "assets/scene_document.h"
+#include "authoring/image_import_commit.h"
 #include "authoring/source_intelligence.h"
 #include "editor/workspace/editor_internal.h"
 #include "editor/workspace/scene_internal.h"
@@ -354,7 +355,13 @@ static void check_asset(asset_code *c)
     av_value *root = av_doc_root(c->source->document);
     char error[256] = "";
     bool ok = true;
-    if (strstr(c->path, "/scenes/")) {
+    size_t length = strlen(c->path), suffix = strlen(IMAGE_IMPORT_TEXTURE_SUFFIX);
+    if (length >= suffix &&
+        !strcmp(c->path + length - suffix, IMAGE_IMPORT_TEXTURE_SUFFIX)) {
+        image_import_texture texture = { 0 };
+        ok = image_import_texture_parse(c->text, &texture, error, sizeof error);
+        image_import_texture_free(&texture);
+    } else if (strstr(c->path, "/scenes/")) {
         scene_document *scene = scene_document_load_value(root, error, sizeof error);
         ok = scene != NULL;
         scene_document_free(scene);

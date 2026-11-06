@@ -151,7 +151,8 @@ const editor_choices *ed_pin_choices(editor *e, node *n, int output, int index)
         return NULL;
     }
     const pin_spec *spec = &n->input_pins[index];
-    if ((spec->type != PIN_I32 && spec->type != PIN_ENUM && spec->type != PIN_NAME) ||
+    if ((spec->type != PIN_I32 && spec->type != PIN_ENUM &&
+         spec->type != PIN_NAME && spec->type != PIN_STR) ||
         spec->container != PIN_CONTAINER_SINGLE) {
         return NULL;
     }

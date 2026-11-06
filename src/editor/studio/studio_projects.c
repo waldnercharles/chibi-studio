@@ -197,6 +197,9 @@ static void unsaved_names(studio *s, char *out, size_t size)
     app_scene_authoring *scene = s->scene;
     const char *names[2] = { 0 };
     int count = 0;
+    if (studio_texture_unsaved(s)) {
+        names[count++] = "Texture import settings";
+    }
     for (int i = 0; i < acount(scene->tabs); i++) {
         if (scene_tabs_dirty(scene, &scene->tabs[i])) {
             if (count < 2) {

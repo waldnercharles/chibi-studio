@@ -1,0 +1,46 @@
+behavior TextureAsset {
+    Operation: string = "read"
+    Resolution: string = "1k"
+    Semantic: string = "color"
+    action request = studio_texture_asset(Operation, state.Resolution, state.Semantic)
+
+    on Begin {
+        Read()
+    }
+    on Refresh {
+        Read()
+    }
+    on TextureAssetSetting {
+        if text_equal(event.Id, "resolution") {
+            state.Resolution = event.Value
+        } else if text_equal(event.Id, "semantic") {
+            state.Semantic = event.Value
+        }
+        Operation = "edit"
+        request()
+    }
+    on TextureAssetSave {
+        Operation = "save"
+        request()
+    }
+    on TextureAssetReimport {
+        Operation = "reimport"
+        request()
+    }
+    after request {
+        state.Resolution = request.Resolution
+        state.Semantic = request.Semantic
+        await set_ui_data(Name: "textureAssetActive", Value: request.Active)
+        await set_ui_data(Name: "textureAssetImage", Value: request.Image)
+        await set_ui_data(Name: "textureAssetSource", Value: request.Source)
+        await set_ui_data(Name: "textureAssetResolution", Value: state.Resolution)
+        await set_ui_data(Name: "textureAssetSemantic", Value: state.Semantic)
+        await set_ui_data(Name: "textureAssetDirty", Value: request.Dirty)
+        await set_ui_data(Name: "textureAssetStatus", Value: request.Status)
+        set_ui_data(Name: "textureAssetInfo", Value: request.Info)
+    }
+    Read :: fn() {
+        Operation = "read"
+        request()
+    }
+}

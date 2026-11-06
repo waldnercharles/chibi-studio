@@ -2,3 +2,4 @@ name "AssetsHeader"
 components {
     Ui document="AssetsHeader" hidden=#true
 }
+(array)behaviors "TextureImport"

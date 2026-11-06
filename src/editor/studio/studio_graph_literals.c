@@ -1250,8 +1250,9 @@ static bool choice_control(
     int count = editor_choices_count(choices), current = -1;
     for (int i = 0; i < count; i++) {
         editor_choice choice = editor_choice_at(choices, i);
-        bool selected = spec->type == PIN_NAME ? value->str && choice.name &&
-                                                     !strcmp(value->str, choice.name)
+        bool selected = (spec->type == PIN_NAME || spec->type == PIN_STR)
+                          ? value->str && choice.name &&
+                                !strcmp(value->str, choice.name)
                       : spec->type == PIN_ENUM
                           ? choice.value == value->e
                           : choice.value == sg_literal_number(value);
@@ -1267,13 +1268,14 @@ static bool choice_control(
                                           : "-",
                                .flags = flags };
     bool clicked = kit_picker(k, "v", &picker) && !(flags & KIT_READONLY);
+    kit_attr(k, "aria-label", spec->name);
     kit_flag(k, "data-open", picker_open(s, pick));
     int index = choice_pick(s, k, pick, clicked, choices, current, "Search options");
     if (index < 0 || index >= count || index == current) {
         return false;
     }
     editor_choice selected = editor_choice_at(choices, index);
-    if (spec->type == PIN_NAME) {
+    if (spec->type == PIN_NAME || spec->type == PIN_STR) {
         value->str = selected.name;
     } else if (spec->type == PIN_ENUM) {
         value->e = selected.value;

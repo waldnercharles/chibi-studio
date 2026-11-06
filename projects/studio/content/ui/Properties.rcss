@@ -47,3 +47,22 @@ body, body.area-panel { width: 100%; height: 100%; margin: 0dp; padding: 0dp; ov
 .graph-sub-heading { display: block; margin-top: var(--gap); }
 .graph-inline-part { display: block; }
 .param-settings [data-ui=EnumField] { flex: 1 1 78dp; min-width: 0dp; }
+
+.texture-asset-shell { flex: 1 1 0dp; min-width: 0dp; display: flex; flex-direction: column; }
+.texture-asset-toolbar { flex: 0 0 auto; padding: 16dp; border-bottom: 1dp var(--border); }
+.texture-asset { padding: 16dp; }
+.texture-asset p { display: block; margin: 0dp; line-height: 18dp; }
+.texture-asset-heading { display: flex; flex-direction: column; gap: 4dp; margin-bottom: 12dp; }
+.texture-asset-heading .title { font-size: 14dp; line-height: 20dp; font-weight: 600; word-break: break-all; }
+.texture-asset-preview { height: 192dp; display: flex; align-items: center; justify-content: center; background-color: var(--muted); border: 1dp var(--border); margin-bottom: 8dp; }
+.texture-asset-preview img { width: 192dp; height: 192dp; }
+.texture-asset-section { display: flex; flex-direction: column; gap: 14dp; margin: 18dp 0dp; padding-top: 18dp; border-top: 1dp var(--border); }
+.texture-asset-field { display: flex; flex-direction: column; gap: 6dp; flex: 0 0 auto; min-width: 0dp; }
+.texture-asset-field label { color: var(--muted-foreground); font-size: 12dp; line-height: 16dp; }
+.texture-asset-field > use { display: flex; width: 100%; }
+.texture-asset-field .field { height: 32dp; }
+.texture-asset-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.texture-asset .texture-asset-note { font-size: 12dp; line-height: 18dp; }
+.texture-asset-actions { display: flex; gap: 8dp; flex-wrap: wrap; }
+.texture-asset-actions .btn { height: 32dp; }
+#texture-asset-status { word-break: break-all; }

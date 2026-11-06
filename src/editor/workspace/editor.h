@@ -267,6 +267,22 @@ void editor_clear_log(editor *e);
 /* Adds a node of type desc to the graph at canvas (x, y) and returns the core
  * node for wiring, or NULL on allocation failure. */
 node *editor_spawn(editor *e, const node_desc *desc, float x, float y);
+typedef struct
+{
+    int pin_index;
+    pin_value value;
+} editor_initial_default;
+/* Initialized descriptor input defaults form one undo/collaboration edit.
+ * Values are copied into graph storage; invalid defaults leave graph/history
+ * unchanged. Configured spawns are unavailable in executable source views. */
+node *editor_spawn_with_defaults(
+    editor *e,
+    const node_desc *desc,
+    float x,
+    float y,
+    const editor_initial_default *defaults,
+    int count
+);
 node *editor_add_behavior_expression(
     editor *e,
     const char *source,

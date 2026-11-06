@@ -97,6 +97,8 @@ set(STUDIO_SOURCES
     src/editor/studio/studio_performance.c
     src/editor/studio/studio_pick.c
     src/editor/studio/studio_prefs.c
+    src/editor/studio/studio_image_import.c
+    src/editor/studio/studio_texture_asset.c
     src/editor/studio/studio_projects.c
     src/editor/studio/studio_properties.c
     src/editor/studio/studio_properties_view.c

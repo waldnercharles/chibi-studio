@@ -25,7 +25,8 @@ bool studio_asset_draggable(const reference_asset *asset)
         return false;
     }
     if (asset->kind == REFERENCE_ASSET_PROTOTYPE ||
-        asset->kind == REFERENCE_ASSET_BEHAVIOR) {
+        asset->kind == REFERENCE_ASSET_BEHAVIOR ||
+        asset->kind == REFERENCE_ASSET_TEXTURE) {
         return true;
     }
     for (int i = 0; i < ASSIGNED_COUNT; i++) {

@@ -5,7 +5,42 @@
       <button class="btn icon-only" data-attr-data-state="tab.on ? 'on' : 'off'" data-attr-data-tip="tab.tip" data-tip-side="right" data-event-click="emit('properties.tab', tab.id)"><span class="icon">{{ tab.icon }}</span></button>
     </div>
   </nav>
-  <div class="prop-scroll" data-if="properties.view != 'graph'">
+  <div class="texture-asset-shell" data-if="properties.view == 'texture'">
+   <div class="texture-asset-toolbar">
+    <div class="texture-asset-heading">
+      <span class="title">{{ properties.textureName }}</span>
+      <span class="dim">Texture</span>
+    </div>
+      <div class="texture-asset-actions">
+        <button id="texture-asset-save" class="btn outline" data-attrif-data-disabled="!self.textureAssetDirty" data-event-click="emit('TextureAssetSave')">Save settings</button>
+        <button id="texture-asset-reimport" class="btn primary" data-attrif-data-disabled="self.textureAssetSource == ''" data-event-click="emit('TextureAssetReimport')">Reimport</button>
+      </div>
+   </div>
+   <div class="prop-scroll texture-asset">
+    <div class="texture-asset-preview">
+      <img id="texture-asset-preview" data-if="properties.texturePreview != ''" data-attr-src="properties.texturePreview"/>
+    </div>
+    <p id="texture-asset-info" class="dim">{{ self.textureAssetInfo }}</p>
+    <div class="texture-asset-section">
+      <div class="texture-asset-field">
+        <label>Source</label>
+        <p id="texture-asset-source" class="texture-asset-path" data-attr-data-tip="self.textureAssetSource">{{ self.textureAssetSource != '' ? self.textureAssetSource : 'No import source recorded' }}</p>
+      </div>
+      <div class="texture-asset-field">
+        <label for="texture-asset-resolution">Maximum size</label>
+        <use ui="Select"><select id="texture-asset-resolution" data-attr-value="self.textureAssetResolution" data-attrif-disabled="self.textureAssetSource == ''" data-event-change="emit('TextureAssetSetting','resolution',ev.value)"><option value="1k">1K · 1024 px</option><option value="2k">2K · 2048 px</option><option value="source">Original · up to 2K</option></select></use>
+      </div>
+      <div class="texture-asset-field">
+        <label for="texture-asset-semantic">Texture type</label>
+        <use ui="Select"><select id="texture-asset-semantic" data-attr-value="self.textureAssetSemantic" data-attrif-disabled="self.textureAssetSource == ''" data-event-change="emit('TextureAssetSetting','semantic',ev.value)"><option value="color">Color · sRGB</option><option value="scalar">Data · linear</option><option value="normal">Normal map</option></select></use>
+      </div>
+      <p class="dim texture-asset-note">Reimport applies these settings to the source image.</p>
+      <p id="texture-asset-status" role="status" data-if="self.textureAssetStatus != ''">{{ self.textureAssetStatus }}</p>
+    </div>
+    <p class="dim texture-asset-note">Drag this texture from Assets into a material to use it.</p>
+   </div>
+  </div>
+  <div class="prop-scroll" data-if="properties.view != 'graph' &amp;&amp; properties.view != 'texture'">
     <div class="identity" data-when="properties.identity.kind == 'object'">
       <div class="glyph"><span class="icon">{{ properties.identity.icon }}</span></div>
       <div class="who">

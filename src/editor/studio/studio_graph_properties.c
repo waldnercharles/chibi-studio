@@ -95,7 +95,7 @@ static int choice_index(const pin_spec *spec, const pin_value *value, const edit
 {
     for (int i = 0; i < editor_choices_count(choices); i++) {
         editor_choice choice = editor_choice_at(choices, i);
-        bool same = spec->type == PIN_NAME
+        bool same = pin_string(spec->type)
                       ? value->str && choice.name && !strcmp(value->str, choice.name)
                   : spec->type == PIN_ENUM
                       ? choice.value == value->e
@@ -1431,7 +1431,7 @@ static bool edited_leaf(
             return false;
         }
         editor_choice choice = editor_choice_at(choices, index);
-        if (l->shape.type == PIN_NAME) {
+        if (pin_string(l->shape.type)) {
             out->str = choice.name;
         } else if (l->shape.type == PIN_ENUM) {
             out->e = choice.value;

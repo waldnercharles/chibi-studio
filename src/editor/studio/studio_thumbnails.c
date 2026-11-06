@@ -219,9 +219,29 @@ static uint64_t file_hash(studio_thumbs *t, const char *path)
     if (known && known->stat == stat) {
         return known->hash;
     }
-    char *text = stat ? file_read_text(path) : NULL;
-    uint64_t hash = text ? hash_text(text) : 0;
-    free(text);
+    /* Images contain zero bytes; hash complete file bytes rather than a C
+       string prefix so a same-key reimport invalidates its picture. */
+    uint64_t hash = 0;
+    FILE *file = stat ? fopen(path, "rb") : NULL;
+    if (file) {
+        hash = SEED;
+        unsigned char bytes[8192];
+        size_t count, total = 0;
+        while ((count = fread(bytes, 1, sizeof bytes, file)) != 0) {
+            total += count;
+            if (total > 64 * 1024 * 1024) {
+                hash = 0;
+                break;
+            }
+            for (size_t i = 0; i < count; i++) {
+                hash = (hash ^ bytes[i]) * 1099511628211ull;
+            }
+        }
+        if (ferror(file)) {
+            hash = 0;
+        }
+        fclose(file);
+    }
     if (known) {
         known->stat = stat;
         known->hash = hash;
@@ -705,11 +725,10 @@ static bool flat(const CF_Pixel *pixels, int count)
    scene with no lighting yet, or a shape whose outline lies outside its
    frame, comes out flat. UI documents, stylesheets and graphs draw on a
    margin of their backdrop, so theirs is flat only when nothing shows. A
-   field's picture is its values, so a constant field's flat one shows. */
+   field's picture is its values, and a texture may be a uniform scalar map,
+   so a flat field or texture remains a valid picture. */
 static bool flat_shows_nothing(reference_asset_kind kind)
-{
-    return kind != REFERENCE_ASSET_FIELD;
-}
+{ return kind != REFERENCE_ASSET_FIELD && kind != REFERENCE_ASSET_TEXTURE; }
 
 /* A picture read back, which shows and goes to disk when it shows saved
    content, or fails when it is flat and shows nothing; false when it

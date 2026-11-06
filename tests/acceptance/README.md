@@ -420,3 +420,26 @@ cp "$CHIBI_STUDIO_SOURCE/projects/studio/project.kdl" \
 
 Studio migrates that build copy when it starts. Restoring it keeps each run on
 the same pinned resource bytes; the source project remains unchanged.
+
+`studio-acceptance --texture-import --project-root PATH` uses a disposable
+absolute project path and two hidden host lifetimes: 46 interaction frames and
+eight fresh-open frames. Ordinary SDL input opens the authored import form,
+chooses a source through an injected OS selection boundary, edits the destination,
+reviews measured resident costs and confirms creation. It selects the Assets
+entry and preview, edits/undoes/redoes/saves import settings, drags the texture
+into a material as one undoable node creation, and exercises the existing Image
+picker. It saves the material, changes a disposable source copy and reimports.
+Assertions check changed resident pixels, unchanged material references and
+bytes, saved metadata, and the untouched original source. A fresh host verifies
+the saved settings, node, pixels and preview. The imported PNG is deliberately
+inside `content/materials/` to verify that its metadata is not parsed as a
+material. This does not validate the operating system's file dialog interaction
+or browser import.
+
+By default it generates two distinct 2×2 RGBA8 PNGs. Set
+`CHIBI_STUDIO_TEXTURE_SOURCE` and `CHIBI_STUDIO_TEXTURE_SECOND_SOURCE` to explicitly
+selected PNG files for a provenance-preserving asset run. Each source read is
+bounded to 8 MiB. `CHIBI_STUDIO_TEXTURE_OUTPUT` optionally names the final scene
+PNG. Run only after independent admission under the shared 60-second supervisor;
+the checked-in selector is not evidence that it passed. Complete saved-project
+budget validation and terrain checkpoint persistence are separate checks.

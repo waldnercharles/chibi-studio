@@ -4,6 +4,7 @@
 #include "assets/reference_adapters.h"
 #include "assets/scene_document.h"
 #include "assets/ui_document.h"
+#include "authoring/image_import_commit.h"
 #include "authoring/preview_source.h"
 #include "authoring/source_navigation.h"
 #include "authoring/source_references.h"
@@ -58,8 +59,10 @@ static bool ui_listed(const char *path)
 static reference_asset_kind content_asset_kind(const app_scene_authoring *scene, const char *path)
 {
     size_t length = strlen(path), suffix = strlen(CODE_ASSET_METADATA_EXTENSION);
-    if (length >= suffix &&
-        !strcmp(path + length - suffix, CODE_ASSET_METADATA_EXTENSION)) {
+    if ((length >= suffix &&
+         !strcmp(path + length - suffix, CODE_ASSET_METADATA_EXTENSION)) ||
+        (length >= strlen(IMAGE_IMPORT_TEXTURE_SUFFIX) &&
+         !strcmp(path + length - strlen(IMAGE_IMPORT_TEXTURE_SUFFIX), IMAGE_IMPORT_TEXTURE_SUFFIX))) {
         return REFERENCE_ASSET_KIND_COUNT;
     }
     static const struct
@@ -110,17 +113,23 @@ static void add_content_assets(reference_index *index, app_scene_authoring *scen
 {
     for (int i = 0; i < acount(scene->content); i++) {
         scene_content_entry *entry = &scene->content[i];
-        reference_asset_kind kind = entry->directory || entry->image
-                                      ? REFERENCE_ASSET_KIND_COUNT
+        reference_asset_kind kind = entry->directory ? REFERENCE_ASSET_KIND_COUNT
+                                  : entry->image
+                                      ? REFERENCE_ASSET_TEXTURE
                                       : content_asset_kind(scene, entry->path);
-        if (kind != REFERENCE_ASSET_KIND_COUNT) {
-            reference_index_add_asset(
-                index,
-                kind,
-                content_asset_name(entry->path),
-                entry->path,
-                NULL
+        char image_key[4096];
+        const char *name = content_asset_name(entry->path);
+        if (entry->image) {
+            snprintf(
+                image_key,
+                sizeof image_key,
+                "content/%s",
+                entry->path + strlen(scene->content_root) + 1
             );
+            name = image_key;
+        }
+        if (kind != REFERENCE_ASSET_KIND_COUNT) {
+            reference_index_add_asset(index, kind, name, entry->path, NULL);
         }
     }
 }
@@ -471,6 +480,8 @@ int app_scene_authoring_open_asset(app_scene_authoring *scene, int position)
         }
         case REFERENCE_ASSET_UI:
             return asset->path ? scene_tabs_open_ui(scene, asset->path) : -1;
+        case REFERENCE_ASSET_TEXTURE:
+            return -1; /* Studio owns the authored inspector. */
         case REFERENCE_ASSET_KIND_COUNT: break;
     }
     return -1;

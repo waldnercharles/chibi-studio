@@ -119,8 +119,15 @@
   "authoring/graph_expression.h": [
     "src/editor/studio/studio_code.c"
   ],
+  "authoring/image_import_commit.h": [
+    "src/editor/studio/studio_graph.c",
+    "src/editor/studio/studio_image_import.c",
+    "src/editor/workspace/asset_index.c"
+  ],
   "authoring/image_prepare.h": [
-    "src/editor/workspace/application.c"
+    "src/editor/studio/studio_thumbnail_kinds.c",
+    "src/editor/workspace/application.c",
+    "tests/acceptance/texture_import.h"
   ],
   "authoring/material_prepare.h": [
     "src/editor/workspace/scene_actors.c",
@@ -261,6 +268,9 @@
     "src/editor/studio/studio_ui.c",
     "src/editor/workspace/game_presentation.c",
     "src/editor/workspace/scene_viewport.c"
+  ],
+  "authoring/visual_prepare.h": [
+    "src/editor/studio/studio_image_import.c"
   ],
   "capabilities/catalog.h": [
     "src/editor/graph/eval_view.c",
@@ -464,6 +474,7 @@
     "src/editor/documents/scene_history.c",
     "src/editor/graph/search.c",
     "src/editor/studio/studio_find.c",
+    "src/editor/studio/studio_graph.c",
     "src/editor/studio/studio_graph_edit.c",
     "src/editor/studio/studio_graph_literals.c",
     "src/editor/studio/studio_graph_live.c",
@@ -568,9 +579,6 @@
     "src/editor/workspace/scene_authoring.c",
     "src/editor/workspace/scene_viewport.c"
   ],
-  "render/scene3d.h": [
-    "src/editor/workspace/scene_viewport.c"
-  ],
   "render/audio.h": [
     "src/editor/workspace/game_presentation.c"
   ],
@@ -586,6 +594,9 @@
     "src/editor/workspace/scene_viewport.c"
   ],
   "render/mesh_surface.h": [
+    "src/editor/workspace/scene_viewport.c"
+  ],
+  "render/scene3d.h": [
     "src/editor/workspace/scene_viewport.c"
   ],
   "render/scene_renderer.h": [
@@ -683,6 +694,9 @@
     "src/editor/workspace/scene_authoring.h",
     "src/editor/workspace/scene_gizmo.h"
   ],
+  "runtime/images/catalog.h": [
+    "tests/acceptance/texture_import.h"
+  ],
   "runtime/material_field.h": [
     "src/editor/studio/studio_thumbnail_kinds.c",
     "src/editor/studio/studio_thumbnails.c"
@@ -701,6 +715,9 @@
   "runtime/scenes/physics_settings.h": [
     "src/editor/documents/scene_history.h",
     "src/editor/workspace/scene_authoring.h"
+  ],
+  "runtime/shaders/program.h": [
+    "src/editor/studio/studio_graph.c"
   ],
   "runtime/transform_propagation.h": [
     "src/editor/workspace/scene_hierarchy.c"

@@ -23,6 +23,7 @@
  * up with edits before each picture. Materials and shapes draw as the
  * shader catalog holds them. */
 #include "assets/scene_document.h"
+#include "authoring/image_prepare.h"
 #include "authoring/preview_source.h"
 #include "authoring/prototype_preview.h"
 #include "editor/studio/studio_internal.h"
@@ -146,6 +147,7 @@ int studio_thumb_side(reference_asset_kind kind, int side)
 int studio_thumb_cost(reference_asset_kind kind)
 {
     switch (kind) {
+        case REFERENCE_ASSET_TEXTURE:
         case REFERENCE_ASSET_BEHAVIOR:
         case REFERENCE_ASSET_EVENT:
         case REFERENCE_ASSET_LIBRARY:
@@ -1061,11 +1063,69 @@ static studio_thumb_step render_scene(
     return STUDIO_THUMB_DRAWN;
 }
 
+/* Detached image preview: no runtime catalog load or retained source-sized GPU
+ * texture. The existing thumbnail canvas/cache owns the only uploaded pixels. */
+static bool render_texture(const studio_thumb_job *job, CF_Canvas canvas)
+{
+    FILE *file = job->path ? fopen(job->path, "rb") : NULL;
+    if (!file) {
+        return false;
+    }
+    bool sized = fseek(file, 0, SEEK_END) == 0;
+    long length = sized ? ftell(file) : -1;
+    if (length <= 0 || length > 64 * 1024 * 1024 || fseek(file, 0, SEEK_SET)) {
+        fclose(file);
+        return false;
+    }
+    unsigned char *bytes = xmalloc((size_t)length);
+    bool read = fread(bytes, 1, (size_t)length, file) == (size_t)length;
+    fclose(file);
+    shader_image_view image = { 0 };
+    char error[256];
+    bool decoded = read &&
+                   image_prepare_decode(bytes, (size_t)length, &image, error, sizeof error);
+    free(bytes);
+    if (!decoded) {
+        return false;
+    }
+    int side = job->side;
+    CF_Pixel *pixels = xmalloc((size_t)side * side * sizeof *pixels);
+    float scale = fminf((float)side / image.width, (float)side / image.height);
+    int width = (int)fmaxf(1, floorf(image.width * scale));
+    int height = (int)fmaxf(1, floorf(image.height * scale));
+    int left = (side - width) / 2, top = (side - height) / 2;
+    for (int y = 0; y < side; y++) {
+        for (int x = 0; x < side; x++) {
+            unsigned char bg = ((x / 8 + y / 8) & 1) ? 76 : 56;
+            CF_Pixel pixel = { .r = bg, .g = bg, .b = bg, .a = 255 };
+            if (x >= left && x < left + width && y >= top && y < top + height) {
+                int sx = (x - left) * image.width / width;
+                int sy = (y - top) * image.height / height;
+                const unsigned char *source = image.pixels +
+                                              ((size_t)sy * image.width + sx) * 4;
+                unsigned alpha = source[3];
+                pixel.r = (unsigned char)((source[0] * alpha + bg * (255 - alpha) + 127) /
+                                          255);
+                pixel.g = (unsigned char)((source[1] * alpha + bg * (255 - alpha) + 127) /
+                                          255);
+                pixel.b = (unsigned char)((source[2] * alpha + bg * (255 - alpha) + 127) /
+                                          255);
+            }
+            pixels[y * side + x] = pixel;
+        }
+    }
+    cf_texture_update(cf_canvas_get_target(canvas), pixels, side * side * (int)sizeof *pixels);
+    free(pixels);
+    free((void *)image.pixels);
+    return true;
+}
+
 /* ---------- Dispatch ---------- */
 
 static bool render_still(studio *s, studio_thumb_renderers *r, const studio_thumb_job *job, CF_Canvas canvas)
 {
     switch (job->kind) {
+        case REFERENCE_ASSET_TEXTURE: return render_texture(job, canvas);
         case REFERENCE_ASSET_PROTOTYPE:
             return render_prototype(s, r, job, canvas);
         case REFERENCE_ASSET_MATERIAL:
@@ -1136,7 +1196,8 @@ char *studio_thumb_unsaved(studio *s, const reference_asset *a)
         case REFERENCE_ASSET_PROTOTYPE:
             return unsaved_prototype_text(s, a->name);
         case REFERENCE_ASSET_SYSTEM:
-        case REFERENCE_ASSET_UI: return NULL;
+        case REFERENCE_ASSET_UI:
+        case REFERENCE_ASSET_TEXTURE: return NULL;
         default: return unsaved_graph_text(s, a->name);
     }
 }

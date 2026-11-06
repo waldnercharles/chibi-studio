@@ -215,6 +215,7 @@ uint64_t studio_nodes_stamp(const studio *s)
     const uint64_t counters[] = {
         scene->asset_index_generation,
         scene->asset_index_revision,
+        studio_texture_revision(s),
         (uintptr_t)scene->history,
         scene_history_step_id(scene->history, false),
         scene_history_step_id(scene->history, true),
@@ -291,6 +292,10 @@ const char *studio_node_run(studio *s, studio_node_op op, const pin_value *in, a
     int index;
     switch (op) {
         case STUDIO_NODE_COUNT: return "Invalid Studio operation";
+        case STUDIO_NODE_IMAGE_IMPORT:
+            return studio_image_import_run(s, in, storage, out);
+        case STUDIO_NODE_TEXTURE_ASSET:
+            return studio_texture_asset_run(s, in, storage, out);
         case STUDIO_NODE_SCENE_OBJECTS:
             scene_objects(s, in, storage, out);
             break;
@@ -321,7 +326,10 @@ const char *studio_node_run(studio *s, studio_node_op op, const pin_value *in, a
         case STUDIO_NODE_PROTOTYPE_CHOICES:
             prototype_choices(s, storage, out);
             break;
-        case STUDIO_NODE_SELECT_OBJECT: select_object(s, in); break;
+        case STUDIO_NODE_SELECT_OBJECT:
+            studio_texture_close(s);
+            select_object(s, in);
+            break;
         case STUDIO_NODE_RENAME_OBJECT:
             if (studio_object_index(s, in[0].str) >= 0) {
                 studio_rename_commit(s, strtoull(in[0].str, NULL, 10), text_of(&in[1]));
