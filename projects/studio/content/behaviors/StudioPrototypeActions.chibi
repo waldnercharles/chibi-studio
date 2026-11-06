@@ -1,0 +1,249 @@
+behavior StudioPrototypeActions {
+    self.Active := false
+    Room := false
+    Busy := false
+    Document: int = 0
+    Revision: int = 0
+    Kind: string = ""
+    Selected: string[] = []
+    SourceDocument: int = 0
+    SourceRevision: int = 0
+    SourceKind: string = ""
+    SourceEntity: string = ""
+    SourcePath: string = ""
+    Base: string = ""
+    SaveAs := false
+    NewName: string = ""
+    Checked: string[] = []
+    Labels: string[] = []
+    Truncated := false
+    Fields: struct<"WorkspaceAssetField">[] = []
+    Request: int = 0
+    Lease := false
+    Publish :: fn() {
+        enabled := Active && !Room && !Busy && Document > 0 && length(Selected) == 1 && !text_equal(Selected[0], "")
+        await send_event<"StudioCommandAvailability">(self, "applyOverrides", enabled)
+        await send_event<"StudioCommandAvailability">(self, "saveAsPrototype", enabled)
+        await set_ui_data(Name: "prototypeActions.saveAs", Value: SaveAs)
+        await set_ui_data(Name: "prototypeActions.room", Value: Room)
+        await set_ui_data(Name: "prototypeActions.enabled", Value: enabled)
+        await set_ui_data(Name: "prototypeActions.busy", Value: Busy)
+    }
+    on Begin {
+        info := query_workspace_info()
+        Active = info.Active
+        await Publish()
+    }
+    on StudioCollaborationState {
+        Room = event.Active
+        await Publish()
+    }
+    on StudioObjectSelection {
+        self.Document = event.Document
+        self.Revision = event.Revision
+        self.Kind = event.Kind
+        Selected = event.Paths
+        await Publish()
+    }
+    Open :: fn(Pointer: struct<"CF_V2">, Saving: bool) {
+        if !Active || Room || Busy || length(Selected) != 1 || text_equal(Selected[0], "") {
+            return
+        }
+        SaveAs = Saving
+        NewName = ""
+        await set_ui_data(Name: "prototypeActions.newName", Value: "")
+        await Publish()
+        SourceDocument = Document
+        SourceRevision = Revision
+        SourceKind = Kind
+        SourceEntity = Selected[0]
+        current := await workspace_document_info(SourceDocument)
+        if !current.Ok || current.Revision != SourceRevision {
+            return
+        }
+        SourcePath = current.Path
+        inspected := workspace_object_inspect(SourceDocument, SourceRevision, SourceKind, SourceEntity)
+        if !inspected.Ok {
+            await set_ui_data(Name: "prototypeActions.error", Value: inspected.Error)
+            return
+        }
+        Base = ""
+        Fields = []
+        Labels = []
+        Truncated = false
+        Checked = []
+        foreach (field in inspected.Fields) {
+            if text_equal(field.relative, "/prototype") {
+                Base = field.text
+            }
+            if field.present && !field.required && !text_equal(field.type, "object") && !text_equal(field.type, "array") && text_contains("/components/", field.relative, false) {
+                if length(Fields) < 256 {
+                    Fields = array_add(Fields, field)
+                    Checked = array_add(Checked, field.relative)
+                    label := field.name
+                    parent := field.parent
+                    while parent > 0 {
+                        row := inspected.Fields[parent]
+                        if text_equal(row.name, "components") {
+                            break
+                        }
+                        label = format_text("{} · {}", row.name, label)
+                        parent = row.parent
+                    }
+                    Labels = array_add(Labels, label)
+                } else {
+                    Truncated = true
+                }
+            }
+        }
+        await set_ui_data(Name: "prototypeActions.base", Value: Base)
+        await set_ui_data(Name: "prototypeActions.error", Value: "")
+        await set_ui_data(Name: "prototypeActions.result", Value: "")
+        await Rows()
+        await show_ui_popover(Element: "#studio-prototype-actions", At: Pointer)
+    }
+    Rows :: fn() {
+        slots: int[] = []
+        index: int = 0
+        foreach (field in Fields) {
+            slots = array_add(slots, index)
+            key := format_text("prototypeActions.rows.{}", index)
+            await set_ui_data(Name: format_text("{}.path", key), Value: field.relative)
+            await set_ui_data(Name: format_text("{}.label", key), Value: Labels[index])
+            await set_ui_data(Name: format_text("{}.checked", key), Value: contains(Checked, field.relative))
+            index += 1
+        }
+        await set_ui_data(Name: "prototypeActions.slots", Value: slots)
+        await set_ui_data(Name: "prototypeActions.truncated", Value: Truncated)
+        await set_ui_data(Name: "prototypeActions.empty", Value: length(Fields) == 0)
+        await set_ui_data(Name: "prototypeActions.count", Value: length(Checked))
+    }
+    on StudioPrototypeOpen {
+        await Open(event.Pointer, event.SaveAs)
+    }
+    on StudioSceneCommand {
+        if text_equal(event.Id, "applyOverrides") {
+            await Open({ x: 24.0, y: 80.0 }, false)
+        }
+        if text_equal(event.Id, "saveAsPrototype") {
+            await Open({ x: 24.0, y: 80.0 }, true)
+        }
+    }
+    on StudioPrototypeName {
+        if !Busy {
+            NewName = event.Name
+        }
+    }
+    on StudioPrototypeField {
+        if Busy {
+            return
+        }
+        if event.Checked {
+            self.Checked = add_unique(self.Checked, event.Path)
+        } else {
+            self.Checked = remove_item(self.Checked, event.Path)
+        }
+        await Rows()
+    }
+    on StudioPrototypeApply {
+        if Room || Busy || (!SaveAs && length(Checked) == 0) || Document != SourceDocument || Revision != SourceRevision || length(Selected) != 1 || !text_equal(Selected[0], SourceEntity) {
+            return
+        }
+        Busy = true
+        Request += 1
+        await Publish()
+        await send_event<"StudioDocumentExternalEditRequested">(self, "prototype-actions", SourceDocument, Request)
+    }
+    Complete :: fn() {
+        if Lease {
+            Lease = false
+            await send_event<"StudioDocumentExternalEditComplete">(self, "prototype-actions", SourceDocument, Request)
+        }
+    }
+    Failure :: fn(Error: string) {
+        await Complete()
+        Busy = false
+        await set_ui_data(Name: "prototypeActions.error", Value: Error)
+        await Publish()
+    }
+    on StudioDocumentExternalEditReady {
+        if !Busy || !text_equal(event.Owner, "prototype-actions") || event.Document != SourceDocument || event.Request != self.Request {
+            return
+        }
+        Lease = event.Ok
+        if !event.Ok {
+            await Failure(event.Error)
+            return
+        }
+        if Room || event.Revision != SourceRevision {
+            await Failure("Source changed. Reopen Apply overrides to review it again.")
+            return
+        }
+        if SaveAs {
+            none: string[] = []
+            candidate := workspace_prototype_candidate(SourceDocument, SourceRevision, SourceKind, SourceEntity, 0, 0, none, "save-as", NewName)
+            if !candidate.Ok {
+                await Failure(candidate.Error)
+                return
+            }
+            info := query_workspace_info()
+            path := format_text("{}/prototypes/{}.kdl", info.Content, NewName)
+            documents := [SourceDocument, 0]
+            revisions := [SourceRevision, -1]
+            paths := [SourcePath, path]
+            texts := [candidate.ObjectText, candidate.PrototypeText]
+            initials: string[] = ["", candidate.PrototypeText]
+            await send_event<"StudioDocumentEdits">(self, SourceDocument, SourceRevision, documents, revisions, paths, texts, "prototype-actions", self.Request, initials)
+        } else {
+            source := workspace_prototype_source(Base)
+            if !source.Ok {
+                await Failure(source.Error)
+                return
+            }
+            target := await workspace_document_open(source.Path)
+            if !target.Ok {
+                await Failure(target.Error)
+                return
+            }
+            candidate := workspace_prototype_candidate(SourceDocument, SourceRevision, SourceKind, SourceEntity, target.Document, target.Revision, Checked, "apply", "")
+            if !candidate.Ok {
+                await Failure(candidate.Error)
+                return
+            }
+            documents := [SourceDocument, target.Document]
+            revisions := [SourceRevision, target.Revision]
+            paths := [SourcePath, source.Path]
+            texts := [candidate.ObjectText, candidate.PrototypeText]
+            initials: string[] = []
+            await send_event<"StudioDocumentEdits">(self, SourceDocument, SourceRevision, documents, revisions, paths, texts, "prototype-actions", self.Request, initials)
+        }
+    }
+    on StudioDocumentEditsResult {
+        if !Busy || !text_equal(event.Owner, "prototype-actions") || event.Request != self.Request || event.Document != SourceDocument || event.ExpectedRevision != SourceRevision {
+            return
+        }
+        await set_ui_data(Name: "prototypeActions.error", Value: event.Error)
+        if event.Ok {
+            if SaveAs {
+                saved := await workspace_document_save(event.Documents[1], event.Revisions[1])
+                if saved.Ok {
+                    await set_ui_data(Name: "prototypeActions.result", Value: "Prototype created. Undo restores the instance; the new prototype remains in Assets.")
+                    await send_event<"WorkspaceResourcesChanged">(self)
+                } else {
+                    await set_ui_data(Name: "prototypeActions.error", Value: format_text("Prototype remains an unsaved document. {} Undo restores the instance without discarding that draft.", saved.Error))
+                }
+            } else {
+                await set_ui_data(Name: "prototypeActions.result", Value: "Overrides applied. Save the changed documents to persist them; one Undo restores both.")
+            }
+        }
+        await Complete()
+        Busy = false
+        await Publish()
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        if !text_equal(event.Owner, "prototype-actions") || event.Request != self.Request || event.Document != SourceDocument {
+            return
+        }
+        await Failure("The prototype operation was canceled.")
+    }
+}

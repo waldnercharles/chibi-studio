@@ -1,0 +1,26 @@
+body, .authored-studio { display: flex; flex-direction: column; width: 100%; height: 100%; min-width: 0dp; min-height: 0dp; }
+.authored-studio > [data-ui=StudioShell] { display: flex; flex-direction: column; flex: 1 1 0dp; min-width: 0dp; min-height: 0dp; }
+.studio-workspace-host > [data-ui=StudioHome] { display: flex; flex-direction: column; flex: 1 1 0dp; min-width: 0dp; min-height: 0dp; }
+.studio-pane { display: flex; flex-direction: column; min-width: 0dp; min-height: 0dp; }
+.studio-pane-body { display: flex; flex: 1 1 0dp; min-width: 0dp; min-height: 0dp; overflow: hidden; }
+.studio-pane-body > [data-ui] { flex: 1 1 0dp; min-width: 0dp; min-height: 0dp; }
+.studio-pane-heading { flex: 0 0 auto; padding: 7dp 10dp; background-color: var(--panel-head); border-bottom: 1dp var(--line); font-weight: 600; }
+.studio-pane-toolbar { display: flex; align-items: center; flex: 0 0 auto; min-height: 30dp; gap: 4dp; padding: 3dp 6dp; border-bottom: 1dp var(--line); }
+.studio-pane-toolbar > [data-ui=AssetsHeader] { flex: 1 1 0dp; min-width: 0dp; }
+.studio-pane-toolbar [aria-selected=true] { background-color: var(--secondary); color: var(--foreground); }
+.studio-workspace-group { display: flex; flex-direction: column; flex: 1 1 0dp; min-height: 0dp; min-width: 0dp; }
+.studio-workspace-group > [data-ui=StudioWorkspace] { display: flex; flex: 1 1 0dp; min-height: 0dp; min-width: 0dp; }
+.studio-workspace > [data-area=inactive] { display: none; }
+.studio-workspace > .studio-panel-header { height: 32dp; z-index: 2; border-bottom-left-radius: 0dp; border-bottom-right-radius: 0dp; }
+.studio-workspace > .studio-panel-header[data-area=secondary] { bottom: auto; }
+.studio-workspace > .studio-panel-content { border-top-left-radius: 0dp; border-top-right-radius: 0dp; }
+.studio-workspace > .studio-panel-content[data-area=main] { top: 32dp; height: var(--studio-main-content-height); }
+.studio-workspace > .studio-panel-content[data-area=secondary] { top: var(--studio-main-secondary-content-top); }
+.studio-workspace.across > .studio-panel-header[data-area=main] { bottom: auto; height: 32dp; }
+.studio-workspace.across > .studio-panel-content[data-area=main] { top: 32dp; height: auto; }
+.studio-workspace.across > .studio-panel-content[data-area=secondary] { top: 32dp; }
+.studio-workspace[data-maximized=main] > .studio-panel-header[data-area=main], .studio-workspace[data-maximized=secondary] > .studio-panel-header[data-area=secondary] { display: flex; top: 0dp; height: 32dp; bottom: auto; }
+.studio-workspace[data-maximized=main] > .studio-panel-content[data-area=main], .studio-workspace[data-maximized=secondary] > .studio-panel-content[data-area=secondary] { display: flex; top: 32dp; height: auto; }
+.studio-assets-pane { flex-direction: column; }
+.studio-assets-pane > [data-ui=AssetsHeader] { flex: 0 0 auto; }
+.studio-panel-header select { min-width: 120dp; }

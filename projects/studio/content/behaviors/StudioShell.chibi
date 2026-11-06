@@ -1,0 +1,831 @@
+behavior StudioShell {
+    self.CommandContext: string = "Scene"
+    CommandTextEditing := false
+    Revision: int = 0
+    EscapeSequence: int = 0
+    EscapePhase: string = ""
+    EscapeFrames: int = 0
+    EscapeContext: string = ""
+    EscapeTextEditing := false
+    EscapeDocument: int = 0
+    EscapeRevision: int = 0
+    Path: string = ""
+    ProjectName: string = "Chibi Studio"
+    Document: int = 0
+    AssetKind: string = ""
+    Dirty := false
+    Conflict := false
+    Busy := false
+    Message: string = ""
+    ReportAge: double = 3.0
+    LastReport: string = ""
+    LastReportKind: string = "info"
+    MessageKind: string = "info"
+    SettingsOpen := false
+    PaletteOpen := false
+    AboutOpen := false
+    Category: string = "appearance"
+    DrawerOpen := false
+    SideOpen := true
+    Drawer: string = "output"
+    FocusArea: string = "main"
+    Maximized: string = ""
+    Across := false
+    MainSize: double = 0.62
+    MainExtent: double = 0
+    SideExtent: double = 0
+    DrawerSize: double = 240
+    SideSize: double = 372
+    OutlinerSize: double = 0.38
+    MainPanel: string = "scene"
+    SecondaryPanel: string = "graph"
+    OutlinerPanel: string = "objects"
+    PropertiesPanel: string = "properties"
+    AreaNames: string[] = ["main", "secondary", "outliner", "properties", "drawer"]
+    GraphViews: string[] = ["graph", "graph", "graph", "graph", "graph"]
+    GraphSplits: double[] = [0.5, 0.5, 0.5, 0.5, 0.5]
+    EditorTypes: string[] = ["scene", "graph", "objects", "properties", "output", "assets", "performance", "members", "text", "designer", "dom", "visual", "savedData", "themeTokens"]
+    EditorTitles: string[] = ["Scene", "Behavior", "Outliner", "Properties", "Output", "Assets", "Performance", "Members", "Text Editor", "UI Designer", "Inspector", "Preview", "Data", "Theme"]
+    ViewWidth: double = 1280
+    ViewHeight: double = 620
+    MainWidth: double = 0
+    ColumnHeight: double = 0
+    SideHeight: double = 0
+    SystemLight := false
+    RuntimeDocument: int = 0
+    RuntimeRevision: int = 0
+    RuntimeName: string = ""
+
+    ScalePresets: double[] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+    SpeedPresets: double[] = [0.1, 0.25, 0.5, 1.0, 2.0]
+    HoverContext: string = "Global"
+
+    Themes: string[] = ["system", "dark", "light", "dracula", "solarized-light", "solarized-dark", "tokyo-night", "tokyo-storm", "tokyo-day", "catppuccin-latte", "catppuccin-frappe", "catppuccin-macchiato", "catppuccin-mocha", "rose-pine", "rose-pine-moon", "rose-pine-dawn", "gruvbox-light", "gruvbox-dark"]
+    Fonts: string[] = ["inter", "noto sans", "geist"]
+
+    PanelKeys: string[] = []
+    PanelTitles: string[] = []
+    PanelOwners: string[] = []
+    PanelDocuments: string[] = []
+    RegisteredPanel :: pure fn(Panel: string) -> bool {
+        return text_equal(text_slice(Panel, 0, 6).Text, "panel:")
+    }
+    PanelKnown :: pure fn(Panel: string) -> bool {
+        return contains(EditorTypes, Panel) || RegisteredPanel(Panel)
+    }
+    unique_panels :: fn(Previous: string) {
+        if !PanelKnown(MainPanel) {
+            MainPanel = "scene"
+        }
+        if !PanelKnown(SecondaryPanel) {
+            SecondaryPanel = "graph"
+        }
+        return
+    }
+
+    EditorIcon :: pure fn(Panel: string) -> string {
+        switch Panel {
+            case "scene": { return "󰵉" }
+            case "graph": { return "" }
+            case "text": { return "󰅩" }
+            case "visual": { return "" }
+            case "designer": { return "" }
+            case "dom": { return "" }
+            case "savedData": { return "" }
+            case "themeTokens": { return "󰏘" }
+            case "objects": { return "" }
+            case "properties": { return "󰘮" }
+            case "assets": { return "" }
+            case "output": { return "" }
+            case "performance": { return "󰓅" }
+            case "members": { return "" }
+        }
+        return ""
+    }
+    LayoutKey :: fn() -> string {
+        if Across {
+            return "studio.layout.horizontal"
+        }
+        return "studio.layout.vertical"
+    }
+    SaveLayout :: fn() {
+        key := LayoutKey()
+        drawer_open := 0.0
+        side_open := 0.0
+        if DrawerOpen { drawer_open = 1.0 }
+        if SideOpen { side_open = 1.0 }
+        await set_saved_number(format_text("{}.main", key), MainSize)
+        await set_saved_number(format_text("{}.outliner", key), OutlinerSize)
+        await set_saved_number(format_text("{}.drawer", key), DrawerSize)
+        await set_saved_number(format_text("{}.side", key), SideSize)
+        await set_saved_number(format_text("{}.drawerOpen", key), drawer_open)
+        await set_saved_number(format_text("{}.sideOpen", key), side_open)
+        await set_saved_text(format_text("{}.outlinerPanel", key), OutlinerPanel)
+        await set_saved_text(format_text("{}.propertiesPanel", key), PropertiesPanel)
+        for i in 0..length(AreaNames) - 1 {
+            await set_saved_text(format_text("{}.{}.graphView", key, AreaNames[i]), GraphViews[i])
+            await set_saved_number(format_text("{}.{}.graphSplit", key, AreaNames[i]), GraphSplits[i])
+        }
+        await set_saved_text(format_text("{}.mainPanel", key), MainPanel)
+        await set_saved_text(format_text("{}.secondaryPanel", key), SecondaryPanel)
+        set_saved_text(format_text("{}.drawerPanel", key), Drawer)
+        return
+    }
+    LoadLayout :: fn() {
+        key := LayoutKey()
+        default_main := 0.62
+        default_side := 372.0
+        default_secondary := "graph"
+        if Across {
+            default_main = 0.5
+            default_side = 320.0
+            default_secondary = "text"
+        }
+        MainSize = read_saved_number(format_text("{}.main", key), default_main).Number
+        OutlinerSize = read_saved_number(format_text("{}.outliner", key), 0.38).Number
+        DrawerSize = read_saved_number(format_text("{}.drawer", key), 240).Number
+        SideSize = read_saved_number(format_text("{}.side", key), default_side).Number
+        DrawerOpen = read_saved_number(format_text("{}.drawerOpen", key), 0).Number == 1
+        SideOpen = read_saved_number(format_text("{}.sideOpen", key), 1).Number == 1
+        OutlinerPanel = read_saved_text(format_text("{}.outlinerPanel", key), "objects").Text
+        PropertiesPanel = read_saved_text(format_text("{}.propertiesPanel", key), "properties").Text
+        for i in 0..length(AreaNames) - 1 {
+            GraphViews[i] = read_saved_text(format_text("{}.{}.graphView", key, AreaNames[i]), "graph").Text
+            GraphSplits[i] = read_saved_number(format_text("{}.{}.graphSplit", key, AreaNames[i]), 0.5).Number
+        }
+        MainPanel = read_saved_text(format_text("{}.mainPanel", key), "scene").Text
+        SecondaryPanel = read_saved_text(format_text("{}.secondaryPanel", key), default_secondary).Text
+        Drawer = read_saved_text(format_text("{}.drawerPanel", key), "output").Text
+        drawer_open := 0.0
+        side_open := 0.0
+        if DrawerOpen { drawer_open = 1.0 }
+        if SideOpen { side_open = 1.0 }
+        await set_saved_number("studio.preference.workspace.main", MainSize)
+        await set_saved_number("studio.preference.workspace.outliner", OutlinerSize)
+        await set_saved_number("studio.preference.workspace.drawer", DrawerSize)
+        await set_saved_number("studio.preference.workspace.side", SideSize)
+        await set_saved_number("studio.preference.workspace.drawerOpen", drawer_open)
+        await set_saved_number("studio.preference.workspace.sideOpen", side_open)
+        await set_saved_text("studio.preference.workspace.mainPanel", MainPanel)
+        await set_saved_text("studio.preference.workspace.secondaryPanel", SecondaryPanel)
+        set_saved_text("studio.preference.workspace.drawerPanel", Drawer)
+        return
+    }
+    publish :: fn() {
+        if LastReport != Message || LastReportKind != MessageKind {
+            LastReport = Message
+            LastReportKind = MessageKind
+            ReportAge = 0
+        }
+        panels: string[] = [MainPanel, SecondaryPanel, OutlinerPanel, PropertiesPanel, Drawer]
+        for i in 0..length(AreaNames) - 1 {
+            base := format_text("shellAreas.{}", AreaNames[i])
+            title := panels[i]
+            type_index := find(EditorTypes, panels[i])
+            if type_index >= 0 { title = EditorTitles[type_index] }
+            registered_index := find(PanelKeys, panels[i])
+            panel_owner := ""
+            document := ""
+            if registered_index >= 0 {
+                title = PanelTitles[registered_index]
+                panel_owner = PanelOwners[registered_index]
+                document = PanelDocuments[registered_index]
+            }
+            await set_ui_data(Name: format_text("{}.registered", base), Value: RegisteredPanel(panels[i]))
+            await set_ui_data(Name: format_text("{}.owner", base), Value: panel_owner)
+            await set_ui_data(Name: format_text("{}.document", base), Value: document)
+            await set_ui_data(Name: format_text("{}.panel", base), Value: panels[i])
+            await set_ui_data(Name: format_text("{}.title", base), Value: title)
+            await set_ui_data(Name: format_text("{}.icon", base), Value: EditorIcon(panels[i]))
+            await set_ui_data(Name: format_text("{}.graphView", base), Value: GraphViews[i])
+            await set_ui_data(Name: format_text("{}.graphSplit", base), Value: GraphSplits[i])
+            width := get_ui_view_width(Element: format_text("#studio-area-{}-body", AreaNames[i]))
+            graph_width := 160.0
+            if width.Known { graph_width = cast<double>(width."View Width") * GraphSplits[i] }
+            await set_ui_data(Name: format_text("{}.graphWidth", base), Value: graph_width)
+        }
+        await set_ui_data(Name: "shellReporting", Value: !text_equal(Message, "") && ReportAge < 3.0)
+        await set_ui_data(Name: "shellGridIncrement", Value: read_saved_number("studio.preference.scene.gridIncrement", 32).Number)
+        await set_ui_data(Name: "shellPreviewAvailable", Value: text_equal(AssetKind, "prototype") || text_equal(AssetKind, "model"))
+        await set_ui_data(Name: "shellMainIcon", Value: EditorIcon(MainPanel))
+        await set_ui_data(Name: "shellSecondaryIcon", Value: EditorIcon(SecondaryPanel))
+        await set_ui_data(Name: "shellRuntimeName", Value: RuntimeName)
+        await set_ui_data(Name: "shellScale", Value: format_text("{}%", read_saved_number("studio.preference.uiScale", 1).Number * 100))
+        await set_ui_data(Name: "shellProjectName", Value: ProjectName)
+        await set_ui_data(Name: "shellPath", Value: Path)
+        await set_ui_data(Name: "shellEscapePending", Value: !text_equal(EscapePhase, ""))
+        await set_ui_data(Name: "shellDocument", Value: Document)
+        await set_ui_data(Name: "shellAssetKind", Value: AssetKind)
+        await set_ui_data(Name: "shellDirty", Value: Dirty)
+        await set_ui_data(Name: "shellConflict", Value: Conflict)
+        await set_ui_data(Name: "shellBusy", Value: Busy)
+        await set_ui_data(Name: "shellMessage", Value: Message)
+        await set_ui_data(Name: "shellMessageKind", Value: MessageKind)
+        await set_ui_data(Name: "shellSettingsOpen", Value: SettingsOpen)
+        await set_ui_data(Name: "shellPaletteOpen", Value: PaletteOpen)
+        await set_ui_data(Name: "shellAboutOpen", Value: AboutOpen)
+        await set_ui_data(Name: "shellCategory", Value: Category)
+        await set_ui_data(Name: "shellDrawerOpen", Value: DrawerOpen)
+        await set_ui_data(Name: "shellSideOpen", Value: SideOpen)
+        await set_ui_data(Name: "shellDrawer", Value: Drawer)
+        await set_ui_data(Name: "shellFocusArea", Value: FocusArea)
+        await set_ui_data(Name: "shellMaximized", Value: Maximized)
+        await set_ui_data(Name: "shellAcross", Value: Across)
+        // Preserve the predecessor's ratio model, using the authored workspace's measured size.
+        side := SideSize
+        column := ColumnHeight
+        if column <= 0 { column = max(1.0, ViewHeight - 4.0) }
+        side_height := SideHeight
+        if side_height <= 0 { side_height = column }
+        drawer := min(DrawerSize, max(80.0, column - 200.0))
+        main_extent := column
+        if DrawerOpen {
+            main_extent = main_extent - drawer - 4.0
+        }
+        if Across {
+            main_extent = MainWidth
+            if main_extent <= 0 {
+                main_extent = ViewWidth - 12.0
+                if SideOpen { main_extent = main_extent - side - 6.0 }
+            }
+        }
+        MainExtent = max(1.0, main_extent - 4.0)
+        SideExtent = max(1.0, side_height - 4.0)
+        MainSize = max(0.05, min(0.95, MainSize))
+        OutlinerSize = max(0.05, min(0.95, OutlinerSize))
+        main := floor(MainExtent * MainSize)
+        outliner := floor(SideExtent * OutlinerSize)
+        workspace_style := format_text("--studio-main: {}dp; --studio-drawer: {}dp; --studio-side: {}dp; --studio-outliner: {}dp;", main, drawer, side, outliner)
+        workspace_style = format_text("{} --studio-side-right: {}dp; --studio-side-split: {}dp; --studio-main-secondary-top: {}dp; --studio-main-content-height: {}dp;", workspace_style, side + 12.0, side + 6.0, main + 6.0, main - 32.0)
+        workspace_style = format_text("{} --studio-main-secondary-content-top: {}dp; --studio-main-across-left: {}dp; --studio-main-split-across-left: {}dp; --studio-drawer-bottom: {}dp;", workspace_style, main + 38.0, main + 12.0, main + 6.0, drawer + 10.0)
+        workspace_style = format_text("{} --studio-drawer-split-bottom: {}dp; --studio-outliner-properties-top: {}dp;", workspace_style, drawer + 4.0, outliner + 6.0)
+        await set_ui_data(Name: "shellWorkspaceStyle", Value: workspace_style)
+        await set_ui_data(Name: "shellMainSize", Value: main)
+        await set_ui_data(Name: "shellDrawerSize", Value: drawer)
+        await set_ui_data(Name: "shellSideSize", Value: side)
+        await set_ui_data(Name: "shellOutlinerSize", Value: outliner)
+        await set_ui_data(Name: "shellMainPanel", Value: MainPanel)
+        set_ui_data(Name: "shellSecondaryPanel", Value: SecondaryPanel)
+        return
+    }
+    appearance :: fn() {
+        theme := read_saved_number("studio.preference.theme", 0).Number
+        light := theme == 2 || theme == 4 || theme == 8 || theme == 9 || theme == 15 || theme == 16 || (theme == 0 && SystemLight)
+        await set_ui_class(Element: "body", Class: "dark", On: !light)
+        for i in 3..length(Themes) - 1 {
+            await set_ui_class(Element: "body", Class: format_text("theme-{}", Themes[i]), On: theme == cast<double>(i))
+        }
+        font := cast<int>(read_saved_number("studio.preference.font.standardFamily", 2).Number)
+        if font >= 0 && font < length(Fonts) {
+            await set_ui_style(Element: "body", Property: "font-family", Value: Fonts[font])
+        }
+
+        await set_ui_class(Element: "body", Class: "comfortable", On: read_saved_number("studio.preference.density", 0).Number == 1)
+        await set_ui_class(Element: "body", Class: "reduce-motion", On: read_saved_number("studio.preference.reduceMotion", 0).Number == 1)
+        await set_ui_style(Element: "body", Property: "font-size", Value: format_text("{}dp", read_saved_number("studio.preference.font.standardSize", 13).Number))
+        return
+    }
+    on Begin {
+        await set_ui_data(Name: "shellEditorTypes", Value: EditorTypes)
+        await set_ui_data(Name: "shellEditorTitles", Value: EditorTitles)
+        editor_icons: string[] = []
+        for panel in EditorTypes { editor_icons = array_add(editor_icons, EditorIcon(panel)) }
+        await set_ui_data(Name: "shellEditorIcons", Value: editor_icons)
+        await set_ui_data(Name: "shellScalePresets", Value: ScalePresets)
+        await set_ui_data(Name: "shellSpeedPresets", Value: SpeedPresets)
+        await set_ui_data(Name: "shellHoverContext", Value: HoverContext)
+        workspace := query_workspace_info()
+        if workspace.Ok && workspace.Active {
+            ProjectName = workspace.Name
+        }
+        MainSize = read_saved_number("studio.preference.workspace.main", 0.62).Number
+        DrawerSize = read_saved_number("studio.preference.workspace.drawer", 240).Number
+        SideSize = read_saved_number("studio.preference.workspace.side", 372).Number
+        OutlinerSize = read_saved_number("studio.preference.workspace.outliner", 0.38).Number
+        Across = read_saved_number("studio.preference.workspace.across", 0).Number == 1
+        DrawerOpen = read_saved_number("studio.preference.workspace.drawerOpen", 0).Number == 1
+        SideOpen = read_saved_number("studio.preference.workspace.sideOpen", 1).Number == 1
+        MainPanel = read_saved_text("studio.preference.workspace.mainPanel", "scene").Text
+        SecondaryPanel = read_saved_text("studio.preference.workspace.secondaryPanel", "graph").Text
+        Drawer = read_saved_text("studio.preference.workspace.drawerPanel", "output").Text
+        await LoadLayout()
+        await unique_panels("text")
+        await appearance()
+        publish()
+    }
+    on Tick {
+        if ReportAge < 3.0 {
+            ReportAge += max(0.0, cast<double>(event.DeltaSeconds))
+            if ReportAge >= 3.0 { await set_ui_data(Name: "shellReporting", Value: false) }
+        }
+        if !text_equal(EscapePhase, "") {
+            EscapeFrames += 1
+            if EscapeFrames >= 30 {
+                EscapePhase = ""
+                MessageKind = "warning"
+                Message = "The active view did not finish its Escape request. Selection was preserved."
+                await publish()
+            }
+        }
+        main_width := get_ui_view_width(Element: "#studio-main-column")
+        main_height := get_ui_scroll(Element: "#studio-main-column")
+        side_height := get_ui_scroll(Element: "#studio-side-column")
+        dimensions_changed := false
+        if main_width.Known && main_width."View Width" > 0 && MainWidth != cast<double>(main_width."View Width") {
+            MainWidth = cast<double>(main_width."View Width")
+            dimensions_changed = true
+        }
+        if main_height.Known && main_height."View Height" > 0 && ColumnHeight != cast<double>(main_height."View Height") {
+            ColumnHeight = cast<double>(main_height."View Height")
+            dimensions_changed = true
+        }
+        if side_height.Known && side_height."View Height" > 0 && SideHeight != cast<double>(side_height."View Height") {
+            SideHeight = cast<double>(side_height."View Height")
+            dimensions_changed = true
+        }
+        if dimensions_changed { await publish() }
+        width := get_ui_view_width(Element: "#studio-workspace")
+        height := get_ui_scroll(Element: "#studio-workspace")
+        if width.Known && height.Known && width."View Width" > 0 && height."View Height" > 0 {
+            if ViewWidth != cast<double>(width."View Width") || ViewHeight != cast<double>(height."View Height") {
+                ViewWidth = cast<double>(width."View Width")
+                ViewHeight = cast<double>(height."View Height")
+                publish()
+            }
+        }
+    }
+    on StudioRuntimeState {
+        if RuntimeDocument == event.Document && RuntimeRevision == event.Revision {
+            return
+        }
+        RuntimeDocument = event.Document
+        RuntimeRevision = event.Revision
+        RuntimeName = ""
+        if RuntimeDocument > 0 {
+            target := workspace_asset_identity(RuntimeDocument, RuntimeRevision)
+            if target.Ok {
+                RuntimeName = target.Name
+            }
+        }
+        publish()
+    }
+    on StudioDocumentState {
+        previous := MainPanel
+        changed := self.Document != event.Document
+        self.Document = event.Document
+        self.Revision = event.Revision
+        self.Path = event.Path
+        self.Dirty = event.Dirty
+        self.Conflict = event.Conflict
+        self.Busy = event.Busy
+        if changed && event.Document > 0 {
+            identity := workspace_asset_identity(event.Document, event.Revision)
+            if identity.Ok {
+                AssetKind = identity.Kind
+                switch identity.Kind {
+                    case "scene": {
+                        MainPanel = "scene"
+                    }
+                    case "material": {
+                        MainPanel = "scene"
+                        SecondaryPanel = "graph"
+                    }
+                    case "shape": {
+                        MainPanel = "scene"
+                        SecondaryPanel = "graph"
+                    }
+                    case "model": {
+                        MainPanel = "scene"
+                        SecondaryPanel = "graph"
+                    }
+                    case "field": {
+                        MainPanel = "graph"
+                    }
+                    case "shader-library": {
+                        MainPanel = "graph"
+                    }
+                    case "prototype": {
+                        MainPanel = "scene"
+                    }
+                    case "event": {
+                        MainPanel = "text"
+                    }
+                    case "ui": {
+                        MainPanel = "designer"
+                    }
+                    case "component": {
+                        MainPanel = "text"
+                    }
+                    case "behavior": {
+                        MainPanel = "text"
+                    }
+                    case "library": {
+                        MainPanel = "text"
+                    }
+                    case "system": {
+                        MainPanel = "text"
+                    }
+                    case: {
+                        MainPanel = "text"
+                    }
+                }
+                if (text_equal(identity.Kind, "behavior") || text_equal(identity.Kind, "library") || text_equal(identity.Kind, "system")) && text_equal(read_saved_text("studio.preference.workspace.mainPanel", "text").Text, "graph") {
+                    MainPanel = "graph"
+                }
+            } else {
+                MainPanel = "text"
+                AssetKind = ""
+            }
+        }
+
+        if !text_equal(event.Error, "") {
+            Message = event.Error
+            MessageKind = "error"
+        }
+        publish()
+    }
+    on StudioStatus {
+        self.Message = event.Message
+        MessageKind = event.Kind
+        publish()
+    }
+    on StudioStatusDismiss {
+        Message = ""
+        MessageKind = "info"
+        publish()
+    }
+    on StudioPreferencesChanged {
+        MainSize = read_saved_number("studio.preference.workspace.main", 0.62).Number
+        DrawerSize = read_saved_number("studio.preference.workspace.drawer", 240).Number
+        SideSize = read_saved_number("studio.preference.workspace.side", 372).Number
+        OutlinerSize = read_saved_number("studio.preference.workspace.outliner", 0.38).Number
+        Across = read_saved_number("studio.preference.workspace.across", 0).Number == 1
+        DrawerOpen = read_saved_number("studio.preference.workspace.drawerOpen", 0).Number == 1
+        SideOpen = read_saved_number("studio.preference.workspace.sideOpen", 1).Number == 1
+        await appearance()
+        publish()
+    }
+    close :: fn() {
+        SettingsOpen = false
+        PaletteOpen = false
+        AboutOpen = false
+        await publish()
+        return
+    }
+    on Close {
+        close()
+    }
+    on StudioPaletteClose {
+        PaletteOpen = false
+        publish()
+    }
+    on StudioPaneHover {
+        if HoverContext != event.Context {
+            HoverContext = event.Context
+            set_ui_data(Name: "shellHoverContext", Value: HoverContext)
+        }
+    }
+    on StudioFocusState {
+        CommandContext = event.Context
+        CommandTextEditing = event.TextEditing
+    }
+    on StudioShellClose {
+        if SettingsOpen || PaletteOpen || AboutOpen {
+            await close()
+            return
+        }
+        if !text_equal(EscapePhase, "") {
+            return
+        }
+        if EscapeSequence >= 2147483647 {
+            await send_event<"StudioStatus">(self, "error", "Escape request counter exhausted; reopen the application.")
+            return
+        }
+        EscapeSequence += 1
+        EscapeContext = CommandContext
+        EscapeTextEditing = CommandTextEditing
+        EscapeDocument = Document
+        EscapeRevision = Revision
+        EscapePhase = "dom"
+        EscapeFrames = 0
+        await send_event<"StudioEscapeProbe">(self, EscapeSequence, EscapePhase)
+        publish()
+    }
+    on StudioEscapeResult {
+        if event.Request != EscapeSequence || !text_equal(event.Phase, EscapePhase) || text_equal(EscapePhase, "") {
+            return
+        }
+        if event.Consumed {
+            EscapePhase = ""
+            await publish()
+            return
+        }
+        if text_equal(EscapePhase, "dom") {
+            EscapePhase = "source"
+        } else if text_equal(EscapePhase, "source") {
+            EscapePhase = "document"
+        } else {
+            EscapePhase = ""
+            if !EscapeTextEditing && !CommandTextEditing && text_equal(EscapeContext, CommandContext) && EscapeDocument == Document && EscapeRevision == Revision {
+                if text_equal(CommandContext, "Scene") || text_equal(CommandContext, "Outliner") || text_equal(CommandContext, "Graph") || text_equal(CommandContext, "Behavior") {
+                    await send_event<"StudioCommand">(self, "deselect", "escape-idle")
+                }
+            }
+            await publish()
+            return
+        }
+        EscapeFrames = 0
+        await send_event<"StudioEscapeProbe">(self, EscapeSequence, EscapePhase)
+        publish()
+    }
+    on StudioSettingsCategory {
+        self.Category = event.Category
+        publish()
+    }
+    on StudioShellCommand {
+        save_layout := false
+        switch event.Id {
+            case "settings": {
+                SettingsOpen = !SettingsOpen
+            }
+            case "search": {
+                PaletteOpen = !PaletteOpen
+                if PaletteOpen {
+                    await send_event<"StudioCommandQuery">(self, "")
+                }
+            }
+            case "findAssets": {
+                Drawer = "assets"
+                DrawerOpen = true
+                await publish()
+                await send_event<"StudioResourceCommand">(self, "search", "")
+                return
+            }
+            case "findOutput": {
+                Drawer = "output"
+                DrawerOpen = true
+                await publish()
+                await send_event<"StudioOutputFind">(self)
+                return
+            }
+            case "about": {
+                AboutOpen = !AboutOpen
+            }
+            case "keyboardShortcuts": {
+                SettingsOpen = true
+                Category = "keyboard"
+            }
+            case "toggleAssets": {
+                save_layout = true
+                DrawerOpen = !DrawerOpen || !text_equal(Drawer, "assets")
+                Drawer = "assets"
+            }
+            case "toggleOutput": {
+                save_layout = true
+                DrawerOpen = !DrawerOpen || !text_equal(Drawer, "output")
+                Drawer = "output"
+            }
+            case "togglePerformance": {
+                save_layout = true
+                DrawerOpen = !DrawerOpen || !text_equal(Drawer, "performance")
+                Drawer = "performance"
+            }
+            case "closeDrawer": {
+                save_layout = true
+                DrawerOpen = false
+            }
+            case "toggleSidePane": {
+                save_layout = true
+                SideOpen = !SideOpen
+            }
+            case "maximize": {
+                if text_equal(Maximized, "") {
+                    Maximized = FocusArea
+                } else {
+                    Maximized = ""
+                }
+            }
+            case "workspaceHorizontalSplit": {
+                await SaveLayout()
+                save_layout = true
+                Across = true
+                await LoadLayout()
+                Maximized = ""
+            }
+            case "workspaceVerticalSplit": {
+                await SaveLayout()
+                save_layout = true
+                Across = false
+                await LoadLayout()
+                Maximized = ""
+            }
+            case "resetLayout": {
+                save_layout = true
+                Maximized = ""
+                DrawerOpen = false
+                SideOpen = true
+                MainSize = 0.62
+                DrawerSize = 240
+                SideSize = 372
+                OutlinerSize = 0.38
+                OutlinerPanel = "objects"
+                PropertiesPanel = "properties"
+                GraphViews = ["graph", "graph", "graph", "graph", "graph"]
+                GraphSplits = [0.5, 0.5, 0.5, 0.5, 0.5]
+                MainPanel = "scene"
+                SecondaryPanel = "graph"
+                if Across {
+                    MainSize = 0.5
+                    SideSize = 320
+                    SecondaryPanel = "text"
+                }
+                Drawer = "output"
+                await SaveLayout()
+                await LoadLayout()
+                await send_event<"StudioPreferenceNumber">(self, "workspace.main", MainSize)
+                await send_event<"StudioPreferenceNumber">(self, "workspace.drawer", 240)
+                await send_event<"StudioPreferenceNumber">(self, "workspace.side", SideSize)
+                send_event<"StudioPreferenceNumber">(self, "workspace.outliner", 0.38)
+            }
+            case "density": {
+                send_event<"StudioPreferenceNumber">(self, "density", 1 - read_saved_number("studio.preference.density", 0).Number)
+            }
+            case "motion": {
+                send_event<"StudioPreferenceNumber">(self, "reduceMotion", 1 - read_saved_number("studio.preference.reduceMotion", 0).Number)
+            }
+            case "theme": {
+                if read_saved_number("studio.preference.theme", 0).Number == 2 {
+                    send_event<"StudioPreferenceNumber">(self, "theme", 1)
+                } else {
+                    send_event<"StudioPreferenceNumber">(self, "theme", 2)
+                }
+            }
+            case "zoomIn": {
+                scale := read_saved_number("studio.preference.uiScale", 1).Number
+                next := scale
+                for i in 0..length(ScalePresets) - 1 {
+                    candidate := ScalePresets[length(ScalePresets) - 1 - i]
+                    if candidate > scale + 0.001 { next = candidate }
+                }
+                send_event<"StudioPreferenceNumber">(self, "uiScale", next)
+            }
+            case "zoomOut": {
+                scale := read_saved_number("studio.preference.uiScale", 1).Number
+                next := scale
+                for candidate in ScalePresets {
+                    if candidate < scale - 0.001 { next = candidate }
+                }
+                send_event<"StudioPreferenceNumber">(self, "uiScale", next)
+            }
+            case "zoomReset": {
+                send_event<"StudioPreferenceNumber">(self, "uiScale", 1)
+            }
+        }
+        await publish()
+        if save_layout {
+            await SaveLayout()
+            across: double = 0
+            drawer: double = 0
+            side: double = 0
+            if Across {
+                across = 1
+            }
+            if DrawerOpen {
+                drawer = 1
+            }
+            if SideOpen {
+                side = 1
+            }
+            await send_event<"StudioPreferenceNumber">(self, "workspace.across", across)
+            await send_event<"StudioPreferenceNumber">(self, "workspace.drawerOpen", drawer)
+            await send_event<"StudioPreferenceNumber">(self, "workspace.sideOpen", side)
+            send_event<"StudioPreferenceText">(self, "workspace.drawerPanel", Drawer)
+        }
+    }
+    on StudioWorkspaceResize {
+        if !(event.Size >= 80 && event.Size <= 4096) {
+            return
+        }
+        switch event.Area {
+            case "main": {
+                MainSize = max(0.05, min(0.95, event.Size / MainExtent))
+            }
+            case "drawer": {
+                DrawerSize = event.Size
+            }
+            case "side": {
+                if event.Size < 260 {
+                    return
+                }
+                SideSize = event.Size
+            }
+            case "outliner": {
+                OutlinerSize = max(0.05, min(0.95, event.Size / SideExtent))
+            }
+        }
+        await SaveLayout()
+        await publish()
+        saved_size := event.Size
+        if text_equal(event.Area, "main") {
+            saved_size = MainSize
+        }
+        if text_equal(event.Area, "outliner") {
+            saved_size = OutlinerSize
+        }
+        send_event<"StudioPreferenceNumber">(self, format_text("workspace.{}", event.Area), saved_size)
+    }
+    on StudioPaneFocus {
+        FocusArea = event.Area
+        await publish()
+        context := event.Context
+        switch event.Context {
+            case "code": {
+                context = "Text Editor"
+            }
+            case "text": {
+                context = "Text Editor"
+            }
+            case "graph": {
+                context = "Graph"
+            }
+            case "objects": {
+                context = "Outliner"
+            }
+            case "properties": {
+                context = "Properties"
+            }
+            case "assets": {
+                context = "Assets"
+            }
+            case "output": {
+                context = "Output"
+            }
+            case "scene": {
+                context = "Scene"
+            }
+            case "canvas": {
+                context = "Canvas"
+            }
+            case "visual": {
+                context = "Properties"
+            }
+        }
+        send_event<"StudioFocusState">(self, context, event.TextEditing)
+    }
+    on StudioAreaViewChanged {
+        index := find(AreaNames, event.Area)
+        if index < 0 || (!text_equal(event.View, "graph") && !text_equal(event.View, "code") && !text_equal(event.View, "both")) { return }
+        GraphViews[index] = event.View
+        await SaveLayout()
+        publish()
+    }
+    on StudioAreaGraphResize {
+        index := find(AreaNames, event.Area)
+        width := get_ui_view_width(Element: format_text("#studio-area-{}-body", event.Area))
+        if index < 0 || !width.Known || width."View Width" <= 0 { return }
+        GraphSplits[index] = max(0.05, min(0.95, event.Width / cast<double>(width."View Width")))
+        await SaveLayout()
+        publish()
+    }
+    on StudioPanelsCleared {
+        PanelKeys = []
+        PanelTitles = []
+        PanelOwners = []
+        PanelDocuments = []
+        await set_ui_data(Name: "shellRegisteredPanelKeys", Value: PanelKeys)
+        await set_ui_data(Name: "shellRegisteredPanelTitles", Value: PanelTitles)
+        await publish()
+    }
+    on StudioPanelRegistered {
+        if contains(PanelKeys, event.Key) { return }
+        PanelKeys = array_add(PanelKeys, event.Key)
+        PanelTitles = array_add(PanelTitles, event.Name)
+        PanelOwners = array_add(PanelOwners, event.Owner)
+        PanelDocuments = array_add(PanelDocuments, event.Document)
+        await set_ui_data(Name: "shellRegisteredPanelKeys", Value: PanelKeys)
+        await set_ui_data(Name: "shellRegisteredPanelTitles", Value: PanelTitles)
+        await publish()
+    }
+    on StudioPanelSelected {
+        if !contains(AreaNames, event.Area) || !PanelKnown(event.Panel) { return }
+        if text_equal(event.Area, "drawer") && !text_equal(event.Panel, "output") && !text_equal(event.Panel, "assets") && !text_equal(event.Panel, "performance") && !text_equal(event.Panel, "text") && !text_equal(event.Panel, "dom") && !text_equal(event.Panel, "savedData") && !text_equal(event.Panel, "themeTokens") && !RegisteredPanel(event.Panel) { return }
+        switch event.Area {
+            case "main": { MainPanel = event.Panel }
+            case "secondary": { SecondaryPanel = event.Panel }
+            case "outliner": { OutlinerPanel = event.Panel }
+            case "properties": { PropertiesPanel = event.Panel }
+            case "drawer": { Drawer = event.Panel; DrawerOpen = true }
+        }
+        FocusArea = event.Area
+        await SaveLayout()
+        await publish()
+        if text_equal(event.Area, "drawer") {
+            await send_event<"StudioPreferenceText">(self, "workspace.drawerPanel", Drawer)
+            send_event<"StudioPreferenceNumber">(self, "workspace.drawerOpen", 1)
+        }
+    }
+    on StudioEnvironmentState {
+        SystemLight = event.Light
+        appearance()
+    }
+}

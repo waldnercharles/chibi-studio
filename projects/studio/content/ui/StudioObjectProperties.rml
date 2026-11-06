@@ -1,0 +1,115 @@
+<div class="authored-object-properties properties">
+  <nav class="prop-tabs">
+    <div class="tab" data-for="category : self.objectProperties.categories">
+      <div class="tab-sep" data-if="category == 'behaviors'"/>
+      <button class="btn icon-only" data-attr-data-state="self.objectProperties.category == category ? 'on' : 'off'" data-attr-data-tip="category == 'scene' ? 'Scene' : category == 'object' ? 'Object' : category == 'physics' ? 'Physics' : category == 'material' ? 'Material' : category == 'gameplay' ? 'Gameplay' : 'Behaviors'" data-tip-side="right" data-event-click="emit('StudioObjectPropertiesCategory', category)"><span class="icon">{{ category == 'scene' ? '' : category == 'object' ? '󰆧' : category == 'physics' ? '󰹻' : category == 'material' ? '󰏘' : category == 'gameplay' ? '󰓥' : '' }}</span></button>
+    </div>
+  </nav>
+  <div class="prop-scroll">
+    <div class="identity" data-if="self.objectProperties.count == 1 &amp;&amp; self.objectProperties.category == 'object'">
+      <div class="glyph"><span class="icon">{{ self.objectProperties.identity.icon }}</span></div>
+      <div class="who">
+        <div class="name-field" data-if="!self.objectProperties.identity.prototypeAsset"><div class="field text" data-attrif-data-readonly="self.objectProperties.readOnly || self.objectProperties.busy"><input type="text" class="part value" id="name" aria-label="Name" data-attr-value="self.objectProperties.identity.name" data-attrif-readonly="row.readonly || self.objectProperties.readOnly || self.objectProperties.busy" data-event-change="emit('StudioObjectPropertyEdit', '/name', 'set-text', ev.value)"/></div></div>
+        <div class="row" data-if="self.objectProperties.identity.prototypeAsset"><span class="title">{{ self.objectProperties.identity.name }}</span><span class="badge accent">Prototype</span></div>
+        <div class="lineage" data-if="self.objectProperties.identity.prototype != ''"><span>Instance of</span><button class="btn" data-tip="Open prototype" data-event-click="emit('StudioObjectPrototypeOpen')"><span class="icon">&#xf01a7;</span><span class="label">{{ self.objectProperties.identity.prototype }}</span></button><button class="btn icon-only" data-attrif-data-disabled="!self.prototypeActions.enabled" data-tip="Prototype actions" popovertarget="studio-object-prototype-menu" aria-haspopup="menu"><span class="icon">&#xea7c;</span></button></div>
+        <span class="lineage" data-if="self.objectProperties.identity.prototypeAsset">{{ self.objectProperties.identity.components }} components</span>
+      </div>
+    </div>
+    <use ui="Menu" id="studio-object-prototype-menu">
+      <use ui="MenuItem" data-attrif-data-disabled="!self.prototypeActions.enabled" data-event-click="emit('StudioPrototypeOpen', ev.pointer, false)"><span class="text"><span class="label">Apply Overrides to Prototype…</span></span></use>
+      <use ui="MenuItem" data-attrif-data-disabled="!self.prototypeActions.enabled" data-event-click="emit('StudioPrototypeOpen', ev.pointer, true)"><span class="text"><span class="label">Save as New Prototype…</span></span></use>
+    </use>
+    <div class="identity" data-if="self.objectProperties.count &gt; 1 &amp;&amp; self.objectProperties.category == 'object'"><div class="glyph"><span class="icon">&#xf0135;</span></div><div class="who"><span class="title">{{ self.objectProperties.count }} objects</span><div class="lineage prototypes"><button class="btn" data-for="slot : self.objectProperties.chipSlots" data-alias-chip="self.objectProperties.chips[slot]" data-tip="Select only these" data-event-click="emit('StudioObjectPropertiesNarrow', chip.name)"><span class="icon">&#xf01a7;</span><span class="label">{{ chip.label }}</span></button></div></div></div>
+
+  <div class="object-properties-empty" data-if="self.objectProperties.count &gt; 0 &amp;&amp; self.objectProperties.filter != '' &amp;&amp; self.objectProperties.slots.size == 0">No matching properties.</div>
+
+  <span class="prop-note" data-if="self.objectProperties.readOnly">Object changes are unavailable while this session is read only or waiting for an edit.</span>
+  <span class="prop-empty" data-if="self.objectProperties.count == 0 &amp;&amp; self.objectProperties.category != 'scene'">Select an object to edit its properties</span>
+
+  <div class="object-properties-error" data-if="self.objectProperties.error != ''" role="alert">{{ self.objectProperties.error }}</div>
+  <section class="panel object-behaviors" data-if="self.objectProperties.behaviorEditable &amp;&amp; self.objectProperties.category == 'behaviors'" data-attrif-data-open="self.objectProperties.behaviorsOpen">
+    <div class="panel-head"><div class="panel-fold" data-event-click="emit('StudioObjectPropertyFold', '/behaviors')"><span class="icon chev">&#xeab4;</span>
+      <span class="title">Behaviors</span>
+      <span class="spacer" />
+    </div></div>
+    <div class="panel-body" data-if="self.objectProperties.behaviorsOpen">
+    <div class="behavior-row" data-for="name : self.objectProperties.behaviors">
+      <button class="behavior-open" data-event-click="emit('StudioObjectBehaviorOpen', name)"><span class="icon">&#xebb9;</span><span class="name">{{ name }}</span></button>
+      <button class="btn icon-only subtle" aria-label="Detach behavior" data-attrif-data-disabled="self.objectProperties.readOnly || self.objectProperties.busy" data-event-click="emit('StudioObjectBehaviorToggle', name, true)">
+        <span class="icon"></span>
+      </button>
+    </div>
+    <div class="add-row"><button class="btn subtle" data-attrif-data-disabled="self.objectProperties.readOnly || self.objectProperties.busy" data-event-click="emit('StudioObjectBehaviorMenu', ev.pointer)"><span class="icon">&#xea60;</span>Attach Behavior</button></div>
+    </div>
+  </section>
+  <use ui="Menu" id="studio-object-behaviors" class="object-reference-menu">
+    <input id="studio-object-behavior-search" class="field text" type="text" maxlength="256" placeholder="Search behaviors…" aria-label="Search behaviors" data-attr-value="self.objectProperties.behaviorQuery" data-event-input="emit('StudioObjectBehaviorQuery', ev.value)" data-event-mousedown="emit('StudioPaneFocus', pane, 'properties', true); stop()" data-event-focusin="emit('StudioPaneFocus', pane, 'properties', true); stop()" />
+    <div class="object-reference-options">
+      <use ui="MenuItem" data-for="slot : self.objectProperties.behaviorSlots" data-alias-row="self.objectProperties.behaviorRows[slot]" data-attrif-data-disabled="self.objectProperties.readOnly || self.objectProperties.busy" data-event-click="emit('StudioObjectBehaviorToggle', row.name, row.attached)">
+        <span class="icon">{{ row.attached ? '' : '' }}</span>{{ row.name }}</use>
+    </div>
+    <div class="object-properties-error" data-if="self.objectProperties.behaviorError != ''">{{ self.objectProperties.behaviorError }}</div>
+    <div class="object-reference-pages">
+      <button class="btn subtle" data-attrif-data-disabled="!self.objectProperties.behaviorPrevious" data-event-click="emit('StudioObjectBehaviorPage', -1)">Previous</button>
+      <button class="btn subtle" data-attrif-data-disabled="!self.objectProperties.behaviorMore" data-event-click="emit('StudioObjectBehaviorPage', 1)">Next</button>
+    </div>
+  </use>
+  <use ui="Menu" id="studio-component-menu" class="object-reference-menu">
+    <input id="studio-component-search" class="field text" type="text" maxlength="256" aria-label="Search components" placeholder="Search components…" data-attr-value="self.objectProperties.componentQuery" data-event-input="emit('StudioObjectComponentQuery', ev.value)" data-event-mousedown="emit('StudioPaneFocus', pane, 'properties', true); stop()" data-event-focusin="emit('StudioPaneFocus', pane, 'properties', true); stop()" />
+    <div class="object-reference-options">
+      <use ui="MenuItem" data-for="component : self.objectProperties.components" data-event-click="emit('StudioObjectComponentChange', component.key, true)">{{ component.name }}</use>
+    </div>
+    <div class="object-properties-empty" data-if="self.objectProperties.components.size == 0">No matching components.</div>
+  </use>
+  <section class="panel" data-for="group : self.objectProperties.panelSlots" data-alias-panel="self.objectProperties.panels[group]" data-attrif-data-open="panel.open">
+    <div class="panel-head">
+      <div class="panel-fold" data-event-click="emit('StudioObjectPropertyFold', panel.path)"><span class="icon chev">&#xeab4;</span><span class="title">{{ panel.title }}</span><span class="badge override" data-if="panel.badge != ''">{{ panel.badge }}</span><span class="spacer"/></div>
+      <button class="btn icon-only" aria-label="Keep component changes" data-attr-data-tip="'Keep ' + panel.title + ' changes when you stop'" data-if="panel.keepable &amp;&amp; self.objectProperties.live" data-attrif-disabled="!self.objectProperties.canKeepChanges || !self.sceneRuntime.canKeepChanges || self.sceneRuntime.keepApplying" data-event-click="emit('StudioObjectComponentKeep', self.objectProperties.keepSession, self.objectProperties.keepDocument, self.objectProperties.keepRevision, self.objectProperties.keepPath, panel.component); stop()"><span class="icon">&#xf0931;</span></button>
+      <button class="btn sm icon-only menu" data-if="panel.component != '' &amp;&amp; panel.present" data-tip="Remove Component data; inherited data remains" data-attrif-data-disabled="self.objectProperties.readOnly || self.objectProperties.busy" data-event-click="emit('StudioObjectComponentActions', panel.component, ev.pointer)"><span class="icon">&#xea7c;</span></button>
+    </div>
+    <div class="panel-body" data-if="panel.open">
+      <div class="prop" data-if="panel.component == 'Transform' &amp;&amp; panel.axisSlots.size &gt; 0"><label class="label"><span>Position</span></label><div class="control"><div class="joined"><use ui="NumberField" data-for="axis : panel.axisSlots" data-alias-value="panel.axes[axis]" data-attr-aria-label="'Position ' + value.label" data-attr-name="value.name" data-attr-addon="value.label" data-attr-data-axis="value.name" data-attr-value="value.number" data-attrif-mixed="value.mixed" data-attrif-data-overridden="value.overridden" data-attrif-readonly="self.objectProperties.busy || self.objectProperties.readOnly" precision="2" step="1" data-event-change="emit('StudioObjectPropertyEdit', value.path, 'set-number', ev.value + '')"/></div></div></div>
+  <div class="object-property" data-for="slot : self.objectProperties.slots" data-if="self.objectProperties.rows[slot].group == panel.path &amp;&amp; !self.objectProperties.rows[slot].component &amp;&amp; panel.component != 'Transform'" data-alias-row="self.objectProperties.rows[slot]">
+    <button class="object-property-group" data-if="!row.vector &amp;&amp; (row.type == 'object' || row.type == 'array')" data-event-click="emit('StudioObjectPropertyFold', row.path)">
+      <span class="icon">{{ row.open ? '' : '' }}</span>
+      <span>{{ row.label }}</span>
+    </button>
+    <div class="prop object-property-field" data-attrif-data-overridden="row.overridden" data-if="row.vector || (row.type != 'object' &amp;&amp; row.type != 'array')" data-attr-data-tip-about="row.about">
+      <label class="label"><span data-tip-clipped="">{{ row.label }}</span></label>
+      <div class="control">
+      <div class="joined" data-if="row.vector"><use ui="NumberField" data-for="axis : row.axisSlots" data-alias-value="row.axes[axis]" data-attr-name="value.name" data-attr-addon="value.label" data-attr-data-axis="value.name" data-attr-aria-label="row.label + ' ' + value.label" data-attr-value="value.number" data-attrif-mixed="value.mixed" data-attrif-data-overridden="value.overridden" data-attrif-readonly="row.readonly || self.objectProperties.busy || self.objectProperties.readOnly" data-event-change="emit('StudioObjectPropertyEdit', value.path, 'set-number', ev.value + '')"/></div>
+      <use ui="NumberField" data-if="!row.wideInteger &amp;&amp; !row.color &amp;&amp; (row.type == 'number' || row.type == 'integer')" data-attr-aria-label="row.label" data-attr-value="row.number" data-attrif-mixed="row.mixed" data-attr-min="row.bounded ? row.min : ''" data-attr-max="row.bounded ? row.max : ''" data-attr-unit="row.unit" data-attrif-integer="row.type == 'integer'" data-attrif-readonly="row.readonly || self.objectProperties.busy || self.objectProperties.readOnly" data-event-change="emit('StudioObjectPropertyEdit', row.path, 'set-number', ev.value + '')" />
+      <input class="field text object-property-exact-integer" data-if="row.wideInteger" type="text" maxlength="21" data-attr-aria-label="row.label" data-attr-value="row.mixed ? '' : row.exactInteger" data-attr-placeholder="row.mixed ? 'Multiple values' : ''" data-attrif-readonly="row.readonly || self.objectProperties.busy || self.objectProperties.readOnly" data-event-change="emit('StudioObjectIntegerEdit', row.path, ev.value, ev.canceled)" />
+      <use ui="ColorField" data-if="row.color" data-attr-aria-label="row.label" data-attr-value="row.colorHex" data-attrif-disabled="row.readonly || self.objectProperties.busy || self.objectProperties.readOnly" data-event-change="emit('StudioObjectPropertyColor', row.path, ev.value, ev.canceled)" />
+      <span class="object-property-kind" data-if="row.color &amp;&amp; row.mixed">Multiple colors</span>
+      <use ui="Checkbox" data-if="row.type == 'bool'" data-attr-aria-label="row.label" data-attrif-checked="row.boolean" data-attrif-disabled="row.readonly || self.objectProperties.readOnly || self.objectProperties.busy" data-event-change="emit('StudioObjectPropertyEdit', row.path, 'set-bool', ev.value ? 'true' : 'false')" />
+      <use ui="EnumField" data-if="row.choices.size &gt; 0" data-alias-table="row.table" data-alias-value="row.text" data-attrif-data-mixed="row.mixed" data-attrif-data-readonly="row.readonly || self.objectProperties.readOnly || self.objectProperties.busy" data-event-change="emit('StudioObjectPropertyEdit', row.path, 'set-text', ev.value)"/>
+      <use ui="AssetField" data-if="row.reference != ''" data-alias-table="row.table" data-alias-value="row.mixed ? '—' : row.text" data-attr-data-drop="row.reference == 'entity' ? 'authored-object' : row.reference" data-drop-hint="Assign" data-attrif-data-readonly="row.readonly || self.objectProperties.readOnly || self.objectProperties.busy" data-event-click="emit('StudioObjectReferenceOpen', row.path, row.reference, ev.pointer)" data-event-drop="emit('StudioObjectReferenceDrop', row.path, row.reference, ev.type, ev.payload); stop()"/>
+      <button class="btn subtle" data-if="row.reference == 'entity' &amp;&amp; !row.mixed &amp;&amp; row.text != ''" data-event-click="emit('StudioObjectReferenceReveal', row.path, row.reference)">Reveal</button>
+      <input class="field text" data-if="row.type == 'string' &amp;&amp; row.choices.size == 0 &amp;&amp; row.reference == ''" data-attr-aria-label="row.label" data-attr-value="row.mixed ? '' : row.text" data-attr-placeholder="row.mixed ? 'Multiple values' : ''" data-attrif-readonly="row.readonly || self.objectProperties.busy || self.objectProperties.readOnly" data-event-change="emit('StudioObjectPropertyEdit', row.path, 'set-text', ev.value)" />
+      <button class="btn subtle" data-attrif-data-disabled="self.objectProperties.readOnly || self.objectProperties.busy" data-if="row.present &amp;&amp; !row.required" data-tip="Remove authored override; inherit its default" data-event-click="emit('StudioObjectPropertyEdit', row.path, 'remove', '')">Reset</button>
+      </div>
+    </div>
+  </div>
+    </div>
+  </section>
+  <use ui="Menu" id="studio-object-component-actions">
+    <use ui="MenuItem" data-attrif-data-disabled="self.objectProperties.readOnly || self.objectProperties.busy" data-event-click="emit('StudioObjectComponentChange', self.objectProperties.menuComponent, false)"><span class="icon lead">&#xea81;</span><span class="text"><span class="label">Remove Component</span><span class="about">Remove this component added to the object.</span></span></use>
+  </use>
+  <use ui="Menu" id="studio-object-reference" class="object-reference-menu">
+    <input id="studio-object-reference-search" class="field text" placeholder="Search references…" aria-label="Search references" data-event-input="emit('StudioObjectReferenceQuery', ev.value)" />
+    <div class="object-properties-error" data-if="self.objectProperties.referenceError != ''" role="alert">{{ self.objectProperties.referenceError }}</div>
+    <div class="object-reference-options">
+      <use ui="MenuItem" data-event-click="emit('StudioObjectReferencePick', '')">None</use>
+      <use ui="MenuItem" data-for="value : self.objectProperties.referenceValues" data-event-click="emit('StudioObjectReferencePick', value)">{{ value }}</use>
+    </div>
+    <div class="object-reference-pages">
+      <button class="btn subtle" data-attrif-data-disabled="!self.objectProperties.referencePrevious" data-event-click="emit('StudioObjectReferencePage', -1)">Previous</button>
+      <button class="btn subtle" data-attrif-data-disabled="!self.objectProperties.referenceMore" data-event-click="emit('StudioObjectReferencePage', 1)">Next</button>
+    </div>
+  </use>
+  <div class="add-row" data-if="self.objectProperties.category != 'scene'"><button class="btn subtle" data-if="self.objectProperties.count == 1" data-attrif-data-disabled="self.objectProperties.readOnly || self.objectProperties.busy" data-event-click="emit('StudioObjectComponentMenu', ev.pointer)">
+    <span class="icon"></span>Add Component</button></div>
+  <div class="object-prototype-popover"><use ui="StudioPrototypeActions"/></div>
+  </div>
+</div>

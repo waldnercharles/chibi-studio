@@ -1,0 +1,13 @@
+version 3
+name "StudioGraphWirePath"
+domain "event"
+id_counter 7
+(array)variables {
+    - id=1 name="Generation" type="int" category="Payload"
+    - id=2 name="Xs" type="float" container=1 category="Payload"
+    - id=3 name="Ys" type="float" container=1 category="Payload"
+    - id=4 name="EdgeIndex" type="int" category="Payload"
+    - id=5 name="Style" type="int" category="Payload"
+    - id=6 name="Zoom" type="float" category="Payload"
+}
+(array)graphs { - kind="event" name=""; }

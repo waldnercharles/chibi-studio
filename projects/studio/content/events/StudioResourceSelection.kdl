@@ -1,0 +1,10 @@
+version 3
+name "StudioResourceSelection"
+domain "event"
+id_counter 2
+(array)variables {
+    - id=1 name="Keys" type="const char *" container=1 category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

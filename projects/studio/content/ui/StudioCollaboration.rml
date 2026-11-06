@@ -1,0 +1,25 @@
+<section class="collaboration-panel" data-if="self.collaborationVisible" role="region" aria-label="Collaboration">
+  <header class="collaboration-head"><strong>Collaboration</strong><span class="spacer"></span><button class="btn sm" data-event-click="emit('StudioCollaborationClose')">Close</button></header>
+  <p role="status" aria-live="polite">{{ self.collaborationStatus }}</p>
+  <p class="collaboration-error" data-if="self.collaborationError != ''" role="alert">{{ self.collaborationError }}</p>
+  <div data-if="self.collaborationAvailable &amp;&amp; !self.collaborationActive">
+    <button class="btn sm" data-event-click="emit('StudioCollaborationCommand','collaborationToken','')" data-attr-aria-expanded="self.collaborationTokenExpanded ? 'true' : 'false'">Service token</button>
+    <label data-if="self.collaborationTokenExpanded">Service token <input id="collaboration-service-token" type="password" autocomplete="off" placeholder="Optional room-service token" data-event-change="emit('StudioCollaborationInput', 'token', ev.value)" /></label>
+    <button class="btn sm" data-attrif-disabled="self.collaborationPending" data-event-click="emit('StudioCollaborationCommand', 'collaborationHost', '')">Host room</button>
+    <label>Invitation <input type="text" autocomplete="off" placeholder="Paste an invitation link" data-event-change="emit('StudioCollaborationInput', 'invite', ev.value)" /></label>
+    <button class="btn sm" data-attrif-disabled="self.collaborationPending" data-event-click="emit('StudioCollaborationCommand', 'collaborationJoin', '')">Join room</button>
+  </div>
+  <div data-if="self.collaborationActive">
+    <p>Room {{ self.collaborationRoom }} · {{ self.collaborationRole }} · revision {{ self.collaborationRevision }}</p>
+    <p data-if="!self.collaborationReady">Source drafts stay local until synchronization completes.</p>
+    <div class="collaboration-actions" data-if="self.collaborationRole == 'host'">
+      <button class="btn sm" data-attrif-disabled="!self.collaborationReady || self.collaborationPending" data-event-click="emit('StudioCollaborationCommand', 'collaborationInviteViewer', '')">Invite viewer</button>
+      <button class="btn sm" data-attrif-disabled="!self.collaborationReady || self.collaborationPending" data-event-click="emit('StudioCollaborationCommand', 'collaborationInviteEditor', '')">Invite editor</button>
+    </div>
+    <label data-if="self.collaborationInviteLink != ''">Invitation link <input type="text" readonly="readonly" data-attr-value="self.collaborationInviteLink" /></label>
+    <p role="status" data-if="self.collaborationFollowChooser">Choose a participant to follow.</p>
+    <ul id="collaboration-peer-picker" tabindex="0" aria-label="Choose a participant to follow" class="collaboration-peers"><li data-for="peer : self.collaborationPeers"><span>{{ peer.name }} · {{ peer.role }} · {{ peer.path }}</span><button class="btn sm" data-event-click="emit('StudioCollaborationFollow', peer.client)">Follow</button></li></ul>
+    <div class="collaboration-actions"><button class="btn sm" data-if="!self.collaborationReady" data-attrif-disabled="self.collaborationPending" data-event-click="emit('StudioCollaborationCommand', 'collaborationRetry', '')">Retry synchronization</button><button class="btn sm" data-if="self.collaborationFollow != ''" data-event-click="emit('StudioCollaborationCommand', 'collaborationUnfollow', '')">Stop following</button><button class="btn sm" data-event-click="emit('StudioCollaborationCommand', 'collaborationLeave', '')">Leave room</button></div>
+    <p class="collaboration-note">Shared source edits use host approval. File operations and visual source changes without a proposal mapping are unavailable in rooms.</p>
+  </div>
+</section>

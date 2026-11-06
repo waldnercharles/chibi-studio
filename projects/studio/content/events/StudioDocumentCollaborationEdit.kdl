@@ -1,0 +1,16 @@
+version 3
+name "StudioDocumentCollaborationEdit"
+domain "event"
+id_counter 8
+(array)variables {
+    - id=1 name="Document" type="int" category="Payload"
+    - id=2 name="Revision" type="int" category="Payload"
+    - id=3 name="Start" type="int" category="Payload"
+    - id=4 name="End" type="int" category="Payload"
+    - id=5 name="Text" type="const char *" category="Payload"
+    - id=6 name="Owner" type="const char *" category="Payload"
+    - id=7 name="Request" type="int" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

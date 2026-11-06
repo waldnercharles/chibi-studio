@@ -1,0 +1,13 @@
+.dom-inspector { padding: 8dp; overflow-y: auto; }
+.dom-inspector-toolbar { display: flex; align-items: center; gap: 6dp; padding-bottom: 8dp; }
+.dom-inspector-tree { max-height: 260dp; overflow-y: auto; border-bottom: 1dp var(--border); }
+.dom-inspector-row { display: flex; width: 100%; min-height: var(--row); justify-content: flex-start; gap: 6dp; }
+.dom-inspector-properties { display: flex; flex-direction: column; gap: 8dp; }
+.dom-inspector-property { display: flex; flex-direction: column; gap: 2dp; padding: 4dp 0; border-bottom: 1dp var(--border); }
+.dom-inspector-pseudos { display: flex; flex-wrap: wrap; gap: 8dp; padding: 8dp 0; }
+
+.dom-inspector-picker { position: fixed; left: 0; top: 0; width: 100%; height: 100%; z-index: 10000; cursor: crosshair; }
+
+.dom-inspector-box { border-top: 1dp var(--border); padding: 8dp 0; }
+.dom-inspector-box-grid { display: flex; flex-wrap: wrap; gap: 8dp; padding-top: 8dp; }
+.dom-inspector-box-grid > div { width: 45%; display: flex; justify-content: space-between; }

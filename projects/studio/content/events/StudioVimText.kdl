@@ -1,0 +1,12 @@
+version 3
+name "StudioVimText"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Glyph" type="const char *" category="Payload"
+    - id=2 name="Caret" type="int" category="Payload"
+    - id=3 name="Buffer" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

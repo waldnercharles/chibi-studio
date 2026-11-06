@@ -1,0 +1,7 @@
+version 3
+name "StudioKey_normalSpeed"
+domain "event"
+id_counter 1
+(array)graphs {
+    - kind="event" name=""
+}

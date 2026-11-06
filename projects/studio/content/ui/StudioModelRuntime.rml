@@ -1,0 +1,34 @@
+<section class="studio-model-runtime" data-if="self.sceneRuntime.modelPreview" aria-label="Model preview controls">
+  <div class="scene-runtime-toolbar" role="group" aria-label="Model view">
+    <span class="badge accent">Model · {{ self.sceneRuntime.previewName }}</span>
+    <button data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" class="btn sm" data-event-click="emit('StudioModelRuntimeView',self.sceneRuntime.session,'frame',0)">Frame</button>
+    <button data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" class="btn sm" data-attr-aria-pressed="self.sceneRuntime.modelView == 'orbit'" data-event-click="emit('StudioModelRuntimeView',self.sceneRuntime.session,'orbit',0)">Orbit</button>
+    <button data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" class="btn sm" data-attr-aria-pressed="self.sceneRuntime.modelView == 'front'" data-event-click="emit('StudioModelRuntimeView',self.sceneRuntime.session,'front',0)">Front</button>
+    <button data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" class="btn sm" data-attr-aria-pressed="self.sceneRuntime.modelView == 'side'" data-event-click="emit('StudioModelRuntimeView',self.sceneRuntime.session,'side',0)">Side</button>
+    <button data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" class="btn sm" data-attr-aria-pressed="self.sceneRuntime.modelView == 'top'" data-event-click="emit('StudioModelRuntimeView',self.sceneRuntime.session,'top',0)">Top</button>
+  </div>
+  <div class="studio-model-runtime-details" data-attrif-data-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing">
+    <div class="scene-runtime-toolbar" role="group" aria-label="Section plane">
+      <use ui="Checkbox" data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" data-attrif-checked="self.sceneRuntime.modelSection" data-event-change="emit('StudioModelRuntimeView',self.sceneRuntime.session,'section',ev.value ? 1 : 0)">Section</use>
+      <button data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" class="btn sm" data-attr-aria-pressed="self.sceneRuntime.modelSectionAxis == 0" data-event-click="emit('StudioModelRuntimeView',self.sceneRuntime.session,'axis',0)">X</button>
+      <button data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" class="btn sm" data-attr-aria-pressed="self.sceneRuntime.modelSectionAxis == 1" data-event-click="emit('StudioModelRuntimeView',self.sceneRuntime.session,'axis',1)">Y</button>
+      <button data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" class="btn sm" data-attr-aria-pressed="self.sceneRuntime.modelSectionAxis == 2" data-event-click="emit('StudioModelRuntimeView',self.sceneRuntime.session,'axis',2)">Z</button>
+      <use ui="NumberField" data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" float addon="Offset" step="0.01" data-if="self.sceneRuntime.modelSection" data-attr-value="self.sceneRuntime.modelSectionOffset" data-event-change="emit('StudioModelRuntimeView',self.sceneRuntime.session,'offset',ev.value)"/>
+    </div>
+    <div class="studio-model-runtime-parts" role="group" aria-label="Isolate model part">
+      <button data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" class="btn ghost sm" data-attr-aria-pressed="self.sceneRuntime.modelPart == -1" data-event-click="emit('StudioModelRuntimeView',self.sceneRuntime.session,'part',-1)">Complete model</button>
+      <button data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" class="btn ghost sm" data-for="part : self.sceneRuntime.modelParts" data-attr-aria-pressed="self.sceneRuntime.modelPart == part.index" data-event-click="emit('StudioModelRuntimeView',self.sceneRuntime.session,'part',part.index)">{{ part.name }}</button>
+    </div>
+    <div class="studio-model-runtime-parameters" role="group" aria-label="Preview parameter overrides">
+      <button data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" class="btn outline sm" data-event-click="emit('StudioModelRuntimeView',self.sceneRuntime.session,'resetParameters',0)">Reset preview values</button>
+      <div class="studio-model-runtime-parameter" data-for="name, row : self.sceneRuntime.modelParameterNames">
+        <use ui="NumberField" data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing || self.sceneRuntime.preparing" float step="0.01" precision="3" data-attr-addon="name" data-attr-aria-label="name" data-attr-value="self.sceneRuntime.modelParameterValues[row]" data-attr-min="self.sceneRuntime.modelParameterMin[row]" data-attr-max="self.sceneRuntime.modelParameterMax[row]" data-event-change="emit('StudioModelRuntimeParameter',self.sceneRuntime.session,row,ev.value)"/>
+        <span class="notice error" role="alert" data-if="self.sceneRuntime.modelParameterErrors[row] != ''">{{ self.sceneRuntime.modelParameterErrors[row] }}</span>
+      </div>
+    </div>
+  </div>
+  <p class="dim">Dimensions {{ self.sceneRuntime.modelDimensions[0] }} × {{ self.sceneRuntime.modelDimensions[1] }} × {{ self.sceneRuntime.modelDimensions[2] }}</p>
+  <p class="dim" role="status" data-if="self.sceneRuntime.modelWarning != ''">{{ self.sceneRuntime.modelWarning }}</p>
+  <p class="studio-scene-error" role="alert" data-if="self.sceneRuntime.modelError != ''">{{ self.sceneRuntime.modelError }}</p>
+  <p class="studio-scene-error" role="alert" data-if="self.sceneRuntime.modelParameterError != ''">{{ self.sceneRuntime.modelParameterError }}</p>
+</section>

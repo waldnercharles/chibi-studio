@@ -1,0 +1,23 @@
+@import "theme/tokens.rcss";
+@import "theme/roles.rcss";
+@import "theme/presets.rcss";
+@import "theme/base.rcss";
+@import "theme/button.rcss";
+@import "theme/field.rcss";
+@import "theme/panel.rcss";
+@import "theme/popup.rcss";
+@import "theme/command.rcss";
+@import "theme/tree.rcss";
+@import "theme/toast.rcss";
+@import "theme/motion.rcss";
+@import "theme/list.rcss";
+@import "theme/code.rcss";
+@import "theme/drag.rcss";
+@import "theme/chart.rcss";
+@import "theme/inspect.rcss";
+@import "theme/workspace.rcss";
+@import "theme/assets.rcss";
+@import "theme/graph.rcss";
+
+body { width: 100%; height: 100%; background-color: var(--app); pointer-events: auto; }
+slot { display: block; width: 100%; height: 100%; }

@@ -1,0 +1,74 @@
+behavior StudioSavedData {
+    Session: int = 0
+    Document: int = 0
+    Visible := false
+    Revision: string = ""
+    Rows: WorkspaceSavedRow[] = []
+    First: int = 0
+    Age: float = 0
+    Title: string = ""
+    refresh :: fn() {
+        if !Visible || Session <= 0 { return }
+        latest := query_runtime_saved_data(Session, 0, 1)
+        if !latest.Ok { return }
+        if latest.Revision == Revision { return }
+        incoming: WorkspaceSavedRow[] = []
+        first: int = 0
+        token := ""
+        while first < 4096 {
+            page := query_runtime_saved_data(Session, first, 256)
+            if !page.Ok {
+                await send_event<"StudioStatus">(self, "error", page.Error)
+                return
+            }
+            if first == 0 { token = page.Revision }
+            if page.Revision != token { return }
+            incoming = append(incoming, page.Rows)
+            first += length(page.Rows)
+            if first >= page.Total { break }
+            if length(page.Rows) == 0 { return }
+        }
+        if Revision == token && length(Rows) == length(incoming) { return }
+        Rows = incoming
+        Revision = token
+        await set_ui_data(Name: "savedDataRows", Value: Rows)
+        set_ui_data(Name: "savedDataTitle", Value: Title)
+    }
+    on Begin {
+        await set_ui_data(Name: "savedDataRows", Value: Rows)
+        set_ui_data(Name: "savedDataTitle", Value: Title)
+    }
+    on StudioPanelSelected {
+        if event.Panel == "savedData" { Visible = true; refresh() }
+    }
+    on StudioRuntimeState {
+        if self.Session != event.Session {
+            self.Session = event.Session
+            Rows = []
+            self.Revision = ""
+            await set_ui_data(Name: "savedDataRows", Value: Rows)
+        }
+        self.Document = event.Document
+        if self.Session > 0 {
+            current := await workspace_document_read(self.Document)
+            if current.Ok {
+                identity := workspace_asset_identity(self.Document, current.Revision)
+                if identity.Ok { Title = format_text("Scene · {}", identity.Name) }
+            }
+        }
+        await set_ui_data(Name: "savedDataTitle", Value: Title)
+        refresh()
+    }
+    on StudioSavedDataEdit {
+        if event.Index < 0 || event.Index >= length(Rows) || Session <= 0 { return }
+        changed := await edit_runtime_saved_data(Session, Revision, Rows[event.Index].key, event.Value)
+        if !changed.Ok { Revision = ""; await send_event<"StudioStatus">(self, "error", changed.Error) }
+        refresh()
+    }
+    on Tick(dt) {
+        Visible = get_ui_view_width(Element: "#studio-saved-data").Known
+        if !Visible { return }
+        Age += dt
+        if Age >= 0.5 { Age = 0; refresh() }
+    }
+}

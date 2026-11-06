@@ -1,0 +1,6 @@
+component StudioThemeRow {
+    index: int
+    name: string
+    value: string
+    color: bool
+}

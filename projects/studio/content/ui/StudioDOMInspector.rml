@@ -1,0 +1,30 @@
+<div id="studio-dom-inspector" data-measure class="dom-inspector" data-if="self.domInspectorOpen">
+  <div id="studio-dom-picker" class="dom-inspector-picker" tabindex="0" data-if="self.domInspectorPicking" aria-label="Click an interface element to inspect it. Escape cancels." data-event-click="emit('StudioDOMInspectorPick', ev.mouse_x, ev.mouse_y); stop()"></div>
+  <div class="dom-inspector-toolbar"><strong>UI Inspector</strong><span class="spacer"></span><button class="btn sm" data-event-click="emit('StudioSceneCommand', 'inspectElement', '')">{{ self.domInspectorPicking ? 'Cancel picking' : 'Pick application UI' }}</button><button class="btn sm" data-event-click="emit('StudioDOMInspectorClose')">Clear selection</button></div>
+  <div class="dom-inspector-toolbar"><label>Context <use ui="Select"><select aria-label="Inspected UI context" data-attr-value="self.domInspectorContext" data-event-change="emit('StudioDOMInspectorContext', ev.value)"><option data-for="context : self.domInspectorContexts" data-attr-value="context.Key">{{ context.Key }}</option></select></use></label></div>
+  <p class="dim" data-if="self.domInspectorContext != 'application'">Choose elements in the preview canvas or the tree below.</p>
+  <p role="status" data-if="self.domInspectorPicking">Click an element in the interface to inspect it.</p>
+  <div class="notice error" role="alert" data-if="self.domInspectorError != ''">{{ self.domInspectorError }}</div>
+  <p class="dim" data-if="!self.domInspectorComplete">Some DOM or property details exceed the inspection budget.</p>
+  <div class="dom-inspector-toolbar"><button class="btn sm" data-attrif-disabled="self.domInspectorFirst == 0" data-event-click="emit('StudioDOMInspectorPage', -1)">Previous</button><span>{{ self.domInspectorFirst }} / {{ self.domInspectorTotal }}</span><button class="btn sm" data-attrif-disabled="self.domInspectorFirst + 64 &gt;= self.domInspectorTotal" data-event-click="emit('StudioDOMInspectorPage', 1)">Next</button></div>
+  <div class="dom-inspector-tree" aria-label="Live UI elements">
+    <button class="btn subtle dom-inspector-row" data-for="row : self.domInspectorRows" data-style-padding-left="row.Depth * 10 + 'dp'" data-attrif-data-selected="row.Key == self.domInspectorKey" data-event-click="emit('StudioDOMInspectorSelect', row.Key)"><span>{{ row.Tag }}</span><span class="dim">{{ row.Id != '' ? '#' + row.Id : row.Classes }}</span></button>
+  </div>
+  <div data-if="self.domInspectorKey != ''">
+    <button class="btn subtle" data-if="self.domInspectorSourcePath != ''" data-event-click="emit('StudioDOMInspectorSource', self.domInspectorSourcePath, self.domInspectorSourceLine, self.domInspectorSourceStart)">Reveal {{ self.domInspectorSourcePath }}:{{ self.domInspectorSourceLine }}</button>
+    <p>{{ self.domInspectorWidth }} × {{ self.domInspectorHeight }} px at {{ self.domInspectorX }}, {{ self.domInspectorY }}</p>
+    <details class="dom-inspector-box"><summary>Box model · {{ self.domInspectorContentWidth }} × {{ self.domInspectorContentHeight }} dp content</summary><div class="dom-inspector-box-grid"><div data-for="value, index : self.domInspectorBoxValues"><span>{{ self.domInspectorBoxLabels[index] }}</span><strong>{{ self.domInspectorBoxValues[index] }} dp</strong></div></div></details>
+    <div class="dom-inspector-toolbar">
+      <use ui="Select"><select aria-label="Style inspection mode" data-attr-value="self.domInspectorMode" data-event-change="emit('StudioDOMInspectorMode', ev.value)"><option value="computed">Computed</option><option value="declared">Declared</option><option value="attributes">Attributes</option></select></use>
+    </div>
+    <div class="dom-inspector-pseudos">
+      <use ui="Checkbox" data-checked="self.domInspectorHover" data-event-change="emit('StudioDOMInspectorPseudo', 'hover', ev.value)">:hover</use>
+      <use ui="Checkbox" data-checked="self.domInspectorActive" data-event-change="emit('StudioDOMInspectorPseudo', 'active', ev.value)">:active</use>
+      <use ui="Checkbox" data-checked="self.domInspectorFocus" data-event-change="emit('StudioDOMInspectorPseudo', 'focus', ev.value)">:focus</use>
+      <use ui="Checkbox" data-checked="self.domInspectorChecked" data-event-change="emit('StudioDOMInspectorPseudo', 'checked', ev.value)">:checked</use>
+    </div>
+    <div class="dom-inspector-properties">
+      <div class="dom-inspector-property" data-for="property : self.domInspectorProperties"><strong>{{ property.Name }}</strong><span>{{ property.Value }}</span><button class="btn subtle" data-if="property.Path != '' &amp;&amp; property.Line &gt; 0" data-event-click="emit('StudioDOMInspectorSource', property.Path, property.Line, -1)">{{ property.Path }}:{{ property.Line }} {{ property.Rule }}</button></div>
+    </div>
+  </div>
+</div>

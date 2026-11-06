@@ -71,7 +71,7 @@ body.comfortable .popover .btn.sm { height: var(--studio-height-36, 36dp); }
 .dropdown .field.search { margin: 2dp 2dp 6dp; }
 /* Field choices show seven rows. Action menus use compact, font-scaled rows
    and grow to their content until the viewport requires scrolling. */
-body { --menu-row-h: var(--studio-line-22, 22dp); --dropdown-list-h: 182dp; --dropdown-box-h: 192dp; }
+body { --menu-seven-row-max: 154dp; --menu-row-h: var(--studio-line-22, 22dp); --dropdown-list-h: 182dp; --dropdown-box-h: 192dp; }
 body.comfortable { --dropdown-list-h: 210dp; --dropdown-box-h: 220dp; }
 body.graph-canvas, body.graph-canvas.comfortable { --dropdown-list-h: 154dp; --dropdown-box-h: 164dp; }
 .dropdown-results, .autocomplete-results { max-height: var(--dropdown-list-h); overflow-y: auto; }

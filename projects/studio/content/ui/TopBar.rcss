@@ -126,7 +126,7 @@ body { flex: 0 0 auto; }
 #speed { display: flex; flex: 0 0 auto; }
 // The speed keeps its width as it steps, so the centered transport stays put,
 // and reads as on, as Play does, while it is not 1x.
-.speed { min-width: 54dp; font-family: var(--font-numeric); }
+.speed { min-width: 54dp; font-family: var(--font-numeric, GeistNumeric); }
 .speed[data-state=on] { background-color: var(--selected); color: var(--primary-text); }
 // Search narrows before anything else but the tabs.
 .search-trigger {

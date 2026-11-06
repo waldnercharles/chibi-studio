@@ -1,0 +1,7 @@
+body { --notice-bottom: 40dp; }
+body.comfortable { --notice-bottom: 42dp; }
+.studio-notices.toaster { height: auto; max-width: 90vw; display: flex; flex-direction: column; gap: 8dp; bottom: var(--notice-bottom); }
+.studio-notice.toast { position: relative; bottom: auto; pointer-events: auto; flex: 0 0 auto; align-items: center; }
+.studio-notice .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.studio-notice .description { max-height: 64dp; overflow-y: auto; word-break: break-word; }
+.studio-notice .toast-action { max-width: 100dp; }

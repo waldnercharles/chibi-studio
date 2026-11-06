@@ -1,0 +1,12 @@
+version 3
+name "StudioPaneFocus"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Area" type="const char *" category="Payload"
+    - id=2 name="Context" type="const char *" category="Payload"
+    - id=3 name="TextEditing" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

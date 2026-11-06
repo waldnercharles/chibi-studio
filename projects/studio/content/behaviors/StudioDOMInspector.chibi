@@ -1,0 +1,338 @@
+behavior StudioDOMInspector {
+    self.Context: string = "application"
+    Contexts: UiDomContext[] = []
+    Open := false
+    Picking := false
+    First: int = 0
+    Total: int = 0
+    Key: string = ""
+    SourceAsset: string = ""
+    SourcePath: string = ""
+    SourceLine: int = 0
+    SourceStart: int = -1
+    SourceKey: string = ""
+    DpRatio: double = 1
+    ContentWidth: double = 0
+    ContentHeight: double = 0
+    BoxLabels: string[] = ["Margin top", "Margin right", "Margin bottom", "Margin left", "Border top", "Border right", "Border bottom", "Border left", "Padding top", "Padding right", "Padding bottom", "Padding left"]
+    BoxValues: double[] = []
+    Mode: string = "computed"
+    Error: string = ""
+    Complete := true
+    Rows: UiDomRow[] = []
+    Properties: UiDomProperty[] = []
+    Age: float = 0.0
+    NeedFocus := false
+    Hover := false
+    Active := false
+    Focus := false
+    Checked := false
+    X: double = 0
+    Y: double = 0
+    Width: double = 0
+    Height: double = 0
+    action read_tree = query_ui_dom(First, 64)
+    action inspect = inspect_ui_dom(Key, Mode, 0, 256)
+    publish :: fn() {
+        await set_ui_data(Name: "domInspectorSourcePath", Value: SourcePath)
+        await set_ui_data(Name: "domInspectorSourceLine", Value: SourceLine)
+        await set_ui_data(Name: "domInspectorSourceStart", Value: SourceStart)
+        await set_ui_data(Name: "domInspectorContentWidth", Value: ContentWidth)
+        await set_ui_data(Name: "domInspectorContentHeight", Value: ContentHeight)
+        await set_ui_data(Name: "domInspectorBoxLabels", Value: BoxLabels)
+        await set_ui_data(Name: "domInspectorBoxValues", Value: BoxValues)
+        await set_ui_data(Name: "domInspectorContext", Value: Context)
+        await set_ui_data(Name: "domInspectorContexts", Value: Contexts)
+        await set_ui_data(Name: "domInspectorOpen", Value: Open)
+        await set_ui_data(Name: "domInspectorPicking", Value: Picking)
+        await set_ui_data(Name: "domInspectorRows", Value: Rows)
+        await set_ui_data(Name: "domInspectorProperties", Value: Properties)
+        await set_ui_data(Name: "domInspectorKey", Value: Key)
+        await set_ui_data(Name: "domInspectorMode", Value: Mode)
+        await set_ui_data(Name: "domInspectorFirst", Value: First)
+        await set_ui_data(Name: "domInspectorTotal", Value: Total)
+        await set_ui_data(Name: "domInspectorError", Value: Error)
+        await set_ui_data(Name: "domInspectorComplete", Value: Complete)
+        await set_ui_data(Name: "domInspectorHover", Value: Hover)
+        await set_ui_data(Name: "domInspectorActive", Value: Active)
+        await set_ui_data(Name: "domInspectorFocus", Value: Focus)
+        await set_ui_data(Name: "domInspectorChecked", Value: Checked)
+        await set_ui_data(Name: "domInspectorX", Value: X)
+        await set_ui_data(Name: "domInspectorY", Value: Y)
+        await set_ui_data(Name: "domInspectorWidth", Value: Width)
+        set_ui_data(Name: "domInspectorHeight", Value: Height)
+        return
+    }
+    clear_forced :: fn() {
+        if !text_equal(Key, "") {
+            if Hover {
+                await force_ui_dom_pseudo(Key, "hover", false)
+            }
+            if Active {
+                await force_ui_dom_pseudo(Key, "active", false)
+            }
+            if Focus {
+                await force_ui_dom_pseudo(Key, "focus", false)
+            }
+            if Checked {
+                await force_ui_dom_pseudo(Key, "checked", false)
+            }
+        }
+        Hover = false
+        Active = false
+        Focus = false
+        Checked = false
+        return
+    }
+    source_path :: fn() {
+        SourcePath = ""
+        workspace := query_workspace_info()
+        if !workspace.Active || text_equal(SourceAsset, "") {
+            return
+        }
+        for page in 0..15 {
+            resources := await query_workspace_resources(page * 256, 256, "ui", "")
+            if !resources.Status.Ok {
+                return
+            }
+            foreach (resource in resources.Rows) {
+                if text_equal(resource.Name, SourceAsset) {
+                    SourcePath = resource.Path
+                    return
+                }
+            }
+            if (page + 1) * 256 >= resources.Status.Total || length(resources.Rows) == 0 {
+                return
+            }
+        }
+        return
+    }
+    details :: fn() {
+        Properties = []
+        if !text_equal(Key, "") {
+            await inspect()
+            if inspect.Status.Ok {
+                Properties = inspect.Properties
+                X = inspect.Row.X
+                Y = inspect.Row.Y
+                Width = inspect.Row.Width
+                Height = inspect.Row.Height
+                DpRatio = inspect.Row.DpRatio
+                if DpRatio <= 0 {
+                    DpRatio = 1
+                }
+                ContentWidth = inspect.Row.ContentWidth / DpRatio
+                ContentHeight = inspect.Row.ContentHeight / DpRatio
+                BoxValues = [inspect.Row.MarginTop / DpRatio, inspect.Row.MarginRight / DpRatio, inspect.Row.MarginBottom / DpRatio, inspect.Row.MarginLeft / DpRatio, inspect.Row.BorderTop / DpRatio, inspect.Row.BorderRight / DpRatio, inspect.Row.BorderBottom / DpRatio, inspect.Row.BorderLeft / DpRatio, inspect.Row.PaddingTop / DpRatio, inspect.Row.PaddingRight / DpRatio, inspect.Row.PaddingBottom / DpRatio, inspect.Row.PaddingLeft / DpRatio]
+                SourceLine = inspect.Row.SourceLine
+                SourceStart = inspect.Row.SourceStart
+                if !text_equal(SourceKey, Key) || !text_equal(SourceAsset, inspect.Row.SourceAsset) {
+                    SourceKey = Key
+                    SourceAsset = inspect.Row.SourceAsset
+                    await source_path()
+                }
+            } else {
+                Error = inspect.Status.Error
+                Key = ""
+                Hover = false
+                Active = false
+                Focus = false
+                Checked = false
+            }
+            Complete = Complete && inspect.Status.Complete
+        }
+        await publish()
+        return
+    }
+    refresh :: fn() {
+        if !Open {
+            return
+        }
+        contexts := await query_ui_dom_contexts()
+        Contexts = contexts.Rows
+        foreach (context in Contexts) {
+            if context.Selected {
+                Context = context.Key
+            }
+        }
+        if !text_equal(Context, "application") {
+            Picking = false
+        }
+        await read_tree()
+        Rows = read_tree.Rows
+        Total = read_tree.Status.Total
+        Error = read_tree.Status.Error
+        Complete = read_tree.Status.Complete
+        foreach (row in Rows) {
+            if text_equal(row.Key, Key) {
+                X = row.X
+                Y = row.Y
+                Width = row.Width
+                Height = row.Height
+                break
+            }
+        }
+        await details()
+        return
+    }
+    on Begin {
+        Open = true
+        publish()
+    }
+    on Tick(dt) {
+        if Open && get_ui_view_width(Element: "#studio-dom-inspector")."View Width" > 0.0 {
+            if NeedFocus {
+                NeedFocus = false
+                await focus_ui_element(self, "#studio-dom-picker")
+            }
+            Age += dt
+            if Age >= 0.5 {
+                Age = 0.0
+                refresh()
+            }
+        }
+    }
+    on StudioDOMInspectorSource {
+        workspace := query_workspace_info()
+        if !workspace.Active {
+            Error = "Open a workspace to navigate source origins."
+            publish()
+            return
+        }
+        path := event.Path
+        if text_equal(path, "") {
+            return
+        }
+        prefix := format_text("{}/", workspace.Root)
+        bytes := text_difference("", prefix).Inserted
+        if text_equal(text_slice(path, 0, bytes).Text, prefix) {
+            size := text_difference("", path).Inserted
+            path = text_slice(path, bytes, size).Text
+        } else {
+            if text_equal(text_slice(path, 0, 1).Text, "/") || text_equal(text_slice(path, 1, 2).Text, ":") {
+                Error = "This source origin belongs to another resource root."
+                publish()
+                return
+            }
+        }
+        if event.Start >= 0 {
+            send_event<"StudioTextProjectRange">(self, path, event.Start, event.Start)
+        } else {
+            if event.Line > 0 {
+                send_event<"StudioTextProjectLine">(self, path, event.Line)
+            }
+        }
+    }
+    on StudioDOMInspectorContext {
+        await clear_forced()
+        chosen := await select_ui_dom_context(event.Key)
+        Error = chosen.Status.Error
+        if chosen.Status.Ok {
+            Context = event.Key
+            self.Key = ""
+            First = 0
+            Picking = false
+        }
+        refresh()
+    }
+    on StudioPanelSelected {
+        if text_equal(event.Panel, "dom") {
+            Open = true
+            refresh()
+        }
+    }
+    on StudioSceneCommand {
+        if text_equal(event.Id, "inspectElement") {
+            Open = true
+            await select_ui_dom_context("application")
+            Context = "application"
+            Picking = !Picking
+            NeedFocus = Picking
+            refresh()
+        }
+    }
+    on StudioDOMInspectorSelect {
+        Open = true
+        await clear_forced()
+        self.Key = event.Key
+        Picking = false
+        refresh()
+    }
+    on StudioDOMInspectorMode {
+        self.Mode = event.Mode
+        refresh()
+    }
+    on StudioDOMInspectorPage {
+        if event.Direction < 0 {
+            First -= 64
+            if First < 0 {
+                First = 0
+            }
+        } else {
+            if First + 64 < Total {
+                First += 64
+            }
+        }
+        refresh()
+    }
+    on StudioDOMInspectorPick {
+        if !Picking || !text_equal(Context, "application") {
+            return
+        }
+        picked := await pick_ui_dom(event.X, event.Y, "#studio-dom-picker")
+        if picked.Status.Ok {
+            await clear_forced()
+            Key = picked.Row.Key
+            self.X = picked.Row.X
+            self.Y = picked.Row.Y
+            Width = picked.Row.Width
+            Height = picked.Row.Height
+            Picking = false
+        } else {
+            Error = picked.Status.Error
+        }
+        details()
+    }
+    on StudioDOMInspectorPseudo {
+        forced := await force_ui_dom_pseudo(Key, event.Pseudo, event.On)
+        if forced.Status.Ok {
+            switch event.Pseudo {
+                case "hover": {
+                    Hover = event.On
+                }
+                case "active": {
+                    Active = event.On
+                }
+                case "focus": {
+                    Focus = event.On
+                }
+                case "checked": {
+                    Checked = event.On
+                }
+            }
+        } else {
+            Error = forced.Status.Error
+        }
+        refresh()
+    }
+    on StudioEscapeProbe {
+        if !text_equal(event.Phase, "dom") {
+            return
+        }
+        consumed := Picking
+        if consumed {
+            Picking = false
+            await publish()
+        }
+        await send_event<"StudioEscapeResult">(self, event.Request, event.Phase, consumed)
+    }
+    on StudioDOMInspectorClose {
+        await clear_forced()
+        Key = ""
+        SourceKey = ""
+        SourcePath = ""
+        Properties = []
+        Picking = false
+        publish()
+    }
+}

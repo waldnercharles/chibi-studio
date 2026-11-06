@@ -1,0 +1,280 @@
+behavior StudioObjectClipboard {
+    self.Active := false
+    Room := false
+    RoomWritable := false
+    Busy := false
+    Polling := false
+    Submitted := false
+    Lease := false
+    Document: int = 0
+    Revision: int = 0
+    Kind: string = ""
+    Paths: string[] = []
+    EditDocument: int = 0
+    EditRevision: int = 0
+    Request: int = 0
+    PlatformHandle: int = 0
+    Operation: string = ""
+    Parent: string = ""
+    Text: string = ""
+    ResultPaths: string[] = []
+    SelectionRevision: int = 0
+    SelectionDocument: int = 0
+    SelectionPaths: string[] = []
+    action poll = authoring_platform_poll(PlatformHandle)
+    Publish :: fn() {
+        ready := Active && Document > 0 && !Busy && (text_equal(Kind, "scene") || text_equal(Kind, "prototype"))
+        selected := length(Paths) > 0 && length(Paths) <= 256 && !contains(Paths, "")
+        mutable := !Room || RoomWritable
+        await set_ui_data(Name: "objectClipboard.canCopy", Value: ready && selected)
+        await set_ui_data(Name: "objectClipboard.canCut", Value: ready && selected && mutable)
+        await set_ui_data(Name: "objectClipboard.canPaste", Value: ready && mutable)
+        await set_ui_data(Name: "objectClipboard.canPasteChild", Value: ready && mutable && length(Paths) == 1 && !contains(Paths, ""))
+        await send_event<"StudioCommandAvailability">(self, "copy", ready && selected)
+        await send_event<"StudioCommandAvailability">(self, "cut", ready && selected && (!Room || RoomWritable))
+        await send_event<"StudioCommandAvailability">(self, "paste", ready && (!Room || RoomWritable))
+    }
+    Complete :: fn(request: int) {
+        if request != Request {
+            return
+        }
+        if PlatformHandle > 0 {
+            released := await authoring_platform_release(PlatformHandle)
+            if request != Request {
+                return
+            }
+            PlatformHandle = 0
+        }
+        if Lease {
+            Lease = false
+            await send_event<"StudioDocumentExternalEditComplete">(self, "object-clipboard", EditDocument, Request)
+        }
+        if request != Request {
+            return
+        }
+        Busy = false
+        Submitted = false
+        await Publish()
+    }
+    Failure :: fn(Error: string, request: int) {
+        if request != Request {
+            return
+        }
+        await send_event<"StudioNotice">(self, "object-clipboard", "error", "Object clipboard", Error, "", "", "object-clipboard", Request, 0.0)
+        await Complete(request)
+    }
+    Current :: fn() -> bool {
+        if !Busy || Document != EditDocument || Revision != EditRevision {
+            return false
+        }
+        request := Request
+        info := await workspace_document_info(EditDocument)
+        return request == Request && Busy && info.Ok && info.Revision == EditRevision && !info.Transaction
+    }
+    Submit :: fn() {
+        request := Request
+        if !await Current() {
+            await Failure("The source changed while preparing the clipboard operation. Try again.", request)
+            return
+        }
+        if Room && !RoomWritable {
+            await Failure("Wait until this collaborative session accepts edits.", request)
+            return
+        }
+        Submitted = true
+        await send_event<"StudioDocumentEdit">(self, EditDocument, EditRevision, 0, -1, Text, "object-clipboard", Request)
+    }
+    StartTransport :: fn(Operation: string, Value: string) {
+        request := Request
+        result := await authoring_platform_request(Operation, Value)
+        if !Busy || request != Request {
+            if result.Result.Request > 0 {
+                canceled := await authoring_platform_cancel(result.Result.Request)
+                released := await authoring_platform_release(result.Result.Request)
+            }
+            return
+        }
+        PlatformHandle = result.Result.Request
+        if !result.Result.Ok || PlatformHandle <= 0 {
+            await Failure(result.Result.Message, request)
+            return
+        }
+    }
+    Prepare :: fn() {
+        request := Request
+        if !await Current() {
+            await Failure("The source changed. Try the clipboard operation again.", request)
+            return
+        }
+        if text_equal(Operation, "paste") {
+            await StartTransport("clipboard-read", "")
+            return
+        }
+        copied := workspace_scene_clipboard(EditDocument, EditRevision, Paths, text_equal(Operation, "cut"))
+        if !copied.Ok {
+            await Failure(copied.Error, request)
+            return
+        }
+        Text = copied.Text
+        await StartTransport("clipboard-write", copied.Payload)
+    }
+    on Begin {
+        info := query_workspace_info()
+        Active = info.Active
+        await Publish()
+    }
+    on StudioObjectSelection {
+        self.Document = event.Document
+        self.Revision = event.Revision
+        self.Kind = event.Kind
+        if !Busy {
+            self.Paths = event.Paths
+        }
+        if SelectionRevision > 0 {
+            if event.Document != SelectionDocument {
+                SelectionRevision = 0
+                SelectionPaths = []
+            } else {
+                if event.Revision == SelectionRevision {
+                    SelectionRevision = 0
+                    await send_event<"StudioOutlinerSelectionRequested">(self, event.Document, event.Revision, SelectionPaths, false)
+                    SelectionPaths = []
+                }
+            }
+        }
+        await Publish()
+    }
+    on StudioCollaborationState {
+        Room = event.Active
+        RoomWritable = event.Ready && !event.Pending && (text_equal(event.Role, "host") || text_equal(event.Role, "editor"))
+        await Publish()
+    }
+    on StudioSceneCommand {
+        if !text_equal(event.Id, "copy") && !text_equal(event.Id, "cut") && !text_equal(event.Id, "paste") {
+            return
+        }
+        if !Active || Busy || Document <= 0 {
+            return
+        }
+        if !text_equal(Kind, "scene") && !text_equal(Kind, "prototype") {
+            return
+        }
+        if !text_equal(event.Id, "copy") && Room && !RoomWritable {
+            return
+        }
+        if !text_equal(event.Id, "paste") && (length(Paths) == 0 || length(Paths) > 256 || contains(Paths, "")) {
+            return
+        }
+        if Request >= 2147483647 {
+            return
+        }
+        Busy = true
+        Request += 1
+        EditDocument = Document
+        EditRevision = Revision
+        Operation = event.Id
+        ResultPaths = []
+        Parent = ""
+        if text_equal(event.Argument, "child") && length(Paths) == 1 {
+            Parent = Paths[0]
+        }
+        await Publish()
+        if Room {
+            await Prepare()
+        } else {
+            await send_event<"StudioDocumentExternalEditRequested">(self, "object-clipboard", EditDocument, Request)
+        }
+    }
+    on StudioDocumentExternalEditReady {
+        request := event.Request
+        if !Busy || !text_equal(event.Owner, "object-clipboard") || event.Request != self.Request || event.Document != EditDocument {
+            return
+        }
+        Lease = event.Ok
+        if !event.Ok {
+            await Failure(event.Error, request)
+            return
+        }
+        if event.Revision != EditRevision {
+            await Failure("Source changed while flushing the editor. Select the objects again and retry.", request)
+            return
+        }
+        await Prepare()
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        request := event.Request
+        if !Busy || !text_equal(event.Owner, "object-clipboard") || event.Request != self.Request || event.Document != EditDocument {
+            return
+        }
+        if Submitted {
+            return
+        }
+        if PlatformHandle > 0 {
+            canceled := await authoring_platform_cancel(PlatformHandle)
+        }
+        await Failure("The clipboard operation was canceled. Source changes were not submitted.", request)
+    }
+    on Tick {
+        if Busy && PlatformHandle > 0 && !Polling {
+            Polling = true
+            poll()
+        }
+    }
+    after poll {
+        request := Request
+        Polling = false
+        if !Busy || poll.Result.Request != PlatformHandle {
+            return
+        }
+        if text_equal(poll.Result.State, "running") || text_equal(poll.Result.State, "pending") {
+            return
+        }
+        if !poll.Result.Ok {
+            await Failure(poll.Result.Message, request)
+            return
+        }
+        released := await authoring_platform_release(PlatformHandle)
+        if request != Request {
+            return
+        }
+        PlatformHandle = 0
+        if text_equal(Operation, "copy") {
+            await send_event<"StudioNotice">(self, "object-clipboard", "success", "Objects copied", "Paste adds the selected roots with their children.", "", "", "object-clipboard", Request, 5.0)
+            await Complete(request)
+            return
+        }
+        if text_equal(Operation, "paste") {
+            if !await Current() {
+                await Failure("The paste destination changed. Try again.", request)
+                return
+            }
+            pasted := workspace_scene_paste(EditDocument, EditRevision, Parent, poll.Result.Value)
+            if !pasted.Ok {
+                await Failure(pasted.Error, request)
+                return
+            }
+            Text = pasted.Text
+            ResultPaths = pasted.Paths
+        }
+        await Submit()
+    }
+    on StudioDocumentEditResult {
+        request := event.Request
+        if !Busy || !Submitted || !text_equal(event.Owner, "object-clipboard") || event.Request != self.Request || event.Document != EditDocument || event.ExpectedRevision != EditRevision {
+            return
+        }
+        if !event.Ok {
+            await Failure(event.Error, request)
+            return
+        }
+        if self.Document == EditDocument && self.Revision == event.Revision {
+            await send_event<"StudioOutlinerSelectionRequested">(self, EditDocument, event.Revision, ResultPaths, false)
+        } else {
+            SelectionDocument = EditDocument
+            SelectionRevision = event.Revision
+            SelectionPaths = ResultPaths
+        }
+        await send_event<"StudioNotice">(self, "object-clipboard", "success", "Objects updated", "Undo restores the previous document.", "", "", "object-clipboard", self.Request, 5.0)
+        await Complete(request)
+    }
+}

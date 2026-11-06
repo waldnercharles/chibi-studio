@@ -1,0 +1,401 @@
+behavior StudioSceneInput {
+    self.Session: int = 0
+    Ready := false
+    Playing := false
+    Focused := false
+    Typing := false
+    Pointer := false
+    PointerX: float = 0.0
+    PointerY: float = 0.0
+    Width: float = 1.0
+    Height: float = 1.0
+    Ratio: float = 1.0
+    Keys: string[] = []
+    Supported: string[] = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "Space", "Tab", "Enter", "Backspace", "Up", "Down", "Left", "Right"]
+    Connected: bool[] = []
+    Buttons: int[] = []
+    MoveX: float = 0.0
+    MoveY: float = 0.0
+    AimX: float = 0.0
+    AimY: float = 0.0
+    Firing := false
+    Recording := false
+    Replaying := false
+    Truncated := false
+    Speed: double = 1.0
+    EndStep: int = 0
+    Timeline: string = ""
+    Hash: string = ""
+    ExportSequence: int = 0
+    ExportPath: string = ""
+    WheelX: float = 0.0
+    WheelY: float = 0.0
+    Error: string = ""
+    Has :: fn(Key: string) -> bool {
+        for key in Keys {
+            if text_equal(key, Key) {
+                return true
+            }
+        }
+        return false
+    }
+    SetKey :: fn(Key: string, Down: bool) {
+        next: string[] = []
+        for key in Keys {
+            if !text_equal(key, Key) {
+                next = array_add(next, key)
+            }
+        }
+        if Down {
+            next = array_add(next, Key)
+        }
+        Keys = next
+    }
+    Modifiers :: fn(Bits: int) {
+        SetKey("Shift", Bits % 4 >= 2 && !Typing)
+        SetKey("Control", Bits % 2 != 0 && !Typing)
+        SetKey("Alt", Bits % 8 >= 4 && !Typing)
+    }
+    Publish :: fn() {
+        await set_ui_data(Name: "sceneInput.speed", Value: Speed)
+        await set_ui_data(Name: "sceneInput.focused", Value: Focused)
+        await set_ui_data(Name: "sceneInput.typing", Value: Typing)
+        await set_ui_data(Name: "sceneInput.recording", Value: Recording)
+        await set_ui_data(Name: "sceneInput.replaying", Value: Replaying)
+        await set_ui_data(Name: "sceneInput.truncated", Value: Truncated)
+        await set_ui_data(Name: "sceneInput.hasTimeline", Value: !text_equal(Timeline, ""))
+        await set_ui_data(Name: "sceneInput.hash", Value: Hash)
+        await set_ui_data(Name: "sceneInput.path", Value: ExportPath)
+        await set_ui_data(Name: "sceneInput.error", Value: Error)
+    }
+    Release :: fn() {
+        if !Focused && !Typing {
+            return
+        }
+        if Focused && Ready {
+            released := await workspace_simulation_clear(Session)
+            if !released.Ok {
+                Error = released.Error
+            }
+            Recording = released.Recording
+            Replaying = released.Replaying
+            Truncated = released.Truncated
+            await workspace_runtime_control(Session, "pause")
+        }
+        Focused = false
+        Typing = false
+        Pointer = false
+        Keys = []
+        Connected = []
+        Buttons = []
+        MoveX = 0.0
+        MoveY = 0.0
+        Firing = false
+        ime := await authoring_platform_request("text-input", Number: 0.0)
+        if ime.Result.Request > 0 {
+            await authoring_platform_release(ime.Result.Request)
+        }
+        await Publish()
+    }
+    Focus :: fn() {
+        if !Ready || !Playing {
+            return
+        }
+        if !Focused {
+            Keys = []
+            Firing = false
+        }
+        Focused = true
+        await Publish()
+    }
+    UI :: fn(Operation: string, Key: string, Text: string, Button: int, Modifiers: int) -> int {
+        received := await workspace_simulation_ui(Session, Operation,
+        Key, Text, 2.0 * PointerX / Width - 1.0,
+        1.0 - 2.0 * PointerY / Height, WheelX, WheelY,
+        Button, Modifiers)
+        if !received.Ok {
+            Error = received.Error
+            await Release()
+            return 0
+        }
+        if Typing != received.Typing {
+            Typing = received.Typing
+            if Typing {
+                Keys = []
+                Firing = false
+            }
+            desired: double = 0.0
+            if Typing {
+                desired = 1.0
+            }
+            ime := await authoring_platform_request("text-input", Number: desired)
+            if ime.Result.Request > 0 {
+                await authoring_platform_release(ime.Result.Request)
+            }
+        }
+        if Recording && !received.Recording {
+            Error = "Target UI interaction interrupted gameplay-only recording; start a fresh run before export"
+        }
+        if received.Captured == 2 || received.Captured == 3 || received.Captured == 6 || received.Captured == 7 {
+            Keys = []
+            Firing = false
+        }
+        Recording = received.Recording
+        Replaying = received.Replaying
+        return received.Captured
+    }
+    Sample :: fn() {
+        if !Focused || !Ready || !Playing || Replaying {
+            return
+        }
+        Connected = []
+        Buttons = []
+        MoveX = 0.0
+        MoveY = 0.0
+        AimX = 0.0
+        AimY = 0.0
+        devices := query_physical_controllers()
+        for pad in devices.Rows {
+            Connected = array_add(Connected, pad.Connected && !Typing)
+            buttons := pad.Buttons
+            if Typing {
+                buttons = 0
+            }
+            Buttons = array_add(Buttons, buttons)
+            if pad.Connected && !Typing {
+                if abs(cast<float>(pad.LeftX)) > 0.15 {
+                    MoveX += cast<float>(pad.LeftX)
+                }
+                if abs(cast<float>(pad.LeftY)) > 0.15 {
+                    MoveY -= cast<float>(pad.LeftY)
+                }
+                if abs(cast<float>(pad.RightX)) > 0.15 {
+                    AimX += cast<float>(pad.RightX)
+                }
+                if abs(cast<float>(pad.RightY)) > 0.15 {
+                    AimY -= cast<float>(pad.RightY)
+                }
+            }
+        }
+        if !Typing {
+            if Has("A") || Has("Left") {
+                MoveX -= 1.0
+            }
+            if Has("D") || Has("Right") {
+                MoveX += 1.0
+            }
+            if Has("W") || Has("Up") {
+                MoveY += 1.0
+            }
+            if Has("S") || Has("Down") {
+                MoveY -= 1.0
+            }
+        }
+        magnitude := sqrt(MoveX * MoveX + MoveY * MoveY)
+        if magnitude > 1.0 {
+            MoveX /= magnitude
+            MoveY /= magnitude
+        }
+        aimMagnitude := sqrt(AimX * AimX + AimY * AimY)
+        if aimMagnitude > 1.0 {
+            AimX /= aimMagnitude
+            AimY /= aimMagnitude
+        }
+        ray := await workspace_runtime_ray(Session,
+        2.0 * PointerX / Width - 1.0, 1.0 - 2.0 * PointerY / Height)
+        supplied := await workspace_simulation_sample(Session, Keys,
+        Connected, Buttons, MoveX, MoveY,
+        AimX, AimY, false, Firing,
+        ray.OriginX, ray.OriginY, ray.OriginZ,
+        ray.DirectionX, ray.DirectionY, ray.DirectionZ,
+        Pointer && ray.Ok && !Typing)
+        if !supplied.Ok {
+            Error = supplied.Error
+            await Release()
+        }
+        Recording = supplied.Recording
+        Replaying = supplied.Replaying
+        Truncated = supplied.Truncated
+    }
+    on StudioRuntimeState {
+        if self.Session != event.Session || !event.Ready || !event.Playing {
+            await Release()
+        }
+        if self.Session != event.Session {
+            Timeline = ""
+            Hash = ""
+            ExportPath = ""
+            Recording = false
+            Replaying = false
+        }
+        self.Session = event.Session
+        self.Ready = event.Ready
+        self.Playing = event.Playing
+        await Publish()
+    }
+    on StudioPanelSelected {
+        if text_equal(event.Area, "main") && !text_equal(event.Panel, "scene") {
+            await Release()
+        }
+    }
+    on StudioFocusState {
+        if event.TextEditing {
+            await Release()
+        }
+    }
+    on StudioSceneInputRelease {
+        await Release()
+    }
+    on StudioSceneInputPointer {
+        if event.Session != self.Session {
+            return
+        }
+        if text_equal(event.Action, "down") {
+            await Focus()
+        }
+        if !Focused {
+            return
+        }
+        measured := get_ui_view_width(Element: "#studio-scene-play")
+        height := get_ui_scroll(Element: "#studio-scene-play")."View Height"
+        if !measured.Known || measured.PixelRatio <= 0.0 || measured."View Width" <= 0.0 || height <= 0.0 {
+            await Release()
+            return
+        }
+        Width = measured."View Width"
+        Height = height
+        Ratio = measured.PixelRatio
+        PointerX = event.LocalPointer.x / Ratio
+        PointerY = event.LocalPointer.y / Ratio
+        Pointer = !text_equal(event.Action, "leave")
+        WheelX = event.Wheel.x
+        WheelY = event.Wheel.y
+        captured := await UI(event.Action, "", "", event.Button, event.Modifiers)
+        WheelX = 0.0
+        WheelY = 0.0
+        if text_equal(event.Action, "leave") {
+            await Release()
+            return
+        }
+        Modifiers(event.Modifiers)
+        pointerCaptured := captured == 1 || captured == 3 || captured == 5 || captured == 7
+        if event.Button == 0 {
+            if text_equal(event.Action, "down") {
+                Firing = !pointerCaptured
+                SetKey("MouseLeft", !pointerCaptured)
+            }
+            if text_equal(event.Action, "up") {
+                Firing = false
+                SetKey("MouseLeft", false)
+            }
+        }
+        if event.Button == 1 && (text_equal(event.Action, "down") || text_equal(event.Action, "up")) {
+            SetKey("MouseRight", text_equal(event.Action, "down") && !pointerCaptured)
+        }
+        if event.Button == 2 && (text_equal(event.Action, "down") || text_equal(event.Action, "up")) {
+            SetKey("MouseMiddle", text_equal(event.Action, "down") && !pointerCaptured)
+        }
+        await Sample()
+        await Publish()
+    }
+    on StudioSceneInputKey {
+        if event.Session != self.Session || !Focused {
+            return
+        }
+        if text_equal(event.Key, "Escape") {
+            await Release()
+            return
+        }
+        captured: int = 0
+        if !text_equal(event.Key, "") {
+            captured = await UI(event.Action, event.Key, "", 0, event.Modifiers)
+        }
+        down := text_equal(event.Action, "key-down") && !Typing && (captured == 0 || captured == 1 || captured == 4 || captured == 5)
+        // The UI key namespace includes keys without a gameplay Control value.
+        supported := false
+        for key in Supported {
+            if text_equal(key, event.Key) {
+                supported = true
+            }
+        }
+        if supported {
+            SetKey(event.Key, down)
+        }
+        Modifiers(event.Modifiers)
+        await Sample()
+        await Publish()
+    }
+    on StudioSceneInputText {
+        if event.Session != self.Session || !Focused || !Typing {
+            return
+        }
+        await UI("text", "", event.Text, 0, 0)
+        await Publish()
+    }
+    on StudioSceneSpeed {
+        if !Ready {
+            return
+        }
+        speed := max(0.1, min(2.0, event.Value))
+        scaled := await workspace_simulation_time_scale(Session, true, cast<double>(speed))
+        Error = scaled.Error
+        if scaled.Ok {
+            Speed = scaled.Scale
+        }
+        await Publish()
+    }
+    on StudioSceneTimeline {
+        if !Ready {
+            return
+        }
+        if text_equal(event.Operation, "replay") && text_equal(Timeline, "") {
+            Error = "Export a complete recording before replay"
+            await Publish()
+            return
+        }
+        changed := await workspace_simulation_timeline(Session, event.Operation, 7, Timeline)
+        Error = changed.Error
+        Recording = changed.Recording
+        Replaying = changed.Replaying
+        Truncated = changed.Truncated
+        if changed.Ok {
+            if text_equal(event.Operation, "export") {
+                Timeline = changed.Timeline
+                Hash = changed.Hash
+                if ExportSequence < 2147483647 {
+                    ExportSequence += 1
+                    destination := format_text("input-timeline-{}-{}.json", Session, ExportSequence)
+                    saved := await workspace_document_create(destination, Timeline)
+                    if saved.Ok {
+                        ExportPath = destination
+                        await workspace_document_close(saved.Document)
+                    }
+                    if !saved.Ok {
+                        Error = saved.Error
+                    }
+                }
+            }
+            if text_equal(event.Operation, "record") || text_equal(event.Operation, "replay") {
+                played := await workspace_runtime_control(Session, "play")
+                Playing = played.Playing
+                Error = played.Error
+                if played.Ok {
+                    await Focus()
+                }
+            }
+        }
+        await Publish()
+    }
+    on Tick {
+        if !Focused {
+            return
+        }
+        environment := authoring_platform_environment()
+        if !environment.Environment.Focused {
+            await Release()
+            return
+        }
+        await Sample()
+        await Publish()
+    }
+}

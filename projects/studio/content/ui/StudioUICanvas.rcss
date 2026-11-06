@@ -1,0 +1,7 @@
+.ui-canvas { display: flex; flex-direction: column; flex: 1; min-width: 160dp; min-height: 160dp; height: 100%; }
+.ui-canvas-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6dp; padding: 6dp; border-bottom: 1dp var(--border); flex-shrink: 0; }
+.ui-canvas-surface { position: relative; flex: 1; min-height: 100dp; overflow: auto; background: var(--background); }
+.ui-canvas-image { position: relative; flex-shrink: 0; drag: drag; }
+.ui-canvas-image > texture-view { display: block; width: 100%; height: 100%; pointer-events: none; }
+.ui-canvas-selection { position: absolute; border: 1dp var(--accent); pointer-events: none; }
+.ui-canvas-caption { padding: 4dp 8dp; }

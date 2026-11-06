@@ -1,15 +1,19 @@
-<div class="assets-kind"><use ui="EnumField" data-alias-table="assets.kinds" data-alias-value="assets.kind" data-event-change="emit('assets.kind', ev.value)"/></div>
-<div class="assets-filter"><div class="field search"><span class="part addon"><span class="icon sm">&#xea6d;</span></span><input type="text" id="assets-filter" class="part value" placeholder="Filter" data-value="assets.filter"/></div></div>
-<div class="segmented assets-view">
-  <button class="seg" data-tip="Grid" data-attrif-data-pressed="assets.grid" data-event-click="emit('assets.view', 0)"><span class="icon">&#xf0570;</span></button>
-  <button class="seg" data-tip="List" data-attrif-data-pressed="!assets.grid" data-event-click="emit('assets.view', 1)"><span class="icon">&#xf0572;</span></button>
-</div>
-<div class="assets-size" data-if="assets.grid"><number-field class="field number" min="48" max="160" step="8" precision="0" integer="" slider="" addon="Size" data-tip="Thumbnail Size" data-attr-value="assets.tile" data-event-input="emit('assets.tile', ev.value)" data-event-change="emit('assets.tile', ev.value)"></number-field></div>
-<button class="btn icon-only" id="asset-new-button" popovertarget="asset-new" aria-haspopup="menu" data-tip="New Asset"><span class="icon">&#xea60;</span></button>
-<use ui="Menu" id="asset-new">
-  <div data-for="entry : asset_menus.create">
-    <use ui="MenuSeparator" data-if="entry.separator"/>
-    <use ui="MenuGroup" data-if="entry.heading.label != ''" data-alias-group="entry.heading"/>
-    <use ui="MenuItem" data-alias-item="entry" data-event-click="emit('studio.' + entry.id)"/>
+<div class="assets-header">
+  <div class="assets-kind"><use ui="Select"><select aria-label="Asset kind" data-value="self.assetBrowser.kind" data-event-change="emit('AssetsKindChanged', ev.value)">
+    <option value="">All assets</option><option value="scene">Scenes</option><option value="prototype">Prototypes</option><option value="behavior">Behaviors</option><option value="event">Events</option><option value="material">Materials</option><option value="shape">Shapes</option><option value="model">Models</option><option value="field">Fields</option><option value="library">Libraries</option><option value="system">Systems</option><option value="ui">UI</option><option value="image">Images</option><option value="mesh">Meshes</option><option value="sound">Sounds</option><option value="font">Fonts</option><option value="stylesheet">Stylesheets</option><option value="shader-library">Shader libraries</option>
+  </select></use></div>
+  <div class="assets-filter"><div class="field search"><span class="part addon"><span class="icon sm">&#xea6d;</span></span><input type="text" id="assets-filter" data-event-focusin="emit('StudioPaneFocus', 'drawer', 'assets', true); stop()" data-event-mousedown="emit('StudioPaneFocus', 'drawer', 'assets', true); stop()" class="part value" aria-label="Filter assets" placeholder="Filter assets" data-attr-value="self.assetBrowser.filter" data-event-input="emit('AssetsFilterTyped', ev.value)"/></div></div>
+  <div class="segmented assets-view">
+    <button class="seg" data-tip="Grid" data-attrif-data-pressed="self.assetBrowser.grid" data-event-click="emit('AssetsViewChanged', true)"><span class="icon">&#xf0570;</span></button>
+    <button class="seg" data-tip="List" data-attrif-data-pressed="!self.assetBrowser.grid" data-event-click="emit('AssetsViewChanged', false)"><span class="icon">&#xf0572;</span></button>
   </div>
-</use>
+  <div class="assets-size" data-if="self.assetBrowser.grid"><number-field class="field number" min="48" max="160" step="8" precision="0" integer="" slider="" addon="Size" aria-label="Thumbnail size" data-attr-value="self.assetBrowser.tile" data-event-input="emit('AssetsTileChanged', ev.value)"/></div>
+  <button class="btn icon-only" data-tip="Refresh assets" data-event-click="emit('AssetsRefresh')"><span class="icon">&#xea81;</span></button>
+  <button class="btn icon-only" data-attrif-data-disabled="self.assetBrowser.readOnly" popovertarget="asset-import" aria-haspopup="menu" data-tip="Import source file"><span class="icon">&#xeb8a;</span></button>
+  <button class="btn icon-only" id="asset-new-button" data-attrif-data-disabled="self.assetBrowser.readOnly" data-attr-data-tip-about="self.assetBrowser.readOnly ? 'File changes are unavailable in a collaborative session.' : ''" popovertarget="asset-new" aria-haspopup="menu" data-tip="New Asset"><span class="icon">&#xea60;</span></button>
+  <use ui="Menu" id="asset-new">
+    <div data-for="entry : self.studioCommands" data-if="entry.destination == 'resource' &amp;&amp; (entry.id == 'newScene' || entry.id == 'newPrototype' || entry.id == 'newBehavior' || entry.id == 'newEvent' || entry.id == 'newMaterial' || entry.id == 'newShape' || entry.id == 'newModel' || entry.id == 'newField' || entry.id == 'newSystem' || entry.id == 'newLibrary' || entry.id == 'newShaderLibrary' || entry.id == 'newUiWidget' || entry.id == 'newUiDocument' || entry.id == 'newStylesheet')">
+      <use ui="MenuItem" data-alias-item="entry" data-event-click="emit('StudioCommand', entry.id, '')"/>
+    </div>
+  </use>
+</div>

@@ -1,0 +1,15 @@
+version 3
+name "StudioRuntimeState"
+domain "event"
+id_counter 7
+(array)variables {
+    - id=1 name="Session" type="int" category="Payload"
+    - id=2 name="Ready" type="bool" category="Payload"
+    - id=3 name="Playing" type="bool" category="Payload"
+    - id=4 name="Document" type="int" category="Payload"
+    - id=5 name="Revision" type="int" category="Payload"
+    - id=6 name="Steps" type="int" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

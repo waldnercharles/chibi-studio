@@ -24,7 +24,7 @@ body.area-panel { padding: 0dp; overflow: hidden; }
 .canvas-actions-head .icon { color: var(--faint-foreground); font-size: 12dp; width: 14dp; }
 .canvas-actions-head .title { font-weight: 600; color: var(--foreground); }
 .canvas-actions > [data-ui=List] { flex: 1 1 0dp; min-height: 0dp; }
-#canvas-actions-list { box-sizing: border-box; padding: 2dp 4dp; font-family: var(--font-numeric); }
+#canvas-actions-list { box-sizing: border-box; padding: 2dp 4dp; font-family: var(--font-numeric, GeistNumeric); }
 .canvas-action { display: flex; align-items: center; gap: 6dp; height: var(--studio-height-20, 20dp); padding: 0dp 6dp; border-radius: var(--r); white-space: nowrap; overflow: hidden; }
 body.comfortable .canvas-action { height: var(--studio-height-24, 24dp); }
 .canvas-action:hover { background-color: var(--accent); }

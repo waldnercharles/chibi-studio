@@ -1,5 +1,8 @@
 # Serial browser acceptance, 2026-10-10
 
+This is historical evidence for the retired native editor. It does not validate
+the authored Studio application or its current browser package.
+
 The published Celeste player and its embedded editor were exercised through
 trusted browser pointer and physical-key events in an isolated browser profile.
 The checks found a save/reload data-loss window. The candidate storage fix passed

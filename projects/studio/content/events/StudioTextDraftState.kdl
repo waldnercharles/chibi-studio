@@ -1,0 +1,12 @@
+version 3
+name "StudioTextDraftState"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Document" type="int" category="Payload"
+    - id=2 name="Pending" type="bool" category="Payload"
+    - id=3 name="Dirty" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

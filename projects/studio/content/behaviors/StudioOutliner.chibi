@@ -1,0 +1,1369 @@
+behavior StudioOutliner {
+    self.WorkspaceActive := false
+    Pane: string = "outliner"
+    on Begin {
+        info := query_workspace_info()
+        WorkspaceActive = info.Active
+        await Availability()
+    }
+    ReadOnly := false
+    Document: int = 0
+    Revision: int = 0
+    Kind: string = ""
+    Fields: struct<"WorkspaceAssetField">[] = []
+    Objects: int[] = []
+    Visible: int[] = []
+    Selected: string[] = []
+    Folded: string[] = []
+    Hidden: string[] = []
+    Locked: string[] = []
+    Isolated: string[] = []
+    Filter: string = ""
+    Active: string = ""
+    Anchor: int = -1
+    Top: float = -1.0
+    View: float = -1.0
+    Error: string = ""
+    MutationPath: string = ""
+    MutationParent: string = ""
+    MutationBefore: string = ""
+    MutationName: string = ""
+    MutationPrototype: string = ""
+    MutationMode: string = ""
+    MutationBusy := false
+    MutationDocument: int = 0
+    MutationRevision: int = 0
+    MutationKind: string = ""
+    MutationTargets: string[] = []
+    Request: int = 0
+    Lease := false
+    Executing := false
+    Committing := false
+    Transaction := false
+    CancelRequested := false
+    PaneContext: string = ""
+    TextEditing := false
+    MutationParentKey: string = ""
+    MutationBeforeKey: string = ""
+    MutationResult: string[] = []
+    PolicyFrom: string[] = []
+    PolicyTo: string[] = []
+    DuplicateFrom: string[] = []
+    DuplicateTo: string[] = []
+
+    IsObject :: pure fn(Index: int) -> bool {
+        if Index == 0 {
+            return true
+        }
+        row := Fields[Index]
+        if !text_equal(row.type, "object") || row.parent < 0 {
+            return false
+        }
+        parent := Fields[row.parent]
+        return text_equal(parent.name, "entities") || text_equal(parent.name, "children")
+    }
+    ObjectParent :: pure fn(Index: int) -> int {
+        index := Fields[Index].parent
+        while index >= 0 {
+            if IsObject(index) {
+                return index
+            }
+            index = Fields[index].parent
+        }
+        return -1
+    }
+    NameOf :: pure fn(Index: int) -> string {
+        i := Index + 1
+        while i < length(Fields) {
+            if Fields[i].depth <= Fields[Index].depth {
+                break
+            }
+            if Fields[i].parent == Index && text_equal(Fields[i].name, "name") {
+                return Fields[i].text
+            }
+            i += 1
+        }
+        return "Unnamed object"
+    }
+    PolicyKey :: pure fn(Index: int) -> string {
+        if Index == 0 {
+            return ""
+        }
+        key := NameOf(Index)
+        parent := ObjectParent(Index)
+        while parent > 0 {
+            key = format_text("{}.{}", NameOf(parent), key)
+            parent = ObjectParent(parent)
+        }
+        return key
+    }
+    PublishVisibility :: fn() {
+        hidden: string[] = []
+        locked: string[] = []
+        isolated: string[] = []
+        foreach (index in Objects) {
+            key := PolicyKey(index)
+            if contains(Hidden, key) {
+                hidden = array_add(hidden, Fields[index].path)
+            }
+            if contains(Locked, key) {
+                locked = array_add(locked, Fields[index].path)
+            }
+            if contains(Isolated, key) {
+                isolated = array_add(isolated, Fields[index].path)
+            }
+        }
+        await PublishStats()
+        await send_event<"StudioObjectVisibility">(self, Document, Revision, hidden, locked, isolated)
+    }
+    PublishStats :: fn() {
+        hidden_count := 0
+        for index in Objects {
+            key := PolicyKey(index)
+            if contains(Hidden, key) || (length(Isolated) > 0 && !contains(Isolated, key)) { hidden_count += 1 }
+        }
+        await set_ui_data(Name: "outliner.total", Value: length(Objects))
+        await set_ui_data(Name: "outliner.hiddenCount", Value: hidden_count)
+        selected_name := ""
+        if length(Selected) == 1 {
+            selected_index := IndexOf(Selected[0])
+            if selected_index >= 0 { selected_name = NameOf(selected_index) }
+        }
+        await set_ui_data(Name: "outliner.selectedName", Value: selected_name)
+        return
+    }
+    Refresh :: fn() {
+        if Document <= 0 || text_equal(Kind, "") {
+            Fields = []
+            Objects = []
+            Visible = []
+            await Window()
+            return
+        }
+        inspected := workspace_asset_inspect(Document, Revision, Kind)
+        Error = inspected.Error
+        if inspected.Ok {
+            Fields = inspected.Fields
+            Objects = []
+            i: int = 0
+            while i < length(Fields) {
+                if IsObject(i) {
+                    Objects = array_add(Objects, i)
+                }
+                i += 1
+            }
+            // Index paths are only valid at this revision. Drop removed selections.
+            kept: string[] = []
+            foreach (index in Objects) {
+                if contains(Selected, Fields[index].path) {
+                    kept = array_add(kept, Fields[index].path)
+                }
+            }
+            Selected = kept
+        } else {
+            Fields = []
+            Objects = []
+            Selected = []
+        }
+        await Rebuild()
+    }
+    Rebuild :: fn() {
+        Visible = []
+        matches: int[] = []
+        if !text_equal(Filter, "") {
+            foreach (index in Objects) {
+                if text_contains(Filter, NameOf(index), true) {
+                    matches = add_unique(matches, index)
+                    parent := ObjectParent(index)
+                    while parent >= 0 {
+                        matches = add_unique(matches, parent)
+                        parent = ObjectParent(parent)
+                    }
+                }
+            }
+        }
+        foreach (index in Objects) {
+            shown := true
+            if !text_equal(Filter, "") {
+                shown = contains(matches, index)
+            } else {
+                parent := ObjectParent(index)
+                while parent >= 0 {
+                    if contains(Folded, Fields[parent].path) {
+                        shown = false
+                        break
+                    }
+                    parent = ObjectParent(parent)
+                }
+            }
+            if shown {
+                Visible = array_add(Visible, index)
+            }
+        }
+        Top = -1.0
+        await PublishStats()
+        await set_ui_data(Name: "outliner.height", Value: length(Visible) * 26)
+        await set_ui_data(Name: "outliner.error", Value: Error)
+        await set_ui_data(Name: "outliner.scene", Value: !text_equal(Kind, "") && !ReadOnly)
+        await set_ui_data(Name: "outliner.active", Value: Active)
+        await set_ui_data(Name: "outliner.empty", Value: length(Visible) == 0)
+        await set_ui_data(Name: "outliner.filter", Value: Filter)
+        await Window()
+        await set_ui_data(Name: "outliner.ready", Value: Document > 0 && !text_equal(Kind, ""))
+        await PublishSelection()
+        await PublishVisibility()
+    }
+    PublishSelection :: fn() {
+        await send_event<"StudioObjectSelection">(self, Document, Revision, Kind, Selected)
+        await Availability()
+    }
+    Availability :: fn() {
+        ready := WorkspaceActive && Document > 0 && !text_equal(Kind, "") && !MutationBusy
+        selected := ready && length(Selected) > 0 && !contains(Selected, "")
+        mutable := selected && !ReadOnly
+        ids1: string[] = ["duplicate", "delete", "hideSelected", "hideUnselected"]
+        foreach (id in ids1) {
+            await send_event<"StudioCommandAvailability">(self, id, mutable)
+        }
+        ids2: string[] = ["rename", "objectUp", "objectDown", "objectIndent", "objectOutdent", "objectRoot"]
+        foreach (id in ids2) {
+            await send_event<"StudioCommandAvailability">(self, id, mutable && (length(Selected) == 1 || !text_equal(id, "rename")))
+        }
+        await send_event<"StudioCommandAvailability">(self, "openPrototype", selected && length(Selected) == 1)
+        ids3: string[] = ["selectPrevious", "selectNext", "extendPrevious", "extendNext", "selectAll", "deselect", "showAll"]
+        foreach (id in ids3) {
+            await send_event<"StudioCommandAvailability">(self, id, ready)
+        }
+        await send_event<"StudioCommandAvailability">(self, "addComponent", ready && length(Selected) > 0 && !ReadOnly)
+    }
+    Window :: fn() {
+        top := get_ui_scroll(Element: format_text("#studio-outliner-list-{}", Pane))."Scroll Top"
+        view := get_ui_scroll(Element: format_text("#studio-outliner-list-{}", Pane))."View Height"
+        if view <= 0.0 {
+            view = 600.0
+        }
+        Top = top
+        View = view
+        first := cast<int>(max(0, floor(top / 26.0) - 4))
+        last := cast<int>(min(length(Visible), ceil((top + view) / 26.0) + 4))
+        slots: int[] = []
+        slot: int = 0
+        i := first
+        while i < last {
+            index := Visible[i]
+            row := Fields[index]
+            base := format_text("outliner.rows.{}", slot)
+            depth: int = 0
+            parent := ObjectParent(index)
+            while parent >= 0 {
+                depth += 1
+                parent = ObjectParent(parent)
+            }
+            children := false
+            foreach (child in Objects) {
+                if ObjectParent(child) == index {
+                    children = true
+                    break
+                }
+            }
+            await set_ui_data(Name: format_text("{}.key", base), Value: row.path)
+            await set_ui_data(Name: format_text("{}.dragKey", base), Value: format_text("{}:{}:{}", Document, Revision, row.path))
+            await set_ui_data(Name: format_text("{}.label", base), Value: NameOf(index))
+            await set_ui_data(Name: format_text("{}.icon", base), Value: "󰆧")
+            await set_ui_data(Name: format_text("{}.depth", base), Value: 0)
+            await set_ui_data(Name: format_text("{}.indent", base), Value: depth)
+            await set_ui_data(Name: format_text("{}.parent", base), Value: children)
+            await set_ui_data(Name: format_text("{}.open", base), Value: !contains(Folded, row.path))
+            await set_ui_data(Name: format_text("{}.selected", base), Value: contains(Selected, row.path))
+            await set_ui_data(Name: format_text("{}.active", base), Value: text_equal(Active, row.path))
+            await set_ui_data(Name: format_text("{}.hidden", base), Value: contains(Hidden, PolicyKey(index)) || (length(Isolated) > 0 && !contains(Isolated, PolicyKey(index))))
+            await set_ui_data(Name: format_text("{}.locked", base), Value: contains(Locked, PolicyKey(index)))
+            await set_ui_data(Name: format_text("{}.root", base), Value: index == 0)
+            slots = array_add(slots, slot)
+            slot += 1
+            i += 1
+        }
+        await set_ui_data(Name: "outliner.slots", Value: slots)
+        await set_ui_data(Name: "outliner.top", Value: first * 26)
+        await set_ui_data(Name: "outliner.active", Value: Active)
+        await set_ui_data(Name: "outliner.selectionCount", Value: length(Selected))
+        selected_name := ""
+        if length(Selected) == 1 {
+            selected_index := IndexOf(Selected[0])
+            if selected_index >= 0 { selected_name = NameOf(selected_index) }
+        }
+        await set_ui_data(Name: "outliner.selectedName", Value: selected_name)
+    }
+    on StudioCollaborationState {
+        ReadOnly = event.Active
+        if ReadOnly && MutationBusy && !Committing {
+            CancelRequested = true
+        }
+        await Availability()
+        await set_ui_data(Name: "outliner.readOnly", Value: ReadOnly)
+        await set_ui_data(Name: "outliner.scene", Value: !text_equal(Kind, "") && !ReadOnly)
+    }
+    on StudioDocumentState {
+        if !WorkspaceActive {
+            return
+        }
+        if MutationBusy && !Committing && event.Document != MutationDocument {
+            CancelRequested = true
+        }
+        kind := ""
+        if event.Document > 0 {
+            identity := workspace_asset_identity(event.Document, event.Revision)
+            if identity.Ok && (text_equal(identity.Kind, "scene") || text_equal(identity.Kind, "prototype")) {
+                kind = identity.Kind
+            }
+        }
+        if text_equal(kind, "") && self.Document > 0 {
+            return
+        }
+        if self.Document != event.Document {
+            Selected = []
+            Folded = []
+            Hidden = []
+            Locked = []
+            Isolated = []
+            Active = ""
+            Anchor = -1
+        }
+        if self.Document != event.Document || self.Revision != event.Revision || !text_equal(Kind, kind) {
+            self.Document = event.Document
+            self.Revision = event.Revision
+            Kind = kind
+            await Refresh()
+        }
+    }
+    on StudioPaneFocus {
+        if text_equal(event.Context, "objects") { Pane = event.Area }
+    }
+    on StudioOutlinerFind {
+        await focus_ui_element(Element: format_text("#studio-outliner-filter-{}", Pane))
+    }
+    on StudioOutlinerFilter {
+        Filter = event.Text
+        await Rebuild()
+    }
+    on StudioOutlinerFold {
+        if contains(Folded, event.Path) {
+            Folded = remove_item(Folded, event.Path)
+        } else {
+            Folded = add_unique(Folded, event.Path)
+        }
+        await Rebuild()
+    }
+    Select :: fn(Path: string, Mod: bool, Shift: bool) {
+        if MutationBusy {
+            return
+        }
+        at: int = -1
+        i: int = 0
+        foreach (index in Visible) {
+            if text_equal(Fields[index].path, Path) {
+                at = i
+                break
+            }
+            i += 1
+        }
+        if at < 0 {
+            return
+        }
+        if Shift && Anchor >= 0 && Anchor < length(Visible) {
+            if !Mod {
+                Selected = []
+            }
+            low := cast<int>(min(at, Anchor))
+            high := cast<int>(max(at, Anchor))
+            while low <= high {
+                Selected = add_unique(Selected, Fields[Visible[low]].path)
+                low += 1
+            }
+        } else {
+            if Mod {
+                if contains(Selected, Path) {
+                    Selected = remove_item(Selected, Path)
+                } else {
+                    Selected = add_unique(Selected, Path)
+                }
+            } else {
+                Selected = [Path]
+            }
+            Anchor = at
+        }
+        Active = Path
+        await Window()
+        await PublishSelection()
+    }
+    on StudioOutlinerSelectionRequested {
+        if MutationBusy {
+            return
+        }
+        if !WorkspaceActive || event.Document != self.Document || event.Revision != self.Revision {
+            return
+        }
+        checked: string[] = []
+        foreach (path in event.Paths) {
+            found := false
+            foreach (index in Objects) {
+                if text_equal(Fields[index].path, path) {
+                    found = true
+                    break
+                }
+            }
+            if !found {
+                return
+            }
+            checked = add_unique(checked, path)
+        }
+        if !event.Mod {
+            Selected = []
+        }
+        foreach (path in checked) {
+            Selected = add_unique(Selected, path)
+        }
+        if length(checked) > 0 {
+            Active = checked[length(checked) - 1]
+        } else {
+            if !event.Mod {
+                Active = ""
+            }
+        }
+        Anchor = -1
+        at: int = 0
+        foreach (index in Visible) {
+            if text_equal(Fields[index].path, Active) {
+                Anchor = at
+                break
+            }
+            at += 1
+        }
+        await Window()
+        await PublishSelection()
+    }
+    on StudioOutlinerSelect {
+        await Select(event.Path, event.Mod, event.Shift)
+    }
+    on StudioOutlinerKey {
+        if MutationBusy {
+            return
+        }
+        if length(Visible) == 0 {
+            return
+        }
+        at: int = 0
+        i: int = 0
+        foreach (index in Visible) {
+            if text_equal(Fields[index].path, Active) {
+                at = i
+                break
+            }
+            i += 1
+        }
+        if event.Mod && (text_equal(event.Key, "A") || text_equal(event.Key, "a")) {
+            Selected = []
+            foreach (index in Visible) {
+                if index > 0 {
+                    Selected = array_add(Selected, Fields[index].path)
+                }
+            }
+            await Window()
+            await PublishSelection()
+            return
+        }
+        if text_equal(event.Key, "Escape") {
+            Selected = []
+            Active = ""
+            Anchor = -1
+            await Window()
+            await PublishSelection()
+            return
+        }
+        if text_equal(event.Key, "Right") {
+            Folded = remove_item(Folded, Active)
+            await Rebuild()
+            return
+        }
+        if text_equal(event.Key, "Left") {
+            Folded = add_unique(Folded, Active)
+            await Rebuild()
+            return
+        }
+        if text_equal(event.Key, "F2") || text_equal(event.Key, "Enter") {
+            if !text_equal(Active, "") {
+                await BeginMutation("rename", Active, { x: 24.0, y: 80.0 })
+            }
+            return
+        }
+        if text_equal(event.Key, "Home") {
+            at = 0
+        } else {
+            if text_equal(event.Key, "End") {
+                at = length(Visible) - 1
+            } else {
+                if text_equal(event.Key, "Down") {
+                    at += 1
+                } else {
+                    if text_equal(event.Key, "Up") {
+                        at -= 1
+                    } else {
+                        return
+                    }
+                }
+            }
+        }
+        at = cast<int>(max(0, min(length(Visible) - 1, at)))
+        await Select(Fields[Visible[at]].path, false, event.Shift)
+        await reveal_ui_list_row(Element: format_text("#studio-outliner-list-{}", Pane), Row: at)
+    }
+    on StudioOutlinerVisibility {
+        if MutationBusy {
+            return
+        }
+        key := ""
+        foreach (index in Objects) {
+            if text_equal(Fields[index].path, event.Path) {
+                key = PolicyKey(index)
+                break
+            }
+        }
+        if text_equal(event.Action, "hide") {
+            if contains(Hidden, key) {
+                Hidden = remove_item(Hidden, key)
+            } else {
+                Hidden = add_unique(Hidden, key)
+            }
+        }
+        if text_equal(event.Action, "lock") {
+            if contains(Locked, key) {
+                Locked = remove_item(Locked, key)
+            } else {
+                Locked = add_unique(Locked, key)
+            }
+        }
+        if text_equal(event.Action, "isolate") {
+            Isolated = []
+            foreach (index in Objects) {
+                if contains(Selected, Fields[index].path) {
+                    Isolated = array_add(Isolated, PolicyKey(index))
+                }
+            }
+        }
+        if text_equal(event.Action, "showAll") {
+            Hidden = []
+            Isolated = []
+        }
+        await Window()
+        await PublishVisibility()
+    }
+    IndexOf :: pure fn(Path: string) -> int {
+        foreach (index in Objects) {
+            if text_equal(Fields[index].path, Path) {
+                return index
+            }
+        }
+        return -1
+    }
+    KeyIndex :: pure fn(Key: string) -> int {
+        foreach (index in Objects) {
+            if text_equal(PolicyKey(index), Key) {
+                return index
+            }
+        }
+        return -1
+    }
+    Below :: pure fn(Path: string, Root: string, Separator: string) -> bool {
+        bytes := text_difference("", Root).Inserted
+        return text_equal(Path, Root) || text_equal(text_slice(Path, 0, bytes + 1).Text, format_text("{}{}", Root, Separator))
+    }
+    Roots :: pure fn(Paths: string[]) -> string[] {
+        result: string[] = []
+        foreach (index in Objects) {
+            path := Fields[index].path
+            if index > 0 && contains(Paths, path) {
+                ancestor := ObjectParent(index)
+                covered := false
+                while ancestor > 0 {
+                    if contains(Paths, Fields[ancestor].path) {
+                        covered = true
+                        break
+                    }
+                    ancestor = ObjectParent(ancestor)
+                }
+                if !covered {
+                    result = array_add(result, PolicyKey(index))
+                }
+            }
+        }
+        return result
+    }
+    Snapshot :: fn() {
+        MutationDocument = Document
+        MutationRevision = Revision
+        MutationKind = Kind
+    }
+    BeginMutation :: fn(Mode: string, Path: string, Pointer: struct<"CF_V2">) {
+        if ReadOnly || MutationBusy || text_equal(Kind, "") {
+            return
+        }
+        if !text_equal(Mode, "addRoot") && IndexOf(Path) < 0 {
+            return
+        }
+        await Snapshot()
+        MutationMode = Mode
+        MutationPath = Path
+        MutationName = ""
+        MutationPrototype = ""
+        MutationParent = Path
+        MutationBefore = ""
+        MutationTargets = Roots([Path])
+        if !text_equal(Mode, "rename") && contains(Selected, Path) {
+            MutationTargets = Roots(Selected)
+        }
+        if text_equal(Mode, "rename") && length(MutationTargets) != 1 {
+            return
+        }
+        if text_equal(Mode, "addRoot") {
+            MutationParent = ""
+        }
+        if text_equal(Mode, "rename") {
+            MutationName = NameOf(IndexOf(Path))
+        }
+        await set_ui_data(Name: "outliner.mutationCount", Value: length(MutationTargets))
+        await set_ui_data(Name: "outliner.mutationMode", Value: Mode)
+        await set_ui_data(Name: "outliner.mutationName", Value: MutationName)
+        await set_ui_data(Name: "outliner.mutationPrototype", Value: "")
+        await set_ui_data(Name: "outliner.mutationError", Value: "")
+        await show_ui_popover(Element: format_text("#studio-outliner-mutation-{}", Pane), At: Pointer)
+    }
+    StartMutation :: fn() {
+        if ReadOnly || MutationBusy {
+            return
+        }
+        if MutationDocument != Document || MutationRevision != Revision {
+            Error = "Source changed. Reopen the object action and try again."
+            await set_ui_data(Name: "outliner.mutationError", Value: Error)
+            return
+        }
+        if Request >= 2147483647 {
+            return
+        }
+        if length(MutationTargets) > 256 {
+            Error = "Select at most 256 object roots for one edit."
+            await set_ui_data(Name: "outliner.error", Value: Error)
+            return
+        }
+        MutationParentKey = ""
+        MutationBeforeKey = ""
+        parent := IndexOf(MutationParent)
+        before := IndexOf(MutationBefore)
+        if parent > 0 {
+            MutationParentKey = PolicyKey(parent)
+        }
+        if before > 0 {
+            MutationBeforeKey = PolicyKey(before)
+        }
+        MutationResult = []
+        Request += 1
+        MutationBusy = true
+        CancelRequested = false
+        await set_ui_data(Name: "outliner.mutationBusy", Value: true)
+        await Availability()
+        await send_event<"StudioDocumentExternalEditRequested">(self, "outliner", MutationDocument, Request)
+    }
+    LoadMutation :: fn() -> bool {
+        current := await workspace_document_info(MutationDocument)
+        if !current.Ok {
+            Error = current.Error
+            return false
+        }
+        MutationRevision = current.Revision
+        inspected := workspace_asset_inspect(MutationDocument, MutationRevision, MutationKind)
+        if !inspected.Ok {
+            Error = inspected.Error
+            return false
+        }
+        Fields = inspected.Fields
+        Objects = []
+        i: int = 0
+        while i < length(Fields) {
+            if IsObject(i) {
+                Objects = array_add(Objects, i)
+            }
+            i += 1
+        }
+        return true
+    }
+    RemapPolicy :: pure fn(Keys: string[]) -> string[] {
+        result: string[] = []
+        foreach (key in Keys) {
+            match: int = -1
+            bytes: int = -1
+            n: int = 0
+            foreach (original in PolicyFrom) {
+                size := text_difference("", original).Inserted
+                if size > bytes && Below(key, original, ".") {
+                    match = n
+                    bytes = size
+                }
+                n += 1
+            }
+            mapped := key
+            if match >= 0 {
+                size := text_difference("", key).Inserted
+                mapped = format_text("{}{}", PolicyTo[match], text_slice(key, bytes, size).Text)
+            }
+            result = add_unique(result, mapped)
+        }
+        return result
+    }
+    FinishMutation :: fn(Ok: bool, Error: string) {
+        request := Request
+        if Transaction {
+            current := await workspace_document_info(MutationDocument)
+            if current.Ok {
+                if Ok && !CancelRequested {
+                    Committing = true
+                    committed := await workspace_document_commit(MutationDocument, current.Revision)
+                    if !committed.Ok {
+                        Ok = false
+                        Error = committed.Error
+                    }
+                }
+                if !Ok || CancelRequested {
+                    canceled := await workspace_document_cancel(MutationDocument, current.Revision)
+                    if !canceled.Ok {
+                        Error = format_text("{} Rollback failed: {}", Error, canceled.Error)
+                    }
+                }
+            } else {
+                Ok = false
+                Error = current.Error
+            }
+            Transaction = false
+        }
+        if Lease {
+            Lease = false
+            await send_event<"StudioDocumentExternalEditComplete">(self, "outliner", MutationDocument, request)
+        }
+        if request != Request {
+            return
+        }
+        if CancelRequested {
+            Ok = false
+        }
+        if Document == MutationDocument {
+            current := await workspace_document_info(Document)
+            if current.Ok {
+                Revision = current.Revision
+                if Ok {
+                    Hidden = RemapPolicy(Hidden)
+                    Locked = RemapPolicy(Locked)
+                    Isolated = RemapPolicy(Isolated)
+                }
+                await Refresh()
+                Selected = []
+                Active = ""
+                Anchor = -1
+                restore := MutationTargets
+                if Ok {
+                    restore = MutationResult
+                }
+                foreach (key in restore) {
+                    index := KeyIndex(key)
+                    if index > 0 {
+                        Selected = add_unique(Selected, Fields[index].path)
+                        Active = Fields[index].path
+                    }
+                }
+                await Window()
+                await PublishSelection()
+            }
+        }
+        Executing = false
+        Committing = false
+        MutationBusy = false
+        self.Error = Error
+        await set_ui_data(Name: "outliner.mutationBusy", Value: false)
+        await set_ui_data(Name: "outliner.mutationError", Value: Error)
+        await set_ui_data(Name: "outliner.error", Value: Error)
+        if Ok {
+            MutationMode = ""
+        }
+        // A rollback also advances revision; refresh canonical tabs and selections.
+        await send_event<"StudioDocumentCommand">(self, "refresh", "")
+        await Availability()
+    }
+    ExecuteMutation :: fn() {
+        Executing = true
+        PolicyFrom = []
+        PolicyTo = []
+        Error = ""
+        started := await workspace_document_begin(MutationDocument, MutationRevision)
+        if !started.Ok {
+            await FinishMutation(false, started.Error)
+            return
+        }
+        Transaction = true
+        if !await LoadMutation() {
+            await FinishMutation(false, Error)
+            return
+        }
+        mode := MutationMode
+        if text_equal(mode, "delete") {
+            paths: string[] = []
+            foreach (key in MutationTargets) {
+                index := KeyIndex(key)
+                if index > 0 {
+                    paths = array_add(paths, Fields[index].path)
+                }
+            }
+            cut := workspace_scene_clipboard(MutationDocument, MutationRevision, paths, true)
+            if !cut.Ok {
+                await FinishMutation(false, cut.Error)
+                return
+            }
+            current := await workspace_document_read(MutationDocument)
+            if !current.Ok {
+                await FinishMutation(false, current.Error)
+                return
+            }
+            edited := await workspace_document_edit(MutationDocument, MutationRevision, 0, text_difference("", current.Text).Inserted, cut.Text)
+            await FinishMutation(edited.Ok, edited.Error)
+            return
+        }
+        if text_equal(mode, "add") || text_equal(mode, "addRoot") {
+            resultKey := MutationName
+            if !text_equal(MutationParentKey, "") {
+                resultKey = format_text("{}.{}", MutationParentKey, resultKey)
+            }
+            MutationResult = [resultKey]
+            added := await workspace_scene_add(MutationDocument, MutationRevision, MutationParent, MutationName, MutationPrototype)
+            await FinishMutation(added.Ok, added.Error)
+            return
+        }
+        DuplicateFrom = []
+        DuplicateTo = []
+        count := length(MutationTargets)
+        step: int = 0
+        while step < count {
+            if CancelRequested {
+                await FinishMutation(false, "Object edit canceled.")
+                return
+            }
+            ordinal := step
+            if text_equal(mode, "objectDown") || text_equal(mode, "objectOutdent") {
+                ordinal = count - 1 - step
+            }
+            key := MutationTargets[ordinal]
+            index := KeyIndex(key)
+            if index <= 0 {
+                await FinishMutation(false, "A selected object is no longer available.")
+                return
+            }
+            path := Fields[index].path
+            parent := ObjectParent(index)
+            parentPath := ""
+            parentKey := ""
+            if parent > 0 {
+                parentPath = Fields[parent].path
+                parentKey = PolicyKey(parent)
+            }
+            if text_equal(mode, "rename") {
+                renamed := await workspace_scene_rename(MutationDocument, MutationRevision, path, MutationName)
+                if !renamed.Ok {
+                    await FinishMutation(false, renamed.Error)
+                    return
+                }
+                renamedKey := MutationName
+                if parent > 0 {
+                    renamedKey = format_text("{}.{}", parentKey, MutationName)
+                }
+                MutationResult = array_add(MutationResult, renamedKey)
+                PolicyFrom = array_add(PolicyFrom, key)
+                PolicyTo = array_add(PolicyTo, renamedKey)
+            } else {
+                if text_equal(mode, "duplicate") {
+                    name := MutationName
+                    if text_equal(name, "") || count > 1 {
+                        suffix: int = 2
+                        name = format_text("{}{}", NameOf(index), suffix)
+                        candidateKey := name
+                        if parent > 0 {
+                            candidateKey = format_text("{}.{}", parentKey, name)
+                        }
+                        while KeyIndex(candidateKey) >= 0 {
+                            suffix += 1
+                            name = format_text("{}{}", NameOf(index), suffix)
+                            candidateKey = name
+                            if parent > 0 {
+                                candidateKey = format_text("{}.{}", parentKey, name)
+                            }
+                        }
+                    }
+                    duplicated := await workspace_scene_duplicate(MutationDocument, MutationRevision, path, name)
+                    if !duplicated.Ok {
+                        await FinishMutation(false, duplicated.Error)
+                        return
+                    }
+                    newKey := name
+                    if parent > 0 {
+                        newKey = format_text("{}.{}", parentKey, name)
+                    }
+                    MutationResult = array_add(MutationResult, newKey)
+                    DuplicateFrom = array_add(DuplicateFrom, key)
+                    DuplicateTo = array_add(DuplicateTo, newKey)
+                } else {
+                    before := ""
+                    destination := parentPath
+                    siblings: int[] = []
+                    foreach (object in Objects) {
+                        if object > 0 && ObjectParent(object) == parent {
+                            siblings = array_add(siblings, object)
+                        }
+                    }
+                    at: int = -1
+                    j: int = 0
+                    foreach (sibling in siblings) {
+                        if sibling == index {
+                            at = j
+                        }
+                        j += 1
+                    }
+                    if text_equal(mode, "move") {
+                        destination = ""
+                        before = ""
+                        target := KeyIndex(MutationParentKey)
+                        boundary := KeyIndex(MutationBeforeKey)
+                        if !text_equal(MutationParentKey, "") && target <= 0 {
+                            await FinishMutation(false, "The drop destination changed.")
+                            return
+                        }
+                        if !text_equal(MutationBeforeKey, "") && boundary <= 0 {
+                            await FinishMutation(false, "The drop insertion point changed.")
+                            return
+                        }
+                        if target > 0 {
+                            destination = Fields[target].path
+                        }
+                        if boundary > 0 {
+                            before = Fields[boundary].path
+                        }
+                    }
+                    if text_equal(mode, "objectRoot") {
+                        destination = ""
+                    }
+                    if text_equal(mode, "objectUp") {
+                        previous := at - 1
+                        while previous >= 0 && contains(MutationTargets, PolicyKey(siblings[previous])) {
+                            previous -= 1
+                        }
+                        if previous < 0 {
+                            MutationResult = add_unique(MutationResult, key)
+                            step += 1
+                            continue
+                        }
+                        before = Fields[siblings[previous]].path
+                    }
+                    if text_equal(mode, "objectDown") {
+                        next := at + 1
+                        while next < length(siblings) && contains(MutationTargets, PolicyKey(siblings[next])) {
+                            next += 1
+                        }
+                        if next >= length(siblings) {
+                            MutationResult = add_unique(MutationResult, key)
+                            step += 1
+                            continue
+                        }
+                        if next + 1 < length(siblings) {
+                            before = Fields[siblings[next + 1]].path
+                        }
+                    }
+                    if text_equal(mode, "objectIndent") {
+                        previous := at - 1
+                        while previous >= 0 && contains(MutationTargets, PolicyKey(siblings[previous])) {
+                            previous -= 1
+                        }
+                        if previous < 0 {
+                            MutationResult = add_unique(MutationResult, key)
+                            step += 1
+                            continue
+                        }
+                        destination = Fields[siblings[previous]].path
+                    }
+                    if text_equal(mode, "objectOutdent") {
+                        if parent <= 0 {
+                            MutationResult = add_unique(MutationResult, key)
+                            step += 1
+                            continue
+                        }
+                        grandparent := ObjectParent(parent)
+                        destination = ""
+                        if grandparent > 0 {
+                            destination = Fields[grandparent].path
+                        }
+                        past := false
+                        foreach (object in Objects) {
+                            if past && ObjectParent(object) == grandparent {
+                                before = Fields[object].path
+                                break
+                            }
+                            if object == parent {
+                                past = true
+                            }
+                        }
+                    }
+                    destinationKey := ""
+                    destinationIndex := IndexOf(destination)
+                    if destinationIndex > 0 {
+                        destinationKey = PolicyKey(destinationIndex)
+                    }
+                    resultKey := NameOf(index)
+                    if destinationIndex > 0 {
+                        resultKey = format_text("{}.{}", destinationKey, resultKey)
+                    }
+                    moved := await workspace_scene_move(MutationDocument, MutationRevision, path, destination, before)
+                    if !moved.Ok {
+                        await FinishMutation(false, moved.Error)
+                        return
+                    }
+                    MutationResult = add_unique(MutationResult, resultKey)
+                    PolicyFrom = array_add(PolicyFrom, key)
+                    PolicyTo = array_add(PolicyTo, resultKey)
+                }
+            }
+            if !await LoadMutation() {
+                await FinishMutation(false, Error)
+                return
+            }
+            step += 1
+        }
+        // Native duplication remaps each subtree. Complete cross-root bindings in one pass.
+        if text_equal(mode, "duplicate") {
+            fields := Fields
+            foreach (field in fields) {
+                if !text_equal(field.reference, "entity") || !field.present {
+                    continue
+                }
+                copied := false
+                foreach (newKey in DuplicateTo) {
+                    root := KeyIndex(newKey)
+                    if root > 0 && Below(field.path, Fields[root].path, "/") {
+                        copied = true
+                        break
+                    }
+                }
+                if !copied {
+                    continue
+                }
+                mapped := field.text
+                match: int = -1
+                bytes: int = -1
+                n: int = 0
+                foreach (oldKey in DuplicateFrom) {
+                    size := text_difference("", oldKey).Inserted
+                    if size > bytes && Below(field.text, oldKey, ".") {
+                        match = n
+                        bytes = size
+                    }
+                    n += 1
+                }
+                if match >= 0 {
+                    size := text_difference("", field.text).Inserted
+                    mapped = format_text("{}{}", DuplicateTo[match], text_slice(field.text, bytes, size).Text)
+                    edited := await workspace_asset_edit(MutationDocument, MutationRevision, MutationKind, "set-text", field.path, mapped)
+                    if !edited.Ok {
+                        await FinishMutation(false, edited.Error)
+                        return
+                    }
+                    current := await workspace_document_info(MutationDocument)
+                    if !current.Ok {
+                        await FinishMutation(false, current.Error)
+                        return
+                    }
+                    MutationRevision = current.Revision
+                }
+            }
+        }
+        if CancelRequested {
+            await FinishMutation(false, "Object edit canceled.")
+            return
+        }
+        await FinishMutation(true, "")
+    }
+    on StudioDocumentExternalEditReady {
+        if !MutationBusy || !text_equal(event.Owner, "outliner") || event.Request != self.Request || event.Document != MutationDocument {
+            return
+        }
+        Lease = event.Ok
+        if !event.Ok {
+            await FinishMutation(false, event.Error)
+            return
+        }
+        if event.Revision != MutationRevision || ReadOnly || CancelRequested {
+            await FinishMutation(false, "Source changed or the edit was canceled. Select the objects again.")
+            return
+        }
+        await ExecuteMutation()
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        if !MutationBusy || !text_equal(event.Owner, "outliner") || event.Request != self.Request || event.Document != MutationDocument {
+            return
+        }
+        if Committing {
+            return
+        }
+        CancelRequested = true
+        if !Executing {
+            await FinishMutation(false, "Object edit canceled.")
+        }
+    }
+    on StudioOutlinerMutation {
+        await BeginMutation(event.Action, event.Path, event.Pointer)
+    }
+    on StudioOutlinerMutationName {
+        if !MutationBusy {
+            MutationName = event.Text
+        }
+    }
+    on StudioOutlinerMutationPrototype {
+        if !MutationBusy {
+            MutationPrototype = event.Text
+        }
+    }
+    on StudioOutlinerMutationConfirm {
+        if !text_equal(MutationMode, "") {
+            await StartMutation()
+        }
+    }
+    on StudioOutlinerRename {
+        if ReadOnly || MutationBusy || IndexOf(event.Path) <= 0 {
+            return
+        }
+        await Snapshot()
+        MutationMode = "rename"
+        MutationPath = event.Path
+        MutationTargets = Roots([event.Path])
+        MutationName = event.Name
+        await StartMutation()
+    }
+    on StudioOutlinerDrop {
+        if ReadOnly || MutationBusy || !text_equal(event.Type, "authored-object") {
+            return
+        }
+        source: int = -1
+        foreach (object in Objects) {
+            if text_equal(event.Payload, format_text("{}:{}:{}", Document, Revision, Fields[object].path)) {
+                source = object
+                break
+            }
+        }
+        if source <= 0 {
+            return
+        }
+        await Snapshot()
+        MutationMode = "move"
+        MutationTargets = Roots([Fields[source].path])
+        if contains(Selected, Fields[source].path) {
+            MutationTargets = Roots(Selected)
+        }
+        MutationParent = event.Target
+        MutationBefore = ""
+        if text_equal(event.Zone, "before") || text_equal(event.Zone, "after") {
+            index := IndexOf(event.Target)
+            if index < 0 {
+                return
+            }
+            parent := ObjectParent(index)
+            MutationParent = ""
+            if parent > 0 {
+                MutationParent = Fields[parent].path
+            }
+            if text_equal(event.Zone, "before") {
+                MutationBefore = event.Target
+            } else {
+                found := false
+                foreach (object in Objects) {
+                    if found && ObjectParent(object) == parent {
+                        MutationBefore = Fields[object].path
+                        break
+                    }
+                    if object == index {
+                        found = true
+                    }
+                }
+            }
+        }
+        await StartMutation()
+    }
+    on StudioPaneFocus {
+        PaneContext = event.Context
+        self.TextEditing = event.TextEditing
+    }
+    on StudioSceneCommand {
+        if !WorkspaceActive || MutationBusy || TextEditing || text_equal(Kind, "") {
+            return
+        }
+        id := event.Id
+        if text_equal(id, "addComponent") {
+            if !text_equal(PaneContext, "properties") {
+                return
+            }
+        } else {
+            if !text_equal(PaneContext, "objects") && !text_equal(PaneContext, "scene") {
+                return
+            }
+        }
+        if text_equal(id, "selectAll") {
+            Selected = []
+            foreach (index in Visible) {
+                if index > 0 {
+                    Selected = array_add(Selected, Fields[index].path)
+                }
+            }
+            await Window()
+            await PublishSelection()
+            return
+        }
+        if text_equal(id, "deselect") {
+            Selected = []
+            Active = ""
+            Anchor = -1
+            await Window()
+            await PublishSelection()
+            return
+        }
+        if text_equal(id, "selectPrevious") || text_equal(id, "selectNext") || text_equal(id, "extendPrevious") || text_equal(id, "extendNext") {
+            if length(Visible) == 0 {
+                return
+            }
+            at: int = -1
+            i: int = 0
+            foreach (index in Visible) {
+                if text_equal(Fields[index].path, Active) {
+                    at = i
+                    break
+                }
+                i += 1
+            }
+            if text_equal(id, "selectPrevious") || text_equal(id, "extendPrevious") {
+                at -= 1
+            } else {
+                at += 1
+            }
+            at = cast<int>(max(0, min(length(Visible) - 1, at)))
+            await Select(Fields[Visible[at]].path, false, text_equal(id, "extendPrevious") || text_equal(id, "extendNext"))
+            await reveal_ui_list_row(Element: format_text("#studio-outliner-list-{}", Pane), Row: at)
+            return
+        }
+        if text_equal(id, "showAll") {
+            Hidden = []
+            Isolated = []
+            await Window()
+            await PublishVisibility()
+            return
+        }
+        if text_equal(id, "hideSelected") || text_equal(id, "hideUnselected") {
+            if ReadOnly || length(Selected) == 0 {
+                return
+            }
+            if text_equal(id, "hideUnselected") {
+                Isolated = []
+            }
+            foreach (index in Objects) {
+                if contains(Selected, Fields[index].path) {
+                    if text_equal(id, "hideSelected") {
+                        Hidden = add_unique(Hidden, PolicyKey(index))
+                    } else {
+                        Isolated = add_unique(Isolated, PolicyKey(index))
+                        Hidden = remove_item(Hidden, PolicyKey(index))
+                    }
+                }
+            }
+            await Window()
+            await PublishVisibility()
+            return
+        }
+        if text_equal(id, "addComponent") {
+            if !ReadOnly && length(Selected) > 0 {
+                await send_event<"StudioObjectComponentMenu">(self, { x: 24.0, y: 80.0 })
+            }
+            return
+        }
+        if text_equal(id, "openPrototype") {
+            if length(Selected) != 1 {
+                return
+            }
+            index := IndexOf(Selected[0])
+            if index <= 0 {
+                return
+            }
+            name := ""
+            foreach (field in Fields) {
+                if field.parent == index && text_equal(field.name, "prototype") {
+                    name = field.text
+                    break
+                }
+            }
+            if text_equal(name, "") {
+                return
+            }
+            document := Document
+            revision := Revision
+            first: int = 0
+            total: int = 4096
+            while first < total && first < 4096 {
+                rows := await query_workspace_resources(first, 256, "prototype", name)
+                if Document != document || Revision != revision {
+                    return
+                }
+                foreach (row in rows.Rows) {
+                    if text_equal(row.Name, name) || text_equal(row.Reference, name) {
+                        await send_event<"StudioDocumentCommand">(self, "open", row.Path)
+                        return
+                    }
+                }
+                if !rows.Status.Ok {
+                    Error = rows.Status.Message
+                    await set_ui_data(Name: "outliner.error", Value: Error)
+                    return
+                }
+                total = rows.Status.Total
+                first += 256
+            }
+            Error = "The selected prototype source was not found."
+            await set_ui_data(Name: "outliner.error", Value: Error)
+            return
+        }
+        if ReadOnly || length(Selected) == 0 || contains(Selected, "") {
+            return
+        }
+        if text_equal(id, "rename") || text_equal(id, "delete") {
+            await BeginMutation(id, Selected[0], { x: 24.0, y: 80.0 })
+            return
+        }
+        if text_equal(id, "duplicate") || text_equal(id, "objectUp") || text_equal(id, "objectDown") || text_equal(id, "objectIndent") || text_equal(id, "objectOutdent") || text_equal(id, "objectRoot") {
+            await Snapshot()
+            MutationMode = id
+            MutationName = ""
+            MutationTargets = Roots(Selected)
+            if length(MutationTargets) > 256 {
+                Error = "Select at most 256 object roots for one edit."
+                await set_ui_data(Name: "outliner.error", Value: Error)
+                return
+            }
+            await StartMutation()
+        }
+    }
+    on StudioOutlinerViewport {
+        await Window()
+    }
+    on Tick {
+        top := get_ui_scroll(Element: format_text("#studio-outliner-list-{}", Pane))."Scroll Top"
+        view := get_ui_scroll(Element: format_text("#studio-outliner-list-{}", Pane))."View Height"
+        if view > 0.0 && (top != Top || view != View) {
+            await Window()
+        }
+    }
+}

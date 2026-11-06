@@ -1,0 +1,12 @@
+version 3
+name "StudioGraphBreakpointChanged"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Document" type="int" category="Payload"
+    - id=2 name="Revision" type="int" category="Payload"
+    - id=3 name="Nodes" type="const char *" container=1 category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

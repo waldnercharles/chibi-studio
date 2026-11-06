@@ -7,7 +7,7 @@
 /* The area's panel host scrolls and pads; Output's List scrolls instead. */
 body.area-panel { padding: 0dp; overflow: hidden; }
 .output { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; }
-.output-list { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; font-family: var(--font-numeric); }
+.output-list { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; font-family: var(--font-numeric, GeistNumeric); }
 .output-list.find-list { top: 24dp; }
 .output-list .list { box-sizing: border-box; padding: 2dp 0dp 6dp; }
 .output-list.find-list .list { padding: 2dp 4dp 6dp; }
@@ -30,13 +30,13 @@ body.comfortable .output-row, body.comfortable .output-log { height: var(--studi
 /* Rows at a node open it: where, muted, then the message and a repeat count. */
 .output-row.located { cursor: pointer; }
 .output-row .output-at { display: block; flex: 0 0 auto; color: var(--faint-foreground); white-space: nowrap; }
-.output-row .output-count { flex: 0 0 auto; font-family: var(--font-numeric); }
+.output-row .output-count { flex: 0 0 auto; font-family: var(--font-numeric, GeistNumeric); }
 .output-empty { position: absolute; left: 0dp; right: 0dp; top: 45%; text-align: center; color: var(--faint-foreground); pointer-events: none; }
 /* What the references are to, or what the calls trace from; Calls' direction trails. */
 .find-head { position: absolute; left: 0dp; top: 0dp; right: 0dp; height: var(--studio-height-24, 24dp); display: flex; align-items: center; gap: 6dp; padding: 0dp 10dp; border-bottom: 1dp var(--line); }
 .find-head .icon { color: var(--faint-foreground); font-size: 12dp; width: 14dp; }
 .find-title { display: block; line-height: var(--studio-line-16, 16dp); color: var(--foreground); font-weight: 600; white-space: nowrap; }
-.find-count { display: block; line-height: var(--studio-line-16, 16dp); color: var(--faint-foreground); font-family: var(--font-numeric); }
+.find-count { display: block; line-height: var(--studio-line-16, 16dp); color: var(--faint-foreground); font-family: var(--font-numeric, GeistNumeric); }
 .output-scope { display: flex; flex: 0 0 auto; margin-left: 6dp; }
 .output-scope .segmented, .output-scope .seg { flex: 0 0 auto; }
 .seg { tab-index: auto; }

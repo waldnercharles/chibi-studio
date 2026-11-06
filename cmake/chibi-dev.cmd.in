@@ -1,0 +1,35 @@
+@echo off
+setlocal DisableDelayedExpansion
+set "workspace="
+set "remaining="
+if "%~1"=="" goto discover
+set "first=%~1"
+if "%first:~0,1%"=="-" goto options
+set "workspace=%~f1"
+if /I "%~nx1"=="project.kdl" set "workspace=%~dp1"
+shift
+:collect
+if "%~1"=="" goto launch_workspace
+set "remaining=%remaining% %1"
+shift
+goto collect
+:options
+for %%A in (%*) do if "%%~A"=="--workspace-root" goto launch_original
+for %%A in (%*) do if "%%~A"=="--help" goto launch_original
+:discover
+set "workspace=%CD%"
+:find_parent
+if exist "%workspace%\project.kdl" goto launch_discovered
+for %%P in ("%workspace%\..") do set "parent=%%~fP"
+if /I "%parent%"=="%workspace%" goto launch_original
+set "workspace=%parent%"
+goto find_parent
+:launch_discovered
+"%~dp0chibi-author.exe" "%~dp0..\share\chibi\studio\game.chibip" --resource-root "%~dp0..\share\chibi\studio" --sdk-resource-root "%~dp0..\share\chibi\sdk" --workspace-root "%workspace%\." %*
+exit /b %errorlevel%
+:launch_workspace
+"%~dp0chibi-author.exe" "%~dp0..\share\chibi\studio\game.chibip" --resource-root "%~dp0..\share\chibi\studio" --sdk-resource-root "%~dp0..\share\chibi\sdk" --workspace-root "%workspace%\." %remaining%
+exit /b %errorlevel%
+:launch_original
+"%~dp0chibi-author.exe" "%~dp0..\share\chibi\studio\game.chibip" --resource-root "%~dp0..\share\chibi\studio" --sdk-resource-root "%~dp0..\share\chibi\sdk" %*
+exit /b %errorlevel%

@@ -64,7 +64,7 @@ body > .area { height: 100%; }
 
 /* Behavior graph: the canvas is its own zoomed document (graph.rml), shown here. */
 .graph-surface { position: absolute; left: 0dp; top: 0dp; width: 100%; height: 100%; }
-.area-head .readout { color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); font-family: var(--font-numeric); padding: 0dp 4dp; }
+.area-head .readout { color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); font-family: var(--font-numeric, GeistNumeric); padding: 0dp 4dp; }
 /* A paused run's call stack floats over the canvas's bottom-left corner. */
 .call-stack {
     position: absolute; left: 8dp; bottom: 8dp; width: 280dp; padding: 4dp; display: flex; flex-direction: column;
@@ -101,7 +101,7 @@ body > .area { height: 100%; }
 }
 .find-widget-bar { display: flex; align-items: center; gap: 2dp; }
 .find-widget-bar .search { flex: 1 1 0dp; min-width: 0dp; }
-.find-widget-count { display: block; flex: 0 0 auto; padding: 0dp 4dp; line-height: var(--studio-line-16, 16dp); color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); font-family: var(--font-numeric); white-space: nowrap; }
+.find-widget-count { display: block; flex: 0 0 auto; padding: 0dp 4dp; line-height: var(--studio-line-16, 16dp); color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); font-family: var(--font-numeric, GeistNumeric); white-space: nowrap; }
 
 /* The name filter of Assets (AssetsHeader) and of a UI document's Library. */
 .assets-filter { flex: 1 1 0dp; display: flex; max-width: 220dp; margin-left: 4dp; }
@@ -114,7 +114,7 @@ body > .area { height: 100%; }
 .popup.prototype-apply { width: 320dp; }
 .prototype-field { display: flex; align-items: center; gap: 8dp; height: var(--h); padding: 0dp 8dp 0dp 6dp; white-space: nowrap; }
 .prototype-field .check { flex: 1 1 auto; min-width: 0dp; overflow: hidden; }
-.prototype-field .kbd { flex: 0 0 auto; margin-left: 16dp; color: var(--faint-foreground); font-family: var(--font-numeric); }
+.prototype-field .kbd { flex: 0 0 auto; margin-left: 16dp; color: var(--faint-foreground); font-family: var(--font-numeric, GeistNumeric); }
 /* Rename and safe delete: the new name, then the assets it rewrites or the
    uses a delete leaves, as rows shaped like the menu's items. */
 .popup.refactor { width: 300dp; }

@@ -1,0 +1,121 @@
+.workspace { height: 100%; flex: 1 1 0dp; display: flex; min-width: 0dp; padding: 0dp 6dp 4dp 6dp; }
+.column { display: flex; flex-direction: column; }
+.column.main { flex: 1 1 0dp; min-width: 0dp; }
+// The top and bottom areas, stacked or side by side.
+.editors { display: flex; flex-direction: column; flex: 1 1 0dp; min-width: 0dp; min-height: 0dp; }
+.across .editors { flex-direction: row; }
+.place { position: relative; flex: 0 0 auto; }
+.place.fill { flex: 1 1 0dp; min-width: 0dp; min-height: 0dp; }
+// The kit's box an area's document takes.
+.area-doc { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; }
+
+/* The drawer and the side column keep their last size and open and shut at
+   once, as VS Code's panels do, clipping what they hold; their splitters
+   move them directly. They toggle from the keyboard many times a session,
+   and easing their size would lay out every area and resize the viewport on
+   each frame of it (Emil: no motion for frequent, keyboard-driven changes;
+   animate transform and opacity only). Each area is a document of its own
+   placed over its place, so a transform here could not move it. */
+.drawer { display: flex; flex-direction: column; flex: 0 0 auto; height: 0dp; overflow: hidden; }
+.drawer[data-open] { height: var(--drawer, 0dp); }
+.side { display: flex; flex: 0 0 auto; width: 0dp; overflow: hidden; }
+.side[data-open] { width: var(--side, 0dp); }
+.side .column { flex: 1 1 0dp; min-width: 0dp; }
+// A maximized area fills the workspace.
+.workspace[data-max=drawer] .drawer, .workspace[data-max=outliner] .side, .workspace[data-max=properties] .side {
+  flex: 1 1 0dp; width: auto; height: auto;
+}
+
+/* Splitters: the 6 dp gutters between areas, which tint while hovered or
+   dragged. Each takes the pointer 2 dp onto the areas beside it, a hit area
+   of 10 dp (8 dp where the drawer and the side column clip it). */
+.split { display: block; flex: 0 0 auto; position: relative; width: 10dp; margin: 0dp -2dp; pointer-events: auto; }
+.split[axis=y] { width: auto; height: 10dp; margin: -2dp 0dp; }
+.grip { position: absolute; left: 2dp; right: 2dp; top: 0dp; bottom: 0dp; border-radius: 3dp; pointer-events: none; }
+.split[axis=y] .grip { left: 0dp; right: 0dp; top: 2dp; bottom: 2dp; }
+.split:hover .grip, .split[data-dragging] .grip { background-color: var(--primary-wash); }
+
+
+.studio-workspace-composition { display: flex; flex: 1 1 0dp; min-width: 0dp; min-height: 0dp; }
+.place { display: flex; flex-direction: column; overflow: hidden; background-color: var(--background); border-radius: var(--r-lg); }
+.place > .studio-panel-header { flex: 0 0 auto; height: var(--header-h); }
+.place > .studio-panel-content, .place > .studio-pane { display: flex; flex: 1 1 0dp; min-width: 0dp; min-height: 0dp; }
+.workspace:not(.across) .editors > .place { min-height: 0dp; }
+.workspace[data-maximized] .split { display: none; }
+.workspace[data-maximized=''] .split { display: block; }
+
+.workspace[data-maximized=main] [data-place]:not([data-place=main]), .workspace[data-maximized=secondary] [data-place]:not([data-place=secondary]), .workspace[data-maximized=outliner] [data-place]:not([data-place=outliner]), .workspace[data-maximized=properties] [data-place]:not([data-place=properties]), .workspace[data-maximized=drawer] [data-place]:not([data-place=drawer]) { display: none; }
+.workspace[data-maximized=main] .side, .workspace[data-maximized=secondary] .side, .workspace[data-maximized=drawer] .side, .workspace[data-maximized=outliner] .column.main, .workspace[data-maximized=properties] .column.main { display: none; }
+.workspace[data-maximized=drawer] .editors { display: none; }
+.workspace[data-maximized=main] [data-place=main], .workspace[data-maximized=secondary] [data-place=secondary], .workspace[data-maximized=outliner] [data-place=outliner], .workspace[data-maximized=properties] [data-place=properties], .workspace[data-maximized=drawer] [data-place=drawer] { display: flex; flex: 1 1 0dp; }
+.workspace[data-maximized=drawer] .drawer, .workspace[data-maximized=outliner] .side, .workspace[data-maximized=properties] .side { flex: 1 1 0dp; width: auto; height: auto; }
+
+/* An area's header, as Blender's (studio_shell.c hosts one per area and
+   binds `area`, its item of editor.areas): the editor type menu, a Menu over
+   choices.editors and choices.panels that draws above the other areas, the
+   editor's own controls, native in the .area-controls slot, then Maximize, which
+   turns to Restore while its area fills the workspace, and the drawer's
+   Close. */
+body { flex: 0 0 auto; }
+.area-head {
+  height: var(--header-h); display: flex; align-items: center; gap: 3dp; padding: 0dp 6dp;
+  background-color: var(--background); border-bottom: 1dp var(--line);
+}
+.btn { height: var(--h); }
+.editor-type-host { display: flex; flex: 0 0 auto; }
+.editor-type { gap: 2dp; padding: 0dp 3dp 0dp 5dp; }
+.area-controls { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+/* Actions keep their hit targets; document names consume the remaining width. */
+.area-head > .btn, .area-controls > .btn, .area-controls > .readout { flex: 0 0 auto; }
+.area-controls > .segmented, .area-controls > .segmented .seg { flex: 0 0 auto; }
+// Maximize stays quiet until it is hovered or its area fills the workspace.
+.maximize .icon { color: var(--faint-foreground); }
+.maximize:hover .icon, .area-head.maximized .maximize .icon { color: var(--foreground); }
+.close { margin-left: 2dp; }
+
+/* ---------- Live values ---------- */
+/* While the scene runs, a Properties area edits its running world
+   (studio_properties_live): its header takes a primary wash and rule, as
+   Unity tints its editor in Play Mode. */
+.area-head.live { background-color: color-mix(in srgb, var(--primary) 9%, var(--muted)); border-bottom: 1dp var(--primary-edge); }
+
+/* The Scene's controls in its area header (studio_scene.c's `scene`
+   source). Editing a scene: the View menu, then the transform tools and,
+   at the end, snapping joined to its grid increment and Frame, each group a
+   pill of icon buttons as Unreal's and Godot's viewport toolbars group
+   theirs; the active tool is filled, as Blender's toolbar marks it. In the
+   Canvas: Scene › asset crumbs, the screen sizes, the backdrop and the
+   Actions toggle. View Zoom shows only while it magnifies, and always in
+   the Canvas. A guest Studio names what runs. */
+body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.scene-tools, .canvas-tools, .scene-guest { display: flex; align-items: center; gap: 2dp; flex: 0 1 auto; min-width: 0dp; height: 100%; }
+.scene-guest { gap: 6dp; white-space: nowrap; }
+.btn, .canvas-sizes, .canvas-sizes .segmented, .canvas-sizes .seg { flex: 0 0 auto; }
+.crumbs .btn.crumb { flex: 0 1 auto; }
+.seg { tab-index: auto; }
+
+.tool-group, .snap-controls {
+    display: flex; align-items: center; flex: 0 0 auto; gap: 1dp; padding: 1dp;
+    border-radius: var(--r); background-color: var(--secondary);
+}
+.tool-group { margin-left: 4dp; }
+/* The area header's buttons keep its control height (AreaHeader.rcss). */
+.tool-group .btn { width: var(--h-sm); padding: 0dp; }
+.tool-group .btn[data-state=on] { background-color: var(--primary); }
+.tool-group .btn[data-state=on] .icon { color: var(--primary-foreground); }
+.snap-controls .btn { min-width: var(--h-sm); padding: 0dp 6dp; }
+.snap-controls .btn.icon-only { width: var(--h-sm); padding: 0dp; }
+.snap-controls .menu-btn { font-family: var(--font-numeric); }
+.snap-controls .btn[data-state=on] { background-color: var(--primary); }
+.snap-controls .btn[data-state=on] .icon { color: var(--primary-foreground); }
+
+.canvas-sizes { display: flex; margin-left: 6dp; }
+.canvas-actions-toggle { display: flex; align-items: center; gap: 4dp; flex: 0 0 auto; padding: 0dp 6dp 0dp 2dp; }
+.canvas-actions-toggle .btn { gap: 4dp; padding: 0dp 6dp; }
+.canvas-actions-toggle .btn .icon { font-size: 13dp; width: 14dp; }
+.canvas-actions-toggle .count { color: var(--faint-foreground); font-size: 11dp; }
+
+.area-controls-body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.area-controls .field.search { flex: 1 1 0dp; min-width: 0dp; }
+
+.place > [data-ui=StudioArea] { display: flex; flex: 1 1 0dp; min-width: 0dp; min-height: 0dp; width: 100%; }

@@ -31,7 +31,7 @@
 .field[data-axis=y] > .addon { color: var(--axis-y); }
 .field .value {
     flex: 1 1 0dp; padding: 0dp 7dp; text-align: right;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-numeric);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-numeric, GeistNumeric);
 }
 .field .unit { padding-right: 7dp; color: var(--faint-foreground); flex: 0 0 auto; margin-left: -4dp; }
 /* RmlUi sizes the insertion caret from line-height. Keep the input hit box
@@ -40,7 +40,7 @@
     height: var(--text-line); line-height: var(--input-line); padding-top: var(--input-pad); padding-bottom: var(--input-pad);
     cursor: text; font-family: var(--studio-standard-font-family, inter); color: var(--foreground);
 }
-.field.number input.value { font-family: var(--font-numeric); }
+.field.number input.value { font-family: var(--font-numeric, GeistNumeric); }
 .field input.value selection { background-color: var(--primary); color: var(--primary-foreground); }
 .field .step {
     position: absolute; top: 0dp; bottom: 0dp; width: 14dp; display: flex; align-items: center; justify-content: center;

@@ -1,0 +1,211 @@
+behavior StudioProjectMigration {
+    self.Root: string = ""
+    Parent: string = ""
+    Name: string = "UpgradedProject"
+    Message: string = ""
+    Report: string = ""
+    UpgradeAllowed := false
+    ReadyRoot: string = ""
+    Request: int = 0
+    ParentRequest: int = 0
+    Operation: string = ""
+    Visible := false
+    Web := false
+    Room := false
+    publish :: fn() {
+        await set_ui_data(Name: "migrationOpen", Value: Visible)
+        await set_ui_data(Name: "migrationBusy", Value: Request > 0)
+        await set_ui_data(Name: "migrationSource", Value: Root)
+        await set_ui_data(Name: "migrationParent", Value: Parent)
+        await set_ui_data(Name: "migrationName", Value: Name)
+        await set_ui_data(Name: "migrationMessage", Value: Message)
+        await set_ui_data(Name: "migrationReport", Value: Report)
+        await set_ui_data(Name: "migrationReady", Value: !text_equal(ReadyRoot, ""))
+        await set_ui_data(Name: "migrationCanOpen", Value: !text_equal(ReadyRoot, "") && !Room)
+        await set_ui_data(Name: "migrationWeb", Value: Web)
+        await set_ui_data(Name: "migrationCanUpgrade", Value: UpgradeAllowed && !Room)
+        return
+    }
+    release_parent :: fn() {
+        if ParentRequest > 0 {
+            await authoring_platform_release(ParentRequest)
+        }
+        ParentRequest = 0
+        return
+    }
+    finish :: fn() {
+        result := await authoring_platform_poll(Request)
+        Message = result.Result.Message
+        if text_equal(Operation, "migrate-project") {
+            Report = result.Result.Log
+        }
+        if text_equal(result.Result.State, "running") || text_equal(result.Result.State, "pending") {
+            await publish()
+            return
+        }
+        request := Request
+        Request = 0
+        if result.Result.Ok {
+            if text_equal(Operation, "inspect-project") {
+                Root = result.Result.Value
+                if text_equal(result.Result.Status, "current") {
+                    Visible = false
+                    await send_event<"StudioProjectMigrationReady">(self, Root)
+                } else {
+                    UpgradeAllowed = text_equal(result.Result.Status, "upgrade-required")
+                    Visible = true
+                }
+            } else if text_equal(Operation, "choose-folder") {
+                await release_parent()
+                ParentRequest = request
+                Parent = result.Result.Value
+                await publish()
+                return
+            } else if text_equal(Operation, "migrate-project") {
+                ReadyRoot = result.Result.Value
+                Report = result.Result.Log
+                Message = "Upgrade completed in a new copy. Review the report, then open the copy."
+            }
+        } else {
+            Visible = true
+        }
+        await authoring_platform_release(request)
+        await publish()
+        return
+    }
+    start :: fn(Operation: string, Value: string, Source: int) {
+        if Room || Request > 0 {
+            return
+        }
+        result := await authoring_platform_request(Operation, Value, Source: Source)
+        self.Operation = Operation
+        Request = result.Result.Request
+        Message = result.Result.Message
+        Visible = true
+        if Request > 0 {
+            await finish()
+        }
+        await publish()
+        return
+    }
+    on Begin {
+        environment := await authoring_platform_environment()
+        Web = environment.Environment.Web
+        info := query_workspace_info()
+        if !info.Active && !text_equal(info.PendingRoot, "") {
+            await send_event<"StudioProjectMigrationRequested">(self, info.PendingRoot)
+        }
+        publish()
+    }
+    on Tick(dt) {
+        if Request > 0 {
+            finish()
+        }
+    }
+    on StudioProjectMigrationRequested {
+        if Room {
+            return
+        }
+        if Request > 0 || !text_equal(ReadyRoot, "") {
+            await send_event<"StudioStatus">(self, "warning", "Finish the current project upgrade review first.")
+            return
+        }
+        await release_parent()
+        Root = event.Path
+        Parent = ""
+        ReadyRoot = ""
+        Report = ""
+        UpgradeAllowed = false
+        start("inspect-project", event.Path, 0)
+    }
+    on StudioProjectOpenCancelled {
+        if !text_equal(ReadyRoot, "") && text_equal(event.Path, ReadyRoot) {
+            Visible = true
+            Message = "Project switch cancelled. The upgraded copy is ready; close this review to discard an unopened browser copy."
+            publish()
+        }
+    }
+    on StudioProjectMigrationName {
+        if Request == 0 {
+            Name = event.Value
+            publish()
+        }
+    }
+    on StudioProjectMigrationAction {
+        switch event.Id {
+            case "location": {
+                start("choose-folder", "", 0)
+            }
+            case "upgrade": {
+                if !UpgradeAllowed {
+                    return
+                }
+                if !Web && ParentRequest == 0 {
+                    Message = "Choose a destination parent folder."
+                    publish()
+                    return
+                }
+                root := value_to_json(Root)
+                name := value_to_json(Name)
+                if !root.Ok || !name.Ok {
+                    Message = "Could not encode migration options."
+                    publish()
+                    return
+                }
+                options := format_text("{{\"Root\":{},\"Name\":{}}}", root.Text, name.Text)
+                await start("migrate-project", options, ParentRequest)
+                await release_parent()
+            }
+            case "open": {
+                if Room {
+                    await send_event<"StudioStatus">(self, "warning", "Leave the collaboration room before switching projects.")
+                    return
+                }
+                if Request == 0 && !text_equal(ReadyRoot, "") {
+                    Visible = false
+                    await send_event<"StudioProjectMigrationReady">(self, ReadyRoot)
+                    publish()
+                }
+            }
+            case "cancel": {
+                if Request > 0 {
+                    cancelled := await authoring_platform_cancel(Request)
+                    Message = cancelled.Result.Message
+                    Report = cancelled.Result.Log
+                    await send_event<"StudioStatus">(self, "warning", format_text("{} {}", cancelled.Result.Message, cancelled.Result.Value))
+                    await authoring_platform_release(Request)
+                    Request = 0
+                }
+                await release_parent()
+                if Web && !text_equal(ReadyRoot, "") {
+                    discarded := await authoring_platform_request("discard-project-copy", ReadyRoot)
+                    if discarded.Result.Request > 0 {
+                        await authoring_platform_release(discarded.Result.Request)
+                    }
+                    if !discarded.Result.Ok {
+                        Message = discarded.Result.Message
+                        await publish()
+                        return
+                    }
+                    ReadyRoot = ""
+                }
+                Visible = false
+                publish()
+            }
+        }
+    }
+    on StudioProjectMigrationCancel {
+        send_event<"StudioProjectMigrationAction">(self, "cancel")
+    }
+    on StudioCollaborationState {
+        Room = event.Active
+        if event.Active && Request > 0 {
+            await authoring_platform_cancel(Request)
+            await authoring_platform_release(Request)
+            Request = 0
+            await release_parent()
+            Message = "Project migration is unavailable while connected to a room."
+        }
+        publish()
+    }
+}

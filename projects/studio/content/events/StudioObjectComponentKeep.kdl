@@ -1,0 +1,14 @@
+version 3
+name "StudioObjectComponentKeep"
+domain "event"
+id_counter 6
+(array)variables {
+    - id=1 name="Session" type="int" category="Payload"
+    - id=2 name="Document" type="int" category="Payload"
+    - id=3 name="Revision" type="int" category="Payload"
+    - id=4 name="Path" type="const char *" category="Payload"
+    - id=5 name="Component" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

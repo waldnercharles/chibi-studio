@@ -1,0 +1,13 @@
+version 3
+name "StudioDebuggerObservations"
+domain "event"
+id_counter 5
+(array)variables {
+    - id=1 name="Handle" type="int" category="Payload"
+    - id=2 name="Session" type="int" category="Payload"
+    - id=3 name="Retired" type="bool" category="Payload"
+    - id=4 name="Values" type="struct" type_name="WorkspaceDebugRow" container=1 category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

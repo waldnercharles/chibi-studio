@@ -1,0 +1,18 @@
+version 3
+name "StudioDocumentState"
+domain "event"
+id_counter 10
+(array)variables {
+    - id=1 name="Document" type="int" category="Payload"
+    - id=2 name="Revision" type="int" category="Payload"
+    - id=3 name="Path" type="const char *" category="Payload"
+    - id=4 name="Dirty" type="bool" category="Payload"
+    - id=5 name="Conflict" type="bool" category="Payload"
+    - id=6 name="CanUndo" type="bool" category="Payload"
+    - id=7 name="CanRedo" type="bool" category="Payload"
+    - id=8 name="Busy" type="bool" category="Payload"
+    - id=9 name="Error" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

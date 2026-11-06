@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "frames": 24,
+  "events": [
+    {
+      "frame": 5,
+      "type": "click",
+      "selector": "#studio-home-new"
+    },
+    {
+      "frame": 9,
+      "type": "click",
+      "selector": "#new-project-name"
+    },
+    {
+      "frame": 10,
+      "type": "key-down",
+      "key": "A",
+      "modifiers": [
+        "Mod"
+      ]
+    },
+    {
+      "frame": 10,
+      "type": "key-up",
+      "key": "A",
+      "modifiers": [
+        "Mod"
+      ]
+    },
+    {
+      "frame": 11,
+      "type": "text",
+      "text": "Authored acceptance"
+    },
+    {
+      "frame": 14,
+      "type": "key-down",
+      "key": "Tab"
+    },
+    {
+      "frame": 14,
+      "type": "key-up",
+      "key": "Tab"
+    },
+    {
+      "frame": 18,
+      "type": "click",
+      "selector": "#new-project-cancel"
+    }
+  ],
+  "assertions": [
+    {
+      "frame": 3,
+      "type": "data",
+      "entity": "Application",
+      "name": "homeVisible",
+      "equals": true
+    },
+    {
+      "frame": 8,
+      "type": "data",
+      "entity": "Application",
+      "name": "projectNewOpen",
+      "equals": true
+    },
+    {
+      "frame": 8,
+      "type": "visible",
+      "selector": "#new-project-form",
+      "equals": true
+    },
+    {
+      "frame": 16,
+      "type": "data",
+      "entity": "Application",
+      "name": "projectNewName",
+      "equals": "Authored acceptance"
+    },
+    {
+      "frame": 21,
+      "type": "data",
+      "entity": "Application",
+      "name": "projectNewOpen",
+      "equals": false
+    },
+    {
+      "frame": 21,
+      "type": "data",
+      "entity": "Application",
+      "name": "homeVisible",
+      "equals": true
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+body { display: flex; height: 100%; min-width: 0dp; min-height: 0dp; }
+.studio-scene-runtime { display: flex; flex-direction: column; height: 100%; width: 100%; min-width: 0dp; min-height: 0dp; background-color: var(--background); color: var(--foreground); }
+.scene-runtime-toolbar, .scene-runtime-status { display: flex; align-items: center; flex-wrap: wrap; gap: 4dp; padding: 5dp 8dp; flex: 0 0 auto; }
+.scene-runtime-toolbar { border-bottom: 1dp var(--border); }
+.scene-runtime-toolbar .title { font-weight: 600; margin-right: 6dp; }
+.scene-runtime-toolbar button[aria-pressed=true] { background-color: var(--accent); }
+.scene-runtime-divider { height: 20dp; width: 1dp; background-color: var(--border); margin: 0dp 4dp; }
+.studio-scene-surface { flex: 1 1 0dp; min-height: 80dp; min-width: 0dp; position: relative; overflow: hidden; drag: drag; }
+.studio-scene-image { position: absolute; width: 100%; height: 100%; pointer-events: none; }
+.studio-scene-empty { margin: 24dp; color: var(--muted-foreground); }
+.studio-scene-axis-tools { position: absolute; left: 12dp; bottom: 12dp; display: flex; align-items: center; gap: 5dp; padding: 6dp; background-color: var(--card); border: 1dp var(--border); border-radius: 5dp; }
+.studio-scene-axis-tools span { margin-right: 8dp; color: var(--muted-foreground); }
+.studio-scene-axis-tools button { drag: drag; cursor: move; width: 32dp; height: 32dp; font-weight: 600; }
+.scene-axis-x { color: #ef7777; }
+.scene-axis-y { color: #86ca91; }
+.scene-axis-z { color: #84b2ef; }
+.studio-scene-preparing { position: absolute; top: 12dp; right: 12dp; }
+.scene-runtime-status { border-top: 1dp var(--border); color: var(--muted-foreground); font-size: 11dp; }
+.scene-runtime-status span:first-child { flex: 1 1 200dp; }
+.studio-scene-error { margin: 0dp; padding: 7dp 10dp; flex: 0 0 auto; color: var(--destructive); border-top: 1dp var(--border); }
+
+.studio-scene-stale { position: absolute; top: 12dp; left: 12dp; }
+
+.studio-scene-proposing { position: absolute; top: 40dp; left: 12dp; }
+
+.studio-scene-gizmo { position: absolute; left: 0dp; top: 0dp; width: 100%; height: 100%; pointer-events: none; }
+.scene-gizmo-handle { position: absolute; width: 28dp; height: 28dp; padding: 0dp; border-radius: 14dp; background-color: var(--card); border: 1dp var(--border); drag: drag; cursor: move; pointer-events: auto; }
+.scene-gizmo-origin { position: absolute; width: 6dp; height: 6dp; border-radius: 3dp; background-color: #ffffff; }
+
+.scene-gizmo-line { position: absolute; height: 2dp; transform-origin: 0% 50%; }
+.scene-gizmo-line-x { background-color: #ef7777; }
+.scene-gizmo-line-y { background-color: #86ca91; }
+.scene-gizmo-line-z { background-color: #84b2ef; }
+
+.studio-scene-evidence { margin: 0dp; padding: 5dp 10dp; flex: 0 0 auto; color: var(--muted-foreground); font-size: 11dp; }
+
+.scene-gizmo-center { position: absolute; width: 14dp; height: 14dp; padding: 0dp; border: 1dp #ffffff; background-color: var(--card); pointer-events: auto; drag: drag; cursor: move; }
+.scene-gizmo-plane { position: absolute; width: 16dp; height: 16dp; padding: 0dp; border: 1dp var(--foreground); background-color: var(--card); pointer-events: auto; drag: drag; cursor: move; }
+.scene-gizmo-ring-point { position: absolute; width: 12dp; height: 12dp; padding: 0dp; border-radius: 6dp; pointer-events: auto; drag: drag; cursor: move; }
+.scene-gizmo-ring-point[data-axis=x] { background-color: #ef7777; }
+.scene-gizmo-ring-point[data-axis=y] { background-color: #86ca91; }
+.scene-gizmo-ring-point[data-axis=z] { background-color: #84b2ef; }
+
+.scene-gizmo-collider { position: absolute; width: 12dp; height: 12dp; padding: 0dp; border: 2dp #64dcb1; background-color: var(--card); pointer-events: auto; drag: drag; cursor: move; }
+
+.scene-runtime-marquee { position: absolute; pointer-events: none; border: 1dp var(--accent); background-color: #6688aa33; }
+
+.scene-runtime-grab { position: absolute; left: 0dp; top: 0dp; width: 100%; height: 100%; cursor: move; }
+.scene-runtime-grab .badge { position: absolute; left: 12dp; top: 12dp; pointer-events: none; }
+
+.studio-scene-surface.playing { drag:none; }
+.studio-scene-play { drag:none; position:absolute; top:0dp; right:0dp; bottom:0dp; left:0dp; z-index:20; }
+.studio-scene-play-hint { position:absolute; bottom:8dp; left:8dp; padding:4dp 8dp; background-color:var(--card); color:var(--foreground); pointer-events:none; }
+
+.scene-place-markers, .scene-camera-labels { position: absolute; left: 0dp; top: 0dp; width: 100%; height: 100%; pointer-events: none; }
+.scene-place-marker { position: absolute; width: 10dp; height: 10dp; border: 1dp var(--muted-foreground); border-radius: 5dp; background-color: var(--background); pointer-events: none; }
+.scene-place-marker.selected { border-color: var(--accent); background-color: var(--accent); }
+.scene-place-marker.locked { opacity: 0.45; }
+.scene-camera-label { position: absolute; padding: 1dp 4dp; color: var(--muted-foreground); background-color: var(--background); pointer-events: none; }
+.scene-camera-label.selected { color: var(--accent); }
+.scene-camera-label.disabled { opacity: 0.45; }
+
+.studio-model-runtime-badge { position: absolute; top: 8dp; left: 12dp; display: flex; align-items: center; gap: 6dp; }

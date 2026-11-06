@@ -1,17 +1,889 @@
-<body data-class-dark="(save.theme == 'system' &amp;&amp; system.dark) || (save.theme != 'system' &amp;&amp; save.theme != 'light' &amp;&amp; save.theme != 'solarized-light' &amp;&amp; save.theme != 'tokyo-day' &amp;&amp; save.theme != 'catppuccin-latte' &amp;&amp; save.theme != 'rose-pine-dawn' &amp;&amp; save.theme != 'gruvbox-light')"
-      data-class-comfortable="save.density == 'comfortable'"
-      data-class-theme-dracula="save.theme == 'dracula'"
-      data-class-theme-solarized-light="save.theme == 'solarized-light'"
-      data-class-theme-solarized-dark="save.theme == 'solarized-dark'"
-      data-class-theme-tokyo-night="save.theme == 'tokyo-night'"
-      data-class-theme-tokyo-storm="save.theme == 'tokyo-storm'"
-      data-class-theme-tokyo-day="save.theme == 'tokyo-day'"
-      data-class-theme-catppuccin-latte="save.theme == 'catppuccin-latte'"
-      data-class-theme-catppuccin-frappe="save.theme == 'catppuccin-frappe'"
-      data-class-theme-catppuccin-macchiato="save.theme == 'catppuccin-macchiato'"
-      data-class-theme-catppuccin-mocha="save.theme == 'catppuccin-mocha'"
-      data-class-theme-rose-pine="save.theme == 'rose-pine'"
-      data-class-theme-rose-pine-moon="save.theme == 'rose-pine-moon'"
-      data-class-theme-rose-pine-dawn="save.theme == 'rose-pine-dawn'"
-      data-class-theme-gruvbox-light="save.theme == 'gruvbox-light'"
-      data-class-theme-gruvbox-dark="save.theme == 'gruvbox-dark'"><slot/></body>
+<div class="studio-application" data-keys="Escape:StudioShellClose" data-attr-data-keys="self.studioCommandBindings">
+  <header class="topbar" data-event-mouseenter="emit('StudioPaneHover', 'Global')">
+    <div class="brand">
+      <div class="mark" />
+    </div>
+    <menubar class="menus">
+      <button class="btn trigger" popovertarget="menu-file" aria-haspopup="menu">
+        <span class="label">File</span>
+      </button>
+      <use ui="StudioMenu" id="menu-file">
+        <use ui="StudioSubmenu" data-alias-item="self.studioNewMenu">
+          <use ui="MenuSeparator" />
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newScene]" data-event-click="emit('StudioCommand', 'newScene', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newScene].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newScene].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newScene] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newPrototype]" data-event-click="emit('StudioCommand', 'newPrototype', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newPrototype].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newPrototype].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newPrototype] }}</span>
+          </div>
+          <use ui="MenuSeparator" />
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newBehavior]" data-event-click="emit('StudioCommand', 'newBehavior', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newBehavior].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newBehavior].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newBehavior] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newEvent]" data-event-click="emit('StudioCommand', 'newEvent', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newEvent].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newEvent].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newEvent] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newSystem]" data-event-click="emit('StudioCommand', 'newSystem', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newSystem].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newSystem].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newSystem] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newLibrary]" data-event-click="emit('StudioCommand', 'newLibrary', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newLibrary].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newLibrary].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newLibrary] }}</span>
+          </div>
+          <use ui="MenuSeparator" />
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newMaterial]" data-event-click="emit('StudioCommand', 'newMaterial', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newMaterial].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newMaterial].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newMaterial] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newShape]" data-event-click="emit('StudioCommand', 'newShape', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newShape].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newShape].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newShape] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newField]" data-event-click="emit('StudioCommand', 'newField', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newField].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newField].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newField] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newShaderLibrary]" data-event-click="emit('StudioCommand', 'newShaderLibrary', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newShaderLibrary].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newShaderLibrary].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newShaderLibrary] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newModel]" data-event-click="emit('StudioCommand', 'newModel', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newModel].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newModel].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newModel] }}</span>
+          </div>
+          <use ui="MenuSeparator" />
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newUiWidget]" data-event-click="emit('StudioCommand', 'newUiWidget', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newUiWidget].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newUiWidget].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newUiWidget] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newUiDocument]" data-event-click="emit('StudioCommand', 'newUiDocument', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newUiDocument].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newUiDocument].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newUiDocument] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.newStylesheet]" data-event-click="emit('StudioCommand', 'newStylesheet', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.newStylesheet].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.newStylesheet].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.newStylesheet] }}</span>
+          </div>
+        </use>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.openProject]" data-event-click="emit('StudioCommand', 'openProject', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.openProject].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.openProject].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.openProject] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.save]" data-event-click="emit('StudioCommand', 'save', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.save].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.save].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.save] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.saveAll]" data-event-click="emit('StudioCommand', 'saveAll', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.saveAll].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.saveAll].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.saveAll] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.revert]" data-event-click="emit('StudioCommand', 'revert', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.revert].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.revert].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.revert] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.closeTab]" data-event-click="emit('StudioCommand', 'closeTab', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.closeTab].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.closeTab].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.closeTab] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.exportGame]" data-event-click="emit('StudioCommand', 'exportGame', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.exportGame].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.exportGame].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.exportGame] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.settings]" data-event-click="emit('StudioCommand', 'settings', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.settings].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.settings].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.settings] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.quit]" data-event-click="emit('StudioCommand', 'quit', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.quit].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.quit].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.quit] }}</span>
+        </div>
+      </use>
+      <button class="btn trigger" popovertarget="menu-edit" aria-haspopup="menu">
+        <span class="label">Edit</span>
+      </button>
+      <use ui="StudioMenu" id="menu-edit">
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.undo]" data-event-click="emit('StudioCommand', 'undo', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.undo].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.undo].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.undo] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.redo]" data-event-click="emit('StudioCommand', 'redo', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.redo].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.redo].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.redo] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.cut]" data-event-click="emit('StudioCommand', 'cut', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.cut].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.cut].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.cut] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.copy]" data-event-click="emit('StudioCommand', 'copy', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.copy].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.copy].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.copy] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.paste]" data-event-click="emit('StudioCommand', 'paste', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.paste].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.paste].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.paste] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.duplicate]" data-event-click="emit('StudioCommand', 'duplicate', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.duplicate].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.duplicate].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.duplicate] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.rename]" data-event-click="emit('StudioCommand', 'rename', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.rename].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.rename].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.rename] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.delete]" data-event-click="emit('StudioCommand', 'delete', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.delete].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.delete].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.delete] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.selectAll]" data-event-click="emit('StudioCommand', 'selectAll', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.selectAll].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.selectAll].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.selectAll] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.deselect]" data-event-click="emit('StudioCommand', 'deselect', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.deselect].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.deselect].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.deselect] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.find]" data-event-click="emit('StudioCommand', 'find', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.find].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.find].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.find] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.search]" data-event-click="emit('StudioCommand', 'search', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.search].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.search].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.search] }}</span>
+        </div>
+      </use>
+      <button class="btn trigger" popovertarget="menu-view" aria-haspopup="menu">
+        <span class="label">View</span>
+      </button>
+      <use ui="StudioMenu" id="menu-view">
+        <use ui="MenuGroup">Panels</use>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.toggleAssets]" data-event-click="emit('StudioCommand', 'toggleAssets', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.toggleAssets].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.toggleAssets].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.toggleAssets] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.toggleOutput]" data-event-click="emit('StudioCommand', 'toggleOutput', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.toggleOutput].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.toggleOutput].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.toggleOutput] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.togglePerformance]" data-event-click="emit('StudioCommand', 'togglePerformance', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.togglePerformance].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.togglePerformance].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.togglePerformance] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.toggleSidePane]" data-event-click="emit('StudioCommand', 'toggleSidePane', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.toggleSidePane].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.toggleSidePane].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.toggleSidePane] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <use ui="MenuGroup">Layout</use>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.workspaceHorizontalSplit]" data-event-click="emit('StudioCommand', 'workspaceHorizontalSplit', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.workspaceHorizontalSplit].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.workspaceHorizontalSplit].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.workspaceHorizontalSplit] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.workspaceVerticalSplit]" data-event-click="emit('StudioCommand', 'workspaceVerticalSplit', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.workspaceVerticalSplit].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.workspaceVerticalSplit].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.workspaceVerticalSplit] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.maximize]" data-event-click="emit('StudioCommand', 'maximize', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.maximize].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.maximize].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.maximize] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.resetLayout]" data-event-click="emit('StudioCommand', 'resetLayout', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.resetLayout].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.resetLayout].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.resetLayout] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <use ui="MenuGroup">Tabs</use>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.previousTab]" data-event-click="emit('StudioCommand', 'previousTab', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.previousTab].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.previousTab].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.previousTab] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.nextTab]" data-event-click="emit('StudioCommand', 'nextTab', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.nextTab].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.nextTab].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.nextTab] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.togglePinTab]" data-event-click="emit('StudioCommand', 'togglePinTab', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.togglePinTab].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.togglePinTab].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.togglePinTab] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <use ui="MenuGroup">Scene</use>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.frame]" data-event-click="emit('StudioCommand', 'frame', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.frame].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.frame].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.frame] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.frameAll]" data-event-click="emit('StudioCommand', 'frameAll', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.frameAll].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.frameAll].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.frameAll] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.resetCamera]" data-event-click="emit('StudioCommand', 'resetCamera', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.resetCamera].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.resetCamera].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.resetCamera] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.hideSelected]" data-event-click="emit('StudioCommand', 'hideSelected', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.hideSelected].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.hideSelected].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.hideSelected] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.hideUnselected]" data-event-click="emit('StudioCommand', 'hideUnselected', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.hideUnselected].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.hideUnselected].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.hideUnselected] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.showAll]" data-event-click="emit('StudioCommand', 'showAll', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.showAll].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.showAll].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.showAll] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <use ui="MenuGroup">UI Scale</use>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.zoomIn]" data-event-click="emit('StudioCommand', 'zoomIn', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.zoomIn].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.zoomIn].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.zoomIn] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.zoomOut]" data-event-click="emit('StudioCommand', 'zoomOut', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.zoomOut].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.zoomOut].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.zoomOut] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.zoomReset]" data-event-click="emit('StudioCommand', 'zoomReset', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.zoomReset].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.zoomReset].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.zoomReset] }}</span>
+        </div>
+      </use>
+      <button class="btn trigger" popovertarget="menu-object" aria-haspopup="menu">
+        <span class="label">Object</span>
+      </button>
+      <use ui="StudioMenu" id="menu-object">
+        <div class="menu-group">Add</div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.duplicate]" data-event-click="emit('StudioCommand', 'duplicate', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.duplicate].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.duplicate].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.duplicate] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.rename]" data-event-click="emit('StudioCommand', 'rename', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.rename].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.rename].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.rename] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.delete]" data-event-click="emit('StudioCommand', 'delete', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.delete].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.delete].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.delete] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.openPrototype]" data-event-click="emit('StudioCommand', 'openPrototype', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.openPrototype].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.openPrototype].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.openPrototype] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.applyOverrides]" data-event-click="emit('StudioCommand', 'applyOverrides', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.applyOverrides].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.applyOverrides].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.applyOverrides] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.saveAsPrototype]" data-event-click="emit('StudioCommand', 'saveAsPrototype', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.saveAsPrototype].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.saveAsPrototype].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.saveAsPrototype] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.addComponent]" data-event-click="emit('StudioCommand', 'addComponent', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.addComponent].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.addComponent].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.addComponent] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.selectTool]" data-event-click="emit('StudioCommand', 'selectTool', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.selectTool].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.selectTool].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.selectTool] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.moveTool]" data-event-click="emit('StudioCommand', 'moveTool', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.moveTool].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.moveTool].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.moveTool] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.rotateTool]" data-event-click="emit('StudioCommand', 'rotateTool', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.rotateTool].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.rotateTool].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.rotateTool] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.scaleTool]" data-event-click="emit('StudioCommand', 'scaleTool', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.scaleTool].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.scaleTool].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.scaleTool] }}</span>
+          </div>
+          <use ui="MenuSeparator" />
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.grab]" data-event-click="emit('StudioCommand', 'grab', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.grab].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.grab].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.grab] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.toggleSnap]" data-event-click="emit('StudioCommand', 'toggleSnap', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.toggleSnap].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.toggleSnap].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.toggleSnap] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.finerGrid]" data-event-click="emit('StudioCommand', 'finerGrid', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.finerGrid].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.finerGrid].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.finerGrid] }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.coarserGrid]" data-event-click="emit('StudioCommand', 'coarserGrid', '')">
+            <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.coarserGrid].icon }}</span>
+            <span class="text">
+              <span class="label">{{ self.studioCommands[self.studioCommandIndex.coarserGrid].label }}</span>
+            </span>
+            <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.coarserGrid] }}</span>
+          </div>
+        </div>
+        <use ui="MenuSeparator" />
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.keepChanges]" data-event-click="emit('StudioCommand', 'keepChanges', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.keepChanges].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.keepChanges].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.keepChanges] }}</span>
+        </div>
+      </use>
+      <button class="btn trigger" popovertarget="menu-play" aria-haspopup="menu">
+        <span class="label">Play</span>
+      </button>
+      <use ui="StudioMenu" id="menu-play">
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.resume]" data-event-click="emit('StudioCommand', 'resume', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.resume].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.resume].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.resume] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.play]" data-event-click="emit('StudioCommand', 'play', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.play].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.play].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.play] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.stop]" data-event-click="emit('StudioCommand', 'stop', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.stop].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.stop].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.stop] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.step]" data-event-click="emit('StudioCommand', 'step', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.step].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.step].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.step] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <use ui="MenuGroup">Playback Speed</use>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.slower]" data-event-click="emit('StudioCommand', 'slower', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.slower].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.slower].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.slower] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.faster]" data-event-click="emit('StudioCommand', 'faster', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.faster].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.faster].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.faster] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.normalSpeed]" data-event-click="emit('StudioCommand', 'normalSpeed', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.normalSpeed].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.normalSpeed].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.normalSpeed] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <use ui="MenuGroup">Debugger</use>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.stepOver]" data-event-click="emit('StudioCommand', 'stepOver', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.stepOver].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.stepOver].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.stepOver] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.stepInto]" data-event-click="emit('StudioCommand', 'stepInto', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.stepInto].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.stepInto].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.stepInto] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.stepOut]" data-event-click="emit('StudioCommand', 'stepOut', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.stepOut].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.stepOut].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.stepOut] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.showLiveValues]" data-event-click="emit('StudioCommand', 'showLiveValues', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.showLiveValues].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.showLiveValues].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.showLiveValues] }}</span>
+        </div>
+      </use>
+      <button class="btn trigger" popovertarget="menu-help" aria-haspopup="menu">
+        <span class="label">Help</span>
+      </button>
+      <use ui="StudioMenu" id="menu-help">
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.keyboardShortcuts]" data-event-click="emit('StudioCommand', 'keyboardShortcuts', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.keyboardShortcuts].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.keyboardShortcuts].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.keyboardShortcuts] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.documentation]" data-event-click="emit('StudioCommand', 'documentation', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.documentation].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.documentation].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.documentation] }}</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.reportIssue]" data-event-click="emit('StudioCommand', 'reportIssue', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.reportIssue].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.reportIssue].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.reportIssue] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.inspectElement]" data-event-click="emit('StudioCommand', 'inspectElement', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.inspectElement].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.inspectElement].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.inspectElement] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.about]" data-event-click="emit('StudioCommand', 'about', '')">
+          <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.about].icon }}</span>
+          <span class="text">
+            <span class="label">{{ self.studioCommands[self.studioCommandIndex.about].label }}</span>
+          </span>
+          <span class="kbd">{{ self.studioCommandShortcuts[self.studioCommandIndex.about] }}</span>
+        </div>
+      </use>
+    </menubar>
+    <div class="spacer" />
+    <div class="transport">
+      <button class="btn subtle target" data-tip="Play target" popovertarget="target-menu" aria-haspopup="menu">
+        <span class="icon"></span>
+        <span class="label">{{ self.sceneRuntime.targetPreview ? 'Preview' : 'Scene' }} · {{ self.sceneRuntime.targetPreview ? self.sceneRuntime.previewName : self.shellRuntimeName }}</span>
+      </button>
+      <div class="group">
+        <button class="btn icon-only" data-for="command, i : self.studioCommands" data-if="(!self.debugPaused &amp;&amp; (command.id == 'play' || command.id == 'stop' || command.id == 'step')) || (self.debugPaused &amp;&amp; (command.id == 'play' || command.id == 'stop' || command.id == 'stepOver' || command.id == 'stepInto' || command.id == 'stepOut'))" data-attr-data-tip="command.label" data-attr-data-kbd="self.studioCommandShortcuts[i]" data-attrif-disabled="!self.studioCommandEnabled[i]" data-attr-data-state="command.id == 'play' &amp;&amp; self.sceneRuntime.playing ? 'on' : 'off'" data-event-click="emit('StudioCommand', command.id, '')">
+          <span class="icon">{{ command.icon }}</span>
+        </button>
+      </div>
+      <div id="speed">
+        <button class="btn subtle speed" popovertarget="speed-menu" data-tip="Playback Speed" data-attr-data-state="self.sceneInput.speed != 1 ? 'on' : 'off'">
+          <span class="label">{{ self.sceneInput.speed }}×</span>
+        </button>
+        <use ui="StudioMenu" id="speed-menu">
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.slower]" data-event-click="emit('StudioCommand', 'slower', '')">
+            <span class="text">{{ self.studioCommands[self.studioCommandIndex.slower].label }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.faster]" data-event-click="emit('StudioCommand', 'faster', '')">
+            <span class="text">{{ self.studioCommands[self.studioCommandIndex.faster].label }}</span>
+          </div>
+          <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.normalSpeed]" data-event-click="emit('StudioCommand', 'normalSpeed', '')">
+            <span class="text">{{ self.studioCommands[self.studioCommandIndex.normalSpeed].label }}</span>
+          </div>
+          <use ui="MenuSeparator" />
+          <div class="menu-item" role="menuitem" data-for="speed : self.shellSpeedPresets" data-attrif-data-disabled="!self.sceneRuntime.ready" data-attrif-data-checked="speed == self.sceneInput.speed" data-event-click="emit('StudioSceneSpeed', speed)">
+            <span class="icon lead" data-if="speed == self.sceneInput.speed"></span>
+            <span class="text">{{ speed }}×</span>
+          </div>
+        </use>
+      </div>
+      <use ui="StudioMenu" id="target-menu">
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="self.sceneRuntime.playing || self.sceneRuntime.preparing || self.sceneRuntime.steps &gt; 0" data-event-click="emit('StudioSceneCommand', 'playTarget', 'scene')">
+          <span class="text">Scene</span>
+        </div>
+        <div class="menu-item" role="menuitem" data-attrif-data-disabled="self.sceneRuntime.playing || self.sceneRuntime.preparing || self.sceneRuntime.steps &gt; 0 || !self.sceneRuntime.previewAvailable" data-event-click="emit('StudioSceneCommand', 'playTarget', 'preview')">
+          <span class="text">Preview</span>
+        </div>
+      </use>
+    </div>
+    <div class="spacer" />
+    <button class="btn icon-only collaboration-trigger" data-tip="Collaboration" data-attr-data-state="self.collaborationActive ? 'on' : 'off'" data-event-click="emit('StudioCommand', 'collaboration', '')">
+      <span class="icon">󰘬</span>
+    </button>
+    <div class="sep" />
+    <div id="layout">
+      <button class="btn icon-only" popovertarget="layout-menu" aria-haspopup="menu" data-tip="Layout">
+        <span class="icon"></span>
+      </button>
+      <use ui="StudioMenu" id="layout-menu">
+        <div class="menu-item" role="menuitem" data-for="command, i : self.studioCommands" data-if="command.id == 'workspaceHorizontalSplit' || command.id == 'workspaceVerticalSplit' || command.id == 'maximize' || command.id == 'resetLayout'" data-event-click="emit('StudioCommand', command.id, '')">
+          <span class="icon lead">{{ command.icon }}</span>
+          <span class="text">
+            <span class="label">{{ command.label }}</span>
+          </span>
+        </div>
+      </use>
+    </div>
+    <button class="btn icon-only side-pane" data-tip="Side Pane" data-attr-data-state="self.shellSideOpen ? 'on' : 'off'" data-event-click="emit('StudioCommand', 'toggleSidePane', '')">
+      <span class="icon"></span>
+    </button>
+    <button class="btn icon-only" data-tip="Settings" data-event-click="emit('StudioCommand', 'settings', '')">
+      <span class="icon"></span>
+    </button>
+    <button class="btn search-trigger" data-tip="Search" data-kbd="Mod+K" data-event-click="emit('StudioCommand', 'search', '')">
+      <span class="icon"></span>
+      <span class="label">Search</span>
+      <span class="kbd">Mod+K</span>
+    </button>
+  </header>
+  <div class="studio-conflict" role="alert" data-if="self.shellConflict">This file changed on disk. Review the changes before saving.</div>
+  <main class="studio-workspace-host">
+    <slot />
+  </main>
+  <footer class="statusbar" data-class-live="self.sceneRuntime.playing" data-event-mouseenter="emit('StudioPaneHover', 'Global')">
+    <div class="hints">
+      <div class="hint-group" data-if="self.shellHoverContext == 'properties' || self.shellHoverContext == 'visual'">
+        <span class="icon">󰍽</span>
+        <span class="label">Drag to scrub</span>
+        <span class="kbd-key">Alt</span>
+        <span class="label">Fine</span>
+        <span class="kbd-key">Shift</span>
+        <span class="label">Coarse</span>
+        <span class="kbd-key">Ctrl</span>
+        <span class="label">Snap</span>
+      </div>
+      <div class="hint-group" data-if="self.shellHoverContext == 'outliner'">
+        <span class="icon">󰍽</span>
+        <span class="label">Select</span>
+        <span class="icon">󰍽</span>
+        <span class="kbd-key">Mod</span>
+        <span class="label">Toggle</span>
+        <span class="icon">󰍽</span>
+        <span class="kbd-key">Shift</span>
+        <span class="label">Range</span>
+        <span class="kbd-key">{{ self.studioCommandShortcuts[self.studioCommandIndex.frame] }}</span>
+        <span class="label">Frame</span>
+        <span class="kbd-key">{{ self.studioCommandShortcuts[self.studioCommandIndex.rename] }}</span>
+        <span class="label">Rename</span>
+      </div>
+      <div class="hint-group" data-if="self.shellHoverContext == 'graph' &amp;&amp; !self.graph.readonly">
+        <span class="icon">󰍽</span>
+        <span class="label">Select</span>
+        <span class="kbd-key">Shift+A</span>
+        <span class="label">Add</span>
+        <span class="kbd-key">Q</span>
+        <span class="label">Straighten</span>
+      </div>
+      <div class="hint-group" data-if="self.shellHoverContext == 'graph' &amp;&amp; self.graph.readonly">
+        <span class="icon">󰍽</span>
+        <span class="label">Select</span>
+        <span class="kbd-key">F</span>
+        <span class="label">Frame</span>
+      </div>
+      <div class="hint-group" data-if="self.shellHoverContext == 'scene' &amp;&amp; !self.sceneRuntime.perspective">
+        <span class="icon">󰍽</span>
+        <span class="label">{{ self.sceneRuntime.tool == 'move' ? 'Drag arrows' : self.sceneRuntime.tool == 'rotate' ? 'Drag ring' : self.sceneRuntime.tool == 'scale' ? 'Drag handles' : 'Select' }}</span>
+        <span class="icon">󰍽</span>
+        <span class="kbd-key">Shift</span>
+        <span class="label">Toggle</span>
+        <span class="kbd-key">{{ self.studioCommandShortcuts[self.studioCommandIndex.grab] }}</span>
+        <span class="label">Grab</span>
+        <span class="kbd-key">Ctrl</span>
+        <span class="label">{{ self.sceneRuntime.snap ? 'Free' : 'Snap' }}</span>
+        <span class="kbd-key">{{ self.studioCommandShortcuts[self.studioCommandIndex.frame] }}</span>
+        <span class="label">Frame</span>
+        <span class="kbd-key">{{ self.studioCommandShortcuts[self.studioCommandIndex.hideSelected] }}</span>
+        <span class="label">Hide</span>
+      </div>
+      <div class="hint-group" data-if="self.shellHoverContext == 'scene' &amp;&amp; self.sceneRuntime.perspective">
+        <span class="icon">󰍽</span>
+        <span class="label">{{ self.sceneRuntime.tool == 'move' ? 'Drag arrows' : self.sceneRuntime.tool == 'rotate' ? 'Drag rings' : self.sceneRuntime.tool == 'scale' ? 'Drag handles' : 'Select' }}</span>
+        <span class="icon">󰍽</span>
+        <span class="kbd-key">Alt</span>
+        <span class="label">Orbit</span>
+        <span class="icon">󰍽</span>
+        <span class="label">Right-drag to fly</span>
+        <span class="icon">󰍽</span>
+        <span class="kbd-key">Shift</span>
+        <span class="label">Toggle</span>
+        <span class="kbd-key">{{ self.studioCommandShortcuts[self.studioCommandIndex.frame] }}</span>
+        <span class="label">Frame</span>
+      </div>
+      <div class="hint-group" data-if="self.shellHoverContext != 'scene' &amp;&amp; self.shellHoverContext != 'graph' &amp;&amp; self.shellHoverContext != 'outliner' &amp;&amp; self.shellHoverContext != 'properties' &amp;&amp; self.shellHoverContext != 'visual'">
+        <span class="kbd-key">{{ self.studioCommandShortcuts[self.studioCommandIndex.search] }}</span>
+        <span class="label">Search</span>
+        <span class="kbd-key">{{ self.studioCommandShortcuts[self.studioCommandIndex.keyboardShortcuts] }}</span>
+        <span class="label">Shortcuts</span>
+      </div>
+    </div>
+    <div class="report-area">
+      <div class="report" data-if="self.shellReporting" data-class-warning="self.shellMessageKind == 'warning' || self.shellMessageKind == 'error'" presence="">
+        <span class="icon"></span>
+        <morph-text>{{ self.shellMessage }}</morph-text>
+      </div>
+    </div>
+    <div class="drawers">
+      <button class="btn sm toggle-drawer" data-attr-data-state="self.shellDrawerOpen &amp;&amp; self.shellDrawer == 'assets' ? 'on' : 'off'" data-event-click="emit('StudioCommand', 'toggleAssets', '')">
+        <span class="icon"></span>
+        <span class="label">Assets</span>
+      </button>
+      <button class="btn sm toggle-drawer" data-attr-data-state="self.shellDrawerOpen &amp;&amp; self.shellDrawer == 'output' ? 'on' : 'off'" data-event-click="emit('StudioCommand', 'toggleOutput', '')">
+        <span class="icon"></span>
+        <span class="label">Output</span>
+      </button>
+      <button class="btn sm toggle-drawer" data-attr-data-state="self.shellDrawerOpen &amp;&amp; self.shellDrawer == 'performance' ? 'on' : 'off'" data-event-click="emit('StudioCommand', 'togglePerformance', '')">
+        <span class="icon">󰓅</span>
+        <span class="label">Performance</span>
+      </button>
+    </div>
+    <div class="stats">
+      <span class="strong">{{ self.shellRuntimeName }}</span>
+      <span data-class-strong="self.outliner.selectedName != ''">{{ self.outliner.selectedName != '' ? self.outliner.selectedName : 'No selection' }}</span>
+      <span class="count objects">Objects <number-flow data-attr-value="self.outliner.selectionCount" />/<number-flow data-attr-value="self.outliner.total" />
+      </span>
+      <span class="count speed strong" data-if="self.sceneInput.speed != 1" data-event-click="emit('StudioCommand', 'normalSpeed', '')">{{ self.sceneInput.speed }}×</span>
+      <span class="count hidden-objects" data-if="self.outliner.hiddenCount &gt; 0" data-tip="Show All" data-event-click="emit('StudioCommand', 'showAll', '')">
+        <number-flow data-attr-value="self.outliner.hiddenCount" /> hidden</span>
+    </div>
+    <div id="ui-scale">
+      <button class="btn sm ui-scale" popovertarget="scale-menu" data-tip="UI Scale">{{ self.shellScale }}</button>
+      <use ui="StudioMenu" id="scale-menu">
+        <div class="menu-item" data-for="command, i : self.studioCommands" data-if="command.id == 'zoomIn' || command.id == 'zoomOut' || command.id == 'zoomReset'" data-event-click="emit('StudioCommand', command.id, '')">
+          <span class="text">{{ command.label }}</span>
+          <span class="kbd">{{ self.studioCommandShortcuts[i] }}</span>
+        </div>
+        <use ui="MenuSeparator" />
+        <div class="menu-item" role="menuitem" data-for="scale : self.shellScalePresets" data-event-click="emit('StudioPreferenceNumber', 'uiScale', scale)">
+          <span class="text">{{ scale * 100 }}%</span>
+        </div>
+      </use>
+    </div>
+  </footer>
+  <div data-when="self.projectNewOpen">
+    <use ui="NewProject" />
+  </div>
+  <div data-if="self.platformVisible">
+    <use ui="StudioPlatform" />
+  </div>
+  <div data-if="self.shellSettingsOpen">
+    <use ui="StudioPreferences" />
+  </div>
+  <div data-when="self.shellPaletteOpen">
+    <use ui="StudioCommands" />
+  </div>
+  <div data-if="self.shellAboutOpen">
+    <use ui="Dialog">
+      <div class="studio-about" role="dialog" aria-modal="true" aria-label="About Chibi Studio">
+        <h2>Chibi Studio</h2>
+        <p>Build games with authored scenes, components, materials and behaviors.</p>
+        <button class="btn" data-event-click="emit('StudioShellClose')">Close</button>
+      </div>
+    </use>
+  </div>
+</div>

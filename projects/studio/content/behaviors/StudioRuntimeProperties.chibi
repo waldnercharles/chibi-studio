@@ -1,0 +1,455 @@
+behavior StudioRuntimeProperties {
+    self.Session: int = 0
+    Document: int = 0
+    Revision: int = 0
+    Live := false
+    Stopped := false
+    LastSteps: int = 0
+    RuntimeDocument: int = 0
+    RuntimeRevision: int = 0
+    Subject: string = ""
+    Ready := false
+    Playing := false
+    RoomActive := false
+    Busy := false
+    Typing := false
+    Name: string = ""
+    OriginKnown := false
+    Spawned := false
+    Authored := false
+    Prototype: string = ""
+    OriginPath: string = ""
+    OriginSourcePath: string = ""
+    SourcePath: string = ""
+    Error: string = ""
+    QueryError: string = ""
+    First: int = 0
+    Total: int = 0
+    Filter: string = ""
+    OpenComponent: string = ""
+    Category: string = "object"
+    Folded: string[] = []
+    Opened: string[] = []
+    ChooseInitialGroup := true
+    Elapsed: float = 0
+    Rows: struct<"RuntimeProperty">[] = []
+    Choices: struct<"RuntimePropertyChoice">[] = []
+    PanelOpen :: pure fn(Component: string) -> bool {
+        if Filter != "" || contains(Opened, Component) { return true }
+        if contains(Folded, Component) { return false }
+        return Component == "Transform" || Component == "Appearance" || Component == "Orientation"
+    }
+    on StudioRuntimePropertiesCategory {
+        self.Category = event.Category
+        await Publish()
+    }
+    Label :: pure fn(Name: string) -> string {
+        if Name == "Geometry3D" { return "3D Geometry" }
+        if Name == "Appearance" { return "2D Appearance" }
+        if Name == "sdf" || Name == "Sdf" { return "SDF" }
+        if Name == "ui" { return "UI" }
+        if Name == "sleep" { return "Allow sleeping" }
+        if Name == "continuous" { return "Continuous collision" }
+        if Name == "force_drive" { return "Drive with forces" }
+        if Name == "contact_hertz" { return "Contact Hz" }
+        if Name == "contact_damping" { return "Damping" }
+        result := ""
+        at: int = 0
+        start := true
+        previous := ""
+        while at < 128 {
+            ch := text_slice(Name, at, at + 1).Text
+            if ch == "" { break }
+            if ch == "_" || ch == " " { start = true; at += 1; continue }
+            upper := text_contains(ch, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", false)
+            lower := previous != "" && text_contains(previous, "abcdefghijklmnopqrstuvwxyz", false)
+            next := text_slice(Name, at + 1, at + 2).Text
+            nextLower := next != "" && text_contains(next, "abcdefghijklmnopqrstuvwxyz", false)
+            if result != "" && (start || (upper && (lower || nextLower))) { result = format_text("{} ", result) }
+            if start {
+                letter: int = 0
+                while letter < 26 {
+                    if text_slice("abcdefghijklmnopqrstuvwxyz", letter, letter + 1).Text == ch {
+                        ch = text_slice("ABCDEFGHIJKLMNOPQRSTUVWXYZ", letter, letter + 1).Text
+                        break
+                    }
+                    letter += 1
+                }
+            }
+            result = format_text("{}{}", result, ch)
+            previous = ch
+            start = false
+            at += 1
+        }
+        return result
+    }
+    CanKeep :: pure fn() -> bool {
+        return Ready && Live && !Busy && !RoomActive && Subject != "" && OriginKnown && Authored && !Spawned && OriginSourcePath != "" && RuntimeDocument > 0 && Document == RuntimeDocument && Revision == RuntimeRevision
+    }
+    ComponentWritable :: pure fn(Component: string) -> bool {
+        foreach (row in Rows) {
+            if row.component == Component && row.writable && !row.computed { return true }
+        }
+        return false
+    }
+    Publish :: fn() {
+        await set_ui_data(Name: "runtimeProperties.active", Value: Subject != "")
+        await set_ui_data(Name: "runtimeProperties.session", Value: Session)
+        await set_ui_data(Name: "runtimeProperties.subject", Value: Subject)
+        await set_ui_data(Name: "runtimeProperties.canKeepChanges", Value: CanKeep())
+        await set_ui_data(Name: "runtimeProperties.name", Value: Name)
+        await set_ui_data(Name: "runtimeProperties.originKnown", Value: OriginKnown)
+        await set_ui_data(Name: "runtimeProperties.spawned", Value: Spawned)
+        await set_ui_data(Name: "runtimeProperties.authored", Value: Authored)
+        await set_ui_data(Name: "runtimeProperties.prototype", Value: Prototype)
+        await set_ui_data(Name: "runtimeProperties.originPath", Value: OriginPath)
+        message := QueryError
+        if Error != "" {
+            message = Error
+        }
+        await set_ui_data(Name: "runtimeProperties.error", Value: message)
+        await set_ui_data(Name: "runtimeProperties.rows", Value: Rows)
+        await set_ui_data(Name: "runtimeProperties.choices", Value: Choices)
+        await set_ui_data(Name: "runtimeProperties.filter", Value: Filter)
+        await set_ui_data(Name: "runtimeProperties.open", Value: OpenComponent)
+        await set_ui_data(Name: "runtimeProperties.readOnly", Value: RoomActive || Busy || !Ready)
+        await set_ui_data(Name: "runtimeProperties.playing", Value: Playing)
+        await set_ui_data(Name: "runtimeProperties.room", Value: RoomActive)
+        await set_ui_data(Name: "runtimeProperties.previous", Value: First > 0)
+        await set_ui_data(Name: "runtimeProperties.next", Value: First + length(Rows) < Total)
+        await set_ui_data(Name: "runtimeProperties.total", Value: Total)
+        categories: string[] = ["object"]
+        foreach (row in Rows) {
+            if row.presentation_category != "" { categories = add_unique(categories, row.presentation_category) }
+        }
+        if !contains(categories, Category) { Category = "object" }
+        await set_ui_data(Name: "runtimeProperties.categories", Value: categories)
+        await set_ui_data(Name: "runtimeProperties.category", Value: Category)
+        panels: string[] = []
+        panelSlots: int[] = []
+        slots: int[] = []
+        groups: bool[] = []
+        previous: string = ""
+        index: int = 0
+        while index < length(Rows) {
+            row := Rows[index]
+            await set_ui_data(Name: format_text("runtimeProperties.rows.{}.label", index), Value: Label(row.label))
+            category := row.presentation_category
+            if category == "" { category = "object" }
+            if (Filter != "" || category == Category) && (Filter == "" || text_contains(Filter, row.component, true) || text_contains(Filter, row.field, true) || text_contains(Filter, row.text, true)) {
+                if !contains(panels, row.component) {
+                    panelSlots = array_add(panelSlots, length(panels))
+                    panels = array_add(panels, row.component)
+                    key := format_text("runtimeProperties.panels.{}", length(panels) - 1)
+                    await set_ui_data(Name: format_text("{}.component", key), Value: row.component)
+                    await set_ui_data(Name: format_text("{}.title", key), Value: Label(row.component))
+                    await set_ui_data(Name: format_text("{}.open", key), Value: PanelOpen(row.component))
+                    await set_ui_data(Name: format_text("{}.computed", key), Value: row.computed)
+                    await set_ui_data(Name: format_text("{}.keepable", key), Value: ComponentWritable(row.component))
+                }
+                slots = array_add(slots, index)
+                groups = array_add(groups, row.component != previous)
+                previous = row.component
+            } else {
+                groups = array_add(groups, false)
+            }
+            if row.color {
+                color := packed_color_to_hex(row.number)
+                await set_ui_data(Name: format_text("runtimeProperties.colors[{}]", index), Value: color.Text)
+            }
+            index += 1
+        }
+        await set_ui_data(Name: "runtimeProperties.groups", Value: groups)
+        await set_ui_data(Name: "runtimeProperties.slots", Value: slots)
+        await set_ui_data(Name: "runtimeProperties.panelSlots", Value: panelSlots)
+    }
+    Refresh :: fn() {
+        if !Ready || Subject == "" || Busy {
+            return
+        }
+        session := Session
+        subject := Subject
+        first := First
+        Busy = true
+        inspected := await workspace_runtime_subject_properties(session, subject, first, 64)
+        if Session != session || Subject != subject || First != first {
+            Busy = false;
+            return
+        }
+        Busy = false
+        QueryError = inspected.Error
+        if inspected.Ok {
+            Name = inspected.Name;
+            Rows = inspected.Rows;
+            Choices = inspected.Choices;
+            Total = inspected.Total
+            if ChooseInitialGroup && length(Rows) > 0 {
+                OpenComponent = Rows[0].component
+                foreach (row in Rows) {
+                    if row.writable {
+                        OpenComponent = row.component;
+                        break
+                    }
+                }
+                ChooseInitialGroup = false
+            }
+        } else {
+            Rows = [];
+            Choices = [];
+            Total = 0
+        }
+        await Publish()
+    }
+    Submit :: fn(Component: string, Field: string, Json: string) {
+        if Busy || RoomActive || !Ready || Subject == "" {
+            return
+        }
+        allowed := false
+        foreach (row in Rows) {
+            if row.component == Component && row.field == Field && row.writable {
+                allowed = true;
+                break
+            }
+        }
+        if !allowed {
+            return
+        }
+        session := Session
+        subject := Subject
+        Busy = true
+        await Publish()
+        written := await workspace_runtime_subject_write(session, subject, Component, Field, Json)
+        Busy = false
+        if Session != session || Subject != subject {
+            return
+        }
+        Error = written.Error
+        if written.Ok {
+            await Refresh()
+        } else {
+            await Publish()
+        }
+    }
+    on Begin {
+        await Publish()
+    }
+    SelectSubject :: fn(InSession: int, InSubject: string, Path: string) {
+        if !Ready || InSession != self.Session { return }
+        self.Subject = InSubject
+        SourcePath = Path
+        OriginKnown = false
+        Spawned = false
+        Authored = false
+        Prototype = ""
+        OriginPath = ""
+        OriginSourcePath = ""
+        if self.Subject != "" {
+            session := self.Session
+            subject := self.Subject
+            origin := await workspace_runtime_subject_origin(session, subject)
+            if session != self.Session || subject != self.Subject || SourcePath != Path { return }
+            if Path != "" && (!Live || RoomActive || self.Document != RuntimeDocument || self.Revision != RuntimeRevision || !origin.Ok || !origin.Known || !origin.Authored || origin.Spawned || origin.SourcePath != Path) {
+                self.Subject = ""
+                SourcePath = ""
+                await Publish()
+                return
+            }
+            if origin.Ok && origin.Known {
+                OriginKnown = true
+                Spawned = origin.Spawned
+                Authored = origin.Authored
+                Prototype = origin.Prototype
+                OriginPath = origin.Path
+                OriginSourcePath = origin.SourcePath
+            }
+        }
+        First = 0
+        Filter = ""
+        Error = ""
+        QueryError = ""
+        Name = "Runtime object"
+        OpenComponent = ""
+        ChooseInitialGroup = true
+        Rows = []
+        Choices = []
+        if self.Subject != "" && Path == "" {
+            empty: string[] = []
+            await send_event<"StudioOutlinerSelectionRequested">(self, RuntimeDocument, RuntimeRevision, empty, false)
+        }
+        await Publish()
+        await Refresh()
+    }
+    on StudioRuntimeSubjectSelected {
+        await SelectSubject(event.Session, event.Subject, "")
+    }
+    on StudioRuntimeSourceSelected {
+        if event.Document != self.Document || event.Revision != self.Revision || event.Document != RuntimeDocument || event.Revision != RuntimeRevision || !Live || RoomActive { return }
+        await SelectSubject(event.Session, event.Subject, event.Path)
+    }
+    on StudioRuntimeState {
+        changed := self.Session != event.Session
+        if changed || event.Playing || event.Steps != LastSteps { Stopped = false }
+        LastSteps = event.Steps
+        Live = !Stopped && (event.Playing || event.Steps > 0)
+        self.Session = event.Session;
+        self.Ready = event.Ready;
+        self.Playing = event.Playing
+        RuntimeDocument = event.Document;
+        RuntimeRevision = event.Revision
+        if changed || !self.Ready {
+            SourcePath = ""
+            Subject = "";
+            Rows = [];
+            Choices = [];
+            Error = "";
+            First = 0;
+            Total = 0
+        }
+        await Publish()
+    }
+    on StudioObjectSelection {
+        if length(event.Paths) > 0 {
+            if length(event.Paths) == 1 && event.Paths[0] == SourcePath && event.Document == RuntimeDocument && event.Revision == RuntimeRevision { return }
+            SourcePath = ""
+            Subject = "";
+            Rows = [];
+            Choices = [];
+            Error = "";
+            await Publish()
+        }
+    }
+    on StudioSceneCommand {
+        if event.Id == "deselect" {
+            SourcePath = ""
+            Subject = "";
+            Rows = [];
+            Choices = [];
+            Error = "";
+            await Publish()
+        }
+    }
+    on StudioDocumentState {
+        changed := event.Document != self.Document || event.Revision != self.Revision
+        self.Document = event.Document
+        self.Revision = event.Revision
+        if changed {
+            SourcePath = ""
+            Subject = ""
+            Rows = []
+            Choices = []
+            self.Error = ""
+        }
+        await Publish()
+    }
+    on StudioCollaborationState {
+        RoomActive = event.Active;
+        await Publish()
+    }
+    on StudioRuntimePropertiesFilter {
+        Filter = event.Text;
+        await Publish()
+    }
+    on StudioRuntimePropertiesFold {
+        if event.Session != self.Session || event.Subject != self.Subject || Filter != "" {
+            return
+        }
+        if PanelOpen(event.Component) {
+            Folded = add_unique(Folded, event.Component)
+            Opened = remove_item(Opened, event.Component)
+        } else {
+            Opened = add_unique(Opened, event.Component)
+            Folded = remove_item(Folded, event.Component)
+        }
+        await Publish()
+    }
+    on StudioRuntimePropertiesFocus {
+        Typing = event.Focused
+    }
+    on StudioRuntimePropertiesPage {
+        if Busy {
+            return
+        }
+        ChooseInitialGroup = true
+        if event.Direction < 0 && First >= 64 {
+            First -= 64
+        }
+        if event.Direction > 0 && First + length(Rows) < Total {
+            First += 64
+        }
+        await Refresh()
+    }
+    on StudioRuntimePropertiesEdit {
+        if event.Session != self.Session || event.Subject != self.Subject {
+            return
+        }
+        json := event.Text
+        foreach (row in Rows) {
+            if row.component == event.Component && row.field == event.Field && row.kind == "string" {
+                encoded := value_to_json(event.Text)
+                if !encoded.Ok {
+                    Error = encoded.Error;
+                    await Publish();
+                    return
+                }
+                json = encoded.Text
+                break
+            }
+        }
+        await Submit(event.Component, event.Field, json)
+    }
+    on StudioRuntimePropertiesColor {
+        if event.Session != self.Session || event.Subject != self.Subject {
+            return
+        }
+        if event.Canceled {
+            await Refresh();
+            return
+        }
+        color := packed_color_from_hex(event.Text)
+        if !color.Valid {
+            Error = color.Error;
+            await Publish();
+            return
+        }
+        await Submit(event.Component, event.Field, format_text("{}", color.Packed))
+    }
+    on StudioRuntimeStopped {
+        if event.Ok && event.Session == self.Session {
+            Stopped = true
+            Live = false
+            if SourcePath != "" {
+                SourcePath = ""
+                Subject = ""
+                Rows = []
+                Choices = []
+            }
+            await Publish()
+        }
+    }
+    on StudioRuntimePropertiesKeep {
+        if event.Session != self.Session || event.Subject != self.Subject || !CanKeep() || !ComponentWritable(event.Component) {
+            return
+        }
+        await send_event<"StudioSceneKeepComponent">(self, self.Session, RuntimeDocument, RuntimeRevision, self.Subject, OriginSourcePath, event.Component)
+    }
+    on StudioRuntimePropertiesReveal {
+        if event.Session != self.Session || event.Subject != self.Subject {
+            return
+        }
+        foreach (row in Rows) {
+            if row.component == event.Component && row.field == event.Field && row.target != "" {
+                await send_event<"StudioRuntimeSubjectSelected">(self, self.Session, row.target)
+                return
+            }
+        }
+    }
+    on Tick(dt) {
+        Elapsed += dt
+        if Elapsed >= 0.25 {
+            Elapsed = 0;
+            if !Typing {
+                await Refresh()
+            }
+        }
+    }
+}

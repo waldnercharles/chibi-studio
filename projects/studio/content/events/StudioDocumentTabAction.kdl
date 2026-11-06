@@ -1,0 +1,12 @@
+version 3
+name "StudioDocumentTabAction"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Document" type="int" category="Payload"
+    - id=2 name="Id" type="const char *" category="Payload"
+    - id=3 name="Pointer" type="struct" type_name="CF_V2" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

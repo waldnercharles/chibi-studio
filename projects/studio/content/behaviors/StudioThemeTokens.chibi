@@ -1,0 +1,151 @@
+behavior StudioThemeTokens {
+    Document: int = 0
+    Revision: int = 0
+    Visible := false
+    Rows: WorkspaceCssRow[] = []
+    Colors: bool[] = []
+    Sections: struct<"StudioThemeSection">[] = []
+    DisplayRows: struct<"StudioThemeRow">[] = []
+    Pending := false
+    EditDocument: int = 0
+    EditIndex: int = -1
+    EditValue: string = ""
+    Request: int = 0
+    Age: float = 0
+    starts :: fn(value: string, prefix: string) -> bool {
+        for i in 0..63 {
+            p := text_slice(prefix, i, i + 1).Text
+            if p == "" { return true }
+            if p != text_slice(value, i, i + 1).Text { return false }
+        }
+        return false
+    }
+    is_color :: fn(index: int) -> bool {
+        value := Rows[index].value
+        if starts(value, "#") || starts(value, "rgb") || starts(value, "hsl") || starts(value, "color-mix(") || starts(value, "transparent") { return true }
+        if !starts(value, "var(--") { return false }
+        end: int = 4
+        while end < 256 {
+            ch := text_slice(value, end, end + 1).Text
+            if ch == "" || ch == "," || ch == ")" { break }
+            end += 1
+        }
+        name := text_slice(value, 4, end).Text
+        result := false
+        for i in 0..index - 1 {
+            if Rows[i].name == name { result = Colors[i] }
+        }
+        return result
+    }
+    refresh :: fn() {
+        if !Visible || Document <= 0 || Pending { return }
+        read := await workspace_document_read(Document)
+        if !read.Ok { return }
+        Revision = read.Revision
+        source := query_workspace_css(Document, Revision)
+        if !source.Ok {
+            await send_event<"StudioStatus">(self, "error", source.Error)
+            return
+        }
+        same := length(Rows) == length(source.Rows)
+        if same {
+            for i in 0..length(Rows) - 1 {
+                if Rows[i].path != source.Rows[i].path || Rows[i].fingerprint != source.Rows[i].fingerprint || Rows[i].start != source.Rows[i].start { same = false; break }
+            }
+        }
+        if same { return }
+        Rows = source.Rows
+        Colors = []
+        Sections = []
+        DisplayRows = []
+        group_start: int = 0
+        path := ""
+        file := ""
+        selector := ""
+        for i in 0..length(Rows) - 1 {
+            row := Rows[i]
+            if row.path != path || row.selector != selector {
+                if i > group_start {
+                    section: struct<"StudioThemeSection"> = { file: file, selector: selector, start: group_start, end: i }
+                    Sections = append(Sections, [section])
+                }
+                group_start = i
+                path = row.path
+                file = row.file
+                selector = row.selector
+            }
+            color := is_color(i)
+            Colors = append(Colors, [color])
+            display: struct<"StudioThemeRow"> = { index: i, name: row.name, value: row.value, color: color }
+            DisplayRows = append(DisplayRows, [display])
+        }
+        if length(Rows) > group_start {
+            section: struct<"StudioThemeSection"> = { file: file, selector: selector, start: group_start, end: length(Rows) }
+            Sections = append(Sections, [section])
+        }
+        await set_ui_data(Name: "themeTokenRows", Value: DisplayRows)
+        set_ui_data(Name: "themeTokenSections", Value: Sections)
+    }
+    on Begin {
+        await set_ui_data(Name: "themeTokenRows", Value: DisplayRows)
+        set_ui_data(Name: "themeTokenSections", Value: Sections)
+    }
+    on StudioRuntimeState {
+        self.Document = event.Document
+        self.Revision = event.Revision
+        refresh()
+    }
+    on StudioDocumentState {
+        if event.Document == self.Document { self.Revision = event.Revision; refresh() }
+    }
+    on StudioPanelSelected {
+        if event.Panel == "themeTokens" { Visible = true; refresh() }
+    }
+    on StudioThemeTokenEdit {
+        if Pending || event.Index < 0 || event.Index >= length(Rows) { return }
+        if Request >= 2147483646 {
+            send_event<"StudioStatus">(self, "error", "Theme edit request identity exhausted.")
+            return
+        }
+        opened := await workspace_document_open(Rows[event.Index].path)
+        if !opened.Ok { send_event<"StudioStatus">(self, "error", opened.Error); return }
+        EditIndex = event.Index
+        EditValue = event.Value
+        EditDocument = opened.Document
+        Request += 1
+        Pending = true
+        send_event<"StudioDocumentExternalEditRequested">(self, "theme-tokens", EditDocument, Request)
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        if event.Owner != "theme-tokens" || event.Request != self.Request || event.Document != EditDocument { return }
+        Pending = false
+        await send_event<"StudioDocumentExternalEditComplete">(self, "theme-tokens", EditDocument, self.Request)
+        Rows = []
+        refresh()
+    }
+    on StudioDocumentExternalEditReady {
+        if !Pending || event.Owner != "theme-tokens" || event.Request != self.Request || event.Document != EditDocument { return }
+        Pending = false
+        if event.Ok && EditIndex >= 0 && EditIndex < length(Rows) {
+            row := Rows[EditIndex]
+            edited := await edit_workspace_css(row.path, row.fingerprint, row.start, row.end, row.value, EditValue)
+            if edited.Ok {
+                await send_event<"StudioDocumentChanged">(self, EditDocument)
+            } else {
+                Rows = []
+                await send_event<"StudioStatus">(self, "error", edited.Error)
+            }
+        } else {
+            Rows = []
+            await send_event<"StudioStatus">(self, "error", event.Error)
+        }
+        await send_event<"StudioDocumentExternalEditComplete">(self, "theme-tokens", EditDocument, self.Request)
+        refresh()
+    }
+    on Tick(dt) {
+        Visible = get_ui_view_width(Element: "#studio-theme-tokens").Known
+        if !Visible { return }
+        Age += dt
+        if Age >= 0.5 { Age = 0; refresh() }
+    }
+}

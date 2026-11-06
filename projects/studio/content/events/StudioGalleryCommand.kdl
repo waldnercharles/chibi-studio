@@ -1,0 +1,13 @@
+version 3
+name "StudioGalleryCommand"
+domain "event"
+id_counter 5
+(array)variables {
+    - id=1 name="Id" type="const char *" category="Payload"
+    - id=2 name="Argument" type="const char *" category="Payload"
+    - id=3 name="Area" type="const char *" category="Payload"
+    - id=4 name="Pointer" type="struct" type_name="CF_V2" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

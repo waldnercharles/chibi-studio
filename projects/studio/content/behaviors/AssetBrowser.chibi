@@ -1,0 +1,1014 @@
+behavior AssetBrowser {
+    self.WorkspaceActive := false
+    ReadOnly := false
+    Rows: struct<"WorkspaceResourceRow">[] = []
+    Incoming: struct<"WorkspaceResourceRow">[] = []
+    PreviewKeys: string[] = []
+    PreviewHandles: int[] = []
+    PreviewImages: string[] = []
+    PreviewStatus: string[] = []
+    PreviewErrors: string[] = []
+    DesiredPreviews: string[] = []
+    PreviewDirty := false
+    PreviewQuiet: float = 0.0
+    Selected: string[] = []
+    Folded: string[] = []
+    Filter: string = ""
+    Kind: string = ""
+    Grid := true
+    Tile: int = 96
+    Columns: int = 1
+    Anchor: string = ""
+    Active: string = ""
+    Busy := false
+    LoadFirst: int = 0
+    LoadRevision: int = -1
+    LoadFilter: string = ""
+    LoadKind: string = ""
+    Notice: string = ""
+    ImportRequest: int = 0
+    ImportSource: int = 0
+    ImportPhase: string = ""
+    ImportDestination: string = ""
+    ImportCanceling := false
+    CreateKind: string = ""
+    CreateName: string = ""
+    CreatePath: string = ""
+    CreateText: string = ""
+    CreateBusy := false
+    action create_file = workspace_document_create(CreatePath, CreateText)
+    Mutation: string = ""
+    MutationKeys: string[] = []
+    MutationIndex: int = 0
+    MutationPath: string = ""
+    Destination: string = ""
+    MutationDocument: int = 0
+    MutationRevision: int = 0
+    MutationBusy := false
+    ActiveDocument: int = 0
+    MutationRequest: int = 0
+    MutationLease := false
+    action mutation_lookup = lookup_workspace_resource(MutationKeys[MutationIndex])
+    action mutation_open = workspace_document_open(MutationPath)
+    action move_file = workspace_document_rename(MutationDocument, MutationRevision, Destination)
+    action refresh_resources = refresh_workspace_resources()
+    Starts: int[] = []
+    Counts: int[] = []
+    Kinds: string[] = []
+    Offsets: float[] = []
+    Heights: float[] = []
+    GroupCounts: int[] = []
+    LastTop: float = -1.0
+    LastView: float = -1.0
+    LastWidth: float = -1.0
+    ContentHeight: float = 0.0
+    action page = query_workspace_resources(LoadFirst, 256, LoadKind, LoadFilter)
+
+    Icon :: pure fn(Kind: string) -> string {
+        switch Kind {
+            case "scene":
+                return ""
+                case "prototype":
+                    return "󰆧"
+                    case "behavior":
+                        return ""
+                        case "material":
+                            return "󰏘"
+                            case "shape":
+                                return "󰋙"
+                                case "field":
+                                    return ""
+                                    case "library":
+                                        return ""
+                                        case "system":
+                                            return ""
+                                            case "ui":
+                                                return ""
+                                                case "image":
+                                                    return ""
+                                                    case "sound":
+                                                        return ""
+                                                        case:
+                                                            return ""
+                                                        }
+                                                    }
+
+                                                    IndexOf :: pure fn(Key: string) -> int {
+                                                        index: int = 0
+                                                        foreach (row in Rows) {
+                                                            if text_equal(row.Key, Key) {
+                                                                return index
+                                                            }
+                                                            index += 1
+                                                        }
+                                                        return -1
+                                                    }
+
+                                                    Reload :: fn() {
+                                                        if !WorkspaceActive {
+                                                            return
+                                                        }
+                                                        if Busy {
+                                                            return
+                                                        }
+                                                        Busy = true
+                                                        Incoming = clear(Incoming)
+                                                        LoadFirst = 0
+                                                        LoadRevision = -1
+                                                        LoadFilter = Filter
+                                                        LoadKind = Kind
+                                                        Notice = ""
+                                                        await set_ui_data(self, "assetBrowser.busy", true)
+                                                        page()
+                                                    }
+
+                                                    after page {
+                                                        if !page.Status.Ok {
+                                                            Notice = page.Status.Message
+                                                        }
+                                                        if !page.Status.Ok && length(page.Rows) == 0 {
+                                                            Busy = false
+                                                            Notice = page.Status.Message
+                                                            await set_ui_data(self, "assetBrowser.busy", false)
+                                                            await set_ui_data(self, "assetBrowser.notice", Notice)
+                                                        } else {
+                                                            if page.Status.Total > 4096 {
+                                                                Busy = false
+                                                                Notice = "The resource query exceeds the 4096-item authoring limit. Choose a kind or a narrower filter."
+                                                                await set_ui_data(self, "assetBrowser.busy", false)
+                                                                await set_ui_data(self, "assetBrowser.notice", Notice)
+                                                            } else {
+                                                                if LoadRevision >= 0 && LoadRevision != page.Status.Revision {
+                                                                    Busy = false
+                                                                    Notice = "Resources changed while loading. Refresh to try again."
+                                                                    await set_ui_data(self, "assetBrowser.busy", false)
+                                                                    await set_ui_data(self, "assetBrowser.notice", Notice)
+                                                                } else {
+                                                                    LoadRevision = page.Status.Revision
+                                                                    Incoming = append(Incoming, page.Rows)
+                                                                    LoadFirst = length(Incoming)
+                                                                    if LoadFirst < page.Status.Total && length(page.Rows) > 0 {
+                                                                        page()
+                                                                    } else {
+                                                                        self.Rows = Incoming
+                                                                        Busy = false
+                                                                        if !page.Status.Complete || LoadFirst < page.Status.Total {
+                                                                            if text_equal(Notice, "") {
+                                                                                Notice = "Resource discovery is incomplete. Refresh before relying on this list."
+                                                                            }
+                                                                        }
+                                                                        if !text_equal(Filter, LoadFilter) || !text_equal(Kind, LoadKind) {
+                                                                            await Reload()
+                                                                        } else {
+                                                                            await set_ui_data(self, "assetBrowser.busy", false)
+                                                                            await set_ui_data(self, "assetBrowser.notice", Notice)
+                                                                            await set_ui_data(self, "assetBrowser.total", length(self.Rows))
+                                                                            await Rebuild()
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+                                                    Rebuild :: fn() {
+                                                        Starts = clear(Starts)
+                                                        Counts = clear(Counts)
+                                                        Kinds = clear(Kinds)
+                                                        Offsets = clear(Offsets)
+                                                        Heights = clear(Heights)
+                                                        GroupCounts = clear(GroupCounts)
+                                                        ContentHeight = 0.0
+                                                        index: int = 0
+                                                        while index < length(Rows) {
+                                                            kind := Rows[index].Kind
+                                                            end := index + 1
+                                                            while end < length(Rows) {
+                                                                if !text_equal(Rows[end].Kind, kind) {
+                                                                    break
+                                                                }
+                                                                end += 1
+                                                            }
+                                                            Starts = array_add(Starts, cast<int>(-1))
+                                                            Counts = array_add(Counts, cast<int>(0))
+                                                            Kinds = array_add(Kinds, kind)
+                                                            Offsets = array_add(Offsets, ContentHeight)
+                                                            Heights = array_add(Heights, cast<float>(26.0))
+                                                            GroupCounts = array_add(GroupCounts, end - index)
+                                                            ContentHeight += 26.0
+                                                            if !contains(Folded, kind) {
+                                                                cursor := index
+                                                                while cursor < end {
+                                                                    count: int = 1
+                                                                    height: float = 26.0
+                                                                    if Grid {
+                                                                        count = Columns
+                                                                        height = cast<float>(Tile + 26)
+                                                                    }
+                                                                    if cursor + count > end {
+                                                                        count = end - cursor
+                                                                    }
+                                                                    Starts = array_add(Starts, cursor)
+                                                                    Counts = array_add(Counts, count)
+                                                                    Kinds = array_add(Kinds, "")
+                                                                    Offsets = array_add(Offsets, ContentHeight)
+                                                                    Heights = array_add(Heights, height)
+                                                                    GroupCounts = array_add(GroupCounts, cast<int>(0))
+                                                                    ContentHeight += height
+                                                                    cursor += count
+                                                                }
+                                                            }
+                                                            index = end
+                                                        }
+                                                        LastTop = -1.0
+                                                        await set_ui_data(self, "assetBrowser.height", ContentHeight)
+                                                        await set_ui_data(self, "assetBrowser.grid", Grid)
+                                                        await set_ui_data(self, "assetBrowser.tile", Tile)
+                                                        await set_ui_data(self, "assetBrowser.columns", Columns)
+                                                        await Window()
+                                                    }
+
+                                                    PublishItem :: fn(Line: int, Cell: int, Index: int) {
+                                                        row := Rows[Index]
+                                                        base := format_text("assetBrowser.lines.{}.items.{}", Line, Cell)
+                                                        await set_ui_data(self, format_text("{}.key", base), row.Key)
+                                                        await set_ui_data(self, format_text("{}.label", base), row.Name)
+                                                        await set_ui_data(self, format_text("{}.path", base), row.Path)
+                                                        await set_ui_data(self, format_text("{}.kind", base), row.Kind)
+                                                        await set_ui_data(self, format_text("{}.meta", base), row.Kind)
+                                                        await set_ui_data(self, format_text("{}.icon", base), Icon(row.Kind))
+                                                        await set_ui_data(self, format_text("{}.drag", base), row.Kind)
+                                                        await set_ui_data(self, format_text("{}.selected", base), contains(Selected, row.Key))
+                                                        await set_ui_data(self, format_text("{}.active", base), text_equal(Active, row.Key))
+                                                        await set_ui_data(self, format_text("{}.unresolved", base), row.Unresolved)
+                                                        preview := find(PreviewKeys, row.Key)
+                                                        image := ""
+                                                        badge := ""
+                                                        loading := false
+                                                        about := row.Message
+                                                        if preview >= 0 {
+                                                            image = PreviewImages[preview]
+                                                            loading = text_equal(PreviewStatus[preview], "pending")
+                                                            if text_equal(PreviewStatus[preview], "failed") {
+                                                                badge = ""
+                                                                about = PreviewErrors[preview]
+                                                            }
+                                                        }
+                                                        await set_ui_data(self, format_text("{}.about", base), about)
+                                                        await set_ui_data(self, format_text("{}.image", base), image)
+                                                        await set_ui_data(self, format_text("{}.badge", base), badge)
+                                                        await set_ui_data(self, format_text("{}.loading", base), loading)
+                                                    }
+
+                                                    Window :: fn() {
+                                                        top := get_ui_scroll(Element: "#assets-list")."Scroll Top"
+                                                        view := get_ui_scroll(Element: "#assets-list")."View Height"
+                                                        if view <= 0.0 {
+                                                            view = 600.0
+                                                        }
+                                                        LastTop = top
+                                                        LastView = view
+                                                        first: int = 0
+                                                        high := length(Offsets)
+                                                        while first < high {
+                                                            middle := cast<int>((first + high) / 2)
+                                                            if Offsets[middle] + Heights[middle] < top - 192.0 {
+                                                                first = middle + 1
+                                                            } else {
+                                                                high = middle
+                                                            }
+                                                        }
+                                                        slots: int[] = []
+                                                        DesiredPreviews = []
+                                                        line := first
+                                                        shown: int = 0
+                                                        while line < length(Starts) {
+                                                            if Offsets[line] > top + view + 192.0 {
+                                                                break
+                                                            }
+                                                            slots = array_add(slots, shown)
+                                                            base := format_text("assetBrowser.lines.{}", shown)
+                                                            await set_ui_data(self, format_text("{}.top", base), Offsets[line])
+                                                            await set_ui_data(self, format_text("{}.height", base), Heights[line])
+                                                            await set_ui_data(self, format_text("{}.kind", base), Kinds[line])
+                                                            await set_ui_data(self, format_text("{}.header.label", base), Kinds[line])
+                                                            await set_ui_data(self, format_text("{}.header.icon", base), Icon(Kinds[line]))
+                                                            await set_ui_data(self, format_text("{}.header.parent", base), true)
+                                                            await set_ui_data(self, format_text("{}.header.open", base), !contains(Folded, Kinds[line]))
+                                                            await set_ui_data(self, format_text("{}.header.meta", base), format_text("{}", GroupCounts[line]))
+                                                            cells: int[] = []
+                                                            cell: int = 0
+                                                            while cell < Counts[line] {
+                                                                cells = array_add(cells, cell)
+                                                                rowIndex := Starts[line] + cell
+                                                                row := Rows[rowIndex]
+                                                                if Grid && Offsets[line] + Heights[line] > top && Offsets[line] < top + view && length(DesiredPreviews) < 8 {
+                                                                    if text_equal(row.Kind, "image") || text_equal(row.Kind, "material") || text_equal(row.Kind, "shape") || text_equal(row.Kind, "model") || text_equal(row.Kind, "prototype") || text_equal(row.Kind, "field") || text_equal(row.Kind, "ui") || text_equal(row.Kind, "stylesheet") || text_equal(row.Kind, "behavior") || text_equal(row.Kind, "system") || text_equal(row.Kind, "library") || text_equal(row.Kind, "shader-library") || text_equal(row.Kind, "event") || text_equal(row.Kind, "scene") {
+                                                                        DesiredPreviews = array_add(DesiredPreviews, row.Key)
+                                                                    }
+                                                                }
+                                                                await PublishItem(shown, cell, rowIndex)
+                                                                cell += 1
+                                                            }
+                                                            await set_ui_data(self, format_text("{}.cells", base), cells)
+                                                            shown += 1
+                                                            line += 1
+                                                        }
+                                                        await set_ui_data(self, "assetBrowser.slots", slots)
+                                                        await set_ui_data(self, "assetBrowser.empty", length(Rows) == 0 && !Busy)
+                                                        await set_ui_data(self, "assetBrowser.selectedCount", length(Selected))
+                                                        await set_ui_data(self, "assetBrowser.active", Active)
+                                                        await UpdatePreviews()
+                                                        // Publish newly pending or refused previews in this same window update.
+                                                        line = first
+                                                        shown = 0
+                                                        while line < length(Starts) {
+                                                            if Offsets[line] > top + view + 192.0 {
+                                                                break
+                                                            }
+                                                            cell: int = 0
+                                                            while cell < Counts[line] {
+                                                                await PublishItem(shown, cell, Starts[line] + cell)
+                                                                cell += 1
+                                                            }
+                                                            shown += 1
+                                                            line += 1
+                                                        }
+                                                        send_event<"StudioResourceSelection">(self, Selected)
+                                                        send_event<"StudioCommandAvailability">(self, "open", length(Selected) == 1)
+                                                    }
+
+                                                    ClearPreviews :: fn() {
+                                                        foreach (handle in PreviewHandles) {
+                                                            if handle > 0 {
+                                                                closed := await close_resource_preview(handle)
+                                                            }
+                                                        }
+                                                        PreviewKeys = []
+                                                        PreviewHandles = []
+                                                        PreviewImages = []
+                                                        PreviewStatus = []
+                                                        PreviewErrors = []
+                                                    }
+                                                    UpdatePreviews :: fn() {
+                                                        i := length(PreviewKeys) - 1
+                                                        while i >= 0 {
+                                                            if !contains(DesiredPreviews, PreviewKeys[i]) {
+                                                                if PreviewHandles[i] > 0 {
+                                                                    closed := await close_resource_preview(PreviewHandles[i])
+                                                                }
+                                                                PreviewKeys = remove_index(PreviewKeys, i)
+                                                                PreviewHandles = remove_index(PreviewHandles, i)
+                                                                PreviewImages = remove_index(PreviewImages, i)
+                                                                PreviewStatus = remove_index(PreviewStatus, i)
+                                                                PreviewErrors = remove_index(PreviewErrors, i)
+                                                            }
+                                                            i -= 1
+                                                        }
+                                                        foreach (key in DesiredPreviews) {
+                                                            if !contains(PreviewKeys, key) {
+                                                                index := IndexOf(key)
+                                                                if index >= 0 {
+                                                                    opened := await open_resource_preview(Rows[index].Path, 128, 128)
+                                                                    PreviewKeys = array_add(PreviewKeys, key)
+                                                                    PreviewHandles = array_add(PreviewHandles, opened.Preview)
+                                                                    PreviewImages = array_add(PreviewImages, "")
+                                                                    status := "pending"
+                                                                    if opened.Preview <= 0 {
+                                                                        status = "failed"
+                                                                    }
+                                                                    PreviewStatus = array_add(PreviewStatus, status)
+                                                                    PreviewErrors = array_add(PreviewErrors, opened.Error)
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    PollPreviews :: fn() {
+                                                        changed := false
+                                                        i: int = 0
+                                                        while i < length(PreviewKeys) {
+                                                            if PreviewHandles[i] > 0 && text_equal(PreviewStatus[i], "pending") {
+                                                                result := await read_resource_preview(PreviewHandles[i])
+                                                                if !text_equal(result.Status, "pending") {
+                                                                    PreviewImages = set_array_elem(PreviewImages, i, result.Image)
+                                                                    PreviewStatus = set_array_elem(PreviewStatus, i, result.Status)
+                                                                    PreviewErrors = set_array_elem(PreviewErrors, i, result.Error)
+                                                                    changed = true
+                                                                }
+                                                            }
+                                                            i += 1
+                                                        }
+                                                        if changed {
+                                                            await Window()
+                                                        }
+                                                    }
+                                                    Select :: fn(Key: string, Mod: bool, Shift: bool) {
+                                                        index := IndexOf(Key)
+                                                        anchor := IndexOf(Anchor)
+                                                        if index < 0 {
+                                                            return
+                                                        }
+                                                        if Shift && anchor >= 0 {
+                                                            if !Mod {
+                                                                Selected = clear(Selected)
+                                                            }
+                                                            low := anchor
+                                                            high := index
+                                                            if low > high {
+                                                                low = index
+                                                                high = anchor
+                                                            }
+                                                            while low <= high {
+                                                                Selected = add_unique(Selected, Rows[low].Key)
+                                                                low += 1
+                                                            }
+                                                        } else {
+                                                            if Mod {
+                                                                if contains(Selected, Key) {
+                                                                    Selected = remove_item(Selected, Key)
+                                                                } else {
+                                                                    Selected = add_unique(Selected, Key)
+                                                                }
+                                                            } else {
+                                                                Selected = [Key]
+                                                            }
+                                                            Anchor = Key
+                                                        }
+                                                        Active = Key
+                                                        await Window()
+                                                    }
+
+                                                    on StudioCollaborationState {
+                                                        ReadOnly = event.Active
+                                                        await set_ui_data(Name: "assetBrowser.readOnly", Value: ReadOnly)
+                                                        if ReadOnly && ImportRequest > 0 {
+                                                            ImportCanceling = true
+                                                            canceled := await authoring_platform_cancel(ImportRequest)
+                                                        }
+                                                    }
+                                                    on Begin {
+                                                        info := query_workspace_info()
+                                                        WorkspaceActive = info.Active
+                                                        await set_ui_data(self, "assetBrowser.filter", Filter)
+                                                        await set_ui_data(self, "assetBrowser.kind", Kind)
+                                                        commands: string[] = ["newScene", "newPrototype", "newBehavior", "newEvent", "newSystem", "newLibrary", "newShape", "newField", "newShaderLibrary", "newModel", "newUiWidget", "newUiDocument", "newStylesheet", "refreshResources", "search"]
+                                                        foreach (id in commands) {
+                                                            send_event<"StudioCommandAvailability">(self, id, WorkspaceActive)
+                                                        }
+                                                        await Reload()
+                                                    }
+                                                    on StudioPreferencesChanged {
+                                                        if !WorkspaceActive {
+                                                            return
+                                                        }
+                                                        Tile = cast<int>(max(48, min(160, read_saved_number("studio.preference.assets.tile", 96).Number)))
+                                                        Grid = read_saved_number("studio.preference.assets.list", 0).Number == 0
+                                                        Columns = cast<int>(max(1, floor((LastWidth - 8.0) / cast<float>(Tile + 4))))
+                                                        await Rebuild()
+                                                    }
+                                                    on AssetsRefresh {
+                                                        await ClearPreviews()
+                                                        await Reload()
+                                                    }
+                                                    on WorkspaceResourcesChanged {
+                                                        await ClearPreviews()
+                                                        await Reload()
+                                                    }
+                                                    on AssetsFilterTyped {
+                                                        Filter := event.Filter
+                                                        self.Filter = Filter
+                                                        await set_ui_data(self, "assetBrowser.filter", Filter)
+                                                        await Reload()
+                                                    }
+                                                    on AssetsKindChanged {
+                                                        Kind := event.Kind
+                                                        self.Kind = Kind
+                                                        await set_ui_data(self, "assetBrowser.kind", Kind)
+                                                        await Reload()
+                                                    }
+                                                    on AssetsClearFilter {
+                                                        Filter = ""
+                                                        Kind = ""
+                                                        await set_ui_data(self, "assetBrowser.filter", "")
+                                                        await set_ui_data(self, "assetBrowser.kind", "")
+                                                        await Reload()
+                                                    }
+                                                    on AssetsViewChanged {
+                                                        Grid := event.Grid
+                                                        self.Grid = Grid
+                                                        list := 1.0
+                                                        if Grid {
+                                                            list = 0.0
+                                                        }
+                                                        await send_event<"StudioPreferenceNumber">(self, "assets.list", list)
+                                                        await Rebuild()
+                                                    }
+                                                    on AssetsTileChanged {
+                                                        Size := event.Size
+                                                        Tile = cast<int>(max(48, min(160, Size)))
+                                                        await send_event<"StudioPreferenceNumber">(self, "assets.tile", cast<double>(Tile))
+                                                        Columns = cast<int>(max(1, floor((LastWidth - 8.0) / cast<float>(Tile + 4))))
+                                                        await Rebuild()
+                                                    }
+                                                    on AssetsToggleGroup {
+                                                        Kind := event.Kind
+                                                        if contains(Folded, Kind) {
+                                                            Folded = remove_item(Folded, Kind)
+                                                        } else {
+                                                            Folded = add_unique(Folded, Kind)
+                                                        }
+                                                        await Rebuild()
+                                                    }
+                                                    on AssetsRowClicked {
+                                                        Key := event.Key
+                                                        Mod := event.Mod
+                                                        Shift := event.Shift
+                                                        await Select(Key, Mod, Shift)
+                                                    }
+                                                    on AssetsOpen {
+                                                        Key := event.Key
+                                                        index := IndexOf(Key)
+                                                        if index >= 0 {
+                                                            send_event<"StudioDocumentCommand">(self, "open", Rows[index].Path)
+                                                        }
+                                                    }
+                                                    on AssetsViewportChanged {
+                                                        await Window()
+                                                    }
+                                                    on AssetsMenu {
+                                                        Key := event.Key
+                                                        Pointer := event.Pointer
+                                                        if !contains(Selected, Key) {
+                                                            await Select(Key, false, false)
+                                                        }
+                                                        await show_ui_popover(self, "#asset-menu", Pointer)
+                                                    }
+                                                    on AssetsFileAction {
+                                                        Mode := event.Mode
+                                                        Pointer := event.Pointer
+                                                        if !WorkspaceActive {
+                                                            return
+                                                        }
+                                                        if ReadOnly {
+                                                            return
+                                                        }
+                                                        if MutationBusy || length(Selected) == 0 {
+                                                            return
+                                                        }
+                                                        if text_equal(Mode, "move") && length(Selected) != 1 {
+                                                            return
+                                                        }
+                                                        Mutation = Mode
+                                                        MutationKeys = Selected
+                                                        MutationIndex = 0
+                                                        index := IndexOf(Active)
+                                                        Destination = ""
+                                                        if index >= 0 {
+                                                            Destination = Rows[index].Path
+                                                        }
+                                                        await set_ui_data(self, "assetBrowser.fileDone", false)
+                                                        await set_ui_data(self, "assetBrowser.fileBusy", false)
+                                                        await set_ui_data(self, "assetBrowser.fileMode", Mode)
+                                                        await set_ui_data(self, "assetBrowser.destination", Destination)
+                                                        await set_ui_data(self, "assetBrowser.fileError", "")
+                                                        await set_ui_data(self, "assetBrowser.fileCount", length(MutationKeys))
+                                                        await show_ui_popover(self, "#asset-file-action", Pointer)
+                                                    }
+                                                    on AssetsDestinationTyped {
+                                                        Path := event.Path
+                                                        Destination = Path
+                                                    }
+                                                    on AssetsFileConfirm {
+                                                        if ReadOnly {
+                                                            return
+                                                        }
+                                                        if MutationBusy || length(MutationKeys) == 0 {
+                                                            return
+                                                        }
+                                                        if text_equal(Mutation, "delete") {
+                                                            await send_event<"AssetsDeleteRequested">(self, MutationKeys)
+                                                            return
+                                                        }
+                                                        MutationBusy = true
+                                                        await set_ui_data(self, "assetBrowser.fileBusy", true)
+                                                        mutation_lookup()
+                                                    }
+                                                    after mutation_lookup {
+                                                        if ReadOnly {
+                                                            await MutationFailed("File changes are unavailable in a collaborative session.")
+                                                            return
+                                                        }
+                                                        if !mutation_lookup.Status.Ok {
+                                                            await MutationFailed(mutation_lookup.Status.Message)
+                                                        } else {
+                                                            MutationPath = mutation_lookup.Row.Path
+                                                            mutation_open()
+                                                        }
+                                                    }
+                                                    after mutation_open {
+                                                        if ReadOnly {
+                                                            await MutationFailed("File changes are unavailable in a collaborative session.")
+                                                            return
+                                                        }
+                                                        if !mutation_open.Ok {
+                                                            await MutationFailed(mutation_open.Error)
+                                                        } else {
+                                                            MutationDocument = mutation_open.Document
+                                                            MutationRevision = mutation_open.Revision
+                                                            if MutationDocument == ActiveDocument {
+                                                                MutationRequest += 1
+                                                                await send_event<"StudioDocumentExternalEditRequested">(self, "asset-browser", MutationDocument, MutationRequest)
+                                                            } else {
+                                                                if mutation_open.Dirty || mutation_open.Transaction {
+                                                                    await MutationFailed("Open this document and save or cancel its edits before changing its file.")
+                                                                } else {
+                                                                    await ApplyFileMutation()
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    on StudioDocumentChanged {
+                                                        PreviewDirty = true
+                                                        PreviewQuiet = 0.0
+                                                    }
+                                                    on StudioDocumentState {
+                                                        ActiveDocument = event.Document
+                                                    }
+                                                    ApplyFileMutation :: fn() {
+                                                        if text_equal(Mutation, "move") {
+                                                            move_file()
+                                                        }
+                                                    }
+                                                    CompleteFileLease :: fn() {
+                                                        if MutationLease {
+                                                            MutationLease = false
+                                                            await send_event<"StudioDocumentExternalEditComplete">(self, "asset-browser", MutationDocument, MutationRequest)
+                                                        }
+                                                    }
+                                                    on StudioDocumentExternalEditReady {
+                                                        if !text_equal(event.Owner, "asset-browser") || event.Request != MutationRequest || event.Document != MutationDocument || !MutationBusy {
+                                                            return
+                                                        }
+                                                        MutationLease = event.Ok
+                                                        if !event.Ok {
+                                                            await MutationFailed(event.Error)
+                                                            return
+                                                        }
+                                                        if ReadOnly {
+                                                            await MutationFailed("File changes are unavailable in a collaborative session.")
+                                                            return
+                                                        }
+                                                        current := await workspace_document_info(MutationDocument)
+                                                        if !current.Ok {
+                                                            await MutationFailed(current.Error)
+                                                            return
+                                                        }
+                                                        if current.Revision != event.Revision || current.Dirty || current.Transaction {
+                                                            await MutationFailed("Save or cancel source edits before changing this file.")
+                                                            return
+                                                        }
+                                                        MutationRevision = current.Revision
+                                                        await ApplyFileMutation()
+                                                    }
+                                                    on StudioDocumentExternalEditCancelRequested {
+                                                        if !text_equal(event.Owner, "asset-browser") || event.Request != MutationRequest || event.Document != MutationDocument {
+                                                            return
+                                                        }
+                                                        await MutationFailed("The file change was canceled.")
+                                                    }
+                                                    MutationFailed :: fn(Error: string) {
+                                                        await CompleteFileLease()
+                                                        MutationBusy = false
+                                                        await set_ui_data(self, "assetBrowser.fileBusy", false)
+                                                        await set_ui_data(self, "assetBrowser.fileError", format_text("{} files changed. {}", MutationIndex, Error))
+                                                        if MutationIndex > 0 {
+                                                            send_event<"StudioDocumentCommand">(self, "refresh", "")
+                                                        }
+                                                        refresh_resources()
+                                                    }
+                                                    after move_file {
+                                                        await CompleteFileLease()
+                                                        if move_file.Ok {
+                                                            MutationIndex = 1
+                                                            MutationKeys = clear(MutationKeys)
+                                                            MutationBusy = false
+                                                            Selected = clear(Selected)
+                                                            await set_ui_data(self, "assetBrowser.fileBusy", false)
+                                                            await set_ui_data(self, "assetBrowser.fileDone", true)
+                                                            send_event<"StudioDocumentCommand">(self, "refresh", "")
+                                                            refresh_resources()
+                                                        } else {
+                                                            await MutationFailed(move_file.Error)
+                                                        }
+                                                    }
+                                                    on AssetFileHistoryState {
+                                                        MutationBusy = event.Busy
+                                                    }
+                                                    after refresh_resources {
+                                                        if !refresh_resources.Status.Ok {
+                                                            Notice = refresh_resources.Status.Message
+                                                            await set_ui_data(self, "assetBrowser.notice", Notice)
+                                                        } else {
+                                                            send_event<"WorkspaceResourcesChanged">(self)
+                                                        }
+                                                    }
+                                                    on Tick {
+                                                        if PreviewDirty {
+                                                            PreviewQuiet += event.DeltaSeconds
+                                                            if PreviewQuiet >= 0.25 {
+                                                                PreviewDirty = false
+                                                                await ClearPreviews()
+                                                                await Window()
+                                                            }
+                                                        }
+                                                        await PollPreviews()
+                                                        await PollImport()
+                                                        width := get_ui_view_width(Element: "#assets-list")."View Width"
+                                                        top := get_ui_scroll(Element: "#assets-list")."Scroll Top"
+                                                        view := get_ui_scroll(Element: "#assets-list")."View Height"
+                                                        if width <= 0.0 || view <= 0.0 {
+                                                            return
+                                                        }
+                                                        if width != LastWidth {
+                                                            LastWidth = width
+                                                            Columns = cast<int>(max(1, floor((width - 8.0) / cast<float>(Tile + 4))))
+                                                            await Rebuild()
+                                                        } else {
+                                                            if top != LastTop || view != LastView {
+                                                                await Window()
+                                                            }
+                                                        }
+                                                    }
+                                                    on Close {
+                                                        await ClearPreviews()
+                                                        if ImportRequest > 0 {
+                                                            canceled := await authoring_platform_cancel(ImportRequest)
+                                                        }
+                                                        if ImportSource > 0 {
+                                                            released := await authoring_platform_release(ImportSource)
+                                                        }
+                                                    }
+                                                    on AssetsKey {
+                                                        Key := event.Key
+                                                        Mod := event.Mod
+                                                        Shift := event.Shift
+                                                        index := IndexOf(Active)
+                                                        if text_equal(Key, "Enter") {
+                                                            send_event<"AssetsOpen">(self, Active)
+                                                            return
+                                                        }
+                                                        if text_equal(Key, "Escape") {
+                                                            Selected = clear(Selected)
+                                                            Active = ""
+                                                            await Window()
+                                                            return
+                                                        }
+                                                        if Mod && (text_equal(Key, "a") || text_equal(Key, "A")) {
+                                                            Selected = clear(Selected)
+                                                            foreach (row in Rows) {
+                                                                Selected = array_add(Selected, row.Key)
+                                                            }
+                                                            await Window()
+                                                            return
+                                                        }
+                                                        if !text_equal(Key, "Home") && !text_equal(Key, "End") && !text_equal(Key, "Down") && !text_equal(Key, "Up") && !text_equal(Key, "Right") && !text_equal(Key, "Left") {
+                                                            return
+                                                        }
+                                                        if text_equal(Key, "Home") {
+                                                            index = 0
+                                                        }
+                                                        if text_equal(Key, "End") {
+                                                            index = length(Rows) - 1
+                                                        }
+                                                        if text_equal(Key, "Down") {
+                                                            if Grid {
+                                                                index += Columns
+                                                            } else {
+                                                                index += 1
+                                                            }
+                                                        }
+                                                        if text_equal(Key, "Up") {
+                                                            if Grid {
+                                                                index -= Columns
+                                                            } else {
+                                                                index -= 1
+                                                            }
+                                                        }
+                                                        if text_equal(Key, "Right") {
+                                                            index += 1
+                                                        }
+                                                        if text_equal(Key, "Left") {
+                                                            index -= 1
+                                                        }
+                                                        if index < 0 {
+                                                            index = 0
+                                                        }
+                                                        if index >= length(Rows) {
+                                                            index = length(Rows) - 1
+                                                        }
+                                                        if index >= 0 {
+                                                            if contains(Folded, Rows[index].Kind) {
+                                                                Folded = remove_item(Folded, Rows[index].Kind)
+                                                                await Rebuild()
+                                                            }
+                                                            await Select(Rows[index].Key, false, Shift)
+                                                            line: int = 0
+                                                            while line < length(Starts) {
+                                                                if Starts[line] >= 0 && index >= Starts[line] && index < Starts[line] + Counts[line] {
+                                                                    await reveal_ui_list_row(self, "#assets-list", cast<int>(Offsets[line] / 26.0))
+                                                                    break
+                                                                }
+                                                                line += 1
+                                                            }
+                                                        }
+                                                    }
+                                                    ImportPublish :: fn(Phase: string, Message: string, Progress: double) {
+                                                        ImportPhase = Phase
+                                                        await set_ui_data(Name: "assetBrowser.importPhase", Value: Phase)
+                                                        await set_ui_data(Name: "assetBrowser.importError", Value: Message)
+                                                        await set_ui_data(Name: "assetBrowser.importProgress", Value: Progress)
+                                                        await set_ui_data(Name: "assetBrowser.importBusy", Value: ImportRequest > 0)
+                                                        await set_ui_data(Name: "assetBrowser.importSelected", Value: ImportSource > 0)
+                                                    }
+                                                    on AssetsImportChoose {
+                                                        if !WorkspaceActive {
+                                                            return
+                                                        }
+                                                        if ReadOnly {
+                                                            return
+                                                        }
+                                                        if ImportRequest > 0 {
+                                                            return
+                                                        }
+                                                        if ImportSource > 0 {
+                                                            released := await authoring_platform_release(ImportSource)
+                                                            ImportSource = 0
+                                                        }
+                                                        selected := await authoring_platform_request("choose-file")
+                                                        ImportRequest = selected.Result.Request
+                                                        ImportCanceling = false
+                                                        await ImportPublish("choose", selected.Result.Message, selected.Result.Progress)
+                                                    }
+                                                    on AssetsImportDestination {
+                                                        ImportDestination = event.Path
+                                                    }
+                                                    on AssetsImportConfirm {
+                                                        if ReadOnly {
+                                                            return
+                                                        }
+                                                        if ImportRequest > 0 || ImportSource <= 0 || text_equal(ImportDestination, "") {
+                                                            return
+                                                        }
+                                                        copying := await authoring_platform_request("import-file", ImportDestination, Source: ImportSource)
+                                                        ImportRequest = copying.Result.Request
+                                                        ImportCanceling = false
+                                                        await ImportPublish("copy", copying.Result.Message, copying.Result.Progress)
+                                                    }
+                                                    on AssetsImportCancel {
+                                                        ImportCanceling = true
+                                                        if ImportRequest > 0 {
+                                                            canceled := await authoring_platform_cancel(ImportRequest)
+                                                        } else {
+                                                            if ImportSource > 0 {
+                                                                released := await authoring_platform_release(ImportSource)
+                                                                ImportSource = 0
+                                                            }
+                                                            await ImportPublish("", "", 0)
+                                                        }
+                                                    }
+                                                    PollImport :: fn() {
+                                                        if ImportRequest <= 0 {
+                                                            return
+                                                        }
+                                                        result := await authoring_platform_poll(ImportRequest)
+                                                        if text_equal(result.Result.State, "pending") || text_equal(result.Result.State, "running") {
+                                                            await ImportPublish(ImportPhase, result.Result.Message, result.Result.Progress)
+                                                            return
+                                                        }
+                                                        request := ImportRequest
+                                                        ImportRequest = 0
+                                                        if result.Result.Ok && !ImportCanceling && text_equal(ImportPhase, "choose") {
+                                                            ImportSource = request
+                                                            await set_ui_data(Name: "assetBrowser.importSource", Value: result.Result.Value)
+                                                            await ImportPublish("destination", "", 0)
+                                                            await focus_ui_element(Element: "#asset-import-destination")
+                                                        } else {
+                                                            released := await authoring_platform_release(request)
+                                                            if result.Result.Ok || ImportCanceling {
+                                                                if ImportSource > 0 {
+                                                                    sourceReleased := await authoring_platform_release(ImportSource)
+                                                                    ImportSource = 0
+                                                                }
+                                                                completed := result.Result.Ok && text_equal(ImportPhase, "copy")
+                                                                phase := ""
+                                                                if completed {
+                                                                    phase = "done"
+                                                                }
+                                                                await ImportPublish(phase, "", 1)
+                                                                if completed {
+                                                                    refresh_resources()
+                                                                }
+                                                            } else {
+                                                                await ImportPublish("destination", result.Result.Message, 0)
+                                                            }
+                                                        }
+                                                    }
+                                                    on AssetsCreateName {
+                                                        Name := event.Name
+                                                        CreateName = Name
+                                                    }
+                                                    on AssetsCreateConfirm {
+                                                        if !WorkspaceActive {
+                                                            return
+                                                        }
+                                                        if ReadOnly {
+                                                            return
+                                                        }
+                                                        if CreateBusy || text_equal(CreateKind, "") {
+                                                            return
+                                                        }
+                                                        CreateBusy = true
+                                                        await set_ui_data(self, "assetBrowser.createBusy", true)
+                                                        await set_ui_data(self, "assetBrowser.createError", "")
+                                                        template := workspace_asset_template(CreateKind, CreateName)
+                                                        if !template.Ok {
+                                                            await CreateFailed(template.Error)
+                                                        } else {
+                                                            CreatePath = template.Path
+                                                            CreateText = template.Text
+                                                            create_file()
+                                                        }
+                                                    }
+                                                    CreateFailed :: fn(Error: string) {
+                                                        CreateBusy = false
+                                                        await set_ui_data(self, "assetBrowser.createBusy", false)
+                                                        await set_ui_data(self, "assetBrowser.createError", Error)
+                                                    }
+                                                    after create_file {
+                                                        if !create_file.Ok {
+                                                            await CreateFailed(create_file.Error)
+                                                        } else {
+                                                            CreateBusy = false
+                                                            CreateKind = ""
+                                                            await set_ui_data(self, "assetBrowser.createBusy", false)
+                                                            await set_ui_data(self, "assetBrowser.createDone", true)
+                                                            send_event<"StudioDocumentCommand">(self, "open", create_file.Path)
+                                                            refresh_resources()
+                                                        }
+                                                    }
+                                                    on StudioResourceCommand {
+                                                        Id := event.Id
+                                                        Argument := event.Argument
+                                                        if !WorkspaceActive {
+                                                            return
+                                                        }
+                                                        kind := ""
+                                                        switch Id {
+                                                            case "newScene":
+                                                                kind = "scene"
+                                                                case "newPrototype":
+                                                                    kind = "prototype"
+                                                                    case "newBehavior":
+                                                                        kind = "behavior"
+                                                                        case "newEvent":
+                                                                            kind = "event"
+                                                                            case "newSystem":
+                                                                                kind = "system"
+                                                                                case "newLibrary":
+                                                                                    kind = "library"
+                                                                                    case "newShape":
+                                                                                        kind = "shape"
+                                                                                        case "newField":
+                                                                                            kind = "field"
+                                                                                            case "newShaderLibrary":
+                                                                                                kind = "shader-library"
+                                                                                                case "newModel":
+                                                                                                    kind = "model"
+                                                                                                    case "newUiWidget":
+                                                                                                        kind = "ui-widget"
+                                                                                                        case "newUiDocument":
+                                                                                                            kind = "ui-document"
+                                                                                                            case "newStylesheet":
+                                                                                                                kind = "stylesheet"
+                                                                                                            }
+                                                                                                            if !text_equal(kind, "") && !CreateBusy {
+                                                                                                                CreateKind = kind
+                                                                                                                CreateName = ""
+                                                                                                                await set_ui_data(self, "assetBrowser.createKind", kind)
+                                                                                                                await set_ui_data(self, "assetBrowser.createName", "")
+                                                                                                                await set_ui_data(self, "assetBrowser.createDone", false)
+                                                                                                                await set_ui_data(self, "assetBrowser.createError", "")
+                                                                                                                await show_ui_popover(self, "#asset-create", { x: 24.0, y: 72.0 })
+                                                                                                                await focus_ui_element(self, "#asset-create-name")
+                                                                                                            }
+                                                                                                            if text_equal(Id, "refreshResources") {
+                                                                                                                await Reload()
+                                                                                                            }
+                                                                                                            if text_equal(Id, "search") {
+                                                                                                                await focus_ui_element(self, "#assets-filter")
+                                                                                                            }
+                                                                                                            if text_equal(Id, "open") {
+                                                                                                                send_event<"AssetsOpen">(self, Active)
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }

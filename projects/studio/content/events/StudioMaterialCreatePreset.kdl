@@ -1,0 +1,10 @@
+version 3
+name "StudioMaterialCreatePreset"
+domain "event"
+id_counter 2
+(array)variables {
+    - id=1 name="Value" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

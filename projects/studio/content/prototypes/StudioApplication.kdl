@@ -1,0 +1,6 @@
+name "StudioApplication"
+components {
+    Ui document="StudioRoot"
+    GlobalBinding name="Application"
+}
+(array)behaviors "AssetBrowser" "AssetCollection" "AssetFileHistory" "AssetModelImport" "StudioCollaboration" "StudioCommands" "StudioDOMInspector" "StudioDebugger" "StudioDocuments" "StudioGraph" "StudioGraphWires" "StudioHome" "StudioMaterialCreate" "StudioModel" "StudioModelReference" "StudioNotices" "StudioObjectClipboard" "StudioObjectProperties" "StudioOutliner" "StudioOutput" "StudioPerformance" "StudioPlatform" "StudioPreferences" "StudioProject" "StudioProjectMigration" "StudioPrototypeActions" "StudioRuntimeProperties" "StudioScene" "StudioSceneInput" "StudioSceneKeepChanges" "StudioShell" "StudioText" "StudioUICanvas" "StudioUIDesigner" "StudioVisual" "StudioPanelRegistry" "StudioSavedData" "StudioThemeTokens"

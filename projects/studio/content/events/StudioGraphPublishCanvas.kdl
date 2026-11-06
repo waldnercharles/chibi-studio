@@ -1,0 +1,11 @@
+version 3
+name "StudioGraphPublishCanvas"
+domain "event"
+id_counter 3
+(array)variables {
+    - id=1 name="Document" type="int" category="Payload"
+    - id=2 name="Revision" type="int" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

@@ -52,7 +52,7 @@
 .text-control .field { border-color: var(--border); }
 /* The number sits before its slider, so controls end in one column and
    Up and Down move straight between them. */
-.readout { width: 24dp; text-align: right; font-family: var(--font-numeric); color: var(--muted-foreground); }
+.readout { width: 24dp; text-align: right; font-family: var(--font-numeric, GeistNumeric); color: var(--muted-foreground); }
 .keys { display: flex; align-items: center; gap: 4dp; }
 .key {
   min-width: 20dp; height: var(--studio-height-20, 20dp); line-height: var(--studio-line-19, 19dp); padding: 0dp 6dp; text-align: center; font-size: var(--studio-font-11, 11dp);
@@ -68,7 +68,7 @@
 .shortcut { display: flex; flex-direction: column; align-items: flex-end; gap: 4dp; max-width: 300dp; }
 .shortcut .keys { flex-wrap: wrap; justify-content: flex-end; }
 .shortcut-context, .shortcut-aliases { font-size: var(--studio-font-11, 11dp); color: var(--faint-foreground); }
-.shortcut-aliases { font-family: var(--font-numeric); }
+.shortcut-aliases { font-family: var(--font-numeric, GeistNumeric); }
 .shortcut-conflict { display: flex; align-items: center; gap: 4dp; font-size: var(--studio-font-11, 11dp); color: var(--warning); }
 .shortcut-conflict .icon { font-size: var(--studio-font-12, 12dp); }
 /* The conflict count searches for them. */

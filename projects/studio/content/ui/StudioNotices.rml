@@ -1,0 +1,8 @@
+<div class="toaster studio-notices" role="region" aria-label="Notifications" aria-live="polite">
+  <div data-for="index : self.noticeOrder" data-if="self.noticeVisible[index]" class="toast studio-notice" data-attr-data-type="self.noticeKinds[index]" data-event-mouseenter="emit('StudioNoticePause', index, 'pointer', true)" data-event-mouseleave="emit('StudioNoticePause', index, 'pointer', false)" data-event-focusin="emit('StudioNoticePause', index, 'focus', true)" data-event-focusout="emit('StudioNoticePause', index, 'focus', false)">
+    <span class="icon lead">{{ self.noticeKinds[index] == 'error' ? '' : (self.noticeKinds[index] == 'warning' ? '' : (self.noticeKinds[index] == 'success' ? '' : '')) }}</span>
+    <div class="content"><span class="title">{{ self.noticeTitles[index] }}</span><span class="description" data-if="self.noticeMessages[index] != ''">{{ self.noticeMessages[index] }}</span></div>
+    <button class="btn sm toast-action" data-if="self.noticeLabels[index] != ''" data-attrif-disabled="self.noticeBusy[index]" data-event-click="emit('StudioNoticeActivate', index)">{{ self.noticeLabels[index] }}</button>
+    <button class="btn sm icon-only toast-close" aria-label="Dismiss notification" data-event-click="emit('StudioNoticeClose', index)"><span class="icon">&#xea76;</span></button>
+  </div>
+</div>

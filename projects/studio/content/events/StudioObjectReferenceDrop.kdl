@@ -1,0 +1,13 @@
+version 3
+name "StudioObjectReferenceDrop"
+domain "event"
+id_counter 5
+(array)variables {
+    - id=1 name="Path" type="const char *" category="Payload"
+    - id=2 name="Kind" type="const char *" category="Payload"
+    - id=3 name="Type" type="const char *" category="Payload"
+    - id=4 name="Payload" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

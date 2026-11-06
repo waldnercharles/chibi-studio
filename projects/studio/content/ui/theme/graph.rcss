@@ -278,7 +278,7 @@ body.far .gbubble { visibility: hidden; }
 .gwatch {
     position: absolute; top: -9dp; height: var(--studio-height-16, 16dp); padding: 0dp 6dp; border-radius: 8dp;
     background-color: var(--primary); color: var(--primary-foreground); font-size: var(--studio-font-10, 10dp); line-height: var(--studio-line-16, 16dp);
-    font-family: var(--font-numeric); white-space: nowrap; pointer-events: none;
+    font-family: var(--font-numeric, GeistNumeric); white-space: nowrap; pointer-events: none;
     display: flex; align-items: center;
 }
 .gwatch[data-live] {

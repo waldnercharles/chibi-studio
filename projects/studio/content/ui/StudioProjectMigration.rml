@@ -1,0 +1,15 @@
+<use ui="Dialog" data-keys="Escape:StudioProjectMigrationCancel">
+  <section class="migration-dialog" role="dialog" aria-modal="true" aria-labelledby="migration-title">
+    <header><h2 id="migration-title">Upgrade a project copy</h2><p>Your original project stays unchanged. The current engine opens an upgraded copy.</p></header>
+    <p class="path">{{ self.migrationSource }}</p>
+    <div data-if="!self.migrationReady">
+      <div data-if="!self.migrationWeb"><label for="migration-name">New folder name</label>
+      <div class="field text"><input id="migration-name" class="value" type="text" maxlength="128" data-attr-value="self.migrationName" data-attrif-disabled="self.migrationBusy" data-event-input="emit('StudioProjectMigrationName',ev.value)"/></div></div>
+      <div data-if="!self.migrationWeb"><p class="path">{{ self.migrationParent != '' ? self.migrationParent : 'Choose a parent folder outside the original project' }}</p><button class="btn outline" data-attrif-disabled="self.migrationBusy" data-event-click="emit('StudioProjectMigrationAction','location')">Choose location…</button></div>
+      <p data-if="self.migrationWeb">The copy opens in this browser. Export Project downloads its upgraded files.</p>
+    </div>
+    <p role="status" aria-live="polite">{{ self.migrationMessage }}</p>
+    <pre data-if="self.migrationReport != ''">{{ self.migrationReport }}</pre>
+    <footer><button class="btn outline" data-event-click="emit('StudioProjectMigrationAction','cancel')">{{ self.migrationBusy ? 'Cancel upgrade' : 'Close' }}</button><button class="btn primary" data-if="!self.migrationReady" data-attrif-disabled="self.migrationBusy || !self.migrationCanUpgrade" data-event-click="emit('StudioProjectMigrationAction','upgrade')">Upgrade copy</button><button class="btn primary" data-if="self.migrationReady" data-attrif-disabled="!self.migrationCanOpen" data-event-click="emit('StudioProjectMigrationAction','open')">Open upgraded copy</button></footer>
+  </section>
+</use>

@@ -1,0 +1,60 @@
+<div class="ui-designer-workspace">
+  <div class="ui-designer-canvas"><use ui="StudioUICanvas"/></div>
+<div class="ui-designer">
+  <p data-if="!self.uiDesignerReady">Open an RML document or RCSS stylesheet to edit its structure and fields.</p>
+  <div class="notice error" role="alert" data-if="self.uiDesignerError != ''">{{ self.uiDesignerError }}</div>
+  <div data-if="self.uiDesignerReady">
+    <div class="ui-designer-toolbar">
+      <input class="field text" aria-label="Filter this source page" placeholder="Filter this page" data-attr-value="self.uiDesignerQuery" data-event-input="emit('StudioUIDesignerDraft', 'query', ev.value)"/>
+      <button class="btn sm" data-attrif-disabled="self.uiDesignerFirst == 0" data-event-click="emit('StudioUIDesignerPage', -1)">Previous</button>
+      <span>{{ self.uiDesignerFirst }} / {{ self.uiDesignerTotal }}</span>
+      <button class="btn sm" data-attrif-disabled="self.uiDesignerFirst + 64 &gt;= self.uiDesignerTotal" data-event-click="emit('StudioUIDesignerPage', 1)">Next</button>
+    </div>
+    <div class="ui-designer-tree" role="tree" aria-label="UI source hierarchy">
+      <div data-for="slot : self.uiDesignerVisible" class="ui-designer-row" role="treeitem" data-attr-aria-selected="self.uiDesignerRows[slot].Index == self.uiDesignerSelected ? 'true' : 'false'" data-style-padding-left="self.uiDesignerRows[slot].Depth * 12 + 'dp'">
+        <button class="btn icon-only subtle" data-attr-aria-label="'Fold ' + self.uiDesignerRows[slot].Name" data-event-click="emit('StudioUIDesignerFold', self.uiDesignerRows[slot].Index)"><span class="icon">{{ '&#xeab4;' }}</span></button>
+        <button class="btn subtle ui-designer-label" data-attrif-data-selected="self.uiDesignerRows[slot].Index == self.uiDesignerSelected" data-event-click="emit('StudioUIDesignerSelect', self.uiDesignerRows[slot].Index)">{{ self.uiDesignerRows[slot].Name }}<span class="dim">{{ self.uiDesignerRows[slot].Value != '' ? '#' + self.uiDesignerRows[slot].Value : self.uiDesignerRows[slot].Extra != '' ? '.' + self.uiDesignerRows[slot].Extra : '' }}</span></button>
+      </div>
+    </div>
+    <div data-if="self.uiDesignerSelected &gt;= 0" class="ui-designer-fields">
+      <button class="btn subtle" data-event-click="emit('StudioUIDesignerCommand', 'source')">Reveal in source</button>
+      <h3>{{ self.uiDesignerLanguage == 'rcss' ? 'Declarations' : 'Attributes' }}</h3>
+      <div class="ui-designer-field" data-for="field : self.uiDesignerAttributes">
+        <label>{{ field.Name }}<input class="field text" data-attr-aria-label="field.Name" data-attr-value="field.Value" data-attrif-disabled="!self.uiDesignerValid || self.uiDesignerBusy" data-event-change="emit('StudioUIDesignerField', field.Index, field.Name, ev.value, false)"/></label>
+        <button class="btn subtle" data-if="self.uiDesignerLanguage == 'rcss'" data-event-click="emit('StudioUIDesignerCssField', field.Index, field.Name, field.Value)">Edit</button>
+        <button class="btn icon-only subtle" data-attr-aria-label="'Remove ' + field.Name" data-attrif-disabled="!self.uiDesignerValid || self.uiDesignerBusy" data-event-click="emit('StudioUIDesignerField', field.Index, field.Name, '', true)"><span class="icon">&#xea76;</span></button>
+      </div>
+      <div class="ui-designer-field" data-if="self.uiDesignerLanguage == 'rml'">
+        <input class="field text" aria-label="Attribute name" placeholder="Attribute" data-attr-value="self.uiDesignerAttributeName" data-event-input="emit('StudioUIDesignerDraft', 'attributeName', ev.value)"/>
+        <input class="field text" aria-label="Attribute value" placeholder="Value" data-attr-value="self.uiDesignerAttributeValue" data-event-input="emit('StudioUIDesignerDraft', 'attributeValue', ev.value)"/>
+        <button class="btn" data-attrif-disabled="!self.uiDesignerValid || self.uiDesignerBusy" data-event-click="emit('StudioUIDesignerCommand', 'attribute')">Set attribute</button>
+      </div>
+      <h3>{{ self.uiDesignerLanguage == 'rcss' ? 'Add declaration' : 'Inline style' }}</h3>
+      <div class="ui-designer-field">
+        <input class="field text" aria-label="Style property" placeholder="Property" data-attr-value="self.uiDesignerStyleName" data-event-input="emit('StudioUIDesignerDraft', 'styleName', ev.value)"/>
+        <input class="field text" aria-label="CSS expression or value" placeholder="Value" data-if="self.uiDesignerCssExpression || self.uiDesignerCssKind == 'text'" data-attr-value="self.uiDesignerStyleValue" data-event-input="emit('StudioUIDesignerDraft', 'styleValue', ev.value)"/>
+        <use ui="NumberField" data-if="!self.uiDesignerCssExpression &amp;&amp; (self.uiDesignerCssKind == 'length' || self.uiDesignerCssKind == 'number')" float precision="3" data-attr-step="self.uiDesignerStyleName == 'opacity' ? 0.01 : (self.uiDesignerCssUnit == 'em' || self.uiDesignerCssUnit == 'rem' ? 0.1 : 1)" data-attrif-integer="self.uiDesignerCssInteger" data-attr-unit="self.uiDesignerCssUnit" data-attr-value="self.uiDesignerCssNumber" data-attr-aria-label="self.uiDesignerStyleName" data-event-change="emit('StudioUIDesignerCssNumber', ev.value, ev.canceled)"/>
+        <use ui="ColorField" data-if="!self.uiDesignerCssExpression &amp;&amp; self.uiDesignerCssKind == 'color'" data-attr-value="self.uiDesignerCssColor" data-attr-aria-label="self.uiDesignerStyleName" data-event-change="emit('StudioUIDesignerCssColor', ev.value, ev.canceled)"/>
+        <use ui="Select" data-if="!self.uiDesignerCssExpression &amp;&amp; self.uiDesignerCssKind == 'keyword'"><select data-attr-aria-label="self.uiDesignerStyleName" data-attr-value="self.uiDesignerStyleValue" data-event-change="emit('StudioUIDesignerDraft', 'cssKeyword', ev.value)"><option data-for="option : self.uiDesignerCssOptions" data-attr-value="option">{{ option }}</option></select></use>
+        <button class="btn subtle" data-event-click="emit('StudioUIDesignerCommand', 'expression')">{{ self.uiDesignerCssExpression ? 'Use control' : 'Edit expression' }}</button>
+        <button class="btn" data-attrif-disabled="!self.uiDesignerValid || self.uiDesignerBusy" data-event-click="emit('StudioUIDesignerCommand', self.uiDesignerLanguage == 'rcss' ? 'declaration' : 'style')">Set style</button>
+      </div>
+      <div data-if="self.uiDesignerLanguage == 'rml'">
+        <label>Text<input class="field text" aria-label="Replace leaf text" data-attr-value="self.uiDesignerText" data-event-input="emit('StudioUIDesignerDraft', 'text', ev.value)"/></label>
+        <button class="btn" data-attrif-disabled="!self.uiDesignerValid || self.uiDesignerBusy" data-event-click="emit('StudioUIDesignerCommand', 'text')">Replace leaf text</button>
+        <button class="btn" data-attrif-disabled="!self.uiDesignerValid || self.uiDesignerBusy" data-event-click="emit('StudioUIDesignerCommand', 'duplicate')">Duplicate</button>
+      </div>
+      <button class="btn danger" data-attrif-disabled="!self.uiDesignerValid || self.uiDesignerBusy" data-event-click="emit('StudioUIDesignerCommand', 'delete')">Delete selected</button>
+    </div>
+    <section class="ui-designer-fields" data-if="self.uiDesignerLanguage == 'rml'">
+      <h3>Insert markup</h3>
+      <label>Markup<textarea class="field text" rows="4" aria-label="Markup to insert" data-attr-value="self.uiDesignerMarkup" data-event-input="emit('StudioUIDesignerDraft', 'markup', ev.value)"></textarea></label>
+      <div class="ui-designer-toolbar">
+        <use ui="Select"><select aria-label="Insert position" data-attr-value="self.uiDesignerPlace" data-event-change="emit('StudioUIDesignerDraft', 'place', ev.value)"><option value="inside">Inside selection</option><option value="before">Before selection</option><option value="after">After selection</option></select></use>
+        <button class="btn primary" data-attrif-disabled="!self.uiDesignerValid || self.uiDesignerBusy" data-event-click="emit('StudioUIDesignerCommand', 'insert')">Insert</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+</div>

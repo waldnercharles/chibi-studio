@@ -1,0 +1,6 @@
+.studio-performance { padding: 8dp; overflow-y: auto; display: flex; flex-direction: column; gap: 8dp; }
+.studio-performance-toolbar { display: flex; align-items: center; gap: 8dp; }
+.studio-performance h3 { margin: 0; font-size: 13dp; font-weight: bold; }
+.studio-performance p { margin: 0; }
+.studio-performance .perf-chart { display: block; height: 120dp; width: 100%; }
+.studio-performance .perf-legend { display: flex; flex-wrap: wrap; gap: 12dp; }

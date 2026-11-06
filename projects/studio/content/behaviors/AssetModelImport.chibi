@@ -1,0 +1,179 @@
+behavior AssetModelImport {
+    self.Active := false
+    ReadOnly := false
+    Busy := false
+    Reimport := false
+    Source: string = ""
+    Name: string = ""
+    Strict := false
+    Plan: int = 0
+    Page: int = 0
+    Actions: struct<"WorkspaceImportAction">[] = []
+    action prepare = prepare_workspace_model_import(Source, Name, Reimport, Strict)
+    action apply = apply_workspace_model_import(Plan)
+    Release :: fn() {
+        if Plan > 0 {
+            closed := await close_workspace_model_import(Plan)
+        }
+        Plan = 0
+        Actions = []
+        await set_ui_data(Name: "modelImport.reviewed", Value: false)
+    }
+    Publish :: fn() {
+        await send_event<"StudioCommandAvailability">(self, "convertModel", Active && !ReadOnly && !Busy)
+        await send_event<"StudioCommandAvailability">(self, "reimportModel", Active && !ReadOnly && !Busy)
+        await set_ui_data(Name: "modelImport.busy", Value: Busy)
+        await set_ui_data(Name: "modelImport.readOnly", Value: ReadOnly)
+        await set_ui_data(Name: "modelImport.reimport", Value: Reimport)
+        await set_ui_data(Name: "modelImport.source", Value: Source)
+        await set_ui_data(Name: "modelImport.name", Value: Name)
+        await set_ui_data(Name: "modelImport.strict", Value: Strict)
+    }
+    PublishPage :: fn() {
+        rows: struct<"WorkspaceImportAction">[] = []
+        index := Page * 64
+        while index < length(Actions) && length(rows) < 64 {
+            rows = array_add(rows, Actions[index])
+            index += 1
+        }
+        await set_ui_data(Name: "modelImport.actions", Value: rows)
+        await set_ui_data(Name: "modelImport.previous", Value: Page > 0)
+        await set_ui_data(Name: "modelImport.more", Value: index < length(Actions))
+        await set_ui_data(Name: "modelImport.actionCount", Value: length(Actions))
+    }
+    Open :: fn(Reimport: bool, Source: string, Name: string, Pointer: struct<"CF_V2">) {
+        if !Active || ReadOnly || Busy {
+            return
+        }
+        await Release()
+        self.Reimport = Reimport
+        self.Source = Source
+        self.Name = Name
+        Page = 0
+        await Publish()
+        await set_ui_data(Name: "modelImport.error", Value: "")
+        await set_ui_data(Name: "modelImport.result", Value: "")
+        await show_ui_popover(Element: "#asset-model-import", At: Pointer)
+        await focus_ui_element(Element: "#asset-model-import-name")
+    }
+    on Begin {
+        info := query_workspace_info()
+        Active = info.Active
+        await send_event<"StudioCommandAvailability">(self, "convertModel", Active)
+        await send_event<"StudioCommandAvailability">(self, "reimportModel", Active)
+    }
+    on StudioCollaborationState {
+        ReadOnly = event.Active
+        await Publish()
+        if ReadOnly && !Busy {
+            await Release()
+        }
+    }
+    on AssetsModelImport {
+        if !Active || ReadOnly || Busy {
+            return
+        }
+        resource := await lookup_workspace_resource(event.Key)
+        if !resource.Status.Ok {
+            return
+        }
+        source := resource.Row.Path
+        if text_equal(event.Mode, "reimport") {
+            source = ""
+        }
+        await Open(text_equal(event.Mode, "reimport"), source, resource.Row.Name, event.Pointer)
+    }
+    on StudioResourceCommand {
+        if text_equal(event.Id, "convertModel") {
+            await Open(false, event.Argument, "", { x: 24.0, y: 72.0 })
+        }
+        if text_equal(event.Id, "reimportModel") {
+            await Open(true, "", event.Argument, { x: 24.0, y: 72.0 })
+        }
+    }
+    on AssetsModelImportText {
+        if Busy || ReadOnly {
+            return
+        }
+        await Release()
+        if text_equal(event.Field, "name") {
+            Name = event.Text
+        }
+        if text_equal(event.Field, "source") {
+            Source = event.Text
+        }
+    }
+    on AssetsModelImportStrict {
+        if Busy || ReadOnly {
+            return
+        }
+        await Release()
+        Strict = event.Value
+    }
+    on AssetsModelImportPrepare {
+        if !Active || ReadOnly || Busy {
+            return
+        }
+        await Release()
+        Busy = true
+        await Publish()
+        prepare()
+    }
+    after prepare {
+        Busy = false
+        self.Plan = prepare.Plan
+        await set_ui_data(Name: "modelImport.error", Value: prepare.Error)
+        if ReadOnly {
+            await Release()
+        } else {
+            if self.Plan > 0 {
+                report := await read_workspace_model_import(self.Plan)
+                if !report.Valid {
+                    await set_ui_data(Name: "modelImport.error", Value: report.Error)
+                    await Release()
+                } else {
+                    Actions = report.Actions
+                    Page = 0
+                    await PublishPage()
+                    await set_ui_data(Name: "modelImport.warnings", Value: report.Warnings)
+                    await set_ui_data(Name: "modelImport.summary", Value: format_text("{} vertices · {} triangles · {} materials · {} images", report.Vertices, report.Triangles, report.Materials, report.Images))
+                    await set_ui_data(Name: "modelImport.reviewed", Value: true)
+                }
+            }
+        }
+        await Publish()
+    }
+    on AssetsModelImportPage {
+        if Busy {
+            return
+        }
+        Page = cast<int>(max(0, Page + event.Delta))
+        await PublishPage()
+    }
+    on AssetsModelImportApply {
+        if ReadOnly || Busy || Plan <= 0 {
+            return
+        }
+        Busy = true
+        await Publish()
+        apply()
+    }
+    after apply {
+        Busy = false
+        await set_ui_data(Name: "modelImport.error", Value: apply.Error)
+        if apply.Committed {
+            await set_ui_data(Name: "modelImport.result", Value: "Model published. Any reported cleanup issue does not require retrying publication.")
+            await send_event<"WorkspaceResourcesChanged">(self)
+        }
+        await Release()
+        await Publish()
+    }
+    on AssetsModelImportClose {
+        if !Busy {
+            await Release()
+        }
+    }
+    on Close {
+        await Release()
+    }
+}

@@ -1,0 +1,12 @@
+.studio-document-dialog { position: fixed; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; z-index: 12000; }
+.studio-document-review { width: 440dp; max-width: 90vw; padding: 8dp; }
+.studio-document-review h2 { margin: 0dp 0dp 12dp; font-size: 16dp; font-weight: 600; }
+.studio-document-review p { margin: 8dp 0dp; white-space: normal; line-height: 1.5; }
+.studio-document-review-path { color: var(--muted-foreground); word-break: break-word; }
+.studio-document-review footer { display: flex; justify-content: flex-end; gap: 8dp; margin-top: 20dp; }
+.studio-document-review label { display: block; margin-bottom: 6dp; }
+.studio-document-path { display: block; width: 100%; padding: 8dp; color: var(--foreground); background-color: var(--background); border: 1dp var(--border); border-radius: var(--r, 4dp); }
+.studio-document-review-error { color: var(--destructive); }
+
+.studio-document-tab-choices { max-height: 280dp; overflow-y: auto; }
+.studio-document-tab-choice { display: block; width: 100%; text-align: left; }

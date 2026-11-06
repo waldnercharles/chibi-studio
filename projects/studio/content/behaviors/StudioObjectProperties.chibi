@@ -1,0 +1,1274 @@
+behavior StudioObjectProperties {
+    self.Pane: string = "properties"
+    on StudioPaneFocus {
+        if event.Context == "properties" {
+            Pane = event.Area
+        }
+    }
+    WorkspaceActive := false
+    on Begin {
+        info := query_workspace_info()
+        WorkspaceActive = info.Active
+        await set_ui_data(Name: "objectProperties.categories", Value: ["scene"])
+        await set_ui_data(Name: "objectProperties.category", Value: "scene")
+    }
+    ReadOnly := false
+    RoomActive := false
+    RuntimeSession: int = 0
+    RuntimeSourceDocument: int = 0
+    RuntimeSourceRevision: int = 0
+    RuntimeReady := false
+    RuntimeLive := false
+    RuntimeStopped := false
+    RuntimeSteps: int = 0
+    RuntimeRoutePending := false
+    RuntimeRouteSession: int = 0
+    RuntimeRouteDocument: int = 0
+    RuntimeRouteRevision: int = 0
+    RuntimeRoutePath: string = ""
+    EditDocument: int = 0
+    EditRevision: int = 0
+    EditKind: string = ""
+    Executing := false
+    InFlightRequest: int = 0
+    EditTargets: string[] = []
+    EditComponent := false
+    Request: int = 0
+    Lease := false
+    Document: int = 0
+    Revision: int = 0
+    Kind: string = ""
+    Paths: string[] = []
+    Fields: struct<"WorkspaceAssetField">[] = []
+    Folded: string[] = []
+    Filter: string = ""
+    Category: string = "object"
+    Opened: string[] = []
+    GroupPaths: string[] = []
+    MenuComponent: string = ""
+    SelectionFields: struct<"WorkspaceAssetField">[] = []
+    Error: string = ""
+    Busy := false
+    EditPath: string = ""
+    EditOperation: string = ""
+    EditValue: string = ""
+    Component: string = ""
+    ComponentQuery: string = ""
+    ComponentChoices: struct<"WorkspaceComponent">[] = []
+    ComponentDocument: int = 0
+    ComponentRevision: int = 0
+    ComponentTargets: string[] = []
+    AddComponent := true
+    BehaviorNames: string[] = []
+    BehaviorQuery: string = ""
+    BehaviorFirst: int = 0
+    BehaviorRequest: int = 0
+    BehaviorDocument: int = 0
+    BehaviorRevision: int = 0
+    BehaviorTargets: string[] = []
+    BehaviorAvailable: string[] = []
+    ReferencePath: string = ""
+    ReferenceKind: string = ""
+    ReferenceQuery: string = ""
+    ReferenceFirst: int = 0
+    ReferenceDocument: int = 0
+    ReferenceRevision: int = 0
+    ReferenceTargets: string[] = []
+    ReferenceFields: struct<"WorkspaceAssetField">[] = []
+    action reference_resources = query_workspace_resources(ReferenceFirst, 64, ReferenceKind, ReferenceQuery)
+    action component_change = workspace_objects_component(EditDocument, EditRevision, EditKind, EditTargets, Component, AddComponent)
+    action edit = workspace_objects_edit(EditDocument, EditRevision, EditKind, EditTargets, EditPath, EditOperation, EditValue)
+
+    CategoryOf :: pure fn(Field: struct<"WorkspaceAssetField">) -> string {
+        if Field.presentation_category != "" { return Field.presentation_category }
+        return "object"
+    }
+    PanelOpen :: pure fn(Path: string, Name: string) -> bool {
+        if Filter != "" || contains(Opened, Path) { return true }
+        if contains(Folded, Path) { return false }
+        return Name == "Transform" || Name == "Appearance" || Name == "Orientation" || Name == "behaviors" || Name == "ui" || Name == "physics"
+    }
+    Label :: pure fn(Name: string) -> string {
+        if Name == "Geometry3D" { return "3D Geometry" }
+        if Name == "Appearance" { return "2D Appearance" }
+        if Name == "sdf" || Name == "Sdf" { return "SDF" }
+        if Name == "ui" { return "UI" }
+        if Name == "sleep" { return "Allow sleeping" }
+        if Name == "continuous" { return "Continuous collision" }
+        if Name == "force_drive" { return "Drive with forces" }
+        if Name == "contact_hertz" { return "Contact Hz" }
+        if Name == "contact_damping" { return "Damping" }
+        result := ""
+        at: int = 0
+        start := true
+        previous := ""
+        while at < 128 {
+            ch := text_slice(Name, at, at + 1).Text
+            if ch == "" { break }
+            if ch == "_" || ch == " " { start = true; at += 1; continue }
+            upper := text_contains(ch, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", false)
+            lower := previous != "" && text_contains(previous, "abcdefghijklmnopqrstuvwxyz", false)
+            next := text_slice(Name, at + 1, at + 2).Text
+            nextLower := next != "" && text_contains(next, "abcdefghijklmnopqrstuvwxyz", false)
+            if result != "" && (start || (upper && (lower || nextLower))) { result = format_text("{} ", result) }
+            if start {
+                letter: int = 0
+                while letter < 26 {
+                    if text_slice("abcdefghijklmnopqrstuvwxyz", letter, letter + 1).Text == ch {
+                        ch = text_slice("ABCDEFGHIJKLMNOPQRSTUVWXYZ", letter, letter + 1).Text
+                        break
+                    }
+                    letter += 1
+                }
+            }
+            result = format_text("{}{}", result, ch)
+            previous = ch
+            start = false
+            at += 1
+        }
+        return result
+    }
+    on StudioObjectPropertiesCategory {
+        self.Category = event.Category
+        await Refresh()
+    }
+    IsVector :: pure fn(Index: int) -> bool {
+        if Index < 0 || Fields[Index].type != "object" { return false }
+        axes: int = 0
+        foreach (child in Fields) {
+            if child.parent == Index {
+                if (child.type != "number" && child.type != "integer") || (child.name != "x" && child.name != "y" && child.name != "z" && child.name != "w") { return false }
+                axes += 1
+            }
+        }
+        return axes >= 2 && axes <= 4
+    }
+    MatchesFilter :: pure fn(Index: int) -> bool {
+        field := Fields[Index]
+        if text_contains(Filter, field.name, true) || text_contains(Filter, field.description, true) || text_contains(Filter, field.text, true) || text_contains(Filter, field.json, true) {
+            return true
+        }
+        if (text_equal(field.type, "number") || text_equal(field.type, "integer")) && text_contains(Filter, format_text("{}", field.number), true) {
+            return true
+        }
+        boolean := "false"
+        if field.boolean {
+            boolean = "true"
+        }
+        if text_equal(field.type, "bool") && text_contains(Filter, boolean, true) {
+            return true
+        }
+        parent := field.parent
+        while parent > 0 {
+            if text_contains(Filter, Fields[parent].name, true) {
+                return true
+            }
+            parent = Fields[parent].parent
+        }
+        return false
+    }
+    on StudioObjectPropertiesFind {
+        await focus_ui_element(Element: format_text("#studio-object-properties-filter-{}", Pane))
+    }
+    on StudioObjectPropertiesFilter {
+        Filter = event.Text
+        await Refresh()
+    }
+    CanKeep :: pure fn() -> bool {
+        return WorkspaceActive && RuntimeReady && RuntimeLive && !ReadOnly && !RoomActive && !Busy && Kind == "scene" && length(Paths) == 1 && Paths[0] != "" && Document == RuntimeSourceDocument && Revision == RuntimeSourceRevision
+    }
+    KeepableComponent :: pure fn(Component: string) -> bool {
+        foreach (field in Fields) {
+            if field.component == Component && field.parent >= 0 && Fields[field.parent].name == "components" && !field.computed { return true }
+        }
+        return false
+    }
+    RouteCurrent :: pure fn(Document: int, Revision: int, Session: int, Path: string) -> bool {
+        return CanKeep() && Document == self.Document && Revision == self.Revision && Session == RuntimeSession && length(Paths) == 1 && Paths[0] == Path
+    }
+    RouteRuntime :: fn() {
+        if RuntimeRoutePending || !CanKeep() { return }
+        path := Paths[0]
+        if RuntimeRouteSession == RuntimeSession && RuntimeRouteDocument == Document && RuntimeRouteRevision == Revision && RuntimeRoutePath == path { return }
+        RuntimeRouteSession = RuntimeSession
+        RuntimeRouteDocument = Document
+        RuntimeRouteRevision = Revision
+        RuntimeRoutePath = path
+        RuntimeRoutePending = true
+        session := RuntimeSession
+        document := Document
+        revision := Revision
+        objects := await workspace_runtime_objects(session)
+        if !RouteCurrent(document, revision, session, path) { RuntimeRoutePending = false; RuntimeRoutePath = ""; return }
+        if !objects.Ok {
+            RuntimeRoutePending = false
+            Error = "The selected source object is unavailable in this runtime."
+            await set_ui_data(Name: "objectProperties.error", Value: Error)
+            return
+        }
+        found := ""
+        index: int = 0
+        while index < length(objects.Names) {
+            subject := await workspace_runtime_object_subject(session, index)
+            if !RouteCurrent(document, revision, session, path) { RuntimeRoutePending = false; RuntimeRoutePath = ""; return }
+            if subject.Ok {
+                origin := await workspace_runtime_subject_origin(session, subject.Subject)
+                if !RouteCurrent(document, revision, session, path) { RuntimeRoutePending = false; RuntimeRoutePath = ""; return }
+                if origin.Ok && origin.Known && origin.Authored && !origin.Spawned && origin.Object == index && origin.SourcePath == path {
+                    found = subject.Subject
+                    break
+                }
+            }
+            index += 1
+        }
+        RuntimeRoutePending = false
+        if found == "" {
+            Error = "The selected source object is missing from the live runtime."
+            await set_ui_data(Name: "objectProperties.error", Value: Error)
+            return
+        }
+        await send_event<"StudioRuntimeSourceSelected">(self, session, document, revision, path, found)
+    }
+    PublishKeep :: fn() {
+        await set_ui_data(Name: "objectProperties.readOnly", Value: ReadOnly || (RuntimeReady && RuntimeLive))
+        await set_ui_data(Name: "objectProperties.live", Value: RuntimeReady && RuntimeLive && Kind == "scene")
+        await set_ui_data(Name: "objectProperties.canKeepChanges", Value: CanKeep())
+        await set_ui_data(Name: "objectProperties.keepSession", Value: RuntimeSession)
+        await set_ui_data(Name: "objectProperties.keepDocument", Value: Document)
+        await set_ui_data(Name: "objectProperties.keepRevision", Value: Revision)
+        path := ""
+        if length(Paths) == 1 { path = Paths[0] }
+        await set_ui_data(Name: "objectProperties.keepPath", Value: path)
+    }
+    on StudioRuntimeState {
+        if event.Session != RuntimeSession || event.Playing || event.Steps != RuntimeSteps { RuntimeStopped = false }
+        RuntimeSession = event.Session
+        RuntimeSourceDocument = event.Document
+        RuntimeSourceRevision = event.Revision
+        RuntimeReady = event.Ready
+        RuntimeSteps = event.Steps
+        RuntimeLive = !RuntimeStopped && (event.Playing || event.Steps > 0)
+        if !RuntimeLive { RuntimeRoutePath = "" }
+        await PublishKeep()
+        await RouteRuntime()
+    }
+    on StudioRuntimeStopped {
+        if event.Session == RuntimeSession && event.Ok {
+            RuntimeStopped = true
+            RuntimeLive = false
+            RuntimeRoutePath = ""
+            await PublishKeep()
+        }
+    }
+    on StudioObjectComponentKeep {
+        if event.Session != RuntimeSession || event.Document != self.Document || event.Revision != self.Revision || !CanKeep() || event.Path != Paths[0] || !KeepableComponent(event.Component) { return }
+        await send_event<"StudioSceneKeepComponent">(self, RuntimeSession, self.Document, self.Revision, "", event.Path, event.Component)
+    }
+    Refresh :: fn() {
+        await PublishKeep()
+        await set_ui_data(Name: "objectProperties.filter", Value: Filter)
+        await set_ui_data(Name: "objectProperties.behaviorsOpen", Value: PanelOpen("/behaviors", "behaviors"))
+        await set_ui_data(Name: "objectProperties.count", Value: length(Paths))
+        await set_ui_data(Name: "objectProperties.error", Value: Error)
+        slots: int[] = []
+        await set_ui_data(Name: "objectProperties.chipSlots", Value: slots)
+        if Document <= 0 || (length(Paths) == 0 && !(Category == "scene" && Kind == "scene")) {
+            BehaviorNames = []
+            await set_ui_data(Name: "objectProperties.behaviors", Value: BehaviorNames)
+            await set_ui_data(Name: "objectProperties.behaviorEditable", Value: false)
+            await set_ui_data(Name: "objectProperties.slots", Value: slots)
+            await set_ui_data(Name: "objectProperties.panelSlots", Value: slots)
+            return
+        }
+        targets := Paths
+        if Category == "scene" && Kind == "scene" { targets = [""] }
+        inspected := workspace_objects_inspect(Document, Revision, Kind, targets)
+        if !inspected.Ok {
+            Error = inspected.Error
+            await set_ui_data(Name: "objectProperties.error", Value: Error)
+            await set_ui_data(Name: "objectProperties.slots", Value: slots)
+            await set_ui_data(Name: "objectProperties.panelSlots", Value: slots)
+            return
+        }
+        Fields = inspected.Fields
+        categories: string[] = []
+        if Kind == "scene" { categories = array_add(categories, "scene") }
+        categories = add_unique(categories, "object")
+        GroupPaths = []
+        await set_ui_data(Name: "objectProperties.behaviorsOpen", Value: PanelOpen("/behaviors", "behaviors"))
+        componentCount: int = 0
+        name := ""
+        prototype := ""
+        foreach (field in Fields) {
+            if field.relative == "/name" { name = field.text }
+            if field.relative == "/prototype" { prototype = field.text }
+            if field.component != "" {
+                categories = add_unique(categories, CategoryOf(field))
+                if field.parent >= 0 && Fields[field.parent].name == "components" {
+                    componentCount += 1
+                }
+            }
+        }
+        if length(Paths) == 1 && Paths[0] != "" { categories = add_unique(categories, "behaviors") }
+        if !contains(categories, Category) { Category = "object" }
+        await set_ui_data(Name: "objectProperties.categories", Value: categories)
+        await set_ui_data(Name: "objectProperties.category", Value: Category)
+        await set_ui_data(Name: "objectProperties.identity.name", Value: name)
+        await set_ui_data(Name: "objectProperties.identity.prototype", Value: prototype)
+        await set_ui_data(Name: "objectProperties.identity.prototypeAsset", Value: Kind == "prototype" && targets[0] == "")
+        await set_ui_data(Name: "objectProperties.identity.components", Value: componentCount)
+        names: string[] = ["camera", "system", "light", "emitter", "water", "terrain", "gamepad", "keyboard", "projectile", "health", "diamond", "shape"]
+        glyphs: string[] = ["󰵝", "", "󰌶", "󰙴", "󰸊", "󰖊", "󰊗", "󰥻", "󰳚", "󰋕", "󰮋", "󰠲"]
+        icon := "󰆧"
+        iconIndex: int = 12
+        foreach (field in Fields) {
+            n: int = 0
+            foreach (candidate in names) {
+                if field.icon == candidate && n < iconIndex { iconIndex = n; icon = glyphs[n] }
+                n += 1
+            }
+        }
+        await set_ui_data(Name: "objectProperties.identity.icon", Value: icon)
+        if length(Paths) > 1 {
+            literal := workspace_asset_inspect(Document, Revision, Kind)
+            if literal.Ok {
+                SelectionFields = literal.Fields
+                prototypes: string[] = []
+                foreach (path in Paths) {
+                    foreach (field in SelectionFields) {
+                        if field.path == format_text("{}/prototype", path) { prototypes = add_unique(prototypes, field.text); break }
+                    }
+                }
+                chipSlots: int[] = []
+                foreach (prototype in prototypes) {
+                    count: int = 0
+                    foreach (path in Paths) {
+                        foreach (field in SelectionFields) { if field.path == format_text("{}/prototype", path) && field.text == prototype { count += 1; break } }
+                    }
+                    key := format_text("objectProperties.chips.{}", length(chipSlots))
+                    await set_ui_data(Name: format_text("{}.name", key), Value: prototype)
+                    label := prototype
+                    if count > 1 { label = format_text("{} ×{}", prototype, count) }
+                    await set_ui_data(Name: format_text("{}.label", key), Value: label)
+                    chipSlots = array_add(chipSlots, length(chipSlots))
+                }
+                await set_ui_data(Name: "objectProperties.chipSlots", Value: chipSlots)
+            }
+        }
+        BehaviorNames = []
+        if length(Paths) == 1 {
+            foreach (field in Fields) {
+                if field.parent >= 0 && text_equal(Fields[field.parent].relative, "/behaviors") && text_equal(field.type, "string") {
+                    BehaviorNames = add_unique(BehaviorNames, field.text)
+                }
+            }
+        }
+        await set_ui_data(Name: "objectProperties.behaviors", Value: BehaviorNames)
+        await set_ui_data(Name: "objectProperties.behaviorEditable", Value: length(Paths) == 1 && (text_equal(Kind, "prototype") || !text_equal(Paths[0], "")))
+        selected: int = -1
+        index: int = 0
+        foreach (field in Fields) {
+            if text_equal(field.path, targets[0]) {
+                selected = index
+                break
+            }
+            index += 1
+        }
+        if selected < 0 {
+            await set_ui_data(Name: "objectProperties.slots", Value: slots)
+            await set_ui_data(Name: "objectProperties.panelSlots", Value: slots)
+            return
+        }
+        matches: int[] = []
+        if !text_equal(Filter, "") {
+            at := selected + 1
+            while at < length(Fields) {
+                if Fields[at].depth <= Fields[selected].depth {
+                    break
+                }
+                if Fields[at].common && MatchesFilter(at) {
+                    ancestor := at
+                    while ancestor > selected {
+                        matches = add_unique(matches, ancestor)
+                        ancestor = Fields[ancestor].parent
+                    }
+                }
+                at += 1
+            }
+        }
+        i := selected + 1
+        slot: int = 0
+        while i < length(Fields) {
+            field := Fields[i]
+            if field.depth <= Fields[selected].depth {
+                break
+            }
+            ancestor := field.parent
+            owned := true
+            while ancestor > selected {
+                parent := Fields[ancestor]
+                if text_equal(parent.name, "children") || text_equal(parent.name, "entities") {
+                    owned = false
+                    break
+                }
+                ancestor = parent.parent
+            }
+            if IsVector(field.parent) { owned = false }
+            if text_equal(field.relative, "/behaviors") || text_equal(text_slice(field.relative, 0, 11).Text, "/behaviors/") {
+                owned = false
+            }
+            if field.relative == "/name" || field.relative == "/prototype" || field.relative == "/components" || (Category == "scene" && field.relative != "/ui" && field.relative != "/physics" && !text_contains("/physics/", field.relative, false)) { owned = false }
+            categoryMatch := Filter != "" || (Category != "behaviors" && ((Category == "scene" && field.component == "") || (Category != "scene" && field.component != "" && CategoryOf(field) == Category)))
+            if owned && field.common && categoryMatch {
+                hidden := false
+                ancestor = field.parent
+                while ancestor > selected {
+                    if text_equal(Filter, "") && !PanelOpen(Fields[ancestor].relative, Fields[ancestor].name) && Fields[ancestor].component != "" {
+                        hidden = true
+                        break
+                    }
+                    ancestor = Fields[ancestor].parent
+                }
+                if !hidden && (text_equal(Filter, "") || contains(matches, i)) {
+                    base := format_text("objectProperties.rows.{}", slot)
+                    await set_ui_data(Name: format_text("{}.path", base), Value: field.relative)
+                    fieldLabel := Label(field.name)
+                    if field.name == "ui" && Category == "scene" {
+                        fieldLabel = "Root document"
+                    }
+                    await set_ui_data(Name: format_text("{}.label", base), Value: fieldLabel)
+                    await set_ui_data(Name: format_text("{}.type", base), Value: field.type)
+                    vector := IsVector(i)
+                    await set_ui_data(Name: format_text("{}.vector", base), Value: vector)
+                    vectorAxes: int[] = []
+                    if vector {
+                        foreach (child in Fields) {
+                            if child.parent == i {
+                                axisKey := format_text("{}.axes.{}", base, length(vectorAxes))
+                                await set_ui_data(Name: format_text("{}.path", axisKey), Value: child.relative)
+                                await set_ui_data(Name: format_text("{}.name", axisKey), Value: child.name)
+                                await set_ui_data(Name: format_text("{}.label", axisKey), Value: Label(child.name))
+                                await set_ui_data(Name: format_text("{}.number", axisKey), Value: child.number)
+                                await set_ui_data(Name: format_text("{}.mixed", axisKey), Value: child.mixed)
+                                await set_ui_data(Name: format_text("{}.overridden", axisKey), Value: child.overridden)
+                                vectorAxes = array_add(vectorAxes, length(vectorAxes))
+                            }
+                        }
+                    }
+                    await set_ui_data(Name: format_text("{}.axisSlots", base), Value: vectorAxes)
+                    await set_ui_data(Name: format_text("{}.text", base), Value: field.text)
+                    await set_ui_data(Name: format_text("{}.number", base), Value: field.number)
+                    wide := text_equal(field.type, "integer") && (field.number >= 9007199254740992.0 || field.number <= -9007199254740992.0)
+                    await set_ui_data(Name: format_text("{}.wideInteger", base), Value: wide)
+                    await set_ui_data(Name: format_text("{}.exactInteger", base), Value: field.json)
+                    await set_ui_data(Name: format_text("{}.color", base), Value: field.color)
+                    if field.color {
+                        color := packed_color_to_hex(field.number)
+                        await set_ui_data(Name: format_text("{}.colorHex", base), Value: color.Text)
+                    }
+                    await set_ui_data(Name: format_text("{}.min", base), Value: field.min)
+                    await set_ui_data(Name: format_text("{}.max", base), Value: field.max)
+                    await set_ui_data(Name: format_text("{}.bounded", base), Value: field.bounded)
+                    await set_ui_data(Name: format_text("{}.unit", base), Value: field.unit)
+                    await set_ui_data(Name: format_text("{}.mixed", base), Value: field.mixed)
+                    await set_ui_data(Name: format_text("{}.boolean", base), Value: field.boolean)
+                    await set_ui_data(Name: format_text("{}.reference", base), Value: field.reference)
+                    await set_ui_data(Name: format_text("{}.about", base), Value: field.description)
+                    await set_ui_data(Name: format_text("{}.present", base), Value: field.present)
+                    await set_ui_data(Name: format_text("{}.overridden", base), Value: field.overridden)
+                    await set_ui_data(Name: format_text("{}.required", base), Value: field.required)
+                    await set_ui_data(Name: format_text("{}.component", base), Value: field.parent >= 0 && text_equal(Fields[field.parent].name, "components"))
+                    await set_ui_data(Name: format_text("{}.readonly", base), Value: field.computed || (text_equal(field.relative, "/name") && (length(Paths) > 1 || (text_equal(Kind, "prototype") && text_equal(Paths[0], "")))))
+                    await set_ui_data(Name: format_text("{}.open", base), Value: PanelOpen(field.relative, field.name))
+                    await set_ui_data(Name: format_text("{}.depth", base), Value: max(0, field.depth - Fields[selected].depth - 1))
+                    choices: string[] = []
+                    foreach (choice in inspected.Choices) {
+                        if text_equal(choice.path, field.path) {
+                            choices = array_add(choices, choice.value)
+                        }
+                    }
+                    await set_ui_data(Name: format_text("{}.choices", base), Value: choices)
+                    empty: int[] = []
+                    await set_ui_data(Name: format_text("{}.table.groups", base), Value: empty)
+                    if length(choices) > 0 {
+                        await set_ui_data(Name: format_text("{}.table.groups.0.label", base), Value: "")
+                        choiceIndex: int = 0
+                        foreach (choice in choices) {
+                            choiceKey := format_text("{}.table.groups.0.options.{}", base, choiceIndex)
+                            await set_ui_data(Name: format_text("{}.value", choiceKey), Value: choice)
+                            await set_ui_data(Name: format_text("{}.label", choiceKey), Value: choice)
+                            await set_ui_data(Name: format_text("{}.icon", choiceKey), Value: "")
+                            choiceIndex += 1
+                        }
+                    }
+                    referenceIcon := ""
+                    if field.reference == "material" { referenceIcon = "󰏘" }
+                    if field.reference == "prototype" || field.reference == "entity" { referenceIcon = "󰆧" }
+                    if field.reference == "behavior" { referenceIcon = "" }
+                    await set_ui_data(Name: format_text("{}.table.icon", base), Value: referenceIcon)
+                    await set_ui_data(Name: format_text("{}.table.none", base), Value: "None")
+                    group := field.relative
+                    if field.component == "" {
+                        ancestor = i
+                        while ancestor > selected {
+                            if Fields[ancestor].parent == selected { group = Fields[ancestor].relative; break }
+                            ancestor = Fields[ancestor].parent
+                        }
+                    }
+                    if field.component != "" {
+                        ancestor = i
+                        while ancestor > selected {
+                            if Fields[ancestor].parent >= 0 && Fields[Fields[ancestor].parent].name == "components" { group = Fields[ancestor].relative; break }
+                            ancestor = Fields[ancestor].parent
+                        }
+                    }
+                    await set_ui_data(Name: format_text("{}.group", base), Value: group)
+                    if field.parent == selected || (field.parent >= 0 && Fields[field.parent].name == "components") {
+                        GroupPaths = add_unique(GroupPaths, group)
+                        header := format_text("objectProperties.panels.{}", length(GroupPaths) - 1)
+                        await set_ui_data(Name: format_text("{}.path", header), Value: group)
+                        await set_ui_data(Name: format_text("{}.title", header), Value: Label(field.name))
+                        await set_ui_data(Name: format_text("{}.open", header), Value: PanelOpen(field.relative, field.name))
+                        await set_ui_data(Name: format_text("{}.component", header), Value: field.component)
+                        await set_ui_data(Name: format_text("{}.present", header), Value: field.added && !field.computed)
+                        await set_ui_data(Name: format_text("{}.keepable", header), Value: field.component != "" && !field.computed)
+                        badge := ""
+                        if field.added { badge = "Added" }
+                        if field.computed { badge = "Computed" }
+                        if badge == "" {
+                            overrides: int = 0
+                            childIndex: int = 0
+                            foreach (child in Fields) {
+                                if child.parent == i && child.overridden { overrides += 1 }
+                                childIndex += 1
+                            }
+                            if overrides > 0 { badge = format_text("{}", overrides) }
+                        }
+                        await set_ui_data(Name: format_text("{}.badge", header), Value: badge)
+                        axes: int[] = []
+                        if field.component == "Transform" {
+                            foreach (child in Fields) {
+                                if child.parent == i && (child.name == "x" || child.name == "y") {
+                                    axisKey := format_text("{}.axes.{}", header, length(axes))
+                                    await set_ui_data(Name: format_text("{}.path", axisKey), Value: child.relative)
+                                    await set_ui_data(Name: format_text("{}.name", axisKey), Value: child.name)
+                                    await set_ui_data(Name: format_text("{}.label", axisKey), Value: Label(child.name))
+                                    await set_ui_data(Name: format_text("{}.number", axisKey), Value: child.number)
+                                    await set_ui_data(Name: format_text("{}.mixed", axisKey), Value: child.mixed)
+                                    await set_ui_data(Name: format_text("{}.overridden", axisKey), Value: child.overridden)
+                                    axes = array_add(axes, length(axes))
+                                }
+                            }
+                        }
+                        await set_ui_data(Name: format_text("{}.axisSlots", header), Value: axes)
+                    }
+                    slots = array_add(slots, slot)
+                    slot += 1
+                }
+            }
+            i += 1
+        }
+        await set_ui_data(Name: "objectProperties.slots", Value: slots)
+        panelSlots: int[] = []
+        groupIndex: int = 0
+        foreach (path in GroupPaths) { panelSlots = array_add(panelSlots, groupIndex); groupIndex += 1 }
+        await set_ui_data(Name: "objectProperties.panelSlots", Value: panelSlots)
+    }
+    on StudioCollaborationState {
+        blocked := event.Active && (!event.Ready || event.Pending || !(text_equal(event.Role, "host") || text_equal(event.Role, "editor")))
+        if RoomActive != event.Active || ReadOnly != blocked { RuntimeRoutePath = "" }
+        RoomActive = event.Active
+        ReadOnly = blocked
+        await set_ui_data(Name: "objectProperties.readOnly", Value: ReadOnly)
+        await PublishKeep()
+        await RouteRuntime()
+    }
+    on StudioObjectSelection {
+        if !WorkspaceActive {
+            return
+        }
+        if self.Document == event.Document && self.Revision == event.Revision && identical(self.Paths, event.Paths) {
+            return
+        }
+        self.Document = event.Document
+        self.Revision = event.Revision
+        self.Kind = event.Kind
+        self.Paths = event.Paths
+        RuntimeRoutePath = ""
+        Error = ""
+        if length(Paths) == 1 && Kind == "scene" && Paths[0] == "" { Category = "scene" }
+        else { Category = "object" }
+        await Refresh()
+        await RouteRuntime()
+    }
+    on StudioObjectPropertyFold {
+        name := ""
+        foreach (field in Fields) { if field.relative == event.Path { name = field.name; break } }
+        if PanelOpen(event.Path, name) {
+            Folded = add_unique(Folded, event.Path)
+            Opened = remove_item(Opened, event.Path)
+        } else {
+            Opened = add_unique(Opened, event.Path)
+            Folded = remove_item(Folded, event.Path)
+        }
+        await Refresh()
+    }
+    on StudioObjectPropertiesNarrow {
+        paths: string[] = []
+        foreach (path in Paths) {
+            foreach (field in SelectionFields) {
+                if field.path == format_text("{}/prototype", path) && field.text == event.Prototype { paths = array_add(paths, path); break }
+            }
+        }
+        if length(paths) > 0 { await send_event<"StudioOutlinerSelectionRequested">(self, Document, Revision, paths, false) }
+    }
+    on StudioObjectPrototypeOpen {
+        foreach (field in Fields) {
+            if field.relative == "/prototype" && field.text != "" {
+                result := await query_workspace_resources(0, 256, "prototype", field.text)
+                foreach (row in result.Rows) { if row.Name == field.text { await send_event<"StudioDocumentCommand">(self, "open", row.Path); return } }
+            }
+        }
+    }
+    BeginEdit :: fn(Component: bool) {
+        if RuntimeReady && RuntimeLive { return }
+        if Request >= 2147483647 {
+            return
+        }
+        Request += 1
+        Executing = false
+        EditKind = Kind
+        EditDocument = Document
+        EditRevision = Revision
+        EditTargets = Paths
+        if Category == "scene" && Kind == "scene" { EditTargets = [""] }
+        EditComponent = Component
+        Busy = true
+        await set_ui_data(Name: "objectProperties.busy", Value: true)
+        if RoomActive {
+            operation := EditOperation
+            value := EditValue
+            if Component {
+                operation = "component-remove"
+                if AddComponent {
+                    operation = "component-add"
+                }
+                value = self.Component
+            }
+            candidate := workspace_objects_candidate(EditDocument, EditRevision, EditKind, EditTargets, EditPath, operation, value, "")
+            if !candidate.Ok {
+                Busy = false
+                Error = candidate.Error
+                await set_ui_data(Name: "objectProperties.busy", Value: false)
+                await set_ui_data(Name: "objectProperties.error", Value: Error)
+            } else {
+                if candidate.Start == candidate.End && text_equal(candidate.Replacement, "") {
+                    Busy = false
+                    await set_ui_data(Name: "objectProperties.busy", Value: false)
+                    return
+                }
+                await send_event<"StudioDocumentEdit">(self, EditDocument, EditRevision, candidate.Start, candidate.End, candidate.Replacement, "object-properties", Request)
+            }
+        } else {
+            await send_event<"StudioDocumentExternalEditRequested">(self, "object-properties", EditDocument, Request)
+        }
+    }
+    CompleteLease :: fn() {
+        if Lease {
+            Lease = false
+            await send_event<"StudioDocumentExternalEditComplete">(self, "object-properties", EditDocument, Request)
+        }
+    }
+    on StudioDocumentExternalEditReady {
+        if !text_equal(event.Owner, "object-properties") || event.Document != EditDocument || event.Request != self.Request || !Busy {
+            return
+        }
+        Lease = event.Ok
+        if !event.Ok || event.Revision != EditRevision || RoomActive {
+            self.Error = event.Error
+            if event.Ok {
+                self.Error = "Source changed while preparing the edit. Try again."
+            }
+            Busy = false
+            await CompleteLease()
+            await set_ui_data(Name: "objectProperties.busy", Value: false)
+            await set_ui_data(Name: "objectProperties.error", Value: self.Error)
+            return
+        }
+        Executing = true
+        InFlightRequest = self.Request
+        if EditComponent {
+            component_change()
+        } else {
+            edit()
+        }
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        if !text_equal(event.Owner, "object-properties") || event.Document != EditDocument || event.Request != self.Request {
+            return
+        }
+        if Executing {
+            return
+        }
+        Busy = false
+        Error = "The property edit was canceled."
+        await CompleteLease()
+        await set_ui_data(Name: "objectProperties.busy", Value: false)
+        await set_ui_data(Name: "objectProperties.error", Value: Error)
+    }
+    on StudioDocumentEditResult {
+        if !text_equal(event.Owner, "object-properties") || event.Request != self.Request || !Busy || event.Document != EditDocument || event.ExpectedRevision != EditRevision {
+            return
+        }
+        Busy = false
+        self.Error = event.Error
+        await set_ui_data(Name: "objectProperties.busy", Value: false)
+        await set_ui_data(Name: "objectProperties.error", Value: self.Error)
+    }
+    on StudioObjectPropertyEdit {
+        if ReadOnly || Busy || event.Canceled || (length(Paths) == 0 && Category != "scene") {
+            return
+        }
+        EditPath = event.Path
+        EditOperation = event.Operation
+        EditValue = event.Value
+        await BeginEdit(false)
+    }
+    on StudioObjectIntegerEdit {
+        if ReadOnly || Busy || event.Canceled || (length(Paths) == 0 && Category != "scene") {
+            return
+        }
+        valid := false
+        foreach (field in Fields) {
+            if field.common && text_equal(field.type, "integer") && text_equal(field.relative, event.Path) {
+                valid = true;
+                break
+            }
+        }
+        parsed := query_json(event.Text, "")
+        if !valid || !parsed.Ok || !text_equal(parsed.Kind, "integer") {
+            Error = "Enter a whole decimal integer within the field's signed or unsigned range."
+            await set_ui_data(Name: "objectProperties.error", Value: Error)
+            return
+        }
+        // Json retains every digit. Never route the exact value through Number.
+        EditPath = event.Path;
+        EditOperation = "set-number";
+        EditValue = parsed.Json
+        await BeginEdit(false)
+    }
+    BehaviorCurrent :: pure fn() -> bool {
+        return !Busy && !ReadOnly && length(Paths) == 1 && Document == BehaviorDocument && Revision == BehaviorRevision && identical(Paths, BehaviorTargets)
+    }
+    BehaviorChoices :: fn() {
+        if !BehaviorCurrent() {
+            return
+        }
+        if BehaviorRequest >= 2147483647 {
+            return
+        }
+        BehaviorRequest += 1
+        request := BehaviorRequest
+        result := await query_workspace_resources(BehaviorFirst, 64, "behavior", BehaviorQuery)
+        if request != BehaviorRequest || !BehaviorCurrent() {
+            return
+        }
+        slots: int[] = [];
+        index: int = 0
+        BehaviorAvailable = []
+        foreach (row in result.Rows) {
+            if !row.Unresolved {
+                BehaviorAvailable = add_unique(BehaviorAvailable, row.Name)
+                key := format_text("objectProperties.behaviorRows.{}", index)
+                await set_ui_data(Name: format_text("{}.name", key), Value: row.Name)
+                await set_ui_data(Name: format_text("{}.attached", key), Value: contains(BehaviorNames, row.Name))
+                slots = array_add(slots, index);
+                index += 1
+            }
+        }
+        await set_ui_data(Name: "objectProperties.behaviorSlots", Value: slots)
+        await set_ui_data(Name: "objectProperties.behaviorPrevious", Value: BehaviorFirst > 0)
+        await set_ui_data(Name: "objectProperties.behaviorMore", Value: BehaviorFirst + 64 < result.Status.Total)
+        message := ""
+        if !result.Status.Ok {
+            message = result.Status.Message
+        }
+        await set_ui_data(Name: "objectProperties.behaviorError", Value: message)
+    }
+    on StudioObjectBehaviorMenu {
+        if !WorkspaceActive || ReadOnly || Busy || length(Paths) != 1 {
+            return
+        }
+        BehaviorDocument = Document;
+        BehaviorRevision = Revision;
+        BehaviorTargets = Paths
+        BehaviorQuery = "";
+        BehaviorFirst = 0
+        await set_ui_data(Name: "objectProperties.behaviorQuery", Value: "")
+        await BehaviorChoices()
+        if !BehaviorCurrent() {
+            return
+        }
+        await show_ui_popover(Element: "#studio-object-behaviors", At: event.Pointer)
+        await focus_ui_element(Element: "#studio-object-behavior-search")
+    }
+    on StudioObjectBehaviorQuery {
+        BehaviorQuery = event.Text;
+        BehaviorFirst = 0;
+        await BehaviorChoices()
+    }
+    on StudioObjectBehaviorPage {
+        BehaviorFirst = cast<int>(max(0, BehaviorFirst + event.Delta * 64));
+        await BehaviorChoices()
+    }
+    on StudioObjectBehaviorToggle {
+        if ReadOnly || Busy || length(Paths) != 1 {
+            return
+        }
+        // Removal is available on the attached row; addition requires a current picker.
+        names := BehaviorNames
+        if event.Remove {
+            if !contains(names, event.Name) {
+                return
+            }
+            names = remove_item(names, event.Name)
+        } else {
+            if !BehaviorCurrent() || contains(names, event.Name) {
+                return
+            }
+            if !contains(BehaviorAvailable, event.Name) {
+                Error = "The behavior picker changed. Search and choose the behavior again.";
+                await set_ui_data(Name: "objectProperties.error", Value: Error);
+                return
+            }
+            names = array_add(names, event.Name)
+        }
+        if length(names) > 256 {
+            Error = "An object can attach at most 256 behaviors in one Properties edit.";
+            await set_ui_data(Name: "objectProperties.error", Value: Error);
+            return
+        }
+        literal := "(array)-"
+        foreach (name in names) {
+            encoded := value_to_json(name)
+            if !encoded.Ok {
+                Error = encoded.Error;
+                await set_ui_data(Name: "objectProperties.error", Value: Error);
+                return
+            }
+            literal = format_text("{} {}", literal, encoded.Text)
+        }
+        EditPath = "/behaviors";
+        EditOperation = "set";
+        EditValue = literal
+        await BeginEdit(false)
+    }
+    on StudioObjectBehaviorOpen {
+        if length(Paths) != 1 || !contains(BehaviorNames, event.Name) {
+            return
+        }
+        document := Document;
+        revision := Revision;
+        first: int = 0;
+        total: int = 4096
+        while first < total && first < 4096 {
+            result := await query_workspace_resources(first, 256, "behavior", event.Name)
+            if Document != document || Revision != revision {
+                return
+            }
+            foreach (row in result.Rows) {
+                if !row.Unresolved && text_equal(row.Name, event.Name) {
+                    await send_event<"StudioDocumentCommand">(self, "open", row.Path);
+                    return
+                }
+            }
+            if !result.Status.Ok {
+                Error = result.Status.Message;
+                await set_ui_data(Name: "objectProperties.error", Value: Error);
+                return
+            }
+            total = result.Status.Total;
+            first += 256
+        }
+        Error = "The attached behavior source is unavailable.";
+        await set_ui_data(Name: "objectProperties.error", Value: Error)
+    }
+    on StudioObjectReferenceReveal {
+        if length(Paths) != 1 || !text_equal(event.Kind, "entity") {
+            return
+        }
+        value := ""
+        foreach (field in Fields) {
+            if field.common && text_equal(field.relative, event.Path) && text_equal(field.reference, "entity") {
+                value = field.text;
+                break
+            }
+        }
+        if text_equal(value, "") {
+            return
+        }
+        inspected := workspace_asset_inspect(Document, Revision, Kind)
+        if !inspected.Ok {
+            Error = inspected.Error;
+            await set_ui_data(Name: "objectProperties.error", Value: Error);
+            return
+        }
+        index: int = 0
+        foreach (field in inspected.Fields) {
+            if field.parent >= 0 && text_equal(field.type, "object") {
+                parent := inspected.Fields[field.parent]
+                if (text_equal(parent.name, "entities") || text_equal(parent.name, "children")) && text_equal(DroppedPath(inspected.Fields, index), value) {
+                    await send_event<"StudioOutlinerSelectionRequested">(self, Document, Revision, [field.path], false)
+                    await send_event<"StudioSceneCommand">(self, "frame", "")
+                    return
+                }
+            }
+            index += 1
+        }
+        Error = "This entity reference is unresolved in the current document.";
+        await set_ui_data(Name: "objectProperties.error", Value: Error)
+    }
+    on StudioObjectPropertyColor {
+        if ReadOnly || Busy || event.Canceled || (length(Paths) == 0 && Category != "scene") {
+            return
+        }
+        valid := false
+        foreach (field in Fields) {
+            if field.common && field.color && text_equal(field.relative, event.Path) {
+                valid = true
+                break
+            }
+        }
+        if !valid {
+            return
+        }
+        color := packed_color_from_hex(event.Text)
+        if !color.Valid {
+            Error = color.Error
+            await set_ui_data(Name: "objectProperties.error", Value: Error)
+            return
+        }
+        EditPath = event.Path
+        EditOperation = "set-number"
+        EditValue = format_text("{}", color.Packed)
+        await BeginEdit(false)
+    }
+    DroppedName :: pure fn(Fields: struct<"WorkspaceAssetField">[], Index: int) -> string {
+        at := Index + 1
+        while at < length(Fields) {
+            row := Fields[at]
+            if row.depth <= Fields[Index].depth {
+                break
+            }
+            if row.parent == Index && text_equal(row.name, "name") {
+                return row.text
+            }
+            at += 1
+        }
+        return ""
+    }
+    DroppedPath :: pure fn(Fields: struct<"WorkspaceAssetField">[], Index: int) -> string {
+        value := DroppedName(Fields, Index)
+        parent := Fields[Index].parent
+        while parent > 0 {
+            row := Fields[parent]
+            if text_equal(row.type, "object") && row.parent >= 0 {
+                container := Fields[row.parent]
+                if text_equal(container.name, "entities") || text_equal(container.name, "children") {
+                    name := DroppedName(Fields, parent)
+                    if !text_equal(name, "") {
+                        value = format_text("{}.{}", name, value)
+                    }
+                }
+            }
+            parent = row.parent
+        }
+        return value
+    }
+    on StudioObjectReferenceDrop {
+        if ReadOnly || Busy || length(Paths) == 0 {
+            return
+        }
+        valid := false
+        foreach (field in Fields) {
+            if field.common && text_equal(field.reference, event.Kind) && text_equal(field.relative, event.Path) {
+                valid = true
+                break
+            }
+        }
+        if !valid {
+            return
+        }
+        document := Document
+        revision := Revision
+        targets := Paths
+        value := ""
+        if text_equal(event.Kind, "entity") {
+            if !text_equal(event.Type, "authored-object") {
+                return
+            }
+            inspected := workspace_asset_inspect(document, revision, self.Kind)
+            if !inspected.Ok {
+                Error = inspected.Error
+                await set_ui_data(Name: "objectProperties.error", Value: Error)
+                return
+            }
+            index: int = 0
+            foreach (field in inspected.Fields) {
+                if field.parent >= 0 && text_equal(field.type, "object") && text_equal(event.Payload, format_text("{}:{}:{}", document, revision, field.path)) {
+                    parent := inspected.Fields[field.parent]
+                    if text_equal(parent.name, "entities") || text_equal(parent.name, "children") {
+                        value = DroppedPath(inspected.Fields, index)
+                        break
+                    }
+                }
+                index += 1
+            }
+            if text_equal(value, "") {
+                Error = "The dropped object belongs to a different document or revision."
+                await set_ui_data(Name: "objectProperties.error", Value: Error)
+                return
+            }
+        } else {
+            resource := await lookup_workspace_resource(event.Payload)
+            if Busy || ReadOnly || Document != document || Revision != revision || !identical(Paths, targets) {
+                return
+            }
+            if !resource.Status.Ok {
+                Error = resource.Status.Message
+                await set_ui_data(Name: "objectProperties.error", Value: Error)
+                return
+            }
+            if !text_equal(resource.Row.Kind, event.Kind) || !text_equal(event.Type, resource.Row.Kind) {
+                Error = "The dropped asset has a different reference type."
+                await set_ui_data(Name: "objectProperties.error", Value: Error)
+                return
+            }
+            value = resource.Row.Name
+        }
+        if Busy || ReadOnly || Document != document || Revision != revision || !identical(Paths, targets) {
+            return
+        }
+        EditPath = event.Path
+        EditOperation = "set-text"
+        EditValue = value
+        await BeginEdit(false)
+    }
+    ReferenceObjectName :: pure fn(Index: int) -> string {
+        i := Index + 1
+        while i < length(ReferenceFields) {
+            row := ReferenceFields[i]
+            if row.depth <= ReferenceFields[Index].depth {
+                break
+            }
+            if row.parent == Index && text_equal(row.name, "name") {
+                return row.text
+            }
+            i += 1
+        }
+        return ""
+    }
+    ReferenceObjectPath :: pure fn(Index: int) -> string {
+        path := ReferenceObjectName(Index)
+        parent := ReferenceFields[Index].parent
+        while parent > 0 {
+            row := ReferenceFields[parent]
+            if text_equal(row.type, "object") && row.parent >= 0 {
+                container := ReferenceFields[row.parent]
+                if text_equal(container.name, "entities") || text_equal(container.name, "children") {
+                    name := ReferenceObjectName(parent)
+                    if !text_equal(name, "") {
+                        path = format_text("{}.{}", name, path)
+                    }
+                }
+            }
+            parent = row.parent
+        }
+        return path
+    }
+    ReferenceRefresh :: fn() {
+        await set_ui_data(Name: "objectProperties.referenceError", Value: "")
+        if text_equal(ReferenceKind, "entity") {
+            inspected := workspace_asset_inspect(ReferenceDocument, ReferenceRevision, Kind)
+            if !inspected.Ok {
+                await set_ui_data(Name: "objectProperties.referenceError", Value: inspected.Error)
+                return
+            }
+            ReferenceFields = inspected.Fields
+            values: string[] = []
+            index: int = 0
+            matched: int = 0
+            foreach (row in ReferenceFields) {
+                if text_equal(row.type, "object") && row.parent >= 0 {
+                    parent := ReferenceFields[row.parent]
+                    if text_equal(parent.name, "entities") || text_equal(parent.name, "children") {
+                        path := ReferenceObjectPath(index)
+                        if text_equal(ReferenceQuery, "") || text_contains(ReferenceQuery, path, true) {
+                            if matched >= ReferenceFirst && length(values) < 64 {
+                                values = array_add(values, path)
+                            }
+                            matched += 1
+                        }
+                    }
+                }
+                index += 1
+            }
+            await set_ui_data(Name: "objectProperties.referenceValues", Value: values)
+            await set_ui_data(Name: "objectProperties.referenceMore", Value: ReferenceFirst + length(values) < matched)
+        } else {
+            reference_resources()
+        }
+        await set_ui_data(Name: "objectProperties.referencePrevious", Value: ReferenceFirst > 0)
+    }
+    after reference_resources {
+        values: string[] = []
+        foreach (row in reference_resources.Rows) {
+            values = array_add(values, row.Name)
+        }
+        await set_ui_data(Name: "objectProperties.referenceValues", Value: values)
+        await set_ui_data(Name: "objectProperties.referenceMore", Value: ReferenceFirst + length(values) < reference_resources.Status.Total)
+        if !reference_resources.Status.Ok {
+            await set_ui_data(Name: "objectProperties.referenceError", Value: reference_resources.Status.Message)
+        }
+    }
+    on StudioObjectReferenceOpen {
+        if !WorkspaceActive || ReadOnly || Busy {
+            return
+        }
+        ReferencePath = event.Path
+        ReferenceKind = event.Kind
+        ReferenceQuery = ""
+        ReferenceFirst = 0
+        ReferenceDocument = Document
+        ReferenceRevision = Revision
+        ReferenceTargets = Paths
+        empty: string[] = []
+        await set_ui_data(Name: "objectProperties.referenceValues", Value: empty)
+        await ReferenceRefresh()
+        await show_ui_popover(Element: "#studio-object-reference", At: event.Pointer)
+        await focus_ui_element(Element: "#studio-object-reference-search")
+    }
+    on StudioObjectReferenceQuery {
+        ReferenceQuery = event.Text
+        ReferenceFirst = 0
+        await ReferenceRefresh()
+    }
+    on StudioObjectReferencePage {
+        ReferenceFirst = cast<int>(max(0, ReferenceFirst + event.Delta * 64))
+        await ReferenceRefresh()
+    }
+    on StudioObjectReferencePick {
+        if ReadOnly || Busy || Document != ReferenceDocument || Revision != ReferenceRevision {
+            return
+        }
+        if length(Paths) != length(ReferenceTargets) {
+            return
+        }
+        index: int = 0
+        foreach (path in Paths) {
+            if !text_equal(path, ReferenceTargets[index]) {
+                return
+            }
+            index += 1
+        }
+        EditPath = ReferencePath
+        EditOperation = "set-text"
+        EditValue = event.Value
+        await BeginEdit(false)
+    }
+    ComponentRows :: fn() {
+        choices: struct<"WorkspaceComponent">[] = []
+        foreach (component in ComponentChoices) {
+            if text_equal(ComponentQuery, "") || text_contains(ComponentQuery, component.name, true) || text_contains(ComponentQuery, component.key, true) {
+                choices = array_add(choices, component)
+            }
+        }
+        await set_ui_data(Name: "objectProperties.components", Value: choices)
+        await set_ui_data(Name: "objectProperties.componentQuery", Value: ComponentQuery)
+    }
+    on StudioObjectComponentQuery {
+        ComponentQuery = event.Text;
+        await ComponentRows()
+    }
+    on StudioObjectComponentActions {
+        if Busy || ReadOnly { return }
+        MenuComponent = event.Component
+        await set_ui_data(Name: "objectProperties.menuComponent", Value: MenuComponent)
+        await show_ui_popover(Element: "#studio-object-component-actions", At: event.Pointer)
+    }
+    on StudioObjectComponentMenu {
+        if !WorkspaceActive || ReadOnly || Busy || length(Paths) == 0 {
+            return
+        }
+        catalog := workspace_component_catalog()
+        if !catalog.Ok {
+            Error = catalog.Error
+            await set_ui_data(Name: "objectProperties.error", Value: Error)
+            return
+        }
+        available: struct<"WorkspaceComponent">[] = []
+        foreach (component in catalog.Components) {
+            exists := false
+            foreach (field in Fields) {
+                if field.parent >= 0 && field.common && text_equal(Fields[field.parent].name, "components") && (text_equal(field.name, component.name) || text_equal(field.name, component.key)) {
+                    exists = true
+                    break
+                }
+            }
+            if !exists {
+                available = array_add(available, component)
+            }
+        }
+        ComponentChoices = available;
+        ComponentQuery = ""
+        ComponentDocument = Document;
+        ComponentRevision = Revision;
+        ComponentTargets = Paths
+        await ComponentRows()
+        await show_ui_popover(Element: "#studio-component-menu", At: event.Pointer)
+        await focus_ui_element(Element: "#studio-component-search")
+    }
+    on StudioObjectComponentChange {
+        if ReadOnly || Busy || length(Paths) == 0 {
+            return
+        }
+        if event.Add && (Document != ComponentDocument || Revision != ComponentRevision || !identical(Paths, ComponentTargets)) {
+            Error = "The selection changed. Reopen Add component and choose again.";
+            await set_ui_data(Name: "objectProperties.error", Value: Error);
+            return
+        }
+        self.Component = event.Component
+        AddComponent = event.Add
+        await BeginEdit(true)
+    }
+    after component_change {
+        if InFlightRequest != Request || !Busy || !Executing {
+            return
+        }
+        await CompleteLease()
+        Executing = false
+        Busy = false
+        self.Error = component_change.Error
+        await set_ui_data(Name: "objectProperties.busy", Value: false)
+        await set_ui_data(Name: "objectProperties.error", Value: self.Error)
+        if component_change.Ok {
+            await send_event<"StudioDocumentCommand">(self, "refresh", "")
+        }
+    }
+    after edit {
+        if InFlightRequest != Request || !Busy || !Executing {
+            return
+        }
+        await CompleteLease()
+        Executing = false
+        Busy = false
+        self.Error = edit.Error
+        await set_ui_data(Name: "objectProperties.busy", Value: false)
+        await set_ui_data(Name: "objectProperties.error", Value: self.Error)
+        if edit.Ok {
+            await send_event<"StudioDocumentCommand">(self, "refresh", "")
+        } else {
+            await Refresh()
+        }
+    }
+}

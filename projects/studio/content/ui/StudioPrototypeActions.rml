@@ -1,0 +1,18 @@
+<div class="prototype-actions">
+  <button class="btn outline" data-attrif-data-disabled="!self.prototypeActions.enabled" data-event-click="emit('StudioPrototypeOpen', ev.pointer, false)">Apply overrides…</button>
+  <button class="btn outline" data-attrif-data-disabled="!self.prototypeActions.enabled" data-event-click="emit('StudioPrototypeOpen', ev.pointer, true)">Save as prototype…</button>
+  <use ui="Menu" id="studio-prototype-actions" class="prototype-actions-menu">
+    <div class="prototype-actions-title" data-if="!self.prototypeActions.saveAs">Apply overrides to {{ self.prototypeActions.base }}</div>
+    <div class="prototype-actions-title" data-if="self.prototypeActions.saveAs">Save as new prototype</div>
+    <label class="prototype-actions-name" data-if="self.prototypeActions.saveAs"><span>Prototype name</span><input class="field text" aria-label="Prototype name" data-attr-value="self.prototypeActions.newName" data-attrif-readonly="self.prototypeActions.busy || self.prototypeActions.room" data-event-input="emit('StudioPrototypeName', ev.value)"/></label>
+    <div class="prototype-actions-hint" data-if="!self.prototypeActions.saveAs">Selected values become prototype defaults. Other instances inherit the updated defaults.</div>
+    <div data-if="self.prototypeActions.empty &amp;&amp; !self.prototypeActions.saveAs">This instance has no local component fields to apply.</div>
+    <div class="prototype-actions-hint" data-if="self.prototypeActions.truncated">Showing the first 256 local overrides. Other values are unchanged.</div>
+    <div class="prototype-actions-fields" data-if="!self.prototypeActions.saveAs">
+      <use ui="Checkbox" data-for="slot : self.prototypeActions.slots" data-attrif-checked="self.prototypeActions.rows[slot].checked" data-attrif-disabled="self.prototypeActions.busy" data-event-change="emit('StudioPrototypeField', self.prototypeActions.rows[slot].path, ev.value)">{{ self.prototypeActions.rows[slot].label }}</use>
+    </div>
+    <div class="prototype-actions-error" data-if="self.prototypeActions.error != ''" role="alert">{{ self.prototypeActions.error }}</div>
+    <div class="prototype-actions-hint" data-if="self.prototypeActions.result != ''" role="status">{{ self.prototypeActions.result }}</div>
+    <button class="btn primary" data-attrif-data-disabled="self.prototypeActions.busy || self.prototypeActions.room || (!self.prototypeActions.saveAs &amp;&amp; self.prototypeActions.count == 0)" data-event-click="emit('StudioPrototypeApply')">{{ self.prototypeActions.saveAs ? 'Create prototype' : 'Apply selected overrides' }}</button>
+  </use>
+</div>

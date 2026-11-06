@@ -33,7 +33,10 @@ def main():
     parser.add_argument('--bind', default='127.0.0.1')
     args = parser.parse_args()
     directory = args.directory.resolve()
-    for name in ('chibi-studio.html', 'chibi-studio.js', 'chibi-studio.wasm', 'chibi-studio.data'):
+    for name in ('chibi-studio.html', 'chibi-author.js', 'chibi-author.wasm',
+                 'author.json', 'files.json', 'data/application/game.chibip',
+                 'compiler/compiler_worker.js', 'compiler/chibi-compile-worker.js',
+                 'compiler/chibi-compile-worker.wasm'):
         if not (directory / name).is_file():
             parser.error(f'Browser product is missing {name} in {directory}')
     if not 1 <= args.port <= 65535:

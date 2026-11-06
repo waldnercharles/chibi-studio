@@ -1,10 +1,7 @@
-/* A virtualized list for a C panel source, as react-virtuoso draws one: a
-   scroller, a spacer as tall as every row, and in it the window of rows
-   the source shows, after the padding ui_list_window (src/ui/list.h) gives
-   the spacer. Give it an id, so the source finds it, and
-   data-event-scroll, so a scroll wakes the source; its rows are one
-   data-for over an array the source keeps at one length, each row --row
-   tall, so scrolling only changes their values. */
+/* A virtualized authored list: a scroll viewport, a spacer for the full
+   collection height, and a window of fixed-height rows. Give the viewport an
+   id, data-measure and data-event-scroll so its .chibi owner can publish the
+   visible rows and spacer height from the current viewport geometry. */
 body { display: block; height: 100%; }
 .list { display: block; overflow-y: auto; height: 100%; }
 .list-spacer { display: block; position: relative; box-sizing: border-box; }

@@ -1,0 +1,12 @@
+version 3
+name "StudioTextProjectRange"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Path" type="const char *" category="Payload"
+    - id=2 name="Start" type="int" category="Payload"
+    - id=3 name="End" type="int" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

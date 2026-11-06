@@ -1,0 +1,16 @@
+<section class="studio-home" role="region" aria-label="Welcome to Chibi Studio">
+  <div class="studio-home-intro">
+    <span class="icon studio-home-mark" aria-hidden="true">&#xea69;</span>
+    <h1>Chibi Studio</h1>
+    <p>Create a project or open one to start building.</p>
+    <div class="studio-home-actions">
+      <button id="studio-home-new" class="btn primary" data-attrif-disabled="self.homeRoomActive" data-event-click="emit('StudioResourceCommand', 'newProject', '')">New project</button>
+      <button id="studio-home-open" class="btn" data-attrif-disabled="self.homeRoomActive" data-event-click="emit('StudioResourceCommand', 'openProject', '')">Open project</button>
+    </div>
+  </div>
+  <section class="studio-home-recents" data-if="self.homeRecent.size > 0" aria-label="Recent projects">
+    <h2>Recent projects</h2>
+    <div class="studio-home-projects"><button class="studio-home-project" data-for="path : self.homeRecent" data-attrif-disabled="self.homeRoomActive" data-attr-title="path" data-event-click="emit('StudioHomeOpen', path)"><span class="icon" aria-hidden="true">&#xea83;</span><span>{{ path }}</span><span class="icon" aria-hidden="true">&#xea6c;</span></button></div>
+  </section>
+  <p class="studio-home-room" data-if="self.homeRoomActive">Finish joining or leave the collaboration room before opening another project.</p>
+</section>

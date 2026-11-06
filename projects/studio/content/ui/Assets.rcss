@@ -1,25 +1,35 @@
-/* Assets (studio_assets.c, the `assets` source), after Unity's Project
-   window and Unreal's Content Browser: every indexed asset as a grid of
-   Tiles as wide as the area or as TreeRows, either grouped by kind under a
-   TreeRow header. One List windows either; C sizes the tiles
-   (--tile-width, --tile-height) and places each row or line of tiles it
-   shows in the List's spacer, keeping one where it is while it stays in
-   view, so a scroll changes only those entering. A click selects, a double
-   click opens, a right press opens the asset's menu, and draggable assets
-   carry their kind and name. */
-body { padding: 0dp; overflow: hidden; }
-.assets { position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; }
+/* AssetBrowser.chibi owns filtering, grouped layout, selection and the visible
+   window. Shared List, TreeRow and Tile components keep their usual behavior. */
+.assets { position: relative; width: 100%; height: 100%; overflow: hidden; }
 #assets-list { padding: 3dp 4dp 8dp; }
-#assets-list [data-ui=TreeRow] { position: absolute; left: 0dp; right: 0dp; }
-.assets-line { position: absolute; left: 0dp; right: 0dp; display: flex; gap: 4dp; }
-.assets-line > [data-ui=TreeRow] { flex: 1 1 0dp; }
-.assets-line > [data-ui=Tile] { flex: 0 0 auto; width: var(--tile-width, 104dp); height: var(--tile-height, 122dp); }
-.tree-row { tab-index: none; }
-[data-unused] .tree-row .meta { color: var(--disabled-foreground); }
-[data-unresolved] .tree-row .icon { color: var(--warning); }
-/* Nothing to show: why, and the one action that changes it (Settings'
-   empty search). */
+#assets-list .list-spacer { height: var(--asset-height, 0dp); }
+.assets-line { position: absolute; left: 0dp; right: 0dp; }
+.assets-line > [data-ui=TreeRow] { width: 100%; height: 26dp; }
+.assets-cells { display: flex; gap: 4dp; width: 100%; height: 100%; }
+.asset-cell { flex: 1 1 0dp; min-width: 0dp; }
+.assets[data-grid] .asset-cell { flex: 0 0 auto; width: var(--tile-width, 96dp); height: var(--tile-height, 118dp); }
+.asset-cell > [data-ui=Tile] { width: 100%; height: 100%; }
+.asset-cell > [data-ui=TreeRow] { width: 100%; height: 26dp; }
 .assets-empty { position: absolute; left: 0dp; right: 0dp; top: 30%; display: flex; flex-direction: column; align-items: center; gap: 6dp; padding: 0dp 16dp; text-align: center; }
-.assets-empty .empty-icon { font-size: var(--studio-font-28, 28dp); line-height: var(--studio-line-32, 32dp); width: var(--studio-height-32, 32dp); color: var(--disabled-foreground); }
+.assets-empty .empty-icon { font-size: 28dp; line-height: 32dp; width: 32dp; color: var(--disabled-foreground); }
 .assets-empty .empty-title { font-weight: 600; color: var(--foreground); }
 .assets-empty .empty-hint { color: var(--muted-foreground); margin-bottom: 8dp; }
+.assets-notice { position: absolute; left: 8dp; right: 8dp; bottom: 8dp; display: flex; align-items: center; gap: 8dp; padding: 8dp; background-color: var(--secondary); border: 1dp var(--edge); border-radius: var(--r); }
+.assets-notice > span { flex: 1 1 0dp; }
+.assets-loading { position: absolute; right: 8dp; top: 8dp; padding: 4dp 8dp; background-color: var(--secondary); color: var(--muted-foreground); border-radius: var(--r); }
+.asset-file-action { width: 340dp; padding: 10dp; }
+.asset-file-title { font-weight: 600; margin-bottom: 8dp; }
+.asset-file-hint { color: var(--muted-foreground); margin-bottom: 8dp; }
+.asset-path-field { display: flex; flex-direction: column; gap: 4dp; margin-bottom: 8dp; }
+.asset-path-field input { width: 100%; }
+.asset-file-error { color: var(--destructive); margin-bottom: 8dp; }
+.asset-file-result { color: var(--muted-foreground); margin-bottom: 8dp; }
+
+.asset-import-source { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--muted-foreground); }
+
+.asset-model-import { width: 420dp; max-height: 640dp; overflow-y: auto; padding: 10dp; }
+.asset-model-actions, .asset-model-warnings { max-height: 182dp; overflow-y: auto; margin: 6dp 0dp; }
+.asset-model-action { display: flex; gap: 8dp; height: 26dp; align-items: center; }
+.asset-model-action > span:first-child { width: 64dp; color: var(--muted-foreground); }
+.asset-model-action > span:last-child { flex: 1 1 0dp; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.asset-model-pages, .asset-model-buttons { display: flex; justify-content: space-between; gap: 6dp; margin-top: 8dp; }

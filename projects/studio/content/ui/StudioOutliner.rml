@@ -1,0 +1,54 @@
+<div class="authored-outliner">
+  <div class="authored-outliner-list" data-when="self.outliner.ready">
+    <use ui="List" tabindex="0" data-event-focusin="emit('StudioPaneFocus', pane, 'objects', false)" data-event-keydown="emit('StudioOutlinerKey')" data-measure="" data-style---outliner-height="self.outliner.height + 'dp'" data-event-scroll="emit('StudioPaneFocus', pane, 'objects', false); emit('StudioOutlinerViewport')" data-attr-id="'studio-outliner-list-' + pane" class="studio-outliner-list">
+      <div class="authored-outliner-window" data-style-top="self.outliner.top + 'dp'">
+        <div class="authored-outliner-row" data-for="slot : self.outliner.slots" data-alias-row="self.outliner.rows[slot]" data-style-padding-left="(row.indent * 14) + 'dp'">
+          <button class="btn icon-only subtle outliner-fold" data-attrif-data-invisible="!row.parent" aria-label="Expand or collapse object" data-event-click="emit('StudioOutlinerFold', row.key); stop()">
+            <span class="icon">{{ row.open ? '' : '' }}</span>
+          </button>
+          <use ui="TreeRow" data-alias-item="row" data-attr-data-drag="row.root ? '' : 'authored-object'" data-attr-data-drag-payload="row.dragKey" data-drop="authored-object" data-drop-zones="tree" data-drop-hint="Move object · local transform retained" data-event-drop="emit('StudioOutlinerDrop', ev.type, ev.payload, row.key, ev.zone); stop()" data-event-click="emit('StudioOutlinerSelect', row.key, ev.mod, ev.shift)">
+            <button class="btn icon-only subtle" data-attr-aria-label="row.hidden ? 'Show in editor' : 'Hide in editor'" data-event-click="emit('StudioOutlinerVisibility', 'hide', row.key); stop()">
+              <span class="icon">{{ row.hidden ? '' : '' }}</span>
+            </button>
+            <button class="btn icon-only subtle" data-attr-aria-label="row.locked ? 'Unlock object' : 'Lock object'" data-event-click="emit('StudioOutlinerVisibility', 'lock', row.key); stop()">
+              <span class="icon">{{ row.locked ? '' : '' }}</span>
+            </button>
+            <button class="btn icon-only subtle" data-if="!row.root &amp;&amp; self.outliner.scene" aria-label="Object actions" data-event-click="emit('StudioOutlinerSelect', row.key, false, false)" data-attr-popovertarget="'studio-object-actions-' + pane">
+              <span class="icon"></span>
+            </button>
+          </use>
+        </div>
+      </div>
+    </use>
+  </div>
+  <div class="authored-outliner-empty" data-if="!self.outliner.ready">Open a scene or prototype to edit its objects.</div>
+  <div class="authored-outliner-empty" data-if="self.outliner.ready &amp;&amp; self.outliner.empty">No matching objects.</div>
+  <div class="authored-outliner-error" data-if="self.outliner.error != ''" role="alert">{{ self.outliner.error }}</div>
+  <div class="outliner-tools">
+    <span>{{ self.outliner.selectionCount }} selected</span>
+    <button class="btn subtle" data-event-click="emit('StudioOutlinerVisibility', 'isolate', '')">Isolate</button>
+    <button class="btn subtle" data-event-click="emit('StudioOutlinerVisibility', 'showAll', '')">Show all</button>
+  </div>
+  <use ui="Menu" data-attr-id="'studio-object-actions-' + pane">
+    <use ui="MenuItem" data-event-click="emit('StudioOutlinerMutation', 'rename', self.outliner.active, ev.pointer)">Rename…</use>
+    <use ui="MenuItem" data-event-click="emit('StudioOutlinerMutation', 'add', self.outliner.active, ev.pointer)">Add child…</use>
+    <use ui="MenuItem" data-event-click="emit('StudioOutlinerMutation', 'duplicate', self.outliner.active, ev.pointer)">Duplicate…</use>
+    <use ui="MenuSeparator" />
+    <use ui="MenuItem" data-attrif-data-disabled="!self.objectClipboard.canCopy" data-event-click="emit('StudioSceneCommand', 'copy', '')">Copy objects</use>
+    <use ui="MenuItem" data-attrif-data-disabled="!self.objectClipboard.canCut" data-event-click="emit('StudioSceneCommand', 'cut', '')">Cut objects</use>
+    <use ui="MenuItem" data-attrif-data-disabled="!self.objectClipboard.canPaste" data-event-click="emit('StudioSceneCommand', 'paste', '')">Paste at root</use>
+    <use ui="MenuItem" data-attrif-data-disabled="!self.objectClipboard.canPasteChild" data-event-click="emit('StudioSceneCommand', 'paste', 'child')">Paste as child</use>
+    <use ui="MenuSeparator" />
+    <use ui="MenuItem" data-event-click="emit('StudioOutlinerMutation', 'delete', self.outliner.active, ev.pointer)">Delete…</use>
+  </use>
+  <use ui="Menu" class="outliner-mutation" data-attr-id="'studio-outliner-mutation-' + pane">
+    <div class="outliner-mutation-title">{{ self.outliner.mutationMode == 'delete' ? 'Delete object?' : 'Edit object' }}</div>
+    <div data-if="self.outliner.mutationMode == 'delete'">The selected objects and their children will be removed. Undo restores this change.</div>
+    <label data-if="self.outliner.mutationMode != 'delete' &amp;&amp; (self.outliner.mutationMode != 'duplicate' || self.outliner.mutationCount == 1)">Name<input class="field text" aria-label="Object name" data-attr-value="self.outliner.mutationName" data-event-input="emit('StudioOutlinerMutationName', ev.value)" />
+    </label>
+    <label data-if="self.outliner.mutationMode == 'add' || self.outliner.mutationMode == 'addRoot'">Prototype<input class="field text" aria-label="Prototype name" data-attr-value="self.outliner.mutationPrototype" data-event-input="emit('StudioOutlinerMutationPrototype', ev.value)" />
+    </label>
+    <div class="authored-outliner-error" data-if="self.outliner.mutationError != ''" role="alert">{{ self.outliner.mutationError }}</div>
+    <button class="btn primary" data-attrif-data-disabled="self.outliner.mutationBusy" data-event-click="emit('StudioOutlinerMutationConfirm')">{{ self.outliner.mutationMode == 'delete' ? 'Delete objects' : 'Apply' }}</button>
+  </use>
+</div>

@@ -1,0 +1,60 @@
+behavior StudioHome {
+    Visible := true
+    Recent: string[] = []
+    RoomActive := false
+    action save_recent = commit_save()
+    Publish :: fn() {
+        await set_ui_data(Name: "homeVisible", Value: Visible)
+        await set_ui_data(Name: "homeRecent", Value: Recent)
+        await set_ui_data(Name: "homeRoomActive", Value: RoomActive)
+        return
+    }
+    Remember :: fn(Path: string) {
+        if text_equal(Path, "") {
+            return
+        }
+        paths := [Path]
+        foreach (old in Recent) {
+            if !text_equal(old, Path) && length(paths) < 8 {
+                paths = array_add(paths, old)
+            }
+        }
+        Recent = paths
+        encoded := value_to_json(paths)
+        if encoded.Ok {
+            await set_saved_text("studio.recent.projects", encoded.Text)
+            save_recent()
+        }
+        return
+    }
+    on Begin {
+        saved := read_saved_text("studio.recent.projects", "[]")
+        rows := query_json(saved.Text, "")
+        if rows.Ok && text_equal(rows.Kind, "array") && rows.Count <= 8 {
+            for i in 0..rows.Count - 1 {
+                path := query_json(saved.Text, format_text("/{}", i))
+                if text_equal(path.Kind, "string") && path.Count > 0 && path.Count <= 4096 {
+                    Recent = array_add(Recent, path.String)
+                }
+            }
+        }
+        workspace := query_workspace_info()
+        Visible = workspace.Ok && !workspace.Active
+        if workspace.Ok && workspace.Active {
+            await Remember(workspace.Root)
+        }
+        await Publish()
+    }
+    after save_recent.Failed {
+        send_event<"StudioStatus">(self, "warning", "The project opened, but its recent-project entry could not be saved.")
+    }
+    on StudioHomeOpen {
+        if !RoomActive {
+            send_event<"StudioProjectOpenRequested">(self, event.Path)
+        }
+    }
+    on StudioCollaborationState {
+        RoomActive = event.Active
+        await Publish()
+    }
+}

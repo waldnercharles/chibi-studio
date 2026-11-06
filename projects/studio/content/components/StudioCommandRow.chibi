@@ -1,0 +1,13 @@
+component StudioCommandRow {
+    id: string
+    label: string
+    shortcut: string
+    context: string
+    keywords: string
+    icon: string
+    destination: string
+    group: string
+    creation: bool
+    available: bool
+    aliasBinding: string
+}

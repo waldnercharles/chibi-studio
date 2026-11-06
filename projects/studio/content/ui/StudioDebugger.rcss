@@ -1,0 +1,19 @@
+.studio-debugger { display: block; padding: 12dp; overflow-y: auto; }
+.studio-debugger-heading { display: flex; align-items: center; justify-content: space-between; gap: 8dp; margin-bottom: 8dp; }
+.studio-debugger-heading .title { font-weight: 600; }
+.studio-debugger-targets { max-height: 196dp; overflow-y: auto; margin: 6dp 0dp 12dp; }
+.studio-debugger-targets .menu-item { display: flex; justify-content: space-between; width: 100%; height: 28dp; }
+.studio-debugger-targets [aria-selected=true] { background-color: var(--accent); color: var(--accent-foreground); }
+.studio-debugger-controls { display: flex; gap: 5dp; margin: 8dp 0dp; }
+.studio-debugger-location { color: var(--primary); text-align: left; margin-bottom: 12dp; }
+.studio-debugger .panel { margin-top: 12dp; }
+.studio-debugger .panel-head { width: 100%; text-align: left; }
+.studio-debugger-frame, .studio-debugger-value { display: flex; justify-content: space-between; gap: 12dp; padding: 4dp 0dp; width: 100%; }
+.studio-debugger-value > span { flex: 1; min-width: 0dp; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.studio-debugger-value > span:last-child { text-align: right; }
+.studio-debugger-points { max-height: 224dp; overflow-y: auto; }
+.studio-debugger-point { display: flex; align-items: center; gap: 5dp; min-height: 28dp; }
+.studio-debugger-point-label { flex: 1; text-align: left; }
+.studio-debugger-source { display: block; width: 100%; height: 240dp; font-family: var(--font-code, jetbrains mono); }
+.studio-debugger p { margin: 6dp 0dp; line-height: 1.45; }
+.studio-debugger .notice { margin: 8dp 0dp; }

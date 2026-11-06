@@ -1,0 +1,11 @@
+version 3
+name "StudioPrototypeField"
+domain "event"
+id_counter 3
+(array)variables {
+    - id=1 name="Path" type="const char *" category="Payload"
+    - id=2 name="Checked" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

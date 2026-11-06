@@ -1,0 +1,18 @@
+version 3
+name "StudioCollaborationEdits"
+domain "event"
+id_counter 10
+(array)variables {
+    - id=1 name="Document" type="int" category="Payload"
+    - id=2 name="Revision" type="int" category="Payload"
+    - id=3 name="Documents" type="int" container=1 category="Payload"
+    - id=4 name="Revisions" type="int" container=1 category="Payload"
+    - id=5 name="Paths" type="const char *" container=1 category="Payload"
+    - id=6 name="Texts" type="const char *" container=1 category="Payload"
+    - id=7 name="Owner" type="const char *" category="Payload"
+    - id=8 name="Request" type="int" category="Payload"
+    - id=9 name="InitialTexts" type="const char *" container=1 category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

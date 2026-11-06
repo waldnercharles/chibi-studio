@@ -1,0 +1,12 @@
+version 3
+name "StudioOutlinerKey"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Key" type="const char *" category="Payload"
+    - id=2 name="Mod" type="bool" category="Payload"
+    - id=3 name="Shift" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

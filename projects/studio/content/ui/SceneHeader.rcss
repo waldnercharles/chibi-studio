@@ -24,7 +24,7 @@ body { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0
 .tool-group .btn[data-state=on] .icon { color: var(--primary-foreground); }
 .snap-controls .btn { min-width: var(--h-sm); padding: 0dp 6dp; }
 .snap-controls .btn.icon-only { width: var(--h-sm); padding: 0dp; }
-.snap-controls .menu-btn { font-family: var(--font-numeric); }
+.snap-controls .menu-btn { font-family: var(--font-numeric, GeistNumeric); }
 .snap-controls .btn[data-state=on] { background-color: var(--primary); }
 .snap-controls .btn[data-state=on] .icon { color: var(--primary-foreground); }
 

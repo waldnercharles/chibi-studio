@@ -1,0 +1,8 @@
+version 3
+name "StudioGraphLeaveCall"
+domain "event"
+id_counter 1
+(array)variables {}
+(array)graphs {
+    - kind="event" name=""
+}

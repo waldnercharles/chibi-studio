@@ -1,0 +1,295 @@
+behavior AssetCollection {
+    self.WorkspaceActive := false
+    Keys: string[] = []
+    Previous: string[] = []
+    RedoKeys: string[] = []
+    CanUndo := false
+    CanRedo := false
+    Selected: string = ""
+    Filter: string = ""
+    First: int = 0
+    Count: int = 32
+    LastTop: float = -1.0
+    LastView: float = -1.0
+    PendingKey: string = ""
+    PendingBefore: string = ""
+    PendingZone: string = ""
+    Busy := false
+    ResolveIndex: int = 0
+    Notice: string = ""
+    action available = query_workspace_resources(First, Count, "", Filter)
+    action dropped = lookup_workspace_resource(PendingKey)
+    action resolved = lookup_workspace_resource(Keys[ResolveIndex])
+
+    Icon :: pure fn(Kind: string) -> string {
+        switch Kind {
+            case "scene":
+                return ""
+                case "prototype":
+                    return "󰆧"
+                    case "behavior":
+                        return ""
+                        case "material":
+                            return "󰏘"
+                            case "shape":
+                                return "󰋙"
+                                case "field":
+                                    return ""
+                                    case "library":
+                                        return ""
+                                        case "system":
+                                            return ""
+                                            case "ui":
+                                                return ""
+                                                case "image":
+                                                    return ""
+                                                    case "sound":
+                                                        return ""
+                                                        case:
+                                                            return ""
+                                                        }
+                                                    }
+
+                                                    PublishRow :: fn(Base: string, Row: struct<"WorkspaceResourceRow">, Selected: bool) {
+                                                        await set_ui_data(self, format_text("{}.key", Base), Row.Key)
+                                                        await set_ui_data(self, format_text("{}.name", Base), Row.Name)
+                                                        await set_ui_data(self, format_text("{}.label", Base), Row.Name)
+                                                        await set_ui_data(self, format_text("{}.path", Base), Row.Path)
+                                                        await set_ui_data(self, format_text("{}.kind", Base), Row.Kind)
+                                                        await set_ui_data(self, format_text("{}.icon", Base), Icon(Row.Kind))
+                                                        await set_ui_data(self, format_text("{}.meta", Base), Row.Kind)
+                                                        await set_ui_data(self, format_text("{}.drag", Base), Row.Kind)
+                                                        await set_ui_data(self, format_text("{}.selected", Base), Selected)
+                                                        await set_ui_data(self, format_text("{}.unresolved", Base), Row.Unresolved)
+                                                        await set_ui_data(self, format_text("{}.image", Base), "")
+                                                        await set_ui_data(self, format_text("{}.badge", Base), "")
+                                                        await set_ui_data(self, format_text("{}.loading", Base), false)
+                                                    }
+
+                                                    RefreshAvailable :: fn() {
+                                                        if !WorkspaceActive {
+                                                            return
+                                                        }
+                                                        top := get_ui_scroll(Element: "#gallery-assets")."Scroll Top"
+                                                        view := get_ui_scroll(Element: "#gallery-assets")."View Height"
+                                                        if view <= 0.0 {
+                                                            view = 160.0
+                                                        }
+                                                        LastTop = top
+                                                        LastView = view
+                                                        First = cast<int>(max(0, floor(top / 26.0) - 3))
+                                                        Count = cast<int>(min(256, ceil(view / 26.0) + 6))
+                                                        available()
+                                                    }
+
+                                                    after available {
+                                                        if !available.Status.Ok {
+                                                            Notice = available.Status.Message
+                                                            await set_ui_data(self, "assetCollection.notice", Notice)
+                                                        } else {
+                                                            Notice = ""
+                                                            await set_ui_data(self, "assetCollection.notice", "")
+                                                            slots: int[] = []
+                                                            index: int = 0
+                                                            foreach (row in available.Rows) {
+                                                                slots = array_add(slots, index)
+                                                                await PublishRow(format_text("assetCollection.availableItems.{}", index), row, false)
+                                                                index += 1
+                                                            }
+                                                            await set_ui_data(self, "assetCollection.availableSlots", slots)
+                                                            await set_ui_data(self, "assetCollection.availableHeight", available.Status.Total * 26)
+                                                            await set_ui_data(self, "assetCollection.availableTop", First * 26)
+                                                            await set_ui_data(self, "assetCollection.availableEmpty", available.Status.Total == 0)
+                                                        }
+                                                    }
+
+                                                    PublishCollection :: fn() {
+                                                        slots: int[] = []
+                                                        index: int = 0
+                                                        while index < length(Keys) {
+                                                            slots = array_add(slots, index)
+                                                            index += 1
+                                                        }
+                                                        await set_ui_data(self, "assetCollection.slots", slots)
+                                                        await set_ui_data(self, "assetCollection.count", length(Keys))
+                                                        await set_ui_data(self, "assetCollection.canUndo", CanUndo)
+                                                        await set_ui_data(self, "assetCollection.canRedo", CanRedo)
+                                                        await set_ui_data(self, "assetCollection.notice", Notice)
+                                                        ResolveIndex = 0
+                                                        if length(Keys) > 0 {
+                                                            resolved()
+                                                        }
+                                                    }
+
+                                                    after resolved {
+                                                        base := format_text("assetCollection.items.{}", ResolveIndex)
+                                                        if resolved.Status.Ok {
+                                                            await PublishRow(base, resolved.Row, text_equal(Selected, Keys[ResolveIndex]))
+                                                        } else {
+                                                            // Retain missing entries and their order so a broken reference is repairable.
+                                                            await set_ui_data(self, format_text("{}.path", base), "")
+                                                            await set_ui_data(self, format_text("{}.kind", base), "")
+                                                            await set_ui_data(self, format_text("{}.badge", base), "")
+                                                            await set_ui_data(self, format_text("{}.loading", base), false)
+                                                            await set_ui_data(self, format_text("{}.key", base), Keys[ResolveIndex])
+                                                            await set_ui_data(self, format_text("{}.label", base), Keys[ResolveIndex])
+                                                            await set_ui_data(self, format_text("{}.icon", base), "")
+                                                            await set_ui_data(self, format_text("{}.meta", base), "Missing resource")
+                                                            await set_ui_data(self, format_text("{}.unresolved", base), true)
+                                                            await set_ui_data(self, format_text("{}.drag", base), "")
+                                                            await set_ui_data(self, format_text("{}.image", base), "")
+                                                            await set_ui_data(self, format_text("{}.selected", base), text_equal(Selected, Keys[ResolveIndex]))
+                                                        }
+                                                        ResolveIndex += 1
+                                                        if ResolveIndex < length(Keys) {
+                                                            resolved()
+                                                        }
+                                                    }
+
+                                                    after dropped {
+                                                        Busy = false
+                                                        if !dropped.Status.Ok {
+                                                            Notice = dropped.Status.Message
+                                                            await PublishCollection()
+                                                        } else {
+                                                            before := Keys
+                                                            at := find(Keys, PendingBefore)
+                                                            if at < 0 {
+                                                                at = length(Keys)
+                                                            } else {
+                                                                if text_equal(PendingZone, "after") {
+                                                                    at += 1
+                                                                }
+                                                            }
+                                                            old := find(Keys, PendingKey)
+                                                            if old >= 0 {
+                                                                Keys = remove_index(Keys, old)
+                                                                if old < at {
+                                                                    at -= 1
+                                                                }
+                                                            }
+                                                            if length(Keys) >= 256 {
+                                                                Keys = before
+                                                                Notice = "This collection holds at most 256 resources. Remove an item before adding another."
+                                                            } else {
+                                                                Keys = insert(Keys, at, PendingKey)
+                                                                if !identical(before, Keys) {
+                                                                    Previous = before
+                                                                    CanUndo = true
+                                                                    CanRedo = false
+                                                                    RedoKeys = clear(RedoKeys)
+                                                                }
+                                                                Selected = PendingKey
+                                                                Notice = ""
+                                                            }
+                                                            await PublishCollection()
+                                                        }
+                                                    }
+
+                                                    on Begin {
+                                                        info := query_workspace_info()
+                                                        WorkspaceActive = info.Active
+                                                        await set_ui_data(self, "assetCollection.filter", "")
+                                                        await PublishCollection()
+                                                        await RefreshAvailable()
+                                                    }
+                                                    on CollectionDrop {
+                                                        Type := event.Type
+                                                        Payload := event.Payload
+                                                        Before := event.Before
+                                                        Zone := event.Zone
+                                                        if !WorkspaceActive {
+                                                            return
+                                                        }
+                                                        // A row drop bubbles to its container. Only the row handles a named zone.
+                                                        if text_equal(Before, "") && !text_equal(Zone, "") {
+                                                            return
+                                                        }
+                                                        if Busy || text_equal(Payload, "") {
+                                                            return
+                                                        }
+                                                        PendingKey = Payload
+                                                        PendingBefore = Before
+                                                        PendingZone = Zone
+                                                        Busy = true
+                                                        dropped()
+                                                    }
+                                                    on CollectionSelected {
+                                                        Key := event.Key
+                                                        Selected = Key
+                                                        await PublishCollection()
+                                                    }
+                                                    on CollectionRemove {
+                                                        Key := event.Key
+                                                        index := find(Keys, Key)
+                                                        if index < 0 {
+                                                            return
+                                                        }
+                                                        Previous = Keys
+                                                        Keys = remove_index(Keys, index)
+                                                        CanUndo = true
+                                                        CanRedo = false
+                                                        Selected = ""
+                                                        await PublishCollection()
+                                                    }
+                                                    on CollectionMove {
+                                                        Key := event.Key
+                                                        Direction := event.Direction
+                                                        index := find(Keys, Key)
+                                                        target := index + Direction
+                                                        if index < 0 || target < 0 || target >= length(Keys) {
+                                                            return
+                                                        }
+                                                        Previous = Keys
+                                                        Keys = swap(Keys, index, target)
+                                                        CanUndo = true
+                                                        CanRedo = false
+                                                        await PublishCollection()
+                                                    }
+                                                    on CollectionUndo {
+                                                        if !CanUndo {
+                                                            return
+                                                        }
+                                                        RedoKeys = Keys
+                                                        Keys = Previous
+                                                        CanUndo = false
+                                                        CanRedo = true
+                                                        await PublishCollection()
+                                                    }
+                                                    on CollectionRedo {
+                                                        if !CanRedo {
+                                                            return
+                                                        }
+                                                        Previous = Keys
+                                                        Keys = RedoKeys
+                                                        CanUndo = true
+                                                        CanRedo = false
+                                                        await PublishCollection()
+                                                    }
+                                                    on CollectionFilterTyped {
+                                                        Filter := event.Filter
+                                                        self.Filter = Filter
+                                                        await set_ui_data(self, "assetCollection.filter", Filter)
+                                                        await RefreshAvailable()
+                                                    }
+                                                    on CollectionViewportChanged {
+                                                        await RefreshAvailable()
+                                                    }
+                                                    on WorkspaceResourcesChanged {
+                                                        await RefreshAvailable()
+                                                        await PublishCollection()
+                                                    }
+                                                    on Tick {
+                                                        active := query_workspace_info().Active
+                                                        if active != WorkspaceActive {
+                                                            WorkspaceActive = active
+                                                            await RefreshAvailable()
+                                                            await PublishCollection()
+                                                        }
+                                                        top := get_ui_scroll(Element: "#gallery-assets")."Scroll Top"
+                                                        view := get_ui_scroll(Element: "#gallery-assets")."View Height"
+                                                        if view > 0.0 && (top != LastTop || view != LastView) {
+                                                            await RefreshAvailable()
+                                                        }
+                                                    }
+                                                }

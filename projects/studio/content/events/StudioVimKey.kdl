@@ -1,0 +1,16 @@
+version 3
+name "StudioVimKey"
+domain "event"
+id_counter 8
+(array)variables {
+    - id=1 name="Key" type="const char *" category="Payload"
+    - id=2 name="Control" type="int" category="Payload"
+    - id=3 name="Shift" type="int" category="Payload"
+    - id=4 name="Alt" type="int" category="Payload"
+    - id=5 name="Meta" type="int" category="Payload"
+    - id=6 name="Caret" type="int" category="Payload"
+    - id=7 name="Buffer" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

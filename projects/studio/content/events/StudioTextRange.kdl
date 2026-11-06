@@ -1,0 +1,11 @@
+version 3
+name "StudioTextRange"
+domain "event"
+id_counter 3
+(array)variables {
+    - id=1 name="Start" type="int" category="Payload"
+    - id=2 name="End" type="int" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

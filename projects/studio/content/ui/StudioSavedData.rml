@@ -1,0 +1,8 @@
+<div id="studio-saved-data" data-measure>
+<div class="caption">{{ self.sceneRuntime.targetPreview ? 'Preview · ' + self.sceneRuntime.previewName : self.savedDataTitle }}</div>
+<div class="prop" data-for="row, i : self.savedDataRows">
+  <div class="label">{{ row.key }}</div>
+  <div class="control"><div class="field text"><input type="text" class="value" data-attr-value="row.value" data-event-change="emit('StudioSavedDataEdit', i, ev.value)"/></div></div>
+</div>
+<div class="empty" data-if="self.savedDataRows.size == 0">No saved keys</div>
+</div>

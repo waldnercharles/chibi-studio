@@ -1,0 +1,14 @@
+version 3
+name "StudioTextSelection"
+domain "event"
+id_counter 6
+(array)variables {
+    - id=1 name="Start" type="int" category="Payload"
+    - id=2 name="End" type="int" category="Payload"
+    - id=3 name="Line" type="int" category="Payload"
+    - id=4 name="Column" type="int" category="Payload"
+    - id=5 name="Caret" type="int" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

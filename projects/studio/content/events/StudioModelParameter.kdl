@@ -1,0 +1,15 @@
+version 3
+name "StudioModelParameter"
+domain "event"
+id_counter 7
+(array)variables {
+    - id=1 name="Document" type="int" category="Payload"
+    - id=2 name="Node" type="uint64" category="Payload"
+    - id=3 name="Axis" type="int" category="Payload"
+    - id=4 name="Value" type="float" category="Payload"
+    - id=5 name="Committed" type="bool" category="Payload"
+    - id=6 name="Canceled" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

@@ -1,0 +1,6 @@
+.studio-model-reference { display: block; border-top: 1dp var(--line); margin-top: 16dp; padding-top: 12dp; }
+.studio-model-reference-current { display: flex; align-items: center; gap: 8dp; }
+.studio-model-reference-current > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.studio-model-reference-choices { display: flex; flex-direction: column; max-height: 196dp; overflow-y: auto; }
+.studio-model-reference-choices > button { min-height: 28dp; text-align: left; }
+.studio-model-reference > div > [data-ui=NumberField] { margin-top: 6dp; }

@@ -1,0 +1,13 @@
+version 3
+name "StudioModelOrbit"
+domain "event"
+id_counter 5
+(array)variables {
+    - id=1 name="Id" type="const char *" category="Payload"
+    - id=2 name="X" type="float" category="Payload"
+    - id=3 name="Y" type="float" category="Payload"
+    - id=4 name="Button" type="int" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

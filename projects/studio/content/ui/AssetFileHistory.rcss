@@ -1,0 +1,2 @@
+.asset-delete-history { width: 360dp; padding: 10dp; }
+.asset-delete-actions { display: flex; gap: 6dp; margin-bottom: 8dp; }

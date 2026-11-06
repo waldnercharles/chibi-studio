@@ -1,0 +1,18 @@
+version 3
+name "StudioNotice"
+domain "event"
+id_counter 10
+(array)variables {
+    - id=1 name="Id" type="const char *" category="Payload"
+    - id=2 name="Kind" type="const char *" category="Payload"
+    - id=3 name="Title" type="const char *" category="Payload"
+    - id=4 name="Message" type="const char *" category="Payload"
+    - id=5 name="ActionLabel" type="const char *" category="Payload"
+    - id=6 name="Action" type="const char *" category="Payload"
+    - id=7 name="Owner" type="const char *" category="Payload"
+    - id=8 name="Request" type="int" category="Payload"
+    - id=9 name="Seconds" type="double" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

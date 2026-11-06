@@ -1,0 +1,39 @@
+<section class="studio-text-editor" aria-label="Text Editor">
+  <header class="studio-text-toolbar">
+    <span class="studio-text-title" data-attr-data-tip="self.textPath">{{ self.textPath != '' ? self.textPath : 'Text Editor' }}<span data-if="self.textDirty" aria-label="Unsaved changes"> *</span></span>
+    <button class="btn sm" data-event-click="emit('StudioTextCommand', 'find', '')" data-attrif-disabled="self.textDocument == 0" data-tip="Find in document"><span class="icon">&#xea6d;</span>Find</button>
+    <button class="btn sm" data-event-click="emit('StudioTextCommand', 'problems', '')" data-attrif-data-state-on="self.textProblemsOpen" data-attrif-disabled="self.textDocument == 0">Problems <span class="studio-text-count">{{ self.textDiagnostics.size }}</span></button>
+  </header>
+  <div class="studio-text-find" data-if="self.textVimExOpen">
+    <label for="studio-vim-command">:</label><div class="field text"><input id="studio-vim-command" type="text" class="part value" aria-label="Vim command" placeholder="w, q, wq, undo, redo" data-attr-value="self.textVimEx" data-event-input="emit('StudioVimExInput', ev.value)" data-keys="Enter:StudioVimExSubmit;Escape:StudioVimExCancel"/></div>
+    <button class="btn sm" data-event-click="emit('StudioVimExSubmit')">Run</button>
+  </div>
+  <div class="studio-text-find" data-if="self.textFindOpen">
+    <div class="field search"><span class="part addon icon">&#xea6d;</span><input data-attr-id="'studio-text-find-' + pane" type="text" class="part value" placeholder="Find in this document" aria-label="Find in document" data-attr-value="self.textQuery" data-event-input="emit('StudioTextFindQuery', ev.value)" data-keys="Enter:StudioTextFindNext"/></div>
+    <button class="btn sm" data-event-click="emit('StudioTextCommand', 'findNext', '')">Next</button>
+    <div class="field text"><input type="text" class="part value" placeholder="Replace with" aria-label="Replace with" data-attr-value="self.textReplacement" data-event-input="emit('StudioTextReplacement', ev.value)"/></div>
+    <button class="btn sm" data-event-click="emit('StudioTextCommand', 'replace', '')" data-attrif-disabled="self.textQuery == ''">Replace</button>
+    <button class="btn icon-only sm" aria-label="Close Find" data-event-click="emit('StudioTextCommand', 'closeFind', '')"><span class="icon">&#xea76;</span></button>
+  </div>
+  <div class="studio-text-rename" data-if="self.textRenameOpen">
+    <label for="studio-text-rename">Rename symbol</label>
+    <div class="field text"><input id="studio-text-rename" type="text" class="part value" aria-label="New symbol name" data-attr-value="self.textRename" data-event-input="emit('StudioTextRenameInput', ev.value)"/></div>
+    <button class="btn sm" data-event-click="emit('StudioTextCommand', 'renameCommit', '')" data-attrif-disabled="self.textRename == ''">Rename</button>
+    <button class="btn sm" data-event-click="emit('StudioTextCommand', 'cancel', '')">Cancel</button>
+  </div>
+  <div class="studio-text-notice" role="status" data-if="self.textError != ''">{{ self.textError }}<div class="studio-text-draft-actions" data-if="self.textDraftRejected"><button class="btn sm" data-event-click="emit('StudioTextCommand', 'retryDraft', '')">Keep my draft</button><button class="btn sm" data-event-click="emit('StudioTextCommand', 'discardDraft', '')">Use document version</button></div></div>
+  <div class="studio-text-empty" data-if="self.textDocument == 0"><span class="icon">&#xeac4;</span><p>Open a behavior, shader, or UI file to edit its source.</p></div>
+  <div class="studio-text-surface" data-if="self.textDocument != 0">
+    <code-editor data-attr-keyboard-mode="self.textKeyboardMode" data-event-code-key="emit('StudioVimKey',ev.key,ev.control,ev.shift,ev.alt,ev.meta,ev.caret,ev.buffer)" data-event-code-text="emit('StudioVimText',ev.glyph,ev.caret,ev.buffer)" data-attr-id="'studio-source-' + pane" data-attr-completion-list="'#studio-text-completions-' + pane" data-attr-style="self.textCodeStyle" data-attr-value="self.textValue" data-attr-selection-start="self.textStart" data-attr-selection-end="self.textEnd" data-attr-selection-caret="self.textCaret" data-attr-highlights="self.textHighlights" data-attr-wrap="self.textWrap" data-attr-completion-open="self.textCompletionOpen" data-attr-request-command="self.textPane == pane ? self.textRequest : ''" data-attr-request-sequence="self.textPane == pane ? self.textRequestSequence : 0" data-attr-readonly="self.textBusy" data-event-code-input="emit('StudioTextInput', ev.value, ev.start, ev.end, ev.caret)" data-event-code-selection="emit('StudioTextSelection', ev.start, ev.end, ev.line, ev.column, ev.caret)" data-event-code-command="emit('StudioTextControlCommand', ev.command, ev.start, ev.end, ev.caret)" data-event-code-commit="emit('StudioTextCommit')" data-event-focus="emit('StudioPaneFocus', pane, 'text', true)"/>
+    <div data-attr-id="'studio-text-completions-' + pane" class="studio-text-completion" data-if="self.textCompletionOpen" role="listbox" aria-label="Suggestions">
+      <button class="studio-text-suggestion" data-for="row, i : self.textCompletions" data-class-selected="i == self.textCompletionIndex" data-event-click="emit('StudioTextCompletionPick', i)" role="option" data-attr-aria-posinset="i + 1" data-attr-aria-selected="i == self.textCompletionIndex"><span class="studio-text-suggestion-label">{{ row.label }}</span><span class="studio-text-suggestion-detail">{{ row.detail }}</span></button>
+    </div>
+  </div>
+  <div class="studio-text-results studio-text-problems" data-if="self.textProblemsOpen">
+    <header><span>Problems</span><span class="studio-text-location">{{ self.textDiagnostics.size }}</span></header>
+    <button class="studio-text-result" data-for="row : self.textDiagnostics" data-event-click="emit('StudioTextRange', row.start, row.end)"><span class="icon">&#xea87;</span><span class="studio-text-problem-message">{{ row.message }}</span><span class="studio-text-location">{{ row.line }}:{{ row.column }}</span></button>
+    <p class="studio-text-result-empty" data-if="self.textDiagnostics.size == 0">No problems in this document.</p>
+  </div>
+  <footer class="studio-text-status" data-if="self.textDocument != 0"><span>{{ self.textDraftRejected ? 'Draft not applied' : self.textPending ? 'Applying source…' : self.textValid ? 'Source valid' : 'Source has errors' }}</span><span data-if="self.textVimEnabled">{{ self.textVimMode }}</span><span class="studio-text-status-position">Ln {{ self.textLine }}, Col {{ self.textColumn }}</span><button class="btn sm" data-event-click="emit('StudioTextHover')" data-tip="Show symbol information">Symbol info</button></footer>
+  <div class="studio-text-symbol" data-if="self.textHover != ''">{{ self.textHover }}</div>
+</section>

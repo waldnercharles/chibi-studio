@@ -1,0 +1,19 @@
+<div class="platform-job" data-if="self.platformVisible" role="region" aria-label="Platform task">
+  <div class="platform-job-head">
+    <strong>{{ self.platformOperation }}</strong>
+    <span role="status" aria-live="polite">{{ self.platformState }}</span>
+    <span class="spacer"></span>
+    <button class="btn sm" data-if="self.platformBusy" data-event-click="emit('StudioResourceCommand', 'cancelJob', '')">Cancel</button>
+    <button class="btn sm" data-if="!self.platformBusy" data-event-click="emit('StudioPlatformClose')">Close</button>
+  </div>
+  <p class="platform-job-message">{{ self.platformMessage }}</p>
+  <progress data-if="self.platformBusy" data-attr-value="self.platformProgress" max="1" aria-label="Task progress"></progress>
+  <p class="platform-job-path" data-if="self.platformValue != ''">{{ self.platformValue }}</p>
+  <section class="panel" data-if="self.platformLog != ''" data-attrif-data-open="self.platformLogOpen">
+    <button class="panel-head" data-attr-aria-expanded="self.platformLogOpen ? 'true' : 'false'" data-event-click="emit('StudioPlatformToggleLog')">Diagnostic log</button>
+    <div data-if="self.platformLogOpen">
+    <pre class="platform-job-log">{{ self.platformLog }}</pre>
+    <button class="btn sm" data-attrif-disabled="self.platformBusy" data-event-click="emit('StudioPlatformCopyLog')">Copy log</button>
+  </div>
+  </section>
+</div>

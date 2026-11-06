@@ -1,0 +1,223 @@
+<section class="studio-area" data-attr-data-pane="pane" data-event-mouseenter="emit('StudioPaneHover', area.panel)" data-event-mousedown="emit('StudioPaneFocus', pane, area.panel, area.panel == 'text' || (area.panel == 'graph' &amp;&amp; area.graphView == 'code'))">
+  <header class="area-head" data-class-maximized="self.shellMaximized == pane" data-class-live="false" data-event-mousedown="emit('StudioPaneFocus', pane, area.panel, false)">
+    <div class="editor-type-host">
+      <button class="btn icon-only editor-type" aria-haspopup="menu" data-tip="Editor Type" data-attr-popovertarget="pane + '-editor-types'">
+        <span class="icon">{{ area.icon }}</span>
+      </button>
+      <use ui="StudioMenu" data-attr-id="pane + '-editor-types'">
+        <use ui="MenuGroup">General</use>
+        <div class="menu-item" role="menuitem" data-for="type, i : self.shellEditorTypes" data-if="(type == 'scene' || type == 'objects' || type == 'properties' || type == 'assets') &amp;&amp; (pane != 'drawer' || type == 'assets' || type == 'output' || type == 'performance' || type == 'text' || type == 'dom' || type == 'savedData' || type == 'themeTokens')" data-attrif-data-current="area.panel == type" data-event-click="emit('StudioPanelSelected', pane, type)">
+          <span class="icon lead">{{ self.shellEditorIcons[i] }}</span>
+          <span class="text">{{ self.shellEditorTitles[i] }}</span>
+        </div>
+        <use ui="MenuGroup">Scripting</use>
+        <div class="menu-item" role="menuitem" data-for="type, i : self.shellEditorTypes" data-if="(type == 'graph' || type == 'members' || type == 'text') &amp;&amp; (pane != 'drawer' || type == 'assets' || type == 'output' || type == 'performance' || type == 'text' || type == 'dom' || type == 'savedData' || type == 'themeTokens')" data-attrif-data-current="area.panel == type" data-event-click="emit('StudioPanelSelected', pane, type)">
+          <span class="icon lead">{{ self.shellEditorIcons[i] }}</span>
+          <span class="text">{{ self.shellEditorTitles[i] }}</span>
+        </div>
+        <use ui="MenuGroup">Diagnostics</use>
+        <div class="menu-item" role="menuitem" data-for="type, i : self.shellEditorTypes" data-if="(type == 'output' || type == 'performance') &amp;&amp; (pane != 'drawer' || type == 'assets' || type == 'output' || type == 'performance' || type == 'text' || type == 'dom' || type == 'savedData' || type == 'themeTokens')" data-attrif-data-current="area.panel == type" data-event-click="emit('StudioPanelSelected', pane, type)">
+          <span class="icon lead">{{ self.shellEditorIcons[i] }}</span>
+          <span class="text">{{ self.shellEditorTitles[i] }}</span>
+        </div>
+        <use ui="MenuGroup">Design</use>
+        <div class="menu-item" role="menuitem" data-for="type, i : self.shellEditorTypes" data-if="(type == 'designer' || type == 'dom' || type == 'visual' || type == 'savedData' || type == 'themeTokens') &amp;&amp; (pane != 'drawer' || type == 'assets' || type == 'output' || type == 'performance' || type == 'text' || type == 'dom' || type == 'savedData' || type == 'themeTokens')" data-attrif-data-current="area.panel == type" data-event-click="emit('StudioPanelSelected', pane, type)">
+          <span class="icon lead">{{ self.shellEditorIcons[i] }}</span>
+          <span class="text">{{ self.shellEditorTitles[i] }}</span>
+        </div>
+        <use ui="MenuGroup" data-if="self.shellRegisteredPanelKeys.size &gt; 0">Studio UI</use>
+        <div class="studio-registered-panel-choices">
+          <div class="menu-item" role="menuitem" data-for="key, i : self.shellRegisteredPanelKeys" data-attrif-data-current="area.panel == key" data-event-click="emit('StudioPanelSelected', pane, key)">
+            <span class="icon lead">&#xeaf0;</span><span class="text">{{ self.shellRegisteredPanelTitles[i] }}</span>
+          </div>
+        </div>
+      </use>
+    </div>
+    <div class="area-controls">
+      <div class="area-controls-body" data-if="area.panel == 'scene'">
+        <div class="scene-tools">
+          <button class="btn menu-btn" aria-haspopup="menu" data-attr-popovertarget="pane + '-scene-view'">
+            <span class="label">View</span>
+          </button>
+          <use ui="StudioMenu" data-attr-id="pane + '-scene-view'">
+            <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.frame]" data-event-click="emit('StudioCommand', 'frame', '')">
+              <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.frame].icon }}</span>
+              <span class="text">{{ self.studioCommands[self.studioCommandIndex.frame].label }}</span>
+            </div>
+            <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.frameAll]" data-event-click="emit('StudioCommand', 'frameAll', '')">
+              <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.frameAll].icon }}</span>
+              <span class="text">{{ self.studioCommands[self.studioCommandIndex.frameAll].label }}</span>
+            </div>
+            <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.resetCamera]" data-event-click="emit('StudioCommand', 'resetCamera', '')">
+              <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.resetCamera].icon }}</span>
+              <span class="text">{{ self.studioCommands[self.studioCommandIndex.resetCamera].label }}</span>
+            </div>
+            <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.viewThroughCamera]" data-event-click="emit('StudioCommand', 'viewThroughCamera', '')">
+              <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.viewThroughCamera].icon }}</span>
+              <span class="text">{{ self.studioCommands[self.studioCommandIndex.viewThroughCamera].label }}</span>
+            </div>
+            <use ui="MenuSeparator" />
+            <use ui="MenuGroup">Show</use>
+            <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.toggleGrid]" data-event-click="emit('StudioCommand', 'toggleGrid', '')">
+              <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.toggleGrid].icon }}</span>
+              <span class="text">{{ self.studioCommands[self.studioCommandIndex.toggleGrid].label }}</span>
+            </div>
+            <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.showGeneratedWorld]" data-event-click="emit('StudioCommand', 'showGeneratedWorld', '')">
+              <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.showGeneratedWorld].icon }}</span>
+              <span class="text">{{ self.studioCommands[self.studioCommandIndex.showGeneratedWorld].label }}</span>
+            </div>
+            <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.showLighting]" data-event-click="emit('StudioCommand', 'showLighting', '')">
+              <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.showLighting].icon }}</span>
+              <span class="text">{{ self.studioCommands[self.studioCommandIndex.showLighting].label }}</span>
+            </div>
+            <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.showFog]" data-event-click="emit('StudioCommand', 'showFog', '')">
+              <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.showFog].icon }}</span>
+              <span class="text">{{ self.studioCommands[self.studioCommandIndex.showFog].label }}</span>
+            </div>
+            <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.showCameraFrames]" data-event-click="emit('StudioCommand', 'showCameraFrames', '')">
+              <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.showCameraFrames].icon }}</span>
+              <span class="text">{{ self.studioCommands[self.studioCommandIndex.showCameraFrames].label }}</span>
+            </div>
+            <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.showColliders]" data-event-click="emit('StudioCommand', 'showColliders', '')">
+              <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.showColliders].icon }}</span>
+              <span class="text">{{ self.studioCommands[self.studioCommandIndex.showColliders].label }}</span>
+            </div>
+          </use>
+          <div class="tool-group">
+            <button class="btn icon-only" data-attr-data-state="self.sceneRuntime.tool == 'select' ? 'on' : ''" data-attr-data-tip="self.studioCommands[self.studioCommandIndex.selectTool].label" data-attr-data-kbd="self.studioCommands[self.studioCommandIndex.selectTool].shortcut" data-event-click="emit('StudioCommand', 'selectTool', '')">
+              <span class="icon">{{ self.studioCommands[self.studioCommandIndex.selectTool].icon }}</span>
+            </button>
+            <button class="btn icon-only" data-attr-data-state="self.sceneRuntime.tool == 'move' ? 'on' : ''" data-attr-data-tip="self.studioCommands[self.studioCommandIndex.moveTool].label" data-attr-data-kbd="self.studioCommands[self.studioCommandIndex.moveTool].shortcut" data-event-click="emit('StudioCommand', 'moveTool', '')">
+              <span class="icon">{{ self.studioCommands[self.studioCommandIndex.moveTool].icon }}</span>
+            </button>
+            <button class="btn icon-only" data-attr-data-state="self.sceneRuntime.tool == 'rotate' ? 'on' : ''" data-attr-data-tip="self.studioCommands[self.studioCommandIndex.rotateTool].label" data-attr-data-kbd="self.studioCommands[self.studioCommandIndex.rotateTool].shortcut" data-event-click="emit('StudioCommand', 'rotateTool', '')">
+              <span class="icon">{{ self.studioCommands[self.studioCommandIndex.rotateTool].icon }}</span>
+            </button>
+            <button class="btn icon-only" data-attr-data-state="self.sceneRuntime.tool == 'scale' ? 'on' : ''" data-attr-data-tip="self.studioCommands[self.studioCommandIndex.scaleTool].label" data-attr-data-kbd="self.studioCommands[self.studioCommandIndex.scaleTool].shortcut" data-event-click="emit('StudioCommand', 'scaleTool', '')">
+              <span class="icon">{{ self.studioCommands[self.studioCommandIndex.scaleTool].icon }}</span>
+            </button>
+          </div>
+          <button class="btn icon-only" data-if="self.sceneRuntime.perspective" data-attr-data-state="self.sceneRuntime.local ? 'on' : ''" data-attr-data-tip="self.studioCommands[self.studioCommandIndex.toggleLocalSpace].label" data-attr-data-kbd="self.studioCommands[self.studioCommandIndex.toggleLocalSpace].shortcut" data-event-click="emit('StudioCommand', 'toggleLocalSpace', '')">
+            <span class="icon">{{ self.studioCommands[self.studioCommandIndex.toggleLocalSpace].icon }}</span>
+          </button>
+        </div>
+        <div class="spacer" />
+        <div class="snap-controls">
+          <button class="btn icon-only" data-tip="Snapping" data-attr-data-state="self.sceneRuntime.snap ? 'on' : 'off'" data-event-click="emit('StudioCommand', 'toggleSnap', '')">
+            <span class="icon">󰍇</span>
+          </button>
+          <button class="btn menu-btn" data-tip="Grid Increment" data-attr-popovertarget="pane + '-scene-grid-preset'">
+            <span class="label">{{ self.shellGridIncrement }}</span>
+          </button>
+          <use ui="StudioMenu" data-attr-id="pane + '-scene-grid-preset'">
+            <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.finerGrid]" data-event-click="emit('StudioCommand', 'finerGrid', '')">
+              <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.finerGrid].icon }}</span>
+              <span class="text">{{ self.studioCommands[self.studioCommandIndex.finerGrid].label }}</span>
+            </div>
+            <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.studioCommandEnabled[self.studioCommandIndex.coarserGrid]" data-event-click="emit('StudioCommand', 'coarserGrid', '')">
+              <span class="icon lead">{{ self.studioCommands[self.studioCommandIndex.coarserGrid].icon }}</span>
+              <span class="text">{{ self.studioCommands[self.studioCommandIndex.coarserGrid].label }}</span>
+            </div>
+          </use>
+        </div>
+        <button class="btn icon-only" data-tip="Frame Selected" data-event-click="emit('StudioCommand', 'frame', '')">
+          <span class="icon">󰁌</span>
+        </button>
+      </div>
+      <use ui="StudioGraphHeader" data-when="area.panel == 'graph'" data-alias-pane="pane" data-alias-area="area" />
+      <div class="area-controls-body" data-when="area.panel == 'objects'">
+        <div class="field search">
+          <span class="part addon">
+            <span class="icon sm"></span>
+          </span>
+          <input class="part value" type="text" placeholder="Filter" aria-label="Filter objects" maxlength="256" data-attr-value="self.outliner.filter" data-event-input="emit('StudioOutlinerFilter', ev.value); stop()" data-event-focusin="emit('StudioPaneFocus', pane, 'objects', true); stop()" data-attr-id="'studio-outliner-filter-' + pane" />
+        </div>
+        <button class="btn icon-only add" data-tip="Add object" data-attrif-disabled="!self.outliner.scene || self.outliner.readOnly" data-event-click="emit('StudioOutlinerMutation', 'addRoot', '', ev.pointer)">
+          <span class="icon"></span>
+        </button>
+      </div>
+      <div class="area-controls-body" data-when="area.panel == 'properties'">
+        <div class="field search">
+          <span class="part addon">
+            <span class="icon sm"></span>
+          </span>
+          <input class="part value" type="text" placeholder="Search properties" aria-label="Search properties" maxlength="256" data-attr-value="self.runtimeProperties.active ? self.runtimeProperties.filter : self.objectProperties.filter" data-event-input="emit(self.runtimeProperties.active ? 'StudioRuntimePropertiesFilter' : 'StudioObjectPropertiesFilter', ev.value); stop()" data-event-focusin="emit('StudioPaneFocus', pane, 'properties', true); stop()" data-attr-id="'studio-object-properties-filter-' + pane" />
+        </div>
+        <span class="badge accent" data-if="self.runtimeProperties.active">Live</span>
+        <button class="btn" data-if="self.runtimeProperties.active" data-attrif-disabled="!self.sceneRuntime.canKeepChanges" data-event-click="emit('StudioCommand', 'keepChanges', '')">
+          <span class="icon">󰤱</span>
+          <span class="label">Keep</span>
+        </button>
+      </div>
+      <span data-when="area.panel == 'text'">Text Editor</span>
+      <use ui="AssetsHeader" data-when="area.panel == 'assets'" data-alias-pane="pane" />
+      <span data-when="area.panel == 'output'">Output</span>
+      <span data-when="area.panel == 'performance'">Performance</span>
+      <span data-when="area.panel == 'members'">Members</span>
+      <span data-when="area.panel == 'designer'">UI Designer</span>
+      <span data-when="area.panel == 'dom'">Inspector</span>
+      <span data-when="area.panel == 'visual'">Preview</span>
+      <span data-when="area.panel == 'savedData'">Data</span>
+      <span data-when="area.panel == 'themeTokens'">Theme</span>
+      <span data-when="area.registered">{{ area.title }}</span>
+    </div>
+    <button class="btn icon-only maximize" data-tip="Maximize Area" data-kbd="Ctrl+Space" data-event-click="emit('StudioPaneFocus', pane, area.panel, false); emit('StudioShellCommand', 'maximize', '')">
+      <span class="icon" data-if="self.shellMaximized != pane"></span>
+      <span class="icon" data-if="self.shellMaximized == pane"></span>
+    </button>
+    <button class="btn icon-only close" data-if="pane == 'drawer'" data-tip="Close Drawer" data-event-click="emit('StudioShellCommand', 'closeDrawer', '')">
+      <span class="icon"></span>
+    </button>
+  </header>
+  <div class="studio-area-body" data-measure="" data-attr-id="'studio-area-' + pane + '-body'">
+    <div class="studio-area-content" data-when="area.panel == 'scene'">
+      <use ui="StudioSceneViewport" data-alias-pane="pane" />
+    </div>
+    <div class="studio-area-content" data-when="area.panel == 'objects'">
+      <use ui="StudioOutliner" data-alias-pane="pane" />
+    </div>
+    <div class="studio-area-content" data-when="area.panel == 'output'">
+      <use ui="StudioOutput" data-alias-pane="pane" />
+    </div>
+    <div class="studio-area-content" data-when="area.panel == 'assets'">
+      <use ui="Assets" data-alias-pane="pane" />
+    </div>
+    <div class="studio-area-content" data-when="area.panel == 'performance'">
+      <use ui="StudioPerformance" data-alias-pane="pane" />
+    </div>
+    <div class="studio-area-content" data-when="area.panel == 'members'">
+      <use ui="StudioMembers" data-alias-pane="pane" />
+    </div>
+    <div class="studio-area-content" data-when="area.panel == 'text'">
+      <use ui="StudioTextEditor" data-alias-pane="pane" />
+    </div>
+    <div class="studio-area-content" data-when="area.panel == 'designer'">
+      <use ui="StudioUIDesigner" data-alias-pane="pane" />
+    </div>
+    <div class="studio-area-content" data-when="area.panel == 'dom'">
+      <use ui="StudioDOMInspector" data-alias-pane="pane" />
+    </div>
+    <div class="studio-area-content studio-area-graph" data-when="area.panel == 'graph'" data-attr-data-view="area.graphView">
+      <div class="studio-area-graph-view" data-when="area.graphView != 'code'" data-style-flex-basis="area.graphView == 'both' ? (area.graphSplit * 100) + '%' : '100%'">
+        <use ui="StudioGraphCanvas" data-alias-pane="pane" />
+      </div>
+      <splitter class="split studio-graph-code-split" axis="x" min="80" max="4096" data-when="area.graphView == 'both'" data-attr-value="area.graphWidth" data-event-input="emit('StudioAreaGraphResize', pane, ev.value)" />
+      <div class="studio-area-code-view" data-when="area.graphView != 'graph'">
+        <use ui="StudioTextEditor" data-alias-pane="pane" />
+      </div>
+    </div>
+    <div class="studio-area-content" data-when="area.panel == 'properties'">
+      <use ui="StudioMaterialProperties" data-alias-pane="pane" data-when="self.shellAssetKind == 'material' || self.shellAssetKind == 'shape'" />
+      <use ui="StudioModelProperties" data-alias-pane="pane" data-when="self.shellAssetKind == 'model'" />
+      <use ui="StudioObjectProperties" data-alias-pane="pane" data-when="!self.runtimeProperties.active &amp;&amp; self.shellAssetKind != 'material' &amp;&amp; self.shellAssetKind != 'shape' &amp;&amp; self.shellAssetKind != 'model'" />
+      <use ui="StudioRuntimeProperties" data-alias-pane="pane" data-when="self.runtimeProperties.active" />
+    </div>
+    <div class="studio-area-content" data-when="area.panel == 'savedData'"><use ui="StudioSavedData"/></div>
+    <div class="studio-area-content" data-when="area.panel == 'themeTokens'"><use ui="StudioThemeTokens"/></div>
+    <div class="studio-area-content studio-registered-panel" data-when="area.registered" data-attr-data-ui-entity="area.owner" data-attr-data-ui-document="area.document"></div>
+    <div class="studio-area-content" data-when="area.panel == 'visual'">
+      <use ui="StudioMaterialProperties" data-alias-pane="pane" data-when="self.shellAssetKind == 'material' || self.shellAssetKind == 'shape'" />
+      <use ui="StudioModelProperties" data-alias-pane="pane" data-when="self.shellAssetKind == 'model'" />
+    </div>
+  </div>
+</section>

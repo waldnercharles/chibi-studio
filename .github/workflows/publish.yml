@@ -54,7 +54,7 @@ jobs:
           # Engine releases are prereleases, so the /latest endpoint excludes them.
           tag=$(gh api 'repos/waldnercharles/chibi/releases?per_page=100' | python3 -c '
           import json, re, sys
-          required = {"chibi-web-sdk.tar.gz", "chibi-export-linux-x64.tar.gz", "SHA256SUMS", "build.json"}
+          required = {"chibi-web-sdk.tar.gz", "chibi-web-author.tar.gz", "chibi-export-linux-x64.tar.gz", "SHA256SUMS", "build.json"}
           releases = [r for r in json.load(sys.stdin) if not r["draft"]
                       and re.fullmatch(r"engine-[0-9a-f]{40}", r["tag_name"])
                       and required <= {a["name"] for a in r["assets"] if a["state"] == "uploaded"}]
@@ -68,7 +68,7 @@ jobs:
           if [ "$GITHUB_REF" = refs/heads/main ]; then
             if curl --fail --silent --show-error --retry 3 \
                 https://waldnercharles.github.io/chibi-studio/studio.json -o published.json; then
-              if python3 -c 'import json,sys; p=json.load(open("published.json")); sys.exit(not (p.get("format")==1 and p.get("engine")==sys.argv[1] and p.get("studio")==sys.argv[2]))' "$engine" "$STUDIO"; then
+              if python3 -c 'import json,sys; p=json.load(open("published.json")); sys.exit(not (p.get("format")==2 and p.get("host")=="authored" and p.get("bootstrap")=="author.json" and p.get("workspace_protocol")=="data-files-v1" and p.get("engine")==sys.argv[1] and p.get("studio")==sys.argv[2]))' "$engine" "$STUDIO"; then
                 build=false
               fi
             fi
@@ -90,16 +90,17 @@ jobs:
           ENGINE: ${{ needs.version.outputs.engine }}
         shell: bash
         run: |
-          mkdir packages sdk
+          mkdir packages sdk web-author
           gh release download "engine-$ENGINE" --repo waldnercharles/chibi \
-            --pattern chibi-web-sdk.tar.gz --pattern SHA256SUMS --pattern build.json --dir packages
+            --pattern chibi-web-sdk.tar.gz --pattern chibi-web-author.tar.gz --pattern SHA256SUMS --pattern build.json --dir packages
           cd packages
           # Verify only the downloaded members of the shared checksum manifest.
-          awk '$2 == "chibi-web-sdk.tar.gz" || $2 == "build.json"' SHA256SUMS > selected-sums
-          test "$(wc -l < selected-sums)" -eq 2
+          awk '$2 == "chibi-web-sdk.tar.gz" || $2 == "chibi-web-author.tar.gz" || $2 == "build.json"' SHA256SUMS > selected-sums
+          test "$(wc -l < selected-sums)" -eq 3
           sha256sum --check selected-sums
           python3 -c 'import json,os; p=json.load(open("build.json")); assert p["format"] == 1 and p["engine_sha"] == os.environ["ENGINE"] and p["emsdk_version"] == os.environ["EMSDK_VERSION"] and p["platform"] == "ubuntu-24.04-x64" and p["web_threads"] is False'
           tar -xzf chibi-web-sdk.tar.gz -C ../sdk
+          tar -xzf chibi-web-author.tar.gz -C ../web-author
       - name: Install CMake and Ninja
         run: |
           sudo apt-get update
@@ -113,7 +114,8 @@ jobs:
       - name: Build Studio against the installed SDK
         run: |
           emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release \
-            -DChibi_DIR="$GITHUB_WORKSPACE/sdk/lib/cmake/Chibi"
+            -DChibi_DIR="$GITHUB_WORKSPACE/sdk/lib/cmake/Chibi" \
+            -DCHIBI_AUTHOR_WEB_DIR="$GITHUB_WORKSPACE/web-author"
           cmake --build build-web --target chibi-studio --parallel 2
           cmake --install build-web --prefix "$GITHUB_WORKSPACE/site"
       - name: Package the reusable editor and its version
@@ -121,17 +123,22 @@ jobs:
           ENGINE: ${{ needs.version.outputs.engine }}
           STUDIO: ${{ github.sha }}
         run: |
-          tar -czf "site/editor-$STUDIO-$ENGINE.tar.gz" -C site \
-            chibi-studio.html chibi-studio.js chibi-studio.wasm chibi-studio.data chibi-default.js
+          archive="editor-$STUDIO-$ENGINE.tar.gz"
+          tar -czf "$RUNNER_TEMP/$archive" -C site .
+          cp "$RUNNER_TEMP/$archive" "site/$archive"
           python3 - <<'PY'
           import hashlib, json, os
           from pathlib import Path
           root = Path("site")
           archive = f'editor-{os.environ["STUDIO"]}-{os.environ["ENGINE"]}.tar.gz'
-          manifest = dict(format=1, engine=os.environ["ENGINE"], studio=os.environ["STUDIO"],
+          manifest = dict(format=2, host="authored", bootstrap="author.json",
+                          workspace_protocol="data-files-v1",
+                          engine=os.environ["ENGINE"], studio=os.environ["STUDIO"],
+                          capabilities=dict(prototype_includes=True, project_audio=True),
+                          capability_coverage=dict(category="source-implementation",
+                                                   browser_audio="unvalidated"),
                           archive=archive, sha256=hashlib.sha256((root / archive).read_bytes()).hexdigest())
           (root / "studio.json").write_text(json.dumps(manifest, indent=2) + "\n")
-          (root / "index.html").write_text('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=chibi-studio.html"><a href="chibi-studio.html">Open Chibi Studio</a>\n')
           (root / ".nojekyll").touch()
           PY
       - uses: actions/upload-pages-artifact@v3

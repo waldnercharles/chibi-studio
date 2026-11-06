@@ -1,0 +1,10 @@
+version 3
+name "StudioObjectBehaviorQuery"
+domain "event"
+id_counter 2
+(array)variables {
+    - id=1 name="Text" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

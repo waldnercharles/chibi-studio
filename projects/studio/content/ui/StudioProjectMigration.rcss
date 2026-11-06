@@ -1,0 +1,5 @@
+.migration-dialog { width: 520dp; max-width: 92vw; padding: 20dp; display: flex; flex-direction: column; gap: 12dp; }
+.migration-dialog h2 { margin: 0 0 8dp; }
+.migration-dialog .path { word-break: break-all; color: var(--muted); }
+.migration-dialog pre { max-height: 160dp; overflow: auto; white-space: pre-wrap; }
+.migration-dialog footer { display: flex; justify-content: flex-end; gap: 8dp; }

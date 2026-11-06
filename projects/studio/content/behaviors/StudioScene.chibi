@@ -1,0 +1,3723 @@
+behavior StudioScene {
+    self.OverlayKey: string = ""
+    OverlayScan: int = 0
+    MarkerObjects: int[] = []
+    MarkerX: float[] = []
+    MarkerY: float[] = []
+    MarkerStyles: string[] = []
+    MarkerNames: string[] = []
+    MarkerLocked: bool[] = []
+    MarkerSelected: bool[] = []
+    CameraStyles: string[] = []
+    CameraNames: string[] = []
+    CameraDisabled: bool[] = []
+    CameraSelected: bool[] = []
+    CameraActive: bool[] = []
+    CameraActiveSeen := false
+    FrameScanning := false
+    FrameAll := false
+    FrameScan: int = 0
+    FrameDocument: int = 0
+    FrameRevision: int = 0
+    FrameSession: int = 0
+    FrameFound := false
+    FrameSized := false
+    FrameMin: float[] = []
+    FrameMax: float[] = []
+    BoxView: string = ""
+
+    BoxActive := false
+    BoxScanning := false
+    BoxMod := false
+    BoxX: float = 0.0
+    BoxY: float = 0.0
+    BoxStartX: float = 0.0
+    BoxStartY: float = 0.0
+    BoxScan: int = 0
+    BoxDocument: int = 0
+    BoxRevision: int = 0
+    BoxSession: int = 0
+    BoxPaths: string[] = []
+    PointerX: float = 0.0
+    PointerY: float = 0.0
+    Grab := false
+    RayBaseAlong: float = 0.0
+    RayApplied: float = 0.0
+    CheckpointDirty := true
+    CheckpointLast: string = ""
+    RestoreState: string = ""
+    RestorePath: string = ""
+    EvidenceJob: int = 0
+    EvidenceSequence: int = 0
+    EvidencePending := false
+    EvidenceDirectory: string = ""
+    EvidenceError: string = ""
+    EvidenceState: string = ""
+    Document: int = 0
+    Revision: int = 0
+    Session: int = 0
+    RuntimeRevision: int = 0
+    RuntimeDocument: int = 0
+    TargetPreview := false
+    ModelObject: int = -1
+    ModelCamera: int = -1
+    ModelKey: int = -1
+    ModelFill: int = -1
+    ModelRadius: float = 0.0
+    ModelDimensions: float[] = [0.0, 0.0, 0.0]
+    ModelFrame := true
+    ModelDirty := true
+    ModelDrawn := false
+    ModelStamp: string = ""
+    ModelView: string = "orbit"
+    ModelPitch: float = -0.45
+    ModelYaw: float = 0.45
+    ModelPart: int = -1
+    ModelPartNode: uint64 = 0
+    ModelPartAsset: string = ""
+    ModelPartPath: string = ""
+    ModelParts: struct<"ModelAuthoringPart">[] = []
+    ModelSection := false
+    ModelSectionAxis: int = 0
+    ModelSectionOffset: float = 0.0
+    ModelWarning: string = ""
+    ModelError: string = ""
+    ModelParameterError: string = ""
+    ModelParameterScan: int = 0
+    ModelParameterNames: string[] = []
+    ModelParameterSlots: int[] = []
+    ModelParameterAxes: int[] = []
+    ModelParameterKeys: string[] = []
+    ModelParameterValues: float[] = []
+    ModelParameterApplied: float[] = []
+    ModelParameterMin: float[] = []
+    ModelParameterMax: float[] = []
+    ModelParameterErrors: string[] = []
+    ModelRejectedKeys: string[] = []
+    ModelRejectedValues: float[] = []
+    ModelRejectedErrors: string[] = []
+    ModelOverrideKeys: string[] = []
+    ModelOverrideValues: float[] = []
+    PreviewDocument: int = 0
+    PreviewRevision: int = 0
+    PreviewName: string = ""
+    PreviewKind: string = ""
+    SelectedPreviewDocument: int = 0
+    SelectedPreviewRevision: int = 0
+    SelectedPreviewName: string = ""
+    SelectedPreviewKind: string = ""
+    PlayAfterPrepare := false
+    Visible := false
+    Busy := false
+    Preparing := false
+    Ready := false
+    Playing := false
+    NeedsPrepare := false
+    Idle: float = 0.0
+    Steps: int = 0
+    Time: float = 0.0
+    Image: string = ""
+    Error: string = ""
+    ToolError: string = ""
+    InvertSnap := false
+    RayActive := false
+    RayInitialized := false
+    RayPart: string = ""
+    RayPointerX: float = 0.0
+    RayPointerY: float = 0.0
+    RayPivot: float[] = [0.0, 0.0, 0.0]
+    RayAxis: float[] = [1.0, 0.0, 0.0]
+    RayNormal: float[] = [0.0, 1.0, 0.0]
+    RayLast: float[] = [0.0, 0.0, 0.0]
+    RayAlong: float = 0.0
+    RayTurn: float = 0.0
+    RayScale: float = 1.0
+    TargetSpatial: bool[] = []
+    TargetPaths: string[] = []
+    TargetObjects: int[] = []
+    TargetPositions: float[] = []
+    TargetRotations: float[] = []
+    TargetScales: float[] = []
+    RayScalePixels: float = 0.0
+    ScaleScreenX: float = 1.0
+    ScaleScreenY: float = 0.0
+    RayPendingDX: float = 0.0
+    RayPendingDY: float = 0.0
+    ColliderStyles: string[] = []
+    ColliderLeft: float[] = []
+    ColliderTop: float[] = []
+    ColliderReach: float[] = []
+    ColliderScales: float[] = []
+    ColliderShape: int = 0
+    ColliderSlot: int = 0
+    ColliderBaseReach: float = 0.0
+    ColliderAxisStart: float = 0.0
+    PlaneLeft: float[] = []
+    PlaneTop: float[] = []
+    PlaneStyles: string[] = []
+    RingStyles: string[] = []
+    RingAxes: string[] = []
+    RingLeft: float[] = []
+    RingTop: float[] = []
+    AxisCarry: float = 0.0
+    ActiveDocument: int = 0
+    GuardDocument: int = 0
+    GuardRequest: int = 0
+    GuardWaiting := false
+    Authorized := false
+    GuardMode: string = ""
+    PendingAmount: float = 0.0
+    PendingEnd := false
+    PendingCanceled := false
+    GestureBaseRevision: int = 0
+    CollaborationActive := false
+    CollaborationReady := false
+    CollaborationPending := false
+    CollaborationRole: string = ""
+    CollaborationReplaying := false
+    CandidateMode := false
+    CandidateText: string = ""
+    CandidateKeys: string[] = []
+    CandidateValues: double[] = []
+    CandidateStart: int = 0
+    CandidateEnd: int = 0
+    CandidateReplacement: string = ""
+    ProposalPending := false
+    ProposalRequest: int = 0
+    GizmoVisible := false
+    GizmoX: float = 0.0
+    GizmoY: float = 0.0
+    GizmoDX: float[] = []
+    GizmoDY: float[] = []
+    LiveObjects: int[] = []
+    LiveFields: string[] = []
+    LiveComponents: string[] = []
+    PlanarFields: string[] = ["/components/Transform/x", "/components/Transform/y", "/components/Orientation/radians", "/components/Appearance/width", "/components/Appearance/height"]
+    LiveValues: double[] = []
+    Log: string = ""
+    ReplayPrimed := false
+    Generated := false
+    GenerationPending := false
+    PixelRatio: float = 1.0
+    Width: float = 640.0
+    Height: float = 400.0
+    X: float = 0.0
+    Y: float = 0.0
+    Span: float = 24.0
+    Yaw: float = 0.0
+    Pitch: float = 0.6
+    Elevation: float = 0.0
+    Perspective := true
+    Tool: string = "move"
+    Snap := false
+    Increment: float = 1.0
+    Local := false
+    GameCamera := false
+    Unlit := false
+    Fogless := false
+    Colliders := false
+    Cameras := false
+    PresentationDirty := true
+    PresentationCommands: string[] = ["viewThroughCamera", "showLighting", "showFog", "showColliders", "showCameraFrames"]
+    Grid := true
+    Gesture := false
+    Axis: string = "x"
+    ProjectedAxis := false
+    Fields: struct<"WorkspaceAssetField">[] = []
+    Objects: int[] = []
+    Names: string[] = []
+    Parents: int[] = []
+    ToolCommands: string[] = ["selectTool", "grab", "moveTool", "rotateTool", "scaleTool", "toggleSnap", "toggleLocalSpace", "finerGrid", "coarserGrid"]
+    AxisNames: string[] = ["x", "y", "z", "w"]
+    VectorAxes: string[] = ["x", "y", "z"]
+    GeometryFields: string[] = ["width", "height", "depth", "elevation"]
+    GroupNames: string[] = ["position", "rotation", "scale"]
+    Selection: string[] = []
+    Hidden: string[] = []
+    Locked: string[] = []
+    Isolated: string[] = []
+    action prepare = workspace_runtime_prepare(Document, Revision)
+    action status = workspace_runtime_poll()
+    action view = workspace_runtime_view(Session, X, Y, Span, Span * Height / Width, Yaw, Pitch, Elevation, Perspective, GridValue(), ModelFocal())
+    action objects = workspace_runtime_objects(Session)
+    action read = workspace_document_read(Document)
+    action begin_edit = workspace_document_begin(Document, Revision)
+    action commit_edit = workspace_document_commit(Document, Revision)
+    action cancel_edit = workspace_document_cancel(Document, Revision)
+
+    Quote :: fn(Text: string) -> string {
+        encoded := value_to_json(Text)
+        if encoded.Ok {
+            return encoded.Text
+        }
+        return "null"
+    }
+    RuntimeCurrent :: pure fn() -> bool {
+        if TargetPreview {
+            return RuntimeDocument == PreviewDocument && RuntimeRevision == PreviewRevision
+        }
+        return RuntimeDocument == Document && RuntimeRevision == Revision
+    }
+    PreviewSource :: fn() -> string {
+        name := await Quote(PreviewName)
+        if text_equal(PreviewKind, "prototype") {
+            return format_text("version 1\nname \"Studio Preview\"\n(array)entities {{ - {{ name {}; prototype {}; }} }}\n", name, name)
+        }
+        if ModelPreview() { return await ModelSceneSource() }
+        return ""
+    }
+    ModelPreview :: pure fn() -> bool {
+        return TargetPreview && text_equal(PreviewKind, "model")
+    }
+    ModelFixtureName :: pure fn(Suffix: string) -> string {
+        return format_text("StudioModelPreview-{}-{}-{}", PreviewDocument, PreviewRevision, Suffix)
+    }
+    ModelFixtureSources :: fn() -> string[] {
+        object := await Quote(ModelFixtureName("Object"))
+        camera := await Quote(ModelFixtureName("Camera"))
+        key := await Quote(ModelFixtureName("Key"))
+        fill := await Quote(ModelFixtureName("Fill"))
+        model := await Quote(PreviewName)
+        return [
+            format_text("name {}\ncomponents {{\n (object)Transform\n Appearance width=1.0 height=1.0 color=0xb7c4d6ff\n Geometry3D primitive=0 width=1.0 height=1.0 depth=1.0\n MeshSurface2D enabled=#true\n SdfSurface3D enabled=#true\n VisualTransform scale=1.0\n Shader shape={}\n}}\n", object, model),
+            format_text("name {}\ncomponents {{\n Camera width=200.0 height=200.0\n HRC2D resolution=0.5 adaptive=#true target_fps=60 ambient=0.15 intensity=3.0 exposure=0.6 fog=0.08 bloom=0.03 falloff=1.0 bounce_intensity=0.2 bounce_hysteresis=0.8 radiance_hysteresis=0.8 feedback=#true surface_radius=24.0 surface_depth_radius=128.0 surface_depth_gain=1.0 surface_depth_quality=1 surface_depth_history=0.65 surface_thickness=12.0 surface_relief=0.0 surface_bevel=1.0 specular=1.0\n}}\n", camera),
+            format_text("name {}\ncomponents {{\n Transform x=-90.0 y=-60.0\n Appearance shape=1 width=1.0 height=1.0 color=0xffe6caff\n Material scene=0xffffffff albedo=0xffffffff emission_color=0xffe6caff emission_intensity=0.45 emission_multiplier=1.0\n}}\n", key),
+            format_text("name {}\ncomponents {{\n Transform x=70.0 y=40.0\n Appearance shape=1 width=1.0 height=1.0 color=0xb7d7ffff\n Material scene=0xffffffff albedo=0xffffffff emission_color=0xb7d7ffff emission_intensity=0.2 emission_multiplier=1.0\n}}\n", fill)
+        ]
+    }
+    ModelSceneSource :: fn() -> string {
+        object := await Quote(ModelFixtureName("Object"))
+        camera := await Quote(ModelFixtureName("Camera"))
+        key := await Quote(ModelFixtureName("Key"))
+        fill := await Quote(ModelFixtureName("Fill"))
+        return format_text("version 1\nname \"Studio Model Preview\"\n(array)entities {{\n - name=\"ModelPreviewObject\" prototype={}\n - name=\"ModelPreviewCamera\" prototype={}\n - name=\"ModelPreviewKey\" prototype={}\n - name=\"ModelPreviewFill\" prototype={}\n}}\n", object, camera, key, fill)
+    }
+    ModelNumber :: fn(Object: int, Component: string, Field: string, Value: float) -> bool {
+        changed := await workspace_runtime_number(Session, Object, Component, Field, true, cast<double>(Value))
+        if !changed.Ok {
+            ModelError = changed.Error
+        }
+        return changed.Ok
+    }
+    ModelInitialize :: fn() {
+        ModelError = ""
+        ModelWarning = ""
+        ModelObject = -1
+        ModelCamera = -1
+        ModelKey = -1
+        ModelFill = -1
+        index: int = 0
+        for name in Names {
+            if text_equal(name, "ModelPreviewObject") { ModelObject = index }
+            if text_equal(name, "ModelPreviewCamera") { ModelCamera = index }
+            if text_equal(name, "ModelPreviewKey") { ModelKey = index }
+            if text_equal(name, "ModelPreviewFill") { ModelFill = index }
+            index += 1
+        }
+        if min(min(ModelObject, ModelCamera), min(ModelKey, ModelFill)) < 0 {
+            ModelError = "Model preview fixtures are missing"
+            return
+        }
+        inspection := await inspect_model(PreviewDocument, PreviewRevision)
+        if !inspection.Valid { ModelError = inspection.Error; return }
+        ModelParts = inspection.Parts
+        ModelPart = -1
+        for part in ModelParts {
+            if part.node == ModelPartNode && text_equal(part.asset, ModelPartAsset) && text_equal(part.path, ModelPartPath) {
+                ModelPart = part.index
+            }
+        }
+        if ModelPartNode != 0 && ModelPart < 0 {
+            ModelWarning = "Isolated part no longer exists; showing complete model"
+            ModelPartNode = 0
+        }
+        ModelRadius = 0.0
+        ModelDrawn = false
+        ModelDirty = true
+        ModelFrame = true
+        ModelParameterError = ""
+        ModelParameterScan = 0
+        ModelParameterNames = []
+        ModelParameterSlots = []
+        ModelParameterAxes = []
+        ModelParameterKeys = []
+        ModelParameterValues = []
+        ModelParameterApplied = []
+        ModelParameterMin = []
+        ModelParameterMax = []
+        ModelParameterErrors = []
+        GameCamera = false
+        Perspective = false
+        Yaw = 0.0
+        Pitch = 0.0
+        Elevation = 0.0
+        await ModelUpdate()
+    }
+    ModelUpdate :: fn() {
+        if !ModelPreview() || !Ready || !RuntimeCurrent() || ModelObject < 0 || Preparing {
+            return
+        }
+        bounds := await workspace_runtime_model_snapshot(Session, ModelObject, ModelPart)
+        if !bounds.Ok {
+            ModelError = bounds.Error
+            return
+        }
+        ModelError = ""
+        ModelDimensions = [bounds.MaxX - bounds.MinX, bounds.MaxY - bounds.MinY, bounds.MaxZ - bounds.MinZ]
+        if bounds.Empty {
+            ModelDimensions = [0.0, 0.0, 0.0]
+            ModelFrame = false
+            return
+        }
+        radius := 0.5 * sqrt(ModelDimensions[0] * ModelDimensions[0] + ModelDimensions[1] * ModelDimensions[1] + ModelDimensions[2] * ModelDimensions[2])
+        if radius <= 0.0 {
+            ModelError = "Model bounds cannot be framed"
+            return
+        }
+        if radius != ModelRadius {
+            ModelDirty = true
+            if !await ModelNumber(ModelKey, "Transform", "x", radius * -0.9) { return }
+            if !await ModelNumber(ModelKey, "Transform", "y", radius * -0.6) { return }
+            if !await ModelNumber(ModelFill, "Transform", "x", radius * 0.7) { return }
+            if !await ModelNumber(ModelFill, "Transform", "y", radius * 0.4) { return }
+            if !await ModelNumber(ModelKey, "Appearance", "width", radius * 0.12) { return }
+            if !await ModelNumber(ModelKey, "Appearance", "height", radius * 0.12) { return }
+            if !await ModelNumber(ModelFill, "Appearance", "width", radius * 0.12) { return }
+            if !await ModelNumber(ModelFill, "Appearance", "height", radius * 0.12) { return }
+            if !await ModelNumber(ModelCamera, "Camera", "width", radius * 2.5) { return }
+            if !await ModelNumber(ModelCamera, "Camera", "height", radius * 2.5) { return }
+            if !await ModelNumber(ModelCamera, "HRC2D", "surface_radius", radius * 0.24) { return }
+            ModelRadius = radius
+        }
+        // The bounds center also changes when parameter edits preserve radius.
+        centerX := (bounds.MinX + bounds.MaxX) * 0.5
+        centerY := (bounds.MinY + bounds.MaxY) * 0.5
+        centerZ := (bounds.MinZ + bounds.MaxZ) * 0.5
+        stamp := format_text("{}:{}:{}:{}:{}:{}:{}:{}:{}", Session, ModelPart, ModelSection, ModelSectionAxis, ModelSectionOffset, ModelYaw, ModelPitch, centerX, centerY)
+        stamp = format_text("{}:{}", stamp, centerZ)
+        if ModelDirty || !text_equal(stamp, ModelStamp) {
+            normal: float[] = [0.0, 0.0, 0.0]
+            normal[ModelSectionAxis] = 1.0
+            if ModelDrawn {
+                clipped := await workspace_runtime_model_inspection(Session, ModelObject, ModelPart, ModelSection, normal[0], normal[1], normal[2], ModelSectionOffset)
+                if !clipped.Ok { ModelError = clipped.Error; return }
+            }
+            if !await ModelNumber(ModelObject, "VisualTransform", "pitch", ModelPitch) { return }
+            if !await ModelNumber(ModelObject, "VisualTransform", "yaw", ModelYaw) { return }
+            // visual_rotation applies pitch about Z then negative yaw about Y.
+            rotatedX := cos(ModelPitch) * centerX - sin(ModelPitch) * centerY
+            rotatedY := sin(ModelPitch) * centerX + cos(ModelPitch) * centerY
+            rotatedZ := sin(ModelYaw) * rotatedX + cos(ModelYaw) * centerZ
+            rotatedX = cos(ModelYaw) * rotatedX - sin(ModelYaw) * centerZ
+            if !await ModelNumber(ModelObject, "Transform", "x", -rotatedX) { return }
+            if !await ModelNumber(ModelObject, "Transform", "y", -rotatedZ) { return }
+            if !await ModelNumber(ModelObject, "Geometry3D", "elevation", -rotatedY) { return }
+            focal: float = 0.0
+            if text_equal(ModelView, "orbit") { focal = radius * 6.0 }
+            if focal > 0.0 && focal <= 1.0 {
+                ModelError = "Model orbit focal distance must exceed one unit; choose an orthographic view"
+                return
+            }
+            if !await ModelNumber(ModelCamera, "Camera", "focal_distance", focal) { return }
+            ModelStamp = stamp
+            ModelDirty = false
+        }
+        if ModelFrame {
+            framed := await workspace_runtime_bounds(Session, [ModelObject])
+            if !framed.Ok { ModelError = framed.Error; return }
+            X = (framed.MinX + framed.MaxX) * 0.5
+            Y = -(framed.MinZ + framed.MaxZ) * 0.5
+            Span = max(max(framed.MaxX - framed.MinX, radius * 0.001), max(framed.MaxZ - framed.MinZ, radius * 0.001) * Width / Height) * 1.25
+            ModelFrame = false
+        }
+    }
+    ModelParametersStep :: fn() {
+        if !ModelPreview() || !Ready || !RuntimeCurrent() || Preparing || ModelObject < 0 || Playing || ModelParameterScan >= 33 {
+            return
+        }
+        if ModelParameterScan == 32 {
+            await ModelPruneDrafts()
+            ModelParameterScan = 33
+            return
+        }
+        slot := ModelParameterScan
+        ModelParameterScan += 1
+        parameter := await workspace_runtime_model_parameter(Session, ModelObject, slot, false, 0, "", "", 1, 0.0, 0.0, 0.0, 0.0)
+        if !parameter.Found || parameter.Hidden { return }
+        if !parameter.Ok { ModelParameterError = parameter.Error; return }
+        asset := await Quote(parameter.Asset)
+        scope := await Quote(parameter.Scope)
+        key := format_text("{}:{}:{}:{}:{}", asset, scope, parameter.Node, parameter.Type, parameter.Width)
+        values: float[] = [parameter.X, parameter.Y, parameter.Z, parameter.W]
+        overrideFound := false
+        overrideIndex: int = 0
+        for overrideKey in ModelOverrideKeys {
+            axis: int = 0
+            while axis < parameter.Width {
+                if text_equal(overrideKey, format_text("{}:{}", key, axis)) {
+                    values[axis] = ModelOverrideValues[overrideIndex]
+                    overrideFound = true
+                }
+                axis += 1
+            }
+            overrideIndex += 1
+        }
+        if overrideFound {
+            restored := await workspace_runtime_model_parameter(Session, ModelObject, slot, true, parameter.Node, parameter.Asset, parameter.Scope, parameter.Width, values[0], values[1], values[2], values[3])
+            if !restored.Ok {
+                ModelParameterError = restored.Error
+                values = [parameter.X, parameter.Y, parameter.Z, parameter.W]
+            }
+            ModelFrame = true
+            ModelDirty = true
+        }
+        minima: float[] = [parameter.MinX, parameter.MinY, parameter.MinZ, parameter.MinW]
+        maxima: float[] = [parameter.MaxX, parameter.MaxY, parameter.MaxZ, parameter.MaxW]
+        axes: string[] = ["X", "Y", "Z", "W"]
+        axis: int = 0
+        while axis < parameter.Width {
+            ModelParameterNames = array_add(ModelParameterNames, format_text("{} {}", parameter.Name, axes[axis]))
+            ModelParameterSlots = array_add(ModelParameterSlots, slot)
+            ModelParameterAxes = array_add(ModelParameterAxes, axis)
+            ModelParameterKeys = array_add(ModelParameterKeys, key)
+            ModelParameterValues = array_add(ModelParameterValues, values[axis])
+            ModelParameterApplied = array_add(ModelParameterApplied, values[axis])
+            ModelParameterMin = array_add(ModelParameterMin, minima[axis])
+            ModelParameterMax = array_add(ModelParameterMax, maxima[axis])
+            ModelParameterErrors = array_add(ModelParameterErrors, "")
+            rejectionKey := format_text("{}:{}", key, axis)
+            rejectedIndex: int = 0
+            for rejectedKey in ModelRejectedKeys {
+                if text_equal(rejectedKey, rejectionKey) {
+                    row := length(ModelParameterValues) - 1
+                    ModelParameterValues[row] = ModelRejectedValues[rejectedIndex]
+                    ModelParameterErrors[row] = ModelRejectedErrors[rejectedIndex]
+                    ModelParameterError = "A preview parameter still has a rejected value"
+                }
+                rejectedIndex += 1
+            }
+            axis += 1
+        }
+    }
+    ModelParameterWrite :: fn(Row: int, Value: float) {
+        if Row < 0 || Row >= length(ModelParameterValues) || !ModelPreview() || !Ready || !RuntimeCurrent() || Preparing || Playing {
+            return
+        }
+        slot := ModelParameterSlots[Row]
+        parameter := await workspace_runtime_model_parameter(Session, ModelObject, slot, false, 0, "", "", 1, 0.0, 0.0, 0.0, 0.0)
+        if !parameter.Ok || !parameter.Found { ModelParameterError = parameter.Error; return }
+        asset := await Quote(parameter.Asset)
+        scope := await Quote(parameter.Scope)
+        key := format_text("{}:{}:{}:{}:{}", asset, scope, parameter.Node, parameter.Type, parameter.Width)
+        if !text_equal(key, ModelParameterKeys[Row]) {
+            ModelParameterError = "Preview declaration changed; rebuild the preview"
+            return
+        }
+        values: float[] = [parameter.X, parameter.Y, parameter.Z, parameter.W]
+        values[ModelParameterAxes[Row]] = Value
+        applied := await workspace_runtime_model_parameter(Session, ModelObject, slot, true, parameter.Node, parameter.Asset, parameter.Scope, parameter.Width, values[0], values[1], values[2], values[3])
+        ModelParameterValues[Row] = Value
+        ModelParameterErrors[Row] = applied.Error
+        ModelParameterError = applied.Error
+        rejectionKey := format_text("{}:{}", key, ModelParameterAxes[Row])
+        reject: int = -1
+        index: int = 0
+        for rejected in ModelRejectedKeys {
+            if text_equal(rejected, rejectionKey) { reject = index }
+            index += 1
+        }
+        if !applied.Ok {
+            if reject < 0 {
+                ModelRejectedKeys = array_add(ModelRejectedKeys, rejectionKey)
+                ModelRejectedValues = array_add(ModelRejectedValues, Value)
+                ModelRejectedErrors = array_add(ModelRejectedErrors, applied.Error)
+            } else {
+                ModelRejectedValues[reject] = Value
+                ModelRejectedErrors[reject] = applied.Error
+            }
+            return
+        }
+        if reject >= 0 { ModelRejectedKeys[reject] = "" }
+        overrideIndex: int = -1
+        index = 0
+        for overrideKey in ModelOverrideKeys {
+            if text_equal(overrideKey, rejectionKey) { overrideIndex = index }
+            index += 1
+        }
+        if overrideIndex < 0 {
+            ModelOverrideKeys = array_add(ModelOverrideKeys, rejectionKey)
+            ModelOverrideValues = array_add(ModelOverrideValues, Value)
+        } else {
+            ModelOverrideValues[overrideIndex] = Value
+        }
+        ModelParameterApplied[Row] = Value
+        ModelParameterError = ""
+        for error in ModelParameterErrors {
+            if !text_equal(error, "") { ModelParameterError = "A preview parameter still has a rejected value" }
+        }
+        ModelDirty = true
+        await ModelUpdate()
+    }
+    ModelViewChange :: fn(Id: string, Value: float) {
+        if !ModelPreview() || !Ready || !RuntimeCurrent() || Preparing || Playing { return }
+        if text_equal(Id, "frame") { ModelFrame = true }
+        if text_equal(Id, "section") { ModelSection = Value > 0.0 }
+        if text_equal(Id, "axis") { ModelSectionAxis = cast<int>(clamp(Value, 0.0, 2.0)) }
+        if text_equal(Id, "offset") { ModelSectionOffset = Value }
+        if text_equal(Id, "part") {
+            ModelPart = -1
+            ModelPartNode = 0
+            ModelPartAsset = ""
+            ModelPartPath = ""
+            for part in ModelParts {
+                if part.index == cast<int>(Value) {
+                    ModelPart = part.index
+                    ModelPartNode = part.node
+                    ModelPartAsset = part.asset
+                    ModelPartPath = part.path
+                }
+            }
+            ModelFrame = true
+        }
+        if text_equal(Id, "orbit") || text_equal(Id, "front") || text_equal(Id, "side") || text_equal(Id, "top") {
+            ModelView = Id
+            ModelYaw = 0.0
+            ModelPitch = 0.0
+            if text_equal(Id, "side") { ModelYaw = 1.57079633 }
+            if text_equal(Id, "top") { ModelPitch = -1.57079633 }
+            if text_equal(Id, "orbit") { ModelPitch = -0.45; ModelYaw = 0.45 }
+            ModelFrame = true
+        }
+        if text_equal(Id, "resetParameters") {
+            ModelRejectedKeys = []
+            ModelRejectedValues = []
+            ModelRejectedErrors = []
+            ModelOverrideKeys = []
+            ModelOverrideValues = []
+            NeedsPrepare = true
+            Idle = 0.0
+            return
+        }
+        ModelDirty = true
+        await ModelUpdate()
+        await Publish()
+    }
+    ModelPruneDrafts :: fn() {
+        keys: string[] = []
+        values: float[] = []
+        errors: string[] = []
+        index: int = 0
+        for rejected in ModelRejectedKeys {
+            found := false
+            row: int = 0
+            for key in ModelParameterKeys {
+                if text_equal(rejected, format_text("{}:{}", key, ModelParameterAxes[row])) { found = true }
+                row += 1
+            }
+            if found {
+                keys = array_add(keys, rejected)
+                values = array_add(values, ModelRejectedValues[index])
+                errors = array_add(errors, ModelRejectedErrors[index])
+            } else {
+                if !text_equal(rejected, "") { ModelParameterError = "Rejected preview value was removed because its declaration changed" }
+            }
+            index += 1
+        }
+        ModelRejectedKeys = keys
+        ModelRejectedValues = values
+        ModelRejectedErrors = errors
+        keys = []
+        values = []
+        index = 0
+        for overrideKey in ModelOverrideKeys {
+            found := false
+            row: int = 0
+            for key in ModelParameterKeys {
+                if text_equal(overrideKey, format_text("{}:{}", key, ModelParameterAxes[row])) { found = true }
+                row += 1
+            }
+            if found {
+                keys = array_add(keys, overrideKey)
+                values = array_add(values, ModelOverrideValues[index])
+            }
+            index += 1
+        }
+        ModelOverrideKeys = keys
+        ModelOverrideValues = values
+    }
+    LoadPreferences :: fn() {
+        Generated = read_saved_number("studio.preference.scene.generatedWorld", 0).Number > 0.0
+        Unlit = read_saved_number("studio.preference.scene.lighting", 1).Number != 1
+        Fogless = read_saved_number("studio.preference.scene.fog", 0).Number != 1
+        Cameras = read_saved_number("studio.preference.scene.cameraFrames", 1).Number == 1
+        Colliders = read_saved_number("studio.preference.scene.colliders", 0).Number == 1
+        Grid = read_saved_number("studio.preference.scene.grid", 1).Number == 1
+        Increment = cast<float>(read_saved_number("studio.preference.scene.gridIncrement", 32).Number)
+        Snap = read_saved_number("studio.preference.scene.snap", 0).Number == 1
+        Local = read_saved_number("studio.preference.scene.localSpace", 0).Number == 1
+        PresentationDirty = true
+        CheckpointDirty = true
+    }
+    Checkpoint :: fn() {
+        if !CheckpointDirty || Document <= 0 {
+            return
+        }
+        CheckpointDirty = false
+        document := await workspace_document_read(Document)
+        if !document.Ok || text_equal(document.Path, "") {
+            return
+        }
+        selection := value_to_json(Selection)
+        if !selection.Ok {
+            return
+        }
+        camera := format_text("{{\"x\":{},\"y\":{},\"span\":{},\"yaw\":{},\"pitch\":{},\"elevation\":{},\"game\":{}}}", X, Y, Span, Yaw, Pitch, Elevation, GameCamera)
+        presentation := format_text("{{\"unlit\":{},\"fogless\":{},\"colliders\":{},\"cameras\":{}}}", Unlit, Fogless, Colliders, Cameras)
+        value := format_text("{{\"version\":1,\"path\":{},\"camera\":{},\"tool\":{},\"snap\":{},\"local\":{},\"grid\":{},\"increment\":{},\"presentation\":{},\"selection\":{},\"playing\":{}}}", await Quote(document.Path), camera, await Quote(Tool), Snap, Local, Grid, Increment, presentation, selection.Text, Playing)
+        measured := value_to_json(value)
+        if !measured.Ok || query_json(measured.Text, "").Count > 32768 {
+            ToolError = "Scene recovery state exceeds 32 KiB"
+            await send_event<"StudioSceneCheckpoint">(self, "", false, ToolError)
+            return
+        }
+        if text_equal(value, CheckpointLast) {
+            return
+        }
+        CheckpointLast = value
+        await send_event<"StudioSceneCheckpoint">(self, value, true, "")
+    }
+    RestorePresentation :: fn() {
+        if text_equal(RestoreState, "") || Document <= 0 {
+            return
+        }
+        document := await workspace_document_read(Document)
+        if !document.Ok || !text_equal(document.Path, RestorePath) {
+            return
+        }
+        value := RestoreState
+        X = cast<float>(query_json(value, "/camera/x").Number)
+        Y = cast<float>(query_json(value, "/camera/y").Number)
+        Span = cast<float>(query_json(value, "/camera/span").Number)
+        Yaw = cast<float>(query_json(value, "/camera/yaw").Number)
+        Pitch = cast<float>(query_json(value, "/camera/pitch").Number)
+        Elevation = cast<float>(query_json(value, "/camera/elevation").Number)
+        GameCamera = query_json(value, "/camera/game").Boolean
+        Tool = query_json(value, "/tool").String
+        Snap = query_json(value, "/snap").Boolean
+        Local = query_json(value, "/local").Boolean
+        Grid = query_json(value, "/grid").Boolean
+        Increment = cast<float>(query_json(value, "/increment").Number)
+        Unlit = query_json(value, "/presentation/unlit").Boolean
+        Fogless = query_json(value, "/presentation/fogless").Boolean
+        Colliders = query_json(value, "/presentation/colliders").Boolean
+        Cameras = query_json(value, "/presentation/cameras").Boolean
+        paths: string[] = []
+        count := query_json(value, "/selection").Count
+        i: int = 0
+        while i < count {
+            path := query_json(value, format_text("/selection/{}", i)).String
+            for object in Objects {
+                if text_equal(Fields[object].path, path) {
+                    paths = array_add(paths, path)
+                    break
+                }
+            }
+            i += 1
+        }
+        PlayAfterPrepare = query_json(value, "/playing").Boolean
+        NeedsPrepare = true
+        Idle = 0.0
+        RestoreState = ""
+        RestorePath = ""
+        PresentationDirty = true
+        CheckpointDirty = true
+        await send_event<"StudioOutlinerSelectionRequested">(self, Document, Revision, paths, false)
+    }
+    on StudioSceneRestore {
+        if Gesture || GuardWaiting || ProposalPending {
+            ToolError = "Finish the active scene edit before restoring recovery state"
+            return
+        }
+        measured := value_to_json(event.Value)
+        if !measured.Ok || query_json(measured.Text, "").Count > 32768 {
+            ToolError = "Scene recovery state exceeds 32 KiB"
+            return
+        }
+        version := query_json(event.Value, "/version")
+        path := query_json(event.Value, "/path")
+        selection := query_json(event.Value, "/selection")
+        if !version.Ok || !text_equal(version.Kind, "number") || version.Number != 1 || !text_equal(path.Kind, "string") || path.Count == 0 || path.Count > 1024 || !text_equal(selection.Kind, "array") || selection.Count > 4096 {
+            ToolError = "Scene recovery state is invalid"
+            return
+        }
+        numeric: string[] = ["/camera/x", "/camera/y", "/camera/span", "/camera/yaw", "/camera/pitch", "/camera/elevation", "/increment"]
+        for key in numeric {
+            number := query_json(event.Value, key)
+            if !text_equal(number.Kind, "number") || number.Number < -1000000000.0 || number.Number > 1000000000.0 {
+                ToolError = "Scene recovery camera is invalid"
+                return
+            }
+        }
+        span := query_json(event.Value, "/camera/span").Number
+        pitch := query_json(event.Value, "/camera/pitch").Number
+        increment := query_json(event.Value, "/increment").Number
+        if span < 0.1 || span > 10000.0 || pitch < -1.4 || pitch > 1.4 || increment < 1.0 || increment > 128.0 {
+            ToolError = "Scene recovery camera is out of range"
+            return
+        }
+        boolean: string[] = ["/camera/game", "/snap", "/local", "/grid", "/presentation/unlit", "/presentation/fogless", "/presentation/colliders", "/presentation/cameras", "/playing"]
+        for key in boolean {
+            if !text_equal(query_json(event.Value, key).Kind, "boolean") {
+                ToolError = "Scene recovery settings are invalid"
+                return
+            }
+        }
+        tool := query_json(event.Value, "/tool").String
+        if !text_equal(tool, "select") && !text_equal(tool, "move") && !text_equal(tool, "rotate") && !text_equal(tool, "scale") && !text_equal(tool, "collider") {
+            ToolError = "Scene recovery tool is invalid"
+            return
+        }
+        i: int = 0
+        while i < selection.Count {
+            item := query_json(event.Value, format_text("/selection/{}", i))
+            if !text_equal(item.Kind, "string") || item.Count > 2048 {
+                ToolError = "Scene recovery selection is invalid"
+                return
+            }
+            i += 1
+        }
+        RestoreState = event.Value
+        RestorePath = path.String
+        await RestorePresentation()
+        await Publish()
+    }
+    on StudioPreferencesChanged {
+        await LoadPreferences()
+        await Publish()
+    }
+    OverlayStamp :: pure fn() -> string {
+        return format_text("{}/{}/{}/{}/{}/{}/{}/{}/{}/{}/{}/{}/{}/{}/{}", Document, Revision, Session, X, Y, Span, Yaw, Pitch, Elevation, Width, Height, GameCamera, Perspective, Cameras, length(Names))
+    }
+    OverlayEligible :: pure fn(Object: int, Picking: bool) -> bool {
+        field := SourceField(Object)
+        if field < 0 || Under(field, Hidden) || (length(Isolated) > 0 && !Under(field, Isolated)) {
+            return false
+        }
+        return !Picking || !Under(field, Locked)
+    }
+    IsMarker :: fn(Object: int) -> bool {
+        if Playing || Steps > 0 {
+            return false
+        }
+        transform := await workspace_runtime_component(Session, Object, "Transform")
+        if !transform.Ok || !transform.Present {
+            return false
+        }
+        drawnComponents: string[] = ["Appearance", "Tilemap"]
+        for component in drawnComponents {
+            present := await workspace_runtime_component(Session, Object, component)
+            if !present.Ok || present.Present {
+                return false
+            }
+        }
+        surfaceComponents: string[] = ["MeshSurface2D", "SdfSurface3D"]
+        for component in surfaceComponents {
+            present := await workspace_runtime_component(Session, Object, component)
+            if !present.Ok {
+                return false
+            }
+            if present.Present {
+                enabled := await workspace_runtime_value(Session, Object, component, "enabled")
+                if !enabled.Ok || query_json(enabled.Json, "").Boolean {
+                    return false
+                }
+            }
+        }
+        hidden := await workspace_runtime_value(Session, Object, "RenderState", "hidden")
+        return !hidden.Ok || !query_json(hidden.Json, "").Boolean
+    }
+    ClearOverlays :: fn() {
+        MarkerObjects = [];
+        MarkerX = [];
+        MarkerY = [];
+        MarkerStyles = [];
+        MarkerNames = [];
+        MarkerLocked = [];
+        MarkerSelected = []
+        CameraStyles = [];
+        CameraNames = [];
+        CameraDisabled = [];
+        CameraSelected = [];
+        CameraActive = [];
+        CameraActiveSeen = false
+        OverlayScan = 0;
+        OverlayKey = ""
+    }
+    OverlayStep :: fn() {
+        if !Ready || !Visible || Playing || Steps > 0 || Perspective || Busy || RuntimeDocument != Document || RuntimeRevision != Revision || Width <= 0.0 || Height <= 0.0 {
+            await ClearOverlays();
+            return
+        }
+        stamp := OverlayStamp()
+        if !text_equal(OverlayKey, stamp) {
+            await ClearOverlays();
+            OverlayKey = stamp
+        }
+        scanned: int = 0
+        while OverlayScan < length(Names) && OverlayScan < 4096 && scanned < 32 {
+            object := OverlayScan;
+            OverlayScan += 1;
+            scanned += 1
+            cameraPresent := false;
+            cameraIsDisabled := false;
+            cameraIsActive := false
+            if Cameras {
+                camera := await workspace_runtime_component(Session, object, "Camera")
+                if camera.Ok && camera.Present {
+                    cameraPresent = true
+                    cameraDisabled := await workspace_runtime_value(Session, object, "Camera", "disabled")
+                    cameraIsDisabled = cameraDisabled.Ok && query_json(cameraDisabled.Json, "").Boolean
+                    if cameraDisabled.Ok && !cameraIsDisabled && !CameraActiveSeen {
+                        cameraIsActive = true;
+                        CameraActiveSeen = true
+                    }
+                }
+            }
+            if !OverlayEligible(object, false) {
+                continue
+            }
+            position := await RuntimeVector(object, "position")
+            if length(position) != 3 {
+                continue
+            }
+            field := SourceField(object)
+            if await IsMarker(object) {
+                projected := await workspace_runtime_project(Session, position[0], position[1], position[2])
+                if projected.Ok && projected.Depth >= 0.0 && projected.Depth <= 1.0 && projected.X >= -1.0 && projected.X < 1.0 && projected.Y > -1.0 && projected.Y <= 1.0 {
+                    px := (projected.X + 1.0) * Width * 0.5;
+                    py := (1.0 - projected.Y) * Height * 0.5
+                    MarkerObjects = array_add(MarkerObjects, object)
+                    MarkerX = array_add(MarkerX, px);
+                    MarkerY = array_add(MarkerY, py)
+                    MarkerStyles = array_add(MarkerStyles, format_text("left: {}dp; top: {}dp;", px - 5.0, py - 5.0))
+                    MarkerNames = array_add(MarkerNames, Names[object])
+                    MarkerLocked = array_add(MarkerLocked, Under(field, Locked))
+                    MarkerSelected = array_add(MarkerSelected, Under(field, Selection))
+                }
+            }
+            if Cameras {
+                if cameraPresent {
+                    width := await workspace_runtime_number(Session, object, "Camera", "width", false, 0.0)
+                    height := await workspace_runtime_number(Session, object, "Camera", "height", false, 0.0)
+                    offsetX := await workspace_runtime_number(Session, object, "Camera", "offset.x", false, 0.0)
+                    offsetY := await workspace_runtime_number(Session, object, "Camera", "offset.y", false, 0.0)
+                    if width.Ok && height.Ok && offsetX.Ok && offsetY.Ok && width.Value > 0.0 && height.Value > 0.0 {
+                        low := await workspace_runtime_project(Session, position[0] + cast<float>(offsetX.Value - width.Value * 0.5), position[1], position[2] + cast<float>(offsetY.Value - height.Value * 0.5))
+                        high := await workspace_runtime_project(Session, position[0] + cast<float>(offsetX.Value + width.Value * 0.5), position[1], position[2] + cast<float>(offsetY.Value + height.Value * 0.5))
+                        if low.Ok && high.Ok && low.Depth >= 0.0 && low.Depth <= 1.0 && high.Depth >= 0.0 && high.Depth <= 1.0 && max(low.X, high.X) >= -1.0 && min(low.X, high.X) <= 1.0 && max(low.Y, high.Y) >= -1.0 && min(low.Y, high.Y) <= 1.0 {
+                            CameraStyles = array_add(CameraStyles, format_text("left: {}dp; top: {}dp;", max(0.0, (min(low.X, high.X) + 1.0) * Width * 0.5), max(0.0, (1.0 - max(low.Y, high.Y)) * Height * 0.5)))
+                            CameraNames = array_add(CameraNames, Names[object])
+                            CameraDisabled = array_add(CameraDisabled, cameraIsDisabled)
+                            CameraActive = array_add(CameraActive, cameraIsActive)
+                            CameraSelected = array_add(CameraSelected, Under(field, Selection))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    MarkerPick :: pure fn(PX: float, PY: float) -> int {
+        if Playing || Steps > 0 || Perspective || RuntimeDocument != Document || RuntimeRevision != Revision || !text_equal(OverlayKey, OverlayStamp()) {
+            return -1
+        }
+        i := length(MarkerObjects) - 1
+        while i >= 0 {
+            object := MarkerObjects[i]
+            dx := PX - MarkerX[i];
+            dy := PY - MarkerY[i]
+            if dx * dx + dy * dy <= 64.0 && OverlayEligible(object, true) {
+                return object
+            }
+            i -= 1
+        }
+        return -1
+    }
+    FrameStep :: fn() {
+        if !FrameScanning {
+            return
+        }
+        if Document != FrameDocument || Revision != FrameRevision || Session != FrameSession || !Ready || Playing || Busy || Gesture || GuardWaiting {
+            FrameScanning = false;
+            return
+        }
+        count: int = 0
+        while FrameScan < length(Names) && FrameScan < 4096 && count < 32 {
+            object := FrameScan;
+            FrameScan += 1;
+            count += 1
+            field := SourceField(object)
+            if field < 0 || !OverlayEligible(object, false) || (!FrameAll && !Under(field, Selection)) {
+                continue
+            }
+            bounds := await workspace_runtime_bounds(Session, [object])
+            if bounds.Ok {
+                if !FrameFound {
+                    FrameMin = [bounds.MinX, bounds.MinY, bounds.MinZ];
+                    FrameMax = [bounds.MaxX, bounds.MaxY, bounds.MaxZ]
+                }
+                FrameMin = [min(FrameMin[0], bounds.MinX), min(FrameMin[1], bounds.MinY), min(FrameMin[2], bounds.MinZ)]
+                FrameMax = [max(FrameMax[0], bounds.MaxX), max(FrameMax[1], bounds.MaxY), max(FrameMax[2], bounds.MaxZ)]
+                FrameFound = true;
+                FrameSized = true
+            } else {
+                marked := false
+                if !Perspective {
+                    marked = await IsMarker(object)
+                }
+                if marked {
+                    position := await RuntimeVector(object, "position")
+                    if length(position) == 3 {
+                        if !FrameFound {
+                            FrameMin = position;
+                            FrameMax = position
+                        }
+                        FrameMin = [min(FrameMin[0], position[0]), min(FrameMin[1], position[1]), min(FrameMin[2], position[2])]
+                        FrameMax = [max(FrameMax[0], position[0]), max(FrameMax[1], position[1]), max(FrameMax[2], position[2])]
+                        FrameFound = true
+                    }
+                }
+            }
+        }
+        if FrameScan >= length(Names) || FrameScan >= 4096 {
+            FrameScanning = false
+            if !FrameFound {
+                ToolError = "No visible objects to frame";
+                return
+            }
+            X = (FrameMin[0] + FrameMax[0]) * 0.5;
+            Y = -(FrameMin[2] + FrameMax[2]) * 0.5;
+            Elevation = (FrameMin[1] + FrameMax[1]) * 0.5
+            extentX := FrameMax[0] - FrameMin[0];
+            extentY := FrameMax[1] - FrameMin[1];
+            extentZ := FrameMax[2] - FrameMin[2]
+            fitted := max(0.1, max(extentX, extentZ * Width / Height) * 1.2)
+            if Perspective {
+                fitted = max(0.1, sqrt(extentX * extentX + extentY * extentY + extentZ * extentZ) * 1.4 * max(1.0, Width / Height))
+            }
+            if FrameSized {
+                Span = fitted
+            } else {
+                Span = max(Span, fitted)
+            }
+            await view();
+            OverlayKey = "";
+            await Publish()
+        }
+    }
+    MarqueeStep :: fn() {
+        if !BoxScanning {
+            return
+        }
+        if Document != BoxDocument || Revision != BoxRevision || Session != BoxSession || Playing || Busy || !text_equal(BoxView, OverlayStamp()) {
+            BoxScanning = false
+            ToolError = "Selection scan canceled because the source or runtime changed"
+            return
+        }
+        count: int = 0
+        while BoxScan < length(Names) && BoxScan < 4096 && count < 32 {
+            index := BoxScan
+            BoxScan += 1
+            count += 1
+            field := SourceField(index)
+            if field < 0 || Under(field, Hidden) || Under(field, Locked) || contains(BoxPaths, Fields[field].path) {
+                continue
+            }
+            if length(Isolated) > 0 && !Under(field, Isolated) {
+                continue
+            }
+            bounds := await workspace_runtime_bounds(Session, [index])
+            if !bounds.Ok {
+                if !Perspective {
+                    marked := await IsMarker(index)
+                    if marked {
+                        position := await RuntimeVector(index, "position")
+                        if length(position) == 3 {
+                            projectedMarker := await workspace_runtime_project(Session, position[0], position[1], position[2])
+                            if projectedMarker.Ok && projectedMarker.Depth >= 0.0 && projectedMarker.Depth <= 1.0 {
+                                px := (projectedMarker.X + 1.0) * Width * 0.5;
+                                py := (1.0 - projectedMarker.Y) * Height * 0.5
+                                if px + 8.0 >= min(BoxStartX, BoxX) && px - 8.0 <= max(BoxStartX, BoxX) && py + 8.0 >= min(BoxStartY, BoxY) && py - 8.0 <= max(BoxStartY, BoxY) {
+                                    BoxPaths = array_add(BoxPaths, Fields[field].path)
+                                }
+                            }
+                        }
+                    }
+                }
+                continue
+            }
+            lowX: float = 1000000.0
+            lowY: float = 1000000.0
+            highX: float = -1000000.0
+            highY: float = -1000000.0
+            visible := false
+            corner: int = 0
+            while corner < 8 {
+                x := bounds.MinX
+                y := bounds.MinY
+                z := bounds.MinZ
+                if corner % 2 == 1 {
+                    x = bounds.MaxX
+                }
+                if corner / 2 % 2 == 1 {
+                    y = bounds.MaxY
+                }
+                if corner / 4 == 1 {
+                    z = bounds.MaxZ
+                }
+                projected := await workspace_runtime_project(Session, x, y, z)
+                if projected.Ok && projected.Depth >= 0.0 && projected.Depth <= 1.0 {
+                    px := (projected.X + 1.0) * Width * 0.5
+                    py := (1.0 - projected.Y) * Height * 0.5
+                    lowX = min(lowX, px)
+                    lowY = min(lowY, py)
+                    highX = max(highX, px)
+                    highY = max(highY, py)
+                    visible = true
+                }
+                corner += 1
+            }
+            if visible && highX >= min(BoxStartX, BoxX) && lowX <= max(BoxStartX, BoxX) && highY >= min(BoxStartY, BoxY) && lowY <= max(BoxStartY, BoxY) {
+                BoxPaths = array_add(BoxPaths, Fields[field].path)
+            }
+        }
+        if BoxScan >= length(Names) || BoxScan >= 4096 {
+            BoxScanning = false
+            await send_event<"StudioOutlinerSelectionRequested">(self, Document, Revision, BoxPaths, BoxMod)
+        }
+    }
+    GridValue :: pure fn() -> float {
+        if ModelPreview() { return 0.0 }
+        if Grid && !Perspective {
+            return Increment
+        }
+        return 0.0
+    }
+    CanTransform :: pure fn() -> bool {
+        if TargetPreview {
+            return false
+        }
+        if ProposalPending {
+            return false
+        }
+        if !CollaborationActive {
+            return true
+        }
+        return CollaborationReady && !CollaborationPending && !CollaborationReplaying && (text_equal(CollaborationRole, "host") || text_equal(CollaborationRole, "editor"))
+    }
+    Snapping :: pure fn() -> bool {
+        return Snap != InvertSnap
+    }
+    Dot :: pure fn(A: float[], B: float[]) -> float {
+        return A[0] * B[0] + A[1] * B[1] + A[2] * B[2]
+    }
+    Add :: pure fn(A: float[], B: float[]) -> float[] {
+        return [A[0] + B[0], A[1] + B[1], A[2] + B[2]]
+    }
+    Sub :: pure fn(A: float[], B: float[]) -> float[] {
+        return [A[0] - B[0], A[1] - B[1], A[2] - B[2]]
+    }
+    Mul :: pure fn(A: float[], B: float) -> float[] {
+        return [A[0] * B, A[1] * B, A[2] * B]
+    }
+    Cross :: pure fn(A: float[], B: float[]) -> float[] {
+        return [A[1] * B[2] - A[2] * B[1], A[2] * B[0] - A[0] * B[2], A[0] * B[1] - A[1] * B[0]]
+    }
+    Unit :: pure fn(A: float[]) -> float[] {
+        n := sqrt(Dot(A, A))
+        if n < 0.000001 {
+            return [0.0, 0.0, 0.0]
+        }
+        return Mul(A, 1.0 / n)
+    }
+    Placer :: fn(Object: int, Spatial: bool) -> int {
+        parent := Parents[Object]
+        depth: int = 0
+        while parent >= 0 && depth < 64 {
+            component := "Transform"
+            field := "x"
+            if Spatial {
+                component = "Transform3D"
+                field = "position.x"
+            }
+            value := await workspace_runtime_number(Session, parent, component, field, false, 0.0)
+            if value.Ok {
+                return parent
+            }
+            parent = Parents[parent]
+            depth += 1
+        }
+        return -1
+    }
+    Spatial :: fn(Object: int) -> bool {
+        value := await workspace_runtime_number(Session, Object, "Transform3D", "position.x", false, 0.0)
+        return value.Ok
+    }
+    RuntimeVector :: fn(Object: int, Field: string) -> float[] {
+        result: float[] = []
+        for axis in VectorAxes {
+            value := await workspace_runtime_number(Session, Object, "GlobalTransform3D", format_text("{}.{}", Field, axis), false, 0.0)
+            if !value.Ok {
+                result = []
+                break
+            }
+            result = array_add(result, cast<float>(value.Value))
+        }
+        if length(result) == 3 {
+            return result
+        }
+        if await Spatial(Object) {
+            return []
+        }
+        if text_equal(Field, "position") {
+            x := await workspace_runtime_number(Session, Object, "GlobalTransform2D", "position.x", false, 0.0)
+            y := await workspace_runtime_number(Session, Object, "GlobalTransform2D", "position.y", false, 0.0)
+            elevation := await workspace_runtime_number(Session, Object, "Geometry3D", "elevation", false, 0.0)
+            if !x.Ok || !y.Ok {
+                return []
+            }
+            return [cast<float>(x.Value), cast<float>(elevation.Value), cast<float>(y.Value)]
+        }
+        turn := await workspace_runtime_number(Session, Object, "GlobalTransform2D", "radians", false, 0.0)
+        if !turn.Ok {
+            return []
+        }
+        angle := cast<float>(turn.Value)
+        if text_equal(Field, "x_axis") {
+            return [cos(angle), 0.0, sin(angle)]
+        }
+        if text_equal(Field, "y_axis") {
+            return [0.0, 1.0, 0.0]
+        }
+        if text_equal(Field, "z_axis") {
+            return [-sin(angle), 0.0, cos(angle)]
+        }
+        return []
+    }
+    SelectedAncestor :: pure fn(Object: int) -> bool {
+        parent := Parents[Object]
+        depth: int = 0
+        while parent >= 0 && depth < 64 {
+            for path in Selection {
+                if RuntimeObject(path) == parent {
+                    return true
+                }
+            }
+            parent = Parents[parent]
+            depth += 1
+        }
+        return false
+    }
+    ParentDelta :: fn(Object: int, Delta: float[]) -> float[] {
+        parent := await Placer(Object, true)
+        if parent < 0 {
+            return Delta
+        }
+        x := await RuntimeVector(parent, "x_axis")
+        y := await RuntimeVector(parent, "y_axis")
+        z := await RuntimeVector(parent, "z_axis")
+        if length(x) != 3 || length(y) != 3 || length(z) != 3 {
+            return Delta
+        }
+        determinant := Dot(x, Cross(y, z))
+        axisProduct := sqrt(Dot(x, x) * Dot(y, y) * Dot(z, z))
+        if axisProduct <= 0.0 || abs(determinant) <= 0.00001 * axisProduct {
+            ToolError = "Parent transform is singular"
+            return []
+        }
+        return [Dot(Delta, Cross(y, z)) / determinant, Dot(Delta, Cross(z, x)) / determinant, Dot(Delta, Cross(x, y)) / determinant]
+    }
+    MoveWorld :: fn(Delta: float[]) -> bool {
+        for path in Selection {
+            object := RuntimeObject(path)
+            if object < 0 || SelectedAncestor(object) {
+                continue
+            }
+            if !await Spatial(object) {
+                position := await RuntimeVector(object, "position")
+                if length(position) != 3 || !await PlaceWorld(path, object, Add(position, Delta)) {
+                    return false
+                }
+                continue
+            }
+            local := await ParentDelta(object, Delta)
+            if length(local) != 3 {
+                return false
+            }
+            inspected := workspace_object_inspect(Document, Revision, "scene", path)
+            if !inspected.Ok {
+                ToolError = inspected.Error
+                return false
+            }
+            i: int = 0
+            for axis in VectorAxes {
+                relative := format_text("/components/Transform3D/position/{}", axis)
+                value := CandidateNumber(path, inspected.Fields, relative) + local[i]
+                if !await EditField(path, relative, value) {
+                    return false
+                }
+                i += 1
+            }
+        }
+        return true
+    }
+    GestureTransaction :: fn() -> bool {
+        if !Authorized {
+            return false
+        }
+        if Gesture {
+            return true
+        }
+        await read()
+        if !read.Ok || read.Transaction {
+            ToolError = "Finish the current source edit first"
+            return false
+        }
+        Revision = read.Revision
+        await begin_edit()
+        if !begin_edit.Ok {
+            ToolError = begin_edit.Error
+            return false
+        }
+        Gesture = true
+        await send_event<"StudioDocumentChanged">(self, Document)
+        return true
+    }
+    QMultiply :: pure fn(A: float[], B: float[]) -> float[] {
+        return [A[3] * B[0] + A[0] * B[3] + A[1] * B[2] - A[2] * B[1], A[3] * B[1] - A[0] * B[2] + A[1] * B[3] + A[2] * B[0], A[3] * B[2] + A[0] * B[1] - A[1] * B[0] + A[2] * B[3], A[3] * B[3] - A[0] * B[0] - A[1] * B[1] - A[2] * B[2]]
+    }
+    QRotate :: pure fn(Q: float[], V: float[]) -> float[] {
+        axis := [Q[0], Q[1], Q[2]]
+        t := Mul(Cross(axis, V), 2.0)
+        return Add(V, Add(Mul(t, Q[3]), Cross(axis, t)))
+    }
+    ParentRotation :: fn(Object: int) -> float[] {
+        parent := await Placer(Object, true)
+        depth: int = 0
+        result: float[] = [0.0, 0.0, 0.0, 1.0]
+        if parent >= 0 {
+            x := await RuntimeVector(parent, "x_axis")
+            y := await RuntimeVector(parent, "y_axis")
+            z := await RuntimeVector(parent, "z_axis")
+            if length(x) != 3 || length(y) != 3 || length(z) != 3 {
+                return []
+            }
+            xx := Dot(x, x)
+            yy := Dot(y, y)
+            zz := Dot(z, z)
+            tolerance := max(xx, max(yy, zz)) * 0.00001
+            if abs(xx - yy) > tolerance || abs(xx - zz) > tolerance || abs(Dot(x, y)) > tolerance || abs(Dot(y, z)) > tolerance || abs(Dot(x, z)) > tolerance {
+                ToolError = "Parent scale or shear prevents a representable world rotation"
+                return []
+            }
+        }
+        while parent >= 0 && depth < 64 {
+            q: float[] = []
+            missing := false
+            for axis in AxisNames {
+                value := await workspace_runtime_number(Session, parent, "Transform3D", format_text("rotation.{}", axis), false, 0.0)
+                if !value.Ok {
+                    missing = true
+                }
+                q = array_add(q, cast<float>(value.Value))
+            }
+            if !missing {
+                n := sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3])
+                if n > 0.000001 {
+                    q = [q[0] / n, q[1] / n, q[2] / n, q[3] / n]
+                    result = QMultiply(q, result)
+                }
+            }
+            parent = Parents[parent]
+            depth += 1
+        }
+        return result
+    }
+    PlaceWorld :: fn(Path: string, Object: int, Position: float[]) -> bool {
+        spatial := await Spatial(Object)
+        offset := Position
+        parent := await Placer(Object, spatial)
+        if parent >= 0 {
+            origin := await RuntimeVector(parent, "position")
+            if length(origin) == 3 {
+                offset = Sub(Position, origin)
+            }
+        }
+        if !spatial {
+            angle: float = 0.0
+            if parent >= 0 {
+                turn := await workspace_runtime_number(Session, parent, "GlobalTransform2D", "radians", false, 0.0)
+                if turn.Ok {
+                    angle = cast<float>(turn.Value)
+                }
+            }
+            x := offset[0] * cos(angle) + offset[2] * sin(angle)
+            y := -offset[0] * sin(angle) + offset[2] * cos(angle)
+            if !await EditField(Path, "/components/Transform/x", x) || !await EditField(Path, "/components/Transform/y", y) || !await EditField(Path, "/components/Geometry3D/elevation", Position[1]) {
+                return false
+            }
+            return true
+        }
+        local := await ParentDelta(Object, offset)
+        if length(local) != 3 {
+            return false
+        }
+        i: int = 0
+        for axis in VectorAxes {
+            if !await EditField(Path, format_text("/components/Transform3D/position/{}", axis), local[i]) {
+                return false
+            }
+            i += 1
+        }
+        return true
+    }
+    CaptureTargets :: fn() -> bool {
+        TargetSpatial = []
+        TargetPaths = []
+        TargetObjects = []
+        TargetPositions = []
+        TargetRotations = []
+        TargetScales = []
+        pivot: float[] = [0.0, 0.0, 0.0]
+        for path in Selection {
+            object := RuntimeObject(path)
+            if object < 0 || SelectedAncestor(object) {
+                continue
+            }
+            position := await RuntimeVector(object, "position")
+            inspected := workspace_object_inspect(Document, Revision, "scene", path)
+            if length(position) != 3 || !inspected.Ok {
+                ToolError = "Selection requires an authored Transform3D"
+                return false
+            }
+            spatial := await Spatial(object)
+            TargetSpatial = array_add(TargetSpatial, spatial)
+            TargetPaths = array_add(TargetPaths, path)
+            TargetObjects = array_add(TargetObjects, object)
+            for value in position {
+                TargetPositions = array_add(TargetPositions, value)
+            }
+            pivot = Add(pivot, position)
+            if spatial {
+                for axis in AxisNames {
+                    TargetRotations = array_add(TargetRotations, cast<float>(Number(inspected.Fields, format_text("/components/Transform3D/rotation/{}", axis))))
+                }
+            } else {
+                TargetRotations = array_add(TargetRotations, cast<float>(Number(inspected.Fields, "/components/Orientation/radians")))
+                TargetRotations = array_add(TargetRotations, cast<float>(0.0))
+                TargetRotations = array_add(TargetRotations, cast<float>(0.0))
+                TargetRotations = array_add(TargetRotations, cast<float>(1.0))
+            }
+            if spatial {
+                for axis in VectorAxes {
+                    TargetScales = array_add(TargetScales, cast<float>(Number(inspected.Fields, format_text("/components/Transform3D/scale/{}", axis))))
+                }
+            } else {
+                TargetScales = array_add(TargetScales, cast<float>(Number(inspected.Fields, "/components/Geometry3D/width")))
+                TargetScales = array_add(TargetScales, cast<float>(Number(inspected.Fields, "/components/Geometry3D/height")))
+                TargetScales = array_add(TargetScales, cast<float>(Number(inspected.Fields, "/components/Geometry3D/depth")))
+            }
+        }
+        if length(TargetPaths) == 0 || length(TargetPaths) > 128 {
+            ToolError = "Select between one and 128 authored objects"
+            return false
+        }
+        RayPivot = Mul(pivot, 1.0 / cast<float>(length(TargetPaths)))
+        return true
+    }
+    TurnTargets :: fn(Radians: float) -> bool {
+        sine := sin(Radians * 0.5)
+        cosine := cos(Radians * 0.5)
+        turn: float[] = [RayAxis[0] * sine, RayAxis[1] * sine, RayAxis[2] * sine, cosine]
+        i: int = 0
+        while i < length(TargetPaths) {
+            path := TargetPaths[i]
+            object := TargetObjects[i]
+            position := [TargetPositions[i * 3], TargetPositions[i * 3 + 1], TargetPositions[i * 3 + 2]]
+            if !await PlaceWorld(path, object, Add(RayPivot, QRotate(turn, Sub(position, RayPivot)))) {
+                return false
+            }
+            if !TargetSpatial[i] {
+                if abs(RayAxis[1]) < 0.999 {
+                    ToolError = "Transform/Orientation objects rotate only around world Y"
+                    return false
+                }
+                inspected := workspace_object_inspect(Document, Revision, "scene", path)
+                if !inspected.Ok {
+                    return false
+                }
+                base := TargetRotations[i * 4]
+                if !await EditField(path, "/components/Orientation/radians", base - Radians * RayAxis[1]) {
+                    return false
+                }
+                i += 1
+                continue
+            }
+            parent := await ParentRotation(object)
+            if length(parent) != 4 {
+                return false
+            }
+            original := [TargetRotations[i * 4], TargetRotations[i * 4 + 1], TargetRotations[i * 4 + 2], TargetRotations[i * 4 + 3]]
+            norm := sqrt(original[0] * original[0] + original[1] * original[1] + original[2] * original[2] + original[3] * original[3])
+            if norm < 0.000001 {
+                original = [0.0, 0.0, 0.0, 1.0]
+            } else {
+                original = [original[0] / norm, original[1] / norm, original[2] / norm, original[3] / norm]
+            }
+            localAxis := await ParentDelta(object, RayAxis)
+            if length(localAxis) != 3 {
+                return false
+            }
+            localAxis = Unit(localAxis)
+            parity: float = 1.0
+            placer := await Placer(object, true)
+            if placer >= 0 {
+                x := await RuntimeVector(placer, "x_axis")
+                y := await RuntimeVector(placer, "y_axis")
+                z := await RuntimeVector(placer, "z_axis")
+                if length(x) == 3 && length(y) == 3 && length(z) == 3 {
+                    if Dot(x, Cross(y, z)) < 0.0 {
+                        parity = -1.0
+                    }
+                }
+            }
+            localTurn: float[] = [localAxis[0] * sine * parity, localAxis[1] * sine * parity, localAxis[2] * sine * parity, cosine]
+            next := QMultiply(localTurn, original)
+            k: int = 0
+            for axis in AxisNames {
+                if !await EditField(path, format_text("/components/Transform3D/rotation/{}", axis), next[k]) {
+                    return false
+                }
+                k += 1
+            }
+            i += 1
+        }
+        return true
+    }
+    PointerRay :: fn() -> float[] {
+        ray := await workspace_runtime_ray(Session, RayPointerX / Width * 2.0 - 1.0, 1.0 - RayPointerY / Height * 2.0)
+        if !ray.Ok {
+            ToolError = ray.Error
+            return []
+        }
+        return [ray.OriginX, ray.OriginY, ray.OriginZ, ray.DirectionX, ray.DirectionY, ray.DirectionZ]
+    }
+    AxisParameter :: pure fn(Ray: float[]) -> float[] {
+        origin := [Ray[0], Ray[1], Ray[2]]
+        direction := [Ray[3], Ray[4], Ray[5]]
+        offset := Sub(origin, RayPivot)
+        along := Dot(direction, RayAxis)
+        denominator := 1.0 - along * along
+        if denominator < 0.001 {
+            return []
+        }
+        return [(Dot(RayAxis, offset) - along * Dot(direction, offset)) / denominator]
+    }
+    PlanePoint :: pure fn(Ray: float[]) -> float[] {
+        origin := [Ray[0], Ray[1], Ray[2]]
+        direction := [Ray[3], Ray[4], Ray[5]]
+        denominator := Dot(direction, RayNormal)
+        if abs(denominator) < 0.001 {
+            return []
+        }
+        t := Dot(Sub(RayPivot, origin), RayNormal) / denominator
+        if t <= 0.0 {
+            return []
+        }
+        return Add(origin, Mul(direction, t))
+    }
+    RayBegin :: fn() -> bool {
+        if length(Selection) == 0 {
+            return false
+        }
+        object := RuntimeObject(Selection[0])
+        if object < 0 {
+            return false
+        }
+        position := await RuntimeVector(object, "position")
+        if length(position) != 3 {
+            return false
+        }
+        if !await CaptureTargets() {
+            return false
+        }
+        axis: float[] = [1.0, 0.0, 0.0]
+        if text_equal(Axis, "y") {
+            axis = [0.0, 1.0, 0.0]
+        }
+        if text_equal(Axis, "z") {
+            axis = [0.0, 0.0, 1.0]
+        }
+        if Local || text_equal(Tool, "scale") || text_equal(RayPart, "collider") {
+            basis := await RuntimeVector(object, format_text("{}_axis", Axis))
+            if length(basis) != 3 {
+                return false
+            }
+            axis = Unit(basis)
+        }
+        RayAxis = axis
+        RayNormal = axis
+        if text_equal(Tool, "scale") && !text_equal(RayPart, "screen") {
+            k: int = 0
+            if text_equal(Axis, "y") {
+                k = 1
+            }
+            if text_equal(Axis, "z") {
+                k = 2
+            }
+            if length(GizmoDX) != 3 || length(GizmoDY) != 3 {
+                return false
+            }
+            reach := sqrt(GizmoDX[k] * GizmoDX[k] + GizmoDY[k] * GizmoDY[k])
+            if reach < 0.1 {
+                ToolError = "Scale axis is edge-on to the view; orbit the camera"
+                return false
+            }
+            ScaleScreenX = GizmoDX[k] / reach
+            ScaleScreenY = GizmoDY[k] / reach
+        }
+        ray := await PointerRay()
+        if length(ray) != 6 {
+            return false
+        }
+        if text_equal(RayPart, "screen") {
+            RayNormal = [ray[3], ray[4], ray[5]]
+        }
+        if text_equal(RayPart, "axis") || text_equal(RayPart, "collider") {
+            parameter := AxisParameter(ray)
+            if length(parameter) != 1 {
+                ToolError = "This axis is parallel to the view; orbit the camera"
+                return false
+            }
+            RayAlong = parameter[0]
+            RayBaseAlong = parameter[0]
+            RayApplied = 0.0
+        } else {
+            point := PlanePoint(ray)
+            if length(point) != 3 {
+                ToolError = "This handle is edge-on to the view; orbit the camera"
+                return false
+            }
+            RayLast = point
+        }
+        RayTurn = 0.0
+        RayScale = 1.0
+        RayScalePixels = 0.0
+        RayInitialized = true
+        return true
+    }
+    RayDrag :: fn(DX: float, DY: float) {
+        if !RayInitialized || !await GestureTransaction() {
+            return
+        }
+        ray := await PointerRay()
+        if length(ray) != 6 {
+            return
+        }
+        if text_equal(RayPart, "collider") {
+            if !await ColliderDrag(ray) {
+                await Finish(true)
+                return
+            }
+        } else {
+            if text_equal(Tool, "scale") {
+                if text_equal(RayPart, "screen") {
+                    RayScalePixels += DX - DY
+                } else {
+                    RayScalePixels += DX * ScaleScreenX + DY * ScaleScreenY
+                }
+                next := max(0.01, 1.0 + RayScalePixels / 66.0)
+                if Snapping() {
+                    next = max(0.01, round(next / 0.1) * 0.1)
+                }
+                target: int = 0
+                while target < length(TargetPaths) {
+                    path := TargetPaths[target]
+                    object := TargetObjects[target]
+                    k: int = 0
+                    for axis in VectorAxes {
+                        factor: float = 1.0
+                        if text_equal(RayPart, "screen") || text_equal(axis, Axis) {
+                            factor = next
+                        }
+                        relative := format_text("/components/Transform3D/scale/{}", axis)
+                        if !TargetSpatial[target] {
+                            names: string[] = ["width", "height", "depth"]
+                            relative = format_text("/components/Geometry3D/{}", names[k])
+                        }
+                        if !await EditField(path, relative, max(0.001, TargetScales[target * 3 + k] * factor)) {
+                            await Finish(true)
+                            return
+                        }
+                        k += 1
+                    }
+                    position := [TargetPositions[target * 3], TargetPositions[target * 3 + 1], TargetPositions[target * 3 + 2]]
+                    offset := Sub(position, RayPivot)
+                    if text_equal(RayPart, "screen") {
+                        offset = Mul(offset, next)
+                    } else {
+                        offset = Add(offset, Mul(RayAxis, Dot(offset, RayAxis) * (next - 1.0)))
+                    }
+                    if !await PlaceWorld(path, object, Add(RayPivot, offset)) {
+                        await Finish(true)
+                        return
+                    }
+                    target += 1
+                }
+                RayScale = next
+            } else {
+                if text_equal(Tool, "rotate") {
+                    point := PlanePoint(ray)
+                    if length(point) != 3 {
+                        return
+                    }
+                    previous := Unit(Sub(RayLast, RayPivot))
+                    radial := Unit(Sub(point, RayPivot))
+                    angle := atan2(Dot(RayAxis, Cross(previous, radial)), Dot(previous, radial))
+                    RayLast = point
+                    RayTurn += angle
+                    turn := RayTurn
+                    if Snapping() {
+                        turn = round(turn / 0.261799388) * 0.261799388
+                    }
+                    if !await TurnTargets(turn) {
+                        await Finish(true)
+                        return
+                    }
+                } else {
+                    delta: float[] = [0.0, 0.0, 0.0]
+                    if text_equal(RayPart, "axis") {
+                        parameter := AxisParameter(ray)
+                        if length(parameter) != 1 {
+                            return
+                        }
+                        total := parameter[0] - RayBaseAlong
+                        if Snapping() {
+                            if Local {
+                                total = round(total / Increment) * Increment
+                            } else {
+                                base := Dot(RayPivot, RayAxis)
+                                total = round((base + total) / Increment) * Increment - base
+                            }
+                        }
+                        delta = Mul(RayAxis, total - RayApplied)
+                        RayApplied = total
+                    } else {
+                        point := PlanePoint(ray)
+                        if length(point) != 3 {
+                            return
+                        }
+                        delta = Sub(point, RayLast)
+                        if Snapping() {
+                            delta = [round(delta[0] / Increment) * Increment, round(delta[1] / Increment) * Increment, round(delta[2] / Increment) * Increment]
+                        }
+                        RayLast = Add(RayLast, delta)
+                    }
+                    if !await MoveWorld(delta) {
+                        await Finish(true)
+                        return
+                    }
+                }
+            }
+        }
+        await RefreshFields()
+        await Publish()
+    }
+    UpdateCollider :: fn() {
+        ColliderStyles = []
+        ColliderLeft = []
+        ColliderTop = []
+        ColliderReach = []
+        ColliderScales = []
+        if !text_equal(Tool, "collider") || !Visible || !Ready || !Perspective || Playing || length(Selection) != 1 || !CanTransform() {
+            return
+        }
+        object := RuntimeObject(Selection[0])
+        if object < 0 {
+            return
+        }
+        inspected := workspace_object_inspect(Document, Revision, "scene", Selection[0])
+        if !inspected.Ok {
+            return
+        }
+        present := false
+        shape := cast<int>(Number(inspected.Fields, "/components/Collider3D/shape"))
+        for field in inspected.Fields {
+            if text_equal(field.relative, "/components/Collider3D") {
+                present = true
+            }
+            if text_equal(field.relative, "/components/Collider3D/shape") {
+                if text_contains(Text: field.text, Query: "sphere", true) {
+                    shape = 1
+                }
+                if text_contains(Text: field.text, Query: "capsule", true) {
+                    shape = 2
+                }
+                if text_contains(Text: field.text, Query: "hull", true) || text_contains(Text: field.text, Query: "mesh", true) {
+                    shape = 3
+                }
+            }
+        }
+        if !present || shape < 0 || shape > 2 {
+            ToolError = "Collider handles require one box, sphere or capsule with Transform3D"
+            return
+        }
+        position := await RuntimeVector(object, "position")
+        x := await RuntimeVector(object, "x_axis")
+        y := await RuntimeVector(object, "y_axis")
+        z := await RuntimeVector(object, "z_axis")
+        if length(position) != 3 || length(x) != 3 || length(y) != 3 || length(z) != 3 {
+            return
+        }
+        sx := sqrt(Dot(x, x))
+        sy := sqrt(Dot(y, y))
+        sz := sqrt(Dot(z, z))
+        if min(sx, min(sy, sz)) < 0.000001 {
+            ToolError = "Collider transform is singular"
+            return
+        }
+        if abs(Dot(Unit(x), Unit(y))) > 0.001 || abs(Dot(Unit(y), Unit(z))) > 0.001 || abs(Dot(Unit(x), Unit(z))) > 0.001 {
+            ToolError = "Remove transform shear before resizing this collider"
+            return
+        }
+        ColliderScales = [sx, sy, sz]
+        ColliderShape = shape
+        k: int = 0
+        while k < 3 {
+            axis := x
+            if k == 1 {
+                axis = y
+            }
+            if k == 2 {
+                axis = z
+            }
+            reach := cast<float>(CandidateNumber(Selection[0], inspected.Fields, format_text("/components/Collider3D/size/{}", VectorAxes[k]))) * ColliderScales[k] * 0.5
+            radius := cast<float>(CandidateNumber(Selection[0], inspected.Fields, "/components/Collider3D/radius"))
+            height := cast<float>(CandidateNumber(Selection[0], inspected.Fields, "/components/Collider3D/height"))
+            if shape == 1 {
+                reach = radius * max(sx, max(sy, sz))
+            }
+            if shape == 2 {
+                reach = radius * max(sx, sz)
+                if k == 1 {
+                    reach = max(reach, height * sy * 0.5)
+                }
+            }
+            side: int = 0
+            while side < 2 {
+                sign: float = 1.0
+                if side == 0 {
+                    sign = -1.0
+                }
+                handle := Add(position, Mul(Unit(axis), reach * sign))
+                point := await Project(handle[0], handle[1], handle[2])
+                ColliderLeft = array_add(ColliderLeft, point[0] - 6.0)
+                ColliderTop = array_add(ColliderTop, point[1] - 6.0)
+                ColliderReach = array_add(ColliderReach, reach)
+                ColliderStyles = array_add(ColliderStyles, format_text("left: {}dp; top: {}dp;", point[0] - 6.0, point[1] - 6.0))
+                side += 1
+            }
+            k += 1
+        }
+    }
+    ColliderDrag :: fn(Ray: float[]) -> bool {
+        parameter := AxisParameter(Ray)
+        if length(parameter) != 1 {
+            return true
+        }
+        reach := max(0.001, ColliderBaseReach + parameter[0] - ColliderAxisStart)
+        if Snapping() {
+            reach = max(0.001, round(reach * 2.0 / Increment) * Increment * 0.5)
+        }
+        axis := ColliderSlot / 2
+        relative := format_text("/components/Collider3D/size/{}", VectorAxes[axis])
+        value := reach * 2.0 / ColliderScales[axis]
+        if ColliderShape == 1 {
+            relative = "/components/Collider3D/radius"
+            value = reach / max(ColliderScales[0], max(ColliderScales[1], ColliderScales[2]))
+        }
+        if ColliderShape == 2 {
+            inspected := workspace_object_inspect(Document, Revision, "scene", Selection[0])
+            if !inspected.Ok {
+                ToolError = inspected.Error
+                return false
+            }
+            if axis == 1 {
+                radius := cast<float>(CandidateNumber(Selection[0], inspected.Fields, "/components/Collider3D/radius")) * max(ColliderScales[0], ColliderScales[2])
+                relative = "/components/Collider3D/height"
+                value = max(reach, radius) * 2.0 / ColliderScales[1]
+            } else {
+                height := cast<float>(CandidateNumber(Selection[0], inspected.Fields, "/components/Collider3D/height")) * ColliderScales[1] * 0.5
+                relative = "/components/Collider3D/radius"
+                value = min(reach, height) / max(ColliderScales[0], ColliderScales[2])
+            }
+        }
+        return await EditField(Selection[0], relative, value)
+    }
+    Project :: fn(X: float, Y: float, Z: float) -> float[] {
+        projected := await workspace_runtime_project(Session, X, Y, Z)
+        if !projected.Ok || !projected.Visible {
+            return [-100000.0, -100000.0]
+        }
+        return [(projected.X + 1.0) * Width * 0.5, (1.0 - projected.Y) * Height * 0.5]
+    }
+    ApplyPresentation :: fn() {
+        if !Ready || !PresentationDirty {
+            return
+        }
+        colliders := Colliders
+        cameras := Cameras
+        if ModelPreview() { colliders = false; cameras = false }
+        applied := await workspace_runtime_presentation(Session, Unlit, Fogless, colliders, cameras)
+        if !applied.Ok {
+            ToolError = applied.Error
+            return
+        }
+        PresentationDirty = false
+    }
+    ModelFocal :: pure fn() -> float {
+        if ModelPreview() && text_equal(ModelView, "orbit") { return ModelRadius * 6.0 }
+        return 0.0
+    }
+    ApplyView :: fn() {
+        if ModelPreview() {
+            await view()
+            return
+        }
+        if GameCamera {
+            camera := await workspace_runtime_camera(Session, true)
+            if !camera.Ok {
+                ToolError = camera.Error
+            } else {
+                if !camera.Found {
+                    ToolError = "The scene has no enabled camera"
+                }
+            }
+        } else {
+            await view()
+        }
+    }
+    UpdateGizmo :: fn() {
+        GizmoVisible = false
+        if text_equal(Tool, "collider") {
+            return
+        }
+        PlaneStyles = []
+        RingStyles = []
+        RingAxes = []
+        RingLeft = []
+        RingTop = []
+        GizmoDX = []
+        GizmoDY = []
+        if text_equal(Tool, "select") || !Visible || !Ready || !Perspective || Playing || length(Selection) == 0 || !CanTransform() {
+            return
+        }
+        if !Gesture && (RuntimeDocument != Document || RuntimeRevision != Revision) {
+            return
+        }
+        object := RuntimeObject(Selection[0])
+        if object < 0 {
+            return
+        }
+        pivot := await RuntimeVector(object, "position")
+        if length(pivot) != 3 {
+            return
+        }
+        total: float[] = [0.0, 0.0, 0.0]
+        count: int = 0
+        for path in Selection {
+            index := RuntimeObject(path)
+            if index >= 0 && !SelectedAncestor(index) {
+                position := await RuntimeVector(index, "position")
+                if length(position) == 3 {
+                    total = Add(total, position)
+                    count += 1
+                }
+            }
+        }
+        if count > 0 {
+            pivot = Mul(total, 1.0 / cast<float>(count))
+        }
+        origin := await Project(pivot[0], pivot[1], pivot[2])
+        if origin[0] < 0.0 || origin[0] > Width || origin[1] < 0.0 || origin[1] > Height {
+            return
+        }
+        GizmoX = origin[0]
+        GizmoY = origin[1]
+        basis := object
+        if !Local && !text_equal(Tool, "scale") {
+            basis = -1
+        }
+        for axis in VectorAxes {
+            ax: float = 0.0
+            ay: float = 0.0
+            az: float = 0.0
+            if text_equal(axis, "x") {
+                ax = 1.0
+            }
+            if text_equal(axis, "y") {
+                ay = 1.0
+            }
+            if text_equal(axis, "z") {
+                az = 1.0
+            }
+            if basis >= 0 {
+                rx := workspace_runtime_number(Session, basis, "GlobalTransform3D", format_text("{}_axis.x", axis), false, 0.0)
+                ry := workspace_runtime_number(Session, basis, "GlobalTransform3D", format_text("{}_axis.y", axis), false, 0.0)
+                rz := workspace_runtime_number(Session, basis, "GlobalTransform3D", format_text("{}_axis.z", axis), false, 0.0)
+                if rx.Ok && ry.Ok && rz.Ok {
+                    ax = cast<float>(rx.Value)
+                    ay = cast<float>(ry.Value)
+                    az = cast<float>(rz.Value)
+                }
+            }
+            magnitude := sqrt(ax * ax + ay * ay + az * az)
+            if magnitude > 0.00001 {
+                ax /= magnitude
+                ay /= magnitude
+                az /= magnitude
+            }
+            endpoint := await Project(pivot[0] + ax * Span * 0.12, pivot[1] + ay * Span * 0.12, pivot[2] + az * Span * 0.12)
+            dx := endpoint[0] - origin[0]
+            dy := endpoint[1] - origin[1]
+            reach := sqrt(dx * dx + dy * dy)
+            if reach > 0.01 {
+                dx = dx / reach * 66.0
+                dy = dy / reach * 66.0
+            }
+            GizmoDX = array_add(GizmoDX, dx)
+            GizmoDY = array_add(GizmoDY, dy)
+            await set_ui_data(Name: format_text("sceneRuntime.gizmo{}Line", axis), Value: format_text("left: {}dp; top: {}dp; width: {}dp; transform: rotate({}deg);", origin[0], origin[1], sqrt(dx * dx + dy * dy), atan2(dy, dx) * 57.295779513))
+            await set_ui_data(Name: format_text("sceneRuntime.gizmo{}Style", axis), Value: format_text("left: {}dp; top: {}dp;", origin[0] + dx - 14.0, origin[1] + dy - 14.0))
+        }
+        PlaneLeft = []
+        PlaneTop = []
+        k: int = 0
+        while k < 3 {
+            a := (k + 1) % 3
+            b := (k + 2) % 3
+            left := origin[0] + (GizmoDX[a] + GizmoDX[b]) * 0.25 - 8.0
+            top := origin[1] + (GizmoDY[a] + GizmoDY[b]) * 0.25 - 8.0
+            PlaneLeft = array_add(PlaneLeft, left)
+            PlaneTop = array_add(PlaneTop, top)
+            PlaneStyles = array_add(PlaneStyles, format_text("left: {}dp; top: {}dp;", left, top))
+            if text_equal(Tool, "rotate") {
+                u: float[] = [1.0, 0.0, 0.0]
+                v: float[] = [0.0, 1.0, 0.0]
+                if a == 1 {
+                    u = [0.0, 1.0, 0.0]
+                }
+                if a == 2 {
+                    u = [0.0, 0.0, 1.0]
+                }
+                if b == 0 {
+                    v = [1.0, 0.0, 0.0]
+                }
+                if b == 2 {
+                    v = [0.0, 0.0, 1.0]
+                }
+                if Local {
+                    ru := await RuntimeVector(object, format_text("{}_axis", VectorAxes[a]))
+                    rv := await RuntimeVector(object, format_text("{}_axis", VectorAxes[b]))
+                    if length(ru) == 3 && length(rv) == 3 {
+                        u = Unit(ru)
+                        v = Unit(rv)
+                    }
+                }
+                segment: int = 0
+                while segment < 24 {
+                    angle := cast<float>(segment) * 0.261799388
+                    offset := Add(Mul(u, cos(angle) * Span * 0.12), Mul(v, sin(angle) * Span * 0.12))
+                    point := await Project(pivot[0] + offset[0], pivot[1] + offset[1], pivot[2] + offset[2])
+                    RingLeft = array_add(RingLeft, point[0] - 6.0)
+                    RingTop = array_add(RingTop, point[1] - 6.0)
+                    RingStyles = array_add(RingStyles, format_text("left: {}dp; top: {}dp;", point[0] - 6.0, point[1] - 6.0))
+                    RingAxes = array_add(RingAxes, VectorAxes[k])
+                    segment += 1
+                }
+            }
+            k += 1
+        }
+        GizmoVisible = true
+    }
+    Publish :: fn() {
+        await set_ui_data(Name: "sceneRuntime.modelPreview", Value: ModelPreview())
+        await set_ui_data(Name: "sceneRuntime.modelDimensions", Value: ModelDimensions)
+        await set_ui_data(Name: "sceneRuntime.modelError", Value: ModelError)
+        await set_ui_data(Name: "sceneRuntime.modelWarning", Value: ModelWarning)
+        await set_ui_data(Name: "sceneRuntime.modelParameterError", Value: ModelParameterError)
+        await set_ui_data(Name: "sceneRuntime.modelView", Value: ModelView)
+        await set_ui_data(Name: "sceneRuntime.modelPart", Value: ModelPart)
+        await set_ui_data(Name: "sceneRuntime.modelParts", Value: ModelParts)
+        await set_ui_data(Name: "sceneRuntime.modelSection", Value: ModelSection)
+        await set_ui_data(Name: "sceneRuntime.modelSectionAxis", Value: ModelSectionAxis)
+        await set_ui_data(Name: "sceneRuntime.modelSectionOffset", Value: ModelSectionOffset)
+        await set_ui_data(Name: "sceneRuntime.modelParameterNames", Value: ModelParameterNames)
+        await set_ui_data(Name: "sceneRuntime.modelParameterValues", Value: ModelParameterValues)
+        await set_ui_data(Name: "sceneRuntime.modelParameterApplied", Value: ModelParameterApplied)
+        await set_ui_data(Name: "sceneRuntime.modelParameterMin", Value: ModelParameterMin)
+        await set_ui_data(Name: "sceneRuntime.modelParameterMax", Value: ModelParameterMax)
+        await set_ui_data(Name: "sceneRuntime.modelParameterErrors", Value: ModelParameterErrors)
+        await set_ui_data(Name: "sceneRuntime.targetPreview", Value: TargetPreview)
+        await set_ui_data(Name: "sceneRuntime.previewName", Value: PreviewName)
+        await set_ui_data(Name: "sceneRuntime.previewAvailable", Value: SelectedPreviewDocument > 0)
+        await set_ui_data(Name: "sceneRuntime.generated", Value: Generated)
+        await set_ui_data(Name: "sceneRuntime.generationPending", Value: GenerationPending)
+        await Checkpoint()
+        await set_ui_data(Name: "sceneRuntime.evidencePending", Value: EvidencePending)
+        await set_ui_data(Name: "sceneRuntime.evidenceDirectory", Value: EvidenceDirectory)
+        await set_ui_data(Name: "sceneRuntime.evidenceState", Value: EvidenceState)
+        await set_ui_data(Name: "sceneRuntime.evidenceError", Value: EvidenceError)
+        await set_ui_data(Name: "sceneRuntime.gizmoVisible", Value: GizmoVisible)
+        await set_ui_data(Name: "sceneRuntime.gizmoOriginStyle", Value: format_text("left: {}dp; top: {}dp;", GizmoX - 3.0, GizmoY - 3.0))
+        await set_ui_data(Name: "sceneRuntime.document", Value: Document)
+        await set_ui_data(Name: "sceneRuntime.session", Value: Session)
+        await set_ui_data(Name: "sceneRuntime.ready", Value: Ready)
+        await set_ui_data(Name: "sceneRuntime.current", Value: RuntimeCurrent())
+        await set_ui_data(Name: "sceneRuntime.preparing", Value: Preparing)
+        await set_ui_data(Name: "sceneRuntime.playing", Value: Playing)
+        await set_ui_data(Name: "sceneRuntime.image", Value: Image)
+        await set_ui_data(Name: "sceneRuntime.error", Value: Error)
+        await set_ui_data(Name: "sceneRuntime.toolError", Value: ToolError)
+        await set_ui_data(Name: "sceneRuntime.perspective", Value: Perspective)
+        await set_ui_data(Name: "sceneRuntime.local", Value: Local)
+        await set_ui_data(Name: "sceneRuntime.log", Value: Log)
+        await set_ui_data(Name: "sceneRuntime.steps", Value: Steps)
+        await set_ui_data(Name: "sceneRuntime.time", Value: Time)
+        await set_ui_data(Name: "sceneRuntime.tool", Value: Tool)
+        await set_ui_data(Name: "sceneRuntime.canEdit", Value: CanTransform())
+        await set_ui_data(Name: "sceneRuntime.proposing", Value: ProposalPending)
+        await set_ui_data(Name: "sceneRuntime.snap", Value: Snap)
+        await set_ui_data(Name: "sceneRuntime.grab", Value: Grab)
+        await set_ui_data(Name: "sceneRuntime.boxVisible", Value: BoxActive || BoxScanning)
+        await set_ui_data(Name: "sceneRuntime.boxScanning", Value: BoxScanning)
+        await set_ui_data(Name: "sceneRuntime.boxProgress", Value: BoxScan)
+        await set_ui_data(Name: "sceneRuntime.boxStyle", Value: format_text("left: {}dp; top: {}dp; width: {}dp; height: {}dp;", min(BoxStartX, BoxX), min(BoxStartY, BoxY), abs(BoxX - BoxStartX), abs(BoxY - BoxStartY)))
+        await set_ui_data(Name: "sceneRuntime.markerStyles", Value: MarkerStyles)
+        await set_ui_data(Name: "sceneRuntime.markerNames", Value: MarkerNames)
+        await set_ui_data(Name: "sceneRuntime.markerLocked", Value: MarkerLocked)
+        await set_ui_data(Name: "sceneRuntime.markerSelected", Value: MarkerSelected)
+        await set_ui_data(Name: "sceneRuntime.cameraStyles", Value: CameraStyles)
+        await set_ui_data(Name: "sceneRuntime.cameraNames", Value: CameraNames)
+        await set_ui_data(Name: "sceneRuntime.cameraDisabled", Value: CameraDisabled)
+        await set_ui_data(Name: "sceneRuntime.cameraSelected", Value: CameraSelected)
+        await set_ui_data(Name: "sceneRuntime.cameraActive", Value: CameraActive)
+        await set_ui_data(Name: "sceneRuntime.frameScanning", Value: FrameScanning)
+        await set_ui_data(Name: "sceneRuntime.vectorAxes", Value: VectorAxes)
+        await set_ui_data(Name: "sceneRuntime.colliderStyles", Value: ColliderStyles)
+        await set_ui_data(Name: "sceneRuntime.planeStyles", Value: PlaneStyles)
+        await set_ui_data(Name: "sceneRuntime.ringStyles", Value: RingStyles)
+        await set_ui_data(Name: "sceneRuntime.ringAxes", Value: RingAxes)
+        await set_ui_data(Name: "sceneRuntime.gameCamera", Value: GameCamera)
+        await set_ui_data(Name: "sceneRuntime.unlit", Value: Unlit)
+        await set_ui_data(Name: "sceneRuntime.fogless", Value: Fogless)
+        await set_ui_data(Name: "sceneRuntime.colliders", Value: Colliders)
+        await set_ui_data(Name: "sceneRuntime.cameras", Value: Cameras)
+        for id in PresentationCommands {
+            await send_event<"StudioCommandAvailability">(self, id, Ready)
+        }
+        await set_ui_data(Name: "sceneRuntime.grid", Value: Grid)
+        await set_ui_data(Name: "sceneRuntime.selected", Value: length(Selection))
+        await set_ui_data(Name: "sceneRuntime.span", Value: Span)
+        runtime_source := RuntimeDocument
+        if TargetPreview {
+            runtime_source = 0
+        }
+        await send_event<"StudioRuntimeState">(self, Session, Ready, Playing, runtime_source, RuntimeRevision, Steps)
+        await send_event<"StudioCommandAvailability">(self, "play", (TargetPreview && PreviewDocument > 0) || (!TargetPreview && (Ready || Document > 0)))
+        await send_event<"StudioCommandAvailability">(self, "stop", Ready)
+        await send_event<"StudioCommandAvailability">(self, "step", Ready && !Playing)
+        await send_event<"StudioCommandAvailability">(self, "resetCamera", Ready)
+        await send_event<"StudioCommandAvailability">(self, "frame", Ready && ((ModelPreview() && RuntimeCurrent()) || (!TargetPreview && RuntimeDocument == Document && RuntimeRevision == Revision && length(Selection) > 0)))
+        await send_event<"StudioCommandAvailability">(self, "frameAll", Ready && ((ModelPreview() && RuntimeCurrent()) || (!TargetPreview && RuntimeDocument == Document && RuntimeRevision == Revision)))
+        await send_event<"StudioCommandAvailability">(self, "toggleGrid", Ready && !Perspective)
+        for id in ToolCommands {
+            await send_event<"StudioCommandAvailability">(self, id, Document > 0 && !Playing && CanTransform())
+        }
+    }
+    IsObject :: pure fn(Index: int) -> bool {
+        if Index == 0 {
+            return true
+        }
+        row := Fields[Index]
+        if !text_equal(row.type, "object") || row.parent < 0 {
+            return false
+        }
+        name := Fields[row.parent].name
+        return text_equal(name, "entities") || text_equal(name, "children")
+    }
+    ParentOf :: pure fn(Index: int) -> int {
+        index := Fields[Index].parent
+        while index >= 0 {
+            if IsObject(index) {
+                return index
+            }
+            index = Fields[index].parent
+        }
+        return -1
+    }
+    NameOf :: pure fn(Index: int) -> string {
+        i := Index + 1
+        while i < length(Fields) {
+            if Fields[i].depth <= Fields[Index].depth {
+                break
+            }
+            if Fields[i].parent == Index && text_equal(Fields[i].name, "name") {
+                return Fields[i].text
+            }
+            i += 1
+        }
+        return ""
+    }
+    Matches :: pure fn(Runtime: int, Field: int) -> bool {
+        r := Runtime
+        f := Field
+        while r >= 0 && f > 0 {
+            if !text_equal(Names[r], NameOf(f)) {
+                return false
+            }
+            r = Parents[r]
+            f = ParentOf(f)
+        }
+        return r < 0 && f <= 0
+    }
+    SourceField :: pure fn(Runtime: int) -> int {
+        r := Runtime
+        while r >= 0 {
+            for field in Objects {
+                if field > 0 && Matches(r, field) {
+                    return field
+                }
+            }
+            r = Parents[r]
+        }
+        return -1
+    }
+    Under :: pure fn(Field: int, Paths: string[]) -> bool {
+        f := Field
+        while f >= 0 {
+            if contains(Paths, Fields[f].path) {
+                return true
+            }
+            f = ParentOf(f)
+        }
+        return false
+    }
+    RefreshFields :: fn() {
+        if Document <= 0 {
+            return
+        }
+        inspected := workspace_asset_inspect(Document, Revision, "scene")
+        if !inspected.Ok {
+            Error = inspected.Error
+            return
+        }
+        Fields = inspected.Fields
+        Objects = []
+        i: int = 0
+        while i < length(Fields) {
+            if IsObject(i) {
+                Objects = array_add(Objects, i)
+            }
+            i += 1
+        }
+    }
+    Exclusions :: fn() {
+        if !Ready || (RuntimeDocument != Document || RuntimeRevision != Revision) {
+            return
+        }
+        hidden: int[] = []
+        locked: int[] = []
+        i: int = 0
+        while i < length(Names) {
+            field := SourceField(i)
+            if field >= 0 {
+                hide := Under(field, Hidden) || (length(Isolated) > 0 && !Under(field, Isolated))
+                if hide {
+                    hidden = array_add(hidden, i)
+                }
+                if hide || Under(field, Locked) {
+                    locked = array_add(locked, i)
+                }
+            }
+            i += 1
+        }
+        await workspace_runtime_skip(Session, hidden, false)
+        await workspace_runtime_skip(Session, locked, true)
+    }
+    Prepare :: fn() {
+        if Preparing || Busy || Gesture {
+            NeedsPrepare = true
+            return
+        }
+        if TargetPreview {
+            preview_read := workspace_document_read(PreviewDocument)
+            if !preview_read.Ok {
+                Error = preview_read.Error
+                await Publish()
+                return
+            }
+            if preview_read.Transaction {
+                NeedsPrepare = true
+                return
+            }
+            PreviewRevision = preview_read.Revision
+            identity := workspace_asset_identity(PreviewDocument, PreviewRevision)
+            if !identity.Ok || !text_equal(identity.Kind, PreviewKind) {
+                Error = "The preview source is no longer the selected asset kind"
+                PlayAfterPrepare = false
+                NeedsPrepare = false
+                await Publish()
+                return
+            }
+            PreviewName = identity.Name
+            source := await PreviewSource()
+            if text_equal(source, "") {
+                Error = "This asset cannot be used as a simulation preview"
+                PlayAfterPrepare = false
+                NeedsPrepare = false
+                await Publish()
+                return
+            }
+            path := format_text("scenes/StudioPreview-{}-{}.kdl", PreviewDocument, PreviewRevision)
+            paths: string[] = [path]
+            sources: string[] = [source]
+            if ModelPreview() {
+                fixtures := await ModelFixtureSources()
+                suffixes: string[] = ["Object", "Camera", "Key", "Fill"]
+                index: int = 0
+                for suffix in suffixes {
+                    paths = array_add(paths, format_text("prototypes/{}.kdl", ModelFixtureName(suffix)))
+                    sources = array_add(sources, fixtures[index])
+                    index += 1
+                }
+            }
+            preview := await workspace_runtime_prepare_document_sources(PreviewDocument, PreviewRevision, path, paths, sources)
+            Preparing = preview.Preparing
+            Error = preview.Error
+            NeedsPrepare = false
+            Idle = 0.0
+            await Publish()
+            return
+        }
+        if Document > 0 {
+            await read()
+            if !read.Ok {
+                Error = read.Error
+                await Publish()
+                return
+            }
+            if read.Transaction {
+                NeedsPrepare = true
+                return
+            }
+            Revision = read.Revision
+        }
+        await prepare()
+        Preparing = prepare.Preparing
+        Error = prepare.Error
+        NeedsPrepare = false
+        Idle = 0.0
+        await Publish()
+    }
+    ReleaseGuard :: fn() {
+        if !Authorized {
+            return
+        }
+        document := GuardDocument
+        request := GuardRequest
+        Authorized = false
+        GuardWaiting = false
+        GuardMode = ""
+        if !CandidateMode {
+            await send_event<"StudioDocumentExternalEditComplete">(self, "scene", document, request)
+        }
+    }
+    CacheCandidate :: fn(Entity: string, Relative: string, Value: double) {
+        key := format_text("{}|{}", Entity, Relative)
+        keys: string[] = []
+        values: double[] = []
+        found := false
+        i: int = 0
+        while i < length(CandidateKeys) {
+            keys = array_add(keys, CandidateKeys[i])
+            if text_equal(CandidateKeys[i], key) {
+                values = array_add(values, Value)
+                found = true
+            } else {
+                values = array_add(values, CandidateValues[i])
+            }
+            i += 1
+        }
+        if !found {
+            keys = array_add(keys, key)
+            values = array_add(values, Value)
+        }
+        CandidateKeys = keys
+        CandidateValues = values
+    }
+    CandidateNumber :: pure fn(Entity: string, Fields: struct<"WorkspaceAssetField">[], Relative: string) -> double {
+        if CandidateMode {
+            i: int = 0
+            while i < length(CandidateKeys) {
+                if text_equal(CandidateKeys[i], format_text("{}|{}", Entity, Relative)) {
+                    return CandidateValues[i]
+                }
+                i += 1
+            }
+        }
+        return Number(Fields, Relative)
+    }
+    StartCandidate :: fn() {
+        await read()
+        if !read.Ok || read.Transaction {
+            ToolError = "Finish the source edit before proposing a transform"
+            return
+        }
+        CandidateMode = true
+        CandidateText = ""
+        CandidateKeys = []
+        CandidateValues = []
+        GestureBaseRevision = read.Revision
+        Revision = read.Revision
+        LiveObjects = []
+        LiveFields = []
+        LiveComponents = []
+        LiveValues = []
+        Authorized = true
+        Gesture = true
+        Busy = false
+        for entity in Selection {
+            inspected := workspace_object_inspect(Document, Revision, "scene", entity)
+            if !inspected.Ok {
+                ToolError = inspected.Error
+                await Finish(true)
+                return
+            }
+            for group in GroupNames {
+                for axis in AxisNames {
+                    relative := format_text("/components/Transform3D/{}/{}", group, axis)
+                    await CacheCandidate(entity, relative, Number(inspected.Fields, relative))
+                }
+            }
+            for relative in PlanarFields {
+                await CacheCandidate(entity, relative, Number(inspected.Fields, relative))
+            }
+        }
+    }
+    RequestGuard :: fn(Mode: string) {
+        if GuardWaiting || Authorized || ProposalPending {
+            return
+        }
+        if CollaborationActive {
+            if text_equal(Mode, "axis") {
+                if !CanTransform() {
+                    ToolError = "Your room role cannot edit this source right now"
+                    return
+                }
+                await StartCandidate()
+            } else {
+                if !CollaborationReady || CollaborationPending {
+                    ToolError = "Wait for the room to accept its pending source update"
+                    return
+                }
+                await Prepare()
+            }
+            return
+        }
+        CandidateMode = false
+        GuardMode = Mode
+        GuardDocument = ActiveDocument
+        if TargetPreview && (text_equal(Mode, "prepare") || text_equal(Mode, "play")) {
+            GuardDocument = PreviewDocument
+        }
+        GuardRequest += 1
+        if GuardRequest <= 0 {
+            GuardRequest = 1
+        }
+        PendingAmount = 0.0
+        PendingEnd = false
+        PendingCanceled = false
+        if ActiveDocument <= 0 {
+            if text_equal(Mode, "prepare") || text_equal(Mode, "play") {
+                await Prepare()
+            }
+            return
+        }
+        GuardWaiting = true
+        await send_event<"StudioDocumentExternalEditRequested">(self, "scene", GuardDocument, GuardRequest)
+    }
+    Finish :: fn(Canceled: bool) {
+        Grab = false
+        RayActive = false
+        RayInitialized = false
+        InvertSnap = false
+        if CandidateMode {
+            Gesture = false
+            Authorized = false
+            if Canceled || text_equal(CandidateText, "") {
+                await RestoreLive(true)
+                CandidateMode = false
+                CandidateText = ""
+                await Publish()
+                return
+            }
+            if ProposalRequest >= 2147483647 {
+                ToolError = "Scene edit request limit reached"
+                await RestoreLive(true)
+                CandidateMode = false
+                CandidateText = ""
+                await Publish()
+                return
+            }
+            ProposalRequest += 1
+            ProposalPending = true
+            await send_event<"StudioDocumentEdit">(self, Document, GestureBaseRevision, CandidateStart, CandidateEnd, CandidateReplacement, "scene", ProposalRequest)
+            await Publish()
+            return
+        }
+        if !Gesture {
+            await RestoreLive(Canceled)
+            await ReleaseGuard()
+            return
+        }
+        await read()
+        if read.Ok && read.Transaction {
+            Revision = read.Revision
+            if Canceled {
+                await cancel_edit()
+                if !cancel_edit.Ok {
+                    Error = cancel_edit.Error
+                    await Publish()
+                    return
+                }
+            } else {
+                await commit_edit()
+                if !commit_edit.Ok {
+                    Error = commit_edit.Error
+                    await Publish()
+                    return
+                }
+            }
+        }
+        Gesture = false
+        await RestoreLive(Canceled)
+        await read()
+        if read.Ok {
+            Revision = read.Revision
+        }
+        await RefreshFields()
+        NeedsPrepare = true
+        await send_event<"StudioDocumentChanged">(self, Document)
+        await ReleaseGuard()
+        await Publish()
+    }
+    Number :: pure fn(Fields: struct<"WorkspaceAssetField">[], Path: string) -> double {
+        for field in Fields {
+            if text_equal(field.relative, Path) {
+                return field.number
+            }
+        }
+        return 0.0
+    }
+    RuntimeObject :: pure fn(Path: string) -> int {
+        i: int = 0
+        while i < length(Names) {
+            for field in Objects {
+                if text_equal(Fields[field].path, Path) && Matches(i, field) {
+                    return i
+                }
+            }
+            i += 1
+        }
+        return -1
+    }
+    LiveField :: fn(Entity: string, Relative: string, Value: double) {
+        if !Ready || Playing || RuntimeDocument != Document || RuntimeRevision != GestureBaseRevision {
+            return
+        }
+        object := RuntimeObject(Entity)
+        if object < 0 {
+            return
+        }
+        name := ""
+        component := "Transform3D"
+        if text_equal(Relative, "/components/Transform/x") {
+            component = "Transform"
+            name = "x"
+        }
+        if text_equal(Relative, "/components/Transform/y") {
+            component = "Transform"
+            name = "y"
+        }
+        if text_equal(Relative, "/components/Orientation/radians") {
+            component = "Orientation"
+            name = "radians"
+        }
+        if text_equal(Relative, "/components/Appearance/width") {
+            component = "Appearance"
+            name = "width"
+        }
+        if text_equal(Relative, "/components/Appearance/height") {
+            component = "Appearance"
+            name = "height"
+        }
+        for group in GroupNames {
+            for axis in AxisNames {
+                if text_equal(Relative, format_text("/components/Transform3D/{}/{}", group, axis)) {
+                    name = format_text("{}.{}", group, axis)
+                }
+            }
+        }
+        for axis in VectorAxes {
+            if text_equal(Relative, format_text("/components/Collider3D/size/{}", axis)) {
+                component = "Collider3D"
+                name = format_text("size.{}", axis)
+            }
+        }
+        for name3d in GeometryFields {
+            if text_equal(Relative, format_text("/components/Geometry3D/{}", name3d)) {
+                component = "Geometry3D"
+                name = name3d
+            }
+        }
+        if text_equal(Relative, "/components/Collider3D/radius") {
+            component = "Collider3D"
+            name = "radius"
+        }
+        if text_equal(Relative, "/components/Collider3D/height") {
+            component = "Collider3D"
+            name = "height"
+        }
+        if text_equal(name, "") {
+            return
+        }
+        cached := false
+        i: int = 0
+        while i < length(LiveObjects) {
+            if LiveObjects[i] == object && text_equal(LiveComponents[i], component) && text_equal(LiveFields[i], name) {
+                cached = true
+            }
+            i += 1
+        }
+        if !cached {
+            current := await workspace_runtime_number(Session, object, component, name, false, 0.0)
+            if !current.Ok {
+                return
+            }
+            LiveObjects = array_add(LiveObjects, object)
+            LiveFields = array_add(LiveFields, name)
+            LiveComponents = array_add(LiveComponents, component)
+            LiveValues = array_add(LiveValues, current.Value)
+        }
+        await workspace_runtime_number(Session, object, component, name, true, Value)
+    }
+    RestoreLive :: fn(Canceled: bool) {
+        if Canceled && Ready {
+            i: int = 0
+            while i < length(LiveObjects) {
+                await workspace_runtime_number(Session, LiveObjects[i], LiveComponents[i], LiveFields[i], true, LiveValues[i])
+                i += 1
+            }
+        }
+        LiveObjects = []
+        LiveFields = []
+        LiveComponents = []
+        LiveValues = []
+    }
+    EditField :: fn(Entity: string, Relative: string, Value: double) -> bool {
+        if CandidateMode {
+            candidate := workspace_objects_candidate(Document, GestureBaseRevision, "scene", [Entity], Relative, "set-number", format_text("{}", Value), CandidateText)
+            if !candidate.Ok {
+                ToolError = candidate.Error
+                return false
+            }
+            CandidateText = candidate.Text
+            CandidateStart = candidate.Start
+            CandidateEnd = candidate.End
+            CandidateReplacement = candidate.Replacement
+            await CacheCandidate(Entity, Relative, Value)
+            await LiveField(Entity, Relative, Value)
+            return true
+        }
+        changed := await workspace_objects_edit(Document, Revision, "scene", [Entity], Relative, "set-number", format_text("{}", Value))
+        if !changed.Ok {
+            ToolError = changed.Error
+            return false
+        }
+        await read()
+        if !read.Ok {
+            ToolError = read.Error
+            return false
+        }
+        Revision = read.Revision
+        await LiveField(Entity, Relative, Value)
+        return true
+    }
+    Nudge2D :: fn(Path: string, Fields: struct<"WorkspaceAssetField">[], Delta: float) -> bool {
+        component := "/components/Transform"
+        if text_equal(Tool, "rotate") {
+            component = "/components/Orientation"
+        }
+        if text_equal(Tool, "scale") {
+            component = "/components/Appearance"
+        }
+        present := false
+        for field in Fields {
+            if text_equal(field.relative, component) {
+                present = true
+            }
+        }
+        if !present {
+            ToolError = "Add the required Transform, Orientation or Appearance component in Properties first"
+            return false
+        }
+        if text_equal(Tool, "rotate") {
+            return await EditField(Path, "/components/Orientation/radians", CandidateNumber(Path, Fields, "/components/Orientation/radians") + Delta)
+        }
+        if text_equal(Axis, "z") {
+            return true
+        }
+        if text_equal(Tool, "scale") {
+            relative := "/components/Appearance/width"
+            if text_equal(Axis, "y") {
+                relative = "/components/Appearance/height"
+            }
+            return await EditField(Path, relative, max(0.001, CandidateNumber(Path, Fields, relative) + Delta))
+        }
+        dx: double = Delta
+        dy: double = 0.0
+        if text_equal(Axis, "y") {
+            dx = 0.0
+            dy = -Delta
+        }
+        if Local {
+            radians := CandidateNumber(Path, Fields, "/components/Orientation/radians")
+            x := dx * cos(radians) - dy * sin(radians)
+            dy = dx * sin(radians) + dy * cos(radians)
+            dx = x
+        }
+        if dx != 0.0 && !await EditField(Path, "/components/Transform/x", CandidateNumber(Path, Fields, "/components/Transform/x") + dx) {
+            return false
+        }
+        if dy != 0.0 && !await EditField(Path, "/components/Transform/y", CandidateNumber(Path, Fields, "/components/Transform/y") + dy) {
+            return false
+        }
+        return true
+    }
+    Nudge :: fn(Amount: float) {
+        if !Authorized || Playing || length(Selection) == 0 || Document <= 0 {
+            return
+        }
+        if length(Selection) > 128 {
+            ToolError = "Transform at most 128 objects in one gesture"
+            await Finish(true)
+            return
+        }
+        ToolError = ""
+        await read()
+        if !read.Ok {
+            ToolError = read.Error
+            return
+        }
+        Revision = read.Revision
+        if !Gesture {
+            if read.Transaction {
+                ToolError = "Finish the current source edit first"
+                return
+            }
+            await begin_edit()
+            if !begin_edit.Ok {
+                ToolError = begin_edit.Error
+                return
+            }
+            Gesture = true
+            await send_event<"StudioDocumentChanged">(self, Document)
+        }
+        delta := Amount
+        if Snapping() {
+            increment := Increment
+            if text_equal(Tool, "rotate") {
+                increment = 0.2617994
+            }
+            AxisCarry += Amount
+            delta = round(AxisCarry / increment) * increment
+            AxisCarry -= delta
+        }
+        if delta == 0.0 {
+            return
+        }
+        for path in Selection {
+            inspected := workspace_object_inspect(Document, Revision, "scene", path)
+            if !inspected.Ok {
+                ToolError = inspected.Error
+                await Finish(true)
+                return
+            }
+            if !Perspective {
+                if !await Nudge2D(path, inspected.Fields, delta) {
+                    await Finish(true)
+                    return
+                }
+                continue
+            }
+            present := false
+            for field in inspected.Fields {
+                if text_equal(field.relative, "/components/Transform3D") {
+                    present = true
+                }
+            }
+            if !present {
+                ToolError = "Add Transform3D in Properties before using this tool"
+                await Finish(true)
+                return
+            }
+            qx := CandidateNumber(path, inspected.Fields, "/components/Transform3D/rotation/x")
+            qy := CandidateNumber(path, inspected.Fields, "/components/Transform3D/rotation/y")
+            qz := CandidateNumber(path, inspected.Fields, "/components/Transform3D/rotation/z")
+            qw := CandidateNumber(path, inspected.Fields, "/components/Transform3D/rotation/w")
+            norm := sqrt(qx * qx + qy * qy + qz * qz + qw * qw)
+            if norm == 0.0 {
+                qw = 1.0
+            } else {
+                qx /= norm
+                qy /= norm
+                qz /= norm
+                qw /= norm
+            }
+            dx: double = 0.0
+            dy: double = 0.0
+            dz: double = 0.0
+            if text_equal(Axis, "x") {
+                dx = delta
+            }
+            if text_equal(Axis, "y") {
+                dy = delta
+            }
+            if text_equal(Axis, "z") {
+                dz = delta
+            }
+            if text_equal(Tool, "rotate") {
+                sine := sin(delta * 0.5)
+                cosine := cos(delta * 0.5)
+                ax: double = 0.0
+                ay: double = 0.0
+                az: double = 0.0
+                if text_equal(Axis, "x") {
+                    ax = sine
+                }
+                if text_equal(Axis, "y") {
+                    ay = sine
+                }
+                if text_equal(Axis, "z") {
+                    az = sine
+                }
+                nx := cosine * qx + ax * qw + ay * qz - az * qy
+                ny := cosine * qy - ax * qz + ay * qw + az * qx
+                nz := cosine * qz + ax * qy - ay * qx + az * qw
+                nw := cosine * qw - ax * qx - ay * qy - az * qz
+                if Local {
+                    nx = qw * ax + qx * cosine + qy * az - qz * ay
+                    ny = qw * ay - qx * az + qy * cosine + qz * ax
+                    nz = qw * az + qx * ay - qy * ax + qz * cosine
+                }
+                if !await EditField(path, "/components/Transform3D/rotation/x", nx) {
+                    await Finish(true)
+                    return
+                }
+                if !await EditField(path, "/components/Transform3D/rotation/y", ny) {
+                    await Finish(true)
+                    return
+                }
+                if !await EditField(path, "/components/Transform3D/rotation/z", nz) {
+                    await Finish(true)
+                    return
+                }
+                if !await EditField(path, "/components/Transform3D/rotation/w", nw) {
+                    await Finish(true)
+                    return
+                }
+            } else {
+                relative := "/components/Transform3D/position/"
+                if text_equal(Tool, "scale") {
+                    relative = "/components/Transform3D/scale/"
+                }
+                if Local && text_equal(Tool, "move") {
+                    tx := 2.0 * (qy * dz - qz * dy)
+                    ty := 2.0 * (qz * dx - qx * dz)
+                    tz := 2.0 * (qx * dy - qy * dx)
+                    dx += qw * tx + qy * tz - qz * ty
+                    dy += qw * ty + qz * tx - qx * tz
+                    dz += qw * tz + qx * ty - qy * tx
+                }
+                for axis in VectorAxes {
+                    change := dx
+                    if text_equal(axis, "y") {
+                        change = dy
+                    }
+                    if text_equal(axis, "z") {
+                        change = dz
+                    }
+                    if change != 0.0 {
+                        value := CandidateNumber(path, inspected.Fields, format_text("{}{}", relative, axis)) + change
+                        if text_equal(Tool, "scale") && value < 0.001 {
+                            value = 0.001
+                        }
+                        if !await EditField(path, format_text("{}{}", relative, axis), value) {
+                            await Finish(true)
+                            return
+                        }
+                    }
+                }
+            }
+        }
+        await RefreshFields()
+        await Publish()
+    }
+    Frame :: fn(All: bool) {
+        if ModelPreview() {
+            await ModelViewChange("frame", 0.0)
+            return
+        }
+        if !Ready || Playing || Gesture || GuardWaiting || RuntimeDocument != Document || RuntimeRevision != Revision || Width <= 0.0 || Height <= 0.0 {
+            return
+        }
+        GameCamera = false;
+        FrameAll = All;
+        FrameScan = 0;
+        FrameFound = false;
+        FrameSized = false
+        FrameDocument = Document;
+        FrameRevision = Revision;
+        FrameSession = Session
+        FrameMin = [];
+        FrameMax = [];
+        FrameScanning = true
+    }
+    ResetView :: fn() {
+        if ModelPreview() { await ModelViewChange("orbit", 0.0); return }
+        GameCamera = false
+        X = 0.0
+        Y = 0.0
+        Span = 24.0
+        Yaw = 0.0
+        Pitch = 0.6
+        Elevation = 0.0
+        if Ready {
+            await view()
+        }
+        await Publish()
+    }
+    on Begin {
+        await LoadPreferences()
+        await Publish()
+    }
+    on StudioDocumentState {
+        ActiveDocument = event.Document
+        self.Busy = event.Busy && !Authorized
+        if event.Document <= 0 {
+            SelectedPreviewDocument = 0
+            SelectedPreviewRevision = 0
+            SelectedPreviewName = ""
+            SelectedPreviewKind = ""
+            Visible = false
+            await Publish()
+            return
+        }
+        identity := workspace_asset_identity(event.Document, event.Revision)
+        SelectedPreviewDocument = 0
+        SelectedPreviewRevision = 0
+        SelectedPreviewName = ""
+        SelectedPreviewKind = ""
+        if identity.Ok && (text_equal(identity.Kind, "prototype") || text_equal(identity.Kind, "model")) {
+            SelectedPreviewDocument = event.Document
+            SelectedPreviewRevision = event.Revision
+            SelectedPreviewName = identity.Name
+            SelectedPreviewKind = identity.Kind
+        }
+        if TargetPreview && event.Document == PreviewDocument && event.Revision != PreviewRevision {
+            PreviewRevision = event.Revision
+            PreviewName = identity.Name
+            NeedsPrepare = true
+            Idle = 0.0
+        }
+        Visible = identity.Ok && (text_equal(identity.Kind, "scene") || (TargetPreview && event.Document == PreviewDocument))
+        if identity.Ok && text_equal(identity.Kind, "scene") {
+            if self.Document != event.Document && Gesture {
+                await Finish(true)
+            }
+            if self.Document != event.Document && ProposalPending {
+                return
+            }
+            if self.Document != event.Document || self.Revision != event.Revision {
+                self.Document = event.Document
+                self.Revision = event.Revision
+                NeedsPrepare = true
+                Idle = 0.0
+                await RefreshFields()
+                await RestorePresentation()
+            }
+        }
+        await Publish()
+    }
+    on StudioPanelSelected {
+        if text_equal(event.Area, "main") {
+            Visible = text_equal(event.Panel, "scene")
+        }
+    }
+    on StudioObjectSelection {
+        CheckpointDirty = true
+        if event.Document != self.Document || event.Revision != self.Revision {
+            return
+        }
+        Selection = event.Paths
+        OverlayKey = ""
+        await Publish()
+    }
+    on StudioObjectVisibility {
+        if event.Document != self.Document || event.Revision != self.Revision {
+            return
+        }
+        self.Hidden = event.Hidden
+        self.Locked = event.Locked
+        self.Isolated = event.Isolated
+        OverlayKey = ""
+        await Exclusions()
+    }
+    on StudioSceneCommand {
+        CheckpointDirty = true
+        switch event.Id {
+            case "playTarget": {
+                if Preparing || Playing || Steps > 0 || Gesture || GuardWaiting {
+                    ToolError = "Stop simulation to change target."
+                    await Publish()
+                    return
+                }
+                preview := text_equal(event.Argument, "preview")
+                if !preview && !text_equal(event.Argument, "scene") {
+                    return
+                }
+                if preview && SelectedPreviewDocument <= 0 {
+                    ToolError = "Select a prototype or model to preview."
+                    await Publish()
+                    return
+                }
+                TargetPreview = preview
+                FrameScanning = false
+                BoxScanning = false
+                BoxActive = false
+                if preview {
+                    if PreviewDocument != SelectedPreviewDocument {
+                        ModelPartNode = 0
+                        ModelPartAsset = ""
+                        ModelPartPath = ""
+                        ModelRejectedKeys = []
+                        ModelRejectedValues = []
+                        ModelRejectedErrors = []
+                        ModelOverrideKeys = []
+                        ModelOverrideValues = []
+                    }
+                    PreviewDocument = SelectedPreviewDocument
+                    PreviewRevision = SelectedPreviewRevision
+                    PreviewName = SelectedPreviewName
+                    PreviewKind = SelectedPreviewKind
+                    Visible = true
+                }
+                Ready = false
+                Image = ""
+                PlayAfterPrepare = false
+                NeedsPrepare = true
+                Idle = 0.0
+                ToolError = ""
+            }
+            case "captureEvidence": {
+                if EvidencePending {
+                    return
+                }
+                if EvidenceSequence >= 2147483647 {
+                    EvidenceError = "Evidence request limit reached"
+                    return
+                }
+                EvidenceSequence += 1
+                destination := format_text("runtime-evidence-{}-{}", Session, EvidenceSequence)
+                capture := await workspace_runtime_evidence_begin(Session, destination)
+                if capture.Ok {
+                    EvidencePending = capture.Pending
+                    EvidenceJob = capture.Job
+                    EvidenceDirectory = capture.Directory
+                    EvidenceState = capture.State
+                } else {
+                    EvidencePending = false
+                    EvidenceState = "refused"
+                }
+                EvidenceError = capture.Error
+            }
+            case "cancelEvidence": {
+                canceled := await workspace_runtime_evidence_cancel(EvidenceJob)
+                EvidencePending = canceled.Ok && canceled.Pending
+                EvidenceState = canceled.State
+                EvidenceError = canceled.Error
+            }
+            case "applyLive": {
+                NeedsPrepare = true
+                Idle = 0.3
+            }
+            case "rebuild": {
+                await RequestGuard("prepare")
+            }
+            case "cancelPrepare": {
+                await workspace_runtime_cancel()
+                Preparing = false
+                PlayAfterPrepare = false
+            }
+            case "viewThroughCamera": {
+                GameCamera = !GameCamera
+            }
+            case "generatedWorld": {
+                Generated = !Generated
+                number: double = 0.0
+                if Generated {
+                    number = 1.0
+                }
+                await send_event<"StudioPreferenceNumber">(self, "scene.generatedWorld", number)
+            }
+            case "showLighting": {
+                Unlit = !Unlit
+                PresentationDirty = true
+                number: double = 0.0
+                if !Unlit {
+                    number = 1.0
+                }
+                await send_event<"StudioPreferenceNumber">(self, "scene.lighting", number)
+            }
+            case "showFog": {
+                Fogless = !Fogless
+                PresentationDirty = true
+                number: double = 0.0
+                if !Fogless {
+                    number = 1.0
+                }
+                await send_event<"StudioPreferenceNumber">(self, "scene.fog", number)
+            }
+            case "showColliders": {
+                Colliders = !Colliders
+                PresentationDirty = true
+                number: double = 0.0
+                if Colliders {
+                    number = 1.0
+                }
+                await send_event<"StudioPreferenceNumber">(self, "scene.colliders", number)
+            }
+            case "showCameraFrames": {
+                Cameras = !Cameras
+                PresentationDirty = true
+                number: double = 0.0
+                if Cameras {
+                    number = 1.0
+                }
+                await send_event<"StudioPreferenceNumber">(self, "scene.cameraFrames", number)
+            }
+            case "resetCamera": {
+                await ResetView()
+            }
+            case "frameAll": {
+                await Frame(true)
+            }
+            case "frame": {
+                await Frame(false)
+            }
+            case "grab": {
+                if !Ready || !Perspective || Playing || length(Selection) == 0 || !CanTransform() || RuntimeDocument != Document || RuntimeRevision != Revision {
+                    ToolError = "Grab requires a current paused 3D selection"
+                    return
+                }
+                Tool = "move"
+                Axis = "x"
+                RayPart = "screen"
+                RayPointerX = PointerX
+                RayPointerY = PointerY
+                RayActive = true
+                RayInitialized = false
+                if !await RayBegin() {
+                    RayActive = false
+                    await Publish()
+                    return
+                }
+                Grab = true
+                await RequestGuard("axis")
+            }
+            case "colliderTool": {
+                Tool = "collider"
+                Colliders = true
+                PresentationDirty = true
+            }
+            case "selectTool": {
+                Tool = "select"
+            }
+            case "moveTool": {
+                Tool = "move"
+            }
+            case "rotateTool": {
+                Tool = "rotate"
+            }
+            case "scaleTool": {
+                Tool = "scale"
+            }
+            case "toggleSnap": {
+                Snap = !Snap
+                number: double = 0.0
+                if Snap {
+                    number = 1.0
+                }
+                await send_event<"StudioPreferenceNumber">(self, "scene.snap", number)
+            }
+            case "toggleGrid": {
+                Grid = !Grid
+                number: double = 0.0
+                if Grid {
+                    number = 1.0
+                }
+                await send_event<"StudioPreferenceNumber">(self, "scene.grid", number)
+            }
+            case "toggleLocalSpace": {
+                Local = !Local
+                number: double = 0.0
+                if Local {
+                    number = 1.0
+                }
+                await send_event<"StudioPreferenceNumber">(self, "scene.localSpace", number)
+            }
+            case "finerGrid": {
+                Increment = max(1.0, Increment / 2.0)
+                await send_event<"StudioPreferenceNumber">(self, "scene.gridIncrement", cast<double>(Increment))
+            }
+            case "coarserGrid": {
+                Increment = min(128.0, Increment * 2.0)
+                await send_event<"StudioPreferenceNumber">(self, "scene.gridIncrement", cast<double>(Increment))
+            }
+        }
+        await Publish()
+    }
+    on StudioSceneTimeline {
+        if text_equal(event.Operation, "record") || text_equal(event.Operation, "replay") {
+            ReplayPrimed = false
+        }
+    }
+    on StudioDebugCommand {
+        CheckpointDirty = true
+        operation := event.Id
+        if Ready && Steps == 0 && !Playing && (text_equal(operation, "play") || text_equal(operation, "step")) {
+            await workspace_simulation_materials(Session, "reset", 0.0, 0.0, 0.0)
+        }
+        if text_equal(operation, "play") {
+            if !Ready || NeedsPrepare || !RuntimeCurrent() {
+                PlayAfterPrepare = true
+                await RequestGuard("play")
+                return
+            }
+            if Playing {
+                operation = "pause"
+            }
+        }
+        if !text_equal(operation, "play") && !text_equal(operation, "pause") && !text_equal(operation, "step") && !text_equal(operation, "stop") {
+            return
+        }
+        controlled := await workspace_runtime_control(Session, operation)
+        Playing = controlled.Playing
+        Error = controlled.Error
+        if controlled.Ok && ModelPreview() && text_equal(operation, "stop") { await ModelInitialize() }
+        if text_equal(operation, "stop") {
+            await send_event<"StudioRuntimeStopped">(self, Session, RuntimeDocument, RuntimeRevision, controlled.Ok, controlled.Error)
+        }
+        await Publish()
+    }
+    on StudioScenePointer {
+        if Playing {
+            return
+        }
+        CheckpointDirty = true
+        if event.Session != self.Session || !Ready || Busy {
+            return
+        }
+        if ModelPreview() {
+            if text_equal(event.Action, "orbit") || (text_equal(event.Action, "navigate") && event.Button == 0) {
+                if text_equal(ModelView, "orbit") {
+                    ModelYaw += event.Delta.x / PixelRatio / Width * 6.2831853
+                    ModelPitch = clamp(ModelPitch + event.Delta.y / PixelRatio / Height * 3.14, -1.55, 1.55)
+                    ModelDirty = true
+                }
+            }
+            if text_equal(event.Action, "wheel") { Span = clamp(Span * (1.0 + event.Wheel.y * 0.1), 0.0001, 10000.0) }
+            if text_equal(event.Action, "pan") || (text_equal(event.Action, "navigate") && event.Button == 1) {
+                X -= event.Delta.x / PixelRatio * Span / Width
+                Y += event.Delta.y / PixelRatio * Span / Width
+            }
+            await ModelUpdate()
+            await view()
+            await Publish()
+            return
+        }
+        if Grab && text_equal(event.Action, "grabMove") {
+            dx := event.LocalPointer.x / PixelRatio - RayPointerX
+            dy := event.LocalPointer.y / PixelRatio - RayPointerY
+            RayPointerX = event.LocalPointer.x / PixelRatio
+            RayPointerY = event.LocalPointer.y / PixelRatio
+            if GuardWaiting {
+                RayPendingDX += dx
+                RayPendingDY += dy
+            }
+            if Authorized {
+                await RayDrag(dx, dy)
+            }
+            return
+        }
+        if Grab && (text_equal(event.Action, "grabAccept") || text_equal(event.Action, "grabCancel")) {
+            canceled := text_equal(event.Action, "grabCancel")
+            if GuardWaiting {
+                PendingEnd = true
+                PendingCanceled = canceled
+            }
+            if Authorized {
+                await Finish(canceled)
+            }
+            return
+        }
+        PointerX = event.LocalPointer.x / PixelRatio
+        PointerY = event.LocalPointer.y / PixelRatio
+        if text_equal(event.Action, "boxStart") && event.Button == 0 && !Gesture && !GuardWaiting && RuntimeDocument == Document && RuntimeRevision == Revision {
+            hit := await workspace_runtime_pick(self.Session, event.LocalPointer.x / PixelRatio / Width * 2.0 - 1.0, 1.0 - event.LocalPointer.y / PixelRatio / Height * 2.0)
+            if hit.Ok && hit.Object < 0 {
+                BoxActive = true
+                BoxScanning = false
+                BoxMod = event.Mod || event.Shift
+                BoxStartX = event.LocalPointer.x / PixelRatio
+                BoxStartY = event.LocalPointer.y / PixelRatio
+                BoxX = BoxStartX
+                BoxY = BoxStartY
+            }
+        }
+        if BoxActive && text_equal(event.Action, "navigate") && event.Button == 0 {
+            BoxX += event.Delta.x / PixelRatio
+            BoxY += event.Delta.y / PixelRatio
+        }
+        if BoxActive && text_equal(event.Action, "boxEnd") {
+            BoxActive = false
+            BoxScanning = true
+            BoxScan = 0
+            BoxPaths = []
+            BoxDocument = Document
+            BoxRevision = Revision
+            BoxSession = self.Session
+            BoxView = OverlayStamp()
+        }
+        if Grab && text_equal(event.Action, "navigate") && event.Button == 0 {
+            RayPointerX += event.Delta.x / PixelRatio
+            RayPointerY += event.Delta.y / PixelRatio
+            if Authorized {
+                await RayDrag(event.Delta.x / PixelRatio, event.Delta.y / PixelRatio)
+            }
+        }
+        if text_equal(event.Action, "pick") && event.Button == 0 && RuntimeDocument == Document && RuntimeRevision == Revision {
+            marker := MarkerPick(event.LocalPointer.x / PixelRatio, event.LocalPointer.y / PixelRatio)
+            if marker >= 0 {
+                field := SourceField(marker)
+                if field >= 0 {
+                    await send_event<"StudioOutlinerSelect">(self, Fields[field].path, event.Mod, event.Shift)
+                }
+            } else {
+                picked := await workspace_runtime_pick(self.Session, event.LocalPointer.x / PixelRatio / Width * 2.0 - 1.0, 1.0 - event.LocalPointer.y / PixelRatio / Height * 2.0)
+                if picked.Ok && !text_equal(picked.Subject, "") {
+                    field := -1
+                    if picked.Object >= 0 {
+                        field = SourceField(picked.Object)
+                    }
+                    if field >= 0 {
+                        await send_event<"StudioOutlinerSelect">(self, Fields[field].path, event.Mod, event.Shift)
+                    } else {
+                        await send_event<"StudioRuntimeSubjectSelected">(self, self.Session, picked.Subject)
+                    }
+                } else {
+                    if picked.Ok && !event.Mod && !event.Shift {
+                        await send_event<"StudioSceneCommand">(self, "deselect", "")
+                    }
+                    if !picked.Ok {
+                        ToolError = picked.Error
+                    }
+                }
+            }
+        }
+        if text_equal(event.Action, "pan") || (text_equal(event.Action, "navigate") && event.Button == 1) {
+            GameCamera = false
+            X -= event.Delta.x / PixelRatio * Span / Width
+            Y += event.Delta.y / PixelRatio * Span / Width
+            await view()
+        }
+        if text_equal(event.Action, "orbit") || (text_equal(event.Action, "navigate") && event.Button == 2) {
+            GameCamera = false
+            Yaw += event.Delta.x / PixelRatio * 0.01
+            Pitch = clamp(Pitch + event.Delta.y / PixelRatio * 0.01, -1.4, 1.4)
+            await view()
+        }
+        if text_equal(event.Action, "wheel") {
+            GameCamera = false
+            Span = clamp(Span * (1.0 + event.Wheel.y * 0.1), 0.1, 10000.0)
+            await view()
+        }
+        await Publish()
+    }
+    on StudioModelRuntimeView {
+        if event.Session != Session { return }
+        await ModelViewChange(event.Id, event.Value)
+    }
+    on StudioModelRuntimeParameter {
+        if event.Session != Session { return }
+        await ModelParameterWrite(event.Row, event.Value)
+        await Publish()
+    }
+    on StudioSceneAxis {
+        beginning := text_equal(event.Action, "begin") || text_equal(event.Action, "projectedBegin") || text_equal(event.Action, "planeBegin") || text_equal(event.Action, "centerBegin") || text_equal(event.Action, "ringBegin") || text_equal(event.Action, "colliderBegin")
+        dragging := text_equal(event.Action, "drag") || text_equal(event.Action, "projectedDrag") || text_equal(event.Action, "planeDrag") || text_equal(event.Action, "centerDrag") || text_equal(event.Action, "ringDrag") || text_equal(event.Action, "colliderDrag")
+        ending := text_equal(event.Action, "end") || text_equal(event.Action, "projectedEnd") || text_equal(event.Action, "planeEnd") || text_equal(event.Action, "centerEnd") || text_equal(event.Action, "ringEnd") || text_equal(event.Action, "colliderEnd")
+        if beginning {
+            if ActiveDocument != Document || Playing || !CanTransform() || RuntimeDocument != Document || RuntimeRevision != Revision {
+                return
+            }
+            ProjectedAxis = !text_equal(event.Action, "begin")
+            self.Axis = event.Axis
+            AxisCarry = 0.0
+            InvertSnap = event.Mod
+            RayActive = ProjectedAxis && Perspective
+            RayInitialized = false
+            RayPendingDX = 0.0
+            RayPendingDY = 0.0
+            if RayActive {
+                index: int = 0
+                if text_equal(event.Axis, "y") {
+                    index = 1
+                }
+                if text_equal(event.Axis, "z") {
+                    index = 2
+                }
+                RayPart = "axis"
+                RayPointerX = GizmoX + GizmoDX[index]
+                RayPointerY = GizmoY + GizmoDY[index]
+                if text_equal(event.Action, "planeBegin") {
+                    RayPart = "plane"
+                    RayPointerX = PlaneLeft[index] + 8.0
+                    RayPointerY = PlaneTop[index] + 8.0
+                }
+                if text_equal(event.Action, "centerBegin") {
+                    RayPart = "screen"
+                    RayPointerX = GizmoX
+                    RayPointerY = GizmoY
+                }
+                if text_equal(event.Action, "ringBegin") {
+                    slot := cast<int>(event.Value)
+                    if slot < 0 || slot >= length(RingLeft) {
+                        return
+                    }
+                    RayPart = "ring"
+                    RayPointerX = RingLeft[slot] + 6.0
+                    RayPointerY = RingTop[slot] + 6.0
+                }
+                if text_equal(event.Action, "colliderBegin") {
+                    slot := cast<int>(event.Value)
+                    if slot < 0 || slot >= length(ColliderLeft) {
+                        return
+                    }
+                    ColliderSlot = slot
+                    RayPart = "collider"
+                    RayPointerX = ColliderLeft[slot] + 6.0
+                    RayPointerY = ColliderTop[slot] + 6.0
+                }
+                if !await RayBegin() {
+                    RayActive = false
+                    await Publish()
+                    return
+                }
+                if text_equal(RayPart, "collider") {
+                    if ColliderSlot % 2 == 0 {
+                        RayAxis = Mul(RayAxis, -1.0)
+                    }
+                    colliderRay := await PointerRay()
+                    if length(colliderRay) != 6 {
+                        RayActive = false
+                        return
+                    }
+                    parameter := AxisParameter(colliderRay)
+                    if length(parameter) != 1 {
+                        RayActive = false
+                        return
+                    }
+                    ColliderBaseReach = ColliderReach[ColliderSlot]
+                    ColliderAxisStart = parameter[0]
+                }
+            }
+            await RequestGuard("axis")
+        }
+        if dragging {
+            if RayActive {
+                RayPointerX += event.Delta.x / PixelRatio
+                RayPointerY += event.Delta.y / PixelRatio
+                if GuardWaiting {
+                    RayPendingDX += event.Delta.x / PixelRatio
+                    RayPendingDY += event.Delta.y / PixelRatio
+                }
+                if Authorized {
+                    await RayDrag(event.Delta.x / PixelRatio, event.Delta.y / PixelRatio)
+                }
+            } else {
+                pixels := event.Delta.x / PixelRatio - event.Delta.y / PixelRatio
+                amount := pixels * Span / Width
+                if text_equal(Tool, "rotate") {
+                    amount = pixels * 0.01
+                }
+                if text_equal(Tool, "scale") {
+                    amount = pixels * 0.005
+                }
+                if GuardWaiting {
+                    PendingAmount += amount
+                }
+                if Authorized {
+                    await Nudge(amount)
+                }
+            }
+        }
+        if ending {
+            if GuardWaiting {
+                PendingEnd = true
+                PendingCanceled = event.Canceled
+            }
+            if Authorized {
+                await Finish(event.Canceled)
+            }
+        }
+    }
+    on StudioDocumentExternalEditReady {
+        if !text_equal(event.Owner, "scene") || event.Document != GuardDocument || event.Request != GuardRequest {
+            return
+        }
+        if !event.Ok {
+            GuardWaiting = false
+            ToolError = event.Error
+            if Gesture {
+                await Finish(true)
+            }
+            await Publish()
+            return
+        }
+        if !GuardWaiting {
+            return
+        }
+        GuardWaiting = false
+        Authorized = true
+        Busy = false
+        mode := GuardMode
+        if text_equal(mode, "prepare") || text_equal(mode, "play") {
+            await Prepare()
+            await ReleaseGuard()
+        }
+        if text_equal(mode, "axis") {
+            self.Revision = event.Revision
+            GestureBaseRevision = event.Revision
+            LiveObjects = []
+            LiveFields = []
+            LiveComponents = []
+            LiveValues = []
+            await RefreshFields()
+            if RayActive && RuntimeRevision != event.Revision {
+                ToolError = "Source changed while the pointer tool waited; rebuild the preview"
+                await Finish(true)
+                return
+            }
+            if RayActive && !PendingCanceled {
+                await RayDrag(RayPendingDX, RayPendingDY)
+            }
+            if PendingAmount != 0.0 && !PendingCanceled {
+                await Nudge(PendingAmount)
+            }
+            if PendingEnd {
+                await Finish(PendingCanceled)
+            }
+        }
+        await Publish()
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        if text_equal(event.Owner, "scene") && event.Document == GuardDocument && event.Request == GuardRequest {
+            await Finish(true)
+        }
+    }
+    on StudioCollaborationState {
+        CollaborationActive = event.Active
+        CollaborationReady = event.Ready
+        CollaborationPending = event.Pending
+        CollaborationRole = event.Role
+        CollaborationReplaying = event.Replaying
+        if Gesture && !CanTransform() {
+            await Finish(true)
+        }
+        await Publish()
+    }
+    on StudioDocumentEditResult {
+        if !ProposalPending || !text_equal(event.Owner, "scene") || event.Request != ProposalRequest || event.Document != self.Document || event.ExpectedRevision != GestureBaseRevision {
+            return
+        }
+        ProposalPending = false
+        CandidateMode = false
+        if !event.Ok {
+            ToolError = event.Error
+            await RestoreLive(true)
+        } else {
+            await RestoreLive(false)
+            await read()
+            if read.Ok {
+                self.Revision = read.Revision
+                await RefreshFields()
+                NeedsPrepare = true
+            }
+        }
+        CandidateText = ""
+        CandidateKeys = []
+        CandidateValues = []
+        await send_event<"StudioDocumentCommand">(self, "refresh", "")
+        await Publish()
+    }
+    on StudioSceneCancel {
+        BoxActive = false
+        BoxScanning = false
+        Grab = false
+        if GuardWaiting {
+            PendingEnd = true
+            PendingCanceled = true
+        } else {
+            await Finish(true)
+        }
+    }
+    on Tick {
+        await FrameStep()
+        await MarqueeStep()
+        if EvidencePending {
+            captured := await workspace_runtime_evidence_poll(EvidenceJob)
+            EvidencePending = captured.Ok && captured.Pending
+            EvidenceState = captured.State
+            EvidenceError = captured.Error
+            EvidenceDirectory = captured.Directory
+        }
+        if Preparing {
+            await status()
+            Preparing = status.Preparing
+            Ready = status.Ready
+            Error = status.Error
+            Log = status.Log
+            if Session != status.Session {
+                Session = status.Session
+                RuntimeDocument = status.Document
+                RuntimeRevision = status.Revision
+                Image = ""
+                CheckpointDirty = true
+                PresentationDirty = true
+                await objects()
+                Names = objects.Names
+                Parents = objects.Parents
+                Perspective = objects.Perspective
+                if ModelPreview() { await ModelInitialize() }
+                await view()
+                await Exclusions()
+                if PlayAfterPrepare && RuntimeCurrent() {
+                    played := await workspace_runtime_control(Session, "play")
+                    Playing = played.Playing
+                    CheckpointDirty = true
+                    PlayAfterPrepare = false
+                }
+            }
+            if TargetPreview && !RuntimeCurrent() {
+                Ready = false
+            }
+        }
+        if NeedsPrepare && !Preparing && !Busy && !Gesture {
+            Idle += DeltaSeconds
+            if Idle >= 0.3 {
+                await RequestGuard("prepare")
+            }
+        }
+        if Ready && Playing && !Visible && !Busy {
+            advanced := await workspace_runtime_control(Session, "advance")
+            Error = advanced.Error
+            Steps = advanced.Steps
+            Time = advanced.Time
+        }
+        if Ready && Visible && !Busy {
+            measured := get_ui_view_width(Element: "#studio-scene-surface")
+            width := measured."View Width"
+            height := get_ui_scroll(Element: "#studio-scene-surface")."View Height"
+            if width > 0.0 && height > 0.0 && measured.PixelRatio > 0.0 {
+                Width = width
+                Height = height
+                PixelRatio = measured.PixelRatio
+                scale := min(1.0, min(2048.0 / (width * PixelRatio), 2048.0 / (height * PixelRatio)))
+                if Generated && !TargetPreview && !Playing && Steps == 0 {
+                    generated := await workspace_simulation_materials(Session, "prepare", X, -Y, min(4096.0, 0.5 * sqrt(Span * Span + Span * Height / Width * Span * Height / Width)))
+                    GenerationPending = generated.Pending
+                    if !generated.Ok {
+                        ToolError = generated.Error
+                        Generated = false
+                    }
+                }
+                await ModelUpdate()
+                await ModelParametersStep()
+                await ApplyPresentation()
+                if Playing {
+                    GameCamera = true
+                }
+                await ApplyView()
+                timeline := await workspace_simulation_timeline(Session, "status", 0, "")
+                seconds := min(DeltaSeconds, 0.25)
+                if !timeline.Replaying {
+                    ReplayPrimed = false
+                }
+                if timeline.Replaying {
+                    seconds = 0.0
+                    if ReplayPrimed && timeline.Steps < timeline.EndStep {
+                        await workspace_runtime_control(Session, "step")
+                    }
+                    if timeline.Steps >= timeline.EndStep {
+                        await workspace_simulation_timeline(Session, "stop-replay", 0, "")
+                        await workspace_runtime_control(Session, "pause")
+                    }
+                }
+                drawn := await workspace_runtime_draw(Session, cast<int>(Width * PixelRatio * scale), cast<int>(Height * PixelRatio * scale), seconds)
+                Image = drawn.Image
+                if ModelPreview() && drawn.Ok && !ModelDrawn {
+                    ModelDrawn = true
+                    ModelDirty = true
+                }
+                if !drawn.Ok {
+                    Error = drawn.Error
+                }
+                Playing = drawn.Playing
+                Steps = drawn.Steps
+                Time = drawn.Time
+                if timeline.Replaying && drawn.Ok {
+                    ReplayPrimed = true
+                }
+                if timeline.Replaying && drawn.Ok && drawn.Steps < timeline.EndStep {
+                    resumed := await workspace_runtime_control(Session, "play")
+                    Playing = resumed.Playing
+                }
+            }
+        }
+        await OverlayStep()
+        await UpdateGizmo()
+        await UpdateCollider()
+        await Publish()
+    }
+}

@@ -1,0 +1,11 @@
+version 3
+name "StudioOutputExpand"
+domain "event"
+id_counter 3
+(array)variables {
+    - id=1 name="Path" type="const char *" category="Payload"
+    - id=2 name="Offset" type="int" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

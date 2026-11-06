@@ -1,0 +1,6 @@
+component StudioThemeSection {
+    file: string
+    selector: string
+    start: int
+    end: int
+}

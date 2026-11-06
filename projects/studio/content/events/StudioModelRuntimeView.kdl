@@ -1,0 +1,12 @@
+version 3
+name "StudioModelRuntimeView"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Session" type="int" category="Payload"
+    - id=2 name="Id" type="const char *" category="Payload"
+    - id=3 name="Value" type="float" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

@@ -1,0 +1,13 @@
+.studio-home { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28dp; height: 100%; min-height: 240dp; padding: 32dp; overflow-y: auto; background: var(--background); color: var(--foreground); }
+.studio-home-intro { display: flex; flex-direction: column; align-items: center; gap: 12dp; }
+.studio-home-mark { font-size: 32dp; color: var(--muted-foreground); }
+.studio-home h1 { margin: 0; font-size: 26dp; font-weight: 600; }
+.studio-home p { margin: 0; color: var(--muted-foreground); }
+.studio-home-actions { display: flex; gap: 8dp; margin-top: 8dp; }
+.studio-home-recents { width: 520dp; max-width: 100%; }
+.studio-home h2 { margin: 0 0 8dp; font-size: 13dp; color: var(--muted-foreground); }
+.studio-home-projects { max-height: 196dp; overflow-y: auto; }
+.studio-home-project { display: flex; align-items: center; gap: 10dp; width: 100%; min-height: 32dp; padding: 6dp 8dp; text-align: left; background: transparent; color: var(--foreground); border-bottom: 1dp var(--border); }
+.studio-home-project:hover { background: var(--muted); }
+.studio-home-project span:nth-child(2) { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.studio-home-room { max-width: 520dp; }

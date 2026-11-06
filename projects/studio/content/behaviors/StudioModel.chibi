@@ -1,0 +1,705 @@
+behavior StudioModel {
+    self.Part: int = -1
+    SectionAxis: int = 0
+    SectionOffset: float = 0.0
+    PartSearch: string = ""
+    Parts: struct<"ModelAuthoringPart">[] = []
+    VisibleParts: struct<"ModelAuthoringPart">[] = []
+    Evidence := false
+    EvidenceDestination: string = "model-evidence"
+    Job: int = 0
+    ExportState: int = -1
+    ExportError: string = ""
+    ExportPath: string = ""
+    SharedWritable := true
+    SharedGesture := false
+    SharedRevision: int = 0
+    ProposalDocument: int = 0
+    ProposalPending := false
+    ProposalRequest: int = 0
+    Collaborative := false
+    Document: int = 0
+    Revision: int = 0
+    Active := false
+    DocumentBusy := false
+    Valid := false
+    Error: string = ""
+    Preview: int = 0
+    Image: string = ""
+    Parameters: struct<"ModelAuthoringParameter">[] = []
+    Editing := false
+    Retired := false
+    Node: uint64 = 0
+    Width: int = 1
+    X: float = 0.0
+    Y: float = 0.0
+    Z: float = 0.0
+    W: float = 0.0
+    Time: float = 0.0
+    Yaw: float = 0.45
+    Pitch: float = 0.3
+    Zoom: float = 1.0
+    Dragging := false
+    MouseX: float = 0.0
+    MouseY: float = 0.0
+    Diagnostics := false
+    CellSize: float = 0.1
+    Triangles: int = 50000
+    Samples: uint64 = 2000000
+    Work: uint64 = 100000000
+    BundleDestination: string = "model-bundle"
+    Reference: struct<"ModelReference"> = { image: "", center_x: 0.0, center_y: 0.0, height: 2.0, angle: 0.0, locked: true }
+    ReferenceVisible := false
+    ReferenceOpacity: float = 0.5
+    PanX: float = 0.0
+    PanY: float = 0.0
+    Panning := false
+    Bake: int = 0
+    BakeRevision: int = 0
+    BakeError: string = ""
+    Destination: string = "model.mesh"
+    Saved := false
+    action prepare_default = prepare_model_default(Document, SharedRevision, Node, Width, X, Y, Z, W)
+    action refresh_catalog = refresh_visual_catalog()
+    action read = workspace_document_read(Document)
+    action begin_edit = workspace_document_begin(Document, Revision)
+    action commit_edit = workspace_document_commit(Document, Revision)
+    action cancel_edit = workspace_document_cancel(Document, Revision)
+    action edit = set_model_default(Document, Revision, Node, Width, X, Y, Z, W)
+    action inspect = inspect_model(Document, Revision)
+    action apply = publish_visual_document(Document, Revision)
+    action open = open_visual_preview(Document, 320, 240)
+    action draw = draw_visual_preview(Preview, Revision, Time, Yaw, Pitch, Zoom)
+    action close = close_visual_preview(Preview)
+    action bake = bake_model(Document, Revision, CellSize, Triangles, Samples, Work)
+    action reference_read = inspect_model_reference(Document, Revision)
+    action reference_view = set_model_preview_reference(Preview, Revision, Reference, ReferenceVisible, ReferenceOpacity)
+    action pan_view = set_model_preview_pan(Preview, Revision, PanX, PanY)
+    action export_bundle = export_model_bundle(Bake, BundleDestination)
+    action close_bake = close_model_bake(Bake)
+    action export = export_model_bake(Bake, Destination)
+    action inspection = set_visual_model_inspection(Preview, Revision, Part, SectionAxis, SectionOffset)
+    action evidence = export_visual_evidence(Preview, EvidenceDestination)
+    action status = visual_evidence_status(Job)
+    action close_job = close_visual_evidence(Job)
+    filter_parts :: fn() {
+        VisibleParts = []
+        for part in Parts {
+            if PartSearch == "" || text_contains(PartSearch, part.name, true) {
+                VisibleParts = array_add(VisibleParts, part)
+            }
+        }
+        return
+    }
+    publish :: fn() {
+        await set_ui_data(Name: "modelShared", Value: Collaborative)
+        await set_ui_data(Name: "modelProposalPending", Value: ProposalPending)
+        await set_ui_data(Name: "modelPart", Value: Part)
+        await set_ui_data(Name: "modelSectionAxis", Value: SectionAxis)
+        await set_ui_data(Name: "modelSectionOffset", Value: SectionOffset)
+        await set_ui_data(Name: "modelPartSearch", Value: PartSearch)
+        await set_ui_data(Name: "modelVisibleParts", Value: VisibleParts)
+        await set_ui_data(Name: "modelEvidence", Value: Evidence)
+        await set_ui_data(Name: "modelEvidenceDestination", Value: EvidenceDestination)
+        await set_ui_data(Name: "modelExportState", Value: ExportState)
+        await set_ui_data(Name: "modelExportError", Value: ExportError)
+        await set_ui_data(Name: "modelExportPath", Value: ExportPath)
+        await set_ui_data(Name: "modelActive", Value: Active)
+        await set_ui_data(Name: "modelReadonly", Value: DocumentBusy || ProposalPending || (Collaborative && !SharedWritable))
+        await set_ui_data(Name: "modelDocument", Value: Document)
+        await set_ui_data(Name: "modelRevision", Value: Revision)
+        await set_ui_data(Name: "modelValid", Value: Valid)
+        await set_ui_data(Name: "modelError", Value: Error)
+        await set_ui_data(Name: "modelImage", Value: Image)
+        await set_ui_data(Name: "modelParameters", Value: Parameters)
+        await set_ui_data(Name: "modelTime", Value: Time)
+        await set_ui_data(Name: "modelZoom", Value: Zoom)
+        await set_ui_data(Name: "modelDiagnostics", Value: Diagnostics)
+        await set_ui_data(Name: "modelCellSize", Value: CellSize)
+        await set_ui_data(Name: "modelTriangleBudget", Value: Triangles)
+        await set_ui_data(Name: "modelSampleBudget", Value: Samples)
+        await set_ui_data(Name: "modelWorkBudget", Value: Work)
+        await set_ui_data(Name: "modelBundleDestination", Value: BundleDestination)
+        await set_ui_data(Name: "modelBake", Value: Bake)
+        await set_ui_data(Name: "modelBakeCurrent", Value: Bake > 0 && BakeRevision == Revision)
+        await set_ui_data(Name: "modelBakeError", Value: BakeError)
+        await set_ui_data(Name: "modelDestination", Value: Destination)
+        set_ui_data(Name: "modelSaved", Value: Saved)
+        return
+    }
+    draw_preview :: fn() {
+        Image = ""
+        if Preview > 0 && Valid {
+            await reference_read()
+            if !reference_read.Valid {
+                Error = reference_read.Error;
+                publish();
+                return
+            }
+            Reference = reference_read.Reference
+            await reference_view()
+            await pan_view()
+            if !reference_view.Valid || !pan_view.Valid {
+                Error = "Model view settings are unavailable";
+                publish();
+                return
+            }
+            await inspection()
+            if !inspection.Valid {
+                Error = inspection.Error
+                publish()
+                return
+            }
+            await draw()
+            Image = draw.Image
+            if !draw.Valid {
+                Error = draw.Error
+            }
+        }
+        publish()
+        return
+    }
+    refresh :: fn() {
+        Active = false
+        Valid = false
+        Error = ""
+        Image = ""
+        if Document <= 0 {
+            publish()
+            return
+        }
+        await read()
+        if !read.Ok {
+            Error = read.Error
+            publish()
+            return
+        }
+        Revision = read.Revision
+        identity := workspace_asset_identity(Document, Revision)
+        Active = identity.Kind == "model"
+        if !Active {
+            publish()
+            return
+        }
+        if !read.Transaction && Editing {
+            Editing = false
+            Retired = true
+        }
+        await apply()
+        await inspect()
+        Valid = inspect.Valid
+        Parameters = inspect.Parameters
+        Parts = inspect.Parts
+        selected_exists := Part == -1
+        for part in Parts {
+            if part.index == Part {
+                selected_exists = true
+            }
+        }
+        if !selected_exists {
+            Part = -1
+        }
+        filter_parts()
+        await set_ui_data(Name: "modelInfo", Value: inspect.Info)
+        await set_ui_data(Name: "modelParts", Value: inspect.Parts)
+        await set_ui_data(Name: "modelAnchors", Value: inspect.Anchors)
+        if !inspect.Valid {
+            Error = inspect.Error
+            publish()
+            return
+        }
+        if !apply.Valid {
+            Error = apply.Error
+            publish()
+            return
+        }
+        if Preview == 0 {
+            await open()
+            Preview = open.Preview
+        }
+        draw_preview()
+        return
+    }
+    finish :: fn(Canceled: bool) {
+        await read()
+        if read.Ok && read.Transaction {
+            Revision = read.Revision
+            if Canceled {
+                await cancel_edit()
+                if !cancel_edit.Ok {
+                    Error = cancel_edit.Error
+                    publish()
+                    return
+                }
+            } else {
+                await commit_edit()
+                if !commit_edit.Ok {
+                    Error = commit_edit.Error
+                    publish()
+                    return
+                }
+            }
+        }
+        Editing = false
+        await refresh()
+        send_event<"StudioDocumentCommand">(self, "refresh", "")
+        return
+    }
+    Propose :: fn() {
+        if ProposalPending || !SharedWritable {
+            return
+        }
+        if ProposalRequest >= 2147483647 {
+            Error = "Visual edit request limit reached."
+            publish()
+            return
+        }
+        await prepare_default()
+        SharedGesture = false
+        if !prepare_default.Valid {
+            failure := prepare_default.Error
+            await refresh()
+            Error = failure
+            publish()
+            return
+        }
+        ProposalRequest += 1
+        ProposalDocument = Document
+        ProposalPending = true
+        await send_event<"StudioDocumentEdit">(self, Document, SharedRevision, 0, -1, prepare_default.Text, "model", ProposalRequest)
+        publish()
+        return
+    }
+    SharedParameter :: fn(Document: int, Identity: uint64, Axis: int, Value: float, Committed: bool, Canceled: bool) {
+        if Document != self.Document || !Valid || ProposalPending || !SharedWritable {
+            return
+        }
+        if Canceled {
+            SharedGesture = false
+            refresh()
+            return
+        }
+        if Committed && !SharedGesture {
+            return
+        }
+        if !SharedGesture || Node != Identity {
+            found := false
+            for row in Parameters {
+                if row.node == Identity && row.local {
+                    Width = row.width
+                    X = row.x
+                    Y = row.y
+                    Z = row.z
+                    W = row.w
+                    found = true
+                }
+            }
+            if !found {
+                return
+            }
+            Node = Identity
+            SharedRevision = Revision
+            SharedGesture = true
+        }
+        switch Axis {
+            case 0:
+                X = Value
+                case 1:
+                    Y = Value
+                    case 2:
+                        Z = Value
+                        case 3:
+                            W = Value
+                        }
+                        if Committed {
+                            Propose()
+                        }
+                        return
+                    }
+                    on StudioDocumentEditResult {
+                        if event.Owner != "model" || event.Document != ProposalDocument || event.Request != ProposalRequest || event.ExpectedRevision != SharedRevision || !ProposalPending {
+                            return
+                        }
+                        ProposalPending = false
+                        if event.Document != self.Document {
+                            SharedGesture = false
+                            publish()
+                            return
+                        }
+                        if !event.Ok {
+                            failure := event.Error
+                            await refresh()
+                            self.Error = failure
+                            publish()
+                            return
+                        }
+                        self.Revision = event.Revision
+                        await refresh()
+                        send_event<"StudioDocumentCommand">(self, "refresh", "")
+                    }
+                    on StudioCollaborationState {
+                        Collaborative = event.Active
+                        SharedWritable = event.Ready && !event.Pending && (event.Role == "host" || event.Role == "editor")
+                        publish()
+                    }
+                    on Begin {
+                        publish()
+                    }
+                    on StudioDocumentState {
+                        DocumentBusy = event.Busy
+                        if event.Document != self.Document {
+                            SharedGesture = false
+                            Part = -1
+                            SectionAxis = 0
+                            SectionOffset = 0.0
+                            PartSearch = ""
+                            if Preview > 0 {
+                                await close()
+                            }
+                            if Bake > 0 {
+                                await close_bake()
+                            }
+                            Preview = 0
+                            Bake = 0
+                            Saved = false
+                            BakeError = ""
+                            Editing = false
+                            Dragging = false
+                            Diagnostics = false
+                            self.Document = event.Document
+                        }
+                        self.Revision = event.Revision
+                        refresh()
+                    }
+                    on StudioModelArm {
+                        if event.Document == self.Document {
+                            Retired = false
+                        }
+                    }
+                    on StudioModelParameter {
+                        if DocumentBusy {
+                            return
+                        }
+                        if Collaborative {
+                            SharedParameter(event.Document, event.Node, event.Axis, event.Value, event.Committed, event.Canceled)
+                            return
+                        }
+                        if event.Document != self.Document || !Valid || Retired {
+                            return
+                        }
+                        await read()
+                        if !read.Ok {
+                            Error = read.Error
+                            publish()
+                            return
+                        }
+                        Revision = read.Revision
+                        if !read.Transaction && Editing {
+                            Editing = false
+                            Retired = true
+                        }
+                        if Retired {
+                            return
+                        }
+                        if event.Committed && !Editing {
+                            return
+                        }
+                        if event.Canceled {
+                            finish(true)
+                            return
+                        }
+                        if Editing && self.Node != event.Node {
+                            await finish(false)
+                        }
+                        found := false
+                        for row in Parameters {
+                            if row.node == event.Node && row.local {
+                                Width = row.width
+                                X = row.x
+                                Y = row.y
+                                Z = row.z
+                                W = row.w
+                                found = true
+                            }
+                        }
+                        if !found {
+                            return
+                        }
+                        if !Editing {
+                            await begin_edit()
+                            if !begin_edit.Ok {
+                                Error = begin_edit.Error
+                                publish()
+                                return
+                            }
+                            Editing = true
+                        }
+                        self.Node = event.Node
+                        switch event.Axis {
+                            case 0:
+                                X = event.Value
+                                case 1:
+                                    Y = event.Value
+                                    case 2:
+                                        Z = event.Value
+                                        case 3:
+                                            W = event.Value
+                                        }
+                                        await edit()
+                                        if !edit.Valid {
+                                            failure := edit.Error
+                                            await finish(true)
+                                            Error = failure
+                                            publish()
+                                            return
+                                        }
+                                        Revision = edit.Revision
+                                        if event.Committed {
+                                            finish(false)
+                                        } else {
+                                            refresh()
+                                        }
+                                    }
+                                    on StudioModelView {
+                                        switch event.Id {
+                                            case "refresh":
+                                                await refresh_catalog()
+                                                if !refresh_catalog.Valid {
+                                                    Error = refresh_catalog.Error
+                                                    publish()
+                                                    return
+                                                }
+                                                refresh()
+                                                return
+                                                case "time":
+                                                    Time = event.Value
+                                                    case "zoom":
+                                                        Zoom = clamp(event.Value, 0.25, 4.0)
+                                                        case "front":
+                                                            Yaw = 0.0
+                                                            Pitch = 0.0
+                                                            case "side":
+                                                                Yaw = 1.5707963
+                                                                Pitch = 0.0
+                                                                case "top":
+                                                                    Yaw = 0.0
+                                                                    Pitch = 1.5707963
+                                                                    case "reset":
+                                                                        PanX = 0.0;
+                                                                        PanY = 0.0
+                                                                        Yaw = 0.45
+                                                                        Pitch = 0.3
+                                                                        Zoom = 1.0
+                                                                        case "diagnostics":
+                                                                            Diagnostics = !Diagnostics
+                                                                            case "cell":
+                                                                                CellSize = event.Value
+                                                                                case "triangles":
+                                                                                    Triangles = event.Value
+                                                                                }
+                                                                                draw_preview()
+                                                                            }
+                                                                            on StudioModelOrbit {
+                                                                                switch event.Id {
+                                                                                    case "down":
+                                                                                        Panning = event.Button == 2
+                                                                                        Dragging = !Panning
+                                                                                        MouseX = event.X
+                                                                                        MouseY = event.Y
+                                                                                        case "up":
+                                                                                            Panning = false;
+                                                                                            Dragging = false
+                                                                                            case "move":
+                                                                                                if Panning {
+                                                                                                    await PanMove(event.X, event.Y);
+                                                                                                    return
+                                                                                                }
+                                                                                                if Dragging && !Panning {
+                                                                                                    geometry := get_ui_view_width(Element: "#studio-model-preview")
+                                                                                                    if !geometry.Known || geometry.PixelRatio <= 0.0 {
+                                                                                                        MouseX = event.X
+                                                                                                        MouseY = event.Y
+                                                                                                        return
+                                                                                                    }
+                                                                                                    Yaw = clamp(Yaw + (event.X - MouseX) * 0.01 / geometry.PixelRatio, -3.14159265, 3.14159265)
+                                                                                                    Pitch = clamp(Pitch + (event.Y - MouseY) * 0.01 / geometry.PixelRatio, -1.5707963, 1.5707963)
+                                                                                                    MouseX = event.X
+                                                                                                    MouseY = event.Y
+                                                                                                    draw_preview()
+                                                                                                }
+                                                                                            case "wheel":
+                                                                                                Zoom = clamp(Zoom + event.Y * 0.1, 0.25, 4.0)
+                                                                                                draw_preview()
+                                                                                            }
+                                                                                        }
+                                                                                        on StudioModelBake {
+                                                                                            if ProposalPending || SharedGesture {
+                                                                                                Error = "Finish the shared edit before exporting or baking its accepted source."
+                                                                                                publish()
+                                                                                                return
+                                                                                            }
+                                                                                            if !Valid {
+                                                                                                return
+                                                                                            }
+                                                                                            if Editing {
+                                                                                                await finish(false)
+                                                                                            }
+                                                                                            if Bake > 0 {
+                                                                                                await close_bake()
+                                                                                                Bake = 0
+                                                                                            }
+                                                                                            Saved = false
+                                                                                            BakeError = ""
+                                                                                            await bake()
+                                                                                            if !bake.Valid {
+                                                                                                BakeError = bake.Error
+                                                                                                publish()
+                                                                                                return
+                                                                                            }
+                                                                                            Bake = bake.Bake
+                                                                                            BakeRevision = Revision
+                                                                                            await set_ui_data(Name: "modelBakedTriangles", Value: bake.Triangles)
+                                                                                            await set_ui_data(Name: "modelBakedSamples", Value: bake.Samples)
+                                                                                            await set_ui_data(Name: "modelBakedWork", Value: bake.Work)
+                                                                                            await set_ui_data(Name: "modelBakedDiagonal", Value: bake.CellDiagonal)
+                                                                                            await set_ui_data(Name: "modelBakedResidual", Value: bake.MaxResidual)
+                                                                                            publish()
+                                                                                        }
+                                                                                        on StudioModelDestination {
+                                                                                            Destination = event.Path
+                                                                                            Saved = false
+                                                                                            publish()
+                                                                                        }
+                                                                                        on StudioModelExport {
+                                                                                            if ProposalPending || SharedGesture {
+                                                                                                Error = "Finish the shared edit before exporting or baking its accepted source."
+                                                                                                publish()
+                                                                                                return
+                                                                                            }
+                                                                                            if Bake == 0 || BakeRevision != Revision {
+                                                                                                BakeError = "Bake the current model before exporting."
+                                                                                                publish()
+                                                                                                return
+                                                                                            }
+                                                                                            await export()
+                                                                                            Saved = export.Valid
+                                                                                            BakeError = export.Error
+                                                                                            publish()
+                                                                                        }
+                                                                                        on StudioModelInspection {
+                                                                                            if !Valid || Preview <= 0 {
+                                                                                                return
+                                                                                            }
+                                                                                            self.Part = event.Part
+                                                                                            SectionAxis = event.Axis
+                                                                                            SectionOffset = event.Offset
+                                                                                            draw_preview()
+                                                                                        }
+                                                                                        on StudioModelEvidence {
+                                                                                            switch event.Id {
+                                                                                                case "toggle":
+                                                                                                    Evidence = !Evidence
+                                                                                                    case "destination":
+                                                                                                        EvidenceDestination = event.Value
+                                                                                                        case "search":
+                                                                                                            PartSearch = event.Value
+                                                                                                            filter_parts()
+                                                                                                            case "export":
+                                                                                                                if ProposalPending || SharedGesture {
+                                                                                                                    Error = "Finish the shared edit before exporting its accepted source."
+                                                                                                                    publish()
+                                                                                                                    return
+                                                                                                                }
+                                                                                                                if ExportState == 0 {
+                                                                                                                    return
+                                                                                                                }
+                                                                                                                if Job > 0 {
+                                                                                                                    await close_job()
+                                                                                                                    Job = 0
+                                                                                                                }
+                                                                                                                if Editing {
+                                                                                                                    await finish(false)
+                                                                                                                }
+                                                                                                                await draw_preview()
+                                                                                                                if !Valid || Image == "" {
+                                                                                                                    return
+                                                                                                                }
+                                                                                                                await evidence()
+                                                                                                                Job = evidence.Job
+                                                                                                                ExportState = 0
+                                                                                                                ExportError = evidence.Error
+                                                                                                                ExportPath = ""
+                                                                                                                if Job == 0 {
+                                                                                                                    ExportState = 2
+                                                                                                                }
+                                                                                                                await draw_preview()
+                                                                                                            }
+                                                                                                            publish()
+                                                                                                        }
+                                                                                                        on Tick {
+                                                                                                            if Job > 0 && ExportState == 0 {
+                                                                                                                await status()
+                                                                                                                ExportState = status.State
+                                                                                                                ExportError = status.Error
+                                                                                                                ExportPath = status.Destination
+                                                                                                                publish()
+                                                                                                            }
+                                                                                                        }
+
+                                                                                                        on StudioModelReferenceDisplay {
+                                                                                                            if event.Document != self.Document || event.Revision != self.Revision {
+                                                                                                                return
+                                                                                                            }
+                                                                                                            ReferenceVisible = event.Visible;
+                                                                                                            ReferenceOpacity = event.Opacity;
+                                                                                                            await draw_preview()
+                                                                                                        }
+                                                                                                        on StudioModelBudgets {
+                                                                                                            self.Samples = event.Samples;
+                                                                                                            self.Work = event.Work;
+                                                                                                            await publish()
+                                                                                                        }
+                                                                                                        on StudioModelBundle {
+                                                                                                            if event.Id == "destination" {
+                                                                                                                BundleDestination = event.Path;
+                                                                                                                await publish();
+                                                                                                                return
+                                                                                                            }
+                                                                                                            if event.Id != "export" || Bake == 0 || BakeRevision != Revision {
+                                                                                                                return
+                                                                                                            }
+                                                                                                            await export_bundle();
+                                                                                                            BakeError = export_bundle.Error;
+                                                                                                            Saved = export_bundle.Valid;
+                                                                                                            await publish()
+                                                                                                        }
+                                                                                                        on StudioModelPan {
+                                                                                                            if event.Id == "reset" {
+                                                                                                                PanX = 0.0;
+                                                                                                                PanY = 0.0;
+                                                                                                                await draw_preview()
+                                                                                                            }
+                                                                                                        }
+                                                                                                        PanMove :: fn(X: float, Y: float) {
+                                                                                                            measured := get_ui_view_width(Element: "#studio-model-preview")
+                                                                                                            if !measured.Known || measured.PixelRatio <= 0.0 || measured."View Width" <= 0.0 {
+                                                                                                                return
+                                                                                                            }
+                                                                                                            span := max(0.001, await modelInfoSpan()) / Zoom
+                                                                                                            PanX -= (X - MouseX) / measured.PixelRatio / measured."View Width" * span
+                                                                                                            PanY += (Y - MouseY) / measured.PixelRatio / measured."View Width" * span
+                                                                                                            MouseX = X;
+                                                                                                            MouseY = Y;
+                                                                                                            await draw_preview()
+                                                                                                        }
+                                                                                                        modelInfoSpan :: fn() -> float {
+                                                                                                            report := await inspect_model(Document, Revision)
+                                                                                                            if !report.Valid {
+                                                                                                                return 1.0
+                                                                                                            }
+                                                                                                            dx := report.Info.max_x - report.Info.min_x;
+                                                                                                            dy := report.Info.max_y - report.Info.min_y;
+                                                                                                            dz := report.Info.max_z - report.Info.min_z
+                                                                                                            return sqrt(dx * dx + dy * dy + dz * dz) * 1.25
+                                                                                                        }
+                                                                                                    }

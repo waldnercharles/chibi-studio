@@ -1,0 +1,38 @@
+#!/bin/sh
+set -eu
+bindir=$(CDPATH= cd -P "$(dirname "$0")" && pwd)
+launch() {
+    exec "$bindir/chibi-author" "$bindir/../share/chibi/studio/game.chibip" \
+        --resource-root "$bindir/../share/chibi/studio" \
+        --sdk-resource-root "$bindir/../share/chibi/sdk" "$@"
+}
+workspace=""
+if [ "$#" -gt 0 ]; then
+    case "$1" in
+        -*) ;;
+        *) workspace=$1; shift ;;
+    esac
+fi
+if [ -n "$workspace" ]; then
+    if [ -f "$workspace" ]; then
+        case "$workspace" in
+            */project.kdl) workspace=$(dirname "$workspace") ;;
+            project.kdl) workspace=. ;;
+            *) printf '%s\n' 'Choose a project directory or project.kdl.' >&2; exit 2 ;;
+        esac
+    fi
+    launch --workspace-root "$workspace" "$@"
+fi
+for argument do
+    case "$argument" in
+        --workspace-root|--help) launch "$@" ;;
+    esac
+done
+workspace=$PWD
+while [ ! -f "$workspace/project.kdl" ]; do
+    if [ "$workspace" = / ]; then
+        launch "$@"
+    fi
+    workspace=$(dirname "$workspace")
+done
+launch --workspace-root "$workspace" "$@"

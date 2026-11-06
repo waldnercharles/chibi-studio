@@ -1,0 +1,14 @@
+version 3
+name "StudioGraphCommandState"
+domain "event"
+id_counter 6
+(array)variables {
+    - id=1 name="Available" type="bool" category="Payload"
+    - id=2 name="Selected" type="bool" category="Payload"
+    - id=3 name="Editable" type="bool" category="Payload"
+    - id=4 name="CanBack" type="bool" category="Payload"
+    - id=5 name="CanForward" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

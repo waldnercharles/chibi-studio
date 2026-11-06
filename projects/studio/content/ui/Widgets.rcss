@@ -12,9 +12,7 @@
 // Ten thousand rows, of which only those in view exist (WidgetGallery).
 .list-sample { display: block; height: 160dp; }
 .list-row { height: var(--studio-height-24, 24dp); line-height: var(--studio-line-24, 24dp); padding: 0dp 6dp; color: var(--foreground); }
-// The project's assets as a List of TreeRows a C source windows, dragged
-// as Assets drags them; Collected takes drops before or after its rows, and
-// shows them as Tiles too (studio_gallery.c).
+// Authored resource query windows and ordered stable-key collection.
 .assets-sample { display: block; height: 160dp; padding: 0dp 2dp 8dp; }
 .bin { display: block; min-height: 40dp; margin: 0dp 6dp 8dp; padding: 2dp; border: 1dp var(--edge); border-radius: var(--r); }
 .bin[data-drop-accept] { border-color: var(--primary-edge); }
@@ -22,3 +20,13 @@
 .bin-empty { display: block; padding: 8dp 6dp; color: var(--muted-foreground); text-align: center; }
 .tiles { flex-wrap: wrap; align-items: flex-start; }
 .tile-sample { width: 72dp; height: 90dp; }
+
+#gallery-assets { height: 100%; }
+#gallery-assets > .list-spacer { position: relative; height: var(--collection-height, 0dp); }
+.collection-window { position: absolute; left: 0dp; right: 0dp; }
+.collection-window .tree-row { height: 26dp; min-height: 26dp; }
+.collection-row { display: flex; align-items: center; }
+.collection-row > .tree-row { flex: 1 1 0dp; min-width: 0dp; }
+.collection-row > .btn { flex: 0 0 auto; }
+.collection-history { flex-wrap: wrap; }
+.collection-notice { padding: 6dp; color: var(--destructive); }

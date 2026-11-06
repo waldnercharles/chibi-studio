@@ -1,10 +1,10 @@
 {
-  "status": "held source preservation; not executable acceptance",
+  "status": "historical authored fixtures only; native oracles retired to Git baseline; not executable acceptance",
   "origin_checkout": "/Users/cwaldner/.codex/worktrees/e537/c-blueprints",
-  "source_header_count": 85,
+  "source_header_count": 0,
   "fixture_tree_count": 232,
   "literal_authored_file_count": 17,
-  "unique_preserved_files": 321,
+  "unique_preserved_files": 236,
   "records": [
     {
       "path": "content/behaviors/HealthBehavior.chibi",
@@ -25,301 +25,6 @@
       "path": "content/scenes/Arena3D.kdl",
       "bytes": 4186,
       "sha256": "6f09d3b203fe16827cfdbedc523c25ca59b05d3a3f8eb876af909d2cb5539fcb"
-    },
-    {
-      "path": "test/appearance.c",
-      "bytes": 14923,
-      "sha256": "79dfc46892e749837a63716e63a25173c2e0c043d998af1a6d4ee5876d518453"
-    },
-    {
-      "path": "test/arena_input.c",
-      "bytes": 22471,
-      "sha256": "6896c9d25c76696c59f87b699b3ed2c6acbba9f41678bd2780c7702c2e27b577"
-    },
-    {
-      "path": "test/arena_play.c",
-      "bytes": 93068,
-      "sha256": "b3197ed77b9494952a7a4191f2e356b60ffd2acd3eae54624d2a8bfb3dc6f999"
-    },
-    {
-      "path": "test/asset_fixture.h",
-      "bytes": 507,
-      "sha256": "157999aefff6bb67a83b27b1fafa53e4365cf3952fe4c7218416af6600d45ace"
-    },
-    {
-      "path": "test/collab_protocol.c",
-      "bytes": 2295,
-      "sha256": "0d403ef2aea23be8088996feb08bb3fe96ca0c35fe93d055950aca061af8f50e"
-    },
-    {
-      "path": "test/collab_replay.c",
-      "bytes": 9053,
-      "sha256": "2f181d96002358d26230643cde09e72194788b810496bb4da8ceaea7b3f51b63"
-    },
-    {
-      "path": "test/editor/asset_code.c",
-      "bytes": 18637,
-      "sha256": "8765cc64bda2f89fb75cbd2c659b7d51ea7a21378f608dd116f3ca1c18ec4205"
-    },
-    {
-      "path": "test/editor/code_intelligence.c",
-      "bytes": 24527,
-      "sha256": "c432595d6b58febb8023d1b0dc574f28db3b72cdee26c474b28f796cf967179f"
-    },
-    {
-      "path": "test/editor/code_intelligence_studio.c",
-      "bytes": 30048,
-      "sha256": "d400ace344ef95baa8cafbaf9031e0fbf31de84714617801d00c0806835670fc"
-    },
-    {
-      "path": "test/editor/commands.c",
-      "bytes": 72731,
-      "sha256": "c6ee20f83d5f4656050a557499c08d59356b6145d48f7245f122c793f64cace5"
-    },
-    {
-      "path": "test/editor/debug_target.c",
-      "bytes": 13560,
-      "sha256": "e7bdef46f3f240f69707482fd7ab12bccb6f4a4f3a55e3a2e53fbc13c08986bb"
-    },
-    {
-      "path": "test/editor/iframe_bindings.c",
-      "bytes": 8581,
-      "sha256": "985bba7115c85032b3b2ff90ae1de7550979e47b6874505004fecb120e3921f8"
-    },
-    {
-      "path": "test/editor/kit_code.c",
-      "bytes": 38626,
-      "sha256": "b180e2d7c236797fb97136560ae31403fdcd37e8f9f7462d3b41154ab52ff856"
-    },
-    {
-      "path": "test/editor/kit_documents.c",
-      "bytes": 17863,
-      "sha256": "e960044618f61699925baa4945e10fd4c33a8c7f5bbd1d1e001d791187de9201"
-    },
-    {
-      "path": "test/editor/kit_empty_documents.c",
-      "bytes": 4661,
-      "sha256": "ba871938509f6a74a054ae19ed0175db7a55c9a10dced0422c4b31108a07d13c"
-    },
-    {
-      "path": "test/editor/kit_host.c",
-      "bytes": 15750,
-      "sha256": "7b8dc1f1a78b4bafbf9ca88816b83cf1973247ee03a92f8520496fd47749cf60"
-    },
-    {
-      "path": "test/editor/kit_slot.c",
-      "bytes": 22926,
-      "sha256": "eae2d3a431858ffc0edd3b16c20573b63a1220a7eeaea4074deaeba3e8bcf449"
-    },
-    {
-      "path": "test/editor/rmlui_kit.c",
-      "bytes": 116225,
-      "sha256": "3ba49d43c20f10b88c643e3c1e81db9f1e8c931f89c535fb362e7b6cb4f72699"
-    },
-    {
-      "path": "test/editor/rmlui_render.c",
-      "bytes": 65970,
-      "sha256": "d74b957774ae651d7cf9b1d85f5cfe869b69483b5b16eab8a3bb0d65db30cb52"
-    },
-    {
-      "path": "test/editor/scene_gizmo.c",
-      "bytes": 8787,
-      "sha256": "45fa77bdc996a0a8c186d6489245b5741aaac702250aad8ebc1a97da2b682105"
-    },
-    {
-      "path": "test/editor/scene_selection.c",
-      "bytes": 13065,
-      "sha256": "593694d805f91e2c229462a3e7b318ce92bdfd8094ad8b3e3a08f8c40e8672e5"
-    },
-    {
-      "path": "test/editor/scene_view.c",
-      "bytes": 8533,
-      "sha256": "b8be4b0bf0ca016de91d456c523187c6c4bb48b0556cb8cc7d5571307a7eaf19"
-    },
-    {
-      "path": "test/editor/studio_commands.c",
-      "bytes": 17817,
-      "sha256": "1d7174c3793d69995c5516622162a7b569f458308160bb3863e565b0aee36f72"
-    },
-    {
-      "path": "test/editor/studio_documents.c",
-      "bytes": 18024,
-      "sha256": "64ba56a6aed085b883ff85fefc58d7eaf4957365791afc5019c522a4ecf2fa3b"
-    },
-    {
-      "path": "test/editor/studio_documents.h",
-      "bytes": 5680,
-      "sha256": "e932e356a901f154d7d3e869e7c1c5af94dbefd21244fe9585f106a2cd090b48"
-    },
-    {
-      "path": "test/editor/studio_documents_assets.c",
-      "bytes": 7112,
-      "sha256": "ff0a3861d5c75c2d7b9a8ff0541f74eed8b47267e47e76478a1055ec3c95da31"
-    },
-    {
-      "path": "test/editor/studio_documents_chrome.c",
-      "bytes": 17873,
-      "sha256": "9ed3b3f561a4bde6248e740e8b483063d083a2ae4a96fa7dd7169535a1bfe78b"
-    },
-    {
-      "path": "test/editor/studio_documents_designer.c",
-      "bytes": 32768,
-      "sha256": "4ed75fce3c1271d8fcde69dd92b95fb490e672410a5ec820d38b9245456b328f"
-    },
-    {
-      "path": "test/editor/studio_documents_graph.c",
-      "bytes": 37078,
-      "sha256": "0deade973c6c1fd33d7e0879fb49f9b1d546d4f9c7980dc05aa31d062c4066c3"
-    },
-    {
-      "path": "test/editor/studio_documents_graph_chrome.c",
-      "bytes": 25962,
-      "sha256": "36b875cba0dd98e52b8d9f2bdf5918ee321cf1e2bc7d73950921f1f0420b0bea"
-    },
-    {
-      "path": "test/editor/studio_documents_inspector.c",
-      "bytes": 13664,
-      "sha256": "d03cc6700cd58972a5b953eb3bc0da7063d46ceafe829bf919265d4020a79541"
-    },
-    {
-      "path": "test/editor/studio_documents_members.c",
-      "bytes": 19149,
-      "sha256": "e1a5b8df49f561fde292c84e25d5b1cb0d7f4064c9faa41e4f3cc6408d7708a5"
-    },
-    {
-      "path": "test/editor/studio_documents_outliner.c",
-      "bytes": 32481,
-      "sha256": "fdeca1ecfb778b68792474d9e73c58b6bf45f7ccc92e0ec7c4c7cc246da620e4"
-    },
-    {
-      "path": "test/editor/studio_documents_output.c",
-      "bytes": 20570,
-      "sha256": "e2fa0dbdaaa41c97c99efd5527f357e1ee8fe3d11f633b08986dcbb6e2fa5eea"
-    },
-    {
-      "path": "test/editor/studio_documents_palette.c",
-      "bytes": 22573,
-      "sha256": "86cf08bdd05344cb6587960853a04e9bb0f4ee44f4d6b356cc6432ecfa2dd15b"
-    },
-    {
-      "path": "test/editor/studio_documents_panels.c",
-      "bytes": 53354,
-      "sha256": "ed81a684ecbc6c84830d371f59f2fe086fd017ae0a03088531f1b7d6ba7f17bc"
-    },
-    {
-      "path": "test/editor/studio_documents_properties.c",
-      "bytes": 37806,
-      "sha256": "1272926cb56aa0b90fdf452fc19bfcc594b24459507c6875b098095c38855ede"
-    },
-    {
-      "path": "test/editor/studio_documents_scene.c",
-      "bytes": 18581,
-      "sha256": "ada9c85e72db51a494f1c7e8b52aad32ad81e4bde7324cfae19c1c835a9ff3f3"
-    },
-    {
-      "path": "test/editor/studio_documents_shell.c",
-      "bytes": 96009,
-      "sha256": "8c34eabf6131f8e1adceb24039812a96ede6523dee13f3dd46b13fe42bd16995"
-    },
-    {
-      "path": "test/editor/studio_graph_inputs.c",
-      "bytes": 70971,
-      "sha256": "d9571758bcd542725ea0343badd4c3d7f78b968a2ca46f2fe49c461953edde08"
-    },
-    {
-      "path": "test/editor/studio_graph_zoom.c",
-      "bytes": 11846,
-      "sha256": "7e870f4af963a10b346d4448f998d643df155cabdb5f930bb03608d09a868224"
-    },
-    {
-      "path": "test/editor/studio_models.c",
-      "bytes": 37286,
-      "sha256": "7b1b454be27d0d3d2e7b96c081b28625fded6c88f2606d7746f98e0f400d9e87"
-    },
-    {
-      "path": "test/editor/studio_new_assets.c",
-      "bytes": 27552,
-      "sha256": "8e6e5eb9c36ddb6052533b3e58d62222ff7a6470ff3c943baa864432030e4048"
-    },
-    {
-      "path": "test/editor/studio_nodes_gate.c",
-      "bytes": 5282,
-      "sha256": "a92785b8950fe37fb09db4db774e5efcc68175b339aea0bfe05eefc25495263b"
-    },
-    {
-      "path": "test/editor/studio_pinch.c",
-      "bytes": 1785,
-      "sha256": "f9e40656ae1ca06c151bebbb3b5d67cc92e394a1266c001e86285dd5a9bb4d1b"
-    },
-    {
-      "path": "test/editor/studio_settings.c",
-      "bytes": 79970,
-      "sha256": "d4e954aa5f8a4b31fb0c9b76a999d9fbbe593a1d47e6d59bc08182594f790e4d"
-    },
-    {
-      "path": "test/editor/studio_thumbnails.c",
-      "bytes": 34651,
-      "sha256": "217023764182ed89738a96848fa32d909c7f9f6eb8cc377addeb12d9c7b0ca03"
-    },
-    {
-      "path": "test/editor/ui_bench.c",
-      "bytes": 49802,
-      "sha256": "312d7d984b10c75c4ac41d42b52ea079b59bd78f50d03906c5e4f5b47ac4c8ec"
-    },
-    {
-      "path": "test/editor/ui_bench.h",
-      "bytes": 3111,
-      "sha256": "316f596132c2339eb32ec5e1c0fd2dc0fbf9136f9ad1290e1de8406e5c301b68"
-    },
-    {
-      "path": "test/editor/ui_bench_studio.c",
-      "bytes": 99314,
-      "sha256": "4fc492000780a4c1657585b941ec5cf52d71fb7baff576bdb3fee6a355cc8dd7"
-    },
-    {
-      "path": "test/editor/ui_designer.c",
-      "bytes": 30408,
-      "sha256": "c136696bd0cea7e6408cebe9ef2fc7ed35c6da27fdb5e5a869d800823ef078da"
-    },
-    {
-      "path": "test/editor/ui_documents.c",
-      "bytes": 33560,
-      "sha256": "d3813d110eb551b45c9208509e059b1e64100d3196c06f6989ab3a82a7c0f450"
-    },
-    {
-      "path": "test/editor/ui_inspector.c",
-      "bytes": 14316,
-      "sha256": "6ce4ee9149d0e6114503c0048cb09189a15e541fe551cc4fb5adf17f40a0fe01"
-    },
-    {
-      "path": "test/editor/ui_popovers.c",
-      "bytes": 27491,
-      "sha256": "6e4d7d7d6ccc136451dcb16394276a77a15ec5b69cae57f92e5077cf5035ed26"
-    },
-    {
-      "path": "test/editor/ui_sources.c",
-      "bytes": 14761,
-      "sha256": "28f6f99242417c2a408b8c0a923e60f94c3b027930f57b920379ab36030cc9e3"
-    },
-    {
-      "path": "test/editor/ui_wiring.c",
-      "bytes": 11365,
-      "sha256": "6ba8c5965d76b75bca4642185a70d6c79025a90e9224c793be2612957da459c2"
-    },
-    {
-      "path": "test/editor_checkpoint.c",
-      "bytes": 8247,
-      "sha256": "a5c57499dbee6953b5b35d5b3f028df98ff607e62a6101fdc7fb3a375ab911b6"
-    },
-    {
-      "path": "test/editor_documents.c",
-      "bytes": 9055,
-      "sha256": "03c5de1aa91490e16552487c3b955ba8700b9a3862d5c081ffd6221e3fa035b6"
-    },
-    {
-      "path": "test/editor_flow.c",
-      "bytes": 7790,
-      "sha256": "536623c3fe53ac7466bd2f9642f3d293ce8208a06c6f7e513d3a8787506f2438"
     },
     {
       "path": "test/fixtures/behavior-catalog/README.md",
@@ -1480,136 +1185,6 @@
       "path": "test/fixtures/systems/MovementSystem.chibi.meta",
       "bytes": 1548,
       "sha256": "89de2b461507f429d5bfa30449203e90e121508a05e72edc6755dcafe40a039e"
-    },
-    {
-      "path": "test/graph/document.c",
-      "bytes": 28152,
-      "sha256": "76d258c0f2b17df1afbd6655797deeb3f37099bcb2b5a0880325a9f2ce697366"
-    },
-    {
-      "path": "test/graph/editing.c",
-      "bytes": 14476,
-      "sha256": "632a9fc3d1ede6728ff5f20de2c5f2b26f6c17bdbbd0cbc5e33718f3804b89ab"
-    },
-    {
-      "path": "test/graph/input_bindings.c",
-      "bytes": 82180,
-      "sha256": "7790bdb0c8039def2e81209ccc91e0c7332bfc6b960b02dd5581df43dffd16de"
-    },
-    {
-      "path": "test/graph/optimizer.c",
-      "bytes": 33604,
-      "sha256": "2e16a4a6ae8643982d0938b9e4c2cea02dfc65a3cb63076338acc0749dcc0cb5"
-    },
-    {
-      "path": "test/graph/optimizer_sources.c",
-      "bytes": 13241,
-      "sha256": "b2c5ae966250008e0d676070d51725a9ad26b29e448c46a9ccad98c4fb1a1bcd"
-    },
-    {
-      "path": "test/graph_navigation.c",
-      "bytes": 8089,
-      "sha256": "25bdbcad1464833fcb8c383cb98b9ff8d505e72b106262dd54a5b26c54803f11"
-    },
-    {
-      "path": "test/labels.c",
-      "bytes": 3666,
-      "sha256": "7cbcbc4ee15d9e8f6f5962b19eda8941f3348d4c988491b2919611a8374fb8eb"
-    },
-    {
-      "path": "test/math_expression.c",
-      "bytes": 95861,
-      "sha256": "f9c936509887f4994c46d6fc2cd5174628ba0118cf43cf5cdafd796e3cf51da7"
-    },
-    {
-      "path": "test/movement_input.c",
-      "bytes": 713,
-      "sha256": "1b72582bb5e9084c72d582be629caedb351d80c85a7032bf8b59398d56dbbd43"
-    },
-    {
-      "path": "test/movement_trail.c",
-      "bytes": 6524,
-      "sha256": "7fcafef3db0fb598fd49367b3e9f5223125b0d42d59b28caeaa72451d5e2a73f"
-    },
-    {
-      "path": "test/physics_executor.h",
-      "bytes": 494,
-      "sha256": "314692d337991b59bef6afebd646983b06378818a61bca27ea81b8f547c8b6e8"
-    },
-    {
-      "path": "test/runtime/catalog.c",
-      "bytes": 12917,
-      "sha256": "12f59792c89b496dfbc8ba0a1ef1817d68554e8655186b560661ca63a96d313f"
-    },
-    {
-      "path": "test/runtime/game_capabilities.c",
-      "bytes": 10025,
-      "sha256": "ba32fe527ff82722f7ff6af16feddfbd66fe44166ebf8711eeb0e930d5f4f5b4"
-    },
-    {
-      "path": "test/runtime/ui_source.c",
-      "bytes": 36957,
-      "sha256": "dc7530cdcb9ceba934dcfa9e7b951fec83821d80d7949538ac207d5c2aec8a37"
-    },
-    {
-      "path": "test/scene_checkpoint.c",
-      "bytes": 56259,
-      "sha256": "0b7781c59708d55334449acff2f0dd3804c682b63cba0668e9f36ba33921b27c"
-    },
-    {
-      "path": "test/scene_debug.c",
-      "bytes": 13148,
-      "sha256": "7d23eb0b5054316068f41d717ef57f95208b3f0990a6a05f25ac2197abd58fb4"
-    },
-    {
-      "path": "test/scene_disk.c",
-      "bytes": 14248,
-      "sha256": "4ce3eb149935c4fc14541709f0a7d356ab8802e98fb12388a53b345de43ba9f6"
-    },
-    {
-      "path": "test/scene_history.c",
-      "bytes": 33350,
-      "sha256": "2798f9f10957b47b3803539b4dd18c28f77aaf55818add4cbec5fe6e395813ed"
-    },
-    {
-      "path": "test/scene_instances.c",
-      "bytes": 38257,
-      "sha256": "ce6c69c8d9bfbd779ce1102373a020b7441ba5d5c8cba0624a230e13342c3361"
-    },
-    {
-      "path": "test/scene_refactor.c",
-      "bytes": 15207,
-      "sha256": "e5b137a7fa4a80679f5f152fdbeaa7b3a65a42b37ee47befe47c34e0232d4267"
-    },
-    {
-      "path": "test/sdf_material.c",
-      "bytes": 72309,
-      "sha256": "97855c7553bf57adeda0eaae57f4a6da3a6fb36a3ada86447d61f354382b09ce"
-    },
-    {
-      "path": "test/suite_internal.h",
-      "bytes": 10521,
-      "sha256": "1f9a608789cbe722d02798b4e399e7f2036071ccdf25b1503c38c85a9dcb4463"
-    },
-    {
-      "path": "test/support/code_fixture.h",
-      "bytes": 4284,
-      "sha256": "417f29c7873bc47c41c91d4b39864396f232bece3fa2907cc1109d518dedbf16"
-    },
-    {
-      "path": "test/support/event_fixture.h",
-      "bytes": 3182,
-      "sha256": "9bd8fdb98157836f67b242ec7ed4d425e6cead0d0b06205b4b6b48bd7d685e47"
-    },
-    {
-      "path": "test/support/physics_executor.c",
-      "bytes": 1384,
-      "sha256": "a0ee35f2c2828b4c1322984ffae561c9aea3d9f3a4bf3d5b3861e9d74c4ac98d"
-    },
-    {
-      "path": "test/support/simulation_fixture.h",
-      "bytes": 1601,
-      "sha256": "94db64c0dc7c522649ff8d32e50ce83864229bdd2f6c5d6b9d4a54cb99bdf584"
     }
   ],
   "unresolved_or_directory_literal_references": [
@@ -1664,14 +1239,617 @@
     "test/fixtures/studio",
     "test/fixtures/studio-workspace"
   ],
-  "originals": "78 editor-dependent oracle originals retired after explicit acceptance and refreshed hash verification;7 helpers and232 fixtures retain engine ownership",
+  "originals": "All native oracle and helper sources are retired to the Git baseline. Retained authored fixture bytes are historical reference material; no executable coverage is claimed.",
   "build_target": null,
-  "prior_snapshots": [
+  "retired_native_records": [
+    {
+      "path": "test/appearance.c",
+      "bytes": 14923,
+      "sha256": "79dfc46892e749837a63716e63a25173c2e0c043d998af1a6d4ee5876d518453",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "8b49f97941a565fd81b423d0118340cf1639cb38"
+    },
+    {
+      "path": "test/arena_input.c",
+      "bytes": 22471,
+      "sha256": "6896c9d25c76696c59f87b699b3ed2c6acbba9f41678bd2780c7702c2e27b577",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "24001e324eadba196e82a19a58c6a005119955d0"
+    },
+    {
+      "path": "test/arena_play.c",
+      "bytes": 93068,
+      "sha256": "b3197ed77b9494952a7a4191f2e356b60ffd2acd3eae54624d2a8bfb3dc6f999",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e50ed39cefe2cf2b200cb455d6f45ccafad8a9e1"
+    },
+    {
+      "path": "test/asset_fixture.h",
+      "bytes": 507,
+      "sha256": "157999aefff6bb67a83b27b1fafa53e4365cf3952fe4c7218416af6600d45ace",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e4b46b03bc67ac24625fba5cd1c2c1c56849e925"
+    },
+    {
+      "path": "test/collab_protocol.c",
+      "bytes": 2295,
+      "sha256": "0d403ef2aea23be8088996feb08bb3fe96ca0c35fe93d055950aca061af8f50e",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "50cf535c9f54eee50ed895b10e6cc82c5360e6bd"
+    },
+    {
+      "path": "test/collab_replay.c",
+      "bytes": 9053,
+      "sha256": "2f181d96002358d26230643cde09e72194788b810496bb4da8ceaea7b3f51b63",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2d4d2107acdf6b24bf897da4e4c94f1e4ebf388c"
+    },
+    {
+      "path": "test/editor/asset_code.c",
+      "bytes": 18637,
+      "sha256": "8765cc64bda2f89fb75cbd2c659b7d51ea7a21378f608dd116f3ca1c18ec4205",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d8f57b280bf3d970a5b0089c3f503165514405b6"
+    },
+    {
+      "path": "test/editor/code_intelligence.c",
+      "bytes": 24527,
+      "sha256": "c432595d6b58febb8023d1b0dc574f28db3b72cdee26c474b28f796cf967179f",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "8c3cab6df269e37529201fa3b8f932992f6a74e2"
+    },
+    {
+      "path": "test/editor/code_intelligence_studio.c",
+      "bytes": 30048,
+      "sha256": "d400ace344ef95baa8cafbaf9031e0fbf31de84714617801d00c0806835670fc",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ef8c4bcd7412b1385aed96b5281ce01ce50058c3"
+    },
+    {
+      "path": "test/editor/commands.c",
+      "bytes": 72731,
+      "sha256": "c6ee20f83d5f4656050a557499c08d59356b6145d48f7245f122c793f64cace5",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "79cc5c4273633845dcd9e96ec8980f3b6c618046"
+    },
+    {
+      "path": "test/editor/debug_target.c",
+      "bytes": 13560,
+      "sha256": "e7bdef46f3f240f69707482fd7ab12bccb6f4a4f3a55e3a2e53fbc13c08986bb",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "564231b999ce49292a6d8adf3424e728ceaa1c7e"
+    },
+    {
+      "path": "test/editor/iframe_bindings.c",
+      "bytes": 8581,
+      "sha256": "985bba7115c85032b3b2ff90ae1de7550979e47b6874505004fecb120e3921f8",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ceb0c51a090eb66ecdea69349854eae6da73e19a"
+    },
+    {
+      "path": "test/editor/kit_code.c",
+      "bytes": 38626,
+      "sha256": "b180e2d7c236797fb97136560ae31403fdcd37e8f9f7462d3b41154ab52ff856",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2dd90c010f2c21b4b27faf7c490decaff5f7e086"
+    },
+    {
+      "path": "test/editor/kit_documents.c",
+      "bytes": 17863,
+      "sha256": "e960044618f61699925baa4945e10fd4c33a8c7f5bbd1d1e001d791187de9201",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "de82c59dfd288e655bfe2ea1ed90403f8546fbed"
+    },
+    {
+      "path": "test/editor/kit_empty_documents.c",
+      "bytes": 4661,
+      "sha256": "ba871938509f6a74a054ae19ed0175db7a55c9a10dced0422c4b31108a07d13c",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "11e7f209821003455d466dafc2dc3c754f1f7d3a"
+    },
+    {
+      "path": "test/editor/kit_host.c",
+      "bytes": 15750,
+      "sha256": "7b8dc1f1a78b4bafbf9ca88816b83cf1973247ee03a92f8520496fd47749cf60",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "16303e25812487e7235f32ef4fbe69f62a4dd741"
+    },
+    {
+      "path": "test/editor/kit_slot.c",
+      "bytes": 22926,
+      "sha256": "eae2d3a431858ffc0edd3b16c20573b63a1220a7eeaea4074deaeba3e8bcf449",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c4fd72f0fb8fa63159833e96918969419c3a19f8"
+    },
+    {
+      "path": "test/editor/rmlui_kit.c",
+      "bytes": 116225,
+      "sha256": "3ba49d43c20f10b88c643e3c1e81db9f1e8c931f89c535fb362e7b6cb4f72699",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5cbd08f7b507a7713f479f785621ba09e30b8a80"
+    },
+    {
+      "path": "test/editor/rmlui_render.c",
+      "bytes": 65970,
+      "sha256": "d74b957774ae651d7cf9b1d85f5cfe869b69483b5b16eab8a3bb0d65db30cb52",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1f20b7337db5b27470808900d70d78c85578c83a"
+    },
+    {
+      "path": "test/editor/scene_gizmo.c",
+      "bytes": 8787,
+      "sha256": "45fa77bdc996a0a8c186d6489245b5741aaac702250aad8ebc1a97da2b682105",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c191e98c088e409b88bcaff8c01ba48e01a39b9d"
+    },
+    {
+      "path": "test/editor/scene_selection.c",
+      "bytes": 13065,
+      "sha256": "593694d805f91e2c229462a3e7b318ce92bdfd8094ad8b3e3a08f8c40e8672e5",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3e7a20cc3bc4afd30fb443c1d611274d354f5442"
+    },
+    {
+      "path": "test/editor/scene_view.c",
+      "bytes": 8533,
+      "sha256": "b8be4b0bf0ca016de91d456c523187c6c4bb48b0556cb8cc7d5571307a7eaf19",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7e5e26ffbfe53ec053b9042fc4cb7fe5bc1a6692"
+    },
+    {
+      "path": "test/editor/studio_commands.c",
+      "bytes": 17817,
+      "sha256": "1d7174c3793d69995c5516622162a7b569f458308160bb3863e565b0aee36f72",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "eabc0ebc6b91243e2aa4d638a967e776c4f27455"
+    },
+    {
+      "path": "test/editor/studio_documents.c",
+      "bytes": 18024,
+      "sha256": "64ba56a6aed085b883ff85fefc58d7eaf4957365791afc5019c522a4ecf2fa3b",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "cad930179ab5365be535856682b3a0709c1392f2"
+    },
+    {
+      "path": "test/editor/studio_documents.h",
+      "bytes": 5680,
+      "sha256": "e932e356a901f154d7d3e869e7c1c5af94dbefd21244fe9585f106a2cd090b48",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4a395c791dc6c2596398f6532ae142b63af6d0c1"
+    },
+    {
+      "path": "test/editor/studio_documents_assets.c",
+      "bytes": 7112,
+      "sha256": "ff0a3861d5c75c2d7b9a8ff0541f74eed8b47267e47e76478a1055ec3c95da31",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "af6f8195b94152bd17001dd762aa397107e4cea9"
+    },
+    {
+      "path": "test/editor/studio_documents_chrome.c",
+      "bytes": 17873,
+      "sha256": "9ed3b3f561a4bde6248e740e8b483063d083a2ae4a96fa7dd7169535a1bfe78b",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1b17fbf053c4f4717996804c7a5fbd3d310ed4a6"
+    },
+    {
+      "path": "test/editor/studio_documents_designer.c",
+      "bytes": 32768,
+      "sha256": "4ed75fce3c1271d8fcde69dd92b95fb490e672410a5ec820d38b9245456b328f",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7dd05c0edf673d4c7a9fdbb6a699468c37aaded1"
+    },
+    {
+      "path": "test/editor/studio_documents_graph.c",
+      "bytes": 37078,
+      "sha256": "0deade973c6c1fd33d7e0879fb49f9b1d546d4f9c7980dc05aa31d062c4066c3",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "407ce6f72a23f82aa90ffc0836ad8808ab6c84f2"
+    },
+    {
+      "path": "test/editor/studio_documents_graph_chrome.c",
+      "bytes": 25962,
+      "sha256": "36b875cba0dd98e52b8d9f2bdf5918ee321cf1e2bc7d73950921f1f0420b0bea",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d99b4a087a9dbf30cb25e9883fbcd82511b53e52"
+    },
+    {
+      "path": "test/editor/studio_documents_inspector.c",
+      "bytes": 13664,
+      "sha256": "d03cc6700cd58972a5b953eb3bc0da7063d46ceafe829bf919265d4020a79541",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "80fa75b476e04445d6dce8852abdf17ca04ba2d0"
+    },
+    {
+      "path": "test/editor/studio_documents_members.c",
+      "bytes": 19149,
+      "sha256": "e1a5b8df49f561fde292c84e25d5b1cb0d7f4064c9faa41e4f3cc6408d7708a5",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e0b17088058fa87a0b66f4e67f7f4ae71b9926c9"
+    },
+    {
+      "path": "test/editor/studio_documents_outliner.c",
+      "bytes": 32481,
+      "sha256": "fdeca1ecfb778b68792474d9e73c58b6bf45f7ccc92e0ec7c4c7cc246da620e4",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "78b05a54b753f2f121e48cf0f785310fdcaca0d2"
+    },
+    {
+      "path": "test/editor/studio_documents_output.c",
+      "bytes": 20570,
+      "sha256": "e2fa0dbdaaa41c97c99efd5527f357e1ee8fe3d11f633b08986dcbb6e2fa5eea",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "16961fe7e0fd156fa8954335a1fa400fd279b65e"
+    },
+    {
+      "path": "test/editor/studio_documents_palette.c",
+      "bytes": 22573,
+      "sha256": "86cf08bdd05344cb6587960853a04e9bb0f4ee44f4d6b356cc6432ecfa2dd15b",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "56fff5ec781fb889d8763785865a5efbccd3a79e"
+    },
+    {
+      "path": "test/editor/studio_documents_panels.c",
+      "bytes": 53354,
+      "sha256": "ed81a684ecbc6c84830d371f59f2fe086fd017ae0a03088531f1b7d6ba7f17bc",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "be61d9d980e60bfa015fc334a9e84a24c7afbee1"
+    },
+    {
+      "path": "test/editor/studio_documents_properties.c",
+      "bytes": 37806,
+      "sha256": "1272926cb56aa0b90fdf452fc19bfcc594b24459507c6875b098095c38855ede",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9c094b35bddad61a8f860e3d859c552f7ba5aab2"
+    },
+    {
+      "path": "test/editor/studio_documents_scene.c",
+      "bytes": 18581,
+      "sha256": "ada9c85e72db51a494f1c7e8b52aad32ad81e4bde7324cfae19c1c835a9ff3f3",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "bf5cac3a5ac23bdc0d33b4458e0ecf230e18af27"
+    },
+    {
+      "path": "test/editor/studio_documents_shell.c",
+      "bytes": 96009,
+      "sha256": "8c34eabf6131f8e1adceb24039812a96ede6523dee13f3dd46b13fe42bd16995",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "448f91b7a88813c172c692288c2250ae42fba9ec"
+    },
+    {
+      "path": "test/editor/studio_graph_inputs.c",
+      "bytes": 70971,
+      "sha256": "d9571758bcd542725ea0343badd4c3d7f78b968a2ca46f2fe49c461953edde08",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "735c7ef6f3e432096e3fd175a7f32d68b60214f2"
+    },
+    {
+      "path": "test/editor/studio_graph_zoom.c",
+      "bytes": 11846,
+      "sha256": "7e870f4af963a10b346d4448f998d643df155cabdb5f930bb03608d09a868224",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e3fc5101a8cd7dd0c9bccd27d5941d474754686e"
+    },
+    {
+      "path": "test/editor/studio_models.c",
+      "bytes": 37286,
+      "sha256": "7b1b454be27d0d3d2e7b96c081b28625fded6c88f2606d7746f98e0f400d9e87",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7d72be50746edea8a084581d78f588bdd3f87d80"
+    },
+    {
+      "path": "test/editor/studio_new_assets.c",
+      "bytes": 27552,
+      "sha256": "8e6e5eb9c36ddb6052533b3e58d62222ff7a6470ff3c943baa864432030e4048",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "733acea131c893a7e0b83c848d2c6c569e5c180e"
+    },
+    {
+      "path": "test/editor/studio_nodes_gate.c",
+      "bytes": 5282,
+      "sha256": "a92785b8950fe37fb09db4db774e5efcc68175b339aea0bfe05eefc25495263b",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "192c1d146afa3663d91f3fe2fa7e223aa49029ee"
+    },
+    {
+      "path": "test/editor/studio_pinch.c",
+      "bytes": 1785,
+      "sha256": "f9e40656ae1ca06c151bebbb3b5d67cc92e394a1266c001e86285dd5a9bb4d1b",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "bf93a12a52cf9ef174f2dfa90ad2fa16bba51573"
+    },
+    {
+      "path": "test/editor/studio_settings.c",
+      "bytes": 79970,
+      "sha256": "d4e954aa5f8a4b31fb0c9b76a999d9fbbe593a1d47e6d59bc08182594f790e4d",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4e8f3713e76ea67208528b7a64f19686e7089284"
+    },
+    {
+      "path": "test/editor/studio_thumbnails.c",
+      "bytes": 34651,
+      "sha256": "217023764182ed89738a96848fa32d909c7f9f6eb8cc377addeb12d9c7b0ca03",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "55fe5a59f1168774e34c5ea88093fd8de16d8cc0"
+    },
+    {
+      "path": "test/editor/ui_bench.c",
+      "bytes": 49802,
+      "sha256": "312d7d984b10c75c4ac41d42b52ea079b59bd78f50d03906c5e4f5b47ac4c8ec",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d18c92bc7e6f107cf6d42aa1c37ceb6043797738"
+    },
+    {
+      "path": "test/editor/ui_bench.h",
+      "bytes": 3111,
+      "sha256": "316f596132c2339eb32ec5e1c0fd2dc0fbf9136f9ad1290e1de8406e5c301b68",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3d4c960fba344a82bb5734102089f122c335df79"
+    },
+    {
+      "path": "test/editor/ui_bench_studio.c",
+      "bytes": 99314,
+      "sha256": "4fc492000780a4c1657585b941ec5cf52d71fb7baff576bdb3fee6a355cc8dd7",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "438035c0929062372b53c592dfebf8c81130d744"
+    },
+    {
+      "path": "test/editor/ui_designer.c",
+      "bytes": 30408,
+      "sha256": "c136696bd0cea7e6408cebe9ef2fc7ed35c6da27fdb5e5a869d800823ef078da",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4daf87c2094c7b57a9ba8c32348276086e3ec317"
+    },
+    {
+      "path": "test/editor/ui_documents.c",
+      "bytes": 33560,
+      "sha256": "d3813d110eb551b45c9208509e059b1e64100d3196c06f6989ab3a82a7c0f450",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d4c1bdaf0ef474f0b18406a00bd6ef1493a65507"
+    },
+    {
+      "path": "test/editor/ui_inspector.c",
+      "bytes": 14316,
+      "sha256": "6ce4ee9149d0e6114503c0048cb09189a15e541fe551cc4fb5adf17f40a0fe01",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5e4c8e4c5826c67fbfd0624391c58ef5ac754399"
+    },
+    {
+      "path": "test/editor/ui_popovers.c",
+      "bytes": 27491,
+      "sha256": "6e4d7d7d6ccc136451dcb16394276a77a15ec5b69cae57f92e5077cf5035ed26",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "b44235097042ae258cfdf19b9b028b40a3d86bb6"
+    },
+    {
+      "path": "test/editor/ui_sources.c",
+      "bytes": 14761,
+      "sha256": "28f6f99242417c2a408b8c0a923e60f94c3b027930f57b920379ab36030cc9e3",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "b304e8c94e5a53e04c8627fd4d0ae21a54b8f8d9"
+    },
+    {
+      "path": "test/editor/ui_wiring.c",
+      "bytes": 11365,
+      "sha256": "6ba8c5965d76b75bca4642185a70d6c79025a90e9224c793be2612957da459c2",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e28709fd15aba2f80a12920f6ec110b238637288"
+    },
+    {
+      "path": "test/editor_checkpoint.c",
+      "bytes": 8247,
+      "sha256": "a5c57499dbee6953b5b35d5b3f028df98ff607e62a6101fdc7fb3a375ab911b6",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "12c07db5396b3078661094fb9aa63d16204d146e"
+    },
+    {
+      "path": "test/editor_documents.c",
+      "bytes": 9055,
+      "sha256": "03c5de1aa91490e16552487c3b955ba8700b9a3862d5c081ffd6221e3fa035b6",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ed1b5cb2607ed15745d39d38e6d8cc8f6d424389"
+    },
+    {
+      "path": "test/editor_flow.c",
+      "bytes": 7790,
+      "sha256": "536623c3fe53ac7466bd2f9642f3d293ce8208a06c6f7e513d3a8787506f2438",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e4c97585b7dfe9814af0b963d90f257d70f57fe8"
+    },
+    {
+      "path": "test/graph/document.c",
+      "bytes": 28152,
+      "sha256": "76d258c0f2b17df1afbd6655797deeb3f37099bcb2b5a0880325a9f2ce697366",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3db6916ed22f2aceeb8073cc3957406da4fa87d9"
+    },
+    {
+      "path": "test/graph/editing.c",
+      "bytes": 14476,
+      "sha256": "632a9fc3d1ede6728ff5f20de2c5f2b26f6c17bdbbd0cbc5e33718f3804b89ab",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4df71f4c1863c28f1ca5a0f83da0a9dccd6ef82a"
+    },
+    {
+      "path": "test/graph/input_bindings.c",
+      "bytes": 82180,
+      "sha256": "7790bdb0c8039def2e81209ccc91e0c7332bfc6b960b02dd5581df43dffd16de",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "edbadac3df81ae65a3c3909f4475fddce4d8465c"
+    },
+    {
+      "path": "test/graph/optimizer.c",
+      "bytes": 33604,
+      "sha256": "2e16a4a6ae8643982d0938b9e4c2cea02dfc65a3cb63076338acc0749dcc0cb5",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "96294889d60f112620ec58f347952a47ab266db0"
+    },
+    {
+      "path": "test/graph/optimizer_sources.c",
+      "bytes": 13241,
+      "sha256": "b2c5ae966250008e0d676070d51725a9ad26b29e448c46a9ccad98c4fb1a1bcd",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7506ad03b071ef169e9a091c94a542370b88e66f"
+    },
+    {
+      "path": "test/graph_navigation.c",
+      "bytes": 8089,
+      "sha256": "25bdbcad1464833fcb8c383cb98b9ff8d505e72b106262dd54a5b26c54803f11",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "629e7274110ed63e08f49c46dcd5bba5c026c49a"
+    },
+    {
+      "path": "test/labels.c",
+      "bytes": 3666,
+      "sha256": "7cbcbc4ee15d9e8f6f5962b19eda8941f3348d4c988491b2919611a8374fb8eb",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "08fc71d5b635dce729680a507ffb814de757af7b"
+    },
+    {
+      "path": "test/math_expression.c",
+      "bytes": 95861,
+      "sha256": "f9c936509887f4994c46d6fc2cd5174628ba0118cf43cf5cdafd796e3cf51da7",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a66099c01d162090ad2729b6a01a6d063dbc4473"
+    },
+    {
+      "path": "test/movement_input.c",
+      "bytes": 713,
+      "sha256": "1b72582bb5e9084c72d582be629caedb351d80c85a7032bf8b59398d56dbbd43",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5b0566719358b6a6ea088d4a90e0bae72a4478a4"
+    },
+    {
+      "path": "test/movement_trail.c",
+      "bytes": 6524,
+      "sha256": "7fcafef3db0fb598fd49367b3e9f5223125b0d42d59b28caeaa72451d5e2a73f",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5db0ba20f00e6b83173d933eb0bf3489dff51507"
+    },
+    {
+      "path": "test/physics_executor.h",
+      "bytes": 494,
+      "sha256": "314692d337991b59bef6afebd646983b06378818a61bca27ea81b8f547c8b6e8",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ab783c054add43ffe78227acfa2ce054b2449ae0"
+    },
+    {
+      "path": "test/runtime/catalog.c",
+      "bytes": 12917,
+      "sha256": "12f59792c89b496dfbc8ba0a1ef1817d68554e8655186b560661ca63a96d313f",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c44d4367f18a907e2f71426bc26d385de6462296"
+    },
+    {
+      "path": "test/runtime/game_capabilities.c",
+      "bytes": 10025,
+      "sha256": "ba32fe527ff82722f7ff6af16feddfbd66fe44166ebf8711eeb0e930d5f4f5b4",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d16aaa302ee26b89c1510f1abe505c4abc1be204"
+    },
+    {
+      "path": "test/runtime/ui_source.c",
+      "bytes": 36957,
+      "sha256": "dc7530cdcb9ceba934dcfa9e7b951fec83821d80d7949538ac207d5c2aec8a37",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "28029f47dfcb725ff2041498369b97024a918ecd"
+    },
+    {
+      "path": "test/scene_checkpoint.c",
+      "bytes": 56259,
+      "sha256": "0b7781c59708d55334449acff2f0dd3804c682b63cba0668e9f36ba33921b27c",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2db04d7b3a48559f72aa4110e6dd74da37787f7b"
+    },
+    {
+      "path": "test/scene_debug.c",
+      "bytes": 13148,
+      "sha256": "7d23eb0b5054316068f41d717ef57f95208b3f0990a6a05f25ac2197abd58fb4",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "103e1f2d33d7b39203767b58f942fee4feabc0a0"
+    },
+    {
+      "path": "test/scene_disk.c",
+      "bytes": 14248,
+      "sha256": "4ce3eb149935c4fc14541709f0a7d356ab8802e98fb12388a53b345de43ba9f6",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "868dbb2e7b1e6299031fe36825fa4affd3e480da"
+    },
+    {
+      "path": "test/scene_history.c",
+      "bytes": 33350,
+      "sha256": "2798f9f10957b47b3803539b4dd18c28f77aaf55818add4cbec5fe6e395813ed",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "60ca5fd524801132cba963976c7a0881a0849d10"
+    },
+    {
+      "path": "test/scene_instances.c",
+      "bytes": 38257,
+      "sha256": "ce6c69c8d9bfbd779ce1102373a020b7441ba5d5c8cba0624a230e13342c3361",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ea60d26c80cc055ed56cb93c87bf2e0365aa6e9b"
+    },
+    {
+      "path": "test/scene_refactor.c",
+      "bytes": 15207,
+      "sha256": "e5b137a7fa4a80679f5f152fdbeaa7b3a65a42b37ee47befe47c34e0232d4267",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3e56fc551fe3d7c0dfa8261a6e93cf968f1f7ac7"
+    },
+    {
+      "path": "test/sdf_material.c",
+      "bytes": 72309,
+      "sha256": "97855c7553bf57adeda0eaae57f4a6da3a6fb36a3ada86447d61f354382b09ce",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "477d37de45d7359e48bf5aca1e09f9543164411c"
+    },
+    {
+      "path": "test/suite_internal.h",
+      "bytes": 10521,
+      "sha256": "1f9a608789cbe722d02798b4e399e7f2036071ccdf25b1503c38c85a9dcb4463",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c57c81c55a17d29f3a2d9e5edc3f0629d3d1a486"
+    },
+    {
+      "path": "test/support/code_fixture.h",
+      "bytes": 4284,
+      "sha256": "417f29c7873bc47c41c91d4b39864396f232bece3fa2907cc1109d518dedbf16",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e9ccf1548620d223e5d8e8a80f8685ce7acf7ff4"
+    },
+    {
+      "path": "test/support/event_fixture.h",
+      "bytes": 3182,
+      "sha256": "9bd8fdb98157836f67b242ec7ed4d425e6cead0d0b06205b4b6b48bd7d685e47",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7313e44646d96a77cf0c4b21b23a74263644ce84"
+    },
+    {
+      "path": "test/support/physics_executor.c",
+      "bytes": 1384,
+      "sha256": "a0ee35f2c2828b4c1322984ffae561c9aea3d9f3a4bf3d5b3861e9d74c4ac98d",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "b17afc6fd8a93478e0a1724587dad133a2f49d0c"
+    },
+    {
+      "path": "test/support/simulation_fixture.h",
+      "bytes": 1601,
+      "sha256": "94db64c0dc7c522649ff8d32e50ce83864229bdd2f6c5d6b9d4a54cb99bdf584",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "23efd1fe26ac4a35a9dd6267ebe6e84800ee847b"
+    }
+  ],
+  "retired_native_count": 86,
+  "historical_originals": "78 editor-dependent oracle originals retired after explicit acceptance and refreshed hash verification;7 helpers and232 fixtures retain engine ownership",
+  "retired_prior_snapshots": [
     {
       "source": "test/movement_trail.c",
       "snapshot": "prior_snapshots/ebc60a87f99d1cbe035d483c900e5735cb9e38379c23b9a50c0be3356efa2f92/test/movement_trail.c",
       "bytes": 6732,
-      "sha256": "ebc60a87f99d1cbe035d483c900e5735cb9e38379c23b9a50c0be3356efa2f92"
+      "sha256": "ebc60a87f99d1cbe035d483c900e5735cb9e38379c23b9a50c0be3356efa2f92",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "cf3761b891280292ee309a2cca2906995e994187"
     }
-  ]
+  ],
+  "retired_primary_native_count": 85,
+  "retired_snapshot_count": 1
 }

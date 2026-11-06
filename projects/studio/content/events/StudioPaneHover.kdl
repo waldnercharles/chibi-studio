@@ -1,0 +1,8 @@
+version 3
+name "StudioPaneHover"
+domain "event"
+id_counter 2
+(array)variables {
+    - id=1 name="Context" type="const char *" category="Payload"
+}
+(array)graphs { - kind="event" name="" }

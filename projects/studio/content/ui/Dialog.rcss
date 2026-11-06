@@ -6,7 +6,7 @@
    ease-out, under 200 ms). */
 body {
   position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp;
-  display: flex; overflow: auto;
+  display: flex; overflow: auto; z-index: 11000;
 }
 .dialog-backdrop {
   position: absolute; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; background-color: #0000008c;
@@ -19,7 +19,7 @@ body {
 }
 body.window .dialog-panel {
   display: flex; flex-direction: column; width: 88%; max-width: 1000dp; height: 86%; max-height: 720dp;
-  min-width: 560dp; min-height: 360dp; padding: 0dp; overflow: hidden;
+  min-width: 0dp; min-height: 0dp; padding: 0dp; overflow: hidden;
 }
 @keyframes dialog-fade {
   from { opacity: 0; }

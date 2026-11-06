@@ -8,7 +8,7 @@
 .picker .hue-seg { flex: 1 1 0dp; height: 100%; }
 .picker .hue .puck { position: absolute; top: 0dp; bottom: 0dp; width: 4dp; margin-left: -2dp; background-color: #ffffff; border-radius: 1dp; }
 .picker .hexrow { margin-top: 8dp; }
-.picker .hexrow input.value { width: 100%; font-family: var(--font-numeric); }
+.picker .hexrow input.value { width: 100%; font-family: var(--font-numeric, GeistNumeric); }
 .picker .hexrow[data-invalid] { border-color: var(--destructive); }
 .picker .prop { margin-top: 8dp; }
 .picker .prop .label { width: 60dp; justify-content: flex-start; }

@@ -1,0 +1,13 @@
+version 3
+name "StudioCollaborationApplyBatch"
+domain "event"
+id_counter 5
+(array)variables {
+    - id=1 name="Payload" type="const char *" category="Payload"
+    - id=2 name="Client" type="const char *" category="Payload"
+    - id=3 name="Sequence" type="double" category="Payload"
+    - id=4 name="Purpose" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

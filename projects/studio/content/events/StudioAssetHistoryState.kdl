@@ -1,0 +1,12 @@
+version 3
+name "StudioAssetHistoryState"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="CanUndo" type="bool" category="Payload"
+    - id=2 name="CanRedo" type="bool" category="Payload"
+    - id=3 name="Busy" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

@@ -1,0 +1,11 @@
+version 3
+name "StudioRuntimeSubjectSelected"
+domain "event"
+id_counter 3
+(array)variables {
+    - id=1 name="Session" type="int" category="Payload"
+    - id=2 name="Subject" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

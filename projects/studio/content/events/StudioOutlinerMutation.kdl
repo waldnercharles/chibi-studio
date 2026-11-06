@@ -1,0 +1,12 @@
+version 3
+name "StudioOutlinerMutation"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Action" type="const char *" category="Payload"
+    - id=2 name="Path" type="const char *" category="Payload"
+    - id=3 name="Pointer" type="struct" type_name="CF_V2" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

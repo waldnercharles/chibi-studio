@@ -1,0 +1,336 @@
+behavior StudioPlatform {
+    self.SaveGateRequest: int = 0
+    SavedOperation: string = ""
+    SaveGateAge: float = 0.0
+    Document: int = 0
+    DocumentRevision: int = 0
+    WorkspaceActive := false
+    Request: int = 0
+    Operation: string = ""
+    State: string = ""
+    Message: string = ""
+    Value: string = ""
+    Log: string = ""
+    Progress: double = 0
+    Visible := false
+    Web := false
+    CollaborationActive := false
+    AcceptedWorkspace: string = ""
+    AcceptedActivation := false
+    CanCompile := false
+    CanExport := false
+    SystemLight := false
+    EnvironmentReady := false
+    LastCloseRequest: int = 0
+    LogOpen := false
+    EnvironmentAge: float = 0.0
+    CloseAge: float = 0.0
+    AppliedScale: double = 0
+    action environment = authoring_platform_environment()
+    action poll = authoring_platform_poll(Request)
+    action cancel_request = authoring_platform_cancel(Request)
+    action release = authoring_platform_release(Request)
+
+    publish :: fn() {
+        busy := Request > 0 || !text_equal(SavedOperation, "")
+        await set_ui_data(Name: "platformBusy", Value: busy)
+        await set_ui_data(Name: "platformVisible", Value: Visible)
+        await set_ui_data(Name: "platformOperation", Value: Operation)
+        await set_ui_data(Name: "platformState", Value: State)
+        await set_ui_data(Name: "platformMessage", Value: Message)
+        await set_ui_data(Name: "platformValue", Value: Value)
+        await set_ui_data(Name: "platformLog", Value: Log)
+        await set_ui_data(Name: "platformProgress", Value: Progress)
+        await set_ui_data(Name: "platformLogOpen", Value: LogOpen)
+        await send_event<"StudioCommandAvailability">(self, "openProject", !busy && !CollaborationActive)
+        await send_event<"StudioCommandAvailability">(self, "importProject", !busy && !CollaborationActive)
+        await send_event<"StudioCommandAvailability">(self, "exportProject", !busy && Web && WorkspaceActive)
+        await send_event<"StudioCommandAvailability">(self, "compileProject", !busy && CanCompile && WorkspaceActive)
+        await send_event<"StudioCommandAvailability">(self, "exportGame", !busy && CanExport && WorkspaceActive)
+        await send_event<"StudioCommandAvailability">(self, "cancelJob", busy)
+        return
+    }
+    observe_close :: fn() {
+        if environment.Environment.CloseRequest > LastCloseRequest {
+            LastCloseRequest = environment.Environment.CloseRequest
+            await send_event<"StudioQuitRequested">(self)
+        }
+        return
+    }
+    refresh_environment :: fn() {
+        await environment()
+        await observe_close()
+        WorkspaceActive = query_workspace_info().Active
+        Web = environment.Environment.Web
+        CanCompile = environment.Environment.Compile
+        CanExport = environment.Environment.Export
+        light := text_equal(environment.Environment.Theme, "light")
+        if !EnvironmentReady || light != SystemLight {
+            SystemLight = light
+            EnvironmentReady = true
+            await send_event<"StudioEnvironmentState">(self, SystemLight)
+        }
+        scale := read_saved_number("studio.preference.uiScale", 1).Number
+        if scale >= 0.5 && scale <= 2 && scale != AppliedScale {
+            scaled := await authoring_platform_request("ui-scale", Number: scale)
+            if scaled.Result.Ok {
+                AppliedScale = scale
+            } else {
+                await send_event<"StudioStatus">(self, "error", scaled.Result.Message)
+            }
+            if scaled.Result.Request > 0 {
+                await authoring_platform_release(scaled.Result.Request)
+            }
+        }
+        await publish()
+        return
+    }
+    finish :: fn() {
+        await poll()
+        State = poll.Result.State
+        Message = poll.Result.Message
+        Value = poll.Result.Value
+        if !text_equal(Operation, "clipboard-write") {
+            Log = poll.Result.Log
+        }
+        Progress = poll.Result.Progress
+        if text_equal(State, "running") || text_equal(State, "pending") {
+            await publish()
+            return
+        }
+        if poll.Result.Ok {
+            if text_equal(Operation, "choose-folder") || text_equal(Operation, "import-project") {
+                await send_event<"StudioProjectMigrationRequested">(self, Value)
+            }
+            await send_event<"StudioStatus">(self, "info", Message)
+        } else {
+            kind := "error"
+            if text_equal(State, "cancelled") {
+                kind = "info"
+            }
+            await send_event<"StudioStatus">(self, kind, Message)
+        }
+        await release()
+        Request = 0
+        await publish()
+        return
+    }
+    start :: fn(Operation: string, Value: string) {
+        accepted := text_equal(Operation, "activate-project") && !text_equal(AcceptedWorkspace, "") && text_equal(Value, AcceptedWorkspace)
+        if CollaborationActive && !accepted && (text_equal(Operation, "choose-folder") || text_equal(Operation, "import-project") || text_equal(Operation, "import-file") || text_equal(Operation, "activate-project")) {
+            await send_event<"StudioStatus">(self, "warning", "Leave the collaboration room before importing files or switching projects.")
+            return
+        }
+        if Request > 0 || !text_equal(SavedOperation, "") {
+            await send_event<"StudioStatus">(self, "warning", "Wait for the current platform request or cancel it.")
+            return
+        }
+        if accepted {
+            AcceptedWorkspace = ""
+        }
+        AcceptedActivation = accepted
+        started := await authoring_platform_request(Operation, Value)
+        self.Operation = Operation
+        State = started.Result.State
+        Message = started.Result.Message
+        self.Value = started.Result.Value
+        Log = started.Result.Log
+        Progress = started.Result.Progress
+        Request = started.Result.Request
+        Visible = true
+        if Request > 0 {
+            await finish()
+        } else {
+            await send_event<"StudioStatus">(self, "error", Message)
+            await publish()
+        }
+        return
+    }
+    saved_job :: fn(Operation: string) {
+        if !WorkspaceActive || Request > 0 || !text_equal(SavedOperation, "") {
+            await send_event<"StudioStatus">(self, "warning", "Open a project and finish the current task first.")
+            return
+        }
+        if SaveGateRequest >= 2147483647 {
+            await send_event<"StudioStatus">(self, "error", "Request counter exhausted; reopen the application.")
+            return
+        }
+        SaveGateRequest += 1
+        SavedOperation = Operation
+        SaveGateAge = 0.0
+        await send_event<"StudioTextViewRequested">(self, SaveGateRequest)
+        publish()
+    }
+    on StudioDocumentState {
+        self.Document = event.Document
+        DocumentRevision = event.Revision
+    }
+    on StudioTextViewState {
+        if text_equal(SavedOperation, "") || event.Request != SaveGateRequest {
+            return
+        }
+        operation := SavedOperation
+        SavedOperation = ""
+        if !event.Ready || event.Document != self.Document || event.Revision != DocumentRevision {
+            await send_event<"StudioStatus">(self, "warning", "Save source changes and finish the active edit before compiling or exporting saved files.")
+            await publish()
+            return
+        }
+        opened := await workspace_document_handles()
+        if !opened.Ok {
+            await send_event<"StudioStatus">(self, "error", opened.Error)
+            await publish()
+            return
+        }
+        foreach (handle in opened.Documents) {
+            document := await workspace_document_info(handle)
+            if !document.Ok || document.Dirty || document.Transaction || document.NewFile || text_equal(document.Path, "") {
+                await send_event<"StudioStatus">(self, "warning", "Save all documents and finish active edits before compiling or exporting. These tasks use saved project files.")
+                await publish()
+                return
+            }
+        }
+        await send_event<"StudioStatus">(self, "info", "Preparing saved project files.")
+        start(operation, "")
+    }
+    on Begin {
+        refresh_environment()
+    }
+    on Tick(dt) {
+        if !text_equal(SavedOperation, "") {
+            SaveGateAge += dt
+            if SaveGateAge >= 2.0 {
+                SavedOperation = ""
+                await send_event<"StudioStatus">(self, "warning", "Source readiness was not confirmed. Save changes and retry.")
+                await publish()
+            }
+        }
+        if Request > 0 {
+            await finish()
+        }
+        EnvironmentAge += dt
+        CloseAge += dt
+        if CloseAge >= 0.1 {
+            CloseAge = 0.0
+            await environment()
+            await observe_close()
+        }
+        if EnvironmentAge >= 1 {
+            EnvironmentAge = 0
+            refresh_environment()
+        }
+    }
+    on StudioPreferencesChanged {
+        refresh_environment()
+    }
+    on StudioCollaborationState {
+        if !event.Active {
+            AcceptedWorkspace = ""
+        }
+        CollaborationActive = event.Active
+        if event.Active && Request > 0 && !AcceptedActivation && (text_equal(Operation, "choose-folder") || text_equal(Operation, "import-project") || text_equal(Operation, "import-file") || text_equal(Operation, "activate-project")) {
+            await cancel_request()
+            await release()
+            Request = 0
+        }
+        publish()
+    }
+    on StudioCollaborationWorkspaceReady {
+        if CollaborationActive {
+            AcceptedWorkspace = event.Root
+        }
+    }
+    on StudioResourceCommand {
+        switch event.Id {
+            case "openProject": {
+                if Web {
+                    start("import-project", "")
+                } else {
+                    start("choose-folder", "")
+                }
+            }
+            case "importProject": {
+                start("import-project", "")
+            }
+            case "exportProject": {
+                saved_job("export-project")
+            }
+            case "compileProject": {
+                saved_job("compile")
+            }
+            case "exportGame": {
+                saved_job("export")
+            }
+            case "documentation": {
+                start("open-url", "https://github.com/waldnercharles/chibi/tree/main/docs")
+            }
+            case "reportIssue": {
+                start("open-url", "https://github.com/waldnercharles/chibi-studio/issues")
+            }
+            case "quit": {
+                send_event<"StudioQuitRequested">(self)
+            }
+            case "cancelJob": {
+                SavedOperation = ""
+                if Request > 0 {
+                    await cancel_request()
+                    finish()
+                } else {
+                    publish()
+                }
+            }
+        }
+    }
+    stop :: fn() {
+        SavedOperation = ""
+        if Request > 0 {
+            await cancel_request()
+            await release()
+            Request = 0
+        }
+        return
+    }
+    on StudioQuitApproved {
+        await stop()
+        start("quit", "")
+    }
+    on StudioProjectOpenApproved {
+        await stop()
+        start("activate-project", event.Path)
+    }
+    on StudioProjectMigrationReady {
+        send_event<"StudioProjectOpenRequested">(self, event.Path)
+    }
+    on StudioPlatformToggleLog {
+        LogOpen = !LogOpen
+        publish()
+    }
+    on StudioPlatformClose {
+        if Request == 0 {
+            Visible = false
+            publish()
+        }
+    }
+    on StudioPlatformCopyLog {
+        copied := await authoring_platform_request("clipboard-write", Log)
+        if text_equal(copied.Result.State, "running") || text_equal(copied.Result.State, "pending") {
+            if Request == 0 {
+                Request = copied.Result.Request
+                Operation = "clipboard-write"
+                await publish()
+            } else {
+                await authoring_platform_cancel(copied.Result.Request)
+                await authoring_platform_release(copied.Result.Request)
+            }
+        } else {
+            if copied.Result.Ok {
+                await send_event<"StudioStatus">(self, "info", "Diagnostic log copied.")
+            } else {
+                await send_event<"StudioStatus">(self, "error", copied.Result.Message)
+            }
+            if copied.Result.Request > 0 {
+                await authoring_platform_release(copied.Result.Request)
+            }
+        }
+    }
+}

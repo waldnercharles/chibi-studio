@@ -1,0 +1,10 @@
+version 3
+name "StudioObjectComponentMenu"
+domain "event"
+id_counter 2
+(array)variables {
+    - id=1 name="Pointer" type="struct" type_name="CF_V2" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

@@ -1,0 +1,457 @@
+behavior StudioUIDesigner {
+    self.Document: int = 0
+    Revision: int = 0
+    ExpectedRevision: int = 0
+    Language: string = "rml"
+    Ready := false
+    Valid := false
+    Busy := false
+    Pending := false
+    CollaborationActive := false
+    Request: int = 0
+    QueuedDocument: int = 0
+    QueuedRevision: int = 0
+    QueuedOperation: string = ""
+    QueuedElement: int = -1
+    QueuedTarget: int = -1
+    QueuedName: string = ""
+    QueuedValue: string = ""
+    QueuedRemove := false
+    QueuedPlace: string = "inside"
+    Selected: int = -1
+    First: int = 0
+    Total: int = 0
+    Rows: UiSourceRow[] = []
+    Attributes: UiSourceRow[] = []
+    Error: string = ""
+    AttributeName: string = ""
+    AttributeValue: string = ""
+    Markup: string = "<div></div>"
+    Place: string = "inside"
+    Target: int = -1
+    CssKind: string = "text"
+    CssNumber: double = 0
+    CssUnit: string = ""
+    CssColor: string = "#ffffffff"
+    CssOptions: string[] = []
+    CssExpression := false
+    CssInteger := false
+    StyleTarget: int = -1
+    StyleName: string = "width"
+    StyleValue: string = "100dp"
+    Text: string = ""
+    Query: string = ""
+    Folded: int[] = []
+    Visible: int[] = []
+    action read_elements = query_ui_source(Document, Revision, Language, "element", First: First, Count: 64)
+    action rules = query_ui_source(Document, Revision, "rcss", "rule", First: First, Count: 64)
+
+    css_value :: fn() {
+        parsed := query_css_value(StyleName, StyleValue)
+        CssKind = parsed.Kind
+        CssNumber = parsed.Number
+        CssUnit = parsed.Unit
+        CssOptions = parsed.Options
+        CssInteger = parsed.Integer
+        if text_equal(parsed.Kind, "color") {
+            CssColor = linear_color_to_hex(parsed.R, parsed.G, parsed.B, parsed.A).Text
+        }
+        return
+    }
+    publish :: fn() {
+        await css_value()
+        await set_ui_data(Name: "uiDesignerCssKind", Value: CssKind)
+        await set_ui_data(Name: "uiDesignerCssNumber", Value: CssNumber)
+        await set_ui_data(Name: "uiDesignerCssUnit", Value: CssUnit)
+        await set_ui_data(Name: "uiDesignerCssColor", Value: CssColor)
+        await set_ui_data(Name: "uiDesignerCssOptions", Value: CssOptions)
+        await set_ui_data(Name: "uiDesignerCssInteger", Value: CssInteger)
+        await set_ui_data(Name: "uiDesignerCssExpression", Value: CssExpression)
+        Visible = []
+        for i in 0..length(Rows) - 1 {
+            row := Rows[i]
+            hidden := false
+            parent := row.Parent
+            steps := 0
+            while parent >= 0 && steps < 64 {
+                if contains(Folded, parent) {
+                    hidden = true
+                    break
+                }
+                next := -1
+                foreach (ancestor in Rows) {
+                    if ancestor.Index == parent {
+                        next = ancestor.Parent
+                        break
+                    }
+                }
+                parent = next
+                steps += 1
+            }
+            if !hidden && (text_equal(Query, "") || text_contains(Query, format_text("{} {} {}", row.Name, row.Value, row.Extra), true)) {
+                Visible = array_add(Visible, i)
+            }
+        }
+        await set_ui_data(Name: "uiDesignerReady", Value: Ready)
+        await set_ui_data(Name: "uiDesignerValid", Value: Valid)
+        await set_ui_data(Name: "uiDesignerBusy", Value: Busy || Pending || CollaborationActive)
+        await set_ui_data(Name: "uiDesignerLanguage", Value: Language)
+        await set_ui_data(Name: "uiDesignerRows", Value: Rows)
+        await set_ui_data(Name: "uiDesignerAttributes", Value: Attributes)
+        await set_ui_data(Name: "uiDesignerSelected", Value: Selected)
+        await set_ui_data(Name: "uiDesignerFirst", Value: First)
+        await set_ui_data(Name: "uiDesignerTotal", Value: Total)
+        await set_ui_data(Name: "uiDesignerVisible", Value: Visible)
+        await set_ui_data(Name: "uiDesignerFolded", Value: Folded)
+        await set_ui_data(Name: "uiDesignerError", Value: Error)
+        await set_ui_data(Name: "uiDesignerAttributeName", Value: AttributeName)
+        await set_ui_data(Name: "uiDesignerAttributeValue", Value: AttributeValue)
+        await set_ui_data(Name: "uiDesignerMarkup", Value: Markup)
+        await set_ui_data(Name: "uiDesignerPlace", Value: Place)
+        await set_ui_data(Name: "uiDesignerStyleName", Value: StyleName)
+        await set_ui_data(Name: "uiDesignerStyleValue", Value: StyleValue)
+        await set_ui_data(Name: "uiDesignerText", Value: Text)
+        await set_ui_data(Name: "uiDesignerQuery", Value: Query)
+        return
+    }
+    selected :: fn() {
+        Attributes = []
+        if Selected >= 0 {
+            kind := "attribute"
+            if text_equal(Language, "rcss") {
+                kind = "declaration"
+            }
+            attributes := await query_ui_source(Document, Revision, Language, kind, Selected, Count: 256)
+            if attributes.Status.Ok {
+                Attributes = attributes.Rows
+                if text_equal(Language, "rcss") {
+                    StyleTarget = -1
+                    foreach (field in Attributes) {
+                        if text_equal(field.Name, StyleName) {
+                            StyleTarget = field.Index
+                            StyleValue = field.Value
+                            break
+                        }
+                    }
+                }
+                if attributes.Status.Total > length(attributes.Rows) {
+                    Error = "This element has more than 256 fields. Edit the remaining fields in source."
+                }
+            } else {
+                Error = attributes.Status.Error
+            }
+        }
+        await publish()
+        return
+    }
+    refresh :: fn() {
+        if !Ready || Document <= 0 {
+            Rows = []
+            Attributes = []
+            await publish()
+            return
+        }
+        if text_equal(Language, "rcss") {
+            await rules()
+            Rows = rules.Rows
+            Total = rules.Status.Total
+            Valid = rules.Status.Valid
+            Error = rules.Status.Error
+        } else {
+            await read_elements()
+            Rows = read_elements.Rows
+            Total = read_elements.Status.Total
+            Valid = read_elements.Status.Valid
+            Error = read_elements.Status.Error
+        }
+        await selected()
+        return
+    }
+    apply_edit :: fn(Operation: string, Element: int, Target: int, Name: string, Value: string, Remove: bool, Place: string) {
+        if CollaborationActive {
+            Error = "Visual UI edits require an enabled collaboration proposal mapping."
+            await publish()
+            return
+        }
+        if !Ready || !Valid || Busy {
+            return
+        }
+        Busy = true
+        changed := await edit_ui_source(Document, Revision, Operation, Element, Target, Place, Name, Value, Remove)
+        if changed.Status.Ok {
+            Revision = changed.Status.Revision
+            ExpectedRevision = changed.Status.Revision
+            if text_equal(Operation, "move") || text_equal(Operation, "insert") || text_equal(Operation, "delete") || text_equal(Operation, "duplicate") || text_equal(Operation, "remove-rule") {
+                Selected = -1
+                Folded = []
+            }
+            await send_event<"StudioDocumentChanged">(self, Document)
+        } else {
+            Error = changed.Status.Error
+            Busy = false
+            await send_event<"StudioStatus">(self, "error", Error)
+            await publish()
+            return
+        }
+        Busy = false
+        await refresh()
+        return
+    }
+    edit :: fn(Operation: string, Element: int, Target: int, Name: string, Value: string, Remove: bool) {
+        if CollaborationActive {
+            Error = "Visual UI edits are unavailable in a collaboration room until their proposal mapping is enabled. Use the source editor."
+            await publish()
+            return
+        }
+        if !Ready || !Valid || Busy || Pending {
+            return
+        }
+        if Request >= 2147483646 {
+            Error = "UI edit request identity exhausted."
+            publish()
+            return
+        }
+        Request += 1
+        Pending = true
+        QueuedDocument = Document
+        QueuedRevision = Revision
+        QueuedOperation = Operation
+        QueuedElement = Element
+        QueuedTarget = Target
+        QueuedName = Name
+        QueuedValue = Value
+        QueuedRemove = Remove
+        QueuedPlace = Place
+        await publish()
+        send_event<"StudioDocumentExternalEditRequested">(self, "ui-designer", QueuedDocument, Request)
+        return
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        if text_equal(event.Owner, "ui-designer") && event.Request == self.Request && event.Document == QueuedDocument {
+            Pending = false
+            await send_event<"StudioDocumentExternalEditComplete">(self, "ui-designer", QueuedDocument, self.Request)
+            publish()
+        }
+    }
+    on StudioDocumentExternalEditReady {
+        if !Pending || !text_equal(event.Owner, "ui-designer") || event.Request != self.Request || event.Document != QueuedDocument {
+            return
+        }
+        Pending = false
+        if event.Ok && self.Document == QueuedDocument && event.Revision == QueuedRevision {
+            self.Revision = event.Revision
+            Busy = false
+            await apply_edit(QueuedOperation, QueuedElement, QueuedTarget, QueuedName, QueuedValue, QueuedRemove, QueuedPlace)
+        } else {
+            self.Error = event.Error
+            if event.Ok {
+                self.Error = "The source changed while preparing the edit. Review the selection and try again."
+            }
+            await send_event<"StudioStatus">(self, "error", self.Error)
+            await publish()
+        }
+        send_event<"StudioDocumentExternalEditComplete">(self, "ui-designer", QueuedDocument, self.Request)
+    }
+    on StudioCollaborationState {
+        CollaborationActive = event.Active
+        publish()
+    }
+    on StudioDocumentState {
+        changed := self.Document != event.Document || self.Revision != event.Revision
+        self.Busy = event.Busy
+        if !changed {
+            publish()
+            return
+        }
+        if self.Document != event.Document || event.Revision != ExpectedRevision {
+            Selected = -1
+            Folded = []
+        }
+        if self.Document != event.Document {
+            First = 0
+        }
+        self.Document = event.Document
+        self.Revision = event.Revision
+        self.Busy = event.Busy
+        Ready = false
+        if self.Document > 0 {
+            identity := workspace_asset_identity(self.Document, self.Revision)
+            Ready = identity.Ok && (text_equal(identity.Kind, "ui") || text_equal(identity.Kind, "stylesheet"))
+            Language = "rml"
+            if text_equal(identity.Kind, "stylesheet") {
+                Language = "rcss"
+            }
+        }
+        refresh()
+    }
+    on StudioUIDesignerSelect {
+        Selected = event.Element
+        Target = event.Element
+        StyleTarget = -1
+        First = event.Element / 64 * 64
+        refresh()
+    }
+    on StudioUIDesignerFold {
+        if contains(Folded, event.Element) {
+            kept: int[] = []
+            foreach (element in Folded) {
+                if element != event.Element {
+                    kept = array_add(kept, element)
+                }
+            }
+            Folded = kept
+        } else {
+            Folded = array_add(Folded, event.Element)
+        }
+        publish()
+    }
+    on StudioUIDesignerPage {
+        if event.Direction < 0 {
+            First -= 64
+            if First < 0 {
+                First = 0
+            }
+        } else {
+            if First + 64 < Total {
+                First += 64
+            }
+        }
+        refresh()
+    }
+    on StudioUIDesignerCssField {
+        StyleName = event.Name
+        StyleValue = event.Value
+        StyleTarget = event.Index
+        CssExpression = false
+        publish()
+    }
+    on StudioUIDesignerCssNumber {
+        if event.Canceled {
+            publish()
+            return
+        }
+        formatted := format_css_value(StyleName, StyleValue, "number", event.Value, "", "", 0.0, 0.0, 0.0, 0.0)
+        if formatted.Ok {
+            StyleValue = formatted.Text
+        } else {
+            Error = formatted.Error
+        }
+        publish()
+    }
+    on StudioUIDesignerCssColor {
+        if event.Canceled {
+            publish()
+            return
+        }
+        decoded := linear_color_from_hex(event.Value)
+        if !decoded.Valid {
+            Error = decoded.Error
+            publish()
+            return
+        }
+        formatted := format_css_value(StyleName, StyleValue, "color", 0.0, "", "", decoded.R, decoded.G, decoded.B, decoded.A)
+        if formatted.Ok {
+            StyleValue = formatted.Text
+        } else {
+            Error = formatted.Error
+        }
+        publish()
+    }
+    on StudioUIDesignerDraft {
+        switch event.Field {
+            case "attributeName": {
+                AttributeName = event.Value
+            }
+            case "attributeValue": {
+                AttributeValue = event.Value
+            }
+            case "markup": {
+                Markup = event.Value
+            }
+            case "place": {
+                Place = event.Value
+            }
+            case "styleName": {
+                StyleName = event.Value
+            }
+            case "styleValue": {
+                StyleValue = event.Value
+                CssExpression = true
+            }
+            case "cssKeyword": {
+                StyleValue = event.Value
+                CssExpression = false
+            }
+            case "text": {
+                Text = event.Value
+            }
+            case "query": {
+                Query = event.Value
+            }
+        }
+        publish()
+    }
+    on StudioUIDesignerField {
+        operation := "attribute"
+        if text_equal(Language, "rcss") {
+            operation = "declaration"
+        }
+        edit(operation, Selected, event.Index, event.Name, event.Value, event.Remove)
+    }
+    on StudioUIDesignerCommand {
+        switch event.Id {
+            case "expression": {
+                CssExpression = !CssExpression
+                publish()
+            }
+            case "source": {
+                foreach (row in Rows) {
+                    if row.Index == Selected {
+                        send_event<"StudioTextRange">(self, row.Start, row.End)
+                        break
+                    }
+                }
+            }
+            case "attribute": {
+                edit("attribute", Selected, -1, AttributeName, AttributeValue, false)
+            }
+            case "removeAttribute": {
+                edit("attribute", Selected, -1, AttributeName, "", true)
+            }
+            case "style": {
+                edit("style", Selected, -1, StyleName, StyleValue, false)
+            }
+            case "removeStyle": {
+                edit("style", Selected, -1, StyleName, "", true)
+            }
+            case "declaration": {
+                edit("declaration", Selected, StyleTarget, StyleName, StyleValue, false)
+            }
+            case "selector": {
+                edit("selector", Selected, -1, "", AttributeValue, false)
+            }
+            case "text": {
+                edit("text", Selected, -1, "", Text, false)
+            }
+            case "insert": {
+                edit("insert", -1, Target, "", Markup, false)
+            }
+            case "duplicate": {
+                edit("duplicate", Selected, -1, "", "", false)
+            }
+            case "delete": {
+                if text_equal(Language, "rcss") {
+                    edit("remove-rule", Selected, -1, "", "", false)
+                } else {
+                    edit("delete", Selected, -1, "", "", false)
+                }
+            }
+            case "undo": {
+                send_event<"StudioDocumentCommand">(self, "undo", "")
+            }
+            case "redo": {
+                send_event<"StudioDocumentCommand">(self, "redo", "")
+            }
+        }
+    }
+}

@@ -1,0 +1,5 @@
+component StudioPreferenceChoice {
+    key: string
+    number: double
+    label: string
+}

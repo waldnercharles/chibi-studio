@@ -1,0 +1,10 @@
+version 3
+name "StudioRuntimePropertiesFocus"
+domain "event"
+id_counter 2
+(array)variables {
+    - id=1 name="Focused" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

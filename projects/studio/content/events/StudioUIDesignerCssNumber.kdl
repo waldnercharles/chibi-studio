@@ -1,0 +1,11 @@
+version 3
+name "StudioUIDesignerCssNumber"
+domain "event"
+id_counter 3
+(array)variables {
+    - id=1 name="Value" type="double" category="Payload"
+    - id=2 name="Canceled" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

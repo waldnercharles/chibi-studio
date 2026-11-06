@@ -1,0 +1,11 @@
+version 3
+name "AssetsModelImportText"
+domain "event"
+id_counter 3
+(array)variables {
+    - id=1 name="Field" type="const char *" category="Payload"
+    - id=2 name="Text" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

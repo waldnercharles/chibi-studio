@@ -1,0 +1,165 @@
+behavior StudioPerformance {
+    HostHistory: AuthoringTiming[] = []
+    TargetHistory: AuthoringTiming[] = []
+    Age: float = 0.0
+    Frozen := false
+    HostClock: double = 0
+    TargetClock: double = 0
+    HostAvailable := false
+    TargetAvailable := false
+    Playing := false
+    Lighting := false
+    GpuAvailable := false
+    Budget: double = 16.6667
+    Readout: string = "Timing unavailable"
+    TargetReadout: string = "No target session"
+    Frame: string = "[]"
+    Phases: string = "[]"
+    Gpu: string = "[]"
+    action timing = query_authoring_timing()
+    series :: fn(History: AuthoringTiming[], Field: int, Now: double, Color: string) -> string {
+        times := ""
+        values := ""
+        count := 0
+        foreach (sample in History) {
+            time := sample.time - Now + 30
+            if time < 0 {
+                continue
+            }
+            value := sample.frame_ms
+            switch Field {
+                case 1: {
+                    value = sample.behavior_ms
+                }
+                case 2: {
+                    value = sample.physics_ms
+                }
+                case 3: {
+                    value = sample.systems_ms
+                }
+                case 4: {
+                    value = sample.rendering_ms
+                }
+                case 5: {
+                    value = sample.gpu_ms
+                }
+            }
+            if Field == 5 && value < 0 {
+                continue
+            }
+            if count == 0 {
+                times = format_text("{:.4f}", time)
+                values = format_text("{:.4f}", value)
+            } else {
+                times = format_text("{},{:.4f}", times, time)
+                values = format_text("{},{:.4f}", values, value)
+            }
+            count += 1
+        }
+        return format_text("{{\"times\":[{}],\"values\":[{}],\"now\":30,\"color\":{}}}", times, values, Color)
+    }
+    publish :: fn() {
+        await set_ui_data(Name: "performanceFrozen", Value: Frozen)
+        await set_ui_data(Name: "performanceHostAvailable", Value: HostAvailable)
+        await set_ui_data(Name: "performanceTargetAvailable", Value: TargetAvailable)
+        await set_ui_data(Name: "performancePlaying", Value: Playing)
+        await set_ui_data(Name: "performanceLighting", Value: Lighting)
+        await set_ui_data(Name: "performanceGpuAvailable", Value: GpuAvailable)
+        await set_ui_data(Name: "performanceBudget", Value: Budget)
+        await set_ui_data(Name: "performanceReadout", Value: Readout)
+        await set_ui_data(Name: "performanceTargetReadout", Value: TargetReadout)
+        await set_ui_data(Name: "performanceFrame", Value: Frame)
+        await set_ui_data(Name: "performancePhases", Value: Phases)
+        set_ui_data(Name: "performanceGpu", Value: Gpu)
+        return
+    }
+    sample :: fn() {
+        await timing()
+        HostAvailable = timing.Host.available
+        TargetAvailable = timing.Target.available
+        Playing = timing.Target.playing
+        Lighting = timing.Target.lighting
+        GpuAvailable = timing.Target.available && timing.Target.gpu_ms >= 0
+        if timing.Target.available && timing.Target.time < TargetClock {
+            TargetClock = 0
+            TargetHistory = []
+            Phases = "[]"
+            Gpu = "[]"
+        }
+        if timing.Host.available && timing.Host.time > HostClock {
+            HostClock = timing.Host.time
+            HostHistory = array_add(HostHistory, timing.Host)
+            while length(HostHistory) > 120 {
+                HostHistory = remove_index(HostHistory, 0)
+            }
+            while length(HostHistory) > 0 {
+                if HostHistory[0].time >= HostClock - 30 {
+                    break
+                }
+                HostHistory = remove_index(HostHistory, 0)
+            }
+            Frame = format_text("[{}]", series(HostHistory, 0, HostClock, "0"))
+            if timing.Host.frame_ms > 0 {
+                Readout = format_text("{:.1f} ms · {:.0f} FPS", timing.Host.frame_ms, 1000 / timing.Host.frame_ms)
+            } else {
+                Readout = "Frame timing unavailable"
+            }
+        }
+        if timing.Target.available && timing.Target.time > TargetClock {
+            TargetClock = timing.Target.time
+            TargetHistory = array_add(TargetHistory, timing.Target)
+            while length(TargetHistory) > 120 {
+                TargetHistory = remove_index(TargetHistory, 0)
+            }
+            while length(TargetHistory) > 0 {
+                if TargetHistory[0].time >= TargetClock - 30 {
+                    break
+                }
+                TargetHistory = remove_index(TargetHistory, 0)
+            }
+            Phases = format_text("[{},{},{},{}]", series(TargetHistory, 1, TargetClock, "1872759039"), series(TargetHistory, 2, TargetClock, "1470847743"), series(TargetHistory, 3, TargetClock, "3651476991"), series(TargetHistory, 4, TargetClock, "3313942783"))
+            Gpu = format_text("[{}]", series(TargetHistory, 5, TargetClock, "1470847743"))
+        }
+        if timing.Target.available {
+            TargetReadout = format_text("{:.2f} ms simulation · {} steps · {} backlog", timing.Target.behavior_ms + timing.Target.physics_ms + timing.Target.systems_ms, timing.Target.steps, timing.Target.backlog)
+            if timing.Target.lighting {
+                TargetReadout = format_text("{} · {:.0f}% resolution", TargetReadout, timing.Target.resolution * 100)
+            }
+            if timing.Target.budget_ms > 0 {
+                Budget = timing.Target.budget_ms
+            }
+        } else {
+            TargetReadout = "No target session"
+        }
+        await publish()
+        return
+    }
+    on Begin {
+        publish()
+    }
+    on Tick(dt) {
+        if Frozen {
+            return
+        }
+        Age += dt
+        if Age >= 0.25 {
+            Age = 0.0
+            sample()
+        }
+    }
+    on StudioPerformanceCommand {
+        switch event.Id {
+            case "freeze": {
+                Frozen = !Frozen
+            }
+            case "clear": {
+                HostHistory = []
+                TargetHistory = []
+                Frame = "[]"
+                Phases = "[]"
+                Gpu = "[]"
+            }
+        }
+        publish()
+    }
+}

@@ -1,0 +1,27 @@
+<div class="ui-canvas">
+  <div class="ui-canvas-toolbar">
+    <input type="text" aria-label="Search UI pages and widgets" placeholder="Search UI sources" data-attr-value="self.uiCanvasAssetQuery" data-event-input="emit('StudioUICanvasSearch', ev.value)"/>
+    <button class="btn subtle" aria-label="Previous UI sources" data-attrif-disabled="!self.uiCanvasAssetPrevious" data-event-click="emit('StudioUICanvasCommand', 'assetsPrevious')">Previous</button>
+    <button class="btn subtle" aria-label="Next UI sources" data-attrif-disabled="!self.uiCanvasAssetNext" data-event-click="emit('StudioUICanvasCommand', 'assetsNext')">Next</button>
+    <use ui="Select"><select aria-label="Preview UI page or widget" data-attr-value="self.uiCanvasAsset" data-event-change="emit('StudioUICanvasAsset', ev.value)"><option value="">Choose UI source</option><option data-for="asset : self.uiCanvasAssets" data-attr-value="asset.Name">{{ asset.Name }}</option></select></use>
+    <use ui="Select"><select aria-label="UI preview viewport" data-attr-value="self.uiCanvasPreset" data-event-change="emit('StudioUICanvasCommand', ev.value)"><option value="fit">Fit panel</option><option value="desktop">Desktop 1280 × 720</option><option value="phone">Phone 390 × 844</option><option value="tablet">Tablet 1024 × 768</option></select></use>
+    <button class="btn subtle" data-attrif-disabled="self.uiCanvasFollow" data-event-click="emit('StudioUICanvasCommand', 'follow')">Follow document</button>
+    <use ui="Select"><select aria-label="Canvas tool" data-attr-value="self.uiCanvasTool" data-attrif-disabled="self.uiCanvasEditing" data-event-change="emit('StudioUICanvasCommand', ev.value)"><option value="select">Select</option><option value="move">Move</option><option value="resize">Resize</option></select></use>
+    <use ui="Select"><select aria-label="Canvas zoom" data-attr-value="self.uiCanvasZoomPreset" data-attrif-disabled="self.uiCanvasEditing" data-event-change="emit('StudioUICanvasCommand', ev.value)"><option value="zoom25">25%</option><option value="zoom50">50%</option><option value="zoom75">75%</option><option value="zoom100">100%</option><option value="zoom125">125%</option><option value="zoom150">150%</option><option value="zoom200">200%</option></select></use>
+    <use ui="Select"><select aria-label="Align selected element to parent content" data-attr-value="self.uiCanvasAlign" data-attrif-disabled="!self.uiCanvasCanEdit || self.uiCanvasEditing" data-event-change="emit('StudioUICanvasCommand', ev.value)"><option value="">Align to parent</option><option value="alignLeft">Left</option><option value="alignCenter">Horizontal center</option><option value="alignRight">Right</option><option value="alignTop">Top</option><option value="alignMiddle">Vertical center</option><option value="alignBottom">Bottom</option></select></use>
+    <span class="dim">{{ self.uiCanvasWidth }} × {{ self.uiCanvasHeight }}</span>
+    <button class="btn subtle" data-attrif-disabled="!self.uiCanvasReady" data-event-click="emit('StudioUICanvasCommand', 'refresh')">Refresh</button>
+    <button class="btn subtle" data-attrif-disabled="self.uiCanvasSourcePath == '' || self.uiCanvasSourceStart &lt; 0" data-event-click="emit('StudioUICanvasCommand', 'source')">Reveal source</button>
+    <button class="btn subtle" data-attrif-disabled="self.uiCanvasSelected == ''" data-event-click="emit('StudioUICanvasCommand', 'inspect')">Inspect selected</button>
+  </div>
+  <p class="notice" role="status" data-if="self.uiCanvasAssetNotice != ''">{{ self.uiCanvasAssetNotice }}</p>
+  <p data-if="!self.uiCanvasReady">Open an RML page or widget to preview its unsaved source.</p>
+  <p class="notice error" role="alert" data-if="self.uiCanvasError != ''">{{ self.uiCanvasError }}</p>
+  <div id="studio-ui-canvas-surface" data-measure class="ui-canvas-surface">
+    <div id="studio-ui-canvas-image" data-measure class="ui-canvas-image" data-when="self.uiCanvasImage != ''" data-style-width="self.uiCanvasDisplayWidth + 'dp'" data-style-height="self.uiCanvasDisplayHeight + 'dp'" tabindex="0" data-keys="Escape:StudioUICanvasCancel" data-event-mousedown="emit('StudioUICanvasPointer', 'select', self.uiCanvasDocument, self.uiCanvasRevision)" data-event-dragstart="emit('StudioUICanvasPointer', 'begin', self.uiCanvasDocument, self.uiCanvasRevision)" data-event-drag="emit('StudioUICanvasPointer', 'drag', self.uiCanvasDocument, self.uiCanvasRevision)" data-event-dragend="emit('StudioUICanvasPointer', 'end', self.uiCanvasDocument, self.uiCanvasRevision)">
+      <texture-view data-attr-src="self.uiCanvasImage"/>
+      <div class="ui-canvas-selection" data-when="self.uiCanvasSelected != ''" data-style-left="self.uiCanvasX + 'dp'" data-style-top="self.uiCanvasY + 'dp'" data-style-width="self.uiCanvasSelectionWidth + 'dp'" data-style-height="self.uiCanvasSelectionHeight + 'dp'"></div>
+    </div>
+  </div>
+  <span class="dim ui-canvas-caption" data-if="self.uiCanvasSelected != ''">{{ self.uiCanvasTag }} · {{ self.uiCanvasSelectionWidth }} × {{ self.uiCanvasSelectionHeight }}</span>
+</div>

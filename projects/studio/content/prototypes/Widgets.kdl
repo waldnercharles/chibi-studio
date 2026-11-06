@@ -2,3 +2,4 @@ name "Widgets"
 components {
     Ui document="Widgets" hidden=#true
 }
+(array)behaviors "VirtualList" "WidgetGallery" "AssetCollection" "StudioWidgets"

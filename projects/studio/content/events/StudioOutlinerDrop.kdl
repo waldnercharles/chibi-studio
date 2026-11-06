@@ -1,0 +1,13 @@
+version 3
+name "StudioOutlinerDrop"
+domain "event"
+id_counter 5
+(array)variables {
+    - id=1 name="Type" type="const char *" category="Payload"
+    - id=2 name="Payload" type="const char *" category="Payload"
+    - id=3 name="Target" type="const char *" category="Payload"
+    - id=4 name="Zone" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

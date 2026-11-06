@@ -1,0 +1,15 @@
+version 3
+name "StudioModelReferenceEdit"
+domain "event"
+id_counter 7
+(array)variables {
+    - id=1 name="Id" type="const char *" category="Payload"
+    - id=2 name="Document" type="int" category="Payload"
+    - id=3 name="Revision" type="int" category="Payload"
+    - id=4 name="Text" type="const char *" category="Payload"
+    - id=5 name="Number" type="float" category="Payload"
+    - id=6 name="Enabled" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

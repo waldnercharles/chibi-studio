@@ -1,0 +1,235 @@
+behavior StudioMaterialCreate {
+    self.Active := false
+    Room := false
+    Busy := false
+    Executing := false
+    Done := false
+    Document: int = 0
+    Request: int = 0
+    LeaseDocument: int = 0
+    Lease := false
+    Name: string = ""
+    Preset: int = 0
+    Settings: struct<"MaterialAuthoringSettings"> = { base_r: 0.0, base_g: 0.0, base_b: 0.0, opacity: 1.0, roughness: 0.0, metallic: 0.0, emission_r: 0.0, emission_g: 0.0, emission_b: 0.0, emission_gain: 1.0, alpha_mode: 1, alpha_cutoff: 0.5, unlit: false }
+    action create = create_material(Name, Settings)
+    Publish :: fn() {
+        await send_event<"StudioCommandAvailability">(self, "newMaterial", Active && !Room && !Busy)
+        await set_ui_data(Name: "materialCreate.busy", Value: Busy)
+        await set_ui_data(Name: "materialCreate.readOnly", Value: Room)
+        await set_ui_data(Name: "materialCreate.name", Value: Name)
+        preset := "matte"
+        if Preset == 1 {
+            preset = "metal"
+        }
+        if Preset == 2 {
+            preset = "emissive"
+        }
+        if Preset == 3 {
+            preset = "unlit"
+        }
+        alpha := "opaque"
+        if Settings.alpha_mode == 0 {
+            alpha = "blend"
+        }
+        if Settings.alpha_mode == 2 {
+            alpha = "mask"
+        }
+        await set_ui_data(Name: "materialCreate.preset", Value: preset)
+        await set_ui_data(Name: "materialCreate.alpha", Value: alpha)
+        await set_ui_data(Name: "materialCreate.roughness", Value: Settings.roughness)
+        await set_ui_data(Name: "materialCreate.metallic", Value: Settings.metallic)
+        await set_ui_data(Name: "materialCreate.emissionGain", Value: Settings.emission_gain)
+        await set_ui_data(Name: "materialCreate.opacity", Value: Settings.opacity)
+        await set_ui_data(Name: "materialCreate.alphaMode", Value: Settings.alpha_mode)
+        await set_ui_data(Name: "materialCreate.alphaCutoff", Value: Settings.alpha_cutoff)
+        await set_ui_data(Name: "materialCreate.unlit", Value: Settings.unlit)
+        base := linear_color_to_hex(Settings.base_r, Settings.base_g, Settings.base_b, 1.0)
+        emission := linear_color_to_hex(Settings.emission_r, Settings.emission_g, Settings.emission_b, 1.0)
+        await set_ui_data(Name: "materialCreate.baseColor", Value: base.Text)
+        await set_ui_data(Name: "materialCreate.emissionColor", Value: emission.Text)
+    }
+    Defaults :: fn() {
+        defaults := material_preset_settings(Preset)
+        if !defaults.Valid {
+            await set_ui_data(Name: "materialCreate.error", Value: defaults.Error)
+            return
+        }
+        Settings = defaults.Settings
+        await Publish()
+    }
+    on Begin {
+        info := query_workspace_info()
+        Active = info.Active
+        await Publish()
+    }
+    Complete :: fn() {
+        if Lease {
+            Lease = false
+            await send_event<"StudioDocumentExternalEditComplete">(self, "material-create", LeaseDocument, Request)
+        }
+    }
+    Failure :: fn(Error: string) {
+        await Complete()
+        Busy = false
+        await set_ui_data(Name: "materialCreate.error", Value: Error)
+        await Publish()
+    }
+    Execute :: fn() {
+        if !Busy || Executing {
+            return
+        }
+        if Room {
+            await Failure("Material creation is unavailable in a collaborative session.")
+            return
+        }
+        Executing = true
+        create()
+    }
+    on StudioDocumentState {
+        self.Document = event.Document
+    }
+    on StudioCollaborationState {
+        Room = event.Active
+        await Publish()
+    }
+    on StudioDocumentExternalEditReady {
+        if !Busy || Executing || !text_equal(event.Owner, "material-create") || event.Request != self.Request || event.Document != LeaseDocument {
+            return
+        }
+        Lease = event.Ok
+        if !event.Ok {
+            await Failure(event.Error)
+            return
+        }
+        await Execute()
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        if !Busy || !text_equal(event.Owner, "material-create") || event.Request != self.Request || event.Document != LeaseDocument {
+            return
+        }
+        if !Executing {
+            await Failure("Material creation was canceled.")
+        }
+    }
+    on StudioResourceCommand {
+        if !text_equal(event.Id, "newMaterial") || !Active || Room || Busy {
+            return
+        }
+        Name = ""
+        Done = false
+        Preset = 0
+        await Defaults()
+        await set_ui_data(Name: "materialCreate.error", Value: "")
+        await set_ui_data(Name: "materialCreate.done", Value: false)
+        await show_ui_popover(Element: "#studio-material-create", At: { x: 24.0, y: 72.0 })
+        await focus_ui_element(Element: "#studio-material-create-name")
+    }
+    on StudioMaterialCreateName {
+        if !Busy && !Done {
+            self.Name = event.Name
+        }
+    }
+    on StudioMaterialCreatePreset {
+        if Busy || Room || Done {
+            return
+        }
+        switch event.Value {
+            case "matte":
+                Preset = 0
+                case "metal":
+                    Preset = 1
+                    case "emissive":
+                        Preset = 2
+                        case "unlit":
+                            Preset = 3
+                        }
+                        await Defaults()
+                    }
+                    on StudioMaterialCreateColor {
+                        if Busy || Room || Done {
+                            return
+                        }
+                        color := linear_color_from_hex(event.Text)
+                        if !color.Valid {
+                            await set_ui_data(Name: "materialCreate.error", Value: color.Error)
+                            return
+                        }
+                        if text_equal(event.Field, "base") {
+                            Settings.base_r = color.R
+                            Settings.base_g = color.G
+                            Settings.base_b = color.B
+                        }
+                        if text_equal(event.Field, "emission") {
+                            Settings.emission_r = color.R
+                            Settings.emission_g = color.G
+                            Settings.emission_b = color.B
+                        }
+                        await Publish()
+                    }
+                    on StudioMaterialCreateNumber {
+                        if Busy || Room || Done || event.Canceled {
+                            return
+                        }
+                        value := cast<float>(event.Value)
+                        switch event.Field {
+                            case "roughness":
+                                Settings.roughness = value
+                                case "metallic":
+                                    Settings.metallic = value
+                                    case "emissionGain":
+                                        Settings.emission_gain = value
+                                        case "opacity":
+                                            Settings.opacity = value
+                                            case "alphaCutoff":
+                                                Settings.alpha_cutoff = value
+                                            }
+                                            await Publish()
+                                        }
+                                        on StudioMaterialCreateAlpha {
+                                            if Busy || Room || Done {
+                                                return
+                                            }
+                                            switch event.Value {
+                                                case "blend":
+                                                    Settings.alpha_mode = 0
+                                                    case "opaque":
+                                                        Settings.alpha_mode = 1
+                                                        case "mask":
+                                                            Settings.alpha_mode = 2
+                                                        }
+                                                        await Publish()
+                                                    }
+                                                    on StudioMaterialCreateUnlit {
+                                                        if !Busy && !Room && !Done {
+                                                            Settings.unlit = event.Value
+                                                            await Publish()
+                                                        }
+                                                    }
+                                                    on StudioMaterialCreateConfirm {
+                                                        if !Active || Room || Busy || Done {
+                                                            return
+                                                        }
+                                                        Busy = true
+                                                        Request += 1
+                                                        LeaseDocument = Document
+                                                        await Publish()
+                                                        if LeaseDocument > 0 {
+                                                            await send_event<"StudioDocumentExternalEditRequested">(self, "material-create", LeaseDocument, Request)
+                                                        } else {
+                                                            await Execute()
+                                                        }
+                                                    }
+                                                    after create {
+                                                        Executing = false
+                                                        await Complete()
+                                                        Busy = false
+                                                        await set_ui_data(Name: "materialCreate.error", Value: create.Error)
+                                                        Done = create.Valid
+                                                        await set_ui_data(Name: "materialCreate.done", Value: Done)
+                                                        if create.Valid {
+                                                            await send_event<"WorkspaceResourcesChanged">(self)
+                                                            await send_event<"StudioDocumentCommand">(self, "open", create.Path)
+                                                        }
+                                                        await Publish()
+                                                    }
+                                                }

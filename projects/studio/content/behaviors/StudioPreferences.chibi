@@ -1,0 +1,199 @@
+behavior StudioPreferences {
+    self.Rows: struct<"StudioPreferenceRow">[] = [
+        { key: "theme", save: "studio.preference.theme", label: "Theme", detail: "Choose a palette. System follows the operating system's light or dark appearance.", category: "appearance", kind: "choice", minimum: 0, maximum: 17, step: 1, fallback: 0 },
+        { key: "density", save: "studio.preference.density", label: "Density", detail: "Comfortable makes rows and controls taller; text keeps its size.", category: "appearance", kind: "choice", minimum: 0, maximum: 1, step: 1, fallback: 0 },
+        { key: "uiScale", save: "studio.preference.uiScale", label: "UI Scale", detail: "The size of the whole editor. Games keep their own UI scale.", category: "appearance", kind: "number", minimum: 0.5, maximum: 2.0, step: 0.1, fallback: 1.0 },
+        { key: "reduceMotion", save: "studio.preference.reduceMotion", label: "Reduce Motion", detail: "Turns off transitions and animations.", category: "appearance", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 0 },
+        { key: "font.standardFamily", save: "studio.preference.font.standardFamily", label: "Standard Font", detail: "The interface's standard text face.", category: "appearance", kind: "choice", minimum: 0, maximum: 2, step: 1, fallback: 2.0 },
+        { key: "font.standardSize", save: "studio.preference.font.standardSize", label: "Standard Font Size", detail: "The size of interface text. UI Scale resizes the whole editor.", category: "appearance", kind: "number", minimum: 10.0, maximum: 18.0, step: 1.0, fallback: 13.0 },
+        { key: "scene.generatedWorld", save: "studio.preference.scene.generatedWorld", label: "Generated World", detail: "While you edit, the Scene shows terrain, clouds and liquids as the game's first frame makes them.", category: "scene", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 1.0 },
+        { key: "scene.lighting", save: "studio.preference.scene.lighting", label: "Lighting", detail: "Lights the edited scene as the game does. Off shows material colors unlit.", category: "scene", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 1.0 },
+        { key: "scene.fog", save: "studio.preference.scene.fog", label: "Fog of War", detail: "Covers the edited scene with its fog of war as the game starts.", category: "scene", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 0 },
+        { key: "scene.cameraFrames", save: "studio.preference.scene.cameraFrames", label: "Camera Frames", detail: "Outlines what each camera shows, labeled with its object's name.", category: "scene", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 1.0 },
+        { key: "scene.colliders", save: "studio.preference.scene.colliders", label: "Colliders", detail: "Outlines every object's 3D collider, not only the selection's.", category: "scene", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 0 },
+        { key: "wires", save: "studio.preference.wires", label: "Wire Style", detail: "How wires route between nodes.", category: "graph", kind: "choice", minimum: 0, maximum: 3, step: 1, fallback: 0 },
+        { key: "nodes.shortBindings", save: "studio.preference.nodes.shortBindings", label: "Short Bindings", detail: "Binding chips name the component and field, as “Aim › Manual”, not the full path.", category: "graph", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 1.0 },
+        { key: "nodes.titleFlow", save: "studio.preference.nodes.titleFlow", label: "Flow in Titles", detail: "Unlabeled execution pins sit in node titles.", category: "graph", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 1.0 },
+        { key: "nodes.compact", save: "studio.preference.nodes.compact", label: "Compact Nodes", detail: "Operators show as symbols, and reads with one output as pills.", category: "graph", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 1.0 },
+        { key: "debug.liveValues", save: "studio.preference.debug.liveValues", label: "Show Live Values", detail: "While the debug target runs, every data output shows the value it last carried.", category: "graph", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 0 },
+        { key: "code.vim", save: "studio.preference.code.vim", label: "Vim Keys", detail: "Edit with Vim modes, motions and operators.", category: "text", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 0 },
+        { key: "code.fontFamily", save: "studio.preference.code.fontFamily", label: "Monospace Font", detail: "The face used by code and monospace text.", category: "text", kind: "choice", minimum: 0, maximum: 1, step: 1, fallback: 0 },
+        { key: "code.fontSize", save: "studio.preference.code.fontSize", label: "Monospace Font Size", detail: "The size of code and monospace text. UI Scale enlarges it too.", category: "text", kind: "number", minimum: 8.0, maximum: 32.0, step: 1.0, fallback: 13.0 },
+        { key: "code.applyLive", save: "studio.preference.code.applyLive", label: "Apply Live", detail: "Apply valid source edits to the runtime after a short pause.", category: "text", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 1.0 },
+        { key: "code.wrap", save: "studio.preference.code.wrap", label: "Word Wrap", detail: "Long lines wrap at the Text Editor's edge. Off, they run on and scroll sideways.", category: "text", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 1.0 },
+        { key: "scene.grid", save: "studio.preference.scene.grid", label: "Show Grid", detail: "Draws the grid under objects while a 2D scene is edited.", category: "scene", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 1.0 },
+        { key: "scene.snap", save: "studio.preference.scene.snap", label: "Snap to Grid", detail: "Moved and resized objects land on the grid increment, and rotations on 15° steps. Holding Ctrl while dragging does the opposite.", category: "scene", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 0 },
+        { key: "scene.localSpace", save: "studio.preference.scene.localSpace", label: "Local Space", detail: "A 3D view's Move and Rotate gizmos follow the active object's axes rather than the world's. Scale always does.", category: "scene", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 0 },
+        { key: "scene.gridIncrement", save: "studio.preference.scene.gridIncrement", label: "Grid Increment", detail: "The grid's spacing in world units, and the step snapping moves by. 32 units are a meter.", category: "scene", kind: "number", minimum: 1.0, maximum: 128.0, step: 0, fallback: 32.0 },
+        { key: "workspace.main", save: "studio.preference.workspace.main", label: "Main split", detail: "Workspace geometry saved independently of authored documents.", category: "workspace", kind: "number", minimum: 0.05, maximum: 0.95, step: 0.01, fallback: 0.62 },
+        { key: "workspace.drawer", save: "studio.preference.workspace.drawer", label: "Drawer height", detail: "Workspace geometry saved independently of authored documents.", category: "workspace", kind: "number", minimum: 80, maximum: 2048, step: 1, fallback: 240 },
+        { key: "workspace.side", save: "studio.preference.workspace.side", label: "Side pane width", detail: "Workspace geometry saved independently of authored documents.", category: "workspace", kind: "number", minimum: 260, maximum: 2048, step: 1, fallback: 372 },
+        { key: "workspace.outliner", save: "studio.preference.workspace.outliner", label: "Outliner height", detail: "Workspace geometry saved independently of authored documents.", category: "workspace", kind: "number", minimum: 0.05, maximum: 0.95, step: 0.01, fallback: 0.38 },
+        { key: "workspace.across", save: "studio.preference.workspace.across", label: "Split side by side", detail: "Saved editor view preference.", category: "workspace", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 0 },
+        { key: "workspace.drawerOpen", save: "studio.preference.workspace.drawerOpen", label: "Show drawer", detail: "Saved editor view preference.", category: "workspace", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 0 },
+        { key: "workspace.sideOpen", save: "studio.preference.workspace.sideOpen", label: "Show side pane", detail: "Saved editor view preference.", category: "workspace", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 1 },
+        { key: "assets.tile", save: "studio.preference.assets.tile", label: "Thumbnail size", detail: "Saved editor view preference.", category: "assets", kind: "number", minimum: 48, maximum: 160, step: 1, fallback: 96 },
+        { key: "assets.list", save: "studio.preference.assets.list", label: "List assets", detail: "Saved editor view preference.", category: "assets", kind: "bool", minimum: 0, maximum: 1, step: 1, fallback: 0 }
+    ]
+    Choices: struct<"StudioPreferenceChoice">[] = [
+        { key: "theme", number: 0, label: "System" },
+        { key: "theme", number: 1, label: "Dark" },
+        { key: "theme", number: 2, label: "Light" },
+        { key: "theme", number: 3, label: "Dracula" },
+        { key: "theme", number: 4, label: "Solarized Light" },
+        { key: "theme", number: 5, label: "Solarized Dark" },
+        { key: "theme", number: 6, label: "Tokyo Night" },
+        { key: "theme", number: 7, label: "Tokyo Night Storm" },
+        { key: "theme", number: 8, label: "Tokyo Night Day" },
+        { key: "theme", number: 9, label: "Catppuccin Latte" },
+        { key: "theme", number: 10, label: "Catppuccin Frappé" },
+        { key: "theme", number: 11, label: "Catppuccin Macchiato" },
+        { key: "theme", number: 12, label: "Catppuccin Mocha" },
+        { key: "theme", number: 13, label: "Rosé Pine" },
+        { key: "theme", number: 14, label: "Rosé Pine Moon" },
+        { key: "theme", number: 15, label: "Rosé Pine Dawn" },
+        { key: "theme", number: 16, label: "Gruvbox Light" },
+        { key: "theme", number: 17, label: "Gruvbox Dark" },
+        { key: "density", number: 0, label: "Compact" },
+        { key: "density", number: 1, label: "Comfortable" },
+        { key: "uiScale", number: 0.5, label: "50%" },
+        { key: "uiScale", number: 0.67, label: "67%" },
+        { key: "uiScale", number: 0.75, label: "75%" },
+        { key: "uiScale", number: 0.8, label: "80%" },
+        { key: "uiScale", number: 0.9, label: "90%" },
+        { key: "uiScale", number: 1.0, label: "100%" },
+        { key: "uiScale", number: 1.1, label: "110%" },
+        { key: "uiScale", number: 1.25, label: "125%" },
+        { key: "uiScale", number: 1.5, label: "150%" },
+        { key: "uiScale", number: 1.75, label: "175%" },
+        { key: "uiScale", number: 2.0, label: "200%" },
+        { key: "font.standardFamily", number: 0, label: "Inter" },
+        { key: "font.standardFamily", number: 1, label: "Noto Sans" },
+        { key: "font.standardFamily", number: 2, label: "Geist" },
+        { key: "wires", number: 0, label: "Curved" },
+        { key: "wires", number: 1, label: "Orthogonal" },
+        { key: "wires", number: 2, label: "Straight" },
+        { key: "wires", number: 3, label: "Subway" },
+        { key: "code.fontFamily", number: 0, label: "JetBrains Mono" },
+        { key: "code.fontFamily", number: 1, label: "Inconsolata" },
+        { key: "scene.gridIncrement", number: 1.0, label: "1" },
+        { key: "scene.gridIncrement", number: 4.0, label: "4" },
+        { key: "scene.gridIncrement", number: 8.0, label: "8" },
+        { key: "scene.gridIncrement", number: 16.0, label: "16" },
+        { key: "scene.gridIncrement", number: 32.0, label: "32" },
+        { key: "scene.gridIncrement", number: 64.0, label: "64" },
+        { key: "scene.gridIncrement", number: 128.0, label: "128" }
+    ]
+    Numbers: double[] = [0, 0, 1.0, 0, 2.0, 13.0, 1.0, 1.0, 0, 1.0, 0, 0, 1.0, 1.0, 1.0, 0, 0, 0, 13.0, 1.0, 1.0, 1.0, 0, 0, 32.0, 0.62, 240, 372, 0.38, 0, 0, 1, 96, 0]
+    Query: string = ""
+    Shown := [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]
+    SaveError: string = ""
+    TextKeys: string[] = ["workspace.mainPanel", "workspace.secondaryPanel", "workspace.drawerPanel"]
+    TextDefaults: string[] = ["scene", "graph", "output"]
+    Panels: string[] = ["scene", "graph", "text", "canvas", "visual", "assets", "output", "performance", "outliner", "objects", "properties", "members", "designer", "dom", "savedData", "themeTokens"]
+    action persist = commit_save()
+    publish :: fn() {
+        await set_ui_data(Name: "studioPreferenceRows", Value: Rows)
+        await set_ui_data(Name: "studioPreferenceChoices", Value: Choices)
+        await set_ui_data(Name: "studioPreferenceNumbers", Value: Numbers)
+        await set_ui_data(Name: "studioPreferenceError", Value: SaveError)
+        await set_ui_data(Name: "studioPreferenceShown", Value: Shown)
+        set_ui_data(Name: "studioPreferenceQuery", Value: Query)
+        return
+    }
+    valid :: fn(Index: int, Number: double) -> bool {
+        row := Rows[Index]
+        if !(Number >= row.minimum && Number <= row.maximum) {
+            return false
+        }
+        if row.step == 1 && Number != cast<double>(cast<int>(Number)) {
+            return false
+        }
+        if text_equal(row.kind, "choice") {
+            for choice in Choices {
+                if text_equal(choice.key, row.key) && choice.number == Number {
+                    return true
+                }
+            }
+            return false
+        }
+        return true
+    }
+    on Begin {
+        for i in 0..length(Rows) - 1 {
+            row := Rows[i]
+            value := read_saved_number(row.save, row.fallback).Number
+            if valid(i, value) {
+                Numbers[i] = value
+            }
+        }
+        publish()
+    }
+    on StudioPreferencesChanged {
+        for i in 0..length(Rows) - 1 {
+            row := Rows[i]
+            value := read_saved_number(row.save, row.fallback).Number
+            if valid(i, value) { Numbers[i] = value }
+        }
+        publish()
+    }
+    on StudioPreferenceQuery {
+        self.Query = event.Query
+        for i in 0..length(Rows) - 1 {
+            row := Rows[i]
+            Shown[i] = text_contains(event.Query, format_text("{} {} {}", row.label, row.detail, row.category), true)
+        }
+        publish()
+    }
+    on StudioPreferenceNumber {
+        for i in 0..length(Rows) - 1 {
+            row := Rows[i]
+            if text_equal(row.key, event.Key) {
+                if !valid(i, event.Number) {
+                    send_event<"StudioStatus">(self, "error", "Choose a listed value within the preference's allowed range.")
+                    return
+                }
+                Numbers[i] = event.Number
+                await set_saved_number(row.save, event.Number)
+                await publish()
+                persist()
+                return
+            }
+        }
+        send_event<"StudioStatus">(self, "error", "Unknown preference.")
+    }
+    on StudioPreferenceText {
+        for key in TextKeys {
+            if text_equal(key, event.Key) {
+                if text_equal(text_slice(event.Text, 0, 6).Text, "panel:") {
+                    await set_saved_text(format_text("studio.preference.{}", key), event.Text)
+                    persist()
+                    return
+                }
+                for panel in Panels {
+                    if text_equal(panel, event.Text) {
+                        await set_saved_text(format_text("studio.preference.{}", key), event.Text)
+                        persist()
+                        return
+                    }
+                }
+                send_event<"StudioStatus">(self, "error", "Choose one of the available workspace panels.")
+                return
+            }
+        }
+        send_event<"StudioStatus">(self, "error", "Unknown text preference.")
+    }
+    on StudioPreferenceRetry {
+        persist()
+    }
+    after persist.Then {
+        SaveError = ""
+        await publish()
+        send_event<"StudioPreferencesChanged">(self)
+    }
+    after persist.Failed {
+        SaveError = "Preferences changed, but could not be saved. Retry to keep them after restarting."
+        await publish()
+        send_event<"StudioStatus">(self, "error", SaveError)
+    }
+}

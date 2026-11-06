@@ -1,0 +1,11 @@
+version 3
+name "StudioWorkspaceResize"
+domain "event"
+id_counter 3
+(array)variables {
+    - id=1 name="Area" type="const char *" category="Payload"
+    - id=2 name="Size" type="double" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

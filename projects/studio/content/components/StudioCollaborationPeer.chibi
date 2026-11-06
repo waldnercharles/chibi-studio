@@ -1,0 +1,8 @@
+component StudioCollaborationPeer {
+    client: string
+    name: string
+    role: string
+    presence_seq: double
+    path: string
+    panel: string
+}

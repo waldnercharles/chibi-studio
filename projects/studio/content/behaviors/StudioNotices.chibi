@@ -1,0 +1,125 @@
+behavior StudioNotices {
+    Ids: string[] = ["", "", "", ""]
+    Kinds: string[] = ["info", "info", "info", "info"]
+    Titles: string[] = ["", "", "", ""]
+    Messages: string[] = ["", "", "", ""]
+    Labels: string[] = ["", "", "", ""]
+    Actions: string[] = ["", "", "", ""]
+    Owners: string[] = ["", "", "", ""]
+    Requests: int[] = [0, 0, 0, 0]
+    Visible := [false, false, false, false]
+    Busy := [false, false, false, false]
+    Hovered := [false, false, false, false]
+    Focused := [false, false, false, false]
+    Remaining: double[] = [0, 0, 0, 0]
+    Order: int[] = [0, 1, 2, 3]
+    publish :: fn() {
+        await set_ui_data(Name: "noticeIds", Value: Ids)
+        await set_ui_data(Name: "noticeKinds", Value: Kinds)
+        await set_ui_data(Name: "noticeTitles", Value: Titles)
+        await set_ui_data(Name: "noticeMessages", Value: Messages)
+        await set_ui_data(Name: "noticeLabels", Value: Labels)
+        await set_ui_data(Name: "noticeVisible", Value: Visible)
+        await set_ui_data(Name: "noticeBusy", Value: Busy)
+        set_ui_data(Name: "noticeOrder", Value: Order)
+        return
+    }
+    on Begin {
+        publish()
+    }
+    on StudioNotice {
+        if text_equal(event.Id, "") {
+            return
+        }
+        slot := -1
+        for i in 0..3 {
+            if text_equal(Ids[i], event.Id) {
+                slot = i
+            }
+        }
+        if slot < 0 {
+            for i in 0..3 {
+                if slot < 0 && !Visible[Order[i]] {
+                    slot = Order[i]
+                }
+            }
+        }
+        if slot < 0 {
+            slot = Order[0]
+        }
+        for i in 0..2 {
+            if Order[i] == slot {
+                for j in i..2 {
+                    Order[j] = Order[j + 1]
+                }
+                break
+            }
+        }
+        Order[3] = slot
+        Ids[slot] = event.Id
+        Kinds[slot] = event.Kind
+        Titles[slot] = event.Title
+        Messages[slot] = event.Message
+        Labels[slot] = event.ActionLabel
+        Actions[slot] = event.Action
+        Owners[slot] = event.Owner
+        Requests[slot] = event.Request
+        Remaining[slot] = clamp(event.Seconds, 0, 60)
+        Visible[slot] = true
+        Busy[slot] = false
+        Hovered[slot] = false
+        Focused[slot] = false
+        publish()
+    }
+    on StudioNoticeActivate {
+        slot := event.Slot
+        if slot < 0 || slot >= 4 {
+            return
+        }
+        if !Visible[slot] || Busy[slot] || text_equal(Actions[slot], "") {
+            return
+        }
+        Busy[slot] = true
+        await publish()
+        send_event<"StudioNoticeAction">(self, Owners[slot], Requests[slot], Actions[slot])
+    }
+    on StudioNoticeDismiss {
+        for i in 0..3 {
+            if text_equal(Ids[i], event.Id) {
+                Visible[i] = false
+            }
+        }
+        publish()
+    }
+    on StudioNoticeClose {
+        if event.Slot >= 0 && event.Slot < 4 {
+            Visible[event.Slot] = false
+            publish()
+        }
+    }
+    on StudioNoticePause {
+        if event.Slot >= 0 && event.Slot < 4 {
+            if text_equal(event.Kind, "pointer") {
+                Hovered[event.Slot] = event.Paused
+            }
+            if text_equal(event.Kind, "focus") {
+                Focused[event.Slot] = event.Paused
+            }
+        }
+    }
+    on Tick {
+        changed := false
+        for i in 0..3 {
+            if Visible[i] && !Busy[i] && !Hovered[i] && !Focused[i] && Remaining[i] > 0 {
+                Remaining[i] -= max(0, cast<double>(event.DeltaSeconds))
+                if Remaining[i] <= 0 {
+                    Visible[i] = false
+                    changed = true
+                }
+            }
+        }
+        if changed {
+            publish()
+        }
+    }
+}

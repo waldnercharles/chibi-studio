@@ -1,0 +1,1428 @@
+behavior StudioCollaboration {
+    self.NeedsPublish := true
+    Available := false
+    Initialized := false
+    Visible := false
+    Active := false
+    Ready := false
+    Pending := false
+    Status: string = "Collaboration is available in the browser."
+    Error: string = ""
+    Service: string = ""
+    ServiceHost: string = ""
+    ServiceProtocol: string = ""
+    WorkspaceRoot: string = ""
+    Href: string = ""
+    Now: double = 0
+    Room: string = ""
+    Client: string = ""
+    Role: string = ""
+    TokenExpanded := false
+    FollowChooser := false
+    FocusDelay: int = 0
+    FocusTarget: string = ""
+    Token: string = ""
+    WsUrl: string = ""
+    Invite: string = ""
+    InviteInput: string = ""
+    AdminToken: string = ""
+    InviteLink: string = ""
+    Revision: double = 0
+    Sequence: double = 0
+    CheckpointRevision: double = 0
+    CheckpointHash: string = ""
+    SessionRoot: string = ""
+    Request: int = 0
+    Purpose: string = ""
+    SnapshotSource: int = 0
+    SnapshotRevision: double = 0
+    SnapshotHash: string = ""
+    SnapshotWorkspace: string = ""
+    ResumeWorkspace: string = ""
+    ArchiveSource: int = 0
+    PendingClient: string = ""
+    PendingSequence: double = 0
+    PendingPayload: string = ""
+    PublicationRequest: int = 0
+    HostRequest: int = 0
+    RecoveryBlocked := false
+    ReconnectRequired := false
+    AppliedDocuments: int[] = []
+    AppliedRevisions: int[] = []
+    CorePurpose: string = ""
+    CoreDocument: int = 0
+    CoreRevision: int = 0
+    LocalOwner: string = ""
+    LocalRequest: int = 0
+    CoreOwner: string = ""
+    CoreRequest: int = 0
+    LocalBatch := false
+    CoreBatch := false
+    LocalDocuments: int[] = []
+    LocalRevisions: int[] = []
+    LocalDocument: int = 0
+    LocalRevision: int = 0
+    Document: int = 0
+    DocumentRevision: int = 0
+    Path: string = ""
+    MainPanel: string = "scene"
+    SecondaryPanel: string = "graph"
+    SnapshotWasReady := false
+    TextViewJson: string = "null"
+    SceneViewJson: string = "null"
+    FrozenSceneViewJson: string = "null"
+    SceneViewOk := true
+    SceneViewError: string = ""
+    TextPending := false
+    TextDirty := false
+    Guard: int = 0
+    GuardPurpose: string = ""
+    Follow: string = ""
+    Peers: struct<"StudioCollaborationPeer">[] = []
+    PresenceSequence: double = 0
+    PresenceAge: float = 0
+    ReconnectAge: float = 0
+    ReconnectDelay: float = 0
+    RecoveryFailures: int = 0
+
+    Quote :: fn(Text: string) -> string {
+        encoded := value_to_json(Text)
+        if encoded.Ok {
+            return encoded.Text
+        }
+        return "null"
+    }
+    Bytes :: fn(Text: string) -> int {
+        encoded := value_to_json(Text)
+        if !encoded.Ok {
+            return 2147483647
+        }
+        measured := query_json(encoded.Text, "")
+        return measured.Count
+    }
+    Envelope :: fn(Kind: string, Payload: string, Client: string, Sequence: double, Revision: double) -> string {
+        return format_text("{{\"protocol\":1,\"room\":{},\"client\":{},\"seq\":{},\"revision\":{},\"kind\":{},\"payload\":{}}}", Quote(Room), Quote(Client), Sequence, Revision, Quote(Kind), Payload)
+    }
+    Request :: fn(Operation: string, Value: string = "", Json: string = "", Headers: string = "", Source: int = 0) -> int {
+        requested := await browser_message_request("collaboration", Operation, Value, Json, Headers, Source)
+        if !requested.Ok {
+            Error = requested.Error
+            return 0
+        }
+        return requested.Request
+    }
+    Send :: fn(Kind: string, Payload: string, Client: string = "", Sequence: double = 0) -> int {
+        sender := Client
+        if text_equal(sender, "") {
+            sender = self.Client
+        }
+        return await Request("send", Json: Envelope(Kind, Payload, sender, Sequence, Revision))
+    }
+    Publish :: fn() {
+        NeedsPublish = true
+        return
+    }
+    Render :: fn() {
+        NeedsPublish = false
+        workflow_owner := ""
+        if Pending {
+            workflow_owner = "collaboration-remote"
+            if LocalDocument > 0 {
+                workflow_owner = LocalOwner
+            }
+        }
+        await send_event<"StudioCollaborationState">(self, Active, Role, Ready, Pending, false, workflow_owner)
+        await set_ui_data(Name: "collaborationVisible", Value: Visible)
+        await set_ui_data(Name: "collaborationAvailable", Value: Available)
+        await set_ui_data(Name: "collaborationActive", Value: Active)
+        await set_ui_data(Name: "collaborationReady", Value: Ready)
+        await set_ui_data(Name: "collaborationPending", Value: Pending || Request > 0)
+        await set_ui_data(Name: "collaborationStatus", Value: Status)
+        await set_ui_data(Name: "collaborationError", Value: Error)
+        await set_ui_data(Name: "collaborationRoom", Value: Room)
+        await set_ui_data(Name: "collaborationRole", Value: Role)
+        await set_ui_data(Name: "collaborationRevision", Value: Revision)
+        await set_ui_data(Name: "collaborationPeers", Value: Peers)
+        await set_ui_data(Name: "collaborationTokenExpanded", Value: TokenExpanded)
+        await set_ui_data(Name: "collaborationFollowChooser", Value: FollowChooser)
+        await set_ui_data(Name: "collaborationFollow", Value: Follow)
+        await set_ui_data(Name: "collaborationInviteLink", Value: InviteLink)
+        await send_event<"StudioCommandAvailability">(self, "collaboration", true)
+        peers_available := false
+        foreach (peer in Peers) {
+            if !text_equal(peer.client, Client) {
+                peers_available = true
+            }
+        }
+        await send_event<"StudioCommandAvailability">(self, "collaborationFollow", Active && Ready && peers_available)
+        await send_event<"StudioCommandAvailability">(self, "collaborationToken", Available && !Active)
+        await send_event<"StudioCommandAvailability">(self, "collaborationHost", Initialized && Available && !Active && !text_equal(Service, ""))
+        await send_event<"StudioCommandAvailability">(self, "collaborationJoin", Initialized && Available && !Active && !text_equal(Service, ""))
+        await send_event<"StudioCommandAvailability">(self, "collaborationLeave", Active)
+        await send_event<"StudioCommandAvailability">(self, "collaborationInviteViewer", Ready && text_equal(Role, "host") && Request == 0)
+        await send_event<"StudioCommandAvailability">(self, "collaborationInviteEditor", Ready && text_equal(Role, "host") && Request == 0)
+        await send_event<"StudioCommandAvailability">(self, "collaborationUnfollow", !text_equal(Follow, ""))
+        return
+    }
+    Persist :: fn() {
+        if !Active || text_equal(Invite, "") {
+            return
+        }
+        workspace := ResumeWorkspace
+        if text_equal(workspace, "") {
+            workspace = "{}"
+        }
+        saved := format_text("{{\"invite\":{},\"revision\":{},\"checkpoint\":{},\"root\":{},\"workspace\":{}}}", Invite, Revision, Quote(CheckpointHash), Quote(SessionRoot), workspace)
+        await Request("session-write", "room", saved)
+        return
+    }
+    ClearPending :: fn() {
+        Pending = false
+        PendingClient = ""
+        PendingSequence = 0
+        PendingPayload = ""
+        PublicationRequest = 0
+        RecoveryBlocked = false
+        AppliedDocuments = []
+        AppliedRevisions = []
+        CorePurpose = ""
+        LocalDocument = 0
+        LocalBatch = false
+        CoreBatch = false
+        LocalDocuments = []
+        LocalRevisions = []
+        return
+    }
+    AcknowledgeLocal :: fn() {
+        if LocalDocument <= 0 {
+            return
+        }
+        if LocalBatch {
+            await send_event<"StudioDocumentEditsResult">(self, LocalDocument, LocalRevision, true, AppliedDocuments, AppliedRevisions, "", LocalOwner, LocalRequest)
+        } else {
+            current := await workspace_document_info(LocalDocument)
+            await send_event<"StudioDocumentEditResult">(self, LocalDocument, LocalRevision, current.Ok, current.Revision, current.Error, LocalOwner, LocalRequest)
+        }
+        return
+    }
+    RejectLocal :: fn(Error: string) {
+        if LocalDocument > 0 && LocalBatch {
+            await send_event<"StudioDocumentEditsResult">(self, LocalDocument, LocalRevision, false, LocalDocuments, LocalRevisions, Error, LocalOwner, LocalRequest)
+        } else if LocalDocument > 0 {
+            await send_event<"StudioDocumentEditResult">(self, LocalDocument, LocalRevision, false, LocalRevision, Error, LocalOwner, LocalRequest)
+        }
+        if PublicationRequest > 0 || PendingSequence > Sequence {
+            ReconnectRequired = true
+        }
+        await ClearPending()
+        return
+    }
+    Decide :: fn(Ok: bool, Error: string) {
+        if !Ok {
+            if text_equal(CorePurpose, "proposal") {
+                await Send("rejected", format_text("{{\"reason\":{}}}", Quote(Error)), PendingClient, PendingSequence)
+            }
+            await RejectLocal(Error)
+            self.Error = Error
+            await Publish()
+            return
+        }
+        if text_equal(CorePurpose, "host-local") {
+            Sequence = PendingSequence
+        }
+        PublicationRequest = await Send("accepted", PendingPayload, PendingClient, PendingSequence)
+        if PublicationRequest == 0 {
+            ReconnectRequired = true
+            await RejectLocal("The room decision could not be sent; the draft is retained.")
+            await Recover("Room publication failed before local application.")
+            return
+        }
+        await Publish()
+        return
+    }
+    Recover :: fn(Reason: string) {
+        Ready = false
+        Error = Reason
+        if Active && !RecoveryBlocked {
+            if ReconnectRequired {
+                ReconnectRequired = false
+                await Request("close")
+                ReconnectDelay = 0.5
+                ReconnectAge = 0
+            } else {
+                await Send("snapshot_request", format_text("{{\"last_revision\":{}}}", Revision))
+            }
+        }
+        await Publish()
+        return
+    }
+    Connect :: fn() {
+        Active = true
+        Ready = false
+        Error = ""
+        Status = format_text("Connecting to room {}…", Room)
+        await Request("connect", WsUrl)
+        await Persist()
+        await Publish()
+        return
+    }
+    UseInvite :: fn(Json: string) {
+        root := query_json(Json, "")
+        room := query_json(Json, "/room")
+        client := query_json(Json, "/client")
+        role := query_json(Json, "/role")
+        token := query_json(Json, "/token")
+        ws := query_json(Json, "/ws_url")
+        expiry := query_json(Json, "/expires_at")
+        valid := root.Ok && text_equal(root.Kind, "object") && text_equal(room.Kind, "string") && room.Count > 0 && room.Count <= 96 && text_equal(client.Kind, "string") && client.Count > 0 && client.Count <= 96 && text_equal(token.Kind, "string") && token.Count > 0 && token.Count <= 4096 && text_equal(ws.Kind, "string") && expiry.Number > Now
+        if !valid || !(text_equal(role.String, "host") || text_equal(role.String, "editor") || text_equal(role.String, "viewer")) {
+            Error = "The room invite is invalid or expired."
+            await Publish()
+            return
+        }
+        scheme := "ws:"
+        if text_equal(ServiceProtocol, "https:") {
+            scheme = "wss:"
+        }
+        expected := format_text("{}//{}/v1/rooms/{}/ws", scheme, ServiceHost, room.String)
+        if !text_equal(ws.String, expected) {
+            Error = "The invite does not use this build's trusted room service."
+            await Publish()
+            return
+        }
+        Invite = Json
+        Room = room.String
+        Client = client.String
+        Role = role.String
+        Token = token.String
+        WsUrl = ws.String
+        await Connect()
+        return
+    }
+    JoinInput :: fn() {
+        parsed := query_json(InviteInput, "")
+        if parsed.Ok && text_equal(parsed.Kind, "object") {
+            await UseInvite(InviteInput)
+            return
+        }
+        Purpose = "invite-url"
+        Request = await Request("parse-url", InviteInput)
+        return
+    }
+    Host :: fn() {
+        if text_equal(WorkspaceRoot, "") {
+            Error = "Open a project before hosting its room."
+            await Publish()
+            return
+        }
+        headers := "{\"Content-Type\":\"application/json\"}"
+        if !text_equal(AdminToken, "") {
+            headers = format_text("{{\"Content-Type\":\"application/json\",\"Authorization\":{}}}", Quote(format_text("Bearer {}", AdminToken)))
+        }
+        Purpose = "host"
+        Request = await Request("http-post", format_text("{}/v1/rooms", Service), "{}", headers)
+        AdminToken = ""
+        Status = "Creating room…"
+        await Publish()
+        return
+    }
+    GuardConnect :: fn(Purpose: string) {
+        if Active || Request > 0 || !Initialized || !Available {
+            return
+        }
+        if text_equal(Service, "") {
+            Error = "This build has no configured room service."
+            await Publish()
+            return
+        }
+        if Document > 0 {
+            Guard += 1
+            GuardPurpose = Purpose
+            await send_event<"StudioDocumentExternalEditRequested">(self, "collaboration", Document, Guard)
+        } else {
+            if text_equal(Purpose, "host") {
+                await Host()
+            } else {
+                await JoinInput()
+            }
+        }
+        return
+    }
+    Snapshot :: fn() {
+        if !text_equal(Role, "host") || Pending || Request > 0 || !text_equal(GuardPurpose, "") || RecoveryBlocked {
+            return
+        }
+        if TextPending || TextDirty {
+            Error = "Finish the source draft before freezing its checkpoint."
+            await Publish()
+            return
+        }
+        if !SceneViewOk {
+            Error = SceneViewError
+            await Publish()
+            return
+        }
+        if Guard >= 2147483646 {
+            Error = "Checkpoint request IDs are exhausted; reopen the application."
+            await Publish()
+            return
+        }
+        SnapshotWasReady = Ready
+        Ready = false
+        Guard += 1
+        GuardPurpose = "snapshot-view"
+        Status = "Freezing document history and presentation…"
+        await Publish()
+        await send_event<"StudioTextViewRequested">(self, Guard)
+        return
+    }
+    Apply :: fn(Payload: string, Client: string, Sequence: double, Purpose: string) {
+        family := query_json(Payload, "/family")
+        if text_equal(family.String, "document-edits") {
+            Pending = true
+            await send_event<"StudioCollaborationApplyBatch">(self, Payload, Client, Sequence, Purpose)
+            return
+        }
+        CoreBatch = false
+        path := query_json(Payload, "/path")
+        start := query_json(Payload, "/start")
+        end := query_json(Payload, "/end")
+        text := query_json(Payload, "/text")
+        if !family.Ok || !text_equal(family.String, "text") || !text_equal(path.Kind, "string") || path.Count == 0 || path.Count > 512 || !text_equal(start.Kind, "integer") || !text_equal(end.Kind, "integer") || !text_equal(text.Kind, "string") || start.Number < 0 || end.Number < start.Number || Bytes(Payload) > 16384 {
+            if text_equal(Purpose, "proposal") {
+                await Send("rejected", "{\"reason\":\"Invalid authored text action\"}", Client, Sequence)
+            } else {
+                await Recover("The room action is invalid; a new checkpoint is required.")
+            }
+            return
+        }
+        if text_equal(path.String, Path) && (TextPending || TextDirty) && !text_equal(Client, self.Client) {
+            if text_equal(Purpose, "proposal") {
+                await Send("rejected", "{\"reason\":\"Host has an uncommitted source draft\"}", Client, Sequence)
+            } else {
+                await Recover("A local source draft needs review before room recovery. Leave the room to keep a copy.")
+            }
+            return
+        }
+        opened := await workspace_document_open(path.String)
+        if !opened.Ok {
+            if text_equal(Purpose, "proposal") {
+                await Send("rejected", format_text("{{\"reason\":{}}}", Quote(opened.Error)), Client, Sequence)
+            } else {
+                await Recover(opened.Error)
+            }
+            return
+        }
+        current := await workspace_document_info(opened.Document)
+        if !current.Ok || current.Transaction || end.Number > cast<double>(current.Bytes) {
+            if text_equal(Purpose, "proposal") {
+                await Send("rejected", "{\"reason\":\"Document is busy or action range is stale\"}", Client, Sequence)
+            } else {
+                await Recover("The room action's document/range is stale.")
+            }
+            return
+        }
+        Pending = true
+        PendingClient = Client
+        PendingSequence = Sequence
+        PendingPayload = Payload
+        CorePurpose = Purpose
+        CoreDocument = current.Document
+        CoreRevision = current.Revision
+        if text_equal(Purpose, "proposal") {
+            validated := await workspace_document_validate_edit(current.Document, current.Revision, cast<int>(start.Number), cast<int>(end.Number), text.String)
+            await Decide(validated.Ok, validated.Error)
+            return
+        }
+        if HostRequest >= 2147483646 {
+            await RejectLocal("Canonical correlation IDs are exhausted.")
+            await Recover("Reopen the application before continuing this room.")
+            return
+        }
+        HostRequest += 1
+        CoreOwner = "collaboration-canonical"
+        CoreRequest = HostRequest
+        await Publish()
+        if current.Document == Document {
+            await send_event<"StudioDocumentCollaborationEdit">(self, current.Document, current.Revision, cast<int>(start.Number), cast<int>(end.Number), text.String, CoreOwner, CoreRequest)
+        } else {
+            edited := await workspace_document_edit(current.Document, current.Revision, cast<int>(start.Number), cast<int>(end.Number), text.String)
+            await FinishApply(edited.Ok, edited.Error)
+        }
+        return
+    }
+    FinishApply :: fn(Ok: bool, Error: string) {
+        if !Ok {
+            await RejectLocal(Error)
+            RecoveryBlocked = true
+            await Recover("A committed canonical action could not be applied; checkpoint recovery needs review.")
+            return
+        }
+        Revision += 1
+        self.Error = ""
+        await AcknowledgeLocal()
+        await ClearPending()
+        Ready = true
+        await Send("ack", "{}")
+        await Persist()
+        await Publish()
+        return
+    }
+    Packet :: fn(Source: int) {
+        shape := await browser_message_query(Source, "")
+        protocol := await browser_message_query(Source, "/protocol")
+        room := await browser_message_query(Source, "/room")
+        client := await browser_message_query(Source, "/client")
+        kind := await browser_message_query(Source, "/kind")
+        revision := await browser_message_query(Source, "/revision")
+        packet_sequence := await browser_message_query(Source, "/seq")
+        if !shape.Ok || !text_equal(shape.Kind, "object") || shape.Count != 7 || protocol.Number != 1 || !text_equal(room.String, Room) || !text_equal(client.Kind, "string") || client.Count == 0 || client.Count > 96 || !text_equal(kind.Kind, "string") || !text_equal(revision.Kind, "integer") || revision.Number < 0 || revision.Number > 9007199254740991 || !text_equal(packet_sequence.Kind, "integer") || packet_sequence.Number < 0 || packet_sequence.Number > 9007199254740991 {
+            await Recover("The room service sent an invalid envelope.")
+            return
+        }
+        switch kind.String {
+            case "joined": {
+                role := await browser_message_query(Source, "/payload/role")
+                next := await browser_message_query(Source, "/payload/next_seq")
+                if !text_equal(client.String, Client) || !text_equal(role.String, Role) || next.Number < 1 {
+                    Error = "Room membership does not match the invitation."
+                    await Leave()
+                    return
+                }
+                Sequence = next.Number - 1
+                Status = "Synchronizing the room checkpoint…"
+            }
+            case "snapshot_request": {
+                await Snapshot()
+            }
+            case "snapshot": {
+                if Request > 0 || Pending {
+                    await Recover("Finish the pending room edit before checkpoint recovery.")
+                    return
+                }
+                checkpoint := await browser_message_query(Source, "/payload/checkpoint_version")
+                sha := await browser_message_query(Source, "/payload/sha256")
+                workspace := await browser_message_query(Source, "/payload/workspace")
+                if checkpoint.Number != 3 || !text_equal(sha.Kind, "string") || sha.Count != 64 || !text_equal(workspace.Kind, "object") {
+                    await Recover("The room checkpoint uses an unsupported contract.")
+                    return
+                }
+                SnapshotSource = Source
+                SnapshotRevision = revision.Number
+                SnapshotHash = sha.String
+                SnapshotWorkspace = workspace.Json
+                Purpose = "snapshot-verify"
+                Request = await Request("verify-json", "/payload", Source: Source)
+                Ready = false
+            }
+            case "snapshot_ack": {
+                sha := await browser_message_query(Source, "/payload/sha256")
+                if !RecoveryBlocked && text_equal(Role, "host") && text_equal(sha.String, CheckpointHash) {
+                    CheckpointRevision = revision.Number
+                    Error = ""
+                    Ready = true
+                    Status = "Room connected"
+                    await Persist()
+                }
+            }
+            case "proposal": {
+                payload := await browser_message_query(Source, "/payload")
+                if !text_equal(Role, "host") {
+                    return
+                }
+                if !Ready || Pending || revision.Number != Revision || packet_sequence.Number < 1 {
+                    await Send("rejected", "{\"reason\":\"Host is busy or proposal revision is stale\"}", client.String, packet_sequence.Number)
+                } else {
+                    await Apply(payload.Json, client.String, packet_sequence.Number, "proposal")
+                }
+            }
+            case "accepted": {
+                if RecoveryBlocked {
+                    Error = "Canonical recovery is blocked until its failed application is reviewed."
+                    await Publish()
+                    return
+                }
+                if revision.Number <= Revision {
+                    await Send("ack", "{}")
+                    return
+                }
+                if revision.Number != Revision + 1 {
+                    await Recover("Room action sequence gap; recovering.")
+                    return
+                }
+                ours := Pending && packet_sequence.Number == PendingSequence && text_equal(client.String, PendingClient)
+                if Pending && !ours {
+                    await RejectLocal("Another canonical edit arrived before this proposal. The local draft is retained.")
+                    await Recover("Synchronizing the intervening canonical edit before retrying the draft.")
+                    return
+                }
+                payload := await browser_message_query(Source, "/payload")
+                await Apply(payload.Json, client.String, packet_sequence.Number, "accepted")
+            }
+            case "rejected": {
+                reason := await browser_message_query(Source, "/payload/reason")
+                if text_equal(client.String, Client) && packet_sequence.Number == PendingSequence {
+                    await RejectLocal(reason.String)
+                    Error = reason.String
+                    await Recover("The room rejected the edit. The local source draft is retained.")
+                }
+            }
+            case "resync_required": {
+                if Pending {
+                    await RejectLocal("The room requires recovery; the proposal draft is retained.")
+                }
+                await Recover("The room requires a fresh checkpoint.")
+            }
+            case "presence": {
+                await Presence(Source, client.String)
+            }
+            case "leave": {
+                if text_equal(Follow, client.String) {
+                    Follow = ""
+                    Status = "The followed participant left the room."
+                }
+                for i in 0..length(Peers) - 1 {
+                    if text_equal(Peers[i].client, client.String) {
+                        Peers = remove_index(Peers, i)
+                        break
+                    }
+                }
+            }
+            case "host_changed": {
+                online := await browser_message_query(Source, "/payload/online")
+                if !online.Boolean {
+                    Ready = false
+                    Status = "Waiting for the room host to reconnect…"
+                }
+            }
+            case "room_closed": {
+                Error = "The room closed. Local source remains available."
+                await Leave()
+            }
+            case "error": {
+                reason := await browser_message_query(Source, "/payload/reason")
+                if Pending {
+                    await RejectLocal(reason.String)
+                }
+                Error = reason.String
+                Ready = false
+            }
+        }
+        await Publish()
+        return
+    }
+    Presence :: fn(Source: int, Client: string) {
+        name := await browser_message_query(Source, "/payload/name")
+        role := await browser_message_query(Source, "/payload/role")
+        packet_sequence := await browser_message_query(Source, "/payload/presence_seq")
+        path := await browser_message_query(Source, "/payload/data/path")
+        panel := await browser_message_query(Source, "/payload/data/panel")
+        index := -1
+        for i in 0..length(Peers) - 1 {
+            if text_equal(Peers[i].client, Client) {
+                index = i
+            }
+        }
+        if index < 0 && length(Peers) < 64 {
+            label := name.String
+            if text_equal(label, "") {
+                label = Client
+            }
+            peer: struct<"StudioCollaborationPeer"> = { client: Client, name: label, role: role.String, presence_seq: 0, path: "", panel: "" }
+            Peers = array_add(Peers, peer)
+            index = length(Peers) - 1
+        }
+        if index < 0 || packet_sequence.Number < Peers[index].presence_seq {
+            return
+        }
+        Peers[index].presence_seq = packet_sequence.Number
+        Peers[index].path = path.String
+        Peers[index].panel = panel.String
+        if text_equal(Follow, Client) && !text_equal(path.String, "") {
+            await send_event<"StudioDocumentCommand">(self, "open", path.String)
+            if text_equal(panel.String, "text") || text_equal(panel.String, "graph") || text_equal(panel.String, "scene") {
+                await send_event<"StudioPanelSelected">(self, "main", panel.String)
+            }
+        }
+        return
+    }
+    Leave :: fn() {
+        if Active {
+            await Send("leave", "{}")
+        }
+        if SnapshotSource > 0 {
+            await browser_message_release(SnapshotSource)
+            SnapshotSource = 0
+        }
+        if ArchiveSource > 0 {
+            await browser_message_release(ArchiveSource)
+            ArchiveSource = 0
+        }
+        await Request("close")
+        await Request("session-write", "room")
+        await RejectLocal("The room was left; the local source draft is retained.")
+        await ClearPending()
+        Revision = 0
+        Sequence = 0
+        CheckpointRevision = 0
+        CheckpointHash = ""
+        ReconnectRequired = false
+        SessionRoot = WorkspaceRoot
+        Active = false
+        Ready = false
+        Room = ""
+        Client = ""
+        Role = ""
+        Token = ""
+        Invite = ""
+        Peers = []
+        Follow = ""
+        ReconnectDelay = 0
+        Request = 0
+        Purpose = ""
+        ResumeWorkspace = ""
+        Status = "Offline"
+        await Publish()
+        return
+    }
+    on Begin {
+        Available = await browser_messages_available()
+        if Available {
+            Active = true
+            Status = "Checking this tab's room session…"
+            Purpose = "configuration"
+            Request = await Request("configuration")
+        } else {
+            Initialized = true
+        }
+        await Publish()
+    }
+    on StudioDocumentState {
+        self.Document = event.Document
+        DocumentRevision = event.Revision
+        self.Path = event.Path
+    }
+    on StudioSceneCheckpoint {
+        SceneViewOk = event.Ok
+        SceneViewError = event.Error
+        SceneViewJson = "null"
+        if event.Ok && !text_equal(event.Value, "") {
+            parsed := query_json(event.Value, "")
+            if !parsed.Ok || !text_equal(parsed.Kind, "object") || Bytes(event.Value) > 32768 {
+                SceneViewOk = false
+                SceneViewError = "The scene view exceeds the checkpoint metadata limit."
+            } else {
+                SceneViewJson = parsed.Json
+            }
+        }
+    }
+    on StudioTextViewState {
+        if !text_equal(GuardPurpose, "snapshot-view") || event.Request != Guard {
+            return
+        }
+        GuardPurpose = ""
+        if !event.Ready || event.Document != self.Document || event.Revision != DocumentRevision || !SceneViewOk {
+            self.Ready = SnapshotWasReady
+            self.Error = "Finish the current source draft before freezing document history."
+            if !text_equal(event.Error, "") {
+                self.Error = event.Error
+            }
+            if !SceneViewOk {
+                self.Error = SceneViewError
+            }
+            await Publish()
+            return
+        }
+        TextViewJson = format_text("{{\"document\":{},\"path\":{},\"revision\":{},\"start\":{},\"end\":{},\"caret\":{},\"vim\":{}}}", event.Document, Quote(event.Path), event.Revision, event.Start, event.End, event.Caret, Quote(event.VimMode))
+        FrozenSceneViewJson = SceneViewJson
+        Purpose = "snapshot-capture"
+        self.Request = await Request("archive-capture")
+        if self.Request == 0 {
+            self.Ready = SnapshotWasReady
+            Purpose = ""
+        }
+        await Publish()
+    }
+
+    on StudioTextDraftState {
+        if event.Document == self.Document {
+            TextPending = event.Pending
+            TextDirty = event.Dirty
+        }
+    }
+    on StudioPanelSelected {
+        if text_equal(event.Area, "main") {
+            MainPanel = event.Panel
+        }
+        if text_equal(event.Area, "secondary") {
+            SecondaryPanel = event.Panel
+        }
+    }
+    on StudioCollaborationInput {
+        if text_equal(event.Kind, "invite") {
+            InviteInput = event.Text
+        }
+        if text_equal(event.Kind, "token") {
+            AdminToken = event.Text
+        }
+    }
+    on StudioCollaborationRestore {
+        if Ready && !text_equal(ResumeWorkspace, "") {
+            path := query_json(ResumeWorkspace, "/active_path")
+            main := query_json(ResumeWorkspace, "/presentation/main")
+            secondary := query_json(ResumeWorkspace, "/presentation/secondary")
+            source := query_json(ResumeWorkspace, "/presentation/source")
+            if text_equal(source.Kind, "object") {
+                document := query_json(source.Json, "/document")
+                source_path := query_json(source.Json, "/path")
+                revision := query_json(source.Json, "/revision")
+                start := query_json(source.Json, "/start")
+                end := query_json(source.Json, "/end")
+                caret := query_json(source.Json, "/caret")
+                mode := query_json(source.Json, "/vim")
+                valid := source.Count == 7 && text_equal(document.Kind, "integer") && document.Number >= 0 && document.Number <= 2147483647 && text_equal(revision.Kind, "integer") && revision.Number >= 0 && revision.Number <= 2147483647 && text_equal(source_path.Kind, "string") && text_equal(mode.Kind, "string")
+                if !text_equal(start.Kind, "integer") || !text_equal(end.Kind, "integer") || !text_equal(caret.Kind, "integer") || start.Number < 0 || end.Number < start.Number || end.Number > 1048576 || caret.Number < 0 || caret.Number > 1048576 {
+                    valid = false
+                }
+                if valid {
+                    await send_event<"StudioTextViewRestore">(self, cast<int>(document.Number), source_path.String, cast<int>(revision.Number), cast<int>(start.Number), cast<int>(end.Number), cast<int>(caret.Number), mode.String)
+                } else {
+                    Error = "The saved source view is invalid; document history remains available."
+                }
+            } else if !text_equal(path.String, "") {
+                await send_event<"StudioDocumentCommand">(self, "open", path.String)
+            }
+            if !text_equal(main.String, "") {
+                await send_event<"StudioPanelSelected">(self, "main", main.String)
+            }
+            if !text_equal(secondary.String, "") {
+                await send_event<"StudioPanelSelected">(self, "secondary", secondary.String)
+            }
+            scene := query_json(ResumeWorkspace, "/presentation/scene")
+            if text_equal(scene.Kind, "object") {
+                await send_event<"StudioSceneRestore">(self, scene.Json)
+            }
+            ResumeWorkspace = ""
+            await Persist()
+        }
+    }
+    on StudioCollaborationClose {
+        Visible = false
+        await Publish()
+    }
+    FollowPeer :: fn(Client: string) {
+        if !Active || !Ready || text_equal(Client, self.Client) {
+            Error = "Choose another online participant after room synchronization."
+            await Publish()
+            return
+        }
+        found := -1
+        for i in 0..length(Peers) - 1 {
+            if text_equal(Peers[i].client, Client) {
+                found = i
+            }
+        }
+        if found < 0 {
+            Error = "This participant is no longer in the room."
+            await Publish()
+            return
+        }
+        Follow = Client
+        FollowChooser = false
+        Error = ""
+        Status = format_text("Following {}", Peers[found].name)
+        if !text_equal(Peers[found].path, "") {
+            await send_event<"StudioDocumentCommand">(self, "open", Peers[found].path)
+        }
+        panel := Peers[found].panel
+        if text_equal(panel, "text") || text_equal(panel, "graph") || text_equal(panel, "scene") || text_equal(panel, "visual") || text_equal(panel, "designer") || text_equal(panel, "dom") {
+            await send_event<"StudioPanelSelected">(self, "main", panel)
+        }
+        await Publish()
+    }
+    on StudioCollaborationFollow {
+        await FollowPeer(event.Client)
+    }
+    on StudioDocumentExternalEditReady {
+        if !text_equal(event.Owner, "collaboration") || event.Request != Guard {
+            return
+        }
+        purpose := GuardPurpose
+        GuardPurpose = ""
+        if !event.Ok {
+            self.Error = event.Error
+            await Publish()
+            return
+        }
+        await send_event<"StudioDocumentExternalEditComplete">(self, "collaboration", event.Document, event.Request)
+        if text_equal(purpose, "host") {
+            await Host()
+        } else {
+            await JoinInput()
+        }
+    }
+    on StudioCollaborationCommand {
+        Visible = true
+        switch event.Id {
+            case "collaborationToken": {
+                if !Available || Active {
+                    Error = "Service token editing is available before joining a browser room."
+                } else {
+                    TokenExpanded = !TokenExpanded
+                    if TokenExpanded {
+                        FocusTarget = "#collaboration-service-token"
+                        FocusDelay = 2
+                    }
+                }
+            }
+            case "collaborationFollow": {
+                if !text_equal(event.Argument, "") {
+                    await FollowPeer(event.Argument)
+                } else {
+                    valid := false
+                    foreach (peer in Peers) {
+                        if !text_equal(peer.client, Client) {
+                            valid = true
+                        }
+                    }
+                    if !Active || !Ready || !valid {
+                        Error = "No synchronized participant is available to follow."
+                    } else {
+                        FollowChooser = true
+                        FocusTarget = "#collaboration-peer-picker"
+                        FocusDelay = 2
+                    }
+                }
+            }
+            case "collaborationHost": {
+                await GuardConnect("host")
+            }
+            case "collaborationJoin": {
+                if !text_equal(event.Argument, "") {
+                    InviteInput = event.Argument
+                }
+                await GuardConnect("join")
+            }
+            case "collaborationLeave": {
+                await Leave()
+            }
+            case "collaborationRetry": {
+                if text_equal(Role, "host") {
+                    await Snapshot()
+                } else {
+                    await Recover("Retrying room synchronization…")
+                }
+            }
+            case "collaborationUnfollow": {
+                Follow = ""
+            }
+            case "collaborationInviteViewer": {
+                await InvitePeer("viewer")
+            }
+            case "collaborationInviteEditor": {
+                await InvitePeer("editor")
+            }
+        }
+        await Publish()
+    }
+    InvitePeer :: fn(Role: string) {
+        if !Ready || !text_equal(self.Role, "host") || Request > 0 {
+            return
+        }
+        headers := format_text("{{\"Content-Type\":\"application/json\",\"Authorization\":{}}}", Quote(format_text("Bearer {}", Token)))
+        Purpose = "invite-peer"
+        Request = await Request("http-post", format_text("{}/v1/rooms/{}/invites", Service, Room), format_text("{{\"role\":{}}}", Quote(Role)), headers)
+        return
+    }
+    on StudioCollaborationEdits {
+        error := ""
+        count := length(event.Documents)
+        if length(event.InitialTexts) > 0 {
+            error = "Room batches cannot introduce initialized artifact baselines yet."
+        }
+        if !Active || !Ready || Pending || HostRequest >= 2147483646 || text_equal(Role, "viewer") || event.Document != self.Document {
+            error = "The room is not ready for an atomic edit."
+        }
+        if count < 1 || count > 8 || length(event.Revisions) != count || length(event.Paths) != count || length(event.Texts) != count {
+            error = "Atomic edits require one to eight matching arrays."
+        }
+        if (TextPending || TextDirty) && !text_equal(event.Owner, "text") {
+            error = "Finish the source draft before proposing another workflow's edit."
+        }
+        if !text_equal(error, "") {
+            await send_event<"StudioDocumentEditsResult">(self, event.Document, event.Revision, false, event.Documents, event.Revisions, error, event.Owner, event.Request)
+            return
+        }
+        anchor := await workspace_document_info(event.Document)
+        if !anchor.Ok || anchor.Revision != event.Revision || anchor.Transaction || text_equal(anchor.Path, "") {
+            await send_event<"StudioDocumentEditsResult">(self, event.Document, event.Revision, false, event.Documents, event.Revisions, "The source changed before its room proposal.", event.Owner, event.Request)
+            return
+        }
+        records := ""
+        included := false
+        for i in 0..count - 1 {
+            if event.Documents[i] == event.Document && event.Revisions[i] == event.Revision {
+                included = true
+            }
+            if event.Documents[i] > 0 {
+                current := await workspace_document_info(event.Documents[i])
+                if !current.Ok || current.Revision != event.Revisions[i] || !text_equal(current.Path, event.Paths[i]) || current.Transaction {
+                    error = "A batch member changed before its proposal."
+                }
+            } else if event.Documents[i] != 0 || event.Revisions[i] != -1 {
+                error = "A missing draft requires handle0 and revision-1."
+            }
+            if text_equal(event.Paths[i], "") || Bytes(event.Paths[i]) > 512 {
+                error = "A batch path is missing or exceeds512bytes."
+            }
+            for j in 0..i - 1 {
+                if text_equal(event.Paths[i], event.Paths[j]) {
+                    error = "A batch cannot replace a path twice."
+                }
+            }
+            comma := ""
+            if i > 0 {
+                comma = ","
+            }
+            records = format_text("{}{}{{\"path\":{},\"text\":{}}}", records, comma, Quote(event.Paths[i]), Quote(event.Texts[i]))
+        }
+        if !included {
+            error = "The atomic edit must include its source anchor."
+        }
+        payload := format_text("{{\"family\":\"document-edits\",\"anchor\":{},\"edits\":[{}]}}", Quote(anchor.Path), records)
+        if Bytes(payload) > 16384 {
+            error = "Room atomic edits are limited to16KiB including metadata."
+        }
+        if !text_equal(error, "") {
+            await send_event<"StudioDocumentEditsResult">(self, event.Document, event.Revision, false, event.Documents, event.Revisions, error, event.Owner, event.Request)
+            return
+        }
+        Pending = true
+        LocalBatch = true
+        CoreBatch = true
+        LocalDocuments = event.Documents
+        LocalRevisions = event.Revisions
+        LocalDocument = event.Document
+        LocalRevision = event.Revision
+        LocalOwner = event.Owner
+        LocalRequest = event.Request
+        CoreDocument = event.Document
+        CoreRevision = event.Revision
+        CoreOwner = event.Owner
+        CoreRequest = event.Request
+        PendingClient = Client
+        PendingSequence = Sequence + 1
+        PendingPayload = payload
+        if text_equal(Role, "host") {
+            CorePurpose = "host-local"
+            validated := await workspace_document_validate_candidates(event.Documents, event.Revisions, event.Paths, event.Texts, event.Document)
+            await Decide(validated.Ok, validated.Error)
+        } else {
+            Sequence = PendingSequence
+            await Send("proposal", payload, Client, PendingSequence)
+        }
+        await Publish()
+    }
+    on StudioCollaborationApplyBatch {
+        documents: int[] = []
+        revisions: int[] = []
+        texts: string[] = []
+        paths: string[] = []
+        fresh: int[] = []
+        error := ""
+        root := query_json(event.Payload, "")
+        rows := query_json(event.Payload, "/edits")
+        anchor := query_json(event.Payload, "/anchor")
+        if !root.Ok || root.Count != 3 || !text_equal(rows.Kind, "array") || rows.Count < 1 || rows.Count > 8 || !text_equal(anchor.Kind, "string") || Bytes(event.Payload) > 16384 {
+            error = "Invalid atomic room edit."
+        }
+        anchor_handle := 0
+        if text_equal(error, "") {
+            for i in 0..rows.Count - 1 {
+                row := query_json(event.Payload, format_text("/edits/{}", i))
+                path := query_json(event.Payload, format_text("/edits/{}/path", i))
+                text := query_json(event.Payload, format_text("/edits/{}/text", i))
+                if row.Count != 2 || !text_equal(path.Kind, "string") || path.Count < 1 || path.Count > 512 || !text_equal(text.Kind, "string") {
+                    error = "Invalid atomic room member."
+                }
+                foreach (old in paths) {
+                    if text_equal(old, path.String) {
+                        error = "Duplicate atomic room path."
+                    }
+                }
+                if text_equal(path.String, Path) && (TextPending || TextDirty) && !text_equal(event.Client, self.Client) {
+                    error = "A local source draft needs review before canonical replay."
+                }
+                if text_equal(error, "") {
+                    presence := await workspace_document_path(path.String)
+                    if !presence.Ok {
+                        error = presence.Error
+                    } else {
+                        handle := presence.Document
+                        if presence.Exists && handle == 0 {
+                            opened := await workspace_document_open(path.String)
+                            if opened.Ok {
+                                handle = opened.Document
+                            } else {
+                                error = opened.Error
+                            }
+                        } else if !presence.Exists && handle == 0 && text_equal(event.Purpose, "accepted") {
+                            draft := await workspace_document_draft(path.String, "")
+                            if draft.Ok {
+                                handle = draft.Document
+                                fresh = array_add(fresh, handle)
+                            } else {
+                                error = draft.Error
+                            }
+                        }
+                        if text_equal(error, "") {
+                            current := await workspace_document_info(handle)
+                            member_revision := current.Revision
+                            if handle == 0 {
+                                member_revision = -1
+                            }
+                            if handle > 0 && (!current.Ok || current.Transaction) {
+                                error = "A canonical batch member is busy."
+                            } else {
+                                documents = array_add(documents, handle)
+                                revisions = array_add(revisions, member_revision)
+                                texts = array_add(texts, text.String)
+                                paths = array_add(paths, path.String)
+                                if text_equal(path.String, anchor.String) {
+                                    anchor_handle = handle
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if anchor_handle <= 0 {
+            error = "Atomic room edit has no source anchor."
+        }
+        CoreBatch = true
+        CorePurpose = event.Purpose
+        PendingClient = event.Client
+        PendingSequence = event.Sequence
+        PendingPayload = event.Payload
+        if text_equal(event.Purpose, "proposal") {
+            if !text_equal(error, "") {
+                await Decide(false, error)
+                return
+            }
+            validated := await workspace_document_validate_candidates(documents, revisions, paths, texts, anchor_handle)
+            await Decide(validated.Ok, validated.Error)
+            return
+        }
+        ok := false
+        if text_equal(error, "") {
+            edited := await workspace_document_replace_many(documents, revisions, texts, anchor_handle)
+            ok = edited.Ok
+            error = edited.Error
+        }
+        if !ok {
+            foreach (handle in fresh) {
+                closed := await workspace_document_close(handle)
+            }
+        }
+        if ok {
+            AppliedDocuments = documents
+            AppliedRevisions = []
+            foreach (handle in documents) {
+                current := await workspace_document_info(handle)
+                AppliedRevisions = array_add(AppliedRevisions, current.Revision)
+            }
+            if Document > 0 {
+                await send_event<"StudioDocumentChanged">(self, Document)
+            }
+        }
+        await FinishApply(ok, error)
+    }
+    on StudioCollaborationEdit {
+        if !Active || !Ready || Pending || HostRequest >= 2147483646 || text_equal(Role, "viewer") || event.Document != self.Document {
+            await send_event<"StudioDocumentEditResult">(self, event.Document, event.Revision, false, event.Revision, "The room is not ready for this edit; the draft is retained.", event.Owner, event.Request)
+            return
+        }
+        current := await workspace_document_info(event.Document)
+        if !current.Ok || current.Revision != event.Revision || current.Transaction || text_equal(current.Path, "") {
+            await send_event<"StudioDocumentEditResult">(self, event.Document, event.Revision, false, current.Revision, "Save and finish the current source gesture before proposing a room edit.", event.Owner, event.Request)
+            return
+        }
+        end := event.End
+        if end == -1 {
+            end = current.Bytes
+        }
+        payload := format_text("{{\"family\":\"text\",\"path\":{},\"start\":{},\"end\":{},\"text\":{}}}", Quote(current.Path), event.Start, end, Quote(event.Text))
+        if Bytes(payload) > 16384 {
+            await send_event<"StudioDocumentEditResult">(self, event.Document, event.Revision, false, event.Revision, "Room actions are limited to 16 KiB. Use a smaller source splice.", event.Owner, event.Request)
+            return
+        }
+        Pending = true
+        LocalBatch = false
+        CoreBatch = false
+        PendingClient = Client
+        PendingSequence = Sequence + 1
+        PendingPayload = payload
+        LocalOwner = event.Owner
+        LocalRequest = event.Request
+        CoreOwner = event.Owner
+        CoreRequest = event.Request
+        LocalDocument = event.Document
+        LocalRevision = event.Revision
+        CoreDocument = event.Document
+        CoreRevision = event.Revision
+        if text_equal(Role, "host") {
+            CorePurpose = "host-local"
+            validated := await workspace_document_validate_edit(event.Document, event.Revision, event.Start, end, event.Text)
+            await Decide(validated.Ok, validated.Error)
+        } else {
+            Sequence = PendingSequence
+            await Send("proposal", payload, Client, PendingSequence)
+            await Publish()
+        }
+    }
+    on StudioDocumentEditResult {
+        if Pending && !CoreBatch && text_equal(CorePurpose, "accepted") && event.Document == CoreDocument && event.ExpectedRevision == CoreRevision && text_equal(event.Owner, CoreOwner) && event.Request == CoreRequest {
+            await FinishApply(event.Ok, event.Error)
+        }
+    }
+    Result :: fn(Source: int, Text: string, Ok: bool) {
+        purpose := Purpose
+        Request = 0
+        Purpose = ""
+        if !Ok {
+            if text_equal(purpose, "snapshot-capture") || text_equal(purpose, "snapshot-compose") {
+                Ready = SnapshotWasReady
+            }
+            Error = Text
+            if SnapshotSource > 0 {
+                await browser_message_release(SnapshotSource)
+                SnapshotSource = 0
+            }
+            if ArchiveSource > 0 {
+                await browser_message_release(ArchiveSource)
+                ArchiveSource = 0
+            }
+            if !Initialized {
+                Initialized = true
+                Active = false
+            }
+            await Publish()
+            return
+        }
+        switch purpose {
+            case "configuration": {
+                service_config := await browser_message_query(Source, "/service_url")
+                root := await browser_message_query(Source, "/workspace_root")
+                Service = service_config.String
+                WorkspaceRoot = root.String
+                SessionRoot = root.String
+                if text_equal(Service, "") {
+                    Initialized = true
+                    Active = false
+                    Status = "This build has no configured room service."
+                } else {
+                    Purpose = "service_config-url"
+                    Request = await Request("parse-url", Service)
+                }
+            }
+            case "service_config-url": {
+                origin := await browser_message_query(Source, "/origin")
+                host := await browser_message_query(Source, "/host")
+                protocol := await browser_message_query(Source, "/protocol")
+                path := await browser_message_query(Source, "/pathname")
+                if !(text_equal(protocol.String, "http:") || text_equal(protocol.String, "https:")) || !text_equal(path.String, "/") {
+                    Error = "The trusted room service must be an HTTP(S) origin."
+                    Initialized = true
+                    Active = false
+                } else {
+                    Service = origin.String
+                    ServiceHost = host.String
+                    ServiceProtocol = protocol.String
+                    Purpose = "location"
+                    Request = await Request("location")
+                }
+            }
+            case "location": {
+                href := await browser_message_query(Source, "/href")
+                now := await browser_message_query(Source, "/now")
+                Href = href.String
+                Now = now.Number
+                Purpose = "resume"
+                Request = await Request("session-read", "room")
+            }
+            case "resume": {
+                Initialized = true
+                Active = false
+                saved := query_json(Text, "")
+                if saved.Ok {
+                    invite := query_json(Text, "/invite")
+                    root := query_json(Text, "/root")
+                    revision := query_json(Text, "/revision")
+                    checkpoint := query_json(Text, "/checkpoint")
+                    if text_equal(root.String, WorkspaceRoot) && revision.Number >= 0 && revision.Number <= 9007199254740991 {
+                        Revision = revision.Number
+                        CheckpointHash = checkpoint.String
+                        presentation := query_json(Text, "/workspace")
+                        if text_equal(presentation.Kind, "object") {
+                            ResumeWorkspace = presentation.Json
+                        }
+                    }
+                    if text_equal(invite.Kind, "object") {
+                        await UseInvite(invite.Json)
+                    }
+                } else {
+                    Purpose = "startup-url"
+                    Request = await Request("parse-url", Href)
+                }
+            }
+            case "startup-url": {
+                invite := await browser_message_query(Source, "/fragment/collab")
+                if !text_equal(invite.String, "") {
+                    await UseInvite(invite.String)
+                }
+            }
+            case "invite-url": {
+                invite := await browser_message_query(Source, "/fragment/collab")
+                if text_equal(invite.String, "") {
+                    Error = "Paste a complete room invite link or its JSON credentials."
+                } else {
+                    await UseInvite(invite.String)
+                }
+            }
+            case "host": {
+                invite := await browser_message_query(Source, "")
+                await UseInvite(invite.Json)
+            }
+            case "invite-peer": {
+                invite := await browser_message_query(Source, "")
+                room := await browser_message_query(Source, "/room")
+                role := await browser_message_query(Source, "/role")
+                options := format_text("{{\"fragment\":{{\"collab\":{}}},\"query\":{{\"room\":{},\"role\":{}}}}}", Quote(invite.Json), Quote(room.String), Quote(role.String))
+                Purpose = "invite-link"
+                Request = await Request("make-url", Href, options)
+            }
+            case "invite-link": {
+                InviteLink = Text
+                Status = "Invite created. Copy the link to share its access role."
+            }
+            case "snapshot-capture": {
+                ArchiveSource = Source
+                presentation := format_text("{{\"main\":{},\"secondary\":{},\"source\":{},\"scene\":{}}}", Quote(MainPanel), Quote(SecondaryPanel), TextViewJson, FrozenSceneViewJson)
+                workspace := format_text("{{\"version\":3,\"active_path\":{},\"presentation\":{}}}", Quote(Path), presentation)
+                payload := format_text("{{\"checkpoint_version\":3,\"workspace\":{}}}", workspace)
+                Purpose = "snapshot-compose"
+                Request = await Request("compose-json", "/payload/archive", Envelope("snapshot", payload, Client, 0, Revision), "{\"sha256\":\"/payload\"}", Source)
+            }
+            case "snapshot-compose": {
+                digest := query_json(Text, "/sha256")
+                CheckpointHash = digest.String
+                await Request("send", Source: Source)
+                if ArchiveSource > 0 {
+                    await browser_message_release(ArchiveSource)
+                    ArchiveSource = 0
+                }
+                Status = "Publishing room checkpoint…"
+            }
+            case "snapshot-verify": {
+                if SnapshotRevision == Revision && text_equal(SnapshotHash, CheckpointHash) && text_equal(SessionRoot, WorkspaceRoot) {
+                    await Send("snapshot_ack", format_text("{{\"revision\":{},\"sha256\":{}}}", Revision, Quote(CheckpointHash)))
+                    await browser_message_release(SnapshotSource)
+                    SnapshotSource = 0
+                    Ready = true
+                    Status = "Room connected"
+                    await send_event<"StudioCollaborationRestore">(self)
+                } else {
+                    Purpose = "snapshot-install"
+                    Request = await Request("archive-install", "/payload/archive", Source: SnapshotSource)
+                    Status = "Validating the room's isolated workspace…"
+                }
+            }
+            case "snapshot-install": {
+                SessionRoot = Text
+                Revision = SnapshotRevision
+                CheckpointRevision = SnapshotRevision
+                CheckpointHash = SnapshotHash
+                ResumeWorkspace = SnapshotWorkspace
+                await Persist()
+                await browser_message_release(SnapshotSource)
+                SnapshotSource = 0
+                Status = "Review local drafts to open the room workspace."
+                await send_event<"StudioCollaborationWorkspaceReady">(self, Text)
+                await send_event<"StudioProjectOpenRequested">(self, Text)
+            }
+        }
+        await Publish()
+        return
+    }
+    on Tick(dt) {
+        if FocusDelay > 0 {
+            FocusDelay -= 1
+            if FocusDelay == 0 {
+                await focus_ui_element(self, FocusTarget)
+            }
+        }
+        Now += cast<double>(dt)
+        PresenceAge += dt
+        if ReconnectDelay > 0 && Active {
+            ReconnectAge += dt
+            if ReconnectAge >= ReconnectDelay {
+                ReconnectAge = 0
+                ReconnectDelay = min(15.0, ReconnectDelay * 2.0)
+                await Request("connect", WsUrl)
+            }
+        }
+        // Canonical document application has its own correlated completion.
+        // Keep later network packets queued until that exact result is handled.
+        if Pending && text_equal(CorePurpose, "accepted") {
+            if NeedsPublish {
+                await Render()
+            }
+            return
+        }
+        message := await browser_message_receive("collaboration")
+        if message.Available {
+            if text_equal(message.Kind, "open") {
+                ReconnectDelay = 0
+                await Send("hello", format_text("{{\"token\":{}}}", Quote(Token)))
+                await Send("join", format_text("{{\"last_revision\":{}}}", Revision))
+            } else if text_equal(message.Kind, "closed") || text_equal(message.Kind, "overflow") {
+                if Active {
+                    if Pending {
+                        await RejectLocal("Connection lost before canonical acknowledgement; the draft is retained.")
+                    }
+                    Ready = false
+                    Status = "Connection lost; reconnecting…"
+                    ReconnectDelay = 0.5
+                    ReconnectAge = 0
+                    await Publish()
+                }
+            } else if text_equal(message.Kind, "message") {
+                await Packet(message.Source)
+            } else if message.Request == Request && (text_equal(message.Kind, "result") || text_equal(message.Kind, "error")) {
+                await Result(message.Source, message.Text, text_equal(message.Kind, "result"))
+            } else if text_equal(message.Kind, "error") {
+                if Pending && message.Request == PublicationRequest {
+                    await RejectLocal(message.Text)
+                    await Recover("Canonical publication failed; the draft is retained.")
+                }
+                Error = message.Text
+                await Publish()
+            }
+            if message.Source > 0 && message.Source != SnapshotSource && message.Source != ArchiveSource {
+                await browser_message_release(message.Source)
+            }
+        }
+        if Ready && !Pending && PresenceAge >= 1.0 {
+            PresenceAge = 0
+            PresenceSequence += 1
+            await Send("presence", format_text("{{\"presence_seq\":{},\"data\":{{\"path\":{},\"panel\":{}}}}}", PresenceSequence, Quote(Path), Quote(MainPanel)))
+            if text_equal(Role, "host") && Revision - CheckpointRevision >= 32 {
+                await Snapshot()
+            }
+        }
+        if NeedsPublish {
+            await Render()
+        }
+    }
+}

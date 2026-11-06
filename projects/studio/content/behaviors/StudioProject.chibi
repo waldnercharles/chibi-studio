@@ -1,0 +1,236 @@
+behavior StudioProject {
+    Open := false
+    Name: string = ""
+    Template: string = "empty"
+    Folder: string = ""
+    FolderSource: int = 0
+    Request: int = 0
+    Operation: string = ""
+    Error: string = ""
+    Web := false
+    Collaboration := false
+    CreateAfterPick := false
+    NeedFocus := false
+
+    Publish :: fn() {
+        await set_ui_data(Name: "projectNewOpen", Value: Open)
+        await set_ui_data(Name: "projectNewName", Value: Name)
+        await set_ui_data(Name: "projectNewTemplate", Value: Template)
+        await set_ui_data(Name: "projectNewFolder", Value: Folder)
+        await set_ui_data(Name: "projectNewBusy", Value: Request > 0)
+        await set_ui_data(Name: "projectNewOperation", Value: Operation)
+        await set_ui_data(Name: "projectNewError", Value: Error)
+        await set_ui_data(Name: "projectNewWeb", Value: Web)
+        await send_event<"StudioCommandAvailability">(self, "newProject", !Collaboration && Request == 0)
+        return
+    }
+    ReleaseFolder :: fn() {
+        if FolderSource > 0 {
+            await authoring_platform_release(FolderSource)
+        }
+        FolderSource = 0
+        Folder = ""
+        return
+    }
+    Close :: fn() {
+        if Request > 0 {
+            return
+        }
+        await ReleaseFolder()
+        Open = false
+        Error = ""
+        CreateAfterPick = false
+        await Publish()
+        await focus_ui_element(self, "button[popovertarget=studio-file-menu]")
+        return
+    }
+    ChooseFolder :: fn(CreateAfter: bool) {
+        if Web || Request > 0 {
+            return
+        }
+        await ReleaseFolder()
+        CreateAfterPick = CreateAfter
+        chosen := await authoring_platform_request("choose-folder")
+        Request = chosen.Result.Request
+        Operation = "choose-folder"
+        Error = ""
+        if Request == 0 {
+            Error = chosen.Result.Message
+        }
+        await Publish()
+        return
+    }
+    Create :: fn() {
+        if Request > 0 || Collaboration {
+            return
+        }
+        if text_equal(Name, "") {
+            Error = "Enter a project name."
+            NeedFocus = true
+            await Publish()
+            return
+        }
+        if !Web && FolderSource == 0 {
+            await ChooseFolder(true)
+            return
+        }
+        workspace := query_workspace_info()
+        named := value_to_json(Name)
+        template := workspace_asset_template("scene", "Start")
+        if !workspace.Ok || !named.Ok || !template.Ok {
+            Error = "Could not prepare the project files."
+            if !workspace.Ok {
+                Error = workspace.Error
+            } else if !named.Ok {
+                Error = named.Error
+            } else {
+                Error = template.Error
+            }
+            await Publish()
+            return
+        }
+        scene := template.Text
+        if text_equal(Template, "perspective") {
+            scene = "version 1\nname \"Start\"\npresentation \"3d\"\n(array)entities\n"
+        }
+        manifest := format_text("version {}\nname {}\ncontent \"content\"\nstart_scene \"scenes/Start.kdl\"\n", workspace.Version, named.Text)
+        encoded_manifest := value_to_json(manifest)
+        encoded_scene := value_to_json(scene)
+        if !encoded_manifest.Ok || !encoded_scene.Ok {
+            Error = "Could not encode the project files."
+            await Publish()
+            return
+        }
+        scaffold := format_text("{{\"Name\":{},\"Files\":[{{\"Path\":\"project.kdl\",\"Text\":{}}},{{\"Path\":\"content/scenes/Start.kdl\",\"Text\":{}}}]}}", named.Text, encoded_manifest.Text, encoded_scene.Text)
+        created := await authoring_platform_request("create-workspace", scaffold, Source: FolderSource)
+        Request = created.Result.Request
+        Operation = "create-workspace"
+        Error = ""
+        if Request == 0 {
+            Error = created.Result.Message
+        }
+        await Publish()
+        return
+    }
+    Poll :: fn() {
+        if Request == 0 {
+            return
+        }
+        result := await authoring_platform_poll(Request)
+        if text_equal(result.Result.State, "running") || text_equal(result.Result.State, "pending") {
+            return
+        }
+        request := Request
+        Request = 0
+        if text_equal(Operation, "choose-folder") && result.Result.Ok {
+            FolderSource = request
+            Folder = result.Result.Value
+            Error = ""
+            create := CreateAfterPick
+            CreateAfterPick = false
+            await Publish()
+            if create {
+                await Create()
+            }
+            return
+        }
+        await authoring_platform_release(request)
+        if result.Result.Ok && text_equal(Operation, "create-workspace") {
+            path := result.Result.Value
+            await ReleaseFolder()
+            Open = false
+            await Publish()
+            await send_event<"StudioStatus">(self, "info", format_text("Project created: {}", path))
+            // Documents owns the existing save/discard review before activation.
+            await send_event<"StudioProjectOpenRequested">(self, path)
+            return
+        }
+        if !text_equal(result.Result.State, "cancelled") {
+            Error = result.Result.Message
+        }
+        CreateAfterPick = false
+        await Publish()
+        return
+    }
+    on Begin {
+        environment := await authoring_platform_environment()
+        Web = environment.Environment.Web
+        await Publish()
+    }
+    on Tick {
+        if NeedFocus {
+            NeedFocus = false
+            await focus_ui_element(self, "#new-project-name")
+        }
+        await Poll()
+    }
+    on StudioResourceCommand {
+        if text_equal(event.Id, "newProject") && !Collaboration && Request == 0 {
+            Open = true
+            Error = ""
+            NeedFocus = true
+            await Publish()
+        }
+    }
+    MoveFocus :: fn(Step: int) {
+        if Open {
+            await move_ui_focus(self, "#new-project-form input:not([disabled]), #new-project-form select:not([disabled]), #new-project-form button:not([disabled])", Step)
+        }
+        return
+    }
+    on StudioProjectFocusNext {
+        await MoveFocus(1)
+    }
+    on StudioProjectFocusPrevious {
+        await MoveFocus(-1)
+    }
+    on StudioProjectCreate {
+        await Create()
+    }
+    on StudioProjectClose {
+        await Close()
+    }
+    on Close {
+        if Open {
+            await Close()
+        }
+    }
+    on StudioProjectAction {
+        switch event.Id {
+            case "create": {
+                await Create()
+            }
+            case "location": {
+                await ChooseFolder(false)
+            }
+            case "close": {
+                await Close()
+            }
+        }
+    }
+    on StudioProjectField {
+        if Request > 0 {
+            return
+        }
+        if text_equal(event.Field, "name") {
+            Name = event.Value
+            Error = ""
+        }
+        if text_equal(event.Field, "template") && (text_equal(event.Value, "empty") || text_equal(event.Value, "perspective")) {
+            Template = event.Value
+        }
+        await Publish()
+    }
+    on StudioCollaborationState {
+        Collaboration = event.Active
+        if event.Active {
+            if Request > 0 {
+                await authoring_platform_cancel(Request)
+                await authoring_platform_release(Request)
+                Request = 0
+            }
+            await Close()
+        }
+        await Publish()
+    }
+}

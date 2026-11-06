@@ -1,0 +1,100 @@
+<div class="doc-tabs">
+  <tab-list class="doc-tab-list" role="tablist" aria-label="Open documents">
+    <div class="doc-tab" role="presentation" data-for="document, i : self.documentHandles" data-attr-data-state="document == self.documentActive ? 'on' : 'off'" data-attrif-data-pinned="self.documentPinTabs[i]" data-event-contextmenu="emit('StudioDocumentTabAction', document, 'context', ev.pointer); stop()">
+      <button class="btn face" role="tab" data-attr-aria-selected="document == self.documentActive" data-attr-data-tip="self.documentPaths[i]" data-event-click="emit('StudioDocumentTabSelect', document)">
+        <span class="icon">{{ self.documentIcons[i] }}</span>
+        <span class="label">{{ self.documentLabels[i] }}<span class="doc-title-fade" aria-hidden="true" />
+        </span>
+        <span class="dirty-dot" data-if="self.documentDirtyTabs[i]" aria-label="Unsaved changes">●</span>
+      </button>
+      <button class="btn icon-only doc-pin" data-if="self.documentPinTabs[i]" data-tip="Unpin Tab" aria-label="Unpin Tab" aria-pressed="true" data-event-click="emit('StudioDocumentTabAction', document, 'pin', ev.pointer); stop()">
+        <span class="icon">󰤱</span>
+      </button>
+      <button class="btn icon-only doc-close" data-tab-close="" data-if="!self.documentPinTabs[i]" aria-label="Close document" data-event-click="emit('StudioDocumentTabClose', document)" data-attrif-disabled="!self.documentClosable[i]" data-attr-data-tip="self.documentClosable[i] ? 'Close Tab' : 'Keep one scene open'">
+        <span class="icon"></span>
+        <span class="doc-close-cover" aria-hidden="true" />
+        <span class="doc-close-fade" aria-hidden="true" />
+        <span class="doc-close-highlight" aria-hidden="true" />
+      </button>
+    </div>
+  </tab-list>
+  <button class="btn icon-only open-tabs" aria-label="Open tabs" popovertarget="open-tabs-menu" aria-haspopup="menu">
+    <span class="icon"></span>
+  </button>
+  <button class="btn sm studio-document-review-conflict" data-if="self.documentConflict" data-event-click="emit('StudioDocumentCommand', 'reviewConflict', '')">Review disk changes</button>
+  <div class="studio-document-dialog" data-when="self.documentDialog != ''">
+    <use ui="Dialog">
+      <section class="studio-document-review" role="dialog" aria-modal="true" aria-labelledby="document-review-title">
+        <div data-if="self.documentDialog == 'close'">
+          <h2 id="document-review-title">Save changes before closing?</h2>
+          <p class="studio-document-review-path">{{ self.documentDialogPath }}</p>
+          <p>Your unsaved changes will be lost if you discard them.</p>
+          <p data-if="self.documentHasLayout">This includes changes to the document’s layout.</p>
+          <footer>
+            <button class="btn" data-event-click="emit('StudioDocumentDialogChoice', 'cancel')">Cancel</button>
+            <button class="btn" data-event-click="emit('StudioDocumentDialogChoice', 'discard')">Discard</button>
+            <button class="btn primary" data-event-click="emit('StudioDocumentDialogChoice', 'save')">Save</button>
+          </footer>
+        </div>
+        <div data-if="self.documentDialog == 'conflict'">
+          <h2 id="document-review-title">This file changed on disk</h2>
+          <p class="studio-document-review-path">{{ self.documentDialogPath }}</p>
+          <p data-if="!self.documentDialogIsLayout">Your draft has been kept. Save a copy, or reload the disk version. Reload keeps your draft in undo history.</p>
+          <p data-if="self.documentDialogIsLayout">Your layout draft has been kept. Save a copy to preserve it before reloading the disk version.</p>
+          <footer>
+            <button class="btn" data-event-click="emit('StudioDocumentDialogChoice', 'cancel')">Cancel</button>
+            <button class="btn" data-event-click="emit('StudioDocumentDialogChoice', 'reload')">Reload from disk</button>
+            <button class="btn primary" data-event-click="emit('StudioDocumentDialogChoice', 'copy')">Save a copy…</button>
+          </footer>
+        </div>
+        <div data-if="self.documentDialog == 'revert'">
+          <h2 id="document-review-title">Reload this file?</h2>
+          <p class="studio-document-review-path">{{ self.documentDialogPath }}</p>
+          <p>The disk version will replace your draft. You can restore the draft with Undo.</p>
+          <footer>
+            <button class="btn" data-event-click="emit('StudioDocumentDialogChoice', 'cancel')">Cancel</button>
+            <button class="btn primary" data-event-click="emit('StudioDocumentDialogChoice', 'reload')">Reload from disk</button>
+          </footer>
+        </div>
+        <div data-when="self.documentDialog == 'saveAs' || self.documentDialog == 'open'">
+          <h2 id="document-review-title">{{ self.documentDialog == 'open' ? 'Open document' : 'Save a copy' }}</h2>
+          <label for="document-path">Path in this workspace</label>
+          <input id="document-path" type="text" class="studio-document-path" data-attr-value="self.documentDialogPath" data-event-input="emit('StudioDocumentDialogPath', ev.value)" autofocus="" />
+          <p data-if="self.documentDialog == 'saveAs'">Choose a new file path. Existing files are never replaced.</p>
+          <footer>
+            <button class="btn" data-event-click="emit('StudioDocumentDialogChoice', 'cancel')">Cancel</button>
+            <button class="btn primary" data-event-click="emit('StudioDocumentDialogChoice', 'submit')">{{ self.documentDialog == 'open' ? 'Open' : 'Save' }}</button>
+          </footer>
+        </div>
+        <div data-if="self.documentDialog == 'tabs'">
+          <h2 id="document-review-title">Open documents</h2>
+          <div class="studio-document-tab-choices">
+            <button class="btn studio-document-tab-choice" data-for="document, i : self.documentHandles" data-event-click="emit('StudioDocumentTabSelect', document)">{{ self.documentPaths[i] }}<span data-if="self.documentDirtyTabs[i]"> ●</span>
+            </button>
+          </div>
+          <footer>
+            <button class="btn" data-event-click="emit('StudioDocumentDialogChoice', 'cancel')">Cancel</button>
+          </footer>
+        </div>
+        <p class="studio-document-review-error" role="alert" data-if="self.documentError != ''">{{ self.documentError }}</p>
+      </section>
+    </use>
+  </div>
+  <use ui="StudioMenu" id="open-tabs-menu">
+    <use ui="MenuGroup">Open tabs</use>
+    <div class="menu-item" role="menuitem" data-for="document, i : self.documentHandles" data-event-click="emit('StudioDocumentTabSelect', document)">
+      <span class="icon lead">{{ self.documentIcons[i] }}</span>
+      <span class="text">{{ self.documentLabels[i] }}</span>
+    </div>
+  </use>
+  <use ui="StudioMenu" id="tab-menu">
+    <div class="menu-item" role="menuitem" data-event-click="emit('StudioDocumentTabAction', self.documentTabContext, 'pin', ev.pointer)">
+      <span class="icon lead">󰤱</span>
+      <span class="text">{{ self.documentTabContextPinned ? 'Unpin Tab' : 'Pin Tab' }}</span>
+    </div>
+    <div class="menu-item" role="menuitem" data-attrif-data-disabled="!self.documentTabContextClosable" data-event-click="emit('StudioDocumentTabAction', self.documentTabContext, 'close', ev.pointer)">
+      <span class="icon lead"></span>
+      <span class="text">Close Tab</span>
+    </div>
+  </use>
+</div>

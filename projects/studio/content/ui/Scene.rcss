@@ -54,10 +54,10 @@ body.area-panel { padding: 0dp; overflow: hidden; }
 .delta-label {
     position: absolute; left: 0dp; top: 0dp; padding: 1dp 6dp; border-radius: var(--r);
     background-color: var(--floating); color: var(--foreground);
-    font-family: var(--font-numeric); font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-16, 16dp);
+    font-family: var(--font-numeric, GeistNumeric); font-size: var(--studio-font-11, 11dp); line-height: var(--studio-line-16, 16dp);
     white-space: nowrap; pointer-events: none;
 }
-.readout { position: absolute; right: 10dp; bottom: 8dp; color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); font-family: var(--font-numeric); pointer-events: none; }
+.readout { position: absolute; right: 10dp; bottom: 8dp; color: var(--faint-foreground); font-size: var(--studio-font-11, 11dp); font-family: var(--font-numeric, GeistNumeric); pointer-events: none; }
 .live-badge { position: absolute; left: 12dp; bottom: 10dp; }
 .model-preview { position: absolute; top: 8dp; left: 12dp; display: flex; align-items: center; gap: 6dp; }
 .notice { position: absolute; left: 12dp; right: 12dp; bottom: 36dp; padding: 6dp 8dp; border-radius: var(--r); background-color: var(--notice); color: var(--notice-fg); white-space: normal; }

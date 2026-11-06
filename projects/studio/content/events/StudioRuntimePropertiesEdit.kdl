@@ -1,0 +1,14 @@
+version 3
+name "StudioRuntimePropertiesEdit"
+domain "event"
+id_counter 6
+(array)variables {
+    - id=1 name="Session" type="int" category="Payload"
+    - id=2 name="Subject" type="const char *" category="Payload"
+    - id=3 name="Component" type="const char *" category="Payload"
+    - id=4 name="Field" type="const char *" category="Payload"
+    - id=5 name="Text" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

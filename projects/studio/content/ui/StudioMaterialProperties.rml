@@ -1,0 +1,68 @@
+<div class="studio-visual">
+  <p class="dim" data-if="self.visualShared">Shared changes update the preview when accepted.</p><p role="status" data-if="self.visualProposalPending">Waiting for shared edit acceptance…</p>
+  <p class="studio-visual-empty" data-if="self.visualDocument == 0">Open a material or shape to edit its surface.</p>
+  <div data-if="self.visualDocument &gt; 0 &amp;&amp; (self.visualKind == 'material' || self.visualKind == 'shape')">
+    <div class="studio-visual-heading"><span class="title">Surface</span><button class="btn icon-only sm" aria-label="Reset preview view" data-event-click="emit('StudioVisualView', 'reset', 0)"><span class="icon">&#xeae2;</span></button></div>
+    <div id="studio-visual-preview" data-measure class="studio-visual-preview" tabindex="0" aria-label="Surface preview. Drag to orbit; scroll to zoom." data-event-mousedown="emit('StudioVisualOrbit', 'down', ev.mouse_x, ev.mouse_y)" data-event-mousemove="emit('StudioVisualOrbit', 'move', ev.mouse_x, ev.mouse_y)" data-event-mouseup="emit('StudioVisualOrbit', 'up', ev.mouse_x, ev.mouse_y)" data-event-mouseleave="emit('StudioVisualOrbit', 'up', ev.mouse_x, ev.mouse_y)" data-event-mousescroll="emit('StudioVisualOrbit', 'wheel', 0, ev.wheel_delta_y)">
+      <texture-view data-if="self.visualImage != ''" data-attr-src="self.visualImage"/>
+      <span data-if="self.visualImage == ''">Preview unavailable</span>
+    </div>
+    <div class="notice error" role="alert" data-if="self.visualError != ''">{{ self.visualError }}</div>
+    <button class="btn outline sm" data-if="self.visualDiagnosticNode != ''" data-event-click="emit('StudioVisualShowNode', self.visualDiagnosticDocument, self.visualDiagnosticRevision, self.visualDiagnosticGraph, self.visualDiagnosticNode)">Show node</button>
+    <div class="studio-visual-view">
+      <use ui="NumberField" aria-label="Preview time in seconds" addon="Time" unit="s" step="0.05" data-attr-value="self.visualTime" data-event-change="emit('StudioVisualView', 'time', ev.value)"/>
+      <use ui="NumberField" aria-label="Preview zoom" addon="Zoom" min="0.25" max="4" step="0.05" data-attr-value="self.visualZoom" data-event-change="emit('StudioVisualView', 'zoom', ev.value)"/>
+    </div>
+    <div class="studio-visual-view">
+      <use ui="NumberField" aria-label="Preview yaw in radians" addon="Yaw" unit="rad" float min="-3.14159265" max="3.14159265" step="0.05" data-attr-value="self.visualYaw" data-event-change="emit('StudioVisualView', 'yaw', ev.value)"/>
+      <use ui="NumberField" aria-label="Preview pitch in radians" addon="Pitch" unit="rad" float min="-1.5707963" max="1.5707963" step="0.05" data-attr-value="self.visualPitch" data-event-change="emit('StudioVisualView', 'pitch', ev.value)"/>
+    </div>
+    <div class="studio-visual-defaults" data-if="self.visualValid">
+      <div class="studio-visual-parameter" data-for="parameter, i : self.visualParameters">
+        <div class="studio-visual-label"><label>{{ parameter.name }}</label><span class="dim" data-if="parameter.presentation == 2">Linear RGB · HDR</span><use ui="ColorField" data-if="parameter.presentation == 2" data-attrif-disabled="self.visualReadonly || !parameter.editable" data-attr-value="self.visualColors[i]" aria-label="Choose display color; HDR values are available in numeric fields" data-event-change="emit('StudioVisualColor', self.visualDocument, parameter.slot, ev.value)"/></div>
+        <div class="joined studio-visual-components">
+          <use ui="Checkbox" data-if="parameter.kind == 'boolean'" data-attr-aria-label="parameter.name" data-attrif-checked="parameter.x != 0" data-attrif-disabled="self.visualReadonly || !parameter.editable" data-event-mousedown="emit('StudioVisualArm', self.visualDocument)" data-event-keydown="emit('StudioVisualArm', self.visualDocument)" data-event-change="emit('StudioVisualParameter', self.visualDocument, parameter.slot, 0, ev.value ? 1 : 0, false, false); emit('StudioVisualParameter', self.visualDocument, parameter.slot, 0, ev.value ? 1 : 0, true, false)"/>
+          <use ui="NumberField" data-attrif-disabled="self.visualReadonly || !parameter.editable" data-event-mousedown="emit('StudioVisualArm', self.visualDocument)" data-event-keydown="emit('StudioVisualArm', self.visualDocument)" step="1" precision="0" data-attr-min="parameter.minimum" data-attr-max="parameter.maximum" data-if="parameter.kind == 'integer'" data-attr-aria-label="parameter.name + (parameter.presentation == 2 ? ' red' : ' X')" data-attr-addon="parameter.width == 1 ? '' : parameter.presentation == 2 ? 'R' : 'X'" data-attr-value="parameter.x" data-event-input="emit('StudioVisualParameter', self.visualDocument, parameter.slot, 0, false)" data-event-change="emit('StudioVisualParameter', self.visualDocument, parameter.slot, 0, true)"/>
+          <use ui="NumberField" data-attrif-disabled="self.visualReadonly || !parameter.editable" data-event-mousedown="emit('StudioVisualArm', self.visualDocument)" data-event-keydown="emit('StudioVisualArm', self.visualDocument)" float step="0.01" precision="3" data-if="parameter.kind != 'integer' &amp;&amp; parameter.kind != 'boolean'" data-attr-aria-label="parameter.name + (parameter.presentation == 2 ? ' red' : ' X')" data-attr-addon="parameter.width == 1 ? '' : parameter.presentation == 2 ? 'R' : 'X'" data-attr-value="parameter.x" data-event-input="emit('StudioVisualParameter', self.visualDocument, parameter.slot, 0, false)" data-event-change="emit('StudioVisualParameter', self.visualDocument, parameter.slot, 0, true)"/>
+          <use ui="NumberField" data-attrif-disabled="self.visualReadonly || !parameter.editable" data-event-mousedown="emit('StudioVisualArm', self.visualDocument)" data-event-keydown="emit('StudioVisualArm', self.visualDocument)" float step="0.01" precision="3" data-if="parameter.width &gt; 1" data-attr-aria-label="parameter.name + (parameter.presentation == 2 ? ' green' : ' Y')" data-attr-addon="parameter.presentation == 2 ? 'G' : 'Y'" data-attr-value="parameter.y" data-event-input="emit('StudioVisualParameter', self.visualDocument, parameter.slot, 1, false)" data-event-change="emit('StudioVisualParameter', self.visualDocument, parameter.slot, 1, true)"/>
+          <use ui="NumberField" data-attrif-disabled="self.visualReadonly || !parameter.editable" data-event-mousedown="emit('StudioVisualArm', self.visualDocument)" data-event-keydown="emit('StudioVisualArm', self.visualDocument)" float step="0.01" precision="3" data-if="parameter.width &gt; 2" data-attr-aria-label="parameter.name + (parameter.presentation == 2 ? ' blue' : ' Z')" data-attr-addon="parameter.presentation == 2 ? 'B' : 'Z'" data-attr-value="parameter.z" data-event-input="emit('StudioVisualParameter', self.visualDocument, parameter.slot, 2, false)" data-event-change="emit('StudioVisualParameter', self.visualDocument, parameter.slot, 2, true)"/>
+          <use ui="NumberField" data-attrif-disabled="self.visualReadonly || !parameter.editable" data-event-mousedown="emit('StudioVisualArm', self.visualDocument)" data-event-keydown="emit('StudioVisualArm', self.visualDocument)" float step="0.01" precision="3" data-if="parameter.width &gt; 3" data-attr-aria-label="parameter.name + ' W'" addon="W" data-attr-value="parameter.w" data-event-input="emit('StudioVisualParameter', self.visualDocument, parameter.slot, 3, false)" data-event-change="emit('StudioVisualParameter', self.visualDocument, parameter.slot, 3, true)"/>
+        </div>
+      </div>
+    </div>
+    <div class="studio-visual-textures" data-if="self.visualImageSlots.size &gt; 0">
+      <div class="studio-visual-parameter" data-for="slot : self.visualImageSlots"><label>{{ self.visualImageLabels[slot] }}</label><button class="field select" data-attrif-disabled="self.visualReadonly" data-event-click="emit('StudioVisualImage', 'open', self.visualDocument, self.visualImagePaths[slot])"><span class="icon">&#xeb28;</span><span>{{ self.visualImageValues[slot] == '' ? 'Choose image…' : self.visualImageValues[slot] }}</span><span class="icon">&#xeab4;</span></button></div>
+      <div class="studio-visual-picker" data-if="self.visualPickerPath != ''">
+        <div class="studio-visual-heading"><span class="title">Choose image</span><button class="btn icon-only sm" aria-label="Close image picker" data-event-click="emit('StudioVisualImage','close',self.visualDocument,'')"><span class="icon">&#xeb0a;</span></button></div>
+        <div class="field search"><input type="text" class="part value" aria-label="Search project images" placeholder="Search images…" data-attr-value="self.visualPickerQuery" data-event-input="emit('StudioVisualImage','query',self.visualDocument,ev.value)"/></div>
+        <choice-list data-event-change="emit('StudioVisualImage','choose',self.visualDocument,ev.value)"><div class="choice-results"><div class="menu-item" data-for="image : self.visualPickerRows" data-attr-value="image.Reference"><span class="icon">&#xeb28;</span><span>{{ image.Name }}</span></div></div></choice-list>
+        <p class="dim" data-if="self.visualPickerTotal == 0">No matching project images.</p><p class="dim" data-if="self.visualPickerTotal &gt; 256">Refine your search to see more images.</p>
+      </div>
+    </div>
+    <section class="panel studio-visual-diagnostics" data-attrif-data-open="self.visualDiagnostics">
+      <button class="panel-head" data-attr-aria-expanded="self.visualDiagnostics ? 'true' : 'false'" data-event-click="emit('StudioVisualDiagnostics')"><span class="icon chev">&#xeab4;</span><span class="title">Diagnostics</span></button>
+      <div class="panel-body" data-if="self.visualDiagnostics">
+        <button class="btn outline sm" data-event-click="emit('StudioVisualCatalogRefresh')">Refresh dependencies</button><p class="dim">Static estimates and CPU values before lighting. These are not GPU timings or rendered pixel samples.</p>
+        <div class="studio-visual-cost"><span>Expressions</span><span>{{ self.visualCosts.nodes }}</span></div>
+        <div class="studio-visual-cost"><span>Uniforms</span><span>{{ self.visualCosts.uniforms }}</span></div>
+        <div class="studio-visual-cost"><span>Images / texture samples</span><span>{{ self.visualCosts.images }} / {{ self.visualCosts.texture_samples }}</span></div>
+        <div class="studio-visual-cost"><span>Ramp vectors</span><span>{{ self.visualCosts.ramp_vec4s }}</span></div>
+        <div class="studio-visual-probe-controls">
+          <use ui="NumberField" addon="U" aria-label="CPU probe U" step="0.05" data-attr-value="self.visualU" data-event-change="emit('StudioVisualView', 'u', ev.value)"/>
+          <use ui="NumberField" addon="V" aria-label="CPU probe V" step="0.05" data-attr-value="self.visualV" data-event-change="emit('StudioVisualView', 'v', ev.value)"/>
+          <button class="btn outline sm" data-attrif-disabled="!self.visualValid" data-event-click="emit('StudioVisualProbe')">Sample</button>
+        </div>
+        <div class="notice error" role="alert" data-if="self.visualProbeError != ''">{{ self.visualProbeError }}</div>
+        <div class="studio-visual-sample" data-if="self.visualProbeValid" data-for="sample : self.visualSamples"><span>{{ sample.slot == 0 ? 'Base color' : sample.slot == 1 ? 'Emission' : sample.slot == 2 ? 'Roughness' : sample.slot == 3 ? 'Metallic' : sample.slot == 4 ? 'Normal' : sample.slot == 5 ? 'Opacity' : sample.slot == 6 ? 'Unlit' : sample.slot == 7 ? 'Height' : 'Occlusion' }}</span><span>{{ sample.x }}, {{ sample.y }}, {{ sample.z }}</span></div>
+      </div>
+    </section>
+    <section class="studio-visual-evidence">
+      <div class="studio-visual-heading"><span class="title">Evidence</span><button class="btn outline sm" data-attrif-disabled="!self.visualValid || self.visualImage == '' || self.visualExportState == 0" data-event-click="emit('StudioVisualExport')">Export</button></div>
+      <div class="field text"><input class="part value" type="text" aria-label="New evidence directory relative to the workspace" data-attr-value="self.visualDestination" data-event-change="emit('StudioVisualDestination', ev.value)"/></div>
+      <p class="dim">A new directory containing the rendered preview, frozen source and replay instructions.</p>
+      <p class="dim" data-if="self.visualExportState == 0" role="status">Capturing preview…</p>
+      <p data-if="self.visualExportState == 1" role="status">Saved to {{ self.visualExportPath }}</p>
+      <div class="notice error" role="alert" data-if="self.visualExportError != ''">{{ self.visualExportError }}</div>
+    </section>
+  </div>
+</div>

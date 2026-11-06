@@ -1,0 +1,165 @@
+behavior StudioGraphWires {
+    PathText: string = ""
+    PathLeft: float = 0.0
+    PathTop: float = 0.0
+    PathHit: int = 0
+    PathHits: int[] = []
+    PathEdge: int = -1
+    Generation: int = 0
+    WireStyle: int = 0
+    Zoom: float = 1.0
+    PathHitSegment :: fn(AX: float, AY: float, BX: float, BY: float) {
+        base := format_text("graph.edges.{}.hits.{}", PathEdge, PathHit)
+        await set_ui_data(Name: format_text("{}.vertical", base), Value: false)
+        await set_ui_data(Name: format_text("{}.hit", base), Value: format_text("left: {}dp; top: {}dp; width: {}dp; height: {}dp;", min(AX, BX) - 6.0, min(AY, BY) - 6.0, max(12.0, abs(BX - AX) + 12.0), max(12.0, abs(BY - AY) + 12.0)))
+        PathHits = array_add(PathHits, PathHit)
+        PathHit += 1
+    }
+    PathLine :: fn(AX: float, AY: float, BX: float, BY: float) {
+        if AX == BX && AY == BY { return }
+        PathText = format_text("{} L {} {}", PathText, BX - PathLeft, BY - PathTop)
+        await PathHitSegment(AX, AY, BX, BY)
+    }
+    PathCubic :: fn(AX: float, AY: float, C1X: float, C1Y: float, C2X: float, C2Y: float, BX: float, BY: float) {
+        PathText = format_text("{} C {} {} {} {} {} {}", PathText, C1X - PathLeft, C1Y - PathTop, C2X - PathLeft, C2Y - PathTop, BX - PathLeft, BY - PathTop)
+        previous_x := AX
+        previous_y := AY
+        step: int = 1
+        while step <= 24 {
+            t := cast<float>(step) / 24.0
+            u := 1.0 - t
+            x := u * u * u * AX + 3.0 * u * u * t * C1X + 3.0 * u * t * t * C2X + t * t * t * BX
+            y := u * u * u * AY + 3.0 * u * u * t * C1Y + 3.0 * u * t * t * C2Y + t * t * t * BY
+            await PathHitSegment(previous_x, previous_y, x, y)
+            previous_x = x
+            previous_y = y
+            step += 1
+        }
+    }
+    PathTangent :: pure fn(Xs: float[], Ys: float[], Index: int, Direction: float) -> float {
+        span: float = 1.0e30
+        if Index > 0 && Ys[Index - 1] != Ys[Index] { span = abs(Xs[Index] - Xs[Index - 1]) }
+        if Index + 1 < length(Xs) && Ys[Index + 1] != Ys[Index] { span = min(span, abs(Xs[Index + 1] - Xs[Index])) }
+        return Direction * min(40.0 * Zoom, span * 0.5)
+    }
+    BuildWirePath :: fn(Xs: float[], Ys: float[], EdgeIndex: int) {
+        xs := Xs
+        ys := Ys
+        count := length(xs)
+        if count < 2 || count > 64 || length(ys) != count { return }
+        min_x := xs[0]
+        max_x := xs[0]
+        min_y := ys[0]
+        max_y := ys[0]
+        index: int = 0
+        while index < count {
+            min_x = min(min_x, xs[index]); max_x = max(max_x, xs[index])
+            min_y = min(min_y, ys[index]); max_y = max(max_y, ys[index])
+            index += 1
+        }
+        margin := max(40.0 * Zoom, (max_x - min_x) * 0.5) + 8.0
+        PathLeft = min_x - margin
+        PathTop = min_y - margin
+        PathText = format_text("M {} {}", xs[0] - PathLeft, ys[0] - PathTop)
+        PathHits = []
+        PathHit = 0
+        PathEdge = EdgeIndex
+        style := WireStyle
+        if style != 0 && count == 2 && xs[1] < xs[0] {
+            middle := (ys[0] + ys[1]) * 0.5
+            xs = [xs[0], xs[0] + 16.0 * Zoom, xs[0] + 16.0 * Zoom, xs[1] - 16.0 * Zoom, xs[1] - 16.0 * Zoom, xs[1]]
+            ys = [ys[0], ys[0], middle, middle, ys[1], ys[1]]
+            count = 6
+        }
+        radius := 10.0 * Zoom
+        if style == 0 && count > 2 && xs[count - 1] < xs[0] { style = 1; radius = 24.0 * Zoom }
+        if style == 0 {
+            if count == 2 && (ys[0] != ys[1] || xs[1] < xs[0]) {
+                bend := max(40.0 * Zoom, abs(xs[1] - xs[0]) * 0.5)
+                await PathCubic(xs[0], ys[0], xs[0] + bend, ys[0], xs[1] - bend, ys[1], xs[1], ys[1])
+            } else {
+                direction: float = 1.0
+                if xs[count - 1] < xs[0] { direction = -1.0 }
+                index = 0
+                while index + 1 < count {
+                    if ys[index] == ys[index + 1] { await PathLine(xs[index], ys[index], xs[index + 1], ys[index + 1]) }
+                    else { await PathCubic(xs[index], ys[index], xs[index] + PathTangent(xs, ys, index, direction), ys[index], xs[index + 1] - PathTangent(xs, ys, index + 1, direction), ys[index + 1], xs[index + 1], ys[index + 1]) }
+                    index += 1
+                }
+            }
+        } else if style == 2 {
+            index = 0
+            while index + 1 < count {
+                ax := xs[index]; ay := ys[index]; bx := xs[index + 1]; by := ys[index + 1]
+                stub := min(16.0 * Zoom, abs(bx - ax) * 0.25)
+                if ay != by && index == 0 { await PathLine(ax, ay, ax + stub, ay); ax += stub }
+                if ay != by && index + 2 == count { await PathLine(ax, ay, bx - stub, by); ax = bx - stub; ay = by }
+                await PathLine(ax, ay, bx, by)
+                index += 1
+            }
+        } else {
+            cx: float[] = [xs[0]]
+            cy: float[] = [ys[0]]
+            index = 0
+            while index + 1 < count {
+                if xs[index] != xs[index + 1] && ys[index] != ys[index + 1] {
+                    middle := (xs[index] + xs[index + 1]) * 0.5
+                    cx = array_add(cx, middle); cy = array_add(cy, ys[index])
+                    cx = array_add(cx, middle); cy = array_add(cy, ys[index + 1])
+                }
+                cx = array_add(cx, xs[index + 1]); cy = array_add(cy, ys[index + 1])
+                index += 1
+            }
+            cut_in: float = 0.0
+            index = 0
+            while index + 1 < length(cx) {
+                dx := cx[index + 1] - cx[index]; dy := cy[index + 1] - cy[index]
+                distance := sqrt(dx * dx + dy * dy)
+                if distance == 0.0 { index += 1; continue }
+                ux := dx / distance; uy := dy / distance
+                cut: float = 0.0
+                vx: float = 0.0; vy: float = 0.0
+                if index + 2 < length(cx) {
+                    next_x := cx[index + 2] - cx[index + 1]; next_y := cy[index + 2] - cy[index + 1]
+                    next_length := sqrt(next_x * next_x + next_y * next_y)
+                    if next_length > 0.0 && dx * next_x + dy * next_y == 0.0 {
+                        vx = next_x / next_length; vy = next_y / next_length
+                        in_room := distance * 0.5; out_room := next_length * 0.5
+                        if index == 0 { in_room = distance - min(8.0 * Zoom, distance * 0.5) }
+                        if index + 3 == length(cx) { out_room = next_length - min(8.0 * Zoom, next_length * 0.5) }
+                        reach := radius
+                        if style == 3 {
+                            vertical := out_room
+                            if dx == 0.0 { vertical = in_room }
+                            reach = 24.0 * Zoom
+                            if vertical - reach < 8.0 * Zoom { reach = vertical }
+                        }
+                        cut = min(reach, min(in_room, out_room))
+                    }
+                }
+                ax := cx[index] + ux * cut_in; ay := cy[index] + uy * cut_in
+                bx := cx[index + 1] - ux * cut; by := cy[index + 1] - uy * cut
+                await PathLine(ax, ay, bx, by)
+                if cut > 0.0 {
+                    ex := cx[index + 1] + vx * cut; ey := cy[index + 1] + vy * cut
+                    if style == 3 { await PathLine(bx, by, ex, ey) }
+                    else { await PathCubic(bx, by, bx + ux * cut * 0.5523, by + uy * cut * 0.5523, ex - vx * cut * 0.5523, ey - vy * cut * 0.5523, ex, ey) }
+                }
+                cut_in = cut
+                index += 1
+            }
+        }
+        base := format_text("graph.edges.{}", EdgeIndex)
+        await set_ui_data(Name: format_text("{}.path", base), Value: PathText)
+        await set_ui_data(Name: format_text("{}.pathStyle", base), Value: format_text("left: {}dp; top: {}dp; width: {}dp; height: {}dp;", PathLeft, PathTop, max_x - min_x + margin * 2.0, max_y - min_y + margin * 2.0))
+        await set_ui_data(Name: format_text("{}.segments", base), Value: PathHits)
+        return
+    }
+    on StudioGraphWirePath {
+        if event.Generation < self.Generation { return }
+        self.Generation = event.Generation
+        self.WireStyle = event.Style
+        self.Zoom = event.Zoom
+        await BuildWirePath(event.Xs, event.Ys, event.EdgeIndex)
+    }
+}

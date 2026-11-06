@@ -3,20 +3,28 @@
   <div class="sample">
     <button class="btn" popovertarget="gallery-menu" aria-haspopup="menu"><span class="label">Edit</span></button>
     <use ui="Menu" id="gallery-menu">
-      <use ui="MenuCommand" data-alias-command="commands.undo"/>
-      <use ui="MenuCommand" data-alias-command="commands.redo"/>
+      <use ui="MenuCommand" data-alias-command="self.galleryCommands.undo" data-event-click="emit('StudioGalleryCommand', 'undo', '', pane)"/>
+      <use ui="MenuCommand" data-alias-command="self.galleryCommands.redo" data-event-click="emit('StudioGalleryCommand', 'redo', '', pane)"/>
       <use ui="MenuSeparator"/>
       <use ui="MenuCheck" data-checked="save.galleryChecked">Snap to grid</use>
       <use ui="MenuSeparator"/>
-      <use ui="Submenu" data-alias-item="choices.panels">
-        <use ui="MenuItem" data-for="panel : choices.panels.others" data-alias-item="panel"/>
+      <use ui="Submenu" data-alias-item="self.galleryChoices.panels">
+        <use ui="MenuItem" data-for="name, i : self.galleryPanels" data-alias-item="self.galleryPanelItems[i]" data-event-click="emit('StudioGalleryCommand', 'panel', name, pane)"/>
       </use>
     </use>
   </div>
   <div class="menu-group">EnumField</div>
-  <div class="sample"><use ui="EnumField" data-alias-table="choices.fields.Body.type" data-alias-value="save.galleryBody" data-event-change="save.galleryBody = ev.value * 1"/></div>
+  <div class="sample"><use ui="EnumField" data-alias-table="self.galleryChoices.fields.Body.type" data-alias-value="save.galleryBody" data-event-change="save.galleryBody = ev.value * 1"/></div>
   <div class="menu-group">AssetField</div>
-  <div class="sample"><use ui="AssetField" data-alias-table="choices.assets.prototype" data-alias-value="save.galleryAsset" data-event-click="emit('palette.pick', 'prototype', save.galleryAsset, 'None')" data-event-change="save.galleryAsset = ev.value"/></div>
+  <div class="sample"><use ui="AssetField" data-alias-table="self.galleryChoices.assets.prototype" data-alias-value="save.galleryAsset" data-event-click="emit('StudioGalleryCommand', 'assets', '', pane)" data-event-change="save.galleryAsset = ev.value"/></div>
+  <use ui="StudioMenu" id="gallery-prototypes">
+    <use ui="ChoiceList" data-event-input="emit('StudioGalleryPrototypeQuery', ev.value)" data-event-change="emit('StudioGalleryCommand', 'pick', ev.value, pane)">
+      <div class="menu-item" role="option" value="" data-label="None"><span class="text">None</span></div>
+      <div class="menu-item" role="option" data-for="prototype : self.galleryPrototypes" data-attr-value="prototype.Name" data-attr-data-label="prototype.Name"><span class="icon lead">&#xf01a7;</span><span class="text">{{ prototype.Name }}</span></div>
+    </use>
+    <div class="collection-notice" data-if="self.galleryPrototypeError != ''" role="status">{{ self.galleryPrototypeError }}</div>
+    <div class="collection-history sample"><button class="btn subtle" data-attrif-disabled="self.galleryPrototypeFirst == 0" data-event-click="emit('StudioGalleryCommand', 'previous', '', pane)">Previous</button><button class="btn subtle" data-attrif-disabled="self.galleryPrototypeFirst + 64 &gt;= self.galleryPrototypeTotal" data-event-click="emit('StudioGalleryCommand', 'next', '', pane)">Next</button></div>
+  </use>
   <div class="menu-group">MenuOption</div>
   <use ui="MenuOption" value="first">First</use>
   <use ui="MenuOption" value="second">Second</use>
@@ -89,21 +97,35 @@
       <div class="list-row" data-for="row, i : self.rows">Row {{ self.first + i + 1 }} of {{ self.total }}</div>
     </use>
   </div>
-  <div class="menu-group">List</div>
+  <div class="menu-group">Project resources</div>
+  <div class="sample"><input class="field text" aria-label="Filter collection resources" placeholder="Filter resources" data-attr-value="self.assetCollection.filter" data-event-input="emit('CollectionFilterTyped', ev.value)"/></div>
   <div class="sample assets-sample">
-    <use ui="List" id="gallery-assets" data-event-scroll="emit('gallery.scroll')">
-      <use ui="TreeRow" data-for="row : gallery.assets" data-alias-item="row" data-attr-data-drag="row.drag" data-attr-data-drag-payload="row.name" data-attr-data-drag-icon="row.icon"></use>
+    <use ui="List" id="gallery-assets" data-measure="" data-event-scroll="emit('CollectionViewportChanged')" data-style---collection-height="self.assetCollection.availableHeight + 'dp'">
+      <div class="collection-window" data-style-top="self.assetCollection.availableTop + 'dp'">
+        <use ui="TreeRow" data-for="slot : self.assetCollection.availableSlots" data-alias-row="self.assetCollection.availableItems[slot]" data-alias-item="row" data-attr-data-drag="row.drag" data-attr-data-drag-payload="row.key" data-attr-data-drag-icon="row.icon" data-attr-data-tip-about="row.path"/>
+      </div>
     </use>
+    <div class="bin-empty" data-if="self.assetCollection.availableEmpty">No matching resources</div>
   </div>
-  <div class="menu-group">TreeRow drop zones</div>
-  <div class="bin" data-drop="prototype behavior material shape field system ui" data-drop-hint="Collect" data-event-drop="emit('gallery.drop', ev.type, ev.payload, -1, ev.zone)">
-    <div class="bin-empty" data-if="gallery.bin.size == 0">Drop assets here</div>
-    <use ui="TreeRow" data-for="row, i : gallery.bin" data-alias-item="row" data-drop="prototype behavior material shape field system ui" data-drop-zones="list" data-drop-hint="Insert" data-event-drop="emit('gallery.drop', ev.type, ev.payload, i, ev.zone)"></use>
+  <div class="menu-group">Collected resources · {{ self.assetCollection.count }}</div>
+  <div class="sample collection-history">
+    <button class="btn subtle" data-attrif-data-disabled="!self.assetCollection.canUndo" data-event-click="emit('CollectionUndo')">Undo last change</button>
+    <button class="btn subtle" data-attrif-data-disabled="!self.assetCollection.canRedo" data-event-click="emit('CollectionRedo')">Redo</button>
   </div>
-  <div class="menu-group">Tile</div>
+  <div class="bin" data-drop="scene prototype behavior event material shape field system library shader-library model ui image mesh sound font" data-drop-hint="Collect" data-event-drop="emit('CollectionDrop', ev.type, ev.payload, '', ev.zone)">
+    <div class="bin-empty" data-if="self.assetCollection.count == 0">Drag resources here to collect them.</div>
+    <div class="collection-row" data-for="slot : self.assetCollection.slots" data-alias-row="self.assetCollection.items[slot]" data-attr-data-key="row.key">
+      <use ui="TreeRow" data-alias-item="row" data-drop="scene prototype behavior event material shape field system library shader-library model ui image mesh sound font" data-drop-zones="list" data-drop-hint="Insert" data-event-drop="emit('CollectionDrop', ev.type, ev.payload, row.key, ev.zone)" data-event-click="emit('CollectionSelected', row.key)" data-attr-data-drag="row.drag" data-attr-data-drag-payload="row.key" data-attr-data-drag-icon="row.icon"/>
+      <button class="btn icon-only subtle" aria-label="Move resource up" data-event-click="emit('CollectionMove', row.key, -1)"><span class="icon">&#xea77;</span></button>
+      <button class="btn icon-only subtle" aria-label="Move resource down" data-event-click="emit('CollectionMove', row.key, 1)"><span class="icon">&#xea74;</span></button>
+      <button class="btn icon-only subtle" aria-label="Remove from collection" data-event-click="emit('CollectionRemove', row.key)"><span class="icon">&#xeb1f;</span></button>
+    </div>
+  </div>
+  <div class="collection-notice" data-if="self.assetCollection.notice != ''" role="status">{{ self.assetCollection.notice }}</div>
+  <div class="menu-group">Collected tiles</div>
   <div class="sample tiles">
-    <use ui="Tile" class="tile-sample" data-for="row : gallery.bin" data-alias-tile="row" data-attr-data-drag="row.drag" data-attr-data-drag-payload="row.name" data-attr-data-drag-icon="row.icon"></use>
-    <span class="bin-empty" data-if="gallery.bin.size == 0">Collected assets show here</span>
+    <use ui="Tile" class="tile-sample" data-for="slot : self.assetCollection.slots" data-alias-row="self.assetCollection.items[slot]" data-alias-tile="row" data-attr-data-drag="row.drag" data-attr-data-drag-payload="row.key" data-attr-data-drag-icon="row.icon" data-event-click="emit('CollectionSelected', row.key)"/>
+    <span class="bin-empty" data-if="self.assetCollection.count == 0">Collected resources appear here.</span>
   </div>
   <div class="menu-group">Presence</div>
   <div class="sample"><use ui="Switch" data-checked="save.galleryShown"/><span class="shown" data-if="save.galleryShown" presence>Shown</span></div>

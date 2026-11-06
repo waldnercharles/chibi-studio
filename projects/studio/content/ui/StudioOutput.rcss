@@ -1,0 +1,11 @@
+.studio-output { display: flex; flex-direction: column; gap: 6dp; padding: 8dp; height: 100%; }
+.studio-output-toolbar { display: flex; align-items: center; gap: 6dp; flex-shrink: 0; }
+.studio-output .output-search { flex: 1; min-width: 80dp; }
+.studio-output .output-program { width: 140dp; }
+.studio-output-rows { overflow-y: auto; flex: 1; min-height: 40dp; }
+.studio-output-log { display: flex; flex-direction: column; gap: 2dp; padding: 4dp 6dp; border-bottom: 1dp var(--border); white-space: pre-wrap; }
+.studio-output-result { display: flex; align-items: flex-start; text-align: left; gap: 10dp; width: 100%; padding: 5dp 6dp; white-space: pre-wrap; }
+.studio-output-call { display: flex; align-items: center; gap: 6dp; }
+.studio-output-call .studio-output-result { flex: 1; flex-direction: column; gap: 2dp; }
+.studio-output-info { margin: 0; white-space: pre-wrap; }
+.studio-output p { margin: 0; }

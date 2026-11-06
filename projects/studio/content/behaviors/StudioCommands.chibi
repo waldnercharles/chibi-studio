@@ -1,0 +1,1052 @@
+behavior StudioCommands {
+    // Policy and presentation live here; the SDK has no Studio command enum.
+    self.Rows: struct<"StudioCommandRow">[] = [
+        { id: "search", label: "Search", shortcut: "Mod+K", context: "Global", keywords: "find go to", icon: "", destination: "shell", group: "Edit", creation: false, available: true, aliasBinding: "Mod+P:StudioKey_search" },
+        { id: "settings", label: "Settings", shortcut: "Mod+Comma", context: "Global", keywords: "preferences options", icon: "", destination: "shell", group: "File", creation: false, available: true, aliasBinding: "" },
+        { id: "save", label: "Save", shortcut: "Mod+S", context: "Global", keywords: "", icon: "", destination: "document", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "saveAll", label: "Save All", shortcut: "Mod+Alt+S", context: "Global", keywords: "every documents", icon: "", destination: "document", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "revert", label: "Revert File", shortcut: "", context: "Global", keywords: "reload discard disk saved", icon: "", destination: "document", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "undo", label: "Undo", shortcut: "Mod+Z", context: "Global", keywords: "", icon: "󰕌", destination: "document", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "redo", label: "Redo", shortcut: "Mod+Shift+Z", context: "Global", keywords: "", icon: "󰑎", destination: "document", group: "Edit", creation: false, available: false, aliasBinding: "Mod+Y:StudioKey_redo" },
+        { id: "duplicate", label: "Duplicate", shortcut: "Shift+D", context: "Scene, Outliner", keywords: "copy", icon: "", destination: "scene", group: "Edit", creation: false, available: false, aliasBinding: "Mod+D:StudioKey_duplicate" },
+        { id: "delete", label: "Delete", shortcut: "X", context: "Scene, Outliner", keywords: "remove", icon: "", destination: "scene", group: "Edit", creation: false, available: false, aliasBinding: "Backspace:StudioKey_delete Delete:StudioKey_delete" },
+        { id: "openPrototype", label: "Open Prototype", shortcut: "", context: "Global", keywords: "edit", icon: "󰆧", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "frame", label: "Frame Selected", shortcut: "F", context: "Scene, Outliner", keywords: "focus zoom", icon: "󰆣", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "resetCamera", label: "Reset Camera", shortcut: "", context: "Global", keywords: "view", icon: "", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "hideSelected", label: "Hide Selected", shortcut: "H", context: "Scene, Outliner", keywords: "visibility eye hide in editor", icon: "", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "hideUnselected", label: "Hide Unselected", shortcut: "Shift+H", context: "Scene, Outliner", keywords: "visibility isolate solo others", icon: "", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "showAll", label: "Show All", shortcut: "Alt+H", context: "Scene, Outliner", keywords: "visibility unhide reveal eye", icon: "", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "toggleAssets", label: "Toggle Assets", shortcut: "Mod+Shift+A", context: "Global", keywords: "drawer browser content", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "toggleOutput", label: "Toggle Output", shortcut: "Mod+Shift+U", context: "Global", keywords: "drawer log console problems diagnostics", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "togglePerformance", label: "Toggle Performance", shortcut: "", context: "Global", keywords: "drawer profiler frame time fps", icon: "󰓅", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "maximize", label: "Maximize Area", shortcut: "Ctrl+Space", context: "Area under pointer", keywords: "fullscreen", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "resetLayout", label: "Reset Layout", shortcut: "", context: "Global", keywords: "areas default", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "zoomIn", label: "Zoom In", shortcut: "Mod+Equal", context: "Global", keywords: "ui scale larger bigger", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "Mod+Shift+Equal:StudioKey_zoomIn Mod+Plus:StudioKey_zoomIn Mod+Shift+Plus:StudioKey_zoomIn Mod+KeypadPlus:StudioKey_zoomIn" },
+        { id: "zoomOut", label: "Zoom Out", shortcut: "Mod+Minus", context: "Global", keywords: "ui scale smaller", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "Mod+Shift+Minus:StudioKey_zoomOut Mod+KeypadMinus:StudioKey_zoomOut" },
+        { id: "zoomReset", label: "Reset Zoom", shortcut: "Mod+0", context: "Global", keywords: "ui scale actual size 100%", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "Mod+Keypad0:StudioKey_zoomReset" },
+        { id: "play", label: "Play", shortcut: "Space", context: "Except Behavior", keywords: "run start preview pause", icon: "󰐊", destination: "debug", group: "Run", creation: false, available: false, aliasBinding: "Shift+Space:StudioKey_play Alt+Space:StudioKey_play Alt+Shift+Space:StudioKey_play" },
+        { id: "stop", label: "Stop", shortcut: "Shift+F5", context: "Global", keywords: "", icon: "󰓛", destination: "debug", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "step", label: "Step", shortcut: "F10", context: "Unless paused in the debugger", keywords: "frame advance next", icon: "󰒭", destination: "debug", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "recordGameplay", label: "Record Gameplay", shortcut: "", context: "Global", keywords: "scenario capture replay input", icon: "󰑊", destination: "debug", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "exportGame", label: "Export Game", shortcut: "", context: "Global", keywords: "build ship package release app desktop", icon: "", destination: "resource", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "density", label: "Comfortable Density", shortcut: "", context: "Global", keywords: "spacing size settings", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "motion", label: "Reduce Motion", shortcut: "", context: "Global", keywords: "animation settings", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "theme", label: "Light Theme", shortcut: "", context: "Global", keywords: "appearance color mode settings", icon: "󰖙", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "inspectElement", label: "Inspect Element", shortcut: "Mod+Shift+C", context: "Global", keywords: "ui inspector devtools debugger pick styles rml rcss", icon: "󰆿", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "previewUi", label: "Preview UI Asset…", shortcut: "", context: "Global", keywords: "canvas storybook widget document screen size", icon: "", destination: "resource", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "newScene", label: "New Scene…", shortcut: "", context: "Global", keywords: "create add asset level world", icon: "", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newPrototype", label: "New Prototype…", shortcut: "", context: "Global", keywords: "create add asset prefab template entity", icon: "󰆧", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newBehavior", label: "New Behavior…", shortcut: "", context: "Global", keywords: "create add asset graph script blueprint", icon: "", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newEvent", label: "New Event…", shortcut: "", context: "Global", keywords: "create add asset signal message definition", icon: "", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newSystem", label: "New System…", shortcut: "", context: "Global", keywords: "create add asset ecs query graph", icon: "", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newLibrary", label: "New Library…", shortcut: "", context: "Global", keywords: "create add asset functions macros graph", icon: "", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newMaterial", label: "New Material…", shortcut: "", context: "Global", keywords: "create add asset shader surface", icon: "󰏘", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newShape", label: "New Shape…", shortcut: "", context: "Global", keywords: "create add asset shader sdf distance", icon: "󰋙", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newField", label: "New Field…", shortcut: "", context: "Global", keywords: "create add asset procedural terrain noise", icon: "󰋁", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newShaderLibrary", label: "New Shader Library…", shortcut: "", context: "Global", keywords: "create add asset shader functions", icon: "", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newModel", label: "New Model…", shortcut: "", context: "Global", keywords: "create add asset 3d sdf geometry asset", icon: "󰋙", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newUiWidget", label: "New UI Widget…", shortcut: "", context: "Global", keywords: "create add asset component rml", icon: "", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newUiDocument", label: "New UI Document…", shortcut: "", context: "Global", keywords: "create add asset panel screen rml", icon: "", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "newStylesheet", label: "New Stylesheet…", shortcut: "", context: "Global", keywords: "create add asset ui styles rcss css", icon: "", destination: "resource", group: "File", creation: true, available: false, aliasBinding: "" },
+        { id: "rename", label: "Rename", shortcut: "F2", context: "Scene, Outliner", keywords: "name object", icon: "", destination: "scene", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "addComponent", label: "Add Component…", shortcut: "", context: "Properties", keywords: "prototype object attach", icon: "", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "keepChanges", label: "Keep Changes", shortcut: "K", context: "Scene, Properties", keywords: "play live runtime simulation values apply copy", icon: "󰤱", destination: "debug", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "workspaceVerticalSplit", label: "Vertical Split", shortcut: "", context: "Global", keywords: "vertical split stacked scene behavior", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "workspaceHorizontalSplit", label: "Horizontal Split", shortcut: "", context: "Global", keywords: "horizontal split side by side canvas text editor", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "toggleSidePane", label: "Side Pane", shortcut: "", context: "Global", keywords: "sidebar outliner properties hierarchy details column", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "collaboration", label: "Collaboration", shortcut: "", context: "Global", keywords: "share room invite host join", icon: "󰘬", destination: "collaboration", group: "Collaboration", creation: false, available: false, aliasBinding: "" },
+        { id: "collaborationToken", label: "Use admin token", shortcut: "", context: "Global", keywords: "", icon: "", destination: "collaboration", group: "Collaboration", creation: false, available: false, aliasBinding: "" },
+        { id: "collaborationFollow", label: "Follow participant", shortcut: "", context: "Global", keywords: "", icon: "", destination: "collaboration", group: "Collaboration", creation: false, available: false, aliasBinding: "" },
+        { id: "collaborationUnfollow", label: "Stop following", shortcut: "", context: "Global", keywords: "", icon: "", destination: "collaboration", group: "Collaboration", creation: false, available: false, aliasBinding: "" },
+        { id: "collaborationHost", label: "Host Collaboration Room", shortcut: "", context: "Collaboration", keywords: "", icon: "󰘬", destination: "collaboration", group: "Collaboration", creation: false, available: false, aliasBinding: "" },
+        { id: "collaborationJoin", label: "Join Collaboration Room", shortcut: "", context: "Collaboration", keywords: "", icon: "", destination: "collaboration", group: "Collaboration", creation: false, available: false, aliasBinding: "" },
+        { id: "collaborationLeave", label: "Leave Collaboration Room", shortcut: "", context: "Collaboration", keywords: "", icon: "", destination: "collaboration", group: "Collaboration", creation: false, available: false, aliasBinding: "" },
+        { id: "collaborationInviteViewer", label: "Copy Viewer Invite", shortcut: "", context: "Collaboration", keywords: "", icon: "", destination: "collaboration", group: "Collaboration", creation: false, available: false, aliasBinding: "" },
+        { id: "collaborationInviteEditor", label: "Copy Editor Invite", shortcut: "", context: "Collaboration", keywords: "", icon: "", destination: "collaboration", group: "Collaboration", creation: false, available: false, aliasBinding: "" },
+        { id: "selectTab", label: "Select Tab", shortcut: "", context: "Global", keywords: "document switch", icon: "", destination: "document", group: "View", creation: false, available: false, aliasBinding: "" },
+        { id: "closeTab", label: "Close Tab", shortcut: "Mod+W", context: "Global", keywords: "document", icon: "", destination: "document", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "togglePinTab", label: "Pin / Unpin Tab", shortcut: "", context: "Global", keywords: "document keep", icon: "󰤱", destination: "document", group: "View", creation: false, available: false, aliasBinding: "" },
+        { id: "previousTab", label: "Previous Tab", shortcut: "Ctrl+Shift+Tab", context: "Global", keywords: "", icon: "", destination: "document", group: "View", creation: false, available: false, aliasBinding: "" },
+        { id: "nextTab", label: "Next Tab", shortcut: "Ctrl+Tab", context: "Global", keywords: "", icon: "", destination: "document", group: "View", creation: false, available: false, aliasBinding: "" },
+        { id: "closeDrawer", label: "Close Drawer", shortcut: "", context: "Global", keywords: "hide panel", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "objectUp", label: "Move Objects Up", shortcut: "Alt+Up", context: "Outliner", keywords: "reparent reorder hierarchy world transform", icon: "󰆾", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "objectDown", label: "Move Objects Down", shortcut: "Alt+Down", context: "Outliner", keywords: "reparent reorder hierarchy world transform", icon: "󰆾", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "objectIndent", label: "Parent to Previous Sibling", shortcut: "Alt+Right", context: "Outliner", keywords: "reparent reorder hierarchy world transform", icon: "󰆾", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "objectOutdent", label: "Move Out of Parent", shortcut: "Alt+Left", context: "Outliner", keywords: "reparent reorder hierarchy world transform", icon: "󰆾", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "objectRoot", label: "Move to Scene Root", shortcut: "", context: "Outliner", keywords: "reparent reorder hierarchy world transform", icon: "󰆾", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "selectPrevious", label: "Select Previous", shortcut: "Up", context: "Outliner", keywords: "", icon: "", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "selectNext", label: "Select Next", shortcut: "Down", context: "Outliner", keywords: "", icon: "", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "showGeneratedWorld", label: "Show Generated World", shortcut: "", context: "Global", keywords: "scene view procedural terrain material fluid preview", icon: "󰖊", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "showLighting", label: "Show Lighting", shortcut: "", context: "Global", keywords: "scene view hrc unlit light", icon: "󰌶", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "showFog", label: "Show Fog of War", shortcut: "", context: "Global", keywords: "scene view visibility vision", icon: "󰅣", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "showCameraFrames", label: "Show Camera Frames", shortcut: "", context: "Global", keywords: "scene view camera frustum bounds overlay", icon: "󰵝", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "showColliders", label: "Show Colliders", shortcut: "", context: "Global", keywords: "scene view physics collision debug overlay", icon: "󰹻", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "viewThroughCamera", label: "View Through Camera", shortcut: "Shift+C", context: "Scene, Outliner", keywords: "game camera view frame pilot", icon: "󰵉", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "Keypad0:StudioKey_viewThroughCamera" },
+        { id: "resume", label: "Play / Resume", shortcut: "F5", context: "Global", keywords: "run start continue debug", icon: "󰐊", destination: "debug", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "stepOver", label: "Step Over", shortcut: "F10", context: "When paused", keywords: "", icon: "", destination: "debug", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "stepInto", label: "Step Into", shortcut: "F11", context: "When paused", keywords: "", icon: "", destination: "debug", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "stepOut", label: "Step Out", shortcut: "Shift+F11", context: "When paused", keywords: "", icon: "", destination: "debug", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "selectTool", label: "Select Tool", shortcut: "Q", context: "Scene", keywords: "pick cursor", icon: "󰆿", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "moveTool", label: "Move Tool", shortcut: "W", context: "Scene", keywords: "translate position gizmo arrows", icon: "󰆾", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "rotateTool", label: "Rotate Tool", shortcut: "E", context: "Scene", keywords: "orientation angle turn gizmo ring", icon: "󰑧", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "scaleTool", label: "Scale Tool", shortcut: "R", context: "Scene", keywords: "resize size width height handles gizmo", icon: "󰩨", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "grab", label: "Grab", shortcut: "G", context: "Scene", keywords: "move modal translate follow pointer", icon: "󰮴", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "toggleSnap", label: "Snap to Grid", shortcut: "Shift+G", context: "Scene", keywords: "magnet increment align", icon: "󰍇", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "toggleLocalSpace", label: "Local Space", shortcut: "T", context: "Scene", keywords: "world global axes orientation pivot gizmo", icon: "󰵉", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "toggleGrid", label: "Show Grid", shortcut: "", context: "Scene", keywords: "lines axes overlay", icon: "󰋁", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "finerGrid", label: "Finer Grid Increment", shortcut: "", context: "Scene", keywords: "snap step smaller spacing", icon: "󰋁", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "coarserGrid", label: "Coarser Grid Increment", shortcut: "", context: "Scene", keywords: "snap step larger spacing", icon: "󰋁", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "selectAll", label: "Select All", shortcut: "Mod+A", context: "Scene, Outliner", keywords: "objects every", icon: "󰆿", destination: "scene", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "deselect", label: "Deselect All", shortcut: "Escape", context: "Scene, Outliner", keywords: "clear selection none", icon: "", destination: "scene", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "frameAll", label: "Frame All", shortcut: "Home", context: "Scene", keywords: "view fit everything zoom", icon: "󰁌", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "find", label: "Find", shortcut: "Mod+F", context: "Area under pointer", keywords: "search filter", icon: "", destination: "scene", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "keyboardShortcuts", label: "Keyboard Shortcuts", shortcut: "Mod+Slash", context: "Global", keywords: "keys keymap hotkeys bindings cheat sheet help", icon: "󰥻", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "documentation", label: "Documentation", shortcut: "", context: "Global", keywords: "help manual guide readme", icon: "", destination: "resource", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "reportIssue", label: "Report an Issue", shortcut: "", context: "Global", keywords: "help bug feedback github", icon: "", destination: "resource", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "about", label: "About Chibi Studio", shortcut: "", context: "Global", keywords: "help version engine", icon: "", destination: "shell", group: "View", creation: false, available: true, aliasBinding: "" },
+        { id: "goToDefinition", label: "Go to Definition", shortcut: "F12", context: "Text Editor", keywords: "jump declaration symbol", icon: "", destination: "text", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "findReferences", label: "Find References", shortcut: "Shift+F12", context: "Text Editor", keywords: "usages symbol", icon: "", destination: "text", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "renameSymbol", label: "Rename Symbol", shortcut: "F2", context: "Text Editor", keywords: "refactor name", icon: "", destination: "text", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "callHierarchy", label: "Show Call Hierarchy", shortcut: "Shift+Alt+H", context: "Text Editor", keywords: "callers callees", icon: "", destination: "text", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "nextProblem", label: "Go to Next Problem", shortcut: "F8", context: "Text Editor", keywords: "error warning diagnostic marker", icon: "", destination: "text", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "previousProblem", label: "Go to Previous Problem", shortcut: "Shift+F8", context: "Text Editor", keywords: "error warning diagnostic marker", icon: "", destination: "text", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "toggleLineComment", label: "Toggle Line Comment", shortcut: "Mod+Slash", context: "Text Editor", keywords: "comment uncomment", icon: "", destination: "text", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "copy", label: "Copy", shortcut: "Mod+C", context: "Scene, Outliner", keywords: "clipboard objects", icon: "󰆏", destination: "scene", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "cut", label: "Cut", shortcut: "Mod+X", context: "Scene, Outliner", keywords: "clipboard objects remove", icon: "󰆐", destination: "scene", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "paste", label: "Paste", shortcut: "Mod+V", context: "Scene, Outliner", keywords: "clipboard objects insert", icon: "󰆒", destination: "scene", group: "Edit", creation: false, available: false, aliasBinding: "" },
+        { id: "extendPrevious", label: "Extend Selection Up", shortcut: "Shift+Up", context: "Outliner", keywords: "range multiple", icon: "", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "extendNext", label: "Extend Selection Down", shortcut: "Shift+Down", context: "Outliner", keywords: "range multiple", icon: "", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "showLiveValues", label: "Show Live Values", shortcut: "", context: "Global", keywords: "graph debug watch values chips running inspect", icon: "", destination: "graph", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "slower", label: "Slower", shortcut: "Mod+Alt+Minus", context: "Global", keywords: "playback speed slow motion time scale slomo", icon: "󰳗", destination: "debug", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "faster", label: "Faster", shortcut: "Mod+Alt+Equal", context: "Global", keywords: "playback speed fast forward time scale", icon: "󰤇", destination: "debug", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "normalSpeed", label: "Normal Speed", shortcut: "Mod+Alt+0", context: "Global", keywords: "playback speed reset time scale 1x real time", icon: "", destination: "debug", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "applyOverrides", label: "Apply Overrides to Prototype…", shortcut: "", context: "Global", keywords: "prefab instance push defaults", icon: "󰆧", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "saveAsPrototype", label: "Save as New Prototype…", shortcut: "", context: "Global", keywords: "prefab variant instance create", icon: "", destination: "scene", group: "Scene", creation: false, available: false, aliasBinding: "" },
+        { id: "newProject", label: "New Project", shortcut: "Mod+Shift+N", context: "Global", keywords: "create workspace game folder", icon: "", destination: "resource", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "openProject", label: "Open Project…", shortcut: "Mod+O", context: "Global", keywords: "folder load", icon: "", destination: "resource", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "quit", label: "Quit", shortcut: "Mod+Q", context: "Global", keywords: "exit close window", icon: "", destination: "resource", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "importProject", label: "Import Project…", shortcut: "", context: "Global", keywords: "project job", icon: "", destination: "resource", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "exportProject", label: "Export Project…", shortcut: "", context: "Global", keywords: "project job", icon: "", destination: "resource", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "compileProject", label: "Compile Project", shortcut: "", context: "Global", keywords: "project job", icon: "", destination: "resource", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "cancelJob", label: "Cancel Job", shortcut: "", context: "Global", keywords: "project job", icon: "", destination: "resource", group: "Run", creation: false, available: false, aliasBinding: "" },
+        { id: "convertModel", label: "Convert Model…", shortcut: "", context: "Global", keywords: "mesh import gltf recipe", icon: "", destination: "resource", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "reimportModel", label: "Reimport Model…", shortcut: "", context: "Global", keywords: "mesh recipe rebuild", icon: "", destination: "resource", group: "File", creation: false, available: false, aliasBinding: "" },
+        { id: "breakpoint", label: "Toggle Node Breakpoint", shortcut: "F9", context: "Graph", keywords: "graph", icon: "", destination: "graph", group: "Graph", creation: false, available: false, aliasBinding: "" },
+        { id: "disable", label: "Enable or Disable Node", shortcut: "D", context: "Graph", keywords: "graph", icon: "", destination: "graph", group: "Graph", creation: false, available: false, aliasBinding: "" },
+        { id: "fold", label: "Fold or Expand Inputs", shortcut: "Mod+G", context: "Graph", keywords: "graph", icon: "", destination: "graph", group: "Graph", creation: false, available: false, aliasBinding: "" },
+        { id: "selectLinked", label: "Select Connected Nodes", shortcut: "L", context: "Graph", keywords: "graph", icon: "", destination: "graph", group: "Graph", creation: false, available: false, aliasBinding: "" },
+        { id: "arrangeLinked", label: "Arrange Connected Nodes", shortcut: "Shift+L", context: "Graph", keywords: "graph", icon: "", destination: "graph", group: "Graph", creation: false, available: false, aliasBinding: "" },
+        { id: "back", label: "Previous Graph Location", shortcut: "Alt+Left", context: "Graph", keywords: "graph", icon: "", destination: "graph", group: "Graph", creation: false, available: false, aliasBinding: "" },
+        { id: "forward", label: "Next Graph Location", shortcut: "Alt+Right", context: "Graph", keywords: "graph", icon: "", destination: "graph", group: "Graph", creation: false, available: false, aliasBinding: "" },
+        { id: "left", label: "Select Node to Left", shortcut: "Left", context: "Graph", keywords: "graph", icon: "", destination: "graph", group: "Graph", creation: false, available: false, aliasBinding: "" },
+        { id: "right", label: "Select Node to Right", shortcut: "Right", context: "Graph", keywords: "graph", icon: "", destination: "graph", group: "Graph", creation: false, available: false, aliasBinding: "" },
+        { id: "up", label: "Select Node Above", shortcut: "Up", context: "Graph", keywords: "graph", icon: "", destination: "graph", group: "Graph", creation: false, available: false, aliasBinding: "" },
+        { id: "down", label: "Select Node Below", shortcut: "Down", context: "Graph", keywords: "graph", icon: "", destination: "graph", group: "Graph", creation: false, available: false, aliasBinding: "" }
+    ]
+    NewMenu: struct<"StudioCommandRow"> = { id: "new", label: "New", shortcut: "", context: "Global", keywords: "", icon: "", destination: "resource", group: "File", creation: false, available: false, aliasBinding: "" }
+    CommandIds: string[] = []
+    Available: bool[] = []
+    Enabled: bool[] = []
+    Uses: int[] = []
+    Query: string = ""
+    Shown: bool[] = []
+    Order: int[] = []
+    Scores: int[] = []
+    Matches: int = 0
+    RegistryReady := false
+    Shortcuts: string[] = []
+    Customized: bool[] = []
+    KeyEvents: string[] = []
+    AliasBindings: string[] = []
+    Bindings: string = "Escape:StudioShellClose"
+    ShortcutError: string = ""
+    Paused := false
+    DebuggerPaused := false
+    DocumentCanUndo := false
+    DocumentCanRedo := false
+    DocumentBusy := false
+    GestureCancelable := false
+    AssetCanUndo := false
+    AssetCanRedo := false
+    GraphAvailable := false
+    GraphSelected := false
+    GraphEditable := false
+    GraphCanBack := false
+    GraphCanForward := false
+    Context: string = "Scene"
+    TextEditing := false
+    ensure_registry :: fn() {
+        if RegistryReady {
+            return
+        }
+        for row in Rows {
+            await set_ui_data(Name: format_text("studioCommandIndex.{}", row.id), Value: length(CommandIds))
+            CommandIds = array_add(CommandIds, row.id)
+            Available = array_add(Available, row.available)
+            Enabled = array_add(Enabled, row.available)
+            Uses = array_add(Uses, cast<int>(0))
+            Shown = array_add(Shown, true)
+            Order = array_add(Order, length(Order))
+            Scores = array_add(Scores, cast<int>(0))
+            Shortcuts = array_add(Shortcuts, row.shortcut)
+            Customized = array_add(Customized, false)
+            KeyEvents = array_add(KeyEvents, format_text("StudioKey_{}", row.id))
+            AliasBindings = array_add(AliasBindings, row.aliasBinding)
+        }
+        Matches = length(Rows)
+        RegistryReady = true
+        return
+    }
+    dispatch_key :: fn(Id: string) {
+        ensure_registry()
+        i: int = 0
+        for row in Rows {
+            if text_equal(row.id, Id) {
+                if eligible(row.id, row.context) {
+                    send_event<"StudioCommand">(self, Id, "")
+                }
+                return
+            }
+            i += 1
+        }
+    }
+    graph_only :: pure fn(Id: string) -> bool {
+        return text_equal(Id, "breakpoint") || text_equal(Id, "disable") || text_equal(Id, "fold") || text_equal(Id, "selectLinked") || text_equal(Id, "arrangeLinked") || text_equal(Id, "back") || text_equal(Id, "forward") || text_equal(Id, "left") || text_equal(Id, "right") || text_equal(Id, "up") || text_equal(Id, "down")
+    }
+    graph_command :: pure fn(Id: string) -> bool {
+        return graph_only(Id) || text_equal(Id, "selectAll") || text_equal(Id, "deselect") || text_equal(Id, "selectPrevious") || text_equal(Id, "selectNext") || text_equal(Id, "extendPrevious") || text_equal(Id, "extendNext") || text_equal(Id, "frameAll") || text_equal(Id, "find") || text_equal(Id, "copy") || text_equal(Id, "paste") || text_equal(Id, "showLiveValues") || text_equal(Id, "cut") || text_equal(Id, "goToDefinition") || text_equal(Id, "findReferences") || text_equal(Id, "callHierarchy")
+    }
+    find_context :: pure fn(Context: string) -> bool {
+        return text_equal(Context, "Text Editor") || text_equal(Context, "Graph") || text_equal(Context, "Behavior") || text_equal(Context, "Outliner") || text_equal(Context, "Properties") || text_equal(Context, "Assets") || text_equal(Context, "Output")
+    }
+    graph_field_command :: pure fn(Id: string) -> bool {
+        return (graph_command(Id) && !text_equal(Id, "find")) || text_equal(Id, "undo") || text_equal(Id, "redo") || text_equal(Id, "duplicate") || text_equal(Id, "delete") || text_equal(Id, "rename")
+    }
+    eligible :: fn(Id: string, CommandContext: string) -> bool {
+        if TextEditing && (text_equal(Context, "Graph") || text_equal(Context, "Behavior")) && graph_field_command(Id) {
+            return false
+        }
+        if graph_only(Id) {
+            return !TextEditing && (text_equal(Context, "Graph") || text_equal(Context, "Behavior"))
+        }
+        if text_equal(Id, "find") {
+            return find_context(Context)
+        }
+        if text_equal(Context, "Assets") && (text_equal(Id, "undo") || text_equal(Id, "redo")) {
+            return !TextEditing
+        }
+        if graph_command(Id) && (text_equal(Context, "Graph") || text_equal(Context, "Behavior")) {
+            return true
+        }
+        common := text_equal(Id, "undo") || text_equal(Id, "redo") || text_equal(Id, "cut") || text_equal(Id, "copy") || text_equal(Id, "paste") || text_equal(Id, "selectAll") || text_equal(Id, "find")
+        if common && (text_equal(Context, "Text Editor") || text_equal(Context, "Graph") || text_equal(Context, "Behavior")) {
+            return true
+        }
+        if text_equal(CommandContext, "Global") || text_equal(CommandContext, "Area under pointer") {
+            return true
+        }
+        if text_equal(CommandContext, "When paused") {
+            return DebuggerPaused
+        }
+        if text_equal(CommandContext, "Unless paused in the debugger") {
+            return !DebuggerPaused
+        }
+        if text_equal(CommandContext, "Except Behavior") {
+            return !text_equal(Context, "Graph") && !text_equal(Context, "Behavior") && !TextEditing
+        }
+        if text_equal(CommandContext, Context) {
+            return true
+        }
+        if text_equal(CommandContext, "Scene, Outliner") {
+            return text_equal(Context, "Scene") || text_equal(Context, "Outliner")
+        }
+        if text_equal(CommandContext, "Scene, Properties") {
+            return text_equal(Context, "Scene") || text_equal(Context, "Properties")
+        }
+        return false
+    }
+    rebuild_keys :: fn() {
+        ensure_registry()
+        Bindings = "Escape:StudioShellClose"
+        i: int = 0
+        for row in Rows {
+            if Enabled[i] && eligible(row.id, row.context) {
+                if !text_equal(Shortcuts[i], "") {
+                    Bindings = format_text("{} {}:{}", Bindings, Shortcuts[i], KeyEvents[i])
+                }
+                if !Customized[i] && !text_equal(AliasBindings[i], "") {
+                    Bindings = format_text("{} {}", Bindings, AliasBindings[i])
+                }
+            }
+            i += 1
+        }
+        return
+    }
+    publish :: fn() {
+        ensure_registry()
+        i: int = 0
+        for row in Rows {
+            id := row.id
+            Enabled[i] = Available[i]
+            if (text_equal(Context, "Graph") || text_equal(Context, "Behavior")) && graph_command(id) {
+                Enabled[i] = GraphAvailable && !TextEditing
+                if graph_only(id) && (text_equal(id, "breakpoint") || text_equal(id, "disable") || text_equal(id, "fold")) {
+                    Enabled[i] = GraphEditable && GraphSelected && !TextEditing
+                }
+                if text_equal(id, "back") {
+                    Enabled[i] = GraphCanBack && !TextEditing
+                }
+                if text_equal(id, "forward") {
+                    Enabled[i] = GraphCanForward && !TextEditing
+                }
+            }
+            if text_equal(id, "find") {
+                Enabled[i] = find_context(Context)
+            }
+            if text_equal(id, "undo") {
+                Enabled[i] = (DocumentCanUndo && !DocumentBusy) || GestureCancelable
+                if text_equal(Context, "Assets") {
+                    Enabled[i] = AssetCanUndo && !TextEditing
+                }
+            }
+            if text_equal(id, "redo") {
+                Enabled[i] = DocumentCanRedo && !DocumentBusy
+                if text_equal(Context, "Assets") {
+                    Enabled[i] = AssetCanRedo && !TextEditing
+                }
+            }
+            i += 1
+        }
+        await rebuild_keys()
+        await set_ui_data(Name: "studioCommandBindings", Value: Bindings)
+        await set_ui_data(Name: "studioCommandShortcuts", Value: Shortcuts)
+        await set_ui_data(Name: "studioShortcutError", Value: ShortcutError)
+        await set_ui_data(Name: "studioCommandEnabled", Value: Enabled)
+        await set_ui_data(Name: "studioCommandShown", Value: Shown)
+        await set_ui_data(Name: "studioCommandOrder", Value: Order)
+        await set_ui_data(Name: "studioCommandMatches", Value: Matches)
+        set_ui_data(Name: "studioCommandQuery", Value: Query)
+        return
+    }
+    on Begin {
+        ensure_registry()
+        await set_ui_data(Name: "studioCommands", Value: Rows)
+        await set_ui_data(Name: "studioNewMenu", Value: NewMenu)
+        i: int = 0
+        for row in Rows {
+            uses := read_saved_number(format_text("studio.commandUses.{}", row.id), 0).Number
+            if uses >= 0 && uses <= 1000000 {
+                Uses[i] = cast<int>(uses)
+            }
+            stored := read_saved_text(format_text("studio.shortcut.{}", row.id), row.shortcut)
+            if text_equal(stored.Text, "") || validate_ui_chord(stored.Text) {
+                Shortcuts[i] = stored.Text
+                Customized[i] = stored.Found
+            }
+            i += 1
+        }
+        publish()
+    }
+    action persist_recent = commit_save()
+    after persist_recent.Failed {
+        send_event<"StudioStatus">(self, "warning", "The command ran, but its recent history could not be saved.")
+    }
+    action persist_shortcuts = commit_save()
+    after persist_shortcuts.Then {
+        send_event<"StudioStatus">(self, "info", "Keyboard shortcuts saved.")
+    }
+    after persist_shortcuts.Failed {
+        ShortcutError = "Shortcut changed, but could not be saved. Retry to keep it after restarting."
+        await publish()
+        send_event<"StudioStatus">(self, "error", ShortcutError)
+    }
+    on StudioShortcutRetry {
+        ensure_registry()
+        persist_shortcuts()
+    }
+    on StudioShortcutChanged {
+        ensure_registry()
+        if !text_equal(event.Chord, "") && !validate_ui_chord(event.Chord) {
+            ShortcutError = "Use a key with optional Mod, Ctrl, Meta, Alt and Shift prefixes."
+            await publish()
+            return
+        }
+        i: int = 0
+        for row in Rows {
+            if text_equal(row.id, event.Id) {
+                j: int = 0
+                for other in Rows {
+                    if j != i && !text_equal(event.Chord, "") && text_equal(Shortcuts[j], event.Chord) && (text_equal(row.context, other.context) || text_equal(row.context, "Global") || text_equal(other.context, "Global")) {
+                        ShortcutError = format_text("That shortcut is already assigned to {}.", other.label)
+                        await publish()
+                        return
+                    }
+                    j += 1
+                }
+                Shortcuts[i] = event.Chord
+                Customized[i] = true
+                ShortcutError = ""
+                await set_saved_text(format_text("studio.shortcut.{}", event.Id), event.Chord)
+                await publish()
+                persist_shortcuts()
+                return
+            }
+            i += 1
+        }
+        send_event<"StudioStatus">(self, "error", "Unknown shortcut command.")
+    }
+    on StudioShortcutReset {
+        ensure_registry()
+        i: int = 0
+        for row in Rows {
+            if text_equal(row.id, event.Id) {
+                Shortcuts[i] = row.shortcut
+                Customized[i] = false
+                ShortcutError = ""
+                await remove_saved_text(format_text("studio.shortcut.{}", event.Id))
+                await publish()
+                persist_shortcuts()
+                return
+            }
+            i += 1
+        }
+    }
+    on StudioPlaybackState {
+        ensure_registry()
+        self.Paused = event.Paused
+        publish()
+    }
+    on StudioDebuggerState {
+        ensure_registry()
+        DebuggerPaused = event.Attached && event.Paused
+        publish()
+    }
+    on StudioSettingsShortcut {
+        ensure_registry()
+        send_event<"StudioCommand">(self, "settings", "")
+    }
+    on StudioSearchShortcut {
+        ensure_registry()
+        send_event<"StudioCommand">(self, "search", "")
+    }
+    on StudioRedoShortcut {
+        ensure_registry()
+        send_event<"StudioCommand">(self, "redo", "")
+    }
+    on StudioUndoShortcut {
+        ensure_registry()
+        send_event<"StudioCommand">(self, "undo", "")
+    }
+    on StudioSaveAllShortcut {
+        ensure_registry()
+        send_event<"StudioCommand">(self, "saveAll", "")
+    }
+    on StudioSaveShortcut {
+        ensure_registry()
+        send_event<"StudioCommand">(self, "save", "")
+    }
+    on StudioCommandQuery {
+        ensure_registry()
+        self.Query = event.Query
+        Matches = 0
+        i: int = 0
+        for row in Rows {
+            Scores[i] = text_rank(event.Query, format_text("{} {} {}", row.label, row.id, row.keywords), true)
+            Shown[i] = text_equal(event.Query, "") || Scores[i] > 0
+            if Shown[i] {
+                Matches += 1
+            }
+            Order[i] = i
+            i += 1
+        }
+        // Stable insertion sort keeps authored order when ranks tie.
+        for i in 1..length(Rows) - 1 {
+            index := Order[i]
+            j := i
+            while j > 0 && (Scores[Order[j - 1]] < Scores[index] || (Scores[Order[j - 1]] == Scores[index] && Uses[Order[j - 1]] < Uses[index])) {
+                Order[j] = Order[j - 1]
+                j -= 1
+            }
+            Order[j] = index
+        }
+        publish()
+    }
+    on StudioCommandAvailability {
+        ensure_registry()
+        i: int = 0
+        for id in CommandIds {
+            if text_equal(id, event.Id) {
+                if Available[i] == event.Enabled {
+                    return
+                }
+                Available[i] = event.Enabled
+                publish()
+                return
+            }
+            i += 1
+        }
+    }
+    on StudioGraphCommandState {
+        GraphAvailable = event.Available
+        GraphSelected = event.Selected
+        GraphEditable = event.Editable
+        GraphCanBack = event.CanBack
+        GraphCanForward = event.CanForward
+        publish()
+    }
+    on StudioFocusState {
+        ensure_registry()
+        self.Context = event.Context
+        self.TextEditing = event.TextEditing
+        publish()
+    }
+    on StudioAssetHistoryState {
+        ensure_registry()
+        AssetCanUndo = event.CanUndo && !event.Busy
+        AssetCanRedo = event.CanRedo && !event.Busy
+        publish()
+    }
+    on StudioDocumentGestureState {
+        ensure_registry()
+        GestureCancelable = event.Cancelable
+        publish()
+    }
+    on StudioDocumentState {
+        ensure_registry()
+        DocumentCanUndo = event.CanUndo
+        DocumentCanRedo = event.CanRedo
+        DocumentBusy = event.Busy
+        GestureCancelable = false
+        i: int = 0
+        for row in Rows {
+            id := row.id
+            if text_equal(id, "save") {
+                Available[i] = event.Document > 0 && event.Dirty && !event.Busy && !event.Conflict
+            }
+            if text_equal(id, "undo") {
+                Available[i] = event.CanUndo && !event.Busy
+            }
+            if text_equal(id, "redo") {
+                Available[i] = event.CanRedo && !event.Busy
+            }
+            i += 1
+        }
+        publish()
+    }
+    on StudioCommand {
+        ensure_registry()
+        i: int = 0
+        for row in Rows {
+            if text_equal(row.id, event.Id) {
+                if text_equal(event.Id, "deselect") && text_equal(event.Argument, "escape-idle") && (!Enabled[i] || !eligible(row.id, row.context)) {
+                    return
+                }
+                if !eligible(row.id, row.context) && (text_equal(event.Id, "find") || (TextEditing && (text_equal(Context, "Graph") || text_equal(Context, "Behavior")) && graph_field_command(event.Id))) {
+                    return
+                }
+                if !Enabled[i] {
+                    send_event<"StudioStatus">(self, "warning", "This command is unavailable in the current document.")
+                    return
+                }
+                if text_equal(event.Id, "find") {
+                    if text_equal(Context, "Outliner") {
+                        await send_event<"StudioOutlinerFind">(self)
+                    }
+                    if text_equal(Context, "Properties") {
+                        await send_event<"StudioObjectPropertiesFind">(self)
+                    }
+                    if text_equal(Context, "Assets") {
+                        await send_event<"StudioShellCommand">(self, "findAssets", "")
+                    }
+                    if text_equal(Context, "Output") {
+                        await send_event<"StudioShellCommand">(self, "findOutput", "")
+                    }
+                    if text_equal(Context, "Outliner") || text_equal(Context, "Properties") || text_equal(Context, "Assets") || text_equal(Context, "Output") {
+                        await send_event<"StudioPaletteClose">(self)
+                        return
+                    }
+                }
+                destination := row.destination
+                command := event.Id
+                if text_equal(Context, "Assets") && text_equal(event.Id, "undo") {
+                    destination = "resource"
+                    command = "undoAssetDeletion"
+                }
+                if text_equal(Context, "Assets") && text_equal(event.Id, "redo") {
+                    destination = "resource"
+                    command = "redoAssetDeletion"
+                }
+                contextual := text_equal(event.Id, "undo") || text_equal(event.Id, "redo") || text_equal(event.Id, "cut") || text_equal(event.Id, "copy") || text_equal(event.Id, "paste") || text_equal(event.Id, "selectAll") || text_equal(event.Id, "find")
+                if contextual && text_equal(Context, "Text Editor") {
+                    destination = "text"
+                }
+                if (graph_command(event.Id) || contextual || text_equal(event.Id, "duplicate") || text_equal(event.Id, "delete") || text_equal(event.Id, "rename") || text_equal(event.Id, "showLiveValues")) && (text_equal(Context, "Graph") || text_equal(Context, "Behavior")) {
+                    destination = "graph"
+                }
+                switch destination {
+                    case "shell": {
+                        send_event<"StudioShellCommand">(self, event.Id, event.Argument)
+                    }
+                    case "document": {
+                        send_event<"StudioDocumentCommand">(self, event.Id, event.Argument)
+                    }
+                    case "resource": {
+                        send_event<"StudioResourceCommand">(self, command, event.Argument)
+                    }
+                    case "scene": {
+                        send_event<"StudioSceneCommand">(self, event.Id, event.Argument)
+                    }
+                    case "graph": {
+                        send_event<"StudioGraphCommand">(self, event.Id, event.Argument)
+                    }
+                    case "text": {
+                        send_event<"StudioTextCommand">(self, event.Id, event.Argument)
+                    }
+                    case "debug": {
+                        send_event<"StudioDebugCommand">(self, event.Id, event.Argument)
+                    }
+                    case "collaboration": {
+                        send_event<"StudioCollaborationCommand">(self, event.Id, event.Argument)
+                    }
+                }
+                if !text_equal(event.Id, "search") {
+                    await send_event<"StudioPaletteClose">(self)
+                }
+                if Uses[i] < 1000000 {
+                    Uses[i] += 1
+                }
+                await set_saved_number(format_text("studio.commandUses.{}", row.id), cast<double>(Uses[i]))
+                persist_recent()
+                return
+            }
+            i += 1
+        }
+        send_event<"StudioStatus">(self, "error", "Unknown command.")
+    }
+    on StudioKey_search {
+        dispatch_key("search")
+    }
+    on StudioKey_settings {
+        dispatch_key("settings")
+    }
+    on StudioKey_save {
+        dispatch_key("save")
+    }
+    on StudioKey_saveAll {
+        dispatch_key("saveAll")
+    }
+    on StudioKey_revert {
+        dispatch_key("revert")
+    }
+    on StudioKey_undo {
+        dispatch_key("undo")
+    }
+    on StudioKey_redo {
+        dispatch_key("redo")
+    }
+    on StudioKey_duplicate {
+        dispatch_key("duplicate")
+    }
+    on StudioKey_delete {
+        dispatch_key("delete")
+    }
+    on StudioKey_openPrototype {
+        dispatch_key("openPrototype")
+    }
+    on StudioKey_frame {
+        dispatch_key("frame")
+    }
+    on StudioKey_resetCamera {
+        dispatch_key("resetCamera")
+    }
+    on StudioKey_hideSelected {
+        dispatch_key("hideSelected")
+    }
+    on StudioKey_hideUnselected {
+        dispatch_key("hideUnselected")
+    }
+    on StudioKey_showAll {
+        dispatch_key("showAll")
+    }
+    on StudioKey_toggleAssets {
+        dispatch_key("toggleAssets")
+    }
+    on StudioKey_toggleOutput {
+        dispatch_key("toggleOutput")
+    }
+    on StudioKey_togglePerformance {
+        dispatch_key("togglePerformance")
+    }
+    on StudioKey_maximize {
+        dispatch_key("maximize")
+    }
+    on StudioKey_resetLayout {
+        dispatch_key("resetLayout")
+    }
+    on StudioKey_zoomIn {
+        dispatch_key("zoomIn")
+    }
+    on StudioKey_zoomOut {
+        dispatch_key("zoomOut")
+    }
+    on StudioKey_zoomReset {
+        dispatch_key("zoomReset")
+    }
+    on StudioKey_play {
+        dispatch_key("play")
+    }
+    on StudioKey_stop {
+        dispatch_key("stop")
+    }
+    on StudioKey_step {
+        dispatch_key("step")
+    }
+    on StudioKey_recordGameplay {
+        dispatch_key("recordGameplay")
+    }
+    on StudioKey_exportGame {
+        dispatch_key("exportGame")
+    }
+    on StudioKey_density {
+        dispatch_key("density")
+    }
+    on StudioKey_motion {
+        dispatch_key("motion")
+    }
+    on StudioKey_theme {
+        dispatch_key("theme")
+    }
+    on StudioKey_inspectElement {
+        dispatch_key("inspectElement")
+    }
+    on StudioKey_previewUi {
+        dispatch_key("previewUi")
+    }
+    on StudioKey_newScene {
+        dispatch_key("newScene")
+    }
+    on StudioKey_newPrototype {
+        dispatch_key("newPrototype")
+    }
+    on StudioKey_newBehavior {
+        dispatch_key("newBehavior")
+    }
+    on StudioKey_newEvent {
+        dispatch_key("newEvent")
+    }
+    on StudioKey_newSystem {
+        dispatch_key("newSystem")
+    }
+    on StudioKey_newLibrary {
+        dispatch_key("newLibrary")
+    }
+    on StudioKey_newMaterial {
+        dispatch_key("newMaterial")
+    }
+    on StudioKey_newShape {
+        dispatch_key("newShape")
+    }
+    on StudioKey_newField {
+        dispatch_key("newField")
+    }
+    on StudioKey_newShaderLibrary {
+        dispatch_key("newShaderLibrary")
+    }
+    on StudioKey_newModel {
+        dispatch_key("newModel")
+    }
+    on StudioKey_newUiWidget {
+        dispatch_key("newUiWidget")
+    }
+    on StudioKey_newUiDocument {
+        dispatch_key("newUiDocument")
+    }
+    on StudioKey_newStylesheet {
+        dispatch_key("newStylesheet")
+    }
+    on StudioKey_rename {
+        dispatch_key("rename")
+    }
+    on StudioKey_addComponent {
+        dispatch_key("addComponent")
+    }
+    on StudioKey_keepChanges {
+        dispatch_key("keepChanges")
+    }
+    on StudioKey_workspaceVerticalSplit {
+        dispatch_key("workspaceVerticalSplit")
+    }
+    on StudioKey_workspaceHorizontalSplit {
+        dispatch_key("workspaceHorizontalSplit")
+    }
+    on StudioKey_toggleSidePane {
+        dispatch_key("toggleSidePane")
+    }
+    on StudioKey_collaboration {
+        dispatch_key("collaboration")
+    }
+    on StudioKey_collaborationToken {
+        dispatch_key("collaborationToken")
+    }
+    on StudioKey_collaborationFollow {
+        dispatch_key("collaborationFollow")
+    }
+    on StudioKey_collaborationUnfollow {
+        dispatch_key("collaborationUnfollow")
+    }
+    on StudioKey_collaborationHost {
+        dispatch_key("collaborationHost")
+    }
+    on StudioKey_collaborationJoin {
+        dispatch_key("collaborationJoin")
+    }
+    on StudioKey_collaborationLeave {
+        dispatch_key("collaborationLeave")
+    }
+    on StudioKey_collaborationInviteViewer {
+        dispatch_key("collaborationInviteViewer")
+    }
+    on StudioKey_collaborationInviteEditor {
+        dispatch_key("collaborationInviteEditor")
+    }
+    on StudioKey_selectTab {
+        dispatch_key("selectTab")
+    }
+    on StudioKey_closeTab {
+        dispatch_key("closeTab")
+    }
+    on StudioKey_togglePinTab {
+        dispatch_key("togglePinTab")
+    }
+    on StudioKey_previousTab {
+        dispatch_key("previousTab")
+    }
+    on StudioKey_nextTab {
+        dispatch_key("nextTab")
+    }
+    on StudioKey_closeDrawer {
+        dispatch_key("closeDrawer")
+    }
+    on StudioKey_objectUp {
+        dispatch_key("objectUp")
+    }
+    on StudioKey_objectDown {
+        dispatch_key("objectDown")
+    }
+    on StudioKey_objectIndent {
+        dispatch_key("objectIndent")
+    }
+    on StudioKey_objectOutdent {
+        dispatch_key("objectOutdent")
+    }
+    on StudioKey_objectRoot {
+        dispatch_key("objectRoot")
+    }
+    on StudioKey_selectPrevious {
+        dispatch_key("selectPrevious")
+    }
+    on StudioKey_selectNext {
+        dispatch_key("selectNext")
+    }
+    on StudioKey_showGeneratedWorld {
+        dispatch_key("showGeneratedWorld")
+    }
+    on StudioKey_showLighting {
+        dispatch_key("showLighting")
+    }
+    on StudioKey_showFog {
+        dispatch_key("showFog")
+    }
+    on StudioKey_showCameraFrames {
+        dispatch_key("showCameraFrames")
+    }
+    on StudioKey_showColliders {
+        dispatch_key("showColliders")
+    }
+    on StudioKey_viewThroughCamera {
+        dispatch_key("viewThroughCamera")
+    }
+    on StudioKey_resume {
+        dispatch_key("resume")
+    }
+    on StudioKey_stepOver {
+        dispatch_key("stepOver")
+    }
+    on StudioKey_stepInto {
+        dispatch_key("stepInto")
+    }
+    on StudioKey_stepOut {
+        dispatch_key("stepOut")
+    }
+    on StudioKey_selectTool {
+        dispatch_key("selectTool")
+    }
+    on StudioKey_moveTool {
+        dispatch_key("moveTool")
+    }
+    on StudioKey_rotateTool {
+        dispatch_key("rotateTool")
+    }
+    on StudioKey_scaleTool {
+        dispatch_key("scaleTool")
+    }
+    on StudioKey_grab {
+        dispatch_key("grab")
+    }
+    on StudioKey_toggleSnap {
+        dispatch_key("toggleSnap")
+    }
+    on StudioKey_toggleLocalSpace {
+        dispatch_key("toggleLocalSpace")
+    }
+    on StudioKey_toggleGrid {
+        dispatch_key("toggleGrid")
+    }
+    on StudioKey_finerGrid {
+        dispatch_key("finerGrid")
+    }
+    on StudioKey_coarserGrid {
+        dispatch_key("coarserGrid")
+    }
+    on StudioKey_selectAll {
+        dispatch_key("selectAll")
+    }
+    on StudioKey_deselect {
+        dispatch_key("deselect")
+    }
+    on StudioKey_frameAll {
+        dispatch_key("frameAll")
+    }
+    on StudioKey_find {
+        dispatch_key("find")
+    }
+    on StudioKey_keyboardShortcuts {
+        dispatch_key("keyboardShortcuts")
+    }
+    on StudioKey_documentation {
+        dispatch_key("documentation")
+    }
+    on StudioKey_reportIssue {
+        dispatch_key("reportIssue")
+    }
+    on StudioKey_about {
+        dispatch_key("about")
+    }
+    on StudioKey_goToDefinition {
+        dispatch_key("goToDefinition")
+    }
+    on StudioKey_findReferences {
+        dispatch_key("findReferences")
+    }
+    on StudioKey_renameSymbol {
+        dispatch_key("renameSymbol")
+    }
+    on StudioKey_callHierarchy {
+        dispatch_key("callHierarchy")
+    }
+    on StudioKey_nextProblem {
+        dispatch_key("nextProblem")
+    }
+    on StudioKey_previousProblem {
+        dispatch_key("previousProblem")
+    }
+    on StudioKey_toggleLineComment {
+        dispatch_key("toggleLineComment")
+    }
+    on StudioKey_copy {
+        dispatch_key("copy")
+    }
+    on StudioKey_cut {
+        dispatch_key("cut")
+    }
+    on StudioKey_paste {
+        dispatch_key("paste")
+    }
+    on StudioKey_extendPrevious {
+        dispatch_key("extendPrevious")
+    }
+    on StudioKey_extendNext {
+        dispatch_key("extendNext")
+    }
+    on StudioKey_showLiveValues {
+        dispatch_key("showLiveValues")
+    }
+    on StudioKey_slower {
+        dispatch_key("slower")
+    }
+    on StudioKey_faster {
+        dispatch_key("faster")
+    }
+    on StudioKey_normalSpeed {
+        dispatch_key("normalSpeed")
+    }
+    on StudioKey_applyOverrides {
+        dispatch_key("applyOverrides")
+    }
+    on StudioKey_saveAsPrototype {
+        dispatch_key("saveAsPrototype")
+    }
+    on StudioKey_openProject {
+        dispatch_key("openProject")
+    }
+    on StudioKey_quit {
+        dispatch_key("quit")
+    }
+
+    on StudioKey_importProject {
+        dispatch_key("importProject")
+    }
+    on StudioKey_exportProject {
+        dispatch_key("exportProject")
+    }
+    on StudioKey_compileProject {
+        dispatch_key("compileProject")
+    }
+    on StudioKey_cancelJob {
+        dispatch_key("cancelJob")
+    }
+
+    on StudioKey_convertModel {
+        dispatch_key("convertModel")
+    }
+    on StudioKey_reimportModel {
+        dispatch_key("reimportModel")
+    }
+    on StudioKey_newProject {
+        dispatch_key("newProject")
+    }
+    on StudioKey_breakpoint {
+        dispatch_key("breakpoint")
+    }
+    on StudioKey_disable {
+        dispatch_key("disable")
+    }
+    on StudioKey_fold {
+        dispatch_key("fold")
+    }
+    on StudioKey_selectLinked {
+        dispatch_key("selectLinked")
+    }
+    on StudioKey_arrangeLinked {
+        dispatch_key("arrangeLinked")
+    }
+    on StudioKey_back {
+        dispatch_key("back")
+    }
+    on StudioKey_forward {
+        dispatch_key("forward")
+    }
+    on StudioKey_left {
+        dispatch_key("left")
+    }
+    on StudioKey_right {
+        dispatch_key("right")
+    }
+    on StudioKey_up {
+        dispatch_key("up")
+    }
+    on StudioKey_down {
+        dispatch_key("down")
+    }
+
+}

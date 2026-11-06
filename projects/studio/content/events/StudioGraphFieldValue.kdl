@@ -1,0 +1,14 @@
+version 3
+name "StudioGraphFieldValue"
+domain "event"
+id_counter 6
+(array)variables {
+    - id=1 name="Index" type="int" category="Payload"
+    - id=2 name="Document" type="int" category="Payload"
+    - id=3 name="Revision" type="int" category="Payload"
+    - id=4 name="Text" type="const char *" category="Payload"
+    - id=5 name="Canceled" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

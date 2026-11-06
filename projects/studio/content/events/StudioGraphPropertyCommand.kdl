@@ -1,0 +1,13 @@
+version 3
+name "StudioGraphPropertyCommand"
+domain "event"
+id_counter 5
+(array)variables {
+    - id=1 name="Action" type="const char *" category="Payload"
+    - id=2 name="Argument" type="const char *" category="Payload"
+    - id=3 name="Document" type="int" category="Payload"
+    - id=4 name="Revision" type="int" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

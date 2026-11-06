@@ -1,0 +1,532 @@
+behavior StudioSceneKeepChanges {
+    self.Document: int = 0
+    Revision: int = 0
+    Busy := false
+    Session: int = 0
+    RuntimeDocument: int = 0
+    RuntimeRevision: int = 0
+    Ready := false
+    Live := false
+    Stopped := false
+    LastSteps: int = 0
+    Selection: string[] = []
+    Subject: string = ""
+    SubjectPath: string = ""
+    SubjectAuthored := false
+    Capturing := false
+    StopPending := false
+    Fields: struct<"WorkspaceAssetField">[] = []
+    Names: string[] = []
+    Parents: int[] = []
+    Room := false
+    Writable := true
+    Queue: string = ""
+    QueueStart: int = 0
+    QueueEnd: int = 0
+    QueueRevision: int = 0
+    QueueDocument: int = 0
+    QueueSession: int = 0
+    QueueSource: string = ""
+    PreviousSource: string = ""
+    Previous: string = ""
+    PreviousStart: int = 0
+    PreviousEnd: int = 0
+    CaptureToken: int = 0
+    Request: int = 0
+    Applying := false
+    Submitted := false
+    Lease := false
+    Error: string = ""
+    Publish :: fn() {
+        current := Document > 0 && RuntimeDocument == Document && RuntimeRevision == Revision
+        canKeep := current && Ready && Live && !Busy && !Applying && !Capturing && Writable && (length(Selection) > 0 || SubjectAuthored)
+        await send_event<"StudioCommandAvailability">(self, "keepChanges", canKeep)
+        await set_ui_data(Name: "sceneRuntime.canKeepChanges", Value: canKeep)
+        await set_ui_data(Name: "sceneRuntime.keepCaptureToken", Value: CaptureToken)
+        await set_ui_data(Name: "sceneRuntime.keepApplying", Value: Applying)
+        await set_ui_data(Name: "sceneRuntime.keptChanges", Value: !text_equal(Queue, ""))
+        await set_ui_data(Name: "sceneRuntime.keepChangesError", Value: Error)
+    }
+    Clear :: fn() {
+        Queue = ""
+        Previous = ""
+        QueueSource = ""
+        PreviousSource = ""
+        StopPending = false
+        if CaptureToken < 2147483647 {
+            CaptureToken += 1
+        }
+    }
+    Complete :: fn() {
+        if Lease {
+            Lease = false
+            await send_event<"StudioDocumentExternalEditComplete">(self, "scene-keep", QueueDocument, Request)
+        }
+        Applying = false
+        Capturing = false
+        Submitted = false
+        StopPending = false
+        await Publish()
+    }
+    Failure :: fn(Message: string) {
+        Error = Message
+        await send_event<"StudioNotice">(self, "scene-keep", "error", "Keep Changes", Message, "", "", "scene-keep", CaptureToken, 0.0)
+        await Complete()
+    }
+    IsObject :: pure fn(Index: int) -> bool {
+        if Index == 0 {
+            return true
+        }
+        row := Fields[Index]
+        if !text_equal(row.type, "object") || row.parent < 0 {
+            return false
+        }
+        name := Fields[row.parent].name
+        return text_equal(name, "entities") || text_equal(name, "children")
+    }
+    ParentOf :: pure fn(Index: int) -> int {
+        index := Fields[Index].parent
+        while index >= 0 {
+            if IsObject(index) {
+                return index
+            }
+            index = Fields[index].parent
+        }
+        return -1
+    }
+    NameOf :: pure fn(Index: int) -> string {
+        i := Index + 1
+        while i < length(Fields) {
+            if Fields[i].depth <= Fields[Index].depth {
+                break
+            }
+            if Fields[i].parent == Index && text_equal(Fields[i].name, "name") {
+                return Fields[i].text
+            }
+            i += 1
+        }
+        return ""
+    }
+    Matches :: pure fn(Runtime: int, Field: int) -> bool {
+        r := Runtime
+        f := Field
+        while r >= 0 && f > 0 {
+            if !text_equal(Names[r], NameOf(f)) {
+                return false
+            }
+            r = Parents[r]
+            f = ParentOf(f)
+        }
+        return r < 0 && f <= 0
+    }
+    ObjectFor :: pure fn(Path: string) -> int {
+        selected: int = -1
+        index: int = 0
+        while index < length(Fields) {
+            if IsObject(index) && text_equal(Fields[index].path, Path) {
+                selected = index
+            }
+            index += 1
+        }
+        if selected <= 0 {
+            return -1
+        }
+        found: int = -1
+        index = 0
+        while index < length(Names) {
+            if Matches(index, selected) {
+                if found >= 0 {
+                    return -1
+                }
+                found = index
+            }
+            index += 1
+        }
+        return found
+    }
+    SameSelection :: pure fn(Paths: string[]) -> bool {
+        if length(Paths) != length(Selection) {
+            return false
+        }
+        index: int = 0
+        while index < length(Paths) {
+            if !text_equal(Paths[index], Selection[index]) {
+                return false
+            }
+            index += 1
+        }
+        return true
+    }
+    CaptureCurrent :: pure fn(Document: int, Revision: int, Session: int, Token: int, Paths: string[], Target: string) -> bool {
+        if Document != self.Document || Revision != self.Revision || Session != self.Session || Token != CaptureToken || !Ready || !Live || Busy || !Writable {
+            return false
+        }
+        if Target != "" { return Target == Subject && SubjectAuthored }
+        return Subject == "" && SameSelection(Paths)
+    }
+    Origin :: pure fn(Fields: struct<"WorkspaceAssetField">[], Index: int) -> string[] {
+        field := Fields[Index].name
+        parent := Fields[Index].parent
+        while parent >= 0 {
+            row := Fields[parent]
+            if row.parent >= 0 && text_equal(Fields[row.parent].relative, "/components") {
+                return [row.name, field]
+            }
+            if !text_equal(row.type, "object") {
+                return []
+            }
+            field = format_text("{}.{}", row.name, field)
+            parent = row.parent
+        }
+        return []
+    }
+    Capture :: fn(Only: string, Paths: string[], Target: string) {
+        if Applying || Capturing {
+            return
+        }
+        if !Ready || !Live || Busy || Applying || !Writable || length(Paths) == 0 || RuntimeDocument != Document || RuntimeRevision != Revision {
+            await Failure("Keep Changes requires a live selection from the current source revision.")
+            return
+        }
+        if CaptureToken >= 2147483646 {
+            await Failure("Capture generation limit reached.")
+            return
+        }
+        Capturing = true
+        document := Document
+        revision := Revision
+        session := Session
+        token := CaptureToken
+        selection := Paths
+        guardSelection := Selection
+        objectOrigin: int = -1
+        await Publish()
+        if Target != "" {
+            origin := await workspace_runtime_subject_origin(session, Target)
+            if !origin.Ok || !origin.Known || !origin.Authored || origin.Spawned || origin.SourcePath == "" || length(Paths) != 1 || Paths[0] != origin.SourcePath {
+                await Failure("Keep Changes requires an object placed in the source scene.")
+                return
+            }
+            objectOrigin = origin.Object
+        }
+        read := await workspace_document_read(document)
+        if !read.Ok || read.Transaction || read.Revision != revision || !CaptureCurrent(document, revision, session, token, guardSelection, Target) {
+            await Failure("Finish the current source gesture before capturing runtime values.")
+            return
+        }
+        objects := await workspace_runtime_objects(session)
+        if !CaptureCurrent(document, revision, session, token, guardSelection, Target) {
+            await Failure("The source, preview or selection changed during capture.")
+            return
+        }
+        if !objects.Ok {
+            await Failure(objects.Error)
+            return
+        }
+        all := workspace_asset_inspect(document, revision, "scene")
+        if !all.Ok {
+            await Failure(all.Error)
+            return
+        }
+        Fields = all.Fields
+        Names = objects.Names
+        Parents = objects.Parents
+        source := QueueSource
+        initial := source
+        if initial == "" { initial = read.Text }
+        start: int = 0
+        end: int = 0
+        replacement := ""
+        captured: int = 0
+        for path in selection {
+            object := objectOrigin
+            if Target == "" { object = ObjectFor(path) }
+            if object < 0 {
+                await Failure("A selected source object is missing from the live runtime.")
+                return
+            }
+            inspected := workspace_object_inspect(document, revision, "scene", path)
+            if !inspected.Ok {
+                await Failure(inspected.Error)
+                return
+            }
+            index: int = 0
+            while index < length(inspected.Fields) {
+                field := inspected.Fields[index]
+                origin := Origin(inspected.Fields, index)
+                index += 1
+                if length(origin) != 2 || (Only != "" && origin[0] != Only) || field.computed || text_equal(field.json, "") || !text_equal(field.reference, "") {
+                    continue
+                }
+                value := await workspace_runtime_value(session, object, origin[0], origin[1])
+                if !CaptureCurrent(document, revision, session, token, guardSelection, Target) {
+                    await Failure("The source, preview or selection changed during capture.")
+                    return
+                }
+                if !value.Ok {
+                    await Failure(value.Error)
+                    return
+                }
+                if text_equal(value.Json, field.json) && QueueSource == "" {
+                    continue
+                }
+                candidate := workspace_objects_candidate(document, revision, "scene", [path], field.relative, "set", value.Json, source)
+                if !candidate.Ok {
+                    await Failure(candidate.Error)
+                    return
+                }
+                source = candidate.Text
+                start = candidate.Start
+                end = candidate.End
+                replacement = candidate.Replacement
+                captured += 1
+            }
+        }
+        if captured == 0 || text_equal(source, "") || text_equal(source, initial) {
+            await Failure("No editable runtime values differ from the authored selection.")
+            return
+        }
+        bytes := text_difference("", replacement)
+        if !bytes.Ok || bytes.Inserted > 1048000 {
+            await Failure("The queued source change exceeds the document event payload budget.")
+            return
+        }
+        PreviousSource = QueueSource
+        Previous = Queue
+        PreviousStart = QueueStart
+        PreviousEnd = QueueEnd
+        QueueSource = source
+        Queue = replacement
+        QueueStart = start
+        QueueEnd = end
+        QueueDocument = document
+        QueueRevision = revision
+        QueueSession = session
+        Capturing = false
+        CaptureToken += 1
+        Error = ""
+        await send_event<"StudioNotice">(self, "scene-keep", "success", "Runtime values captured", "Stop applies these values as one source edit. Undo removes this queued capture.", "Undo", "undo-capture", "scene-keep", CaptureToken, 8.0)
+        await Publish()
+    }
+    Submit :: fn() {
+        if !Writable {
+            await Clear()
+            await Failure("Your room role cannot apply captured values.")
+            return
+        }
+        read := await workspace_document_read(QueueDocument)
+        if !read.Ok || read.Transaction || read.Revision != QueueRevision || Document != QueueDocument || Session != QueueSession || RuntimeDocument != QueueDocument || RuntimeRevision != QueueRevision || !Writable {
+            await Clear()
+            await Failure("The captured source revision or preview session changed; runtime values were not applied.")
+            return
+        }
+        Submitted = true
+        await send_event<"StudioDocumentEdit">(self, QueueDocument, QueueRevision, QueueStart, QueueEnd, Queue, "scene-keep", Request)
+    }
+    on StudioDebugCommand {
+        if text_equal(event.Id, "keepChanges") {
+            paths := Selection
+            if SubjectAuthored { paths = [SubjectPath] }
+            await Capture("", paths, Subject)
+        }
+        if text_equal(event.Id, "stop") && !text_equal(Queue, "") {
+            StopPending = true
+        }
+    }
+    on StudioSceneKeepComponent {
+        if event.Session != self.Session || event.Document != self.Document || event.Revision != self.Revision || event.Component == "" {
+            return
+        }
+        if event.Subject != "" {
+            if event.Subject != self.Subject || !SubjectAuthored || event.Path != SubjectPath { return }
+        } else {
+            if self.Subject != "" || !contains(Selection, event.Path) { return }
+        }
+        await Capture(event.Component, [event.Path], event.Subject)
+    }
+    SelectSubject :: fn(InSession: int, Target: string, Path: string) {
+        if InSession != self.Session { return }
+        self.Subject = Target
+        SubjectPath = ""
+        SubjectAuthored = false
+        if self.Subject != "" {
+            session := self.Session
+            document := self.Document
+            revision := self.Revision
+            target := self.Subject
+            origin := await workspace_runtime_subject_origin(session, target)
+            if session != self.Session || target != self.Subject || document != self.Document || revision != self.Revision { return }
+            if origin.Ok && origin.Known && origin.Authored && !origin.Spawned && origin.SourcePath != "" && (Path == "" || Path == origin.SourcePath) {
+                SubjectPath = origin.SourcePath
+                SubjectAuthored = true
+            }
+        }
+        await Publish()
+    }
+    on StudioRuntimeSubjectSelected {
+        await SelectSubject(event.Session, event.Subject, "")
+    }
+    on StudioRuntimeSourceSelected {
+        if event.Document != self.Document || event.Revision != self.Revision || event.Document != RuntimeDocument || event.Revision != RuntimeRevision || !contains(Selection, event.Path) { return }
+        await SelectSubject(event.Session, event.Subject, event.Path)
+    }
+    on StudioSceneCommand {
+        if event.Id == "deselect" {
+            Subject = ""
+            SubjectPath = ""
+            SubjectAuthored = false
+            await Publish()
+        }
+    }
+    on StudioNoticeAction {
+        if !text_equal(event.Owner, "scene-keep") || !text_equal(event.Action, "undo-capture") || event.Request != CaptureToken || Applying || Capturing || text_equal(Queue, "") {
+            return
+        }
+        if Document != QueueDocument || Revision != QueueRevision || Session != QueueSession {
+            await Clear()
+            await Publish()
+            return
+        }
+        QueueSource = PreviousSource
+        PreviousSource = ""
+        Queue = Previous
+        QueueStart = PreviousStart
+        QueueEnd = PreviousEnd
+        Previous = ""
+        CaptureToken += 1
+        await Publish()
+    }
+    on StudioRuntimeStopped {
+        if event.Session != self.Session { return }
+        if event.Ok {
+            Stopped = true
+            Live = false
+            await Publish()
+        }
+        if text_equal(Queue, "") && !StopPending {
+            return
+        }
+        if !event.Ok {
+            StopPending = false
+            await Clear()
+            await Failure(event.Error)
+            return
+        }
+        if Applying || text_equal(Queue, "") {
+            return
+        }
+        if event.Session != QueueSession || event.Document != QueueDocument || event.Revision != QueueRevision {
+            await Clear()
+            await Publish()
+            return
+        }
+        if !Writable || Request >= 2147483647 {
+            await Failure("Keep Changes is unavailable for the current room role or request generation.")
+            return
+        }
+        Request += 1
+        Applying = true
+        StopPending = false
+        if Room {
+            await Submit()
+            return
+        }
+        await send_event<"StudioDocumentExternalEditRequested">(self, "scene-keep", QueueDocument, Request)
+    }
+    on StudioDocumentExternalEditReady {
+        if !text_equal(event.Owner, "scene-keep") {
+            return
+        }
+        if !Applying || event.Request != self.Request || event.Document != QueueDocument {
+            if event.Ok {
+                await send_event<"StudioDocumentExternalEditComplete">(self, "scene-keep", event.Document, event.Request)
+            }
+            return
+        }
+        if !event.Ok {
+            await Failure(event.Error)
+            return
+        }
+        Lease = true
+        if event.Revision != QueueRevision {
+            await Clear()
+            await Failure("Source changed while Keep Changes waited for pending edits.")
+            return
+        }
+        await Submit()
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        if !Applying || !text_equal(event.Owner, "scene-keep") || event.Request != self.Request || event.Document != QueueDocument || Submitted {
+            return
+        }
+        await Complete()
+    }
+    on StudioDocumentEditResult {
+        if !Applying || !Submitted || !text_equal(event.Owner, "scene-keep") || event.Request != self.Request || event.Document != QueueDocument || event.ExpectedRevision != QueueRevision {
+            return
+        }
+        if !event.Ok {
+            await Failure(event.Error)
+            return
+        }
+        await Clear()
+        self.Error = ""
+        await send_event<"StudioDocumentCommand">(self, "refresh", "")
+        await Complete()
+    }
+    on StudioDocumentState {
+        changed := event.Document != self.Document || event.Revision != self.Revision
+        if changed {
+            Subject = ""
+            SubjectPath = ""
+            SubjectAuthored = false
+        }
+        self.Document = event.Document
+        self.Revision = event.Revision
+        self.Busy = event.Busy
+        if changed && !Submitted {
+            if Applying {
+                await Complete()
+            }
+            await Clear()
+        }
+        await Publish()
+    }
+    on StudioRuntimeState {
+        if event.Session != self.Session || !event.Ready {
+            Subject = ""
+            SubjectPath = ""
+            SubjectAuthored = false
+        }
+        if event.Session != self.Session && !Applying && !StopPending {
+            await Clear()
+        }
+        if event.Session != self.Session || event.Playing || event.Steps != LastSteps {
+            Stopped = false
+        }
+        self.Session = event.Session
+        RuntimeDocument = event.Document
+        RuntimeRevision = event.Revision
+        LastSteps = event.Steps
+        self.Ready = event.Ready
+        Live = !Stopped && (event.Playing || event.Steps > 0)
+        await Publish()
+    }
+    on StudioObjectSelection {
+        if event.Document != self.Document || event.Revision != self.Revision {
+            return
+        }
+        Selection = event.Paths
+        if length(Selection) > 0 && !(length(Selection) == 1 && Selection[0] == SubjectPath) {
+            Subject = ""
+            SubjectPath = ""
+            SubjectAuthored = false
+        }
+        await Publish()
+    }
+    on StudioCollaborationState {
+        Room = event.Active
+        Writable = !event.Active || (event.Ready && !event.Pending && !event.Replaying && (text_equal(event.Role, "host") || text_equal(event.Role, "editor")))
+        await Publish()
+    }
+}

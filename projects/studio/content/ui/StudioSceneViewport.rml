@@ -1,0 +1,77 @@
+<section class="studio-scene-runtime">
+  <div id="studio-scene-surface" class="studio-scene-surface" data-class-playing="self.sceneRuntime.playing" tabindex="0" data-measure="" data-keys="Escape:StudioSceneCancel" data-event-mousedown="emit('StudioScenePointer', 'pick', self.sceneRuntime.session)" data-event-dragstart="emit('StudioScenePointer', 'boxStart', self.sceneRuntime.session)" data-event-drag="emit('StudioScenePointer', 'navigate', self.sceneRuntime.session)" data-event-dragend="emit('StudioScenePointer', 'boxEnd', self.sceneRuntime.session)" data-event-mousescroll="emit('StudioScenePointer', 'wheel', self.sceneRuntime.session); stop()">
+    <texture-view class="studio-scene-image" data-if="self.sceneRuntime.image != ''" data-attr-src="self.sceneRuntime.image"/>
+    <div class="studio-model-runtime-badge" data-if="self.sceneRuntime.modelPreview" data-event-mousedown="stop()" data-event-dragstart="stop()">
+      <span class="badge accent">Model · {{ self.sceneRuntime.previewName }}</span>
+      <button class="btn sm" data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.playing" data-event-click="emit('StudioModelRuntimeView',self.sceneRuntime.session,'frame',0); stop()"><span class="icon">&#xeb90;</span><span class="label">Frame</span></button>
+    </div>
+    <div class="scene-place-markers" aria-label="Undrawn scene objects">
+      <span class="scene-place-marker" role="img" data-for="style, i : self.sceneRuntime.markerStyles" data-attr-style="style" data-attr-aria-label="self.sceneRuntime.markerNames[i]" data-class-selected="self.sceneRuntime.markerSelected[i]" data-class-locked="self.sceneRuntime.markerLocked[i]"/>
+    </div>
+    <div class="scene-camera-labels" aria-label="Camera frame names">
+      <span class="scene-camera-label" data-for="style, i : self.sceneRuntime.cameraStyles" data-attr-style="style" data-class-selected="self.sceneRuntime.cameraSelected[i]" data-class-disabled="self.sceneRuntime.cameraDisabled[i]">{{ self.sceneRuntime.cameraNames[i] }}{{ self.sceneRuntime.cameraActive[i] ? ' · active' : '' }}</span>
+    </div>
+    <span class="studio-scene-preparing" role="status" data-if="self.sceneRuntime.frameScanning">Framing visible objects…</span>
+    <p class="studio-scene-empty" data-if="self.sceneRuntime.image == ''">{{ self.sceneRuntime.preparing ? 'Compiling a frozen source snapshot…' : 'Open a scene and build its preview.' }}</p>
+    <div class="studio-scene-axis-tools" data-if="self.sceneRuntime.tool != 'select' &amp;&amp; self.sceneRuntime.selected &gt; 0 &amp;&amp; !self.sceneRuntime.playing &amp;&amp; self.sceneRuntime.canEdit">
+      <span>{{ self.sceneRuntime.tool }} · drag an axis</span>
+      <button class="btn scene-axis-x" data-event-mousedown="stop()" aria-label="Drag X axis" data-event-dragstart="emit('StudioSceneAxis', 'begin', 'x'); stop()" data-event-drag="emit('StudioSceneAxis', 'drag', 'x'); stop()" data-event-dragend="emit('StudioSceneAxis', 'end', 'x'); stop()">X</button>
+      <button class="btn scene-axis-y" data-event-mousedown="stop()" aria-label="Drag Y axis" data-event-dragstart="emit('StudioSceneAxis', 'begin', 'y'); stop()" data-event-drag="emit('StudioSceneAxis', 'drag', 'y'); stop()" data-event-dragend="emit('StudioSceneAxis', 'end', 'y'); stop()">Y</button>
+      <button class="btn scene-axis-z" data-attrif-disabled="!self.sceneRuntime.perspective &amp;&amp; self.sceneRuntime.tool != 'rotate'" data-event-mousedown="stop()" aria-label="Drag Z axis" data-event-dragstart="emit('StudioSceneAxis', 'begin', 'z'); stop()" data-event-drag="emit('StudioSceneAxis', 'drag', 'z'); stop()" data-event-dragend="emit('StudioSceneAxis', 'end', 'z'); stop()">Z</button>
+    </div>
+    <div class="studio-scene-gizmo" data-if="self.sceneRuntime.gizmoVisible">
+      <button class="btn scene-gizmo-center" data-if="self.sceneRuntime.tool != 'rotate'" data-attr-style="self.sceneRuntime.gizmoOriginStyle" aria-label="Drag selection in view plane; scale uniformly in Scale tool" data-event-mousedown="stop()" data-event-dragstart="emit('StudioSceneAxis', 'centerBegin', 'x'); stop()" data-event-drag="emit('StudioSceneAxis', 'centerDrag', 'x'); stop()" data-event-dragend="emit('StudioSceneAxis', 'centerEnd', 'x'); stop()"/>
+      <button class="btn scene-gizmo-plane" data-if="self.sceneRuntime.tool == 'move'" data-for="style, i : self.sceneRuntime.planeStyles" data-attr-style="style" data-attr-aria-label="'Drag in plane normal to ' + self.sceneRuntime.vectorAxes[i]" data-event-mousedown="stop()" data-event-dragstart="emit('StudioSceneAxis', 'planeBegin', self.sceneRuntime.vectorAxes[i]); stop()" data-event-drag="emit('StudioSceneAxis', 'planeDrag', self.sceneRuntime.vectorAxes[i]); stop()" data-event-dragend="emit('StudioSceneAxis', 'planeEnd', self.sceneRuntime.vectorAxes[i]); stop()"/>
+      <button class="btn scene-gizmo-ring-point" data-if="self.sceneRuntime.tool == 'rotate'" data-for="style, i : self.sceneRuntime.ringStyles" data-attr-style="style" data-attr-data-axis="self.sceneRuntime.ringAxes[i]" aria-label="Drag rotation ring" data-event-mousedown="stop()" data-event-dragstart="emit('StudioSceneAxis', 'ringBegin', self.sceneRuntime.ringAxes[i], i); stop()" data-event-drag="emit('StudioSceneAxis', 'ringDrag', self.sceneRuntime.ringAxes[i], i); stop()" data-event-dragend="emit('StudioSceneAxis', 'ringEnd', self.sceneRuntime.ringAxes[i], i); stop()"/>
+      <span class="scene-gizmo-origin" data-attr-style="self.sceneRuntime.gizmoOriginStyle"/>
+      <span data-if="self.sceneRuntime.tool != 'rotate'" class="scene-gizmo-line scene-gizmo-line-x" data-attr-style="self.sceneRuntime.gizmoxLine"/>
+      <button data-if="self.sceneRuntime.tool != 'rotate'" class="btn scene-gizmo-handle scene-axis-x" data-attr-style="self.sceneRuntime.gizmoxStyle" aria-label="Drag projected X axis" data-event-mousedown="stop()" data-event-dragstart="emit('StudioSceneAxis', 'projectedBegin', 'x'); stop()" data-event-drag="emit('StudioSceneAxis', 'projectedDrag', 'x'); stop()" data-event-dragend="emit('StudioSceneAxis', 'projectedEnd', 'x'); stop()">X</button>
+      <span data-if="self.sceneRuntime.tool != 'rotate'" class="scene-gizmo-line scene-gizmo-line-y" data-attr-style="self.sceneRuntime.gizmoyLine"/>
+      <button data-if="self.sceneRuntime.tool != 'rotate'" class="btn scene-gizmo-handle scene-axis-y" data-attr-style="self.sceneRuntime.gizmoyStyle" aria-label="Drag projected Y axis" data-event-mousedown="stop()" data-event-dragstart="emit('StudioSceneAxis', 'projectedBegin', 'y'); stop()" data-event-drag="emit('StudioSceneAxis', 'projectedDrag', 'y'); stop()" data-event-dragend="emit('StudioSceneAxis', 'projectedEnd', 'y'); stop()">Y</button>
+      <span data-if="self.sceneRuntime.tool != 'rotate'" class="scene-gizmo-line scene-gizmo-line-z" data-attr-style="self.sceneRuntime.gizmozLine"/>
+      <button data-if="self.sceneRuntime.tool != 'rotate'" class="btn scene-gizmo-handle scene-axis-z" data-attr-style="self.sceneRuntime.gizmozStyle" aria-label="Drag projected Z axis" data-event-mousedown="stop()" data-event-dragstart="emit('StudioSceneAxis', 'projectedBegin', 'z'); stop()" data-event-drag="emit('StudioSceneAxis', 'projectedDrag', 'z'); stop()" data-event-dragend="emit('StudioSceneAxis', 'projectedEnd', 'z'); stop()">Z</button>
+    </div>
+    <div class="studio-scene-gizmo" data-if="self.sceneRuntime.tool == 'collider'">
+      <button class="btn scene-gizmo-collider" data-for="style, i : self.sceneRuntime.colliderStyles" data-attr-style="style" aria-label="Drag collider extent" data-event-mousedown="stop()" data-event-dragstart="emit('StudioSceneAxis','colliderBegin',self.sceneRuntime.vectorAxes[i / 2],i); stop()" data-event-drag="emit('StudioSceneAxis','colliderDrag',self.sceneRuntime.vectorAxes[i / 2],i); stop()" data-event-dragend="emit('StudioSceneAxis','colliderEnd',self.sceneRuntime.vectorAxes[i / 2],i); stop()"/>
+    </div>
+    <div class="scene-runtime-grab" data-if="self.sceneRuntime.grab" data-event-mousemove="emit('StudioScenePointer','grabMove',self.sceneRuntime.session); stop()" data-event-click="emit('StudioScenePointer','grabAccept',self.sceneRuntime.session); stop()" data-event-contextmenu="emit('StudioScenePointer','grabCancel',self.sceneRuntime.session); stop()"><span class="badge">Grab · click to place · Escape to cancel</span></div>
+    <div class="scene-runtime-marquee" data-if="self.sceneRuntime.boxVisible" data-attr-style="self.sceneRuntime.boxStyle"/>
+    <span class="badge studio-scene-preparing" data-if="self.sceneRuntime.boxScanning">Selecting · {{ self.sceneRuntime.boxProgress }} objects checked</span>
+    <span class="studio-scene-proposing badge" data-if="self.sceneRuntime.proposing">Waiting for the room to accept this transform</span>
+    <span class="studio-scene-stale badge" data-if="self.sceneRuntime.ready &amp;&amp; !self.sceneRuntime.current">Preview shows an earlier source revision</span>
+    <span class="studio-scene-preparing badge" data-if="self.sceneRuntime.preparing">Building · current preview retained</span>
+    <div id="studio-scene-play" class="studio-scene-play" tabindex="0" data-measure="" data-own-keys="" data-if="self.sceneRuntime.playing" data-keys="Escape:StudioSceneInputRelease" data-event-blur="emit('StudioSceneInputRelease')" data-event-mousedown="emit('StudioSceneInputPointer','down',self.sceneRuntime.session); stop()" data-event-mouseup="emit('StudioSceneInputPointer','up',self.sceneRuntime.session); stop()" data-event-mousemove="emit('StudioSceneInputPointer','move',self.sceneRuntime.session); stop()" data-event-mouseout="emit('StudioSceneInputPointer','leave',self.sceneRuntime.session); stop()" data-event-mousescroll="emit('StudioSceneInputPointer','wheel',self.sceneRuntime.session); stop()" data-event-keydown="emit('StudioSceneInputKey','key-down',self.sceneRuntime.session); stop()" data-event-keyup="emit('StudioSceneInputKey','key-up',self.sceneRuntime.session); stop()" data-event-textinput="emit('StudioSceneInputText',self.sceneRuntime.session); stop()">
+      <span class="studio-scene-play-hint">{{ self.sceneInput.focused ? 'Playing · Escape releases input' : 'Click viewport to control game' }}</span>
+    </div>
+  </div>
+  <nav class="scene-runtime-toolbar" aria-label="Gameplay input timeline">
+    <button class="btn sm" data-attrif-disabled="!self.sceneRuntime.ready" data-event-click="emit('StudioSceneTimeline','record')">Record fresh run</button>
+    <button class="btn sm" data-attrif-disabled="!self.sceneInput.recording" data-event-click="emit('StudioSceneTimeline','stop')">Stop recording</button>
+    <button class="btn sm" data-attrif-disabled="!self.sceneRuntime.ready || self.sceneInput.truncated" data-event-click="emit('StudioSceneTimeline','export')">Export controls</button>
+    <button class="btn sm" data-attrif-disabled="!self.sceneInput.hasTimeline" data-event-click="emit('StudioSceneTimeline','replay')">Replay controls</button>
+    <button class="btn sm" data-event-click="emit('StudioSceneSpeed',0.25)">¼×</button>
+    <button class="btn sm" data-event-click="emit('StudioSceneSpeed',0.5)">½×</button>
+    <button class="btn sm" data-event-click="emit('StudioSceneSpeed',1.0)">1×</button>
+    <button class="btn sm" data-event-click="emit('StudioSceneSpeed',2.0)">2×</button>
+    <span>Speed {{ self.sceneInput.speed }}×</span>
+    <span data-if="self.sceneInput.path != ''">Saved {{ self.sceneInput.path }} · SHA256 {{ self.sceneInput.hash }}</span>
+    <span>Gameplay controls only · UI interaction interrupts recording</span>
+  </nav>
+  <p class="studio-scene-error" role="alert" data-if="self.sceneInput.truncated">Recording exceeded its 4096-key budget. Start a fresh run; a partial timeline cannot be exported.</p>
+  <p class="studio-scene-error" role="alert" data-if="self.sceneInput.error != ''">{{ self.sceneInput.error }}</p>
+  <div class="scene-runtime-status" data-if="self.sceneRuntime.keptChanges" role="status"><span>{{ self.sceneRuntime.keepApplying ? 'Applying captured source values…' : 'Runtime values captured. Stop applies them to source.' }}</span><button class="btn sm" data-attrif-disabled="self.sceneRuntime.keepApplying" data-event-click="emit('StudioNoticeAction', 'scene-keep', self.sceneRuntime.keepCaptureToken, 'undo-capture')">Undo capture</button></div>
+  <footer class="scene-runtime-status">
+    <span>Click to select · middle drag to pan · right drag to orbit · scroll to zoom</span>
+    <button class="btn sm" data-attrif-disabled="!self.sceneRuntime.ready" data-event-click="emit('StudioSceneCommand', 'frameAll', '')">Frame all</button>
+    <button class="btn sm" data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.selected == 0" data-event-click="emit('StudioSceneCommand', 'frame', '')">Frame selected</button>
+    <button class="btn sm" data-if="!self.sceneRuntime.perspective" data-attr-aria-pressed="self.sceneRuntime.grid" data-event-click="emit('StudioSceneCommand', 'toggleGrid', '')">Grid</button>
+    <button class="btn sm" data-attrif-disabled="!self.sceneRuntime.ready || self.sceneRuntime.evidencePending" data-event-click="emit('StudioSceneCommand', 'captureEvidence', '')">Capture evidence</button>
+    <button class="btn sm" data-if="self.sceneRuntime.evidencePending" data-event-click="emit('StudioSceneCommand', 'cancelEvidence', '')">Cancel capture</button>
+    <span>{{ self.sceneRuntime.steps }} steps · {{ self.sceneRuntime.time }} s</span>
+  </footer>
+  <p class="studio-scene-evidence" data-if="self.sceneRuntime.evidenceState != ''">{{ self.sceneRuntime.evidenceState }} · {{ self.sceneRuntime.evidenceDirectory }} · rendered viewport evidence; gameplay assertions are separate.</p>
+  <p class="studio-scene-error" role="alert" data-if="self.sceneRuntime.evidenceError != ''">{{ self.sceneRuntime.evidenceError }}</p>
+  <p class="studio-scene-error" role="alert" data-if="self.sceneRuntime.error != ''">{{ self.sceneRuntime.error }}</p>
+  <p class="studio-scene-evidence" data-if="self.sceneRuntime.colliders">Collider wireframes cover boxes, spheres, capsules and 2D circles. Hull and mesh collider outlines are unavailable.</p>
+  <p class="studio-scene-error" role="alert" data-if="self.sceneRuntime.toolError != ''">{{ self.sceneRuntime.toolError }}</p>
+</section>

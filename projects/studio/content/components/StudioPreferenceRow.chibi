@@ -1,0 +1,12 @@
+component StudioPreferenceRow {
+    key: string
+    save: string
+    label: string
+    detail: string
+    category: string
+    kind: string
+    minimum: double
+    maximum: double
+    step: double
+    fallback: double
+}

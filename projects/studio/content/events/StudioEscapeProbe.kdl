@@ -1,0 +1,11 @@
+version 3
+name "StudioEscapeProbe"
+domain "event"
+id_counter 3
+(array)variables {
+    - id=1 name="Request" type="int" category="Payload"
+    - id=2 name="Phase" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

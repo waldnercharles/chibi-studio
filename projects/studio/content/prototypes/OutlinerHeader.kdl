@@ -2,4 +2,3 @@ name "OutlinerHeader"
 components {
     Ui document="OutlinerHeader" hidden=#true
 }
-(array)behaviors "OutlinerHeaderInput"

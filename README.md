@@ -1,64 +1,91 @@
 # Chibi Studio
 
-This repository owns Studio's editor, document and workspace code, its application
-loop, retained UI kit, text editor bridge, desktop host, and authored Studio UI.
-It consumes an installed Chibi SDK. Engine, compiler, renderer, shared UI backend
-and native runtime implementations remain in their owning SDK packages.
+Studio is an authored Chibi application. RML defines its structure, RCSS defines
+its appearance, and `.chibi` defines editor behavior, commands, selection and
+workflow state. It consumes packaged SDK tools through a `LANGUAGES NONE` CMake
+project. Reusable document, compiler, renderer, platform and input services live
+in the engine. Studio contains no C or C++ sources; retired implementations
+remain recoverable through the Git baseline recorded in `NATIVE_RETIREMENT.json`.
 
-`EXTRACTION.json` records every copied source's original path and SHA-256 hash.
-Preserved test oracles live in `tests/held/engine_oracles`; they are held coverage,
-not passing tests. Agent and contributor rules are in `AGENTS.md`.
-The engine's [current status](https://github.com/waldnercharles/chibi/blob/main/docs/status.md)
-tracks implemented capabilities, remaining work, ownership and evidence limits
-across repositories.
+## Migration candidate status
+
+The engine's [canonical migration evidence](../chibi/docs/studio-rml-migration.md#current-candidate-evidence-2026-10-14)
+records SDK/source identities and scoped validation results.
+SDK13 CPU and native/Web package checks passed. Current source v6 canonical
+formatting passed; final application and interaction results remain separate.
+Native ownership retirement covers 347 files, including 318 C/C++ source/header
+files. Source retirement does not certify complete behavior parity.
+
+Build against an installed SDK:
 
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCHIBI_STUDIO_DISTRIBUTION=ON \
   -DCMAKE_PREFIX_PATH=/absolute/path/to/pinned/chibi-sdk
 cmake --build build
-python3 /absolute/path/to/pinned/chibi-sdk/share/chibi/tools/package_studio.py --build build \
-  --sdk /absolute/path/to/pinned/chibi-sdk --output /absolute/path/to/studio-package
+build/bin/chibi-dev
+build/bin/chibi-dev /absolute/path/to/project
 ```
 
-On Windows, install the SDK with `cmake --install` from a Windows engine build
-(see the engine README) and configure with the same clang and
-`-DCMAKE_PREFIX_PATH`; the build writes `build/bin/chibi-dev.exe` with the
-SDK's UTF-8 manifest.
+The launcher opens a supplied project directory or `project.kdl`. Without a
+project argument it searches the working directory's ancestors; if none contains
+a project, Studio opens Home. Windows uses `build/bin/chibi-dev.cmd` and the
+SDK's native executables. Studio itself needs no C/C++ compiler.
 
-The native build writes `build/bin/chibi-dev`. `chibi-dev PROJECT` opens a
-project directory or its `project.kdl`; without one it opens the project that
-contains the working directory. The SDK's `chibi PROJECT` plays the same project.
+To install beside an installed engine SDK, run `make install PREFIX=/path/to/prefix`.
+To make a relocatable distribution:
 
-Distribution configuration records the SDK package ID and manifest checksum.
-Packaging verifies the complete SDK inventory, current compiled inputs and link
-dependencies before installing Studio and its resources. The package contains
-one application executable. Games consume a separately pinned player package.
+```sh
+python3 /absolute/path/to/pinned/chibi-sdk/share/chibi/tools/package_studio.py \
+  --build build --sdk /absolute/path/to/pinned/chibi-sdk \
+  --output /absolute/path/to/studio-package
+```
 
-Configuration lists missing SDK packages before fetching Studio's pinned Zep
-dependency. It does not accept an engine source include directory or fall back to
-building the engine checkout. `SDK_HEADERS.json` records the exact external
-headers required by the copied editor sources.
+Packaging verifies the SDK identity and inventory, the prepared application and
+its source resources. The distribution includes the generic author host,
+compiler and player tools, authored Studio content, and the exact SDK metadata,
+shaders and licenses. The launcher resolves these beside itself.
 
-The build and install copy the SDK resources into their own `share/chibi` tree.
-The executable resolves that tree relative to itself; `CHIBI_RESOURCE_DIR` can
-explicitly select a different engine resource root. It does not require the SDK
-installation used during compilation to remain at its original path.
+A bounded startup check uses the generic host's flags:
 
-To use Studio in any project, install the engine SDK first (`make install` in
-the engine checkout), then run `make install` here. It builds a Release Studio
-against the SDK in `PREFIX` (default `~/.local`) and installs `chibi-dev` into
-`PREFIX/bin`, beside the SDK's `chibi`, which Export Game runs. With
-`PREFIX/bin` on `PATH`, `chibi-dev` opens the project in the working directory.
-On Windows, run the Makefile's three CMake commands directly.
+```sh
+build/bin/chibi-dev --hidden --frames 2 --fixed-dt 0.0166667
+```
 
-The [acceptance inventory](tests/acceptance/README.md) describes bounded source
-edit/history, keyboard, scene hierarchy/moves, dirty prompts, rendered graph/asset
-pointer input, paused-source debugger history and visible-panel construction counts.
-Some use queued SDL pointer events; others call production handlers and explicitly
-omit hit testing. The pointer selectors explicitly exercise rendered hit targets.
-Test source is not a current execution result; final results for the combined
-engine/Studio candidate belong in its integration PR.
+On Linux without a display, use the engine's documented bounded display adapter.
+Startup is separate from interaction coverage. The SDK's generic UI replay
+protocol dispatches ordinary pointer, key and text input, resolves real hit
+geometry, asserts visible UI/data, and records source/SDK/backend/capture identity.
+See the engine's `docs/testing/ui-replay.md`; Studio's first replay fixture is
+`tests/acceptance/studio_home_replay.json`. Its presence does not establish a
+passing execution result. Historical native acceptance remains documented in
+[the historical acceptance inventory](tests/acceptance/HISTORICAL_NATIVE.md); broad quarantined suites
+must not be reconstructed as separate chunks.
+
+Browser builds consume matching installed Emscripten SDK and generic web-author
+products:
+
+```sh
+emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH=/absolute/path/to/emscripten-sdk \
+  -DCHIBI_AUTHOR_WEB_DIR=/absolute/path/to/matching/web-author
+cmake --build build-web --target chibi-studio
+cmake --install build-web --prefix /absolute/path/to/studio-web
+python3 tools/serve_web.py --directory /absolute/path/to/studio-web
+```
+
+Build those products in the engine with `make package-web-sdk package-web-author`.
+The browser app opens Home by default. `CHIBI_STUDIO_WORKSPACE_ROOT` optionally
+seeds one project; `CHIBI_STUDIO_COLLAB_URL` selects a trusted HTTP(S) room service.
+Project archives and target compilation use generic host adapters and an isolated
+compiler worker. Browser persistence, worker execution, room behavior and visual
+interaction require separate fresh acceptance on the combined package.
+
+`EXTRACTION.json` records copied source origins and hashes. Contributor rules are
+in [AGENTS.md](AGENTS.md). Held test oracles and previous reports are historical
+coverage, not passing results for this migration.
+
+## Earlier validation
 
 Recorded evidence includes the October 8 four-frame source edit/undo/redo check
 and [PR #53](https://github.com/waldnercharles/chibi-studio/pull/53)'s sixteen
@@ -67,58 +94,3 @@ selectors at `243fdc6`, followed by a narrower rerun at `64c0b3b`.
 at `d10222d`, using engine `fd69f0bf`, passed bounded starter and Studio-project
 startup, installed startup and game export. These results do not establish all
 interactions on that revision or full packaged-distribution acceptance.
-
-Studio owns its frame timing log and profiling wrappers. Profiling is disabled
-by default. `CHIBI_STUDIO_TRACY=ON` requires an installed Tracy package exporting
-`Tracy::TracyClient`; `CHIBI_STUDIO_WEB_TRACE=ON` requires Emscripten and records
-Studio zones through browser User Timing. These options profile Studio code;
-the installed SDK retains the profiling configuration used to build it.
-
-The browser product consumes an installed Emscripten SDK:
-
-```sh
-emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_PREFIX_PATH=/absolute/path/to/emscripten-sdk
-cmake --build build-web --target chibi-studio
-cmake --install build-web --prefix /absolute/path/to/studio-web
-python3 tools/serve_web.py --directory /absolute/path/to/studio-web
-```
-
-The local server supplies COOP/COEP isolation headers and opens `chibi-studio.html`
-at its root URL. The browser bundle preloads SDK shaders,
-Studio's UI/project and an empty starter project. Browser projects and thumbnail
-caches persist through IndexedDB; import/export and collaboration bootstrap are
-owned here. `CHIBI_STUDIO_WEB_PROJECTS` accepts explicit extra sample directories,
-each containing `project.kdl` and `content`. Games remain separate repositories.
-
-The SDK exports its worker ABI; Studio selects the matching bootstrap. A serial
-site can include a separately built worker site in `threads/`. The serial entry
-passes its own same-origin fallback URL. A standalone worker site reports missing
-worker/isolation support and can accept an explicit `serial-url` query parameter.
-The serial and worker archives must each come from their matching SDK build.
-The serial product is built and published by the workflow below.
-[Publish run 38088359471](https://github.com/waldnercharles/chibi-studio/actions/runs/38088359471)
-built and deployed `d10222d` using engine `fd69f0bf`. Publication is separate
-from edit/save/reload, input, export and revision-isolation acceptance in
-a browser. The [serial browser report](tests/acceptance/BROWSER.md) records those
-interactions on named published/rebuilt revisions. Browser persistence now keeps
-unload protection and a reachable Retry until the latest saved bytes are durable,
-including concurrent saves and failed creation/import flushes. These records do
-not validate the combined candidate or establish threaded/cross-browser acceptance.
-
-## Automatic browser distribution
-
-`.github/workflows/publish.yml` builds the serial editor against the newest
-complete engine release, using its installed web SDK and Emscripten 6.0.10.
-Changes to browser build inputs on `main` publish automatically. A daily check
-also picks up new engine packages and skips compilation when the published
-Studio/engine pair is unchanged. Pull requests build without deploying.
-
-The public distribution is at
-<https://waldnercharles.github.io/chibi-studio/>. Its `studio.json` identifies
-both repository commits and the SHA-256 of an editor archive named for those
-commits. Game repositories download that archive and the matching engine export
-package during deployment; they do not compile the editor or engine. The archive
-contains `chibi-studio.html`, its JavaScript, WASM and data files, and the serial
-bootstrap, all at its root. Games can host those files under their own `/dev/`
-route with their published project sources.

@@ -1,0 +1,15 @@
+version 3
+name "StudioSceneInputPointer"
+domain "event"
+id_counter 7
+(array)variables {
+    - id=1 name="Action" type="const char *" category="Payload"
+    - id=2 name="Session" type="int" category="Payload"
+    - id=3 name="LocalPointer" type="struct" type_name="CF_V2" category="Payload"
+    - id=4 name="Button" type="int" category="Payload"
+    - id=5 name="Wheel" type="struct" type_name="CF_V2" category="Payload"
+    - id=6 name="Modifiers" type="int" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

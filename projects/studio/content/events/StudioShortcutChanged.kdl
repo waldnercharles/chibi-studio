@@ -1,0 +1,11 @@
+version 3
+name "StudioShortcutChanged"
+domain "event"
+id_counter 3
+(array)variables {
+    - id=1 name="Id" type="const char *" category="Payload"
+    - id=2 name="Chord" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

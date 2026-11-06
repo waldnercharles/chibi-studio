@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "frames": 60,
+  "events": [
+    {
+      "frame": 3,
+      "type": "click",
+      "selector": ".studio-statusbar > button:nth-child(2)"
+    },
+    {
+      "frame": 5,
+      "type": "click",
+      "selector": "[aria-label=\"Command palette\"]"
+    },
+    {
+      "frame": 7,
+      "type": "text",
+      "text": "New material"
+    },
+    {
+      "frame": 10,
+      "type": "click",
+      "selector": ".studio-command-row[value=\"newMaterial\"]"
+    },
+    {
+      "frame": 13,
+      "type": "click",
+      "selector": "#studio-material-create-name"
+    },
+    {
+      "frame": 14,
+      "type": "key-down",
+      "key": "A",
+      "modifiers": [
+        "Mod"
+      ]
+    },
+    {
+      "frame": 14,
+      "type": "key-up",
+      "key": "A",
+      "modifiers": [
+        "Mod"
+      ]
+    },
+    {
+      "frame": 15,
+      "type": "text",
+      "text": "ReplayMaterial"
+    },
+    {
+      "frame": 17,
+      "type": "click",
+      "selector": "select[aria-label=\"Starting material\"]"
+    },
+    {
+      "frame": 18,
+      "type": "key-down",
+      "key": "Down"
+    },
+    {
+      "frame": 18,
+      "type": "key-up",
+      "key": "Down"
+    },
+    {
+      "frame": 19,
+      "type": "key-down",
+      "key": "Enter"
+    },
+    {
+      "frame": 19,
+      "type": "key-up",
+      "key": "Enter"
+    },
+    {
+      "frame": 21,
+      "type": "click",
+      "selector": "number-field[aria-label=\"Roughness\"]"
+    },
+    {
+      "frame": 22,
+      "type": "key-down",
+      "key": "A",
+      "modifiers": [
+        "Mod"
+      ]
+    },
+    {
+      "frame": 22,
+      "type": "key-up",
+      "key": "A",
+      "modifiers": [
+        "Mod"
+      ]
+    },
+    {
+      "frame": 23,
+      "type": "text",
+      "text": "0.25"
+    },
+    {
+      "frame": 24,
+      "type": "key-down",
+      "key": "Enter"
+    },
+    {
+      "frame": 24,
+      "type": "key-up",
+      "key": "Enter"
+    },
+    {
+      "frame": 27,
+      "type": "wheel",
+      "selector": "#studio-material-create",
+      "delta": 100
+    },
+    {
+      "frame": 40,
+      "type": "click",
+      "selector": "#studio-material-create .btn.primary"
+    },
+    {
+      "frame": 46,
+      "type": "key-down",
+      "key": "Escape"
+    },
+    {
+      "frame": 46,
+      "type": "key-up",
+      "key": "Escape"
+    }
+  ],
+  "assertions": [
+    {
+      "frame": 2,
+      "type": "data",
+      "entity": "Application",
+      "name": "homeVisible",
+      "equals": false
+    },
+    {
+      "frame": 6,
+      "type": "data",
+      "entity": "Application",
+      "name": "shellPaletteOpen",
+      "equals": true
+    },
+    {
+      "frame": 12,
+      "type": "visible",
+      "selector": "#studio-material-create",
+      "equals": true
+    },
+    {
+      "frame": 12,
+      "type": "data",
+      "entity": "Application",
+      "name": "shellMessageKind",
+      "equals": "info"
+    },
+    {
+      "frame": 20,
+      "type": "data",
+      "entity": "Application",
+      "name": "materialCreate.preset",
+      "equals": "metal"
+    },
+    {
+      "frame": 26,
+      "type": "data",
+      "entity": "Application",
+      "name": "materialCreate.roughness",
+      "equals": 0.25
+    },
+    {
+      "frame": 59,
+      "type": "data",
+      "entity": "Application",
+      "name": "materialCreate.done",
+      "equals": true
+    },
+    {
+      "frame": 59,
+      "type": "data",
+      "entity": "Application",
+      "name": "materialCreate.error",
+      "equals": ""
+    },
+    {
+      "frame": 59,
+      "type": "data",
+      "entity": "Application",
+      "name": "visualKind",
+      "equals": "material"
+    },
+    {
+      "frame": 59,
+      "type": "data",
+      "entity": "Application",
+      "name": "visualValid",
+      "equals": true
+    },
+    {
+      "frame": 59,
+      "type": "data",
+      "entity": "Application",
+      "name": "shellMessageKind",
+      "equals": "info"
+    }
+  ]
+}

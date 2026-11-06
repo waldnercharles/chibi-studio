@@ -1,0 +1,13 @@
+version 3
+name "StudioTextControlCommand"
+domain "event"
+id_counter 5
+(array)variables {
+    - id=1 name="Id" type="const char *" category="Payload"
+    - id=2 name="Start" type="int" category="Payload"
+    - id=3 name="End" type="int" category="Payload"
+    - id=4 name="Caret" type="int" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

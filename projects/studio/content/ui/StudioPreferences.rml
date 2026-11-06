@@ -1,0 +1,34 @@
+<use ui="Dialog">
+  <div class="studio-preferences" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="studio-preferences-heading"><h2>Settings</h2><span class="studio-spacer"/><button class="btn icon-only" aria-label="Close settings" data-event-click="emit('StudioShellClose')"><span class="icon">&#xea76;</span></button></div>
+    <div class="studio-preferences-body">
+      <nav class="studio-preferences-nav" aria-label="Settings categories">
+        <button class="btn" data-attr-data-state="self.shellCategory == 'appearance' ? 'on' : 'off'" data-event-click="emit('StudioSettingsCategory', 'appearance')">Appearance</button>
+        <button class="btn" data-attr-data-state="self.shellCategory == 'scene' ? 'on' : 'off'" data-event-click="emit('StudioSettingsCategory', 'scene')">Scene</button>
+        <button class="btn" data-attr-data-state="self.shellCategory == 'graph' ? 'on' : 'off'" data-event-click="emit('StudioSettingsCategory', 'graph')">Graph</button>
+        <button class="btn" data-attr-data-state="self.shellCategory == 'text' ? 'on' : 'off'" data-event-click="emit('StudioSettingsCategory', 'text')">Text Editor</button>
+        <button class="btn" data-attr-data-state="self.shellCategory == 'assets' ? 'on' : 'off'" data-event-click="emit('StudioSettingsCategory', 'assets')">Assets</button>
+        <button class="btn" data-attr-data-state="self.shellCategory == 'workspace' ? 'on' : 'off'" data-event-click="emit('StudioSettingsCategory', 'workspace')">Workspace</button>
+        <button class="btn" data-attr-data-state="self.shellCategory == 'keyboard' ? 'on' : 'off'" data-event-click="emit('StudioSettingsCategory', 'keyboard')">Keyboard</button>
+        <p>Changes save as you make them.</p>
+      </nav>
+      <div class="studio-preferences-main">
+        <div class="field search"><span class="icon">&#xea6d;</span><input type="text" placeholder="Search settings" data-event-input="emit('StudioPreferenceQuery', ev.value)"/></div>
+        <div class="studio-preference-error" role="alert" data-if="self.studioPreferenceError != ''">{{ self.studioPreferenceError }}<button class="btn outline sm" data-event-click="emit('StudioPreferenceRetry')">Retry</button></div>
+        <div class="studio-preference-row" data-for="setting, i : self.studioPreferenceRows" data-if="self.studioPreferenceShown[i] &amp;&amp; (self.studioPreferenceQuery != '' || setting.category == self.shellCategory)">
+          <div class="studio-preference-copy"><label>{{ setting.label }}</label><p>{{ setting.detail }}</p></div>
+          <div class="studio-preference-value">
+            <div data-when="setting.kind == 'bool'"><use ui="Switch" data-attr-aria-label="setting.label" data-attrif-checked="self.studioPreferenceNumbers[i] != 0" data-event-change="emit('StudioPreferenceNumber', setting.key, ev.value ? 1 : 0)"/></div>
+            <div data-when="setting.kind == 'choice'"><use ui="Select"><select data-attr-aria-label="setting.label" data-attr-value="self.studioPreferenceNumbers[i]" data-event-change="emit('StudioPreferenceNumber', setting.key, ev.value)"><option data-for="choice : self.studioPreferenceChoices" data-if="choice.key == setting.key" data-attr-value="choice.number">{{ choice.label }}</option></select></use></div>
+            <div data-when="setting.kind == 'number'"><use ui="NumberField" data-attr-aria-label="setting.label" data-attr-value="self.studioPreferenceNumbers[i]" data-attr-min="setting.minimum" data-attr-max="setting.maximum" data-attr-step="setting.step" data-event-change="emit('StudioPreferenceNumber', setting.key, ev.value)"/></div>
+            <button class="btn icon-only sm" data-attr-aria-label="'Reset ' + setting.label" data-if="self.studioPreferenceNumbers[i] != setting.fallback" data-event-click="emit('StudioPreferenceNumber', setting.key, setting.fallback)"><span class="icon">&#xeae2;</span></button>
+          </div>
+        </div>
+        <div class="studio-preference-error" role="alert" data-if="self.shellCategory == 'keyboard' &amp;&amp; self.studioShortcutError != ''">{{ self.studioShortcutError }}<button class="btn outline sm" data-event-click="emit('StudioShortcutRetry')">Retry save</button></div>
+        <div class="studio-shortcut-row" data-for="command, i : self.studioCommands" data-if="self.shellCategory == 'keyboard'">
+          <span>{{ command.label }}</span><input type="text" class="field studio-shortcut-input" data-attr-aria-label="command.label + ' shortcut'" data-attr-value="self.studioCommandShortcuts[i]" placeholder="Unassigned" data-event-change="emit('StudioShortcutChanged', command.id, ev.value)"/><button class="btn icon-only sm" aria-label="Reset shortcut" data-event-click="emit('StudioShortcutReset', command.id)"><span class="icon">&#xeae2;</span></button><span class="studio-command-context">{{ command.context }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</use>

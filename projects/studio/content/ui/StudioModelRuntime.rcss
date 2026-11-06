@@ -1,0 +1,7 @@
+.studio-model-runtime { flex: 0 0 auto; max-height: 260dp; overflow-y: auto; border-top: 1dp var(--border); }
+.studio-model-runtime-details { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8dp; }
+.studio-model-runtime-parts { display: flex; flex-direction: column; max-height: 140dp; min-width: 100dp; overflow-y: auto; }
+.studio-model-runtime-parts button { flex: 0 0 20dp; min-height: 20dp; }
+.studio-model-runtime-parameters { flex: 1 1 200dp; min-width: 160dp; padding: 8dp; }
+.studio-model-runtime-parameter { margin-top: 4dp; }
+.studio-model-runtime [data-disabled] { opacity: 0.6; }

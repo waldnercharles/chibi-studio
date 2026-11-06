@@ -1,0 +1,12 @@
+version 3
+name "StudioMaterialCreateNumber"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Field" type="const char *" category="Payload"
+    - id=2 name="Value" type="double" category="Payload"
+    - id=3 name="Canceled" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

@@ -1,0 +1,2782 @@
+{
+  "status": "retired from authored Studio; recoverable from baseline Git commit",
+  "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+  "records": [
+    {
+      "path": "SDK_HEADERS.json",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "0d3db22705a7d8680ca06ecc92200c3ea307d9e1",
+      "bytes": 37536,
+      "sha256": "89b5c80159483698f8a0fafbcc0cd7fdcb35a32915779e93243835435e3f06c3"
+    },
+    {
+      "path": "cmake/apply_patch.cmake",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a26e9fb902e502b38d0a6b714bb3120229b87525",
+      "bytes": 2382,
+      "sha256": "5680fc83e399b29b87910c6b5b12854a29cedc25e789992cdb2bdbc22e4e718e"
+    },
+    {
+      "path": "cmake/patches/zep-change-inner-word.patch",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9e4b60405ee9d61e325d7e8293b39ff0a483c31c",
+      "bytes": 787,
+      "sha256": "3cb299c1f704f24186f55c1e7dae3a08ca3570984b9720ef20ef58f379a019fa"
+    },
+    {
+      "path": "cmake/patches/zep-cursor-info.patch",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "bd431c95fe77a07f6bc16dce6a298415dc51f446",
+      "bytes": 450,
+      "sha256": "ab18ef45a6f159d67065b4b7437ce7e8a05b1243025da52b6b3264ded19e2551"
+    },
+    {
+      "path": "cmake/patches/zep-flat-underline.patch",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "55a2ed785d9e9829b818af02c37978c37434045a",
+      "bytes": 2079,
+      "sha256": "912a8fda8a6177f31a6ff825c8f67c04a0975a4747b4cdc3a2dec961c3dfd79f"
+    },
+    {
+      "path": "cmake/patches/zep-host-view.patch",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e14c6a838704575434dd9dd4883eff0c0e89e35e",
+      "bytes": 6241,
+      "sha256": "d0b322dccd7ea9dc5f921104af022942bb518ce9b488a36f5408660fbcfbbab0"
+    },
+    {
+      "path": "cmake/patches/zep-indicator-dot.patch",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "aa460cebc182e0cf84fd053829b5d42156f1a002",
+      "bytes": 2332,
+      "sha256": "30f312fbb900a775973c3f3fcae038f77abd75f03aa9296fc4b88cf06407656d"
+    },
+    {
+      "path": "cmake/patches/zep-integer-types.patch",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "69d23bcc98715a4e8f72c25ba31cdb9f665da64d",
+      "bytes": 481,
+      "sha256": "c8b597c55cf69124b2a86ecb1a2424c6527fe105db174450c97141ec7b9bd5d3"
+    },
+    {
+      "path": "cmake/patches/zep-marker-self-clear.patch",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a5ded1df53fd0731e12f1000a249e0190c44f4bf",
+      "bytes": 730,
+      "sha256": "2482c2eedcf95dfa70af70844229d631f8962b9313fa045d6e93d831c8dcd92e"
+    },
+    {
+      "path": "cmake/patches/zep-select-range.patch",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "079f3d3b3db0f82ec0bdbd706920b3d7f05f16ba",
+      "bytes": 1235,
+      "sha256": "1238f14221c24fbe9202c860bd98bf55fe707ca127b357f24b8a6fc77967a427"
+    },
+    {
+      "path": "cmake/patches/zep-undo-pop.patch",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4fdd38bed1e75dd8d604b8ab7c2ca33336fe5485",
+      "bytes": 495,
+      "sha256": "5fa804023b163e871c1a914f8db3ea4dc0fbe522827cf934113d5635592a30b0"
+    },
+    {
+      "path": "cmake/patches/zep-wheel-scroll.patch",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "99c0aae0a2a3d5fccc5b9fdb089dc2d0e0e1d1a4",
+      "bytes": 1622,
+      "sha256": "ea4cab85c483d88fb4dab246c3f57263602dd0e8f6d8b4804170cbf108f2bbaf"
+    },
+    {
+      "path": "cmake/patches/zep-wrapped-line-numbers.patch",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1c733a9ce902a2fa5d25788d1d8a0a01c1a811b5",
+      "bytes": 464,
+      "sha256": "75d5304690350f09fcc1ba1ea185e47904d0f4e3707818f30811debd05b7feb7"
+    },
+    {
+      "path": "cmake/studio_sources.cmake",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3a254ab9ca6d8c1696b230f992399a496636784a",
+      "bytes": 6028,
+      "sha256": "dcd1b56b4cac1c639918c4c90fe280abef7c40cc022a2c471cf9876320676b40"
+    },
+    {
+      "path": "cmake/studio_web.cmake",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f8363e9f59402e3890576144d12e804d75da573b",
+      "bytes": 5057,
+      "sha256": "9921623e5079a0d52137ee859b0592835c02c539c4e597d78f3c7d887cd41167"
+    },
+    {
+      "path": "cmake/zep_dependencies.cmake",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f1aa14a30f3b675ae9f2583ce723a4ddfaf557ae",
+      "bytes": 3883,
+      "sha256": "886951581b6d735199b209ca49638467c0849ead6e58ec4d109e3f1a6250d3c8"
+    },
+    {
+      "path": "include/chibi/application.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "29e0574c16b7c91aaaa8e2b31e0a73e277a3dddd",
+      "bytes": 531,
+      "sha256": "e1a89898f27f81623f1d6b5935ae64db6f7b68842961e774c74bc0cc3e1fa5e7"
+    },
+    {
+      "path": "src/diagnostics/frame_log.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "975360829cf7f3457cf51965734a5e9f8edc05a0",
+      "bytes": 1490,
+      "sha256": "d170cf8927d1fcb08bf10a0251b64fe3240c41bac7c8dbabd9374c945de0d950"
+    },
+    {
+      "path": "src/diagnostics/frame_log.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2a78859d187a099960fb9c095d37d5de8b46e502",
+      "bytes": 599,
+      "sha256": "730e2a1bcc42934fc1f38dc733299081f98eb76037d8872c0e5c63852f28cef2"
+    },
+    {
+      "path": "src/diagnostics/tracy.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2fc898a9e7fa3e5272df708f5fc1ee4da45146e2",
+      "bytes": 2688,
+      "sha256": "78fd00e057e77063ee4b80c38bee89579cfd9af48911ea505aa89179f0a15518"
+    },
+    {
+      "path": "src/diagnostics/web_trace.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "197d7f18e00fce3394c4bbcbfd026a4b32346a79",
+      "bytes": 964,
+      "sha256": "249ae8da39f0d05962f8dd5ddefb3be2157c885383223401e419cf1b9252caf7"
+    },
+    {
+      "path": "src/diagnostics/web_trace.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "049b53670b3eec168925b86859ec4cabbef43d13",
+      "bytes": 368,
+      "sha256": "eac269b017ad23d370a50835d6ce88091b3ef9b26dea99455c501391522c7a64"
+    },
+    {
+      "path": "src/editor/collab/actions.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "05d8ec0e2998ae76861b1f567af8c8a3692d6065",
+      "bytes": 1001,
+      "sha256": "0e9f2b2d1109cf7340d43e749e0db9d3d8d625abacc875c2321e7cd8f4b28d55"
+    },
+    {
+      "path": "src/editor/collab/actions.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1bfcc45791d28a0d7815c889ab3ac6a04f3ddba4",
+      "bytes": 488,
+      "sha256": "b4256da0e9b5f5c3654b7d781d49144ed14167b3af9520166372a96db284292b"
+    },
+    {
+      "path": "src/editor/collab/actions_gate.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "463fd1ae7c9f80afde47cff15287349a49718ab6",
+      "bytes": 772,
+      "sha256": "239f8a0e4cac2a6d6347c0773b98d4c06ee60492fc072446398bd1a8770a6fd7"
+    },
+    {
+      "path": "src/editor/collab/actions_graph.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "877f1108fe7e8af36660a0bed3b0a90c021d5485",
+      "bytes": 61037,
+      "sha256": "d653edabdd9b9bf566aebd6b8a9af54edd155c5aab146ab61376c43161550c75"
+    },
+    {
+      "path": "src/editor/collab/actions_internal.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "0c9abc672cf81378210b4a6ac3d6a7e3e51c6268",
+      "bytes": 2446,
+      "sha256": "a740221aeca4a89a67df5a234d269b5c596b5ec28a2fafdf762d307a8bc0746d"
+    },
+    {
+      "path": "src/editor/collab/actions_scene.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ee2a0cbff9cf7d4493995f88e078f675b158993b",
+      "bytes": 23185,
+      "sha256": "1b13967f34db967de940163ee043c827d668ec79312a569dafab7adcbc9b1dac"
+    },
+    {
+      "path": "src/editor/collab/actions_scene.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "08bbccc2b3a3a78c0fbdcd371b63d1e53eb7f82d",
+      "bytes": 1065,
+      "sha256": "0750590697691399d5b65bca467f6caa0f535a232a590fc17925455697ad98e2"
+    },
+    {
+      "path": "src/editor/collab/collab.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a2fd748282c94f7e20a15ec7ab8459b7a998d120",
+      "bytes": 23687,
+      "sha256": "3cf13c7cd359720c7ce0fc3ba41c4665243f0042404fcce85998f795b219a6f4"
+    },
+    {
+      "path": "src/editor/collab/collab.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f94922308eb3e12381b894ed03a307047b58ff40",
+      "bytes": 2721,
+      "sha256": "9b334d8f027731e137b60b034c208b1c1bb53c1c8916728ed99315ec20d45e1a"
+    },
+    {
+      "path": "src/editor/collab/protocol.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "b2cdc020d775e1de97f8f10b52a2168047760875",
+      "bytes": 4601,
+      "sha256": "18b31276619a3c07a5559f4a4e34d8b830599f99a9464ae96a96391458edd540"
+    },
+    {
+      "path": "src/editor/collab/protocol.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "363fc0ac404e3c4d144b30fcf06ada7a9ad80396",
+      "bytes": 761,
+      "sha256": "ef5bcf4f232c0c8bd98f9f983fae09340de4afafe2ea53f8f3035f7751fd803b"
+    },
+    {
+      "path": "src/editor/collab/workspace.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "097c483dcb5d09a044972077f9dba266e6c49a84",
+      "bytes": 4215,
+      "sha256": "8a308bab9ea0ba20dd17eab3dd4b52ec762ed0f162faf448da471b65d87987df"
+    },
+    {
+      "path": "src/editor/collab/workspace.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "174c066a008e8c65c275912cac0ba9696f433000",
+      "bytes": 744,
+      "sha256": "ce7c1b35312dee3f3f0c2deae517b62105db9e3b4be15600eb5733619aa800f6"
+    },
+    {
+      "path": "src/editor/documents/asset_code.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2c7c0e24272302b94a66700b7d2173747476b761",
+      "bytes": 57346,
+      "sha256": "d6a2eeb84a13efa0b3f857c89f1c33576666b8b7f3b3772b983f7b15356a5e1d"
+    },
+    {
+      "path": "src/editor/documents/asset_code.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e3530089a26312401acf07826a73a913b9d1ad45",
+      "bytes": 5330,
+      "sha256": "5f81c21bcd6bf59885518104da95980f33dbf15509e763a777c44e1004cc053a"
+    },
+    {
+      "path": "src/editor/documents/commands.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "6fd5185eab725b9be3b1eb390b38a501aaf53524",
+      "bytes": 18431,
+      "sha256": "055ac0716c23f7d2078177827b141486c080318eea4bd8288e4c16c707d8a9b4"
+    },
+    {
+      "path": "src/editor/documents/component_properties.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d2c3056524deb7673faf629f1a473c6bf044e176",
+      "bytes": 4756,
+      "sha256": "c9c5165925e7ac857fb2f57e4db85bc4f4c6bb1b6a9763a965b3d1b5bd567129"
+    },
+    {
+      "path": "src/editor/documents/component_properties.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "856a1a4b272b46088406257e0684005bcca86ebf",
+      "bytes": 609,
+      "sha256": "a0f21f180077b1fd9e5e8261a52853528617f195935bb622098ea2a076abba0b"
+    },
+    {
+      "path": "src/editor/documents/document.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2baee72e1a993123d6c7051db09a3a9ed7222b75",
+      "bytes": 24323,
+      "sha256": "005897317a8d0574c062c7eef4c783b81de46b963b6fa2b28d1213699d868989"
+    },
+    {
+      "path": "src/editor/documents/mutations.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ce919302b6e504d1c33fcb3f72191a8212884e59",
+      "bytes": 28299,
+      "sha256": "af63014de3153a12ad7be80aa7ff279bb31331e17d70684697581161894b5d43"
+    },
+    {
+      "path": "src/editor/documents/navigation.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ac7d25ee78e92aa93456fa4e58fda9f43ce3bc87",
+      "bytes": 7718,
+      "sha256": "f0a654c7d4227b1f76813d4d64e03c168352f110d1ada8d3cf37abaea7332196"
+    },
+    {
+      "path": "src/editor/documents/preview.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "cd1b35d43a9e3ba48e9b36c7767dd792f617fbc2",
+      "bytes": 3817,
+      "sha256": "362b31047dfa8e7368522e2da00db5d23ebdf8b2c87cb3dedec5eb9dd96993ee"
+    },
+    {
+      "path": "src/editor/documents/scene_disk.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "35ebd1f716df6f93f5c52f12e39d3f3b78e5d7f2",
+      "bytes": 29776,
+      "sha256": "aab31ac43b4255e68792b05f16162405e1256285c6bbf356efb12bf1b56d12f3"
+    },
+    {
+      "path": "src/editor/documents/scene_document.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ca5b8f485fc3503bd87e3bc12d0ca773fabe413e",
+      "bytes": 27418,
+      "sha256": "73fdebbd4f30ea490bd92ad4436d82dfe90cdca2e1609f5792cdf453b84f9817"
+    },
+    {
+      "path": "src/editor/documents/scene_documents.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "70cc8237c725abff6d311e30d2530f40578519cd",
+      "bytes": 39450,
+      "sha256": "e8b63179f92011b306abcb97ec56e207e763baf3dcd7796f27f7200060b26181"
+    },
+    {
+      "path": "src/editor/documents/scene_history.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3d50edc2f816f410663a049f1a736f903cb2f909",
+      "bytes": 46860,
+      "sha256": "0a493abf1d3f52a751aa2ec2b8a7b33025ca75f5932bc657f72417060cd75593"
+    },
+    {
+      "path": "src/editor/documents/scene_history.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "6113a7dc465ca9f58911cf4e3d01e64dce6acd61",
+      "bytes": 7592,
+      "sha256": "7e190e41cf17005c0996714561086ed8214d2f2a9d6c25e11c84a83d11278c38"
+    },
+    {
+      "path": "src/editor/documents/scene_prototype_actions.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "32270b207022cec0526cb2da76a7a1d1d853be11",
+      "bytes": 10937,
+      "sha256": "c18d05fbe8e474e85aa09db2528f5f860503eb4e7fe5376935adc62edcea921e"
+    },
+    {
+      "path": "src/editor/documents/scene_prototypes.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2287531b36e0acb8959fa0ff071ba3a4d8e487c3",
+      "bytes": 25693,
+      "sha256": "eaad30bfa6cd6ab41ec9fec577a7b150d86ae7b942a812e0726e6d9d934efa0b"
+    },
+    {
+      "path": "src/editor/documents/scene_retention.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "242534c5bbde8de08d6a3e16b896673be100e6a7",
+      "bytes": 4656,
+      "sha256": "1421199c774902542020237e36f053f6f9bee9d17791ae9cccd36672717a70ff"
+    },
+    {
+      "path": "src/editor/documents/scene_retention.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2859f8398311388e16963872c0d3e21cfdd0e6e1",
+      "bytes": 741,
+      "sha256": "6cc2022edf1fbef5ed0e6fbf63dda931c0199a837ca1ef9c30fb211052417ddd"
+    },
+    {
+      "path": "src/editor/documents/ui_buffer.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "335fdc82f476cc864893ce5f21b27c5f1fdfa965",
+      "bytes": 20928,
+      "sha256": "52080d34d52fd7dc6f6915cd986c821b9e89985b8e3f35beee141a3e016517f9"
+    },
+    {
+      "path": "src/editor/documents/ui_buffer.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "40b099145e899400e44fbacd0b4e075ef3251ebf",
+      "bytes": 7305,
+      "sha256": "f595bcc41c3b43557f9975226b0d1e352d4bda8d4c8525a74e04c598d574b15a"
+    },
+    {
+      "path": "src/editor/documents/ui_code.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "41729a16fa30b5faf80694dceabb933653d5a168",
+      "bytes": 24055,
+      "sha256": "61fda6b71d37dff748cfc9f91c6cd3beef986d69d7ed4171937b6a25a812f5c7"
+    },
+    {
+      "path": "src/editor/documents/ui_code.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e26cd0c495369402be558196d57f4eff60a225b1",
+      "bytes": 6142,
+      "sha256": "f82f45585d3e041914b61f419e815f55559231b3ca3762ed43e9b2cd5f72f2fc"
+    },
+    {
+      "path": "src/editor/documents/ui_design.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "28fcaf9360908d5aa996d6e4ff03ebfa40c4f9b3",
+      "bytes": 28826,
+      "sha256": "620c523bc78f208fe3092d628a7d4a47ebb9dde7f03bb5dd9a1c82738e4d1d7f"
+    },
+    {
+      "path": "src/editor/documents/ui_design.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "da55b949dc9b403e0875f56d06ddd3f431847d2a",
+      "bytes": 6160,
+      "sha256": "1bdbc325e8d7c1e029c8c3daeaecad30dbe566c71567e8c7de2bdf1a120b4b0a"
+    },
+    {
+      "path": "src/editor/graph/eval_view.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "27f77304e49997a1001810f6253ec91701c86875",
+      "bytes": 6515,
+      "sha256": "e83e94fbfc5c6e1833ef78fe31b81ae9de5208affe90eda24cd6045771eac946"
+    },
+    {
+      "path": "src/editor/graph/eval_view.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "52c71e85db6c6803586bded95e317ef13b398b4b",
+      "bytes": 1136,
+      "sha256": "d9906f2bdc6829cfab70fdfbe51c1480edd2763b30e37cff212ee68947707b71"
+    },
+    {
+      "path": "src/editor/graph/flow.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3b0666249e9a56cccc24debc95cb9c90b11cb6eb",
+      "bytes": 5367,
+      "sha256": "94d819e8a57956ebe4b1bdec247f3422f0a07698d3c2c2230353da1fd3178e00"
+    },
+    {
+      "path": "src/editor/graph/flow_visual.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5a5f52adcd4be1b002567b4bdbed59d7b812744a",
+      "bytes": 888,
+      "sha256": "84c6446a86572a15f23b47079042cc804d3048c8ea221129a924e97125856733"
+    },
+    {
+      "path": "src/editor/graph/flow_visual.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ca39fa15aa6e5979f3adf9625574d01a32c540fb",
+      "bytes": 524,
+      "sha256": "1057bd5609a1d4168c559d2d6fdb5f43c4fa495e6589d511aae198b1baef9d7c"
+    },
+    {
+      "path": "src/editor/graph/input_bindings.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3614bb909a0da494d68be897bc1d565085952c26",
+      "bytes": 7302,
+      "sha256": "ca1d6f6a78b56dbab883cec9ba38f409d774c6f778d25c32da98372832055258"
+    },
+    {
+      "path": "src/editor/graph/pins.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "77e2eaa151f6efd4233658a4e730e76cb22b238c",
+      "bytes": 6754,
+      "sha256": "c3af5dc1deeb5bd5ea22824bd46fa40252889f3d99b335cb02bf0e2196da6746"
+    },
+    {
+      "path": "src/editor/graph/presentation.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "00475d2af921f6ab2a5f3bb805d5a392f10b8180",
+      "bytes": 6141,
+      "sha256": "c806c7d8b9605942f1c6c50af537f56d083b79ed11aed4dbe5ab0e03569d5948"
+    },
+    {
+      "path": "src/editor/graph/search.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9298a05b1c98b03549324ec4192de2fbebf4539e",
+      "bytes": 43051,
+      "sha256": "72ba86bfec251ef989cea3ed5c341a72c179b050c777c12f2c9187b8f622aa2e"
+    },
+    {
+      "path": "src/editor/graph/search.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7ea454a0dec823cc242792133f29a1cdd0b7ff70",
+      "bytes": 2006,
+      "sha256": "26c84b2cda1babe7283595792c84210a8d26dfb571705760e7b1b65f3d447405"
+    },
+    {
+      "path": "src/editor/graph/selection.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "401738c9da7141a5d2655500f21a618077fcf7d4",
+      "bytes": 2787,
+      "sha256": "9853f54e1b1d80ca300fd135204a68c4865359492b3e92428d539f30c488bc8f"
+    },
+    {
+      "path": "src/editor/rmlui/kit.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a9a099584343337b8e0efc1c903c7301a9459681",
+      "bytes": 41480,
+      "sha256": "2999a8e80b977bd797ede4fca64ea2a727977a73829346817d6fd1aae35e8e44"
+    },
+    {
+      "path": "src/editor/rmlui/kit_code.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d583de0e1af056d5f144f067d7fe061fe55b8e9a",
+      "bytes": 91627,
+      "sha256": "016c119d178244be34a533813629c03879062a88dcca418d8586f03a4a681c0e"
+    },
+    {
+      "path": "src/editor/rmlui/kit_command.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "025d698441bc1369c9d7aeea8b96914a7a51863b",
+      "bytes": 13106,
+      "sha256": "86871c55338cbfe79458f00664b09fdcc19bba2375a3a8fc4112b0c5db755434"
+    },
+    {
+      "path": "src/editor/rmlui/kit_controls.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "69e9cd9ee03dd0d01a9faf42fc8237c19c3eca4b",
+      "bytes": 28665,
+      "sha256": "88f0d79384e83fd65d7cc111d5074a0cf1cf3673dd6147326cc7f446e4fcef07"
+    },
+    {
+      "path": "src/editor/rmlui/kit_drag.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "37e32c5dcbc2b6f19afae0cc006c3dd61736f320",
+      "bytes": 3206,
+      "sha256": "fffcb3380e86a7baa74a376ac109ee50ae92c4a3c62dfd69e80969ad4202ab05"
+    },
+    {
+      "path": "src/editor/rmlui/kit_inspect.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f0469242952a375cb0c2e1e0d221c60bfd10f409",
+      "bytes": 4998,
+      "sha256": "1e9d7ad2a64fd0361b1acf0a7bbf79e84c7cb6a9b615c03c7f6445972abf596f"
+    },
+    {
+      "path": "src/editor/rmlui/kit_internal.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c3e26ae3b7b90b307480d2c207509e80b8bcd215",
+      "bytes": 15381,
+      "sha256": "a0d16a371650697e390add875306ae93ee06d1c4defcc65d5f45557516ebb736"
+    },
+    {
+      "path": "src/editor/rmlui/kit_list.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "98c43763ad74c77240ba3a3dbcde9c4d6b37914c",
+      "bytes": 1113,
+      "sha256": "0e0b525e2d1e25984e7daa3a55c490932133951172dcbaa28f8103f9b590d418"
+    },
+    {
+      "path": "src/editor/rmlui/kit_motion.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1872bf2bc04c103e7d6628640583bed0abfa38ab",
+      "bytes": 7539,
+      "sha256": "0d1a32b7dc529f46a0e6a28f563fc3d09515fcf58ce3fa233c55adeb0d7dff4a"
+    },
+    {
+      "path": "src/editor/rmlui/kit_number.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "92438e3d7a9dfcb2b0db4f6b4248dd836bd14bee",
+      "bytes": 2302,
+      "sha256": "a752cf7e4cc1723a854cf913d16ca2d4aac70618b481e3597543f4583f7a2d07"
+    },
+    {
+      "path": "src/editor/rmlui/kit_popup.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "6dc11b24da3161c96f68b73da77f9992d8527e1c",
+      "bytes": 29395,
+      "sha256": "08847d1bd4f43c3ccf89acbc7c6221d3d8fca17508c0ba15616505db90996d44"
+    },
+    {
+      "path": "src/editor/rmlui/kit_slot.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "079c9ad0742e8f3c95bfe537d9cbafbc70eb5521",
+      "bytes": 5482,
+      "sha256": "fc28731a18bd1bff5ef727f3b89d173eaa6df6bc49fd9a3d381159a98b0b4b56"
+    },
+    {
+      "path": "src/editor/rmlui/kit_text.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "b8bd53945b7459e5bb9b23f8432f2534a64caa6a",
+      "bytes": 1028,
+      "sha256": "ad0de3cb228c273f51ad6d711181bab223463614264cf75d7f8fc0ef0a33eff7"
+    },
+    {
+      "path": "src/editor/rmlui/kit_toast.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1e9382c7387268d44a7dd1b12629cb8e2811af3c",
+      "bytes": 13381,
+      "sha256": "095a830f2ad88978cb87df65806a8eb5a3dd82ab774c8e6af7b87146982a97f6"
+    },
+    {
+      "path": "src/editor/rmlui/kit_wires.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "91a94238f142224177284402af5885841d504dfe",
+      "bytes": 30163,
+      "sha256": "43f948c3d2ecea36864f7459667d3035cd68299459cf8f4aaaf47577c50eadfc"
+    },
+    {
+      "path": "src/editor/rmlui/resources/graph.rml",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d58ac5085883d68095ecc47f3aa6dce1de9ea0d8",
+      "bytes": 182,
+      "sha256": "4ee2c61dc10596546b02752ded56e2a7f3816725f691079492afa02b2e5233ea"
+    },
+    {
+      "path": "src/editor/rmlui/resources/studio.rml",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "cd74d4b92dde9dfff6de4cedb9765e3c04342382",
+      "bytes": 115,
+      "sha256": "7f5dcf8ade88ab8dfa85d75b9dff26c94856fe7e38f0a2c3b4178e858e62dad0"
+    },
+    {
+      "path": "src/editor/studio/studio.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "652e2864486cbfbb2c48cc3fa464fd2612d4549a",
+      "bytes": 2414,
+      "sha256": "107a404d99921e733e03c250aacc22c265f9214044fcb5e2d98feaaa80144ce7"
+    },
+    {
+      "path": "src/editor/studio/studio_assets.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "185fd7e8543d80cd265fe38f10fe6629f46788c2",
+      "bytes": 71822,
+      "sha256": "95550bd76b5c70a1bd20c12f838b12162f9cabb133b3dbd1c9b044a432b55520"
+    },
+    {
+      "path": "src/editor/studio/studio_calls.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "0efe3b994145e5783b70348642bf2498c178d6b4",
+      "bytes": 16159,
+      "sha256": "0831bc34fc7d8792962a942c19cad2dea5d0efb8d90da12d80bfe6d368b8eb5b"
+    },
+    {
+      "path": "src/editor/studio/studio_canvas.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7914fa8be6ac2447e9b99370e7ea4c5fd45be64c",
+      "bytes": 24338,
+      "sha256": "71c700430b24f953ae3c84eb407bcf1c74bafaa925903f9f23ee3a1bf002b4c1"
+    },
+    {
+      "path": "src/editor/studio/studio_code.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c8a286027163f2178c8348238f34200213630f3b",
+      "bytes": 109129,
+      "sha256": "c5c601255708d2373c1b9a28989535df4658bf972c4158d919479ac5afbe2ae6"
+    },
+    {
+      "path": "src/editor/studio/studio_collab.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "b2332daf51316b7dc7b2472a3fd79dc770ff2150",
+      "bytes": 22124,
+      "sha256": "60af050d5af319126cb1cd5ea52ec1bf5c23014c654109d30b9b40259aafea5e"
+    },
+    {
+      "path": "src/editor/studio/studio_commands.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ee0ef94429727b1106b3074e2b5d887985187920",
+      "bytes": 96328,
+      "sha256": "48bf53bfedf8e48ad165198fbe6c4c11b1f9d702f4a8dc335668646cafd3d7b0"
+    },
+    {
+      "path": "src/editor/studio/studio_debug.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c1575f1d02d72b3a1c2464b7d53777692eeed025",
+      "bytes": 23275,
+      "sha256": "401abb83ac64cafa36b8ff3dfce2d3af219ab049c2cba2dc23a2e4747398f184"
+    },
+    {
+      "path": "src/editor/studio/studio_definition.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "aa531a80f951d07aac0b79433bb897eebf019667",
+      "bytes": 4042,
+      "sha256": "6e82c72917049cbc23225bc15ced916e64d320d6545cfb903ad006e938e52920"
+    },
+    {
+      "path": "src/editor/studio/studio_designer.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7570daaabc3a3c268365a9e38b2257702b0969c6",
+      "bytes": 37983,
+      "sha256": "b254a14cedbc332c7b3f667f0dc13f56e42a0143e69d0c37bdfc067040b7a488"
+    },
+    {
+      "path": "src/editor/studio/studio_designer_details.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ce627c6c09cea35e38141ecca70c90d0bce18151",
+      "bytes": 36566,
+      "sha256": "a0d87375f1ecb6091ce3f17066638f4a8e1803af0033f7af85f2accad1ea3b1f"
+    },
+    {
+      "path": "src/editor/studio/studio_designer_edit.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a7041fd743cf1e71831135c514b27f985c96ea5c",
+      "bytes": 22819,
+      "sha256": "8234dbc542b5b42236bdc0c2bc93b3126a55ea8cb8923e5a2114ddeccbf46443"
+    },
+    {
+      "path": "src/editor/studio/studio_designer_edit.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "30a55032aac9eb4d0c6819023f14ff2d690340c1",
+      "bytes": 6547,
+      "sha256": "f963be78223b6e37b4f600356b6721998a02c2be23013c9f902fd4c244faa1b5"
+    },
+    {
+      "path": "src/editor/studio/studio_designer_hierarchy.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "17d8735a70e073a3c2f723609bca2744b83a7c07",
+      "bytes": 32604,
+      "sha256": "4e4d00a83aea3954615fff85ff52e4a5f801fb045638f0ca6fbed08dc8d7fffe"
+    },
+    {
+      "path": "src/editor/studio/studio_designer_internal.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2cad9d64884a817443b3321be9338fa60805f201",
+      "bytes": 8747,
+      "sha256": "9cc1d7a8c503e91a9740196c5014a8936e0a8b0c09cdaa206eb0a62826838b81"
+    },
+    {
+      "path": "src/editor/studio/studio_designer_library.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7098dd4800bfe659b4f5f2e1be6962119c109a63",
+      "bytes": 7922,
+      "sha256": "21b2f62a31c804a08a1f7cf67059edfd9e4f4380e2cf959fb5ac5b9f031afccf"
+    },
+    {
+      "path": "src/editor/studio/studio_designer_values.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2f68b0feeac90c7bb43b614b86245aeb718b5aef",
+      "bytes": 12594,
+      "sha256": "466c9f611a6e96fe569d85a4180e6cf352a204d5c317c8397da2b73e8c48bfc4"
+    },
+    {
+      "path": "src/editor/studio/studio_disk.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "331b0456aeed36fca4af5306441f4dcc9e078140",
+      "bytes": 3557,
+      "sha256": "2d8f2300faa04bcf9cd7d8a788adb7f2bb578c656be778eaed9b5f5299476c0a"
+    },
+    {
+      "path": "src/editor/studio/studio_drop.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "28aa2e89a9a4ea22b1cd9350adadfaffa8b5135e",
+      "bytes": 7540,
+      "sha256": "f80fd8a9a547c285019fe36bc5585ccd1d278abae78c0c4f7eb8a60f832c32cf"
+    },
+    {
+      "path": "src/editor/studio/studio_export.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ce6ad9cad77a80a252fb9e988b7adac11736784f",
+      "bytes": 8080,
+      "sha256": "9ba3d4d3b366a5422d14b56ced3b39c1a6f4320f1b13910639e1cf0d02c0e758"
+    },
+    {
+      "path": "src/editor/studio/studio_find.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d16ba402be325431059e43b8710c127299061e49",
+      "bytes": 11105,
+      "sha256": "27121abc1f37ed31f643ccb03fc2cb2e954795b8af39d8abd0bda2854ea09361"
+    },
+    {
+      "path": "src/editor/studio/studio_gallery.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9d24b1a6c91d7ed476580d767c58a8a3f72028b5",
+      "bytes": 8446,
+      "sha256": "2e310540b560b7ba432813b814854ca77385eda7184104d65c7eafeb66db7754"
+    },
+    {
+      "path": "src/editor/studio/studio_graph.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "886d0094f30d747a462119211970eee5ede54235",
+      "bytes": 31177,
+      "sha256": "18f6688e316414407e0586370f00308adf23190523d8e6378d1dcb1df44e5b91"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_comment.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "23b1928ac516671848555287a5722080025b7dda",
+      "bytes": 11103,
+      "sha256": "b5c125313cda03fa83f768970ca4fb6450cd99679004986b0f5573efa962ad1f"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_details.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "63d7b03780a3e4ad3782e1a2087aa0d3c4ffc6cb",
+      "bytes": 32510,
+      "sha256": "6ad24275c8e14f11069f95fa4518e944aecfb25fe6b5f547b6e2451d09da5a91"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_draw.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d0178596e2e4337c3aab3eab233bbc7e2f623bfb",
+      "bytes": 41081,
+      "sha256": "1ea70c236cf757eae28bfc8af27626feef3c8a810020c9d87d30b6d5ecf57dbb"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_edit.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4c9a09ece27ab044fc27312014db304446b92f45",
+      "bytes": 38560,
+      "sha256": "888cb7c9b8136e32de6a256420c5532872595156f73e11076460647c26534557"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_find.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a4e67f8e57f9678693743279103645dbeea30833",
+      "bytes": 12495,
+      "sha256": "f5f6f7a50acce6ebeaa09f047c6ac50cdf4d0c4ed25807d9cd67c8e8a40e8748"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_header.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5f04aedaaf3ff9cbff119f8cc877722c937efa6e",
+      "bytes": 38334,
+      "sha256": "707370769352007cc0c4da6ac214507cd1b1239dd0aeec3c490024ad89fdde50"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_input.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9a5d0bc16f7c28122cd607dcaeb0bcd1c76d52f3",
+      "bytes": 47412,
+      "sha256": "e334e00fc0e651efb9d302d4facd6ea3a4986296a533a3a58cdf766a0af164f5"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_internal.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9c6997add4afe6d09421227c0ddb521c99624d44",
+      "bytes": 20140,
+      "sha256": "e2c9865d20383f3d05d4a47a72679a93b34ee8bea0f0f2379b00a6a4bb5ce65c"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_layout.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ec3f002a3d61e2073f911a2ee061eacf9a42e55f",
+      "bytes": 29609,
+      "sha256": "75d6179a9973e23f80bbfa631d0e7872bab43ea6309b0876a0d5dcb1ee9e55ce"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_literals.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2fbf5d78dba83bf705ce69701970a88ceb575005",
+      "bytes": 51072,
+      "sha256": "1d8ce15646219e1fa5a84810ff2d1fb91e76f9846216a246aac391275156ffc1"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_live.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "307e3657c0e3177da39d735ac57c1eb8f166ed42",
+      "bytes": 4579,
+      "sha256": "960098ffd026e0250c3c06f67de1f2f7f3fc4ebfa18edd5769fdbcc285a186df"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_menu.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "002c5a7fe3ab467e00dd08b046fdb0c2b26b8a00",
+      "bytes": 11359,
+      "sha256": "d8db46d636cdaca177013302ad5183b217299e5ab13113544ed0902d2ab80521"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_nav.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "31ed4a50cc7053cb452e37cd8b73f066cf8fe84e",
+      "bytes": 6472,
+      "sha256": "a549f4064fe29a10c6f8a7cd93378f3315bfa3a2e83065ebf09ca17a90d6e5d3"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_pins.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d5056dc0b61d6a292a85b84c956a8d923bf91261",
+      "bytes": 17484,
+      "sha256": "f046840cda452885659e3be320152f385951e2d723bb650edb637a8d7c4a88e5"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_properties.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "191dac07b6c7bcbd80f8d3a4fae8d2af75f8ec4d",
+      "bytes": 63178,
+      "sha256": "6e18d40e2776ec16bad2305ecca90648f2298d3b734a872ebb92a26cd43351e5"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_values.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "07bd9ec735569436d603976247458b0062d1d4bc",
+      "bytes": 67051,
+      "sha256": "f4727b468412a7d618e7c8427618f3cc69ecabc273a91c28a372fbf8101616eb"
+    },
+    {
+      "path": "src/editor/studio/studio_graph_view.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3eace3bf6ba1f0f93832f8d87b11c2c50407ac71",
+      "bytes": 14706,
+      "sha256": "d272fbc4afa24084fcb9d36110a55d7a68b0af43d118e89abd2b22e2d4bee20b"
+    },
+    {
+      "path": "src/editor/studio/studio_host.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9009b45c51d4fc273cbc1ce42553f27402c8ce0b",
+      "bytes": 54062,
+      "sha256": "c22ba95bd9bb0a2624d1cb4d1ec60e9c91f75cbc5cb1fc69180fcbc5e85ddb7d"
+    },
+    {
+      "path": "src/editor/studio/studio_inspect.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ea0138248799ce3e376b713a2a6bb0637e9a7115",
+      "bytes": 50659,
+      "sha256": "28892e20f3ab98854932fc2342bb49c71e3286517b6e23a78f7310d17fba0c51"
+    },
+    {
+      "path": "src/editor/studio/studio_internal.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5b02cdbc58c2328a47a7bc585fd6ca90989b78ee",
+      "bytes": 148822,
+      "sha256": "c60e679270848aea4c5256c2b7beb1ec2208e39c06fcaa47c55b166f9dae6a94"
+    },
+    {
+      "path": "src/editor/studio/studio_keymap.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "72cd78e4454bc04e2b5faed7ea7ee85134dca437",
+      "bytes": 10554,
+      "sha256": "b13e84b8e1799b050a550c121c220e072713742438f49956a2b77d46f28baf92"
+    },
+    {
+      "path": "src/editor/studio/studio_keys.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "b4f1d81d7e02261ba159fe19a5da0bde65fac5ee",
+      "bytes": 8396,
+      "sha256": "408ddf89f41c2e21c2b9a0e09e9257e381dc6986d4582e64faadf0c807d96e14"
+    },
+    {
+      "path": "src/editor/studio/studio_member_properties.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5b513d7c0b1406da87fbca949b823c50fb385859",
+      "bytes": 33869,
+      "sha256": "808e4d2d0080885bd0787152eac0e45a65bdc70a3caa105dcd32b932f443e4b3"
+    },
+    {
+      "path": "src/editor/studio/studio_members.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "03a12f9f0d21264d7129146e4f857662246ecef7",
+      "bytes": 68075,
+      "sha256": "7a3d41ec297a2a7d35b86207b395ccac2753e0fed73cb704886dbc2c7bd3ba33"
+    },
+    {
+      "path": "src/editor/studio/studio_members_internal.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "04e0a661ce47cbd64b2c16eeadbfc1979ed21c04",
+      "bytes": 1824,
+      "sha256": "06f869c986d3d40184a25b6af5b2f9b61771d09e0d4fb054bf59a07f5d60e2c1"
+    },
+    {
+      "path": "src/editor/studio/studio_model.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "33ea702360a9285f47c17b691db9a04a21b29da9",
+      "bytes": 26574,
+      "sha256": "c25333d9b60ed5615d30acd148ca9044620bf524c67de1967fee71fbf51fbcee"
+    },
+    {
+      "path": "src/editor/studio/studio_node_calls.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e2808e04b29908baa877ebe97077d7dde5fe0aca",
+      "bytes": 12961,
+      "sha256": "ecb18ceb7f3056f6c0abaaee58c1aca4908c82c2d5849ea7067a0db30d8c4676"
+    },
+    {
+      "path": "src/editor/studio/studio_nodes.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2ab57d8a5e4b85b07505abe362a4d882632be67c",
+      "bytes": 498,
+      "sha256": "f6f9ea26d635804f7c7a633a3fd5010cbe9dc89a81eb917003098e0141bad885"
+    },
+    {
+      "path": "src/editor/studio/studio_outliner.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ac122032d032a0c164b7330f7e325fffd9126a66",
+      "bytes": 15149,
+      "sha256": "8bbeca84e591da8b2efae3d75e56eb7dd28bd28e56daf432eeb10481ac411a7d"
+    },
+    {
+      "path": "src/editor/studio/studio_output.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "cff7f96c31e8116d8b2c8b0897da97c99e4d7e04",
+      "bytes": 39982,
+      "sha256": "c491cb8663fc2fd22b2b0b87881eda8b5d301e1d0cfacf849f5392be30096417"
+    },
+    {
+      "path": "src/editor/studio/studio_palette.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "825039e7d27c32989a5a1932c532f64b9616e924",
+      "bytes": 18655,
+      "sha256": "bf945aa1cb76f0768d3bffd57115c483efbe9e0fff1eadd7df7a1fc96c437c81"
+    },
+    {
+      "path": "src/editor/studio/studio_palette_view.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "36c2bc5a9204a06391c7b2b5047a929a4f893e34",
+      "bytes": 27573,
+      "sha256": "a338e23e1e39d34edd9b3255fbc1c08e911edfce41a743651f7cf8a0c0c3d320"
+    },
+    {
+      "path": "src/editor/studio/studio_panels.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7b40c2828f0d1103f3af5d2d747f733f9ea4e4b0",
+      "bytes": 1669,
+      "sha256": "bdd80adcd85c06fa6025c329d68a399bea63652f03269095c2f99b66610e48f1"
+    },
+    {
+      "path": "src/editor/studio/studio_performance.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f1d935b50f218852805014393544e325b05035ec",
+      "bytes": 9925,
+      "sha256": "bc62152cf78d79cd682c9a245a48cbc1524d751299d987ddc990cab71081bfa6"
+    },
+    {
+      "path": "src/editor/studio/studio_pick.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "dcbed9d90b3ef45ba4424e023971ce13b0b1a96d",
+      "bytes": 7618,
+      "sha256": "01e3a5c69dd9b76d1cf0ff3cb3458955647c82968bfda44800aab5a1335f610c"
+    },
+    {
+      "path": "src/editor/studio/studio_prefs.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4169c07ce7e28e97eef0b51c6afd68f19aca1d22",
+      "bytes": 22947,
+      "sha256": "acd5ae3e53ec014355facb3724be004f9d9c6be64a276c3ded6d27f59dd1f2cb"
+    },
+    {
+      "path": "src/editor/studio/studio_projects.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ff587a1a8c56f798a2b58aad3c7b4144faee5ea1",
+      "bytes": 24763,
+      "sha256": "c8bd13ade530ec11a5e5e3711bff93b6676372c57e11b046818c3295d87c1911"
+    },
+    {
+      "path": "src/editor/studio/studio_properties.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f598e1a5c54ac524837dec4e27927df9188a3250",
+      "bytes": 62548,
+      "sha256": "81b34d411ed3c6a502bfdb4079cb5c778ffbeaca3b15616aa0409dc63e7954f2"
+    },
+    {
+      "path": "src/editor/studio/studio_properties_internal.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2ff5f9194995fd8336bc9aff446893a6754debfc",
+      "bytes": 4774,
+      "sha256": "85d35572b7e728a297749e2e807c4ceb6f56532185decb60baf34862c3dcd36f"
+    },
+    {
+      "path": "src/editor/studio/studio_properties_view.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "6aa8976ed525805af8cadc0501c1e6a4ab680225",
+      "bytes": 65702,
+      "sha256": "fe0120343414b306c499423b3e7dfc697810fedf09bfbc6984bd21c8f0bbf41d"
+    },
+    {
+      "path": "src/editor/studio/studio_prototype_actions.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "6fa030eb8ceee6ff4c60fd8d9e849358a9902303",
+      "bytes": 10988,
+      "sha256": "43185dc389f58a789767d58d0e9c1a2702a33079f817f3eb5bb62557cf44dc20"
+    },
+    {
+      "path": "src/editor/studio/studio_refactor.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "23976c960163ee7c586c0cee94fa2d610fc4c319",
+      "bytes": 29147,
+      "sha256": "e232ce1d7c1bfaa9ec0688e16cc822d0016cec1043a1fa51797933382360cc16"
+    },
+    {
+      "path": "src/editor/studio/studio_scene.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "953c9ff8f406ece02af6bfe5659ab26cbf661d3b",
+      "bytes": 33332,
+      "sha256": "f23f1b772a1e86d7b59168ba5b94b189ff3a0dec8dda996b6f3328453c66aba7"
+    },
+    {
+      "path": "src/editor/studio/studio_scene_camera.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d62e86568977e1a0fb9da2d80112ebed6e42eaea",
+      "bytes": 7341,
+      "sha256": "7639a16f103fd7c25b7061828c096fabed16fe3a2f1a1c6b4f82fc60aa90b1cd"
+    },
+    {
+      "path": "src/editor/studio/studio_settings.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7b9657e8418cdcdf4a44613a4c50b62db36ff6b1",
+      "bytes": 25622,
+      "sha256": "717e297a33e55f94f1d8e2489b82e003139be6f5cc4850077e2aeda5fa05e1d5"
+    },
+    {
+      "path": "src/editor/studio/studio_shader.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "eb621e6c0bef4f19fd21fdaf169f36494a75cb3e",
+      "bytes": 34510,
+      "sha256": "93b03742835ae6899ee9b00ee4ada6fe1a8f81262586c0ca1eaf10a1077b2f94"
+    },
+    {
+      "path": "src/editor/studio/studio_shell.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "180dda535bfb78321276d49419319725b6a496f8",
+      "bytes": 72081,
+      "sha256": "3b02b1e972fe68501e58fb87122bd05b383746403ae22c756f4250a57f0743f2"
+    },
+    {
+      "path": "src/editor/studio/studio_sources.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "79f90a2239516ee48e0bc535747fec4a5457df7b",
+      "bytes": 103023,
+      "sha256": "ec5631d930a49df0c5f68d9684c5cc93f4b39e223180e1ebcaa0f16d10faf11e"
+    },
+    {
+      "path": "src/editor/studio/studio_thumbnail_cache.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e77fa305326dc63733cca9828dc0fa1c909f74eb",
+      "bytes": 8578,
+      "sha256": "221159e50f24881e559f2f0b0f0412cd91e01015a5b221fadb3b4b9a2c1d6b0d"
+    },
+    {
+      "path": "src/editor/studio/studio_thumbnail_graph.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7025f321bde94bf266f55e7d6fd8143d1c96adc6",
+      "bytes": 6663,
+      "sha256": "1ada91d01150db53fa4cb14ac52aff2b8bc013f20620efbf7a593064b59ba31c"
+    },
+    {
+      "path": "src/editor/studio/studio_thumbnail_kinds.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f215c7f40b1b7dfc0c6400a00158999f5eead875",
+      "bytes": 41842,
+      "sha256": "d5ee94f81817c6cc23e7490b62529dcf5dcbc38b17db7ec31a873589f777ceae"
+    },
+    {
+      "path": "src/editor/studio/studio_thumbnails.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "529b834e77315080dcaefb8d6580578b4cc678ae",
+      "bytes": 29289,
+      "sha256": "fee0c3e73fe1aeae431a0bd4855f8b779f598d5e132b69e143f8821f455811cc"
+    },
+    {
+      "path": "src/editor/studio/studio_thumbnails.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f68a0b85b3d2c8f919e0a5f8cd8871e98337b549",
+      "bytes": 7160,
+      "sha256": "31a8861ef91e9bd4e02ad15e615700b2fb872660851db589d6329f3319cf45aa"
+    },
+    {
+      "path": "src/editor/studio/studio_ui.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f1a829227d25d2cacb0d7f26213b71db4fdf0aca",
+      "bytes": 41231,
+      "sha256": "83ef3afcf76601c0694e6224dcb21aed532062b3f8903bb2e4b861933a3523a2"
+    },
+    {
+      "path": "src/editor/text/zep_bridge.cpp",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f59aeeb50e74c354b5da08a56499a80555667c7e",
+      "bytes": 17138,
+      "sha256": "849c8a08a3c4dce47283005bdc6fbb47bdf0e9e0be5fc3fc945a093f388456ce"
+    },
+    {
+      "path": "src/editor/text/zep_bridge.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7c47040ba031d82e35e3638c25c87d565c14df85",
+      "bytes": 9982,
+      "sha256": "49788ccc1157c2113d6a80b289a5f1715675c826f42a1847abdf194d0153e1ef"
+    },
+    {
+      "path": "src/editor/ui/choices.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c048e5788ecfce41763d4217e36f8ad0b88cf326",
+      "bytes": 2032,
+      "sha256": "440309a8ad3353e22549b8ebf04cb233b49c4f879e0a8dca584efad53ec535d7"
+    },
+    {
+      "path": "src/editor/ui/choices.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "35cdfbd8377bd4a2f5115f14fb5b18a88617461d",
+      "bytes": 954,
+      "sha256": "f2d9ec39a67a8e9567d6efdecf07b9db6d921ff25c9b525ce0c7ded0b86e3da8"
+    },
+    {
+      "path": "src/editor/ui/highlight.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "29571b70440e4bf6f5ce73f79defa7e9d0c559c6",
+      "bytes": 9280,
+      "sha256": "45ba8e47b5cc1c8bd5b964fb697e6de99c1e6711cd407a8cf3b2f354ec540498"
+    },
+    {
+      "path": "src/editor/ui/highlight.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "987583032c0ea66066af91be769a2b8f6675efd8",
+      "bytes": 1639,
+      "sha256": "e6874198b585387b2e0cefad46aee8336704bcd1dc86190f86103f1ad8b5fdf9"
+    },
+    {
+      "path": "src/editor/ui/kit.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "025345b8d4a4b1844691b7d24092e88556241dd9",
+      "bytes": 40880,
+      "sha256": "2ca4e9a4609b1917aba7d77e67373fd1d87728e10e0aebef36b6d8037aa3ae92"
+    },
+    {
+      "path": "src/editor/ui/kit_icons.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "fa9737217b8d8a1f61456d603f906dfef6dbd109",
+      "bytes": 9010,
+      "sha256": "ed949744d5f25567d58c6d86d7f75d9434815671e004433dedab39f77745948e"
+    },
+    {
+      "path": "src/editor/ui/kit_wire_shape.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a0306ee011d689e12a096792e4c82028ebcd624e",
+      "bytes": 1467,
+      "sha256": "eba917d35e8408df9fb699b081bfcac330753e6391a87c54df9d37a9613dfd7d"
+    },
+    {
+      "path": "src/editor/ui/labels.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f04c076ebabe3d4e2a56101ce3732d4515daa957",
+      "bytes": 3689,
+      "sha256": "eb87084bc3deaf4a98e2266f2ed6e6dfbcd4f7117f2ac5a8d64e61862b5fa5c2"
+    },
+    {
+      "path": "src/editor/ui/labels.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "cc75fed1497afcc3bbaeb0a09d3237fb18374aff",
+      "bytes": 442,
+      "sha256": "6b3d2515226a20ab858f427470b1d9fadf9fced2bbdcd3d9bc1926470d46d699"
+    },
+    {
+      "path": "src/editor/workspace/application.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "bded23eb1e0f9c9dcb6e2dc46b9a50e4f42bd906",
+      "bytes": 35779,
+      "sha256": "fb2743cc6ea0c1a9cc8052414c62a4166741558ccd3d34e31cb741317e9de141"
+    },
+    {
+      "path": "src/editor/workspace/asset_index.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "448ffd219dfdd5611f06be675f77ebdd67f07c27",
+      "bytes": 17901,
+      "sha256": "3e3d563e37968abe4d06be49f35e5227759c8fe67910ca318bcccbc55b3827b8"
+    },
+    {
+      "path": "src/editor/workspace/asset_index.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4a0c9b324a480af06a4b7cddcd2d8707de28f1b9",
+      "bytes": 631,
+      "sha256": "d96023f0abe1a5bc66b26a9f3e16c46cb9a752efd1f319f94396379ad3fe3f70"
+    },
+    {
+      "path": "src/editor/workspace/asset_refactor.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9d36f839ab5ef9c24750c1a035c6fc4cdc877eac",
+      "bytes": 25780,
+      "sha256": "6e18ce4ce5307b9214e1a580c57b9ecea02ff8df89b0927027e5b08b0983cb24"
+    },
+    {
+      "path": "src/editor/workspace/asset_refactor.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "8d355bf7c10bfce3c2a745f4611673ca35d7ec56",
+      "bytes": 2740,
+      "sha256": "08a0f88b7664c9902613f2d02323e6c4e0076606190f3718402779c6ab9a3e13"
+    },
+    {
+      "path": "src/editor/workspace/asset_refactor_internal.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7a7cece5a527d0c9219b0cd30423b936b2ccc0b3",
+      "bytes": 1095,
+      "sha256": "b4acdefccd67036dc4215c602cf5821aca7c2faa2dba430a821363ad1a9b5966"
+    },
+    {
+      "path": "src/editor/workspace/asset_refactor_source.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "0c9463f426db735f65ce0cbabdcf88afc840f953",
+      "bytes": 19171,
+      "sha256": "a55bbf4ec2968dbec5825d488434688183681c2606605d3f4a33535279f8fa3e"
+    },
+    {
+      "path": "src/editor/workspace/checkpoint.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3c94bfe89a867d6ca4865208aad0c126ade3b178",
+      "bytes": 5726,
+      "sha256": "94a4dda93b904abad1b7a4c39683777ef124d5803c14ff960ff7f41065bc88af"
+    },
+    {
+      "path": "src/editor/workspace/editor.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "b7fcb7ee41c95a8f5f8481505e11c776d300b40a",
+      "bytes": 9891,
+      "sha256": "3c23084d24990e2a0c76fc746070ecd4c76c0127cca3d69e7e8030a530a7f6ac"
+    },
+    {
+      "path": "src/editor/workspace/editor.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2919c7a8763c6cf37cd2b507d79b11b4edc5917f",
+      "bytes": 12120,
+      "sha256": "c85547b370c8cc1bc7a7b94c8243aef4a691b0372ed90a56af16de2af280bc5f"
+    },
+    {
+      "path": "src/editor/workspace/editor_camera.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "dde32c06b2f75d21a02d417a9cbeff9076be320c",
+      "bytes": 5071,
+      "sha256": "09c52335287118eaf071f7116b357bd80345b131003ed4367870945230137b9f"
+    },
+    {
+      "path": "src/editor/workspace/editor_camera.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2bcbb454bc803149925b53a5b2ef17c89799b280",
+      "bytes": 2242,
+      "sha256": "81c3d9790b5ad22c669fc5888bc60f67d2b038f08becfcdab36e21e3a7274c60"
+    },
+    {
+      "path": "src/editor/workspace/editor_internal.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "73ea7d5179124c14b1bc64729a212d86903e28af",
+      "bytes": 8690,
+      "sha256": "177a5dd27a59e264dc8156e1947efdade025ce121f0da5cac6f8d0af700b75c5"
+    },
+    {
+      "path": "src/editor/workspace/game_presentation.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "dd739de353f10c64f056a70b77bffee91f24893f",
+      "bytes": 13978,
+      "sha256": "84e372f49b6fedaeb333c6241a79eaa30c450b1547261782c3ec8f01d249112b"
+    },
+    {
+      "path": "src/editor/workspace/game_presentation.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "8cf7fe6d1dea477d6fe755748c328e1e12bce881",
+      "bytes": 658,
+      "sha256": "d42a92973e86c7bc24cd084b808492753e3d9b1b627c35156ad16613b0cab356"
+    },
+    {
+      "path": "src/editor/workspace/gameplay_input.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "6aba37c762b5f9ddb6c87860e9ffe4374d35dc54",
+      "bytes": 2133,
+      "sha256": "5825c40e10aec01a60ae15f8f7f45b99bc698ec934a398f16521280465ab356d"
+    },
+    {
+      "path": "src/editor/workspace/gameplay_input.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a97bad1b8c662931eb64074b536fa715191c3525",
+      "bytes": 542,
+      "sha256": "113dc35b930bbea87a51106e8dd26e53b6eb90134ce0e0f0f306d347cbb25112"
+    },
+    {
+      "path": "src/editor/workspace/input.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "0dcbd32828bebb21fd6292be836d3294a2cc5b46",
+      "bytes": 4566,
+      "sha256": "53122d885eb1e0e1fd529cf696de34fb1baf0c8f13100a1364df4002d36c2947"
+    },
+    {
+      "path": "src/editor/workspace/input.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1be08d0f80f0680c388a917458af7fb677c9fc38",
+      "bytes": 908,
+      "sha256": "702d2a8840f12edb0d7f30577cb304abb57ac7ee6c3c3e2ffeba4ebfdd72e83a"
+    },
+    {
+      "path": "src/editor/workspace/model_preview.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1c28ce34dc08971258bbcd62eb8395584e287d70",
+      "bytes": 26129,
+      "sha256": "66d3f7843f9d685006d8f26a406086563097cadc6e6b3f49b0f150f0f3b2cad3"
+    },
+    {
+      "path": "src/editor/workspace/model_preview.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "fd37ec585f059a55f30bb08ed1bf4011331c0c19",
+      "bytes": 2685,
+      "sha256": "ae9ab2437cc1e8c1d9158f91dc2950d72e1c6d70e7a492a929f75fd034f9d2d2"
+    },
+    {
+      "path": "src/editor/workspace/movement_input.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3246a75a414ad6f97466ecf7d7b745bad229e9d5",
+      "bytes": 648,
+      "sha256": "721716d4e7c9ef9a8f9d70d1761fc948a18f21de7d34788f694ad064d0f855d2"
+    },
+    {
+      "path": "src/editor/workspace/scenario_playback.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f05b7741c768bf1dde6bbfbae9844f8dd5411915",
+      "bytes": 7050,
+      "sha256": "8cb736c9b826accf99325bb3436f4890708c5babadd14a1688d5c8a87f9efc17"
+    },
+    {
+      "path": "src/editor/workspace/scenario_playback.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "cba06d39524fcbadf4d76cd5c8057d4ccb2d3e8a",
+      "bytes": 1202,
+      "sha256": "460ea6f5c21dcd7a8c4ed67173aaf39e0f42a161736b1a0061feab8186d031cb"
+    },
+    {
+      "path": "src/editor/workspace/scene_actors.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a70a96b022ffecb032e8008ef2e0709f1340ffdf",
+      "bytes": 55583,
+      "sha256": "bcc6e8270b21ff9228ca94a33fd63a3d98c856efe2f6a0caadd7d6a47a1b5929"
+    },
+    {
+      "path": "src/editor/workspace/scene_asset_drop.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ad6119a0fb038b6879edca6a049a49df5c5bfae1",
+      "bytes": 3184,
+      "sha256": "068cafc2d0558fcccba9dc115eae52ef648c9f72aa134636f949b8ef9319df13"
+    },
+    {
+      "path": "src/editor/workspace/scene_authoring.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f45c9cd885805d2a08473674d3014d5676b0c4dd",
+      "bytes": 86518,
+      "sha256": "aa2b862ff210adc860c8461276e98915f0701c7a49c29c3ff4d8afd89588a9de"
+    },
+    {
+      "path": "src/editor/workspace/scene_authoring.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d42a34e34f8eed68ccdde8776a770b046504c0f9",
+      "bytes": 16514,
+      "sha256": "05a8a4509923351e8d10ff4640f342a3e604d50f3320a3b3d78723e7ac507008"
+    },
+    {
+      "path": "src/editor/workspace/scene_checkpoint.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f3847755222ef5e0aba73a77a7bf55ced1f7ae61",
+      "bytes": 43987,
+      "sha256": "2a0553db866ec2f8185d9b2f87f82d62a8ee85f34cfe4d1fc8fad8c7ea250924"
+    },
+    {
+      "path": "src/editor/workspace/scene_collider3d.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "6949cd3263bf368ce9d7f915c951940b51811ebf",
+      "bytes": 16395,
+      "sha256": "080dd76f32ceba83b82483fda2b979f84362df3aff585945ead8911d02dbdbce"
+    },
+    {
+      "path": "src/editor/workspace/scene_collider3d.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3e4dba7b3b51f555422e3a07123c7a3127c861da",
+      "bytes": 1036,
+      "sha256": "8e6c9d6d567c8e2e5f108dd276590bcdc5ea667d9b03fefd15a468183888d664"
+    },
+    {
+      "path": "src/editor/workspace/scene_debug.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "82c0d4b22df104a8cbacea35f7582c72c788033b",
+      "bytes": 4829,
+      "sha256": "085b091a95668d42bd60584c3f4b4766ad9351977d6c419714332bb6d49d1fd4"
+    },
+    {
+      "path": "src/editor/workspace/scene_debug.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1064f44efc683800bda60b3fb36db676b41d972d",
+      "bytes": 1434,
+      "sha256": "3d1479affac6b59ffa8b4ae63101e62ad97ade210792cbe895cb68de2db90f26"
+    },
+    {
+      "path": "src/editor/workspace/scene_gizmo.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "aec2bc4ab74f13c60aa61d66419a64efad408acc",
+      "bytes": 37919,
+      "sha256": "64c885f9eb589521e248c894baaca6436930de7cc828782c37e4678e67f19498"
+    },
+    {
+      "path": "src/editor/workspace/scene_gizmo.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "24dc403300ef8f2818ffdea70908e3855f2fbbcb",
+      "bytes": 10095,
+      "sha256": "7ca10c9cb37b7e4564f02b5eba222cc33586034d1e8fb2da92e78be63f8b1fca"
+    },
+    {
+      "path": "src/editor/workspace/scene_gizmo3d.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "086511bb5710458f57eadf00aeb3ae96f8f2a862",
+      "bytes": 12814,
+      "sha256": "33291b135aabcb793bcae708e50681712e4efa1b5e2f8f0e85b8eed401651477"
+    },
+    {
+      "path": "src/editor/workspace/scene_gizmo3d_internal.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "f1f5026707923d8d45de9aede86a13f50755d6d9",
+      "bytes": 2378,
+      "sha256": "13c80416596cf771c641a9460124ea90ca84c86012678a58344f4f1e7ee30743"
+    },
+    {
+      "path": "src/editor/workspace/scene_gizmo3d_targets.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "34c2592992362cb399087ca72c4534aab8aa7598",
+      "bytes": 14670,
+      "sha256": "f83221f7d86500dff8b15b1db96336ab4aef46b78e909c672f3543fa9fdb12e6"
+    },
+    {
+      "path": "src/editor/workspace/scene_gizmo3d_view.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "baa0160fd289d04768ed76ddf0e9f1047c55c73e",
+      "bytes": 12504,
+      "sha256": "b8f49481a56b374624be7d2e8b1c2192d86f6204c9050264ce494bacbb411653"
+    },
+    {
+      "path": "src/editor/workspace/scene_hierarchy.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9ac6c26d1dbc27798a808cd346a3a645b6775936",
+      "bytes": 18836,
+      "sha256": "c3dbc0f225d3cd482cc07dababe12e801e2b0004ed4a377ed5fe80db2310de2b"
+    },
+    {
+      "path": "src/editor/workspace/scene_internal.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2a2e1814c7729ce10a1825fa31d475a5f59e1b4b",
+      "bytes": 34604,
+      "sha256": "8625e566af9af3483ab9e22dc7ec7096814f76a20e4951de2978dbe2b552a2c0"
+    },
+    {
+      "path": "src/editor/workspace/scene_overlays.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "8b68c2d54f672bfc4f2636e39303381330bf5ee8",
+      "bytes": 12823,
+      "sha256": "c8b066f0f1f29f4ffb311672796a7a250e3f38f2cb27a677d5ccb24e17bfd3e6"
+    },
+    {
+      "path": "src/editor/workspace/scene_runtime.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1194733fe5d53a0764599959c849ffa897a4db29",
+      "bytes": 31088,
+      "sha256": "4272c413643a5bad0d4ce6967cbf60d6a1d15ea174fc5d8c646ba68b1ef4c2b2"
+    },
+    {
+      "path": "src/editor/workspace/scene_tabs.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a6c2f89ad9cbaae0a8ae485bb37f95505ae30ebe",
+      "bytes": 42654,
+      "sha256": "93e58dea4ef4de52611c2e13f7f91b81c75d0be4f6b61316202ffa207a66c4de"
+    },
+    {
+      "path": "src/editor/workspace/scene_view.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c28410451f8c1d1565d4e1656c8d3da04260776a",
+      "bytes": 6417,
+      "sha256": "45e72482a89592027ebe6c41b7d4da8b52d924469d9586a2a7c85939f80782d5"
+    },
+    {
+      "path": "src/editor/workspace/scene_view3d.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ade12b6f73ac38d99b7267703d054a9e6ff055ec",
+      "bytes": 2493,
+      "sha256": "d2e3047ae09ed4b82b4581b7b9be032173ffdd2c8b59cd725a41695c69582d54"
+    },
+    {
+      "path": "src/editor/workspace/scene_view3d.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a6c43a3f27efaec399d61258ca62392be03a9725",
+      "bytes": 1505,
+      "sha256": "6e9040e24b660f59a042e7dbf649484d5e861e37b6b620a32897792281cfa020"
+    },
+    {
+      "path": "src/editor/workspace/scene_viewport.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9fce962b970966bf862b80c45e1413466aa3a409",
+      "bytes": 47489,
+      "sha256": "d40adc352b35c3f9b21e3fb9dadcd56750a01b770cfff538659c06db3ae9e412"
+    },
+    {
+      "path": "src/editor/workspace/scene_world_preview.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "84eb677317081ac48b69a146c64263bbbd23e597",
+      "bytes": 7351,
+      "sha256": "490016e898032ef15d7516861b2629d0f598fde7fff1b82e31c862c46ea321f3"
+    },
+    {
+      "path": "src/editor/workspace/tree_watch.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "0d1330b0556f0989f1ddad2ad03b1561e719a2ed",
+      "bytes": 4931,
+      "sha256": "04c2f8181ad5b57f6905c677eb3c7850c862a04fee85d87abce33c8ddeb07def"
+    },
+    {
+      "path": "src/editor/workspace/tree_watch.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1cf2c639d76125d91901c07b860ff99ef841d5a7",
+      "bytes": 1046,
+      "sha256": "b21da6d49ee5bec09a7ce259c3a3ae90de12c543ea4b7db849fd11116f3fbdf5"
+    },
+    {
+      "path": "src/editor/workspace/viewport.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "6db4c5fa9fcbcd603e5d067e94341fc6a62d8d60",
+      "bytes": 5129,
+      "sha256": "ad8a90738d2e38f1e6291288a77e0adddb7f619da5273595fa1324c6c1f164e2"
+    },
+    {
+      "path": "src/editor/workspace/viewport.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9038e2c06c1d86683fa8bb7cf9db687324c17267",
+      "bytes": 376,
+      "sha256": "ab988d8e5aa5c5078303942cd2e5b6ce06a508c8bd5b2cc28171a4c9ad5ba501"
+    },
+    {
+      "path": "src/host/main.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1a20a6ecb90909414d522669d1170dacbe4b8b26",
+      "bytes": 8694,
+      "sha256": "7ca6d6c9db74b849b9e6f47cd23ac45a0f9efda78bca873f3a97f8938417e844"
+    },
+    {
+      "path": "src/host/stacktrace.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2db50a071d73822e73f7f9473328d9a7534d7186",
+      "bytes": 4069,
+      "sha256": "e14172008d28ce9b7935d48978573c78d4c1bed57f8baa76df2a8a60aaf52f6f"
+    },
+    {
+      "path": "src/host/stacktrace.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "89892207c56894703b5959dacd44470a4e04e83e",
+      "bytes": 497,
+      "sha256": "9387834c65825c14fd3e0b8e8b4aa3881142f1ba2d12bb28bdd4451a9f5124da"
+    },
+    {
+      "path": "src/host/state_file.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ac0428340c374105919c492017f96bf10ae12400",
+      "bytes": 1513,
+      "sha256": "3b7cd4557df64fbc8f52f74bee466dadd897337864533d64818de7834aa41322"
+    },
+    {
+      "path": "src/host/state_file.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "83429ab5b560dc7670a270bd343e6b7d946c14b8",
+      "bytes": 192,
+      "sha256": "986402e1b8d829f46577e0880995750261cdfc642b58c327f39398fc44a5b5f1"
+    },
+    {
+      "path": "src/host/vendor/debugbreak.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "20d52b6ffd83df0fccbe394648d570ff91451ea4",
+      "bytes": 5671,
+      "sha256": "a4dd581dd7248b1acbc6eb6ebac36ea5a963e4f7f8431dee7376d5cef096e0b6"
+    },
+    {
+      "path": "src/studio_registry.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9d8d7560350bdb153962c95ed686aed7acc1423d",
+      "bytes": 2773,
+      "sha256": "0b3a312ee1fbbc32056c13df8261776af143b9d38b0f034b945afff58f00f512"
+    },
+    {
+      "path": "src/studio_registry.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "106cf2af15b7f5254d79dbdac6139b18f83d2b6d",
+      "bytes": 280,
+      "sha256": "1564e009edc86187dc69157862038e7adbccd33f90cc7d777ccabdc17165b66b"
+    },
+    {
+      "path": "tests/acceptance/application.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e71c6d48aa9ef6038561d476f8039339c8ff5523",
+      "bytes": 303,
+      "sha256": "99f312f466e3abe43d30a47094f1dd03fa0a27672244eb0960ed4dc5e316ab3c"
+    },
+    {
+      "path": "tests/acceptance/debugger.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a7e584e35b1527035eaa1fc15635b44f30579c14",
+      "bytes": 11932,
+      "sha256": "5731c49f75a563af39ba5a067655ed1cec125fc4e3b597fb23788aecfd37ce26"
+    },
+    {
+      "path": "tests/acceptance/debugger.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "537c6f5ddc28e8deb10548aecafd08d7ac13daec",
+      "bytes": 210,
+      "sha256": "c6aeeb427b4c75f2304df2826752c5708f03a1d327d1b98c331331d0a22822a8"
+    },
+    {
+      "path": "tests/acceptance/host.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "67829171d386cc328dd41083df4ee11db2c56790",
+      "bytes": 569,
+      "sha256": "79336a3b1fe8ad01ff2df59fa77c0fcd71ef3e019ea67282c1af1400df36a033"
+    },
+    {
+      "path": "tests/acceptance/main.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "926553b9d2fe037d63a5c13a58f17f6f2e70bdba",
+      "bytes": 226703,
+      "sha256": "2efd3e351cc8148a81c988e6be0b168d5400aac6037b11b81252886820702b74"
+    },
+    {
+      "path": "tests/acceptance/material_dependencies.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "48bd7faa23e30d8aec3b7c41bd79a56d5c3c4e6b",
+      "bytes": 8082,
+      "sha256": "9b5593614b90eeb7640441bbe355a5ff70eb3a64e785c3d0c6521be11c699bc9"
+    },
+    {
+      "path": "tests/acceptance/outliner_move.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "95bd33dbca91e3ac4816676d5f12d7da032a6385",
+      "bytes": 11593,
+      "sha256": "789746834bd66d69dea593a79c3a205e74e96c7c0bccca1727416b5cc25c5eac"
+    },
+    {
+      "path": "tests/acceptance/panel_idle.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5e7949bb962d9478116ba42bbaa2af736602304e",
+      "bytes": 22415,
+      "sha256": "c1795de05bc8dcd0c6a7097eb3949e48fdf19c5c02a52d0f84488f97d94c8a20"
+    },
+    {
+      "path": "tests/acceptance/scene_3d.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "50df74a2be51bc189d0f94ddd731ee9f200103a9",
+      "bytes": 717,
+      "sha256": "b61fed95bf665e0f8cff0c5d5864b31fc521f6adf1f2c80239cb2e2bd580d8df"
+    },
+    {
+      "path": "tests/acceptance/scene_camera.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "de8f523bc0b3a3eb1f0eecd75fa0cfa868a39979",
+      "bytes": 13840,
+      "sha256": "a5c8980fc45869a1cd76b7ba8b1892373aa202f2d6a9216a63ae5a91b3dba12d"
+    },
+    {
+      "path": "tests/acceptance/scene_collider3d.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4c5e02488dc40d987e6f3498fa10daaa31d5fe0c",
+      "bytes": 13371,
+      "sha256": "372ac478e9adb2250ac1d5413bab6bafcf05311ee5801a15523c3f6d198968c5"
+    },
+    {
+      "path": "tests/acceptance/scene_gizmo3d.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a178ef0ed0eb33f39204c484def4258700d3da09",
+      "bytes": 17349,
+      "sha256": "5179efab6447d5d8febd1fa0adfcca70c21a4f1ab7dd09f997f6e10ff3e60910"
+    },
+    {
+      "path": "tests/acceptance/scene_move.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "18e97d4878d4e4cdb2408489c6ae0e71e1240f76",
+      "bytes": 18385,
+      "sha256": "046cf81e06322e5947bdc86af91eebc6774fee1973de21e4f9e9ccc7cb41a8fe"
+    },
+    {
+      "path": "tests/acceptance/vendor/pico_unit.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "6b29bdab8e278fe4ae8c4b3c8e03794d95e0dd17",
+      "bytes": 13953,
+      "sha256": "ae1c93c155941afbd914f2c7a1fb2128d72aafcc05bddf3ddb0bb6f72eef22b8"
+    },
+    {
+      "path": "tests/held/engine_oracles/prior_snapshots/ebc60a87f99d1cbe035d483c900e5735cb9e38379c23b9a50c0be3356efa2f92/test/movement_trail.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "cf3761b891280292ee309a2cca2906995e994187",
+      "bytes": 6732,
+      "sha256": "ebc60a87f99d1cbe035d483c900e5735cb9e38379c23b9a50c0be3356efa2f92"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/appearance.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "8b49f97941a565fd81b423d0118340cf1639cb38",
+      "bytes": 14923,
+      "sha256": "79dfc46892e749837a63716e63a25173c2e0c043d998af1a6d4ee5876d518453"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/arena_input.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "24001e324eadba196e82a19a58c6a005119955d0",
+      "bytes": 22471,
+      "sha256": "6896c9d25c76696c59f87b699b3ed2c6acbba9f41678bd2780c7702c2e27b577"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/arena_play.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e50ed39cefe2cf2b200cb455d6f45ccafad8a9e1",
+      "bytes": 93068,
+      "sha256": "b3197ed77b9494952a7a4191f2e356b60ffd2acd3eae54624d2a8bfb3dc6f999"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/asset_fixture.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e4b46b03bc67ac24625fba5cd1c2c1c56849e925",
+      "bytes": 507,
+      "sha256": "157999aefff6bb67a83b27b1fafa53e4365cf3952fe4c7218416af6600d45ace"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/collab_protocol.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "50cf535c9f54eee50ed895b10e6cc82c5360e6bd",
+      "bytes": 2295,
+      "sha256": "0d403ef2aea23be8088996feb08bb3fe96ca0c35fe93d055950aca061af8f50e"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/collab_replay.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2d4d2107acdf6b24bf897da4e4c94f1e4ebf388c",
+      "bytes": 9053,
+      "sha256": "2f181d96002358d26230643cde09e72194788b810496bb4da8ceaea7b3f51b63"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/asset_code.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d8f57b280bf3d970a5b0089c3f503165514405b6",
+      "bytes": 18637,
+      "sha256": "8765cc64bda2f89fb75cbd2c659b7d51ea7a21378f608dd116f3ca1c18ec4205"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/code_intelligence.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "8c3cab6df269e37529201fa3b8f932992f6a74e2",
+      "bytes": 24527,
+      "sha256": "c432595d6b58febb8023d1b0dc574f28db3b72cdee26c474b28f796cf967179f"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/code_intelligence_studio.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ef8c4bcd7412b1385aed96b5281ce01ce50058c3",
+      "bytes": 30048,
+      "sha256": "d400ace344ef95baa8cafbaf9031e0fbf31de84714617801d00c0806835670fc"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/commands.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "79cc5c4273633845dcd9e96ec8980f3b6c618046",
+      "bytes": 72731,
+      "sha256": "c6ee20f83d5f4656050a557499c08d59356b6145d48f7245f122c793f64cace5"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/debug_target.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "564231b999ce49292a6d8adf3424e728ceaa1c7e",
+      "bytes": 13560,
+      "sha256": "e7bdef46f3f240f69707482fd7ab12bccb6f4a4f3a55e3a2e53fbc13c08986bb"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/iframe_bindings.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ceb0c51a090eb66ecdea69349854eae6da73e19a",
+      "bytes": 8581,
+      "sha256": "985bba7115c85032b3b2ff90ae1de7550979e47b6874505004fecb120e3921f8"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/kit_code.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2dd90c010f2c21b4b27faf7c490decaff5f7e086",
+      "bytes": 38626,
+      "sha256": "b180e2d7c236797fb97136560ae31403fdcd37e8f9f7462d3b41154ab52ff856"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/kit_documents.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "de82c59dfd288e655bfe2ea1ed90403f8546fbed",
+      "bytes": 17863,
+      "sha256": "e960044618f61699925baa4945e10fd4c33a8c7f5bbd1d1e001d791187de9201"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/kit_empty_documents.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "11e7f209821003455d466dafc2dc3c754f1f7d3a",
+      "bytes": 4661,
+      "sha256": "ba871938509f6a74a054ae19ed0175db7a55c9a10dced0422c4b31108a07d13c"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/kit_host.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "16303e25812487e7235f32ef4fbe69f62a4dd741",
+      "bytes": 15750,
+      "sha256": "7b8dc1f1a78b4bafbf9ca88816b83cf1973247ee03a92f8520496fd47749cf60"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/kit_slot.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c4fd72f0fb8fa63159833e96918969419c3a19f8",
+      "bytes": 22926,
+      "sha256": "eae2d3a431858ffc0edd3b16c20573b63a1220a7eeaea4074deaeba3e8bcf449"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/rmlui_kit.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5cbd08f7b507a7713f479f785621ba09e30b8a80",
+      "bytes": 116225,
+      "sha256": "3ba49d43c20f10b88c643e3c1e81db9f1e8c931f89c535fb362e7b6cb4f72699"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/rmlui_render.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1f20b7337db5b27470808900d70d78c85578c83a",
+      "bytes": 65970,
+      "sha256": "d74b957774ae651d7cf9b1d85f5cfe869b69483b5b16eab8a3bb0d65db30cb52"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/scene_gizmo.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c191e98c088e409b88bcaff8c01ba48e01a39b9d",
+      "bytes": 8787,
+      "sha256": "45fa77bdc996a0a8c186d6489245b5741aaac702250aad8ebc1a97da2b682105"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/scene_selection.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3e7a20cc3bc4afd30fb443c1d611274d354f5442",
+      "bytes": 13065,
+      "sha256": "593694d805f91e2c229462a3e7b318ce92bdfd8094ad8b3e3a08f8c40e8672e5"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/scene_view.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7e5e26ffbfe53ec053b9042fc4cb7fe5bc1a6692",
+      "bytes": 8533,
+      "sha256": "b8be4b0bf0ca016de91d456c523187c6c4bb48b0556cb8cc7d5571307a7eaf19"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_commands.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "eabc0ebc6b91243e2aa4d638a967e776c4f27455",
+      "bytes": 17817,
+      "sha256": "1d7174c3793d69995c5516622162a7b569f458308160bb3863e565b0aee36f72"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "cad930179ab5365be535856682b3a0709c1392f2",
+      "bytes": 18024,
+      "sha256": "64ba56a6aed085b883ff85fefc58d7eaf4957365791afc5019c522a4ecf2fa3b"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4a395c791dc6c2596398f6532ae142b63af6d0c1",
+      "bytes": 5680,
+      "sha256": "e932e356a901f154d7d3e869e7c1c5af94dbefd21244fe9585f106a2cd090b48"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_assets.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "af6f8195b94152bd17001dd762aa397107e4cea9",
+      "bytes": 7132,
+      "sha256": "31dbc4ee76d26ffee1b754635aba38b893c37b08beb015dac5fb40e73b1e87c7"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_chrome.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "1b17fbf053c4f4717996804c7a5fbd3d310ed4a6",
+      "bytes": 17873,
+      "sha256": "9ed3b3f561a4bde6248e740e8b483063d083a2ae4a96fa7dd7169535a1bfe78b"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_designer.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7dd05c0edf673d4c7a9fdbb6a699468c37aaded1",
+      "bytes": 32768,
+      "sha256": "4ed75fce3c1271d8fcde69dd92b95fb490e672410a5ec820d38b9245456b328f"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_graph.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "407ce6f72a23f82aa90ffc0836ad8808ab6c84f2",
+      "bytes": 37078,
+      "sha256": "0deade973c6c1fd33d7e0879fb49f9b1d546d4f9c7980dc05aa31d062c4066c3"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_graph_chrome.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d99b4a087a9dbf30cb25e9883fbcd82511b53e52",
+      "bytes": 25962,
+      "sha256": "36b875cba0dd98e52b8d9f2bdf5918ee321cf1e2bc7d73950921f1f0420b0bea"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_inspector.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "80fa75b476e04445d6dce8852abdf17ca04ba2d0",
+      "bytes": 13664,
+      "sha256": "d03cc6700cd58972a5b953eb3bc0da7063d46ceafe829bf919265d4020a79541"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_members.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e0b17088058fa87a0b66f4e67f7f4ae71b9926c9",
+      "bytes": 19149,
+      "sha256": "e1a5b8df49f561fde292c84e25d5b1cb0d7f4064c9faa41e4f3cc6408d7708a5"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_outliner.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "78b05a54b753f2f121e48cf0f785310fdcaca0d2",
+      "bytes": 32481,
+      "sha256": "fdeca1ecfb778b68792474d9e73c58b6bf45f7ccc92e0ec7c4c7cc246da620e4"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_output.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "16961fe7e0fd156fa8954335a1fa400fd279b65e",
+      "bytes": 20570,
+      "sha256": "e2fa0dbdaaa41c97c99efd5527f357e1ee8fe3d11f633b08986dcbb6e2fa5eea"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_palette.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "56fff5ec781fb889d8763785865a5efbccd3a79e",
+      "bytes": 22573,
+      "sha256": "86cf08bdd05344cb6587960853a04e9bb0f4ee44f4d6b356cc6432ecfa2dd15b"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_panels.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "be61d9d980e60bfa015fc334a9e84a24c7afbee1",
+      "bytes": 53340,
+      "sha256": "d8885be83b4430711201cca4938e99e787d2bffef55eddac171b71749314db73"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_properties.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9c094b35bddad61a8f860e3d859c552f7ba5aab2",
+      "bytes": 37792,
+      "sha256": "d50e5b27100c96022565f9e92bddfde100340b7579017057d98bd4aa20cac6f0"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_scene.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "bf5cac3a5ac23bdc0d33b4458e0ecf230e18af27",
+      "bytes": 18581,
+      "sha256": "ada9c85e72db51a494f1c7e8b52aad32ad81e4bde7324cfae19c1c835a9ff3f3"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_documents_shell.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "448f91b7a88813c172c692288c2250ae42fba9ec",
+      "bytes": 96009,
+      "sha256": "8c34eabf6131f8e1adceb24039812a96ede6523dee13f3dd46b13fe42bd16995"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_graph_inputs.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "735c7ef6f3e432096e3fd175a7f32d68b60214f2",
+      "bytes": 70971,
+      "sha256": "d9571758bcd542725ea0343badd4c3d7f78b968a2ca46f2fe49c461953edde08"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_graph_zoom.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e3fc5101a8cd7dd0c9bccd27d5941d474754686e",
+      "bytes": 11846,
+      "sha256": "7e870f4af963a10b346d4448f998d643df155cabdb5f930bb03608d09a868224"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_models.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7d72be50746edea8a084581d78f588bdd3f87d80",
+      "bytes": 37286,
+      "sha256": "7b1b454be27d0d3d2e7b96c081b28625fded6c88f2606d7746f98e0f400d9e87"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_new_assets.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "733acea131c893a7e0b83c848d2c6c569e5c180e",
+      "bytes": 27552,
+      "sha256": "8e6e5eb9c36ddb6052533b3e58d62222ff7a6470ff3c943baa864432030e4048"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_nodes_gate.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "192c1d146afa3663d91f3fe2fa7e223aa49029ee",
+      "bytes": 5282,
+      "sha256": "a92785b8950fe37fb09db4db774e5efcc68175b339aea0bfe05eefc25495263b"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_pinch.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "bf93a12a52cf9ef174f2dfa90ad2fa16bba51573",
+      "bytes": 1785,
+      "sha256": "f9e40656ae1ca06c151bebbb3b5d67cc92e394a1266c001e86285dd5a9bb4d1b"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_settings.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4e8f3713e76ea67208528b7a64f19686e7089284",
+      "bytes": 79970,
+      "sha256": "d4e954aa5f8a4b31fb0c9b76a999d9fbbe593a1d47e6d59bc08182594f790e4d"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/studio_thumbnails.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "55fe5a59f1168774e34c5ea88093fd8de16d8cc0",
+      "bytes": 34685,
+      "sha256": "51fa70f31a248f5f62d52458084ba4853205125d601d87eb4890044c9231cfce"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/ui_bench.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d18c92bc7e6f107cf6d42aa1c37ceb6043797738",
+      "bytes": 49802,
+      "sha256": "312d7d984b10c75c4ac41d42b52ea079b59bd78f50d03906c5e4f5b47ac4c8ec"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/ui_bench.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3d4c960fba344a82bb5734102089f122c335df79",
+      "bytes": 3111,
+      "sha256": "316f596132c2339eb32ec5e1c0fd2dc0fbf9136f9ad1290e1de8406e5c301b68"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/ui_bench_studio.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "438035c0929062372b53c592dfebf8c81130d744",
+      "bytes": 99368,
+      "sha256": "99ff3096163b2ddcd14844a79d771c2a8fad6bab3e9746170a52eb2a4b6b8596"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/ui_designer.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4daf87c2094c7b57a9ba8c32348276086e3ec317",
+      "bytes": 30408,
+      "sha256": "c136696bd0cea7e6408cebe9ef2fc7ed35c6da27fdb5e5a869d800823ef078da"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/ui_documents.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d4c1bdaf0ef474f0b18406a00bd6ef1493a65507",
+      "bytes": 33560,
+      "sha256": "d3813d110eb551b45c9208509e059b1e64100d3196c06f6989ab3a82a7c0f450"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/ui_inspector.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5e4c8e4c5826c67fbfd0624391c58ef5ac754399",
+      "bytes": 14316,
+      "sha256": "6ce4ee9149d0e6114503c0048cb09189a15e541fe551cc4fb5adf17f40a0fe01"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/ui_popovers.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "b44235097042ae258cfdf19b9b028b40a3d86bb6",
+      "bytes": 27491,
+      "sha256": "6e4d7d7d6ccc136451dcb16394276a77a15ec5b69cae57f92e5077cf5035ed26"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/ui_sources.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "b304e8c94e5a53e04c8627fd4d0ae21a54b8f8d9",
+      "bytes": 14761,
+      "sha256": "28f6f99242417c2a408b8c0a923e60f94c3b027930f57b920379ab36030cc9e3"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor/ui_wiring.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e28709fd15aba2f80a12920f6ec110b238637288",
+      "bytes": 11365,
+      "sha256": "6ba8c5965d76b75bca4642185a70d6c79025a90e9224c793be2612957da459c2"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor_checkpoint.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "12c07db5396b3078661094fb9aa63d16204d146e",
+      "bytes": 8247,
+      "sha256": "a5c57499dbee6953b5b35d5b3f028df98ff607e62a6101fdc7fb3a375ab911b6"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor_documents.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ed1b5cb2607ed15745d39d38e6d8cc8f6d424389",
+      "bytes": 9055,
+      "sha256": "03c5de1aa91490e16552487c3b955ba8700b9a3862d5c081ffd6221e3fa035b6"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/editor_flow.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e4c97585b7dfe9814af0b963d90f257d70f57fe8",
+      "bytes": 7790,
+      "sha256": "536623c3fe53ac7466bd2f9642f3d293ce8208a06c6f7e513d3a8787506f2438"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/graph/document.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3db6916ed22f2aceeb8073cc3957406da4fa87d9",
+      "bytes": 28152,
+      "sha256": "76d258c0f2b17df1afbd6655797deeb3f37099bcb2b5a0880325a9f2ce697366"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/graph/editing.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4df71f4c1863c28f1ca5a0f83da0a9dccd6ef82a",
+      "bytes": 14476,
+      "sha256": "632a9fc3d1ede6728ff5f20de2c5f2b26f6c17bdbbd0cbc5e33718f3804b89ab"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/graph/input_bindings.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "edbadac3df81ae65a3c3909f4475fddce4d8465c",
+      "bytes": 82180,
+      "sha256": "7790bdb0c8039def2e81209ccc91e0c7332bfc6b960b02dd5581df43dffd16de"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/graph/optimizer.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "96294889d60f112620ec58f347952a47ab266db0",
+      "bytes": 33604,
+      "sha256": "2e16a4a6ae8643982d0938b9e4c2cea02dfc65a3cb63076338acc0749dcc0cb5"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/graph/optimizer_sources.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7506ad03b071ef169e9a091c94a542370b88e66f",
+      "bytes": 13241,
+      "sha256": "b2c5ae966250008e0d676070d51725a9ad26b29e448c46a9ccad98c4fb1a1bcd"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/graph_navigation.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "629e7274110ed63e08f49c46dcd5bba5c026c49a",
+      "bytes": 8089,
+      "sha256": "25bdbcad1464833fcb8c383cb98b9ff8d505e72b106262dd54a5b26c54803f11"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/labels.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "08fc71d5b635dce729680a507ffb814de757af7b",
+      "bytes": 3666,
+      "sha256": "7cbcbc4ee15d9e8f6f5962b19eda8941f3348d4c988491b2919611a8374fb8eb"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/math_expression.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "a66099c01d162090ad2729b6a01a6d063dbc4473",
+      "bytes": 95861,
+      "sha256": "f9c936509887f4994c46d6fc2cd5174628ba0118cf43cf5cdafd796e3cf51da7"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/movement_input.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5b0566719358b6a6ea088d4a90e0bae72a4478a4",
+      "bytes": 713,
+      "sha256": "1b72582bb5e9084c72d582be629caedb351d80c85a7032bf8b59398d56dbbd43"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/movement_trail.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "5db0ba20f00e6b83173d933eb0bf3489dff51507",
+      "bytes": 6524,
+      "sha256": "7fcafef3db0fb598fd49367b3e9f5223125b0d42d59b28caeaa72451d5e2a73f"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/physics_executor.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ab783c054add43ffe78227acfa2ce054b2449ae0",
+      "bytes": 494,
+      "sha256": "314692d337991b59bef6afebd646983b06378818a61bca27ea81b8f547c8b6e8"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/runtime/catalog.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c44d4367f18a907e2f71426bc26d385de6462296",
+      "bytes": 12917,
+      "sha256": "12f59792c89b496dfbc8ba0a1ef1817d68554e8655186b560661ca63a96d313f"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/runtime/game_capabilities.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d16aaa302ee26b89c1510f1abe505c4abc1be204",
+      "bytes": 10025,
+      "sha256": "ba32fe527ff82722f7ff6af16feddfbd66fe44166ebf8711eeb0e930d5f4f5b4"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/runtime/ui_source.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "28029f47dfcb725ff2041498369b97024a918ecd",
+      "bytes": 36957,
+      "sha256": "dc7530cdcb9ceba934dcfa9e7b951fec83821d80d7949538ac207d5c2aec8a37"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/scene_checkpoint.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "2db04d7b3a48559f72aa4110e6dd74da37787f7b",
+      "bytes": 56259,
+      "sha256": "0b7781c59708d55334449acff2f0dd3804c682b63cba0668e9f36ba33921b27c"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/scene_debug.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "103e1f2d33d7b39203767b58f942fee4feabc0a0",
+      "bytes": 13148,
+      "sha256": "7d23eb0b5054316068f41d717ef57f95208b3f0990a6a05f25ac2197abd58fb4"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/scene_disk.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "868dbb2e7b1e6299031fe36825fa4affd3e480da",
+      "bytes": 14248,
+      "sha256": "4ce3eb149935c4fc14541709f0a7d356ab8802e98fb12388a53b345de43ba9f6"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/scene_history.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "60ca5fd524801132cba963976c7a0881a0849d10",
+      "bytes": 33350,
+      "sha256": "2798f9f10957b47b3803539b4dd18c28f77aaf55818add4cbec5fe6e395813ed"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/scene_instances.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "ea60d26c80cc055ed56cb93c87bf2e0365aa6e9b",
+      "bytes": 38257,
+      "sha256": "ce6c69c8d9bfbd779ce1102373a020b7441ba5d5c8cba0624a230e13342c3361"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/scene_refactor.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3e56fc551fe3d7c0dfa8261a6e93cf968f1f7ac7",
+      "bytes": 15207,
+      "sha256": "e5b137a7fa4a80679f5f152fdbeaa7b3a65a42b37ee47befe47c34e0232d4267"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/sdf_material.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "477d37de45d7359e48bf5aca1e09f9543164411c",
+      "bytes": 72309,
+      "sha256": "97855c7553bf57adeda0eaae57f4a6da3a6fb36a3ada86447d61f354382b09ce"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/suite_internal.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c57c81c55a17d29f3a2d9e5edc3f0629d3d1a486",
+      "bytes": 10521,
+      "sha256": "1f9a608789cbe722d02798b4e399e7f2036071ccdf25b1503c38c85a9dcb4463"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/support/code_fixture.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "e9ccf1548620d223e5d8e8a80f8685ce7acf7ff4",
+      "bytes": 4284,
+      "sha256": "417f29c7873bc47c41c91d4b39864396f232bece3fa2907cc1109d518dedbf16"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/support/event_fixture.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "7313e44646d96a77cf0c4b21b23a74263644ce84",
+      "bytes": 3182,
+      "sha256": "9bd8fdb98157836f67b242ec7ed4d425e6cead0d0b06205b4b6b48bd7d685e47"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/support/physics_executor.c",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "b17afc6fd8a93478e0a1724587dad133a2f49d0c",
+      "bytes": 1384,
+      "sha256": "a0ee35f2c2828b4c1322984ffae561c9aea3d9f3a4bf3d5b3861e9d74c4ac98d"
+    },
+    {
+      "path": "tests/held/engine_oracles/test/support/simulation_fixture.h",
+      "category": "native",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "23efd1fe26ac4a35a9dd6267ebe6e84800ee847b",
+      "bytes": 1601,
+      "sha256": "94db64c0dc7c522649ff8d32e50ce83864229bdd2f6c5d6b9d4a54cb99bdf584"
+    },
+    {
+      "path": "tools/sync_sources.py",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "6ff590a04783e463224f34167e90981782bd274a",
+      "bytes": 2511,
+      "sha256": "e299e416faf738e10ed9e9fe24d07c6b34cf14f6d79123eebfba8c2b4ccfcecb"
+    },
+    {
+      "path": "web/collab/client.js",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "90576083df564cacb52674c2a1b615aae6a42b61",
+      "bytes": 18971,
+      "sha256": "7f38c53f665818e6c118c97ae6ac9ffa326c9a44bfec7cd53911ddeea31f25d7"
+    },
+    {
+      "path": "web/collab/config.js.in",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "85af27ec028f5a074c04caa2a33a2cb28153caab",
+      "bytes": 93,
+      "sha256": "2c3ccc38729d85f5042557e74243e7b4eb41ffe79b254a10987bb85f43a2b38e"
+    },
+    {
+      "path": "web/collab/storage.js",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "9c14d2449f5bfa55b90d01c7202059a17cc0d57f",
+      "bytes": 5584,
+      "sha256": "723f006cbcd96420db5797614fa16f581fcd2a6fe4a2b542e65bcd8d034acc1b"
+    },
+    {
+      "path": "web/web_cache.js",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "3132ab39b0b6052677930b5caa91d5fea55bc4ae",
+      "bytes": 946,
+      "sha256": "27d57ceb00b70084ac12f8e3eb31a4f06486aa51625fcf114d9a315476b33aca"
+    },
+    {
+      "path": "web/web_default.js",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "c76c7956d83621b88f53bf897cdec2acba337e2a",
+      "bytes": 1357,
+      "sha256": "232edcc120a7a14319f6be42f6d5092ba47e6e867320db15631e851f60a1fa4a"
+    },
+    {
+      "path": "web/web_frames.js",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "6fef5f63f9a3ae9b2a6eaf9858ac114818483b64",
+      "bytes": 2480,
+      "sha256": "c69f3d5b0ed188ac8de7d010de3c7c28bd575b9a6ca4ff974b559416f625c1a6"
+    },
+    {
+      "path": "web/web_isolation.js",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "18ffb65e2035a8c2580350f8d772bae29a5e71ab",
+      "bytes": 5628,
+      "sha256": "9a971b49a3351e05598ea87640c473b8d6ae85b100cbbd630e06373d437284f6"
+    },
+    {
+      "path": "web/web_launch.js",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "23984982c6b571dc3ffbe886da9ae40cd8edfc1f",
+      "bytes": 584,
+      "sha256": "27dfecd5e177e835e27395fad01fbcbb76b6f8a1d84926aff986e3efc5cf3d6c"
+    },
+    {
+      "path": "web/web_shell.html",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "4d839c3a3e7e629e44fb9722f087e822e2c81202",
+      "bytes": 5874,
+      "sha256": "63aae1eb31af348597977bcf8450aa5534f148ca1a30940a32297baf2da2ce52"
+    },
+    {
+      "path": "web/web_storage.js",
+      "category": "obsolete-native-build-or-host",
+      "baseline_commit": "34f13325c3fb4e1888dbd64bf45d809e07c782d3",
+      "baseline_blob": "d0e23c9f281c7b481f286b435d6bd7f1b18c9547",
+      "bytes": 21943,
+      "sha256": "c2e3e2497796d97df95997e89772c21ebbf35b208a7580585a78669f10241d47"
+    }
+  ]
+}

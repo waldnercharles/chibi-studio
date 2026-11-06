@@ -1,0 +1,12 @@
+version 3
+name "StudioUIDesignerCssField"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Index" type="int" category="Payload"
+    - id=2 name="Name" type="const char *" category="Payload"
+    - id=3 name="Value" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

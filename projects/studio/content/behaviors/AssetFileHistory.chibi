@@ -1,0 +1,497 @@
+behavior AssetFileHistory {
+    self.Active := false
+    Room := false
+    Busy := false
+    Canceled := false
+    Executing := false
+    Document: int = 0
+    DocumentPath: string = ""
+    Paths: string[] = []
+    Tokens: int[] = []
+    Orphans: int[] = []
+    Cursor: int = 0
+    Token: int = 0
+    Request: int = 0
+    InFlightRequest: int = 0
+    Lease := false
+    LeaseDocument: int = 0
+    Redo := false
+    CloseDocuments: int[] = []
+    CloseRevisions: int[] = []
+    action delete = delete_workspace_files(Paths)
+    action restore = restore_workspace_files(Token)
+    action redo = redo_workspace_file_deletion(Token)
+    Publish :: fn() {
+        undo := false
+        redo := false
+        if Cursor > 0 {
+            view := read_workspace_file_history(Tokens[Cursor - 1])
+            undo = view.Valid && view.CanUndo
+        }
+        if Cursor < length(Tokens) {
+            view := read_workspace_file_history(Tokens[Cursor])
+            redo = view.Valid && view.CanRedo
+        }
+        enabled := Active && !Room && !Busy
+        await set_ui_data(Name: "fileHistory.canUndo", Value: enabled && undo)
+        await set_ui_data(Name: "fileHistory.canRedo", Value: enabled && redo)
+        await set_ui_data(Name: "fileHistory.retained", Value: length(Tokens))
+        await set_ui_data(Name: "fileHistory.recoveryPending", Value: length(Orphans) > 0)
+        await set_ui_data(Name: "fileHistory.busy", Value: Busy)
+        await set_ui_data(Name: "fileHistory.readOnly", Value: Room)
+        await send_event<"StudioCommandAvailability">(self, "undoAssetDeletion", enabled && undo)
+        await send_event<"StudioCommandAvailability">(self, "redoAssetDeletion", enabled && redo)
+        await send_event<"AssetFileHistoryState">(self, Busy)
+        await send_event<"StudioAssetHistoryState">(self, enabled && undo, enabled && redo, Busy)
+    }
+    on Begin {
+        info := query_workspace_info()
+        Active = info.Active
+        await Publish()
+    }
+    on StudioCollaborationState {
+        Room = event.Active
+        await Publish()
+    }
+    on StudioDocumentState {
+        self.Document = event.Document
+        DocumentPath = event.Path
+    }
+    Complete :: fn(request: int) {
+        if request != Request {
+            return
+        }
+        if Lease {
+            Lease = false
+            await send_event<"StudioDocumentExternalEditComplete">(self, "asset-file-history", LeaseDocument, request)
+        }
+    }
+    Failure :: fn(Error: string, request: int) {
+        if request != Request {
+            return
+        }
+        Canceled = true
+        await Complete(request)
+        if request != Request {
+            return
+        }
+        Executing = false
+        Busy = false
+        await set_ui_data(Name: "assetBrowser.fileBusy", Value: false)
+        if request != Request {
+            return
+        }
+        await set_ui_data(Name: "assetBrowser.fileError", Value: Error)
+        if request != Request {
+            return
+        }
+        await set_ui_data(Name: "fileHistory.error", Value: Error)
+        if request != Request {
+            return
+        }
+        await Publish()
+    }
+    CaptureDocuments :: fn(request: int) -> bool {
+        if request != Request || !Busy || Canceled {
+            return false
+        }
+        CloseDocuments = []
+        CloseRevisions = []
+        handles := await workspace_document_handles()
+        if request != Request || !Busy || Canceled {
+            return false
+        }
+        if !handles.Ok {
+            await Failure(handles.Error, request)
+            return false
+        }
+        foreach (document in handles.Documents) {
+            if request != Request || !Busy || Canceled {
+                return false
+            }
+            current := await workspace_document_info(document)
+            if request != Request || !Busy || Canceled {
+                return false
+            }
+            if current.Ok && contains(Paths, current.Path) {
+                if current.Dirty || current.Transaction {
+                    await Failure("Open each selected document and save or cancel its edits before deleting its file.", request)
+                    return false
+                }
+                CloseDocuments = array_add(CloseDocuments, document)
+                CloseRevisions = array_add(CloseRevisions, current.Revision)
+            }
+        }
+        return true
+    }
+    Prepare :: fn(request: int) {
+        if request != Request || !Busy || Canceled {
+            return
+        }
+        if contains(Paths, DocumentPath) && Document > 0 {
+            LeaseDocument = Document
+            await send_event<"StudioDocumentExternalEditRequested">(self, "asset-file-history", LeaseDocument, Request)
+        } else {
+            if await CaptureDocuments(request) {
+                await Execute(request)
+            }
+        }
+    }
+    Execute :: fn(request: int) {
+        if request != Request || !Busy || Canceled {
+            return
+        }
+        if Room {
+            await Failure("File history changes are unavailable in a collaborative session.", request)
+            return
+        }
+        Executing = true
+        InFlightRequest = request
+        if Redo {
+            redo()
+        } else {
+            delete()
+        }
+    }
+    on AssetsDeleteRequested {
+        if !Active || Room || Busy || Request >= 2147483647 {
+            return
+        }
+        Request += 1
+        request := Request
+        if length(event.Keys) == 0 || length(event.Keys) > 64 {
+            await Failure("Select between one and 64 source files for a recoverable deletion.", request)
+            return
+        }
+        Busy = true
+        Canceled = false
+        Redo = false
+        Paths = []
+        await Publish()
+        if request != Request || !Busy || Canceled {
+            return
+        }
+        await set_ui_data(Name: "assetBrowser.fileBusy", Value: true)
+        if request != Request || !Busy || Canceled {
+            return
+        }
+        await set_ui_data(Name: "assetBrowser.fileError", Value: "")
+        if request != Request || !Busy || Canceled {
+            return
+        }
+        foreach (key in event.Keys) {
+            row := await lookup_workspace_resource(key)
+            if request != Request || !Busy || Canceled {
+                return
+            }
+            if !row.Status.Ok {
+                await Failure(row.Status.Message, request)
+                return
+            }
+            Paths = add_unique(Paths, row.Row.Path)
+        }
+        await Prepare(request)
+    }
+    on StudioDocumentExternalEditReady {
+        request := event.Request
+        if !Busy || Executing || !text_equal(event.Owner, "asset-file-history") || event.Request != self.Request || event.Document != LeaseDocument {
+            return
+        }
+        Lease = event.Ok
+        if !event.Ok {
+            await Failure(event.Error, request)
+            return
+        }
+        if await CaptureDocuments(request) {
+            await Execute(request)
+        }
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        request := event.Request
+        if !text_equal(event.Owner, "asset-file-history") || event.Request != self.Request || event.Document != LeaseDocument {
+            return
+        }
+        Canceled = true
+        if !Executing {
+            await Failure("The file operation was canceled.", request)
+        }
+    }
+    CloseCleanDocuments :: fn(request: int) {
+        index: int = 0
+        foreach (document in CloseDocuments) {
+            if request != Request || !Busy {
+                return
+            }
+            current := await workspace_document_info(document)
+            if request != Request || !Busy {
+                return
+            }
+            if current.Ok {
+                if current.Revision == CloseRevisions[index] && !current.Dirty && !current.Transaction && contains(Paths, current.Path) {
+                    closed := await workspace_document_close(document)
+                } else {
+                    await set_ui_data(Name: "fileHistory.error", Value: "A source buffer changed during deletion and remains open. Undo deletion before saving it.")
+                }
+            }
+            index += 1
+        }
+    }
+    Refresh :: fn(request: int) {
+        if request != Request || !Busy {
+            return
+        }
+        await Complete(request)
+        if request != Request || !Busy {
+            return
+        }
+        await send_event<"StudioDocumentCommand">(self, "refresh", "")
+        if request != Request || !Busy {
+            return
+        }
+        refreshed := await refresh_workspace_resources()
+        if request != Request || !Busy {
+            return
+        }
+        if !refreshed.Status.Ok {
+            await set_ui_data(Name: "fileHistory.error", Value: refreshed.Status.Message)
+        }
+        if request != Request || !Busy {
+            return
+        }
+        await send_event<"WorkspaceResourcesChanged">(self)
+        if request != Request || !Busy {
+            return
+        }
+        Executing = false
+        Busy = false
+        await set_ui_data(Name: "assetBrowser.fileBusy", Value: false)
+        await Publish()
+    }
+    after delete {
+        request := InFlightRequest
+        if request != Request || !Busy || !Executing {
+            return
+        }
+        await set_ui_data(Name: "fileHistory.error", Value: delete.Error)
+        await set_ui_data(Name: "assetBrowser.fileError", Value: delete.Error)
+        if delete.Token > 0 {
+            if delete.Ok || text_equal(delete.State, "partial") {
+                kept: int[] = []
+                index: int = 0
+                foreach (token in Tokens) {
+                    if index < Cursor {
+                        kept = array_add(kept, token)
+                    } else {
+                        if Room {
+                            Orphans = add_unique(Orphans, token)
+                        } else {
+                            forgotten := await forget_workspace_file_history(token)
+                            if request != Request || !Busy {
+                                return
+                            }
+                            if !forgotten.Ok {
+                                Orphans = add_unique(Orphans, token)
+                            }
+                        }
+                    }
+                    index += 1
+                }
+                Tokens = array_add(kept, delete.Token)
+                Cursor = length(Tokens)
+            } else {
+                if Room {
+                    Orphans = add_unique(Orphans, delete.Token)
+                } else {
+                    forgotten := await forget_workspace_file_history(delete.Token)
+                    if request != Request || !Busy {
+                        return
+                    }
+                    if !forgotten.Ok {
+                        Orphans = add_unique(Orphans, delete.Token)
+                    }
+                }
+            }
+        }
+        if delete.Token > 0 && delete.Ok {
+            await send_event<"StudioNotice">(self, "resource-delete", "info", "Files deleted", "Undo restores the retained file batch.", "Undo", "restore", "assets", delete.Token, 0.0)
+        }
+        if delete.Token > 0 && !delete.Ok && text_equal(delete.State, "partial") {
+            await send_event<"StudioNotice">(self, "resource-delete", "error", "Deletion needs recovery", delete.Error, "Undo", "restore", "assets", delete.Token, 0.0)
+        }
+        if delete.Ok {
+            await CloseCleanDocuments(request)
+            await set_ui_data(Name: "assetBrowser.fileDone", Value: true)
+            await set_ui_data(Name: "fileHistory.message", Value: "Files deleted. Undo deletion restores the complete batch.")
+        }
+        await Refresh(request)
+    }
+    Undo :: fn() {
+        if !Active || Room || Busy || Cursor <= 0 || Request >= 2147483647 {
+            return
+        }
+        Token = Tokens[Cursor - 1]
+        view := read_workspace_file_history(Token)
+        if !view.Valid || !view.CanUndo {
+            return
+        }
+        Request += 1
+        request := Request
+        Canceled = false
+        Busy = true
+        await Publish()
+        if request != Request || !Busy {
+            return
+        }
+        if Room {
+            await Failure("File history changes are unavailable in a collaborative session.", request)
+            return
+        }
+        Executing = true
+        InFlightRequest = request
+        restore()
+    }
+    Redo :: fn() {
+        if !Active || Room || Busy || Cursor >= length(Tokens) || Request >= 2147483647 {
+            return
+        }
+        Token = Tokens[Cursor]
+        view := read_workspace_file_history(Token)
+        if !view.Valid || !view.CanRedo {
+            return
+        }
+        Paths = view.Paths
+        Redo = true
+        Request += 1
+        request := Request
+        Canceled = false
+        Busy = true
+        await Publish()
+        await Prepare(request)
+    }
+    on AssetsDeleteMenu {
+        await show_ui_popover(Element: "#asset-delete-history", At: event.Pointer)
+    }
+    on AssetsDeleteUndo {
+        await Undo()
+    }
+    on AssetsDeleteRedo {
+        await Redo()
+    }
+    on StudioNoticeAction {
+        if !text_equal(event.Owner, "assets") || !text_equal(event.Action, "restore") {
+            return
+        }
+        if !Active || Room || Busy || Cursor <= 0 || Tokens[Cursor - 1] != event.Request {
+            await send_event<"StudioNotice">(self, "resource-delete", "error", "Undo unavailable", "Use Deletion history to restore the latest retained batch.", "", "", "assets", event.Request, 0.0)
+            return
+        }
+        await Undo()
+    }
+    on StudioResourceCommand {
+        if text_equal(event.Id, "undoAssetDeletion") {
+            await Undo()
+        }
+        if text_equal(event.Id, "redoAssetDeletion") {
+            await Redo()
+        }
+    }
+    after restore {
+        request := InFlightRequest
+        if request != Request || !Busy || !Executing {
+            return
+        }
+        await set_ui_data(Name: "fileHistory.error", Value: restore.Error)
+        if restore.Ok {
+            Cursor -= 1
+            await set_ui_data(Name: "fileHistory.message", Value: "Deleted files restored.")
+            await send_event<"StudioNoticeDismiss">(self, "resource-delete")
+        } else {
+            await send_event<"StudioNotice">(self, "resource-delete", "error", "Files could not be restored", restore.Error, "Retry Undo", "restore", "assets", self.Token, 0.0)
+        }
+        await Refresh(request)
+    }
+    after redo {
+        request := InFlightRequest
+        if request != Request || !Busy || !Executing {
+            return
+        }
+        await set_ui_data(Name: "fileHistory.error", Value: redo.Error)
+        if !redo.Ok && text_equal(redo.State, "partial") {
+            Cursor += 1
+            await send_event<"StudioNotice">(self, "resource-delete", "error", "Deletion needs recovery", redo.Error, "Undo", "restore", "assets", self.Token, 0.0)
+        }
+        if redo.Ok {
+            Cursor += 1
+            await CloseCleanDocuments(request)
+            await set_ui_data(Name: "fileHistory.message", Value: "Files deleted again.")
+            await send_event<"StudioNotice">(self, "resource-delete", "info", "Files deleted", "Undo restores the retained file batch.", "Undo", "restore", "assets", self.Token, 0.0)
+        }
+        await Refresh(request)
+    }
+    on AssetsDeleteForget {
+        if Busy || Room || length(Tokens) == 0 || Request >= 2147483647 {
+            return
+        }
+        Request += 1
+        request := Request
+        Busy = true
+        Executing = true
+        await Publish()
+        if request != Request || !Busy {
+            return
+        }
+        if Room {
+            await Failure("File history changes are unavailable in a collaborative session.", request)
+            return
+        }
+        forgotten := await forget_workspace_file_history(Tokens[0])
+        if request != Request || !Busy {
+            return
+        }
+        if forgotten.Ok {
+            Tokens = remove_index(Tokens, 0)
+            if Cursor > 0 {
+                Cursor -= 1
+            }
+        }
+        await set_ui_data(Name: "fileHistory.error", Value: forgotten.Error)
+        Executing = false
+        Busy = false
+        await Publish()
+    }
+    on AssetsDeleteRetryCleanup {
+        if Room || Busy || length(Orphans) == 0 || Request >= 2147483647 {
+            return
+        }
+        Request += 1
+        request := Request
+        Busy = true
+        Executing = true
+        await Publish()
+        kept: int[] = []
+        foreach (token in Orphans) {
+            if request != Request || !Busy {
+                return
+            }
+            if Room {
+                kept = array_add(kept, token)
+            } else {
+                forgotten := await forget_workspace_file_history(token)
+                if request != Request || !Busy {
+                    return
+                }
+                if !forgotten.Ok {
+                    kept = array_add(kept, token)
+                    await set_ui_data(Name: "fileHistory.error", Value: forgotten.Error)
+                }
+            }
+        }
+        if request != Request || !Busy {
+            return
+        }
+        Orphans = kept
+        Executing = false
+        Busy = false
+        await Publish()
+    }
+}

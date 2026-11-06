@@ -1,0 +1,733 @@
+behavior StudioVisual {
+    self.SharedWritable := true
+    SharedGesture := false
+    SharedRevision: int = 0
+    ProposalDocument: int = 0
+    ProposalPending := false
+    ProposalRequest: int = 0
+    Collaborative := false
+    Document: int = 0
+    Revision: int = 0
+    Preview: int = 0
+    Editing := false
+    Retired := false
+    EditSlot: int = -1
+    EditWidth: int = 1
+    X: double = 0.0
+    Y: double = 0.0
+    Z: double = 0.0
+    W: double = 0.0
+    Kind: string = ""
+    Colors: string[] = []
+    ImagePaths: string[] = []
+    ImageLabels: string[] = []
+    ImageValues: string[] = []
+    ImageSlots: int[] = []
+    PickerPath: string = ""
+    PickerRevision: int = 0
+    PickerQuery: string = ""
+    PickerRows: struct<"WorkspaceResourceRow">[] = []
+    PickerTotal: int = 0
+    Parameters: struct<"visual_parameter">[] = []
+    Valid := false
+    Error: string = ""
+    DiagnosticGraph: string = ""
+    DiagnosticNode: string = ""
+    DiagnosticDocument: int = 0
+    DiagnosticRevision: int = 0
+    Image: string = ""
+    Diagnostics := false
+    Time: float = 0.0
+    Yaw: float = 0.0
+    Pitch: float = 0.0
+    Zoom: float = 1.0
+    U: float = 0.5
+    V: float = 0.5
+    Dragging := false
+    MouseX: float = 0.0
+    MouseY: float = 0.0
+    Destination: string = "shader-evidence"
+    Job: int = 0
+    ExportState: int = -1
+    ExportError: string = ""
+    ExportPath: string = ""
+    action refresh_catalog = refresh_visual_catalog()
+    action image_query = query_workspace_resources(0, 256, "image", PickerQuery)
+    action prepare_default = prepare_visual_default(Document, SharedRevision, EditSlot, EditWidth, X, Y, Z, W)
+    action read = workspace_document_read(Document)
+    action begin_edit = workspace_document_begin(Document, Revision)
+    action commit_edit = workspace_document_commit(Document, Revision)
+    action cancel_edit = workspace_document_cancel(Document, Revision)
+    action edit = set_visual_default(Document, Revision, EditSlot, EditWidth, X, Y, Z, W)
+    action inspect = inspect_visual(Document, Revision)
+    action apply = publish_visual_document(Document, Revision)
+    action open = open_visual_preview(Document, 320, 200)
+    action draw = draw_visual_preview(Preview, Revision, Time, Yaw, Pitch, Zoom)
+    action close = close_visual_preview(Preview)
+    action probe = sample_visual(Document, Revision, U, V, Time)
+    action export = export_visual_evidence(Preview, Destination)
+    action status = visual_evidence_status(Job)
+    action close_job = close_visual_evidence(Job)
+
+    publish :: fn() {
+        await set_ui_data(Name: "visualShared", Value: Collaborative)
+        await set_ui_data(Name: "visualProposalPending", Value: ProposalPending)
+        await set_ui_data(Name: "visualReadonly", Value: ProposalPending || (Collaborative && !SharedWritable))
+        await set_ui_data(Name: "visualDocument", Value: Document)
+        await set_ui_data(Name: "visualKind", Value: Kind)
+        await set_ui_data(Name: "visualColors", Value: Colors)
+        await set_ui_data(Name: "visualImagePaths", Value: ImagePaths)
+        await set_ui_data(Name: "visualImageLabels", Value: ImageLabels)
+        await set_ui_data(Name: "visualImageValues", Value: ImageValues)
+        await set_ui_data(Name: "visualImageSlots", Value: ImageSlots)
+        await set_ui_data(Name: "visualPickerPath", Value: PickerPath)
+        await set_ui_data(Name: "visualPickerQuery", Value: PickerQuery)
+        await set_ui_data(Name: "visualPickerRows", Value: PickerRows)
+        await set_ui_data(Name: "visualPickerTotal", Value: PickerTotal)
+        await set_ui_data(Name: "visualValid", Value: Valid)
+        await set_ui_data(Name: "visualError", Value: Error)
+        await set_ui_data(Name: "visualDiagnosticGraph", Value: DiagnosticGraph)
+        await set_ui_data(Name: "visualDiagnosticNode", Value: DiagnosticNode)
+        await set_ui_data(Name: "visualDiagnosticDocument", Value: DiagnosticDocument)
+        await set_ui_data(Name: "visualDiagnosticRevision", Value: DiagnosticRevision)
+        await set_ui_data(Name: "visualImage", Value: Image)
+        await set_ui_data(Name: "visualParameters", Value: Parameters)
+        await set_ui_data(Name: "visualDiagnostics", Value: Diagnostics)
+        await set_ui_data(Name: "visualTime", Value: Time)
+        await set_ui_data(Name: "visualYaw", Value: Yaw)
+        await set_ui_data(Name: "visualPitch", Value: Pitch)
+        await set_ui_data(Name: "visualZoom", Value: Zoom)
+        await set_ui_data(Name: "visualU", Value: U)
+        await set_ui_data(Name: "visualV", Value: V)
+        await set_ui_data(Name: "visualDestination", Value: Destination)
+        await set_ui_data(Name: "visualExportState", Value: ExportState)
+        await set_ui_data(Name: "visualExportError", Value: ExportError)
+        set_ui_data(Name: "visualExportPath", Value: ExportPath)
+        return
+    }
+    draw_preview :: fn() {
+        if Preview > 0 && Valid {
+            await draw()
+            Image = draw.Image
+            if !draw.Valid {
+                Error = draw.Error
+            }
+        }
+        publish()
+        return
+    }
+    refresh_images :: fn() {
+        ImagePaths = []
+        ImageLabels = []
+        ImageValues = []
+        ImageSlots = []
+        details := workspace_asset_inspect(Document, Revision, Kind)
+        slot: int = 0
+        for field in details.Fields {
+            if field.name == "type" && field.text == "Shader Image Texture" && field.parent >= 0 {
+                path := format_text("{}/inputs/Image", details.Fields[field.parent].path)
+                value := ""
+                for candidate in details.Fields {
+                    if candidate.path == path && candidate.type == "object" {
+                        path = format_text("{}/default", path)
+                    }
+                }
+                for candidate in details.Fields {
+                    if candidate.path == path {
+                        value = candidate.text
+                    }
+                }
+                ImagePaths = array_add(ImagePaths, path)
+                ImageLabels = array_add(ImageLabels, format_text("Texture {}", slot + 1))
+                ImageValues = array_add(ImageValues, value)
+                ImageSlots = array_add(ImageSlots, slot)
+                slot += 1
+            }
+        }
+        return
+    }
+    refresh :: fn() {
+        Image = ""
+        Valid = false
+        Error = ""
+        DiagnosticGraph = ""
+        DiagnosticNode = ""
+        if Document <= 0 {
+            publish()
+            return
+        }
+        await read()
+        if !read.Ok {
+            Error = read.Error
+            publish()
+            return
+        }
+        Revision = read.Revision
+        identity := workspace_asset_identity(Document, Revision)
+        Kind = identity.Kind
+        if Kind != "material" && Kind != "shape" {
+            publish()
+            return
+        }
+        if !read.Transaction && Editing {
+            Editing = false
+            Retired = true
+        }
+        document := Document
+        revision := Revision
+        await apply()
+        await inspect()
+        if document != Document || revision != Revision {
+            return
+        }
+        DiagnosticGraph = inspect.DiagnosticGraph
+        DiagnosticNode = inspect.DiagnosticNode
+        DiagnosticDocument = document
+        DiagnosticRevision = revision
+        Valid = inspect.Valid
+        Parameters = inspect.Parameters
+        Colors = []
+        for parameter in Parameters {
+            alpha := 1.0
+            if parameter.width == 4 {
+                alpha = parameter.w
+            }
+            color := linear_color_to_hex(parameter.x, parameter.y, parameter.z, alpha)
+            Colors = array_add(Colors, color.Text)
+        }
+        await refresh_images()
+        await set_ui_data(Name: "visualCosts", Value: inspect.Costs)
+        await set_ui_data(Name: "visualProbeValid", Value: false)
+        if !inspect.Valid {
+            Error = inspect.Error
+            publish()
+            return
+        }
+        if !apply.Valid {
+            Error = apply.Error
+            publish()
+            return
+        }
+        if Preview == 0 {
+            await open()
+            Preview = open.Preview
+            if Preview == 0 {
+                Error = open.Error
+                publish()
+                return
+            }
+        }
+        draw_preview()
+        return
+    }
+    finish :: fn(Canceled: bool) {
+        await read()
+        if read.Ok && read.Transaction {
+            Revision = read.Revision
+            if Canceled {
+                await cancel_edit()
+                if !cancel_edit.Ok {
+                    Error = cancel_edit.Error
+                    publish()
+                    return
+                }
+            } else {
+                await commit_edit()
+                if !commit_edit.Ok {
+                    Error = commit_edit.Error
+                    publish()
+                    return
+                }
+            }
+        }
+        Editing = false
+        await refresh()
+        send_event<"StudioDocumentCommand">(self, "refresh", "")
+        return
+    }
+    ProposeText :: fn(Text: string, Revision: int) {
+        if ProposalPending || (Collaborative && !SharedWritable) {
+            return
+        }
+        if ProposalRequest >= 2147483647 {
+            Error = "Visual edit request limit reached."
+            publish()
+            return
+        }
+        SharedRevision = Revision
+        SharedGesture = false
+        ProposalRequest += 1
+        ProposalDocument = Document
+        ProposalPending = true
+        await send_event<"StudioDocumentEdit">(self, Document, Revision, 0, -1, Text, "visual", ProposalRequest)
+        publish()
+        return
+    }
+    Propose :: fn() {
+        if ProposalPending || !SharedWritable {
+            return
+        }
+        await prepare_default()
+        SharedGesture = false
+        if !prepare_default.Valid {
+            failure := prepare_default.Error
+            await refresh()
+            Error = failure
+            publish()
+            return
+        }
+        ProposeText(prepare_default.Text, SharedRevision)
+        return
+    }
+    SharedParameter :: fn(Document: int, Identity: int, Axis: int, Value: double, Committed: bool, Canceled: bool) {
+        if Document != self.Document || !Valid || ProposalPending || !SharedWritable {
+            return
+        }
+        if Canceled {
+            SharedGesture = false
+            refresh()
+            return
+        }
+        if Committed && !SharedGesture {
+            return
+        }
+        if !SharedGesture || EditSlot != Identity {
+            found := false
+            for row in Parameters {
+                if row.slot == Identity {
+                    EditWidth = row.width
+                    X = row.x
+                    Y = row.y
+                    Z = row.z
+                    W = row.w
+                    found = true
+                }
+            }
+            if !found {
+                return
+            }
+            EditSlot = Identity
+            SharedRevision = Revision
+            SharedGesture = true
+        }
+        switch Axis {
+            case 0:
+                X = Value
+                case 1:
+                    Y = Value
+                    case 2:
+                        Z = Value
+                        case 3:
+                            W = Value
+                        }
+                        if Committed {
+                            Propose()
+                        }
+                        return
+                    }
+                    on StudioDocumentEditResult {
+                        if event.Owner != "visual" || event.Document != ProposalDocument || event.Request != ProposalRequest || event.ExpectedRevision != SharedRevision || !ProposalPending {
+                            return
+                        }
+                        ProposalPending = false
+                        if event.Document != self.Document {
+                            SharedGesture = false
+                            publish()
+                            return
+                        }
+                        if !event.Ok {
+                            failure := event.Error
+                            await refresh()
+                            self.Error = failure
+                            publish()
+                            return
+                        }
+                        self.Revision = event.Revision
+                        await refresh()
+                        send_event<"StudioDocumentCommand">(self, "refresh", "")
+                    }
+                    on StudioCollaborationState {
+                        Collaborative = event.Active
+                        SharedWritable = event.Ready && !event.Pending && (event.Role == "host" || event.Role == "editor")
+                        publish()
+                    }
+                    on Begin {
+                        publish()
+                    }
+                    on StudioDocumentState {
+                        if self.Document != event.Document {
+                            if Preview > 0 {
+                                await close()
+                            }
+                            Preview = 0
+                            Editing = false
+                            Dragging = false
+                            Diagnostics = false
+                            self.Document = event.Document
+                            Kind = ""
+                            PickerPath = ""
+                        }
+                        self.Revision = event.Revision
+                        refresh()
+                    }
+                    on StudioVisualArm {
+                        if event.Document == self.Document {
+                            Retired = false
+                        }
+                    }
+                    on StudioVisualShowNode {
+                        if text_equal(event.Node, "") || event.Document != self.Document || event.Revision != self.Revision || !text_equal(event.Node, DiagnosticNode) || !text_equal(event.Graph, DiagnosticGraph) {
+                            return
+                        }
+                        document := event.Document
+                        revision := event.Revision
+                        graph := event.Graph
+                        node := event.Node
+                        current := await workspace_document_read(document)
+                        if !current.Ok || current.Revision != revision || self.Document != document || self.Revision != revision {
+                            return
+                        }
+                        await send_event<"StudioGraphReveal">(self, document, revision, graph, node)
+                    }
+                    on StudioVisualParameter {
+                        if Collaborative {
+                            SharedParameter(event.Document, event.Slot, event.Axis, event.Value, event.Committed, event.Canceled)
+                            return
+                        }
+                        if event.Document != self.Document || !Valid || Retired {
+                            return
+                        }
+                        await read()
+                        if !read.Ok {
+                            Error = read.Error
+                            publish()
+                            return
+                        }
+                        Revision = read.Revision
+                        if !read.Transaction && Editing {
+                            Editing = false
+                            Retired = true
+                        }
+                        if Retired {
+                            return
+                        }
+                        if event.Committed && !Editing {
+                            return
+                        }
+                        if event.Canceled {
+                            finish(true)
+                            return
+                        }
+                        if Editing && EditSlot != event.Slot {
+                            await finish(false)
+                        }
+                        found := false
+                        for row in Parameters {
+                            if row.slot == event.Slot {
+                                EditWidth = row.width
+                                X = row.x
+                                Y = row.y
+                                Z = row.z
+                                W = row.w
+                                found = true
+                            }
+                        }
+                        if !found {
+                            return
+                        }
+                        if !Editing {
+                            await begin_edit()
+                            if !begin_edit.Ok {
+                                Error = begin_edit.Error
+                                publish()
+                                return
+                            }
+                            Editing = true
+                        }
+                        EditSlot = event.Slot
+                        switch event.Axis {
+                            case 0:
+                                X = event.Value
+                                case 1:
+                                    Y = event.Value
+                                    case 2:
+                                        Z = event.Value
+                                        case 3:
+                                            W = event.Value
+                                        }
+                                        await edit()
+                                        if !edit.Valid {
+                                            failure := edit.Error
+                                            await finish(true)
+                                            Error = failure
+                                            publish()
+                                            return
+                                        }
+                                        Revision = edit.Revision
+                                        if event.Committed {
+                                            finish(false)
+                                        } else {
+                                            refresh()
+                                        }
+                                    }
+                                    on StudioVisualColor {
+                                        if Collaborative {
+                                            if event.Document != self.Document || !Valid || ProposalPending {
+                                                return
+                                            }
+                                            color := linear_color_from_hex(event.Text)
+                                            if !color.Valid {
+                                                Error = color.Error
+                                                publish()
+                                                return
+                                            }
+                                            found := false
+                                            for row in Parameters {
+                                                if row.slot == event.Slot {
+                                                    EditWidth = row.width
+                                                    found = true
+                                                }
+                                            }
+                                            if !found {
+                                                return
+                                            }
+                                            SharedRevision = Revision
+                                            EditSlot = event.Slot
+                                            X = color.R
+                                            Y = color.G
+                                            Z = color.B
+                                            W = color.A
+                                            Propose()
+                                            return
+                                        }
+                                        if event.Document != self.Document || !Valid {
+                                            return
+                                        }
+                                        if Editing {
+                                            await finish(false)
+                                        }
+                                        color := linear_color_from_hex(event.Text)
+                                        if !color.Valid {
+                                            Error = color.Error
+                                            publish()
+                                            return
+                                        }
+                                        found := false
+                                        for row in Parameters {
+                                            if row.slot == event.Slot {
+                                                EditWidth = row.width
+                                                found = true
+                                            }
+                                        }
+                                        if !found {
+                                            return
+                                        }
+                                        await read()
+                                        if !read.Ok {
+                                            Error = read.Error
+                                            publish()
+                                            return
+                                        }
+                                        Revision = read.Revision
+                                        await begin_edit()
+                                        if !begin_edit.Ok {
+                                            Error = begin_edit.Error
+                                            publish()
+                                            return
+                                        }
+                                        Editing = true
+                                        EditSlot = event.Slot
+                                        X = color.R
+                                        Y = color.G
+                                        Z = color.B
+                                        W = color.A
+                                        await edit()
+                                        if !edit.Valid {
+                                            failure := edit.Error
+                                            await finish(true)
+                                            Error = failure
+                                            publish()
+                                            return
+                                        }
+                                        Revision = edit.Revision
+                                        finish(false)
+                                    }
+                                    on StudioVisualImage {
+                                        if ProposalPending {
+                                            return
+                                        }
+                                        if event.Document != self.Document || !Valid {
+                                            return
+                                        }
+                                        switch event.Id {
+                                            case "open":
+                                                if Editing {
+                                                    await finish(false)
+                                                }
+                                                PickerPath = event.Value
+                                                PickerRevision = Revision
+                                                PickerQuery = ""
+                                                await image_query()
+                                                PickerRows = image_query.Rows
+                                                PickerTotal = image_query.Status.Total
+                                                if !image_query.Status.Ok {
+                                                    Error = image_query.Status.Message
+                                                }
+                                                publish()
+                                                case "query":
+                                                    PickerQuery = event.Value
+                                                    await image_query()
+                                                    PickerRows = image_query.Rows
+                                                    PickerTotal = image_query.Status.Total
+                                                    publish()
+                                                    case "close":
+                                                        PickerPath = ""
+                                                        publish()
+                                                        case "choose":
+                                                            if PickerPath == "" {
+                                                                return
+                                                            }
+                                                            await read()
+                                                            if !read.Ok || read.Revision != PickerRevision {
+                                                                Error = "The material changed. Reopen the image picker."
+                                                                PickerPath = ""
+                                                                publish()
+                                                                return
+                                                            }
+                                                            encoded := value_to_json(event.Value)
+                                                            if !encoded.Ok {
+                                                                Error = encoded.Error
+                                                                publish()
+                                                                return
+                                                            }
+                                                            if Collaborative {
+                                                                candidate := await prepare_workspace_asset_edit(self.Document, PickerRevision, Kind, "set", PickerPath, encoded.Text)
+                                                                if !candidate.Ok {
+                                                                    Error = candidate.Error
+                                                                    publish()
+                                                                    return
+                                                                }
+                                                                PickerPath = ""
+                                                                ProposeText(candidate.Text, PickerRevision)
+                                                                return
+                                                            }
+                                                            result := await workspace_asset_edit(self.Document, PickerRevision, Kind, "set", PickerPath, encoded.Text)
+                                                            if !result.Ok {
+                                                                Error = result.Error
+                                                                publish()
+                                                                return
+                                                            }
+                                                            PickerPath = ""
+                                                            await refresh()
+                                                            send_event<"StudioDocumentCommand">(self, "refresh", "")
+                                                        }
+                                                    }
+                                                    on StudioVisualView {
+                                                        switch event.Id {
+                                                            case "time":
+                                                                Time = event.Value
+                                                                case "yaw":
+                                                                    Yaw = clamp(event.Value, -3.14159265, 3.14159265)
+                                                                    case "pitch":
+                                                                        Pitch = clamp(event.Value, -1.5707963, 1.5707963)
+                                                                        case "zoom":
+                                                                            Zoom = event.Value
+                                                                            case "u":
+                                                                                U = event.Value
+                                                                                case "v":
+                                                                                    V = event.Value
+                                                                                    case "reset":
+                                                                                        Yaw = 0.0
+                                                                                        Pitch = 0.0
+                                                                                        Zoom = 1.0
+                                                                                        Time = 0.0
+                                                                                    }
+                                                                                    draw_preview()
+                                                                                }
+                                                                                on StudioVisualOrbit {
+                                                                                    switch event.Id {
+                                                                                        case "down":
+                                                                                            Dragging = true
+                                                                                            MouseX = event.X
+                                                                                            MouseY = event.Y
+                                                                                            case "up":
+                                                                                                Dragging = false
+                                                                                                case "move":
+                                                                                                    if Dragging {
+                                                                                                        geometry := get_ui_view_width(Element: "#studio-visual-preview")
+                                                                                                        if !geometry.Known || geometry.PixelRatio <= 0.0 {
+                                                                                                            MouseX = event.X
+                                                                                                            MouseY = event.Y
+                                                                                                            return
+                                                                                                        }
+                                                                                                        Yaw = clamp(Yaw + (event.X - MouseX) * 0.01 / geometry.PixelRatio, -3.14159265, 3.14159265)
+                                                                                                        Pitch = clamp(Pitch + (event.Y - MouseY) * 0.01 / geometry.PixelRatio, -1.5707963, 1.5707963)
+                                                                                                        MouseX = event.X
+                                                                                                        MouseY = event.Y
+                                                                                                        draw_preview()
+                                                                                                    }
+                                                                                                case "wheel":
+                                                                                                    Zoom = clamp(Zoom + event.Y * 0.1, 0.25, 4.0)
+                                                                                                    draw_preview()
+                                                                                                }
+                                                                                            }
+                                                                                            on StudioVisualCatalogRefresh {
+                                                                                                if Editing {
+                                                                                                    await finish(false)
+                                                                                                }
+                                                                                                await refresh_catalog()
+                                                                                                if !refresh_catalog.Valid {
+                                                                                                    Error = refresh_catalog.Error
+                                                                                                    publish()
+                                                                                                    return
+                                                                                                }
+                                                                                                refresh()
+                                                                                            }
+                                                                                            on StudioVisualDiagnostics {
+                                                                                                Diagnostics = !Diagnostics
+                                                                                                publish()
+                                                                                            }
+                                                                                            on StudioVisualProbe {
+                                                                                                await probe()
+                                                                                                await set_ui_data(Name: "visualProbeValid", Value: probe.Valid)
+                                                                                                await set_ui_data(Name: "visualProbeError", Value: probe.Error)
+                                                                                                set_ui_data(Name: "visualSamples", Value: probe.Samples)
+                                                                                            }
+                                                                                            on StudioVisualDestination {
+                                                                                                Destination = event.Path
+                                                                                                publish()
+                                                                                            }
+                                                                                            on StudioVisualExport {
+                                                                                                if ProposalPending || SharedGesture {
+                                                                                                    Error = "Finish the shared edit before exporting or baking its accepted source."
+                                                                                                    publish()
+                                                                                                    return
+                                                                                                }
+                                                                                                if Job > 0 {
+                                                                                                    await close_job()
+                                                                                                    Job = 0
+                                                                                                }
+                                                                                                if Editing {
+                                                                                                    await finish(false)
+                                                                                                }
+                                                                                                await export()
+                                                                                                Job = export.Job
+                                                                                                ExportState = 0
+                                                                                                ExportError = export.Error
+                                                                                                ExportPath = ""
+                                                                                                if Job == 0 {
+                                                                                                    ExportState = 2
+                                                                                                }
+                                                                                                await draw_preview()
+                                                                                                publish()
+                                                                                            }
+                                                                                            on Tick {
+                                                                                                if Job > 0 && ExportState == 0 {
+                                                                                                    await status()
+                                                                                                    ExportState = status.State
+                                                                                                    ExportError = status.Error
+                                                                                                    ExportPath = status.Destination
+                                                                                                    publish()
+                                                                                                }
+                                                                                            }
+                                                                                        }

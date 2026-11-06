@@ -1,0 +1,9 @@
+.material-create-menu { width: 340dp; max-height: 640dp; overflow-y: auto; padding: 10dp; }
+.material-create-title { font-weight: 600; margin-bottom: 10dp; }
+.material-create-name { display: flex; flex-direction: column; gap: 4dp; margin-bottom: 10dp; }
+.material-create-name input { width: 100%; }
+.material-create-row { display: flex; align-items: center; gap: 8dp; min-height: 30dp; margin-bottom: 6dp; }
+.material-create-row > label { flex: 1 1 0dp; }
+.material-create-row > [data-ui=NumberField], .material-create-row > [data-ui=Select] { width: 140dp; }
+.material-create-hint { color: var(--muted-foreground); margin: 8dp 0dp; }
+.material-create-error { color: var(--destructive); margin: 8dp 0dp; }

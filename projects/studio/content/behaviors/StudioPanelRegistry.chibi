@@ -1,0 +1,39 @@
+behavior StudioPanelRegistry {
+    self.Owners: handle<"ecs.entity">[] = []
+    Names: string[] = []
+    Documents: string[] = []
+    Registered: bool = false
+
+    Refresh :: fn() {
+        Owners = []
+        Names = []
+        Documents = []
+        await send_event<"StudioPanelsCleared">(self)
+        for candidate in find_entities_with_component("Ui") {
+            name := entity_name(candidate)
+            document := candidate.Ui.document
+            // Application composes the core editors and chrome. Mounting its
+            // root as a Panel would recursively embed the whole application.
+            if candidate != self && name != "" && document != "" && document != "StudioRoot" && !contains(Names, name) && length(Owners) < 128 {
+                Owners = array_add(Owners, candidate)
+                Names = array_add(Names, name)
+                Documents = array_add(Documents, document)
+                await send_event<"StudioPanelRegistered">(self, format_text("panel:{}", name), name, document, format_text("{}", candidate))
+            }
+        }
+        await set_ui_data(Name: "panelRegistry.names", Value: Names)
+        await set_ui_data(Name: "panelRegistry.documents", Value: Documents)
+        await set_ui_data(Name: "panelRegistry.count", Value: length(Names))
+        Registered = true
+    }
+    on Begin { await Refresh() }
+    on StudioPanelRegistryRefresh { await Refresh() }
+    on StudioDocumentState {
+        for panel in Owners {
+            await send_event<"StudioDocumentState">(panel, event.Document, event.Revision, event.Path, event.Dirty, event.Conflict, event.CanUndo, event.CanRedo, event.Busy, event.Error)
+        }
+    }
+    on WorkspaceResourcesChanged {
+        for panel in Owners { await send_event<"WorkspaceResourcesChanged">(panel) }
+    }
+}

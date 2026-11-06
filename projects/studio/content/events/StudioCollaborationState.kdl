@@ -1,0 +1,15 @@
+version 3
+name "StudioCollaborationState"
+domain "event"
+id_counter 7
+(array)variables {
+    - id=1 name="Active" type="bool" category="Payload"
+    - id=2 name="Role" type="const char *" category="Payload"
+    - id=3 name="Ready" type="bool" category="Payload"
+    - id=4 name="Pending" type="bool" category="Payload"
+    - id=5 name="Replaying" type="bool" category="Payload"
+    - id=6 name="Owner" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

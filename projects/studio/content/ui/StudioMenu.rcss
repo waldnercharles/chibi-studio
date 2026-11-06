@@ -1,0 +1,2 @@
+/* Shared popup.menu supplies window placement and available-height clamp. */
+.studio-menu-scroll { max-height: var(--menu-seven-row-max); overflow-y: auto; }

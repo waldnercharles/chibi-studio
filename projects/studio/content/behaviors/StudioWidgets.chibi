@@ -1,0 +1,99 @@
+behavior StudioWidgets {
+    self.PrototypeFirst: int = 0
+    PrototypeQuery: string = ""
+    PrototypeRows: WorkspaceResourceRow[] = []
+    PrototypeTotal: int = 0
+    PanelNames: string[] = []
+
+    Command :: fn(Id: string, Label: string, Shortcut: string) {
+        base := format_text("galleryCommands.{}", Id)
+        await set_ui_data(Name: format_text("{}.id", base), Value: Id)
+        await set_ui_data(Name: format_text("{}.menu", base), Value: Label)
+        await set_ui_data(Name: format_text("{}.shortcut", base), Value: Shortcut)
+        await set_ui_data(Name: format_text("{}.enabled", base), Value: false)
+        await set_ui_data(Name: format_text("{}.checkable", base), Value: false)
+        await set_ui_data(Name: format_text("{}.checked", base), Value: false)
+        await set_ui_data(Name: format_text("{}.icon", base), Value: "")
+    }
+    RefreshPanels :: fn() {
+        PanelNames = []
+        for candidate in find_entities_with_component("Ui") {
+            name := entity_name(candidate)
+            if name != "" && candidate.Ui.document != "StudioRoot" && candidate.Ui.document != "" && !contains(PanelNames, name) {
+                i := length(PanelNames)
+                PanelNames = array_add(PanelNames, name)
+                base := format_text("galleryPanelItems.{}", i)
+                await set_ui_data(Name: format_text("{}.label", base), Value: name)
+                await set_ui_data(Name: format_text("{}.icon", base), Value: "")
+                await set_ui_data(Name: format_text("{}.shortcut", base), Value: "")
+                await set_ui_data(Name: format_text("{}.checked", base), Value: false)
+                await set_ui_data(Name: format_text("{}.disabled", base), Value: false)
+            }
+        }
+        await set_ui_data(Name: "galleryPanels", Value: PanelNames)
+        await set_ui_data(Name: "galleryChoices.panels.label", Value: "Studio UI")
+        await set_ui_data(Name: "galleryChoices.panels.icon", Value: "")
+    }
+    Prototypes :: fn() {
+        page := await query_workspace_resources(PrototypeFirst, 64, "prototype", PrototypeQuery)
+        PrototypeRows = page.Rows
+        PrototypeTotal = page.Status.Total
+        await set_ui_data(Name: "galleryPrototypeError", Value: page.Status.Message)
+        await set_ui_data(Name: "galleryPrototypes", Value: PrototypeRows)
+        await set_ui_data(Name: "galleryPrototypeFirst", Value: PrototypeFirst)
+        await set_ui_data(Name: "galleryPrototypeTotal", Value: PrototypeTotal)
+    }
+    on Begin {
+        environment := await authoring_platform_environment()
+        undo_chord := "Ctrl+Z"
+        redo_chord := "Ctrl+Shift+Z"
+        if environment.Environment.Platform == "macOS" || environment.Environment.Platform == "Mac OS X" {
+            undo_chord = "⌘Z"
+            redo_chord = "⇧⌘Z"
+        }
+        await Command("undo", "Undo", undo_chord)
+        await Command("redo", "Redo", redo_chord)
+        await set_ui_data(Name: "galleryChoices.assets.prototype.icon", Value: "󰆧")
+        await set_ui_data(Name: "galleryChoices.assets.prototype.none", Value: "None")
+        await set_ui_data(Name: "galleryChoices.fields.Body.type.label", Value: "type")
+        await set_ui_data(Name: "galleryChoices.fields.Body.type.icon", Value: "")
+        await set_ui_data(Name: "galleryChoices.fields.Body.type.groups.0.label", Value: "")
+        labels: string[] = ["Static", "Dynamic", "Kinematic"]
+        for i in 0..length(labels) - 1 {
+            base := format_text("galleryChoices.fields.Body.type.groups.0.options.{}", i)
+            await set_ui_data(Name: format_text("{}.value", base), Value: i)
+            await set_ui_data(Name: format_text("{}.label", base), Value: labels[i])
+            await set_ui_data(Name: format_text("{}.icon", base), Value: "")
+        }
+        if read_saved_text("galleryBody", "").Text == "" { await set_saved_number("galleryBody", 0) }
+        await RefreshPanels()
+    }
+    on StudioDocumentState {
+        await set_ui_data(Name: "galleryCommands.undo.enabled", Value: event.CanUndo && !event.Busy)
+        await set_ui_data(Name: "galleryCommands.redo.enabled", Value: event.CanRedo && !event.Busy)
+    }
+    on StudioGalleryPrototypeQuery {
+        PrototypeQuery = event.Query
+        PrototypeFirst = 0
+        await Prototypes()
+    }
+    on StudioGalleryCommand {
+        switch event.Id {
+            case "undo": { await send_event<"StudioCommand">(cast<handle<"ecs.entity">>(get_global_variable("Application")), "undo", "") }
+            case "redo": { await send_event<"StudioCommand">(cast<handle<"ecs.entity">>(get_global_variable("Application")), "redo", "") }
+            case "panel": { await send_event<"StudioPanelSelected">(cast<handle<"ecs.entity">>(get_global_variable("Application")), event.Area, format_text("panel:{}", event.Argument)) }
+            case "assets": {
+                PrototypeFirst = 0
+                PrototypeQuery = ""
+                await Prototypes()
+                await show_ui_popover(Element: "#gallery-prototypes", At: event.Pointer)
+            }
+            case "previous": { PrototypeFirst = max(0, PrototypeFirst - 64); await Prototypes() }
+            case "next": { if PrototypeFirst + 64 < PrototypeTotal { PrototypeFirst += 64; await Prototypes() } }
+            case "pick": { await set_saved_text("galleryAsset", event.Argument) }
+        }
+    }
+    on WorkspaceResourcesChanged {
+        await RefreshPanels()
+    }
+}

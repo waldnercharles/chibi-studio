@@ -1,0 +1,18 @@
+<use ui="Dialog" class="studio-command-modal">
+  <div class="studio-command-dialog" role="dialog" aria-modal="true" aria-label="Commands">
+    <choice-list class="studio-command-choices" data-event-change="emit('StudioCommand', ev.value, '')">
+      <div class="studio-command-search"><span class="icon">&#xea6d;</span><input id="studio-command-search" type="text" autofocus placeholder="Search commands" data-keys="Escape:StudioShellClose" data-event-input="emit('StudioCommandQuery', ev.value)" data-event-change="stop()"/></div>
+      <div class="studio-command-results">
+        <div data-for="index : self.studioCommandOrder" data-if="self.studioCommandShown[index]">
+          <div class="studio-command-row" role="option" data-attr-value="self.studioCommands[index].id" data-attrif-data-disabled="!self.studioCommandEnabled[index]">
+            <span class="icon">{{ self.studioCommands[index].icon }}</span>
+            <span class="studio-command-label">{{ self.studioCommands[index].label }}<span class="studio-command-context">{{ self.studioCommands[index].context }}</span></span>
+            <span class="kbd">{{ self.studioCommandShortcuts[index] }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="studio-command-empty" data-if="self.studioCommandMatches == 0">No commands match. Try another word.</div>
+    </choice-list>
+    <div class="studio-command-footer"><span class="kbd">↑ ↓</span> Navigate <span class="kbd">Enter</span> Run <span class="studio-spacer"/><span class="kbd">Esc</span> Close</div>
+  </div>
+</use>

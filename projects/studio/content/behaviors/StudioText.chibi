@@ -1,0 +1,1687 @@
+behavior StudioText {
+    self.SourceFocused := false
+    Pane: string = "main"
+    EscapeHandled := false
+    ViewRestore := false
+    ViewDocument: int = 0
+    ViewPath: string = ""
+    ViewRevision: int = 0
+    ViewStart: int = 0
+    ViewEnd: int = 0
+    ViewCaret: int = 0
+    ViewMode: string = "insert"
+    ViewElapsed: double = 0
+    Document: int = 0
+    Revision: int = 0
+    Bytes: int = 0
+    Path: string = ""
+    Text: string = ""
+    Draft: string = ""
+    DraftQueued := false
+    InputPending := false
+    SubmittedRevision: int = 0
+    EditSequence: int = 0
+    SubmittedRequest: int = 0
+    ActionRequest: int = 0
+    DraftError: string = ""
+    ActionPending := false
+    ActionRevision: int = 0
+    FlushRequest: int = 0
+    FlushSent := false
+    CommitQueued := false
+    TextGesture := false
+    Start: int = 0
+    End: int = 0
+    Caret: int = 0
+    Line: int = 1
+    Column: int = 1
+    Busy := false
+    Dirty := false
+    Error: string = ""
+    Valid := true
+    Dialect: string = "text"
+    Tokens: DocumentToken[] = []
+    Diagnostics: DocumentDiagnostic[] = []
+    OutputIntent: string = ""
+    RevealPath: string = ""
+    RevealStart: int = 0
+    RevealEnd: int = 0
+    RevealDelay: double = 0
+    RevealLine: int = 0
+    RefactorRequest: int = 0
+    RefactorPending := false
+    RefactorDocument: int = 0
+    RefactorRevision: int = 0
+    RefactorOffset: int = 0
+    RefactorName: string = ""
+    Completions: DocumentCompletion[] = []
+    CompletionOpen := false
+    CompletionIndex: int = 0
+    CompletionStart: int = 0
+    CompletionEnd: int = 0
+    CompletionRevision: int = 0
+    CompletionPending := false
+    CompletionBytes: int = 0
+    ProblemsOpen := false
+    ProblemIndex: int = -1
+    Hover: string = ""
+    FindOpen := false
+    Query: string = ""
+    Replacement: string = ""
+    RenameOpen := false
+    Rename: string = ""
+    Highlights: string = ""
+    Wrap := true
+    ApplyLive := true
+    ApplyPending := false
+    ApplyDelay: double = 0
+    CodeStyle: string = "font-family: jetbrains mono; font-size: 13dp; line-height: 20dp;"
+    CollaborationActive := false
+    CollaborationReadOnly := false
+    Vim := false
+    VimMode: string = "insert"
+    VimOperator: string = ""
+    VimCount: int = 0
+    VimGoal: int = 0
+    VimAnchor: int = 0
+    VimRegister: string = ""
+    VimLineRegister := false
+    VimInsertStart: int = 0
+    VimBefore: string = ""
+    VimEx: string = ""
+    VimExOpen := false
+    VimRepeatText: string = ""
+    VimRepeatRemoved: int = 0
+    VimRepeatSet := false
+    VimOpCount: int = 1
+    Request: string = ""
+    RequestSequence: int = 0
+    CommandIds: string[] = ["goToDefinition", "findReferences", "renameSymbol", "nextProblem", "previousProblem"]
+
+    vimBuffer :: fn() -> string {
+        if InputPending || DraftQueued {
+            return Draft
+        }
+        return Text
+    }
+    vimSelection :: fn() {
+        value := await vimBuffer()
+        Start = Caret
+        End = Caret
+        if text_equal(VimMode, "visual") || text_equal(VimMode, "line") {
+            Start = VimAnchor
+            End = Caret
+            if Start > End {
+                swap := Start
+                Start = End
+                End = swap
+            }
+            End = text_cursor(value, End, "character", 1, 0).Offset
+            if text_equal(VimMode, "line") {
+                Start = text_line(value, Start).Start
+                End = text_line(value, Caret).Next
+                if Caret < VimAnchor {
+                    End = text_line(value, VimAnchor).Next
+                }
+            }
+        }
+        position := text_line(value, Caret)
+        Line = position.Line
+        Column = position.Column
+        await set_ui_data(Name: "textStart", Value: Start)
+        await set_ui_data(Name: "textEnd", Value: End)
+        await set_ui_data(Name: "textCaret", Value: Caret)
+        await set_ui_data(Name: "textLine", Value: Line)
+        await set_ui_data(Name: "textColumn", Value: Column)
+        await set_ui_data(Name: "textKeyboardMode", Value: "delegated")
+        set_ui_data(Name: "textVimMode", Value: VimMode)
+        return
+    }
+    vimEdit :: fn(Start: int, End: int, Replacement: string, Insert: bool) {
+        if CollaborationReadOnly {
+            return
+        }
+        value := await vimBuffer()
+        edited := text_replace(value, Start, End, Replacement)
+        if !edited.Ok {
+            Error = edited.Error
+            await publish()
+            return
+        }
+        if Insert {
+            VimBefore = value
+        } else {
+            change := text_difference(value, edited.Text)
+            if change.Ok {
+                VimRepeatText = change.Replacement
+                VimRepeatRemoved = change.Removed
+                VimRepeatSet = true
+            }
+            CommitQueued = true
+        }
+        Draft = edited.Text
+        DraftQueued = true
+        Caret = Start
+        if Insert {
+            VimMode = "insert"
+            VimInsertStart = Start
+        } else {
+            VimMode = "normal"
+        }
+        VimOperator = ""
+        VimCount = 0
+        self.Start = Caret
+        self.End = Caret
+        CompletionOpen = false
+        if !InputPending {
+            await submit()
+        } else {
+            await publish()
+        }
+        return
+    }
+    vimOperate :: fn(Start: int, End: int, Linewise: bool) {
+        if Start > End {
+            swap := Start
+            Start = End
+            End = swap
+        }
+        value := await vimBuffer()
+        captured := text_slice(value, Start, End)
+        if !captured.Ok {
+            return
+        }
+        VimRegister = captured.Text
+        VimLineRegister = Linewise
+        if Linewise && !text_equal(VimRegister, "") {
+            bytes := text_cursor(VimRegister, 0, "document", 1, 0).Offset
+            tail := text_slice(VimRegister, bytes - 1, bytes).Text
+            if !text_equal(tail, "\n") {
+                VimRegister = format_text("{}\n", VimRegister)
+            }
+        }
+        op := VimOperator
+        if text_equal(op, "y") {
+            Caret = Start
+            VimMode = "normal"
+            VimOperator = ""
+            VimCount = 0
+            await vimSelection()
+            return
+        }
+        await vimEdit(Start, End, "", text_equal(op, "c"))
+        return
+    }
+    vimMotion :: fn(Unit: string, Count: int, Inclusive: bool) {
+        value := await vimBuffer()
+        original := Caret
+        if !text_equal(VimOperator, "") {
+            Count = Count * VimOpCount
+        }
+        if text_equal(VimOperator, "c") && text_equal(Unit, "word") {
+            Unit = "word-end"
+            Inclusive = true
+        }
+        moved := text_cursor(value, original, Unit, Count, VimGoal)
+        if !moved.Ok {
+            return
+        }
+        Caret = moved.Offset
+        if text_equal(Unit, "character") && text_equal(VimOperator, "") {
+            originLine := text_line(value, original)
+            if Caret < originLine.Start {
+                Caret = originLine.Start
+            }
+            if Caret >= originLine.End && originLine.End > originLine.Start {
+                Caret = text_cursor(value, originLine.End, "character", -1, 0).Offset
+            }
+        }
+        if !text_equal(Unit, "line") {
+            VimGoal = 0
+        }
+        if !text_equal(VimOperator, "") {
+            target := Caret
+            if Inclusive && target >= original {
+                target = text_cursor(value, target, "character", 1, 0).Offset
+            }
+            if text_equal(Unit, "line") {
+                lo := original
+                hi := target
+                if lo > hi {
+                    swap := lo
+                    lo = hi
+                    hi = swap
+                }
+                await vimOperate(text_line(value, lo).Start, text_line(value, hi).Next, true)
+            } else {
+                await vimOperate(original, target, false)
+            }
+        } else {
+            targetRow := text_line(value, Caret)
+            if Caret >= targetRow.End && targetRow.End > targetRow.Start {
+                Caret = text_cursor(value, Caret, "character", -1, 0).Offset
+            }
+            VimCount = 0
+            await vimSelection()
+        }
+        return
+    }
+    vimKey :: fn(Key: string) {
+        if !Vim || text_equal(VimMode, "insert") || Document <= 0 || ActionPending || FlushSent || (Busy && !InputPending) {
+            return
+        }
+        n := VimCount
+        if n == 0 {
+            n = 1
+        }
+        value := await vimBuffer()
+        row := text_line(value, Caret)
+        if text_equal(VimOperator, "r") {
+            last := text_cursor(value, Caret, "character", n, 0).Offset
+            replacement := ""
+            i := 0
+            while i < n {
+                replacement = format_text("{}{}", replacement, Key)
+                i += 1
+            }
+            await vimEdit(Caret, last, replacement, false)
+            return
+        }
+        digit := -1
+        switch Key {
+            case "0": {
+                digit = 0
+            }
+            case "1": {
+                digit = 1
+            }
+            case "2": {
+                digit = 2
+            }
+            case "3": {
+                digit = 3
+            }
+            case "4": {
+                digit = 4
+            }
+            case "5": {
+                digit = 5
+            }
+            case "6": {
+                digit = 6
+            }
+            case "7": {
+                digit = 7
+            }
+            case "8": {
+                digit = 8
+            }
+            case "9": {
+                digit = 9
+            }
+        }
+        if digit >= 0 && !(digit == 0 && VimCount == 0) {
+            if VimCount < 1000 {
+                VimCount = VimCount * 10 + digit
+            }
+            return
+        }
+        if text_equal(Key, "h") {
+            await vimMotion("character", 0 - n, false)
+            return
+        }
+        if text_equal(Key, "l") {
+            await vimMotion("character", n, false)
+            return
+        }
+        if text_equal(Key, "j") || text_equal(Key, "k") {
+            if VimGoal == 0 {
+                VimGoal = row.Column
+            }
+            if text_equal(Key, "k") {
+                n = 0 - n
+            }
+            await vimMotion("line", n, false)
+            return
+        }
+        if text_equal(Key, "W") {
+            await vimMotion("space-word", n, false)
+            return
+        }
+        if text_equal(Key, "B") {
+            await vimMotion("space-word", 0 - n, false)
+            return
+        }
+        if text_equal(Key, "E") {
+            await vimMotion("space-word-end", n, true)
+            return
+        }
+        if text_equal(Key, "w") {
+            await vimMotion("word", n, false)
+            return
+        }
+        if text_equal(Key, "b") {
+            await vimMotion("word", 0 - n, false)
+            return
+        }
+        if text_equal(Key, "e") {
+            await vimMotion("word-end", n, true)
+            return
+        }
+        if text_equal(Key, "^") {
+            await vimMotion("line-content", 1, false)
+            return
+        }
+        if text_equal(Key, "0") {
+            await vimMotion("line-start", 1, false)
+            return
+        }
+        if text_equal(Key, "$") {
+            await vimMotion("line-end", 1, false)
+            return
+        }
+        if text_equal(Key, "G") {
+            if VimCount > 0 {
+                await vimMotion("line", n - row.Line, false)
+            } else {
+                await vimMotion("document", 1, false)
+            }
+            return
+        }
+        if text_equal(Key, "g") {
+            if text_equal(VimOperator, "g") {
+                VimOperator = ""
+                await vimMotion("document", -1, false)
+            } else {
+                VimOperator = "g"
+            }
+            return
+        }
+        if text_equal(Key, "d") || text_equal(Key, "c") || text_equal(Key, "y") {
+            if text_equal(VimMode, "visual") || text_equal(VimMode, "line") {
+                VimOperator = Key
+                await vimOperate(Start, End, text_equal(VimMode, "line"))
+            } else {
+                if text_equal(VimOperator, Key) {
+                    last := text_cursor(value, Caret, "line", n * VimOpCount - 1, 1).Offset
+                    await vimOperate(row.Start, text_line(value, last).Next, true)
+                } else {
+                    VimOperator = Key
+                    VimOpCount = n
+                    VimCount = 0
+                }
+            }
+            return
+        }
+        if text_equal(Key, "r") {
+            VimOperator = "r"
+            return
+        }
+        if text_equal(Key, ".") && VimRepeatSet {
+            last := text_cursor(value, Caret, "character", VimRepeatRemoved, 0).Offset
+            await vimEdit(Caret, last, VimRepeatText, false)
+            return
+        }
+        if text_equal(Key, "x") || text_equal(Key, "D") || text_equal(Key, "C") {
+            VimOperator = "d"
+            end := text_cursor(value, Caret, "character", n, 0).Offset
+            if end > row.End {
+                end = row.End
+            }
+            if text_equal(Key, "D") || text_equal(Key, "C") {
+                end = row.End
+            }
+            if text_equal(Key, "C") {
+                VimOperator = "c"
+            }
+            await vimOperate(Caret, end, false)
+            return
+        }
+        if text_equal(Key, "v") || text_equal(Key, "V") {
+            VimAnchor = Caret
+            VimMode = "visual"
+            if text_equal(Key, "V") {
+                VimMode = "line"
+            }
+            await vimSelection()
+            return
+        }
+        if text_equal(Key, "p") || text_equal(Key, "P") {
+            at := Caret
+            if VimLineRegister {
+                at = row.Start
+                if text_equal(Key, "p") {
+                    at = row.Next
+                }
+            } else {
+                if text_equal(Key, "p") {
+                    at = text_cursor(value, at, "character", 1, 0).Offset
+                }
+            }
+            bytes := text_cursor(VimRegister, 0, "document", 1, 0).Offset
+            if bytes > 1048576 / n {
+                Error = "Paste exceeds the source editing budget."
+                await publish()
+                return
+            }
+            paste := ""
+            if VimLineRegister && text_equal(Key, "p") && row.Next == row.End {
+                paste = "\n"
+            }
+            i := 0
+            while i < n {
+                paste = format_text("{}{}", paste, VimRegister)
+                i += 1
+            }
+            if text_equal(VimMode, "visual") || text_equal(VimMode, "line") {
+                await vimEdit(Start, End, paste, false)
+            } else {
+                await vimEdit(at, at, paste, false)
+            }
+            return
+        }
+        if text_equal(Key, "/") {
+            await command("find", "")
+            return
+        }
+        if text_equal(Key, ":") {
+            VimEx = ""
+            VimExOpen = true
+            await publish()
+            await focus_ui_element(self, "#studio-vim-command")
+            return
+        }
+        if text_equal(Key, "u") {
+            VimCount = 0
+            await command("undo", "")
+            return
+        }
+        if text_equal(Key, "i") || text_equal(Key, "a") || text_equal(Key, "I") || text_equal(Key, "A") || text_equal(Key, "o") || text_equal(Key, "O") {
+            if text_equal(Key, "a") {
+                Caret = text_cursor(value, Caret, "character", 1, 0).Offset
+            }
+            if text_equal(Key, "I") {
+                Caret = text_cursor(value, Caret, "line-content", 1, 0).Offset
+            }
+            if text_equal(Key, "A") {
+                Caret = row.End
+            }
+            if text_equal(Key, "o") || text_equal(Key, "O") {
+                at := row.Start
+                if text_equal(Key, "o") {
+                    at = row.End
+                }
+                await vimEdit(at, at, "\n", true)
+                if text_equal(Key, "o") {
+                    Caret = at + 1
+                }
+            }
+            VimMode = "insert"
+            if !text_equal(Key, "o") && !text_equal(Key, "O") {
+                VimBefore = value
+            }
+            VimInsertStart = Caret
+            VimCount = 0
+            VimOperator = ""
+            Start = Caret
+            End = Caret
+            await publish()
+            return
+        }
+        VimOperator = ""
+        VimCount = 0
+        return
+    }
+
+    publish :: fn() {
+        draftDirty := (InputPending || DraftQueued || !text_equal(DraftError, "")) && !text_equal(Draft, Text)
+        await send_event<"StudioTextDraftState">(self, Document, InputPending || DraftQueued || ActionPending || Busy, draftDirty)
+        await set_ui_data(Name: "textDocument", Value: Document)
+        await set_ui_data(Name: "textRevision", Value: Revision)
+        await set_ui_data(Name: "textPane", Value: Pane)
+        await set_ui_data(Name: "textPath", Value: Path)
+        display := Text
+        if InputPending || DraftQueued {
+            display = Draft
+        }
+        await set_ui_data(Name: "textValue", Value: display)
+        await set_ui_data(Name: "textStart", Value: Start)
+        await set_ui_data(Name: "textEnd", Value: End)
+        await set_ui_data(Name: "textCaret", Value: Caret)
+        await set_ui_data(Name: "textLine", Value: Line)
+        await set_ui_data(Name: "textColumn", Value: Column)
+        await set_ui_data(Name: "textBusy", Value: CollaborationReadOnly || (Busy && !InputPending && !(FlushRequest > 0 && !FlushSent)) || ActionPending || FlushSent)
+        await set_ui_data(Name: "textDirty", Value: Dirty || InputPending || DraftQueued)
+        await set_ui_data(Name: "textPending", Value: InputPending || DraftQueued || ActionPending)
+        message := Error
+        if !text_equal(DraftError, "") {
+            message = DraftError
+        }
+        await set_ui_data(Name: "textError", Value: message)
+        await set_ui_data(Name: "textDraftRejected", Value: !text_equal(DraftError, ""))
+        await set_ui_data(Name: "textValid", Value: Valid)
+        await set_ui_data(Name: "textTokens", Value: Tokens)
+        highlights := Highlights
+        if InputPending || DraftQueued {
+            highlights = ""
+        }
+        await set_ui_data(Name: "textHighlights", Value: highlights)
+        keyboard := "native"
+        if Vim && !text_equal(VimMode, "insert") {
+            keyboard = "delegated"
+        }
+        await set_ui_data(Name: "textKeyboardMode", Value: keyboard)
+        await set_ui_data(Name: "textVimEx", Value: VimEx)
+        await set_ui_data(Name: "textVimExOpen", Value: VimExOpen)
+        await set_ui_data(Name: "textVimEnabled", Value: Vim)
+        await set_ui_data(Name: "textVimMode", Value: VimMode)
+        await set_ui_data(Name: "textWrap", Value: Wrap)
+        await set_ui_data(Name: "textCodeStyle", Value: CodeStyle)
+        await set_ui_data(Name: "textDiagnostics", Value: Diagnostics)
+        await set_ui_data(Name: "textCompletions", Value: Completions)
+        await set_ui_data(Name: "textCompletionOpen", Value: CompletionOpen)
+        await set_ui_data(Name: "textCompletionIndex", Value: CompletionIndex)
+        await set_ui_data(Name: "textProblemsOpen", Value: ProblemsOpen)
+        await set_ui_data(Name: "textHover", Value: Hover)
+        await set_ui_data(Name: "textFindOpen", Value: FindOpen)
+        await set_ui_data(Name: "textQuery", Value: Query)
+        await set_ui_data(Name: "textReplacement", Value: Replacement)
+        await set_ui_data(Name: "textRenameOpen", Value: RenameOpen)
+        await set_ui_data(Name: "textRename", Value: Rename)
+        await set_ui_data(Name: "textRequest", Value: Request)
+        set_ui_data(Name: "textRequestSequence", Value: RequestSequence)
+        return
+    }
+    availability :: fn() {
+        foreach (id in CommandIds) {
+            allowed := Document > 0 && !Busy && !InputPending && !DraftQueued && !ActionPending
+            if text_equal(id, "renameSymbol") && CollaborationActive {
+                allowed = false
+            }
+            await send_event<"StudioCommandAvailability">(self, id, allowed)
+        }
+        await send_event<"StudioCommandAvailability">(self, "callHierarchy", Document > 0 && !Busy && !InputPending && !DraftQueued && text_equal(Dialect, "chibi") && !text_equal(Path, ""))
+        send_event<"StudioCommandAvailability">(self, "toggleLineComment", Document > 0 && !Busy && !InputPending && !DraftQueued && !ActionPending && (text_equal(Dialect, "chibi") || text_equal(Dialect, "kdl")))
+        return
+    }
+    appearance :: fn() {
+        enabled := read_saved_number("studio.preference.code.vim", 0).Number == 1
+        if enabled != Vim {
+            Vim = enabled
+            VimMode = "insert"
+            if enabled {
+                VimMode = "normal"
+            }
+            VimOperator = ""
+            VimCount = 0
+            await publish()
+        }
+        ApplyLive = read_saved_number("studio.preference.code.applyLive", 1).Number == 1
+        if !ApplyLive {
+            ApplyPending = false
+        }
+        Wrap = read_saved_number("studio.preference.code.wrap", 1).Number == 1
+        family := "jetbrains mono"
+        if read_saved_number("studio.preference.code.fontFamily", 0).Number == 1 {
+            family = "inconsolata"
+        }
+        size := read_saved_number("studio.preference.code.fontSize", 13).Number
+        CodeStyle = format_text("font-family: {}; font-size: {}dp; line-height: {}dp;", family, size, size * 1.5)
+        await set_ui_data(Name: "textCodeStyle", Value: CodeStyle)
+        set_ui_data(Name: "textWrap", Value: Wrap)
+        return
+    }
+    focus :: fn() {
+        focus_ui_element(self, format_text("#studio-source-{} textarea", Pane))
+        return
+    }
+    reveal :: fn(Start: int, End: int) {
+        self.Start = Start
+        self.End = End
+        Caret = End
+        await publish()
+        focus()
+        return
+    }
+    refresh :: fn() {
+        if Document <= 0 {
+            return
+        }
+        document := await workspace_document_read(Document)
+        if !document.Ok {
+            Error = document.Error
+            await publish()
+            return
+        }
+        if CompletionPending && document.Revision > CompletionRevision {
+            Start = CompletionEnd + document.Bytes - CompletionBytes
+            End = Start
+            Caret = Start
+            CompletionPending = false
+        }
+        Revision = document.Revision
+        Text = document.Text
+        Bytes = document.Bytes
+        semantics := inspect_document(Document, Revision)
+        Dialect = semantics.Dialect
+        Valid = semantics.Valid
+        if !Valid {
+            ApplyPending = false
+        }
+        Diagnostics = semantics.Diagnostics
+        Tokens = semantics.Tokens
+        encoded := value_to_json(Tokens)
+        Highlights = encoded.Text
+        if !text_equal(semantics.Error, "") {
+            Error = semantics.Error
+        }
+        if !encoded.Ok && text_equal(Error, "") {
+            Error = encoded.Error
+        }
+        publish()
+        return
+    }
+    nextEditRequest :: fn() -> int {
+        if EditSequence >= 2147483646 {
+            return 0
+        }
+        EditSequence += 1
+        return EditSequence
+    }
+    submit :: fn() {
+        if CollaborationReadOnly || Document <= 0 || (Busy && FlushRequest == 0) || InputPending || ActionPending || !DraftQueued || !text_equal(DraftError, "") {
+            return
+        }
+        InputPending = true
+        SubmittedRevision = Revision
+        SubmittedRequest = await nextEditRequest()
+        if SubmittedRequest <= 0 {
+            InputPending = false
+            DraftError = "Edit request tokens are exhausted. Reopen Studio before continuing."
+            await publish()
+            return
+        }
+        DraftQueued = false
+        await send_event<"StudioTextDraftState">(self, Document, true, !text_equal(Draft, Text))
+        if !TextGesture && !CollaborationActive {
+            TextGesture = true
+            await send_event<"StudioDocumentGesture">(self, "begin", Document)
+        }
+        if CollaborationActive {
+            change := text_difference(Text, Draft)
+            if !change.Ok {
+                InputPending = false
+                DraftQueued = true
+                DraftError = change.Error
+                await publish()
+                return
+            }
+            await send_event<"StudioDocumentEdit">(self, Document, SubmittedRevision, change.Start, change.End, change.Replacement, "text", SubmittedRequest)
+        } else {
+            await send_event<"StudioDocumentEdit">(self, Document, SubmittedRevision, 0, -1, Draft, "text", SubmittedRequest)
+        }
+        await publish()
+        availability()
+        return
+    }
+    settle :: fn() {
+        if InputPending || ActionPending {
+            return
+        }
+        if DraftQueued && text_equal(DraftError, "") {
+            await submit()
+            return
+        }
+        if !DraftQueued && text_equal(DraftError, "") && !text_equal(OutputIntent, "") {
+            intent := OutputIntent
+            OutputIntent = ""
+            await send_event<"StudioOutputInspectRequested">(self, Document, Revision, Caret, intent)
+        }
+        if CommitQueued && !DraftQueued {
+            CommitQueued = false
+            TextGesture = false
+            if !CollaborationActive {
+                await send_event<"StudioDocumentGesture">(self, "commit", Document)
+            }
+        }
+        if FlushRequest > 0 && !FlushSent {
+            FlushSent = true
+            await send_event<"StudioDocumentFlushReady">(self, Document, FlushRequest, text_equal(DraftError, ""), DraftError)
+            await publish()
+        }
+        return
+    }
+    complete :: fn() {
+        if Document <= 0 || Busy || InputPending || DraftQueued || ActionPending {
+            return
+        }
+        completion := complete_document(Document, Revision, Caret)
+        Completions = completion.Items
+        CompletionStart = completion.Start
+        CompletionEnd = completion.End
+        CompletionRevision = Revision
+        CompletionIndex = 0
+        CompletionOpen = length(completion.Items) > 0
+        Error = completion.Error
+        publish()
+        return
+    }
+    accept :: fn(Index: int) {
+        if CollaborationReadOnly || InputPending || DraftQueued || ActionPending || Index < 0 || Index >= length(Completions) || CompletionRevision != Revision {
+            return
+        }
+        CompletionOpen = false
+        CompletionPending = true
+        CompletionBytes = Bytes
+        ActionPending = true
+        ActionRevision = Revision
+        ActionRequest = await nextEditRequest()
+        if ActionRequest <= 0 {
+            ActionPending = false
+            CompletionPending = false
+            Error = "Edit request tokens are exhausted. Reopen Studio before continuing."
+            await publish()
+            return
+        }
+        TextGesture = false
+        CommitQueued = true
+        if !CollaborationActive {
+            await send_event<"StudioDocumentGesture">(self, "commit", Document)
+        }
+        await send_event<"StudioDocumentEdit">(self, Document, Revision, CompletionStart, CompletionEnd, Completions[Index].insert, "text", ActionRequest)
+        await publish()
+        focus()
+        return
+    }
+    revealProject :: fn(Path: string, Start: int, End: int) {
+        if text_equal(Path, self.Path) {
+            await reveal(Start, End)
+            return
+        }
+        RevealPath = Path
+        RevealLine = 0
+        RevealStart = Start
+        RevealEnd = End
+        RevealDelay = 2
+        await send_event<"StudioDocumentCommand">(self, "open", Path)
+        return
+    }
+    revealLine :: fn(Line: int) {
+        if Line < 1 || Line > 65536 {
+            Error = "Source line is outside the navigation budget."
+            await publish()
+            return
+        }
+        target := text_cursor(Text, 0, "line", Line - 1, 1)
+        if !target.Ok {
+            Error = target.Error
+            await publish()
+            return
+        }
+        row := text_line(Text, target.Offset)
+        await reveal(row.Start, row.End)
+        return
+    }
+    definition :: fn() {
+        if Document <= 0 || InputPending || DraftQueued || ActionPending {
+            return
+        }
+        if !text_equal(Path, "") {
+            result := document_project_references(Document, Revision, Caret, 0, 256)
+            foreach (row in result.Rows) {
+                if row.kind == 0 {
+                    await revealProject(row.path, row.start, row.end)
+                    return
+                }
+            }
+            Error = result.Error
+        }
+        local := document_references(Document, Revision, Caret)
+        foreach (row in local.Rows) {
+            if row.kind == 0 {
+                await reveal(row.start, row.end)
+                return
+            }
+        }
+        if text_equal(Error, "") {
+            Error = "No definition was found at the cursor."
+        }
+        await publish()
+        return
+    }
+    problem :: fn(Direction: int) {
+        if length(Diagnostics) == 0 {
+            return
+        }
+        ProblemIndex += Direction
+        if ProblemIndex < 0 {
+            ProblemIndex = length(Diagnostics) - 1
+        }
+        if ProblemIndex >= length(Diagnostics) {
+            ProblemIndex = 0
+        }
+        ProblemsOpen = true
+        row := Diagnostics[ProblemIndex]
+        reveal(row.start, row.end)
+        return
+    }
+    find :: fn() {
+        if Document <= 0 || text_equal(Query, "") {
+            return
+        }
+        match := document_find(Document, Revision, Query, End, false)
+        if match.Found {
+            Error = ""
+            await reveal(match.Start, match.End)
+            return
+        }
+        wrapped := document_find(Document, Revision, Query, 0, false)
+        if wrapped.Found {
+            Error = ""
+            await reveal(wrapped.Start, wrapped.End)
+        } else {
+            Error = wrapped.Error
+            if text_equal(Error, "") {
+                Error = "No matches in this document."
+            }
+            await publish()
+        }
+        return
+    }
+    replace :: fn() {
+        if CollaborationReadOnly || Document <= 0 || InputPending || DraftQueued || ActionPending || text_equal(Query, "") {
+            return
+        }
+        match := document_find(Document, Revision, Query, Start, false)
+        if !match.Found || match.Start != Start || match.End != End {
+            await find()
+            return
+        }
+        ActionPending = true
+        ActionRevision = Revision
+        ActionRequest = await nextEditRequest()
+        if ActionRequest <= 0 {
+            ActionPending = false
+            CompletionPending = false
+            Error = "Edit request tokens are exhausted. Reopen Studio before continuing."
+            await publish()
+            return
+        }
+        TextGesture = false
+        CommitQueued = true
+        if !CollaborationActive {
+            await send_event<"StudioDocumentGesture">(self, "commit", Document)
+        }
+        await send_event<"StudioDocumentEdit">(self, Document, Revision, Start, End, Replacement, "text", ActionRequest)
+        await publish()
+        return
+    }
+    rename :: fn() {
+        if CollaborationActive {
+            Error = "Project rename needs a shared collaboration refactor intent. Leave the room to rename locally."
+            await publish()
+            return
+        }
+        if Document <= 0 || Busy || InputPending || DraftQueued || ActionPending || text_equal(Rename, "") {
+            return
+        }
+        if RefactorPending {
+            return
+        }
+        RefactorPending = true
+        RefactorDocument = Document
+        RefactorRevision = Revision
+        RefactorOffset = Caret
+        RefactorName = Rename
+        if RefactorRequest >= 2147483646 {
+            RefactorPending = false
+            Error = "Refactor request tokens are exhausted. Reopen Studio before continuing."
+            await publish()
+            return
+        }
+        RefactorRequest += 1
+        await send_event<"StudioDocumentExternalEditRequested">(self, "text-refactor", Document, RefactorRequest)
+        return
+    }
+    toggleComment :: fn() {
+        if CollaborationReadOnly || Document <= 0 || Busy || InputPending || DraftQueued || ActionPending || FlushSent {
+            return
+        }
+        if !text_equal(Dialect, "chibi") && !text_equal(Dialect, "kdl") {
+            return
+        }
+        result := text_prefix_lines(Text, Start, End, "//", "toggle")
+        if !result.Ok {
+            Error = result.Error
+            await publish()
+            return
+        }
+        Draft = result.Text
+        DraftQueued = true
+        Start = result.Start
+        End = result.End
+        Caret = result.Start
+        CommitQueued = true
+        await submit()
+        return
+    }
+    command :: fn(Id: string, Argument: string) {
+        switch Id {
+            case "toggleLineComment": {
+                await toggleComment()
+            }
+            case "retryDraft": {
+                DraftError = ""
+                await refresh()
+                await submit()
+            }
+            case "discardDraft": {
+                OutputIntent = ""
+                DraftQueued = false
+                DraftError = ""
+                await refresh()
+            }
+            case "undo": {
+                await send_event<"StudioDocumentCommand">(self, "undo", "")
+            }
+            case "redo": {
+                await send_event<"StudioDocumentCommand">(self, "redo", "")
+            }
+            case "save": {
+                await send_event<"StudioDocumentCommand">(self, "save", "")
+            }
+            case "find": {
+                FindOpen = true
+                await publish()
+                await focus_ui_element(self, format_text("#studio-text-find-{}", Pane))
+            }
+            case "definition": {
+                await definition()
+            }
+            case "goToDefinition": {
+                await definition()
+            }
+            case "references": {
+                OutputIntent = "findReferences"
+                await settle()
+            }
+            case "findReferences": {
+                OutputIntent = "findReferences"
+                await settle()
+            }
+            case "callHierarchy": {
+                OutputIntent = "callHierarchy"
+                await settle()
+            }
+            case "suggest": {
+                await complete()
+            }
+            case "completion-up": {
+                if CompletionIndex > 0 {
+                    CompletionIndex -= 1
+                }
+                await publish()
+            }
+            case "completion-down": {
+                if CompletionIndex + 1 < length(Completions) {
+                    CompletionIndex += 1
+                }
+                await publish()
+            }
+            case "completion-accept": {
+                await accept(CompletionIndex)
+            }
+            case "problems": {
+                ProblemsOpen = !ProblemsOpen
+                await publish()
+            }
+            case "closeFind": {
+                FindOpen = false
+                await publish()
+                await focus()
+            }
+            case "findNext": {
+                await find()
+            }
+            case "replace": {
+                await replace()
+            }
+            case "renameCommit": {
+                await rename()
+            }
+            case "nextProblem": {
+                await problem(1)
+            }
+            case "previousProblem": {
+                await problem(-1)
+            }
+            case "copy": {
+                Request = "copy"
+                RequestSequence += 1
+                await publish()
+            }
+            case "cut": {
+                Request = "cut"
+                RequestSequence += 1
+                await publish()
+            }
+            case "paste": {
+                Request = "paste"
+                RequestSequence += 1
+                await publish()
+            }
+            case "selectAll": {
+                await reveal(0, Bytes)
+            }
+            case "renameSymbol": {
+                Rename = ""
+                symbol := document_references(Document, Revision, Caret)
+                foreach (row in symbol.Rows) {
+                    if row.kind == 0 {
+                        Rename = row.name
+                    }
+                }
+                RenameOpen = true
+                await publish()
+                await focus_ui_element(self, "#studio-text-rename")
+            }
+            case "cancel": {
+                if RefactorPending {
+                    await send_event<"StudioShellClose">(self)
+                }
+                CompletionOpen = false
+                FindOpen = false
+                RenameOpen = false
+                if TextGesture || InputPending || DraftQueued || ActionPending {
+                    CommitQueued = true
+                    await settle()
+                }
+                await publish()
+            }
+        }
+        return
+    }
+    restoreView :: fn() {
+        if !ViewRestore || Document != ViewDocument || Revision != ViewRevision || !text_equal(Path, ViewPath) || Busy {
+            return
+        }
+        if Document == 0 {
+            Start = 0
+            End = 0
+            Caret = 0
+            ViewRestore = false
+            await publish()
+            return
+        }
+        start := text_cursor(Text, ViewStart, "character", 0, 0)
+        end := text_cursor(Text, ViewEnd, "character", 0, 0)
+        caret := text_cursor(Text, ViewCaret, "character", 0, 0)
+        ViewRestore = false
+        if !start.Ok || !end.Ok || !caret.Ok || start.Offset > end.Offset || caret.Offset < start.Offset || caret.Offset > end.Offset {
+            Error = "The saved source selection is outside this document."
+            await publish()
+            return
+        }
+        Start = start.Offset
+        End = end.Offset
+        Caret = caret.Offset
+        VimMode = ViewMode
+        VimAnchor = Start
+        if Caret == Start && End > Start {
+            VimAnchor = text_cursor(Text, End, "character", -1, 0).Offset
+        }
+        position := text_line(Text, Caret)
+        Line = position.Line
+        Column = position.Column
+        await publish()
+        return
+    }
+    on StudioTextViewRequested {
+        ready := event.Request > 0 && !InputPending && !DraftQueued && !ActionPending && !RefactorPending && text_equal(DraftError, "") && (Document == 0 || !Busy || FlushSent)
+        error := ""
+        if Document > 0 {
+            current := await workspace_document_info(Document)
+            ready = ready && current.Ok && !current.Transaction && current.Revision == Revision && text_equal(current.Path, Path)
+        }
+        if !ready {
+            error = "Finish or resolve the pending source draft before creating a checkpoint."
+        }
+        await send_event<"StudioTextViewState">(self, event.Request, Document, Path, Revision, Start, End, Caret, VimMode, ready, error)
+    }
+    on StudioTextViewRestore {
+        if InputPending || DraftQueued || ActionPending || !text_equal(DraftError, "") {
+            Error = "A source draft prevents restoring its saved selection."
+            await publish()
+            return
+        }
+        if !text_equal(event.VimMode, "normal") && !text_equal(event.VimMode, "insert") && !text_equal(event.VimMode, "visual") && !text_equal(event.VimMode, "line") {
+            Error = "The saved source mode is invalid."
+            await publish()
+            return
+        }
+        ViewRestore = true
+        ViewDocument = event.Document
+        ViewPath = event.Path
+        ViewRevision = event.Revision
+        ViewStart = event.Start
+        ViewEnd = event.End
+        ViewCaret = event.Caret
+        ViewMode = event.VimMode
+        ViewElapsed = 0
+        if self.Document != event.Document {
+            await send_event<"StudioDocumentTabSelect">(self, event.Document)
+        }
+        await restoreView()
+    }
+    on StudioPaneFocus {
+        if text_equal(event.Context, "text") || text_equal(event.Context, "code") {
+            Pane = event.Area
+            set_ui_data(Name: "textPane", Value: Pane)
+        }
+    }
+    on StudioFocusState {
+        SourceFocused = text_equal(event.Context, "Text Editor")
+        if !SourceFocused {
+            EscapeHandled = false
+        }
+    }
+    on StudioEscapeProbe {
+        if !text_equal(event.Phase, "source") {
+            return
+        }
+        consumed := false
+        if !Busy && !RefactorPending {
+            consumed = EscapeHandled || CompletionOpen || FindOpen || RenameOpen || VimExOpen ||
+            (SourceFocused && Vim && (!text_equal(VimMode, "normal") || !text_equal(VimOperator, "") || VimCount > 0))
+            EscapeHandled = false
+            if consumed {
+                CompletionOpen = false
+                FindOpen = false
+                RenameOpen = false
+                VimExOpen = false
+                if SourceFocused && Vim {
+                    VimMode = "normal"
+                    VimOperator = ""
+                    VimCount = 0
+                    await vimSelection()
+                }
+                if TextGesture || InputPending || DraftQueued || ActionPending {
+                    CommitQueued = true
+                    await settle()
+                }
+                await publish()
+            }
+        }
+        await send_event<"StudioEscapeResult">(self, event.Request, event.Phase, consumed)
+    }
+    on Begin {
+        await appearance()
+        await publish()
+        availability()
+    }
+    on StudioPreferencesChanged {
+        appearance()
+    }
+    on StudioCollaborationState {
+        CollaborationActive = event.Active
+        CollaborationReadOnly = event.Active && (event.Replaying || !event.Ready || text_equal(event.Role, "viewer") || (event.Pending && !text_equal(event.Owner, "text")))
+        await publish()
+        await availability()
+    }
+    on StudioDocumentState {
+        changed := self.Document == event.Document && self.Revision != event.Revision
+        if self.Document == event.Document && event.Revision < self.Revision {
+            return
+        }
+        if self.Document != event.Document {
+            ApplyPending = false
+            OutputIntent = ""
+            VimMode = "insert"
+            if Vim {
+                VimMode = "normal"
+            }
+            VimOperator = ""
+            VimCount = 0
+            VimGoal = 0
+            VimRepeatSet = false
+            InputPending = false
+            DraftQueued = false
+            DraftError = ""
+            ActionPending = false
+            FlushRequest = 0
+            FlushSent = false
+            CommitQueued = false
+            TextGesture = false
+            Start = 0
+            End = 0
+            Caret = 0
+            CompletionOpen = false
+            CompletionPending = false
+        }
+        self.Document = event.Document
+        self.Revision = event.Revision
+        self.Path = event.Path
+        self.Busy = event.Busy
+        self.Dirty = event.Dirty
+        self.Error = event.Error
+        if !text_equal(event.Error, "") {
+            CompletionPending = false
+        }
+        if self.Document > 0 && !self.Busy {
+            await refresh()
+        } else {
+            await publish()
+        }
+        if !self.Busy && DraftQueued && !InputPending {
+            await submit()
+        }
+        if !self.Busy && !text_equal(RevealPath, "") && text_equal(self.Path, RevealPath) {
+            RevealPath = ""
+            if RevealLine > 0 {
+                await revealLine(RevealLine)
+            } else {
+                await reveal(RevealStart, RevealEnd)
+            }
+        }
+        if changed && ApplyLive && Valid && !InputPending && !DraftQueued {
+            ApplyPending = true
+            ApplyDelay = 0.3
+        }
+        await restoreView()
+        availability()
+    }
+    on StudioDocumentExternalEditReady {
+        if !text_equal(event.Owner, "text-refactor") || !RefactorPending || event.Document != RefactorDocument || event.Request != RefactorRequest {
+            return
+        }
+        RefactorPending = false
+        if event.Ok {
+            if self.Document != event.Document || event.Revision != RefactorRevision {
+                self.Error = "The source changed before rename. Review it and retry."
+            } else {
+                if text_equal(Path, "") {
+                    result := rename_document_symbol(event.Document, event.Revision, RefactorOffset, RefactorName)
+                    self.Error = result.Error
+                    if result.Ok {
+                        RenameOpen = false
+                        await send_event<"StudioDocumentChanged">(self, event.Document)
+                    }
+                } else {
+                    result := rename_project_symbol(event.Document, event.Revision, RefactorOffset, RefactorName)
+                    self.Error = result.Error
+                    if result.Ok {
+                        RenameOpen = false
+                        foreach (document in result.Documents) {
+                            await send_event<"StudioDocumentChanged">(self, document)
+                        }
+                    }
+                }
+            }
+        } else {
+            self.Error = event.Error
+        }
+        await send_event<"StudioDocumentExternalEditComplete">(self, "text-refactor", event.Document, event.Request)
+        await publish()
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        if !text_equal(event.Owner, "text-refactor") || event.Document != RefactorDocument || event.Request != RefactorRequest {
+            return
+        }
+        RefactorPending = false
+        await send_event<"StudioDocumentExternalEditComplete">(self, "text-refactor", event.Document, event.Request)
+    }
+    on StudioTextProjectRange {
+        await revealProject(event.Path, event.Start, event.End)
+    }
+    on StudioTextProjectLine {
+        if text_equal(event.Path, "") || event.Line < 1 {
+            return
+        }
+        if text_equal(event.Path, self.Path) && !InputPending && !DraftQueued {
+            await revealLine(event.Line)
+            return
+        }
+        RevealPath = event.Path
+        RevealLine = event.Line
+        RevealDelay = 2
+        await send_event<"StudioDocumentCommand">(self, "open", event.Path)
+    }
+    on StudioTextInput {
+        if CollaborationReadOnly || Document <= 0 || (Busy && !InputPending && FlushRequest == 0) || ActionPending || FlushSent {
+            return
+        }
+        ApplyPending = false
+        if Vim && !text_equal(VimMode, "insert") {
+            before := await vimBuffer()
+            change := text_difference(before, event.Text)
+            if change.Ok {
+                VimRepeatText = change.Replacement
+                VimRepeatRemoved = change.Removed
+                VimRepeatSet = true
+            }
+            CommitQueued = true
+        }
+        self.Start = event.Start
+        self.End = event.End
+        self.Caret = event.Caret
+        CompletionOpen = false
+        Draft = event.Text
+        DraftQueued = true
+        if !InputPending {
+            await submit()
+        } else {
+            await publish()
+        }
+    }
+    on StudioDocumentEditResult {
+        if event.Document != self.Document || !text_equal(event.Owner, "text") {
+            return
+        }
+        if ActionPending && event.ExpectedRevision == ActionRevision && event.Request == ActionRequest {
+            ActionPending = false
+            if !event.Ok {
+                CompletionPending = false
+                self.Error = event.Error
+            }
+            await refresh()
+            if event.Ok && ApplyLive && Valid {
+                ApplyPending = true
+                ApplyDelay = 0.3
+            }
+            await settle()
+            await availability()
+            return
+        }
+        if !InputPending || event.ExpectedRevision != SubmittedRevision || event.Request != SubmittedRequest {
+            return
+        }
+        InputPending = false
+        if !event.Ok {
+            DraftQueued = true
+            DraftError = event.Error
+            await refresh()
+            await settle()
+            await availability()
+            return
+        }
+        await refresh()
+        if DraftQueued {
+            if text_equal(Draft, Text) {
+                DraftQueued = false
+                await publish()
+            } else {
+                await submit()
+            }
+        } else {
+            await publish()
+        }
+        if ApplyLive && Valid && !InputPending && !DraftQueued {
+            ApplyPending = true
+            ApplyDelay = 0.3
+        }
+        await settle()
+        availability()
+    }
+    on StudioDocumentFlushRequested {
+        if event.Document != self.Document {
+            send_event<"StudioDocumentFlushReady">(self, event.Document, event.Request, false, "Text editor changed documents before the flush request.")
+            return
+        }
+        FlushRequest = event.Request
+        FlushSent = false
+        settle()
+    }
+    on StudioDocumentFlushComplete {
+        if event.Document != self.Document || event.Request != FlushRequest {
+            return
+        }
+        FlushRequest = 0
+        FlushSent = false
+        TextGesture = false
+        publish()
+    }
+    on Tick {
+        if ViewRestore {
+            ViewElapsed += cast<double>(event.DeltaSeconds)
+            if ViewElapsed >= 2 {
+                ViewRestore = false
+                Error = "The checkpoint source selection did not match the restored document."
+                await publish()
+            }
+        }
+        if !text_equal(RevealPath, "") {
+            RevealDelay -= cast<double>(event.DeltaSeconds)
+            if RevealDelay <= 0 {
+                RevealPath = ""
+            }
+        }
+        if !Valid || !ApplyPending || InputPending || DraftQueued || ActionPending || FlushRequest > 0 {
+            return
+        }
+        ApplyDelay -= cast<double>(event.DeltaSeconds)
+        if ApplyDelay <= 0 {
+            ApplyPending = false
+            send_event<"StudioSceneCommand">(self, "applyLive", "")
+        }
+    }
+    on StudioTextSelection {
+        if Vim && !text_equal(VimMode, "insert") && self.Start == event.Start && self.End == event.End {
+            value := await vimBuffer()
+            position := text_line(value, self.Caret)
+            self.Line = position.Line
+            self.Column = position.Column
+            await set_ui_data(Name: "textLine", Value: self.Line)
+            await set_ui_data(Name: "textColumn", Value: self.Column)
+            return
+        }
+        self.Start = event.Start
+        self.End = event.End
+        self.Caret = event.Caret
+        self.Line = event.Line
+        self.Column = event.Column
+        if Vim && !text_equal(VimMode, "insert") {
+            VimMode = "normal"
+            VimAnchor = self.Caret
+            if self.Start != self.End {
+                VimMode = "visual"
+                value := await vimBuffer()
+                if self.Caret == self.Start {
+                    VimAnchor = text_cursor(value, self.End, "character", -1, 0).Offset
+                } else {
+                    VimAnchor = self.Start
+                    self.Caret = text_cursor(value, self.End, "character", -1, 0).Offset
+                }
+                position := text_line(value, self.Caret)
+                self.Line = position.Line
+                self.Column = position.Column
+            }
+            await set_ui_data(Name: "textVimMode", Value: VimMode)
+        }
+        await set_ui_data(Name: "textLine", Value: self.Line)
+        set_ui_data(Name: "textColumn", Value: self.Column)
+    }
+    on StudioTextCommit {
+        CommitQueued = true
+        settle()
+    }
+    on StudioTextCommand {
+        command(event.Id, event.Argument)
+    }
+    on StudioVimExInput {
+        VimEx = event.Command
+    }
+    on StudioVimExSubmit {
+        VimExOpen = false
+        switch VimEx {
+            case "w": {
+                await command("save", "")
+            }
+            case "write": {
+                await command("save", "")
+            }
+            case "q": {
+                await send_event<"StudioDocumentCommand">(self, "closeTab", "")
+            }
+            case "quit": {
+                await send_event<"StudioDocumentCommand">(self, "closeTab", "")
+            }
+            case "wq": {
+                await send_event<"StudioDocumentCommand">(self, "saveClose", "")
+            }
+            case "x": {
+                await send_event<"StudioDocumentCommand">(self, "saveClose", "")
+            }
+            case "undo": {
+                await command("undo", "")
+            }
+            case "redo": {
+                await command("redo", "")
+            }
+        }
+        await publish()
+        await focus()
+    }
+    on StudioVimExCancel {
+        VimExOpen = false
+        await publish()
+        await focus()
+    }
+    on StudioVimText {
+        await vimKey(event.Glyph)
+    }
+    on StudioVimKey {
+        if event.Control == 1 || event.Meta == 1 {
+            if text_equal(event.Key, "R") {
+                await command("redo", "")
+            }
+            if text_equal(event.Key, "S") {
+                await command("save", "")
+            }
+            if text_equal(event.Key, "C") {
+                await command("copy", "")
+            }
+            if text_equal(event.Key, "X") {
+                await command("cut", "")
+            }
+            if text_equal(event.Key, "V") {
+                await command("paste", "")
+            }
+            if text_equal(event.Key, "A") {
+                await command("selectAll", "")
+            }
+            if text_equal(event.Key, "F") {
+                await command("find", "")
+            }
+            if text_equal(event.Key, "Z") {
+                if event.Shift == 1 {
+                    await command("redo", "")
+                } else {
+                    await command("undo", "")
+                }
+            }
+            if text_equal(event.Key, "Space") {
+                await command("suggest", "")
+            }
+            return
+        }
+        switch event.Key {
+            case "Escape": {
+                EscapeHandled = !text_equal(VimMode, "normal") || !text_equal(VimOperator, "") || VimCount > 0 || CompletionOpen || VimExOpen || TextGesture || InputPending || DraftQueued
+                VimMode = "normal"
+                VimOperator = ""
+                VimCount = 0
+                if TextGesture || InputPending || DraftQueued {
+                    CommitQueued = true
+                    await settle()
+                }
+                await vimSelection()
+            }
+            case "Left": {
+                await vimKey("h")
+            }
+            case "Right": {
+                await vimKey("l")
+            }
+            case "Up": {
+                await vimKey("k")
+            }
+            case "Down": {
+                await vimKey("j")
+            }
+            case "Home": {
+                await vimKey("0")
+            }
+            case "End": {
+                await vimKey("$")
+            }
+            case "Delete": {
+                await vimKey("x")
+            }
+            case "F12": {
+                await command("goToDefinition", "")
+            }
+        }
+    }
+    on StudioTextControlCommand {
+        self.Start = event.Start
+        self.End = event.End
+        self.Caret = event.Caret
+        if text_equal(event.Id, "cancel") {
+            EscapeHandled = CompletionOpen || FindOpen || RenameOpen || VimExOpen || self.Start != self.End || TextGesture || InputPending || DraftQueued ||
+            (Vim && (!text_equal(VimMode, "normal") || !text_equal(VimOperator, "")))
+            if !Vim {
+                self.Start = self.Caret
+                self.End = self.Caret
+            }
+        }
+        if Vim && text_equal(event.Id, "cancel") {
+            value := await vimBuffer()
+            change := text_difference(VimBefore, value)
+            if change.Ok && (!text_equal(change.Replacement, "") || change.Removed > 0) {
+                VimRepeatText = change.Replacement
+                VimRepeatRemoved = change.Removed
+                VimRepeatSet = true
+            }
+            row := text_line(value, self.Caret)
+            if self.Caret > row.Start {
+                self.Caret = text_cursor(value, self.Caret, "character", -1, 0).Offset
+            }
+            VimMode = "normal"
+            VimOperator = ""
+            VimCount = 0
+            CommitQueued = true
+            await vimSelection()
+            await settle()
+            return
+        }
+        command(event.Id, "")
+    }
+    on StudioTextCompletionPick {
+        accept(event.Index)
+    }
+    on StudioTextRange {
+        reveal(event.Start, event.End)
+    }
+    on StudioTextFindNext {
+        find()
+    }
+    on StudioTextFindQuery {
+        Query = event.Text
+        publish()
+    }
+    on StudioTextReplacement {
+        Replacement = event.Text
+        publish()
+    }
+    on StudioTextRenameInput {
+        Rename = event.Text
+        publish()
+    }
+    on StudioTextHover {
+        if Document <= 0 {
+            return
+        }
+        Hover = hover_document(Document, Revision, Caret).Text
+        publish()
+    }
+}

@@ -1,0 +1,10 @@
+/* BehaviorHeader anatomy, inside the shared AreaHeader controls. */
+body, .graph-head { display: flex; align-items: center; gap: 2dp; flex: 1 1 0dp; min-width: 0dp; height: 100%; }
+.graph-head > .btn, .graph-head > .segmented, .graph-head > .segmented .seg { flex: 0 0 auto; }
+.graph-head > .zoom { padding: 0dp 2dp; }
+.graph-head > .zoom:hover .readout { color: var(--foreground); }
+.graph-head .crumbs { display: flex; align-items: center; gap: 2dp; flex: 0 1 auto; min-width: 0dp; overflow: hidden; }
+.graph-head .crumb { flex: 0 1 auto; min-width: 0dp; }
+.graph-head .crumb .label { display: block; min-width: 0dp; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.graph-header-options { max-height: 154dp; overflow-y: auto; }
+#studio-graph-debug-targets .menu-item { padding-right: 16dp; }

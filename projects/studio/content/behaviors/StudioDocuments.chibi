@@ -1,0 +1,1347 @@
+behavior StudioDocuments {
+    self.KeepSelectionEmpty := false
+    DeferredKind: string = ""
+    DeferredId: string = ""
+    DeferredArgument: string = ""
+    DeferredDocument: int = 0
+    Document: int = 0
+    Revision: int = 0
+    Path: string = ""
+    Dirty := false
+    Conflict := false
+    CanUndo := false
+    CanRedo := false
+    Busy := false
+    Error: string = ""
+    GroupSources: int[] = []
+    GroupSidecars: int[] = []
+    Handles: int[] = []
+    Paths: string[] = []
+    Labels: string[] = []
+    Icons: string[] = []
+    Kinds: string[] = []
+    Closable: bool[] = []
+    TabContext: int = 0
+    DirtyTabs: bool[] = []
+    Pinned: int[] = []
+    PinTabs: bool[] = []
+    Dialog: string = ""
+    DialogDocument: int = 0
+    DialogPath: string = ""
+    CloseAfterSave := false
+    CloseQueue: int[] = []
+    SaveQueue: int[] = []
+    Completion: string = ""
+    ProjectPath: string = ""
+    PendingKind: string = ""
+    PendingId: string = ""
+    PendingArgument: string = ""
+    PendingDocument: int = 0
+    FlushDocument: int = 0
+    FlushRequest: int = 0
+    FlushElapsed: double = 0
+    ExternalRequest: int = 0
+    ExternalOwner: string = ""
+    CollaborationActive := false
+    CollaborationRole: string = ""
+    CollaborationReady := false
+    CollaborationPending := false
+    CollaborationReplaying := false
+
+    Primary :: fn(Document: int) -> int {
+        current := Document
+        index := find(GroupSidecars, current)
+        while index >= 0 {
+            current = GroupSources[index]
+            index = find(GroupSidecars, current)
+        }
+        return current
+    }
+    Companion :: fn(Document: int) -> int {
+        index := find(GroupSources, Document)
+        if index >= 0 {
+            return GroupSidecars[index]
+        }
+        return 0
+    }
+    Publish :: fn() {
+        gestureCancelable := false
+        opened := await workspace_document_handles()
+        Handles = []
+        Paths = []
+        Labels = []
+        Icons = []
+        Kinds = []
+        Closable = []
+        DirtyTabs = []
+        PinTabs = []
+        GroupSources = []
+        GroupSidecars = []
+        allHandles: int[] = []
+        allPaths: string[] = []
+        allDirty: bool[] = []
+        allNew: bool[] = []
+        allBytes: int[] = []
+        if opened.Ok {
+            foreach (handle in opened.Documents) {
+                item := await workspace_document_info(handle)
+                if item.Ok {
+                    allHandles = array_add(allHandles, handle)
+                    allPaths = array_add(allPaths, item.Path)
+                    allDirty = array_add(allDirty, item.Dirty || text_equal(item.Path, ""))
+                    allNew = array_add(allNew, item.NewFile)
+                    allBytes = array_add(allBytes, item.Bytes)
+                }
+            }
+        }
+        index := 0
+        foreach (handle in allHandles) {
+            if !text_equal(allPaths[index], "") {
+                companion := await workspace_document_path(format_text("{}.meta", allPaths[index]))
+                if companion.Ok && companion.Document > 0 && companion.Document != handle {
+                    GroupSources = array_add(GroupSources, handle)
+                    GroupSidecars = array_add(GroupSidecars, companion.Document)
+                }
+            }
+            index = index + 1
+        }
+        Document = Primary(Document)
+        index = 0
+        foreach (handle in allHandles) {
+            if !contains(GroupSidecars, handle) {
+                Handles = array_add(Handles, handle)
+                label := allPaths[index]
+                if text_equal(label, "") {
+                    label = format_text("Untitled {}", handle)
+                }
+                Paths = array_add(Paths, label)
+                kind := ""
+                icon := ""
+                current_tab := await workspace_document_info(handle)
+                identity := workspace_asset_identity(handle, current_tab.Revision)
+                if identity.Ok {
+                    label = identity.Name
+                    kind = identity.Kind
+                    switch kind {
+                        case "scene": { icon = "" }
+                        case "prototype": { icon = "󰆧" }
+                        case "behavior": { icon = "" }
+                        case "system": { icon = "" }
+                        case "material": { icon = "" }
+                        case "shape": { icon = "" }
+                        case "field": { icon = "" }
+                        case "shader-library": { icon = "" }
+                        case "event": { icon = "" }
+                        case "library": { icon = "" }
+                        case "ui": { icon = "" }
+                    }
+                }
+                Labels = array_add(Labels, label)
+                Icons = array_add(Icons, icon)
+                Kinds = array_add(Kinds, kind)
+                dirty := allDirty[index]
+                companion := Companion(handle)
+                companionIndex := find(allHandles, companion)
+                if companionIndex >= 0 {
+                    dirty = dirty || (allDirty[companionIndex] && !(allNew[companionIndex] && allBytes[companionIndex] == 0))
+                }
+                DirtyTabs = array_add(DirtyTabs, dirty)
+                PinTabs = array_add(PinTabs, contains(Pinned, handle))
+            }
+            index = index + 1
+        }
+        scenes := 0
+        for kind in Kinds {
+            if text_equal(kind, "scene") { scenes += 1 }
+        }
+        for i in 0..length(Handles) - 1 {
+            Closable = array_add(Closable, !PinTabs[i] && (!text_equal(Kinds[i], "scene") || scenes > 1))
+        }
+        pins := clear(Pinned)
+        foreach (handle in Pinned) {
+            if contains(Handles, handle) {
+                pins = array_add(pins, handle)
+            }
+        }
+        Pinned = pins
+        if Document > 0 && !contains(Handles, Document) {
+            Document = 0
+        }
+        if Document == 0 && !KeepSelectionEmpty && length(Handles) > 0 {
+            Document = Handles[length(Handles) - 1]
+        }
+        if Document > 0 {
+            current := await workspace_document_info(Document)
+            if current.Ok {
+                Revision = current.Revision
+                Path = current.Path
+                activeIndex := find(Handles, Document)
+                Dirty = current.Dirty || text_equal(current.Path, "")
+                if activeIndex >= 0 {
+                    Dirty = DirtyTabs[activeIndex]
+                }
+                CanUndo = current.CanUndo || current.Transaction
+                gestureCancelable = current.Transaction && text_equal(PendingKind, "external-ready") && !text_equal(ExternalOwner, "") && !CollaborationActive
+                CanRedo = current.CanRedo
+            }
+        } else {
+            Revision = 0
+            Path = ""
+            Dirty = false
+            CanUndo = false
+            CanRedo = false
+            Conflict = false
+        }
+        await set_ui_data(Name: "documentHandles", Value: Handles)
+        await set_ui_data(Name: "documentPaths", Value: Paths)
+        await set_ui_data(Name: "documentLabels", Value: Labels)
+        await set_ui_data(Name: "documentIcons", Value: Icons)
+        await set_ui_data(Name: "documentClosable", Value: Closable)
+        await set_ui_data(Name: "documentTabContext", Value: TabContext)
+        await set_ui_data(Name: "documentTabContextPinned", Value: contains(Pinned, TabContext))
+        context_index := find(Handles, TabContext)
+        context_closable := false
+        if context_index >= 0 { context_closable = Closable[context_index] }
+        await set_ui_data(Name: "documentTabContextClosable", Value: context_closable)
+        await set_ui_data(Name: "documentDirtyTabs", Value: DirtyTabs)
+        await set_ui_data(Name: "documentPinTabs", Value: PinTabs)
+        await set_ui_data(Name: "documentActive", Value: Document)
+        await set_ui_data(Name: "documentBusy", Value: Busy || !text_equal(PendingKind, ""))
+        await set_ui_data(Name: "documentError", Value: Error)
+        await set_ui_data(Name: "documentConflict", Value: Conflict)
+        await set_ui_data(Name: "documentDialog", Value: Dialog)
+        await set_ui_data(Name: "documentDialogPath", Value: DialogPath)
+        await set_ui_data(Name: "documentHasLayout", Value: Companion(DialogDocument) > 0)
+        await set_ui_data(Name: "documentDialogIsLayout", Value: contains(GroupSidecars, DialogDocument))
+        enabled := !Busy && text_equal(Dialog, "") && text_equal(PendingKind, "")
+        await send_event<"StudioCommandAvailability">(self, "saveAll", enabled && length(Handles) > 0)
+        await send_event<"StudioCommandAvailability">(self, "revert", enabled && !CollaborationActive && Document > 0 && !text_equal(Path, ""))
+        active_tab := find(Handles, Document)
+        active_closable := false
+        if active_tab >= 0 { active_closable = Closable[active_tab] }
+        await send_event<"StudioCommandAvailability">(self, "closeTab", enabled && active_closable)
+        await send_event<"StudioCommandAvailability">(self, "togglePinTab", enabled && Document > 0)
+        await send_event<"StudioCommandAvailability">(self, "selectTab", enabled && length(Handles) > 0)
+        await send_event<"StudioCommandAvailability">(self, "nextTab", enabled && length(Handles) > 1)
+        await send_event<"StudioCommandAvailability">(self, "previousTab", enabled && length(Handles) > 1)
+        await send_event<"StudioDocumentState">(self, Document, Revision, Path, Dirty, Conflict, CanUndo && !CollaborationActive, CanRedo && !CollaborationActive, Busy || !text_equal(PendingKind, ""), Error)
+        await send_event<"StudioDocumentGestureState">(self, gestureCancelable)
+        return
+    }
+    Failure :: fn(Status: int, Message: string) {
+        Error = Message
+        if Status == 6 {
+            Conflict = true
+            Dialog = "conflict"
+            DialogDocument = Document
+            DialogPath = Path
+        }
+        await send_event<"StudioStatus">(self, "error", Message)
+        return
+    }
+    CommitDocument :: fn(Document: int) -> bool {
+        if Document <= 0 {
+            return true
+        }
+        current := await workspace_document_info(Document)
+        if !current.Ok {
+            await Failure(current.Status, current.Error)
+            return false
+        }
+        if current.Transaction {
+            committed := await workspace_document_commit(Document, current.Revision)
+            if !committed.Ok {
+                await Failure(committed.Status, committed.Error)
+                return false
+            }
+        }
+        return true
+    }
+    CancelDialog :: fn() {
+        if text_equal(Completion, "project") {
+            await send_event<"StudioProjectOpenCancelled">(self, ProjectPath)
+        }
+        Dialog = ""
+        CloseAfterSave = false
+        CloseQueue = []
+        SaveQueue = []
+        Completion = ""
+        ProjectPath = ""
+        await set_ui_data(Name: "documentDialog", Value: "")
+        return
+    }
+    Open :: fn(Path: string) {
+        if !await CommitDocument(Document) {
+            return
+        }
+        opened := await workspace_document_open(Path)
+        if !opened.Ok {
+            await Failure(opened.Status, opened.Error)
+            return
+        }
+        Document = opened.Document
+        KeepSelectionEmpty = false
+        Conflict = false
+        Error = ""
+        Dialog = ""
+        return
+    }
+    SaveDocument :: fn(Document: int) -> bool {
+        if !await CommitDocument(Document) {
+            return false
+        }
+        current := await workspace_document_info(Document)
+        if !current.Ok {
+            await Failure(current.Status, current.Error)
+            return false
+        }
+        if text_equal(current.Path, "") {
+            if CollaborationActive {
+                await Failure(1, "Saving a new path requires a shared collaboration file intent.")
+                return false
+            }
+            self.Document = Document
+            DialogDocument = Document
+            Dialog = "saveAs"
+            DialogPath = "content/untitled.chibi"
+            return false
+        }
+        saved := await workspace_document_save(Document, current.Revision)
+        if !saved.Ok {
+            self.Document = Document
+            Path = current.Path
+            await Failure(saved.Status, saved.Error)
+            return false
+        }
+        companion := Companion(Document)
+        if companion > 0 {
+            if !await CommitDocument(companion) {
+                return false
+            }
+            metadata := await workspace_document_info(companion)
+            if !metadata.Ok {
+                await Failure(metadata.Status, "Source saved, but its layout document is unavailable. Retry Save.")
+                return false
+            }
+            if !(metadata.NewFile && metadata.Bytes == 0) {
+                savedMetadata := await workspace_document_save(companion, metadata.Revision)
+                if !savedMetadata.Ok {
+                    await Failure(savedMetadata.Status, format_text("Source saved, but its layout could not be saved: {}", savedMetadata.Error))
+                    if savedMetadata.Status == 6 {
+                        DialogDocument = companion
+                        DialogPath = metadata.Path
+                    }
+                    return false
+                }
+            }
+        }
+        Error = ""
+        Conflict = false
+        await send_event<"StudioResourceCommand">(self, "refresh", "")
+        return true
+    }
+    ClosePair :: fn(Document: int) -> bool {
+        companion := Companion(Document)
+        if !await CommitDocument(Document) {
+            return false
+        }
+        if companion > 0 && !await CommitDocument(companion) {
+            return false
+        }
+        closed := await workspace_document_close(Document)
+        if !closed.Ok {
+            await Failure(closed.Status, closed.Error)
+            return false
+        }
+        if companion > 0 {
+            metadataClosed := await workspace_document_close(companion)
+            if !metadataClosed.Ok {
+                await Failure(metadataClosed.Status, "Source closed, but its layout remains open. Review the remaining document.")
+                return false
+            }
+        }
+        pin := find(Pinned, Document)
+        if pin >= 0 {
+            Pinned = remove_index(Pinned, pin)
+        }
+        if self.Document == Document || self.Document == companion {
+            self.Document = 0
+        }
+        return true
+    }
+    CloseDocument :: fn(Document: int) -> bool {
+        target := Primary(Document)
+        if !await CommitDocument(target) {
+            return false
+        }
+        current := await workspace_document_info(target)
+        if !current.Ok {
+            return true
+        }
+        dirty := current.Dirty || text_equal(current.Path, "")
+        companion := Companion(target)
+        if companion > 0 {
+            if !await CommitDocument(companion) {
+                return false
+            }
+            metadata := await workspace_document_info(companion)
+            if !metadata.Ok {
+                await Failure(metadata.Status, metadata.Error)
+                return false
+            }
+            dirty = dirty || (metadata.Dirty && !(metadata.NewFile && metadata.Bytes == 0))
+        }
+        if dirty {
+            self.Document = target
+            DialogDocument = target
+            DialogPath = current.Path
+            if text_equal(DialogPath, "") {
+                DialogPath = format_text("Untitled {}", target)
+            }
+            Dialog = "close"
+            return false
+        }
+        return await ClosePair(target)
+    }
+    ContinueClose :: fn() {
+        while length(CloseQueue) > 0 {
+            next := CloseQueue[0]
+            CloseQueue = remove_index(CloseQueue, 0)
+            if !await CloseDocument(next) {
+                return
+            }
+        }
+        if !text_equal(Completion, "") {
+            workspace := query_workspace_info()
+            inactive := workspace.Ok && !workspace.Active
+            opened := await workspace_document_handles()
+            if inactive || (opened.Ok && length(opened.Documents) == 0) {
+                completion := Completion
+                path := ProjectPath
+                Completion = ""
+                ProjectPath = ""
+                if text_equal(completion, "project") {
+                    await send_event<"StudioProjectOpenApproved">(self, path)
+                }
+                if text_equal(completion, "quit") {
+                    await send_event<"StudioQuitApproved">(self)
+                }
+            } else {
+                if text_equal(Completion, "project") {
+                    await send_event<"StudioProjectOpenCancelled">(self, ProjectPath)
+                }
+                Completion = ""
+                ProjectPath = ""
+                await Failure(1, "Another document opened during review. Retry after reviewing it.")
+            }
+        }
+        return
+    }
+    ContinueSave :: fn() {
+        while length(SaveQueue) > 0 {
+            next := SaveQueue[0]
+            SaveQueue = remove_index(SaveQueue, 0)
+            if !await SaveDocument(next) {
+                return
+            }
+        }
+        return
+    }
+    Saved :: fn() {
+        Dialog = ""
+        if CloseAfterSave {
+            target := DialogDocument
+            CloseAfterSave = false
+            await CloseDocument(target)
+            await ContinueClose()
+        }
+        await ContinueSave()
+        return
+    }
+    on Begin {
+        workspace := query_workspace_info()
+        KeepSelectionEmpty = workspace.Ok && workspace.DocumentsRestored
+        if workspace.Ok && workspace.Active && !workspace.DocumentsRestored && !text_equal(workspace.StartScene, "") {
+            await Open(workspace.StartScene)
+        } else if !workspace.Ok {
+            await Failure(1, workspace.Error)
+        }
+        await Publish()
+    }
+    on StudioDocumentChanged {
+        if Busy {
+            return
+        }
+        await Publish()
+    }
+    RejectEdit :: fn(Document: int, ExpectedRevision: int, Error: string, Owner: string, Request: int) {
+        current := await workspace_document_info(Document)
+        revision := 0
+        if current.Ok {
+            revision = current.Revision
+        }
+        await send_event<"StudioDocumentEditResult">(self, Document, ExpectedRevision, false, revision, Error, Owner, Request)
+        return
+    }
+    CoreEdit :: fn(Document: int, Revision: int, Start: int, End: int, Text: string, Owner: string, Request: int) {
+        if text_equal(Owner, "") || Request <= 0 {
+            await RejectEdit(Document, Revision, "Edit requires a workflow owner and positive request token", Owner, Request)
+            return
+        }
+        if text_equal(PendingKind, "external-canceling") {
+            await RejectEdit(Document, Revision, "The visual edit is still canceling", Owner, Request)
+            return
+        }
+        if text_equal(PendingKind, "external-ready") && (!text_equal(Owner, ExternalOwner) || Request != ExternalRequest || Document != PendingDocument) {
+            await RejectEdit(Document, Revision, "A different visual edit owns the document until it finishes", Owner, Request)
+            return
+        }
+        if Busy {
+            await RejectEdit(Document, Revision, "Another document operation is in progress", Owner, Request)
+            return
+        }
+        if !text_equal(Dialog, "") {
+            await RejectEdit(Document, Revision, "Finish the document dialog before editing", Owner, Request)
+            return
+        }
+        if Document != self.Document {
+            await RejectEdit(Document, Revision, "Document is no longer active", Owner, Request)
+            return
+        }
+        Busy = true
+        current := await workspace_document_info(Document)
+        if current.Ok {
+            start := Start
+            end := End
+            if end == -1 {
+                start = 0
+                end = current.Bytes
+            }
+            edited := await workspace_document_edit(Document, Revision, start, end, Text)
+            if !edited.Ok {
+                await Failure(edited.Status, edited.Error)
+            } else {
+                Error = ""
+            }
+            await send_event<"StudioDocumentEditResult">(self, Document, Revision, edited.Ok, edited.Revision, edited.Error, Owner, Request)
+        } else {
+            await Failure(current.Status, current.Error)
+            await send_event<"StudioDocumentEditResult">(self, Document, Revision, false, 0, current.Error, Owner, Request)
+        }
+        Busy = false
+        await Publish()
+        return
+    }
+    on StudioCollaborationState {
+        CollaborationActive = event.Active
+        CollaborationRole = event.Role
+        CollaborationReady = event.Ready
+        CollaborationPending = event.Pending
+        CollaborationReplaying = event.Replaying
+        await Publish()
+    }
+    on StudioDocumentEdit {
+        if CollaborationActive {
+            await send_event<"StudioCollaborationEdit">(self, event.Document, event.Revision, event.Start, event.End, event.Text, event.Owner, event.Request)
+            return
+        }
+        await CoreEdit(event.Document, event.Revision, event.Start, event.End, event.Text, event.Owner, event.Request)
+    }
+    on StudioDocumentCollaborationEdit {
+        await CoreEdit(event.Document, event.Revision, event.Start, event.End, event.Text, event.Owner, event.Request)
+    }
+    BatchResult :: fn(Document: int, ExpectedRevision: int, Ok: bool, Documents: int[], Error: string, Owner: string, Request: int) {
+        revisions: int[] = []
+        foreach (handle in Documents) {
+            current := await workspace_document_info(handle)
+            revision: int = 0
+            if current.Ok {
+                revision = current.Revision
+            }
+            revisions = array_add(revisions, revision)
+        }
+        await send_event<"StudioDocumentEditsResult">(self, Document, ExpectedRevision, Ok, Documents, revisions, Error, Owner, Request)
+        return
+    }
+    CoreEdits :: fn(Document: int, Revision: int, Documents: int[], Revisions: int[], Paths: string[], Texts: string[], Owner: string, Request: int, InitialTexts: string[]) {
+        error := ""
+        count := length(Documents)
+        if text_equal(Owner, "") || Request <= 0 {
+            error = "Batch edit requires a workflow owner and positive request token"
+        }
+        if count <= 0 || count > 8 || length(Revisions) != count || length(Paths) != count || length(Texts) != count {
+            error = "Batch edit requires one to eight matching replacement arrays"
+        }
+        if length(InitialTexts) != 0 && length(InitialTexts) != count {
+            error = "Initial document text must be omitted or match the replacement arrays"
+        }
+        if Busy || !text_equal(Dialog, "") {
+            error = "Finish the current document operation before editing"
+        }
+        if Document != self.Document || Document <= 0 {
+            error = "The source document is no longer active"
+        }
+        if !text_equal(PendingKind, "") && !text_equal(PendingKind, "external-ready") {
+            error = "The source document is being prepared or canceled"
+        }
+        if text_equal(PendingKind, "external-ready") && (!text_equal(Owner, ExternalOwner) || Request != ExternalRequest || Document != PendingDocument) {
+            error = "A different workflow owns the document edit lease"
+        }
+        if !text_equal(error, "") {
+            await BatchResult(Document, Revision, false, Documents, error, Owner, Request)
+            return
+        }
+        anchor := await workspace_document_info(Document)
+        if !anchor.Ok || anchor.Revision != Revision || anchor.Transaction {
+            await BatchResult(Document, Revision, false, Documents, "The source changed or still has an active edit gesture", Owner, Request)
+            return
+        }
+        included := false
+        index := 0
+        foreach (handle in Documents) {
+            if handle == Document && Revisions[index] == Revision {
+                included = true
+            }
+            if handle > 0 {
+                current := await workspace_document_info(handle)
+                if !current.Ok || current.Revision != Revisions[index] || !text_equal(current.Path, Paths[index]) || current.Transaction {
+                    error = "A batch document changed; prepare the edit again"
+                }
+            } else {
+                if handle != 0 || Revisions[index] != -1 || text_equal(Paths[index], "") {
+                    error = "A new draft requires a path and absent revision"
+                }
+            }
+            previous := 0
+            while previous < index {
+                if (handle > 0 && Documents[previous] == handle) || (!text_equal(Paths[index], "") && text_equal(Paths[previous], Paths[index])) {
+                    error = "A batch cannot replace the same document or path twice"
+                }
+                previous = previous + 1
+            }
+            index = index + 1
+        }
+        if !included {
+            error = "The exact source revision must be included in the atomic batch"
+        }
+        foreach (initial in InitialTexts) {
+            validatedText := text_difference("", initial)
+            if !validatedText.Ok {
+                error = validatedText.Error
+            }
+        }
+        if !text_equal(error, "") {
+            await BatchResult(Document, Revision, false, Documents, error, Owner, Request)
+            return
+        }
+        validated := await workspace_document_validate_candidates(Documents, Revisions, Paths, Texts, Document)
+        if !validated.Ok {
+            await BatchResult(Document, Revision, false, Documents, validated.Error, Owner, Request)
+            return
+        }
+        Busy = true
+        handles: int[] = []
+        revisions: int[] = []
+        fresh: int[] = []
+        index = 0
+        foreach (handle in Documents) {
+            if text_equal(error, "") {
+                if handle == 0 {
+                    initial := ""
+                    if length(InitialTexts) == count {
+                        initial = InitialTexts[index]
+                    }
+                    draft := await workspace_document_draft(Paths[index], initial)
+                    if draft.Ok {
+                        handles = array_add(handles, draft.Document)
+                        revisions = array_add(revisions, draft.Revision)
+                        fresh = array_add(fresh, draft.Document)
+                    } else {
+                        error = draft.Error
+                    }
+                } else {
+                    handles = array_add(handles, handle)
+                    revisions = array_add(revisions, Revisions[index])
+                }
+            }
+            index = index + 1
+        }
+        ok := false
+        if text_equal(error, "") {
+            replaced := await workspace_document_replace_many(handles, revisions, Texts, Document)
+            ok = replaced.Ok
+            error = replaced.Error
+        }
+        if !ok {
+            foreach (handle in fresh) {
+                discarded := await workspace_document_close(handle)
+            }
+            await BatchResult(Document, Revision, false, Documents, error, Owner, Request)
+            Error = error
+        } else {
+            Error = ""
+            await BatchResult(Document, Revision, true, handles, "", Owner, Request)
+        }
+        Busy = false
+        await Publish()
+        return
+    }
+    on StudioDocumentEdits {
+        if CollaborationActive {
+            await send_event<"StudioCollaborationEdits">(self, event.Document, event.Revision, event.Documents, event.Revisions, event.Paths, event.Texts, event.Owner, event.Request, event.InitialTexts)
+            return
+        }
+        await CoreEdits(event.Document, event.Revision, event.Documents, event.Revisions, event.Paths, event.Texts, event.Owner, event.Request, event.InitialTexts)
+    }
+    on StudioDocumentCollaborationEdits {
+        await CoreEdits(event.Document, event.Revision, event.Documents, event.Revisions, event.Paths, event.Texts, event.Owner, event.Request, event.InitialTexts)
+    }
+    on StudioDocumentGesture {
+        if CollaborationActive && !text_equal(event.Phase, "cancel") {
+            return
+        }
+        if CollaborationActive && text_equal(event.Phase, "cancel") {
+            await Failure(1, "Canceling shared edits requires a collaboration history action. Your accepted source is preserved.")
+            await Publish()
+            return
+        }
+        if text_equal(PendingKind, "external-ready") || text_equal(PendingKind, "external-canceling") {
+            return
+        }
+        if Busy || !text_equal(Dialog, "") {
+            return
+        }
+        if event.Document != 0 && event.Document != self.Document {
+            return
+        }
+        if self.Document <= 0 {
+            return
+        }
+        Busy = true
+        current := await workspace_document_info(self.Document)
+        if current.Ok {
+            if text_equal(event.Phase, "begin") && !current.Transaction {
+                begun := await workspace_document_begin(self.Document, current.Revision)
+                if !begun.Ok {
+                    await Failure(begun.Status, begun.Error)
+                }
+            }
+            if text_equal(event.Phase, "commit") && current.Transaction {
+                committed := await workspace_document_commit(self.Document, current.Revision)
+                if !committed.Ok {
+                    await Failure(committed.Status, committed.Error)
+                }
+            }
+            if text_equal(event.Phase, "cancel") && current.Transaction {
+                canceled := await workspace_document_cancel(self.Document, current.Revision)
+                if !canceled.Ok {
+                    await Failure(canceled.Status, canceled.Error)
+                }
+            }
+        } else {
+            await Failure(current.Status, current.Error)
+        }
+        Busy = false
+        await Publish()
+    }
+    RunSelect :: fn(Document: int) {
+        if Busy || (!text_equal(Dialog, "") && !text_equal(Dialog, "tabs")) {
+            return
+        }
+        if text_equal(Dialog, "tabs") {
+            Dialog = ""
+        }
+        Busy = true
+        if await CommitDocument(self.Document) {
+            if Document == 0 {
+                self.Document = 0
+                KeepSelectionEmpty = true
+                Busy = false
+                await Publish()
+                return
+            }
+            selected := await workspace_document_info(Document)
+            if selected.Ok {
+                self.Document = Document
+                KeepSelectionEmpty = false
+                Error = ""
+                Conflict = false
+            }
+        }
+        Busy = false
+        await Publish()
+    }
+    RunClose :: fn(Document: int) {
+        if Busy || !text_equal(Dialog, "") {
+            return
+        }
+        Busy = true
+        await CloseDocument(Document)
+        Busy = false
+        await Publish()
+    }
+    RunCommand :: fn(Id: string, Argument: string) {
+        if text_equal(Id, "refresh") {
+            await Publish()
+            return
+        }
+        if CollaborationActive {
+            if text_equal(Id, "undo") || text_equal(Id, "redo") || text_equal(Id, "revert") || text_equal(Id, "saveAs") || text_equal(Id, "new") || ((text_equal(Id, "save") || text_equal(Id, "saveClose")) && text_equal(Path, "")) {
+                await Failure(1, "This action needs a shared collaboration history or file intent. Leave the room to perform it locally.")
+                await Publish()
+                return
+            }
+        }
+        if Busy || !text_equal(Dialog, "") {
+            return
+        }
+        Busy = true
+        Error = ""
+        if !await CommitDocument(Document) {
+            Busy = false
+            await Publish()
+            return
+        }
+        switch Id {
+            case "open": {
+                if text_equal(Argument, "") {
+                    Dialog = "open"
+                    DialogPath = "content/"
+                } else {
+                    await Open(Argument)
+                }
+            }
+            case "new": {
+                created := await workspace_document_memory(Argument)
+                if created.Ok {
+                    Document = created.Document
+                    Conflict = false
+                } else {
+                    await Failure(created.Status, created.Error)
+                }
+            }
+            case "reviewConflict": {
+                if Conflict && Document > 0 {
+                    Dialog = "conflict"
+                    DialogDocument = Document
+                    DialogPath = Path
+                }
+            }
+            case "save": {
+                if Document > 0 {
+                    await SaveDocument(Document)
+                }
+            }
+            case "saveClose": {
+                target := Document
+                if target > 0 {
+                    if await SaveDocument(target) {
+                        await CloseDocument(target)
+                    } else {
+                        if text_equal(Dialog, "saveAs") {
+                            CloseAfterSave = true
+                            DialogDocument = target
+                        }
+                    }
+                }
+            }
+            case "saveAs": {
+                if Document > 0 {
+                    Dialog = "saveAs"
+                    DialogDocument = Document
+                    DialogPath = Path
+                    if text_equal(Path, "") {
+                        DialogPath = "content/untitled.chibi"
+                    }
+                }
+            }
+            case "saveAll": {
+                SaveQueue = []
+                opened := await workspace_document_handles()
+                if opened.Ok {
+                    foreach (handle in opened.Documents) {
+                        current := await workspace_document_info(handle)
+                        if current.Ok && (current.Dirty || text_equal(current.Path, "")) && !(current.NewFile && current.Bytes == 0 && contains(GroupSidecars, handle)) {
+                            primary := Primary(handle)
+                            if !contains(SaveQueue, primary) {
+                                SaveQueue = array_add(SaveQueue, primary)
+                            }
+                        }
+                    }
+                    await ContinueSave()
+                } else {
+                    await Failure(opened.Status, opened.Error)
+                }
+            }
+            case "selectTab": {
+                Dialog = "tabs"
+            }
+            case "undo": {
+                if Document > 0 {
+                    current := await workspace_document_info(Document)
+                    undone := await workspace_document_undo(Document, current.Revision)
+                    if !undone.Ok {
+                        await Failure(undone.Status, undone.Error)
+                    }
+                }
+            }
+            case "redo": {
+                if Document > 0 {
+                    current := await workspace_document_info(Document)
+                    redone := await workspace_document_redo(Document, current.Revision)
+                    if !redone.Ok {
+                        await Failure(redone.Status, redone.Error)
+                    }
+                }
+            }
+            case "revert": {
+                if Document > 0 {
+                    Dialog = "revert"
+                    DialogDocument = Document
+                    DialogPath = Path
+                }
+            }
+            case "closeTab": {
+                index := find(Handles, Document)
+                if index >= 0 && Closable[index] { await CloseDocument(Document) }
+            }
+            case "closeAll": {
+                CloseQueue = []
+                foreach (handle in Handles) {
+                    if !contains(Pinned, handle) {
+                        CloseQueue = array_add(CloseQueue, handle)
+                    }
+                }
+                await ContinueClose()
+            }
+            case "closeOthers": {
+                CloseQueue = []
+                foreach (handle in Handles) {
+                    if handle != Document && !contains(Pinned, handle) {
+                        CloseQueue = array_add(CloseQueue, handle)
+                    }
+                }
+                await ContinueClose()
+            }
+            case "togglePinTab": {
+                if Document > 0 {
+                    found := find(Pinned, Document)
+                    if found >= 0 {
+                        Pinned = remove_index(Pinned, found)
+                    } else {
+                        Pinned = array_add(Pinned, Document)
+                    }
+                }
+            }
+            case "nextTab": {
+                count := length(Handles)
+                if count > 0 {
+                    index := find(Handles, Document) + 1
+                    if index >= count {
+                        index = 0
+                    }
+                    Document = Handles[index]
+                    Conflict = false
+                }
+            }
+            case "previousTab": {
+                count := length(Handles)
+                if count > 0 {
+                    index := find(Handles, Document) - 1
+                    if index < 0 {
+                        index = count - 1
+                    }
+                    Document = Handles[index]
+                    Conflict = false
+                }
+            }
+        }
+        Busy = false
+        await Publish()
+    }
+    ReviewWorkspace :: fn(Kind: string, Path: string) {
+        Busy = true
+        if !await CommitDocument(Document) {
+            if text_equal(Kind, "project") {
+                await send_event<"StudioProjectOpenCancelled">(self, Path)
+            }
+            Busy = false
+            return
+        }
+        Completion = Kind
+        ProjectPath = Path
+        CloseQueue = []
+        workspace := query_workspace_info()
+        if workspace.Ok && !workspace.Active {
+            await ContinueClose()
+            Busy = false
+            return
+        }
+        opened := await workspace_document_handles()
+        if !opened.Ok {
+            await Failure(opened.Status, opened.Error)
+            if text_equal(Kind, "project") {
+                await send_event<"StudioProjectOpenCancelled">(self, Path)
+            }
+            Completion = ""
+            ProjectPath = ""
+            Busy = false
+            return
+        }
+        CloseQueue = opened.Documents
+        await ContinueClose()
+        Busy = false
+        return
+    }
+    DispatchNavigation :: fn() {
+        kind := PendingKind
+        id := PendingId
+        argument := PendingArgument
+        document := PendingDocument
+        flushDocument := FlushDocument
+        flushRequest := FlushRequest
+        if text_equal(kind, "external") {
+            ok := await CommitDocument(document)
+            current := await workspace_document_info(document)
+            if ok && current.Ok && Document == document {
+                PendingKind = "external-ready"
+                FlushElapsed = 0
+                await send_event<"StudioDocumentExternalEditReady">(self, ExternalOwner, document, ExternalRequest, true, current.Revision, "")
+                return
+            }
+            await send_event<"StudioDocumentExternalEditReady">(self, ExternalOwner, document, ExternalRequest, false, 0, "The document could not be prepared for editing.")
+        }
+        PendingKind = ""
+        if text_equal(kind, "command") {
+            await RunCommand(id, argument)
+        }
+        if text_equal(kind, "select") {
+            await RunSelect(document)
+        }
+        if text_equal(kind, "close") {
+            await RunClose(document)
+        }
+        if text_equal(kind, "project") {
+            await ReviewWorkspace("project", argument)
+            await Publish()
+        }
+        if text_equal(kind, "quit") {
+            await ReviewWorkspace("quit", "")
+            await Publish()
+        }
+        if flushDocument > 0 {
+            await send_event<"StudioDocumentFlushComplete">(self, flushDocument, flushRequest)
+        }
+        await Publish()
+        return
+    }
+    RequestNavigation :: fn(Kind: string, Id: string, Argument: string, Document: int) {
+        if text_equal(PendingKind, "external-ready") {
+            DeferredKind = Kind
+            DeferredId = Id
+            DeferredArgument = Argument
+            DeferredDocument = Document
+            PendingKind = "external-canceling"
+            await send_event<"StudioDocumentExternalEditCancelRequested">(self, ExternalOwner, PendingDocument, ExternalRequest)
+            await Publish()
+            return
+        }
+        if Busy || !text_equal(PendingKind, "") {
+            await send_event<"StudioStatus">(self, "info", "Wait for the current document operation to finish.")
+            if text_equal(Kind, "project") {
+                await send_event<"StudioProjectOpenCancelled">(self, Argument)
+            }
+            return
+        }
+        if !text_equal(Dialog, "") && !(text_equal(Kind, "select") && text_equal(Dialog, "tabs")) {
+            if text_equal(Kind, "project") {
+                await send_event<"StudioProjectOpenCancelled">(self, Argument)
+            }
+            return
+        }
+        PendingKind = Kind
+        PendingId = Id
+        PendingArgument = Argument
+        PendingDocument = Document
+        FlushDocument = self.Document
+        if self.Document <= 0 {
+            await DispatchNavigation()
+            return
+        }
+        FlushDocument = self.Document
+        if FlushRequest >= 2147483646 {
+            if text_equal(Kind, "project") {
+                await send_event<"StudioProjectOpenCancelled">(self, Argument)
+            }
+            if text_equal(Kind, "external") {
+                await send_event<"StudioDocumentExternalEditReady">(self, ExternalOwner, Document, ExternalRequest, false, 0, "Document request tokens are exhausted. Reopen Studio before continuing.")
+            }
+            PendingKind = ""
+            await Failure(1, "Document request tokens are exhausted. Reopen Studio before continuing.")
+            await Publish()
+            return
+        }
+        FlushRequest += 1
+        FlushElapsed = 0
+        await send_event<"StudioDocumentFlushRequested">(self, FlushDocument, FlushRequest)
+        await Publish()
+        return
+    }
+    on StudioDocumentExternalEditRequested {
+        if CollaborationActive {
+            await send_event<"StudioDocumentExternalEditReady">(self, event.Owner, event.Document, event.Request, false, 0, "Visual edits require a collaboration lease before changing shared source.")
+            return
+        }
+        if event.Request <= 0 || event.Document != self.Document || self.Document <= 0 || Busy || !text_equal(PendingKind, "") || !text_equal(Dialog, "") {
+            await send_event<"StudioDocumentExternalEditReady">(self, event.Owner, event.Document, event.Request, false, 0, "The active document is unavailable for this edit.")
+            return
+        }
+        ExternalOwner = event.Owner
+        ExternalRequest = event.Request
+        await RequestNavigation("external", "", "", event.Document)
+    }
+    on StudioDocumentExternalEditComplete {
+        if (!text_equal(PendingKind, "external-ready") && !text_equal(PendingKind, "external-canceling")) || event.Document != PendingDocument || event.Request != ExternalRequest || !text_equal(event.Owner, ExternalOwner) {
+            return
+        }
+        PendingKind = ""
+        await send_event<"StudioDocumentFlushComplete">(self, FlushDocument, FlushRequest)
+        if !text_equal(DeferredKind, "") {
+            kind := DeferredKind
+            id := DeferredId
+            argument := DeferredArgument
+            document := DeferredDocument
+            DeferredKind = ""
+            await RequestNavigation(kind, id, argument, document)
+            return
+        }
+        await Publish()
+    }
+    on StudioDocumentCommand {
+        if text_equal(event.Id, "refresh") {
+            await Publish()
+            return
+        }
+        await RequestNavigation("command", event.Id, event.Argument, 0)
+    }
+    on StudioDocumentTabAction {
+        if Busy || !text_equal(Dialog, "") || !contains(Handles, event.Document) {
+            return
+        }
+        if text_equal(event.Id, "context") {
+            TabContext = event.Document
+            await Publish()
+            show_ui_popover(Element: "#tab-menu", At: event.Pointer)
+            return
+        }
+        if text_equal(event.Id, "pin") {
+            pin := find(Pinned, event.Document)
+            if pin >= 0 { Pinned = remove_index(Pinned, pin) }
+            else { Pinned = array_add(Pinned, event.Document) }
+            Publish()
+            return
+        }
+        if text_equal(event.Id, "close") {
+            index := find(Handles, event.Document)
+            if index >= 0 && Closable[index] {
+                RequestNavigation("close", "", "", event.Document)
+            }
+        }
+    }
+    on StudioDocumentTabSelect {
+        await RequestNavigation("select", "", "", event.Document)
+    }
+    on StudioDocumentTabClose {
+        index := find(Handles, event.Document)
+        if index >= 0 && Closable[index] {
+            await RequestNavigation("close", "", "", event.Document)
+        }
+    }
+    on StudioProjectOpenRequested {
+        if (text_equal(Completion, "project") && text_equal(ProjectPath, event.Path)) || (text_equal(PendingKind, "project") && text_equal(PendingArgument, event.Path)) || (text_equal(DeferredKind, "project") && text_equal(DeferredArgument, event.Path)) {
+            return
+        }
+        await RequestNavigation("project", "", event.Path, 0)
+    }
+    on StudioQuitRequested {
+        await RequestNavigation("quit", "", "", 0)
+    }
+    on StudioDocumentFlushReady {
+        if text_equal(PendingKind, "") || event.Request != FlushRequest || event.Document != FlushDocument {
+            return
+        }
+        if event.Ok {
+            await DispatchNavigation()
+        } else {
+            if text_equal(PendingKind, "external") {
+                await send_event<"StudioDocumentExternalEditReady">(self, ExternalOwner, PendingDocument, ExternalRequest, false, 0, event.Error)
+            }
+            if text_equal(PendingKind, "project") {
+                await send_event<"StudioProjectOpenCancelled">(self, PendingArgument)
+            }
+            PendingKind = ""
+            await send_event<"StudioDocumentFlushComplete">(self, event.Document, event.Request)
+            await Failure(1, event.Error)
+            await Publish()
+        }
+    }
+    on Tick {
+        if !text_equal(PendingKind, "") && !text_equal(PendingKind, "external-ready") && !text_equal(PendingKind, "external-canceling") {
+            FlushElapsed += cast<double>(event.DeltaSeconds)
+            if FlushElapsed >= 2 {
+                if text_equal(PendingKind, "external") {
+                    await send_event<"StudioDocumentExternalEditReady">(self, ExternalOwner, PendingDocument, ExternalRequest, false, 0, "The edit preparation expired; retry the action.")
+                }
+                if text_equal(PendingKind, "project") {
+                    await send_event<"StudioProjectOpenCancelled">(self, PendingArgument)
+                }
+                PendingKind = ""
+                await send_event<"StudioDocumentFlushComplete">(self, FlushDocument, FlushRequest)
+                await Failure(1, "The text draft did not finish. Your document remains open; retry the command.")
+                await Publish()
+            }
+        }
+    }
+    on StudioDocumentDialogPath {
+        DialogPath = event.Path
+    }
+    on StudioDocumentDialogChoice {
+        if Busy {
+            return
+        }
+        if CollaborationActive && text_equal(Dialog, "saveAs") && text_equal(event.Choice, "submit") {
+            await Failure(1, "Saving a new path requires a shared collaboration file intent.")
+            await Publish()
+            return
+        }
+        Busy = true
+        target := DialogDocument
+        if text_equal(event.Choice, "cancel") {
+            await CancelDialog()
+        }
+        if text_equal(event.Choice, "discard") && text_equal(Dialog, "close") {
+            if await ClosePair(target) {
+                Dialog = ""
+                await ContinueClose()
+            }
+        }
+        if text_equal(event.Choice, "save") && text_equal(Dialog, "close") {
+            CloseAfterSave = true
+            if await SaveDocument(target) {
+                await Saved()
+            }
+        }
+        if text_equal(event.Choice, "copy") && text_equal(Dialog, "conflict") {
+            Dialog = "saveAs"
+            current := await workspace_document_info(target)
+            if current.Ok {
+                DialogPath = format_text("{}.copy", current.Path)
+            }
+        }
+        if text_equal(event.Choice, "reload") && (text_equal(Dialog, "conflict") || text_equal(Dialog, "revert")) {
+            current := await workspace_document_info(target)
+            reloaded := await workspace_document_reload(target, current.Revision)
+            if reloaded.Ok {
+                CloseAfterSave = false
+                CloseQueue = []
+                Completion = ""
+                ProjectPath = ""
+                Dialog = ""
+                Error = ""
+                Conflict = false
+                await Saved()
+            } else {
+                await Failure(reloaded.Status, reloaded.Error)
+            }
+        }
+        if text_equal(event.Choice, "submit") && text_equal(Dialog, "open") {
+            await Open(DialogPath)
+        }
+        if text_equal(event.Choice, "submit") && text_equal(Dialog, "saveAs") {
+            current := await workspace_document_info(target)
+            saved := await workspace_document_save_as(target, current.Revision, DialogPath)
+            if saved.Ok {
+                Error = ""
+                Conflict = false
+                await send_event<"StudioResourceCommand">(self, "refresh", "")
+                await Saved()
+            } else {
+                await Failure(saved.Status, saved.Error)
+            }
+        }
+        Busy = false
+        await Publish()
+    }
+    Escape :: fn() -> bool {
+        if Busy {
+            return true
+        }
+        consumed := !text_equal(PendingKind, "") || !text_equal(Dialog, "")
+        if text_equal(PendingKind, "external-ready") {
+            PendingKind = "external-canceling"
+            await send_event<"StudioDocumentExternalEditCancelRequested">(self, ExternalOwner, PendingDocument, ExternalRequest)
+            await Publish()
+            return true
+        }
+        if text_equal(PendingKind, "external-canceling") {
+            if text_equal(DeferredKind, "project") {
+                await send_event<"StudioProjectOpenCancelled">(self, DeferredArgument)
+            }
+            DeferredKind = ""
+            return true
+        }
+        if text_equal(PendingKind, "external") {
+            await send_event<"StudioDocumentExternalEditReady">(self, ExternalOwner, PendingDocument, ExternalRequest, false, 0, "The edit was canceled.")
+        }
+        if text_equal(PendingKind, "project") {
+            await send_event<"StudioProjectOpenCancelled">(self, PendingArgument)
+        }
+        if !text_equal(PendingKind, "") {
+            await send_event<"StudioDocumentFlushComplete">(self, FlushDocument, FlushRequest)
+        }
+        PendingKind = ""
+        if !text_equal(Dialog, "") {
+            await CancelDialog()
+            await Publish()
+            return true
+        }
+        if consumed {
+            await Publish()
+            return true
+        }
+        if Document > 0 {
+            current := await workspace_document_info(Document)
+            if !current.Ok {
+                await Failure(current.Status, current.Error)
+                await Publish()
+                return true
+            }
+            if current.Transaction {
+                consumed = true
+                if CollaborationActive {
+                    await Failure(1, "Canceling shared edits requires a collaboration history action. Your accepted source is preserved.")
+                } else {
+                    canceled := await workspace_document_cancel(Document, current.Revision)
+                    if !canceled.Ok {
+                        await Failure(canceled.Status, canceled.Error)
+                    }
+                }
+            }
+        }
+        await Publish()
+        return consumed
+    }
+    on StudioEscapeProbe {
+        if !text_equal(event.Phase, "document") {
+            return
+        }
+        consumed := await Escape()
+        await send_event<"StudioEscapeResult">(self, event.Request, event.Phase, consumed)
+    }
+    on Close {
+        if !text_equal(Dialog, "") {
+            await CancelDialog()
+            await Publish()
+        }
+    }
+}

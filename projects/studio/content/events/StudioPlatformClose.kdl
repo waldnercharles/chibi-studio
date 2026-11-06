@@ -1,0 +1,7 @@
+version 3
+name "StudioPlatformClose"
+domain "event"
+id_counter 1
+(array)graphs {
+    - kind="event" name=""
+}

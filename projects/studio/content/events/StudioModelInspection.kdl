@@ -1,0 +1,12 @@
+version 3
+name "StudioModelInspection"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Part" type="int" category="Payload"
+    - id=2 name="Axis" type="int" category="Payload"
+    - id=3 name="Offset" type="float" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

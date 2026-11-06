@@ -1,0 +1,12 @@
+version 3
+name "StudioNoticePause"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Slot" type="int" category="Payload"
+    - id=2 name="Kind" type="const char *" category="Payload"
+    - id=3 name="Paused" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

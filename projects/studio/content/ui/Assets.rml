@@ -1,22 +1,86 @@
-<div class="assets" data-attrif-data-grid="assets.grid">
-  <use ui="List" id="assets-list" data-event-scroll="emit('assets.scroll')" data-style---tile-width="assets.tileWidth" data-style---tile-height="assets.tileHeight">
-    <use ui="TreeRow" data-for="row : assets.rows" data-if="row.shown" data-alias-item="row" data-style-top="row.top" data-alias-selection="asset_view.selected" data-attr-data-asset="row.key" data-attrif-data-unused="row.unused" data-attrif-data-unresolved="row.unresolved" data-attr-data-drag="row.drag" data-attr-data-drag-payload="row.label" data-attr-data-drag-icon="row.icon" data-event-click="emit('assets.click', row.key, row.kind)" data-event-dblclick="emit('assets.open', row.key)" data-event-contextmenu="emit('assets.menu', row.key)"></use>
-    <div class="assets-line" data-for="line : assets.lines" data-if="line.shown" data-style-top="line.top">
-      <use ui="TreeRow" data-if="line.head.shown" data-alias-item="line.head" data-alias-selection="asset_view.selected" data-attr-data-asset="line.head.key" data-event-click="emit('assets.click', -1, line.head.kind)"></use>
-      <use ui="Tile" data-for="cell : line.tiles" data-if="cell.shown" data-alias-tile="cell" data-alias-selection="asset_view.selected" data-attr-data-asset="cell.key" data-attr-data-tip="cell.label" data-attr-data-tip-about="cell.about" data-attr-data-tip-image="asset_view.preview.id == cell.key ? asset_view.preview.image : cell.image" data-attr-data-drag="cell.drag" data-attr-data-drag-payload="cell.label" data-attr-data-drag-icon="cell.icon" data-event-click="emit('assets.click', cell.key, -1)" data-event-dblclick="emit('assets.open', cell.key)" data-event-contextmenu="emit('assets.menu', cell.key)"></use>
+<div class="assets" data-attrif-data-grid="self.assetBrowser.grid">
+  <use ui="List" id="assets-list" tabindex="0" data-measure="" data-event-scroll="emit('AssetsViewportChanged')" data-event-keydown="emit('AssetsKey')" data-style---asset-height="self.assetBrowser.height &gt; 0 ? self.assetBrowser.height + 'dp' : '0dp'" data-style---tile-width="self.assetBrowser.tile + 'dp'" data-style---tile-height="(self.assetBrowser.tile + 22) + 'dp'">
+    <div class="assets-line" data-for="slot : self.assetBrowser.slots" data-alias-line="self.assetBrowser.lines[slot]" data-style-top="line.top + 'dp'" data-style-height="line.height + 'dp'">
+      <use ui="TreeRow" data-if="line.kind != ''" data-alias-item="line.header" data-event-click="emit('AssetsToggleGroup', line.kind)"/>
+      <div class="assets-cells" data-if="line.kind == ''">
+        <div class="asset-cell" data-for="cell : line.cells" data-alias-row="line.items[cell]" data-attr-data-asset="row.key" data-attr-data-drag="row.drag" data-attr-data-drag-payload="row.key" data-attr-data-drag-icon="row.icon" data-attr-data-tip="row.label" data-attr-data-tip-about="row.about == '' ? row.path : row.path + ' · ' + row.about" data-event-click="emit('AssetsRowClicked', row.key, ev.mod, ev.shift)" data-event-dblclick="emit('AssetsOpen', row.key)" data-event-contextmenu="emit('AssetsMenu', row.key, ev.pointer)">
+          <use ui="TreeRow" data-if="!self.assetBrowser.grid" data-alias-item="row"/>
+          <use ui="Tile" data-if="self.assetBrowser.grid" data-alias-tile="row"/>
+        </div>
+      </div>
     </div>
   </use>
-  <div class="assets-empty" data-if="assets.empty != ''">
+  <div class="assets-empty" data-if="self.assetBrowser.empty">
     <span class="icon empty-icon">&#xea6d;</span>
-    <div class="empty-title">{{ assets.empty }}</div>
-    <div class="empty-hint">Clear the filters to see every asset.</div>
-    <button class="btn outline" data-event-click="emit('assets.clearFilter')"><span class="label">Clear Filters</span></button>
+    <div class="empty-title">No matching assets</div>
+    <div class="empty-hint">Choose another kind or clear your search.</div>
+    <button class="btn outline" data-event-click="emit('AssetsClearFilter')"><span class="label">Clear Filters</span></button>
   </div>
+  <div class="assets-notice" data-if="self.assetBrowser.notice != ''" role="status">
+    <span>{{ self.assetBrowser.notice }}</span>
+    <button class="btn subtle" data-event-click="emit('AssetsRefresh')">Refresh</button>
+  </div>
+  <div class="assets-loading" data-if="self.assetBrowser.busy" role="status">Updating assets…</div>
   <use ui="Menu" id="asset-menu">
-    <use ui="MenuGroup" data-alias-group="asset_menus.row"/>
-    <div data-for="entry : asset_menus.row.items">
-      <use ui="MenuSeparator" data-if="entry.separator"/>
-      <use ui="MenuItem" data-alias-item="entry" data-event-click="emit('assets.' + entry.action, asset_menus.row.key)"/>
+    <use ui="MenuItem" data-event-click="emit('AssetsOpen', self.assetBrowser.active)">Open</use>
+    <use ui="MenuItem" data-attrif-data-disabled="self.assetBrowser.selectedCount != 1 || self.assetBrowser.readOnly" data-event-click="emit('AssetsModelImport', 'convert', self.assetBrowser.active, ev.pointer)">Convert model source…</use>
+    <use ui="MenuItem" data-attrif-data-disabled="self.assetBrowser.selectedCount != 1 || self.assetBrowser.readOnly" data-event-click="emit('AssetsModelImport', 'reimport', self.assetBrowser.active, ev.pointer)">Reimport saved model…</use>
+    <use ui="MenuSeparator"/>
+    <use ui="MenuItem" data-attrif-data-disabled="self.assetBrowser.selectedCount != 1" data-event-click="emit('AssetsFileAction', 'move', ev.pointer)">Move / rename file…</use>
+    <use ui="MenuItem" data-attrif-data-disabled="self.assetBrowser.readOnly || self.fileHistory.busy" data-event-click="emit('AssetsFileAction', 'delete', ev.pointer)">Delete selected files…</use>
+    <use ui="MenuSeparator"/>
+    <use ui="MenuItem" data-attrif-data-disabled="!self.fileHistory.canUndo" data-event-click="emit('AssetsDeleteUndo')">Undo deletion</use>
+    <use ui="MenuItem" data-attrif-data-disabled="!self.fileHistory.canRedo" data-event-click="emit('AssetsDeleteRedo')">Redo deletion</use>
+    <use ui="MenuItem" data-event-click="emit('AssetsDeleteMenu', ev.pointer)">Deletion history…</use>
+  </use>
+  <use ui="Menu" id="asset-file-action" class="asset-file-action">
+    <div class="asset-file-title" data-if="self.assetBrowser.fileMode == 'move'">Move / rename file</div>
+    <div class="asset-file-title" data-if="self.assetBrowser.fileMode == 'delete'">Delete {{ self.assetBrowser.fileCount }} files?</div>
+    <div class="asset-file-hint" data-if="self.assetBrowser.fileMode == 'delete'">Undo restores this file batch. References are retained and may need repair.</div>
+    <div class="asset-file-hint" data-if="self.assetBrowser.fileMode == 'move'">Changes the file path. Declared names and references keep their authored values.</div>
+    <label class="asset-path-field" data-if="self.assetBrowser.fileMode == 'move'"><span>Project-relative destination</span><input class="field text" aria-label="Destination path" data-attr-value="self.assetBrowser.destination" data-event-input="emit('AssetsDestinationTyped', ev.value)"/></label>
+    <div class="asset-file-error" data-if="self.assetBrowser.fileError != ''" role="alert">{{ self.assetBrowser.fileError }}</div>
+    <div class="asset-file-result" data-if="self.assetBrowser.fileDone" role="status">Files updated.</div>
+    <button class="btn primary" data-attrif-data-disabled="self.assetBrowser.fileBusy || self.assetBrowser.fileDone || self.assetBrowser.readOnly" data-event-click="emit('AssetsFileConfirm')">{{ self.assetBrowser.fileMode == 'move' ? 'Move file' : 'Delete files' }}</button>
+  </use>
+  <use ui="Menu" id="asset-create" class="asset-file-action">
+    <div class="asset-file-title">New {{ self.assetBrowser.createKind }}</div>
+    <label class="asset-path-field"><span>Name</span><input id="asset-create-name" class="field text" aria-label="New asset name" data-attr-value="self.assetBrowser.createName" data-event-input="emit('AssetsCreateName', ev.value)" data-keys="Enter:AssetsCreateConfirm"/></label>
+    <div class="asset-file-error" data-if="self.assetBrowser.createError != ''" role="alert">{{ self.assetBrowser.createError }}</div>
+    <div class="asset-file-result" data-if="self.assetBrowser.createDone" role="status">Created and opened.</div>
+    <button class="btn primary" data-attrif-data-disabled="self.assetBrowser.createBusy || self.assetBrowser.createDone" data-event-click="emit('AssetsCreateConfirm')">Create asset</button>
+  </use>
+  <use ui="Menu" id="asset-import" class="asset-file-action">
+    <div class="asset-file-title">Import source file</div>
+    <div class="asset-file-hint">Copy a source file into an existing content folder. Existing files are kept.</div>
+    <button class="btn outline" data-attrif-data-disabled="self.assetBrowser.importBusy" data-event-click="emit('AssetsImportChoose')">Choose file…</button>
+    <div class="asset-import-source" data-if="self.assetBrowser.importSelected" data-attr-data-tip="self.assetBrowser.importSource">{{ self.assetBrowser.importSource }}</div>
+    <label class="asset-path-field" data-if="self.assetBrowser.importSelected"><span>Project-relative destination</span><input id="asset-import-destination" class="field text" placeholder="content/images/Texture.png" aria-label="Import destination" data-attrif-readonly="self.assetBrowser.importBusy" data-event-input="emit('AssetsImportDestination', ev.value)"/></label>
+    <div class="asset-file-error" data-if="self.assetBrowser.importError != ''" role="alert">{{ self.assetBrowser.importError }}</div>
+    <div class="asset-file-result" data-if="self.assetBrowser.importPhase == 'done'" role="status">Source file imported.</div>
+    <div class="asset-file-hint" data-if="self.assetBrowser.importBusy" role="status">Import in progress… {{ self.assetBrowser.importProgress * 100 }}%</div>
+    <button class="btn primary" data-attrif-data-disabled="self.assetBrowser.importBusy || !self.assetBrowser.importSelected" data-event-click="emit('AssetsImportConfirm')">Import file</button>
+    <button class="btn subtle" data-event-click="emit('AssetsImportCancel')">Cancel</button>
+  </use>
+  <use ui="Menu" id="asset-model-import" class="asset-model-import">
+    <div class="asset-file-title">{{ self.modelImport.reimport ? 'Reimport model' : 'Convert model source' }}</div>
+    <div class="asset-file-hint">Review generated assets before publishing. Existing edited outputs are protected.</div>
+    <label class="asset-path-field"><span>Import name</span><input id="asset-model-import-name" class="field text" data-attr-value="self.modelImport.name" data-attrif-readonly="self.modelImport.busy || self.modelImport.readOnly" data-event-input="emit('AssetsModelImportText', 'name', ev.value)"/></label>
+    <label class="asset-path-field" data-if="!self.modelImport.reimport"><span>Project-relative glTF source</span><input class="field text" data-attr-value="self.modelImport.source" data-attrif-readonly="self.modelImport.busy || self.modelImport.readOnly" data-event-input="emit('AssetsModelImportText', 'source', ev.value)"/></label>
+    <use ui="Checkbox" data-attrif-checked="self.modelImport.strict" data-attrif-disabled="self.modelImport.busy || self.modelImport.readOnly" data-event-change="emit('AssetsModelImportStrict', ev.value)">Reject import warnings</use>
+    <div class="asset-file-error" data-if="self.modelImport.error != ''" role="alert">{{ self.modelImport.error }}</div>
+    <div class="asset-file-result" data-if="self.modelImport.result != ''" role="status">{{ self.modelImport.result }}</div>
+    <div data-if="self.modelImport.reviewed">
+      <div class="asset-file-hint">{{ self.modelImport.summary }}</div>
+      <div class="asset-model-warnings"><div data-for="warning : self.modelImport.warnings">{{ warning }}</div></div>
+      <div class="asset-file-title">{{ self.modelImport.actionCount }} planned outputs</div>
+      <div class="asset-model-actions"><div class="asset-model-action" data-for="action : self.modelImport.actions"><span>{{ action.Action }}</span><span data-attr-data-tip="action.Key">{{ action.Key }}</span></div></div>
+      <div class="asset-model-pages"><button class="btn subtle" data-attrif-data-disabled="!self.modelImport.previous || self.modelImport.busy" data-event-click="emit('AssetsModelImportPage', -1)">Previous</button><button class="btn subtle" data-attrif-data-disabled="!self.modelImport.more || self.modelImport.busy" data-event-click="emit('AssetsModelImportPage', 1)">Next</button></div>
+    </div>
+    <div class="asset-model-buttons">
+      <button class="btn outline" data-attrif-data-disabled="self.modelImport.busy || self.modelImport.readOnly" data-event-click="emit('AssetsModelImportPrepare')">Review import</button>
+      <button class="btn primary" data-attrif-data-disabled="!self.modelImport.reviewed || self.modelImport.busy || self.modelImport.readOnly" data-event-click="emit('AssetsModelImportApply')">Publish assets</button>
+      <button class="btn subtle" data-attrif-data-disabled="self.modelImport.busy" data-event-click="emit('AssetsModelImportClose')">Discard plan</button>
     </div>
   </use>
 </div>

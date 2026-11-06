@@ -1,0 +1,4281 @@
+behavior StudioGraph {
+    self.GraphPane: string = "secondary"
+    WireGeneration: int = 0
+    CallerGraphs: string[] = []
+    CallerNodes: string[] = []
+    CallerLabels: string[] = []
+    WireStyle: int = 0
+    GraphSystemLight := false
+    MetricsReady := false
+    MetricProbeKnown := true
+    CompactNodes := true
+    TitleFlow := true
+    NodeWidths: float[] = []
+    NodeHeights: float[] = []
+    NodeForms: int[] = []
+    NodeCodeHeights: float[] = []
+    RevealDocument: int = 0
+    RevealRevision: int = 0
+    RevealGraph: string = ""
+    RevealNode: string = ""
+    RevealFrames: int = 0
+    on StudioGraphReveal {
+        if !Current(event.Document, event.Revision) {
+            Notice("This diagnostic belongs to another document revision.")
+            return
+        }
+        document := await workspace_document_read(event.Document)
+        if !document.Ok || document.Revision != event.Revision {
+            Notice("The diagnostic source changed before navigation.")
+            return
+        }
+        index := NodeIndex(event.Graph, event.Node)
+        if index < 0 {
+            Notice("This diagnostic node is unavailable in the current document.")
+            return
+        }
+        self.Graph = event.Graph
+        ViewState()
+        Select(index, false)
+        Port = -1
+        Wire = -1
+        SelectedEdge = -1
+        RevealDocument = event.Document
+        RevealRevision = event.Revision
+        RevealGraph = event.Graph
+        RevealNode = event.Node
+        RevealFrames = 60
+        area := "main"
+        send_event<"StudioPanelSelected">(self, area, "graph")
+        send_event<"StudioPaneFocus">(self, area, "graph", false)
+        Publish()
+    }
+    RevealTick :: fn() {
+        if RevealFrames <= 0 {
+            return
+        }
+        if Document != RevealDocument || Revision != RevealRevision || Graph != RevealGraph || Selected < 0 || Selected >= length(Nodes) || Nodes[Selected].node != RevealNode {
+            RevealFrames = 0
+            return
+        }
+        width := get_ui_view_width(Element: ViewportElement())
+        height := get_ui_scroll(Element: ViewportElement())
+        if width.Known && height.Known && width.PixelRatio > 0.0 && width."View Width" > 0.0 && height."View Height" > 0.0 {
+            RevealFrames = 0
+            Frame(true)
+            return
+        }
+        RevealFrames -= 1
+        if RevealFrames == 0 {
+            Notice("The graph pane did not become available to frame this diagnostic.")
+        }
+    }
+
+    ActivityReduceMotion := false
+    ActivityHandle: int = 0
+    ActivityGeneration: uint64 = 0
+    ActivityOwner: uint64 = 0
+    ActivityDocument: int = 0
+    ActivityRevision: int = 0
+    ActivityRetired := false
+    ActivityRows: WorkspaceDebugActivity[] = []
+    ActivityNodes: int[] = []
+    ActivityFrom: int[] = []
+    ActivityNodeHeat: float[] = []
+    ActivityEdgeHeat: float[] = []
+    ActivityActiveNodes: int[] = []
+    ActivityActiveEdges: int[] = []
+    ActivitySame :: pure fn(A: WorkspaceDebugActivity, B: WorkspaceDebugActivity) -> bool {
+        return A.generation == B.generation && A.owner == B.owner && A.source == B.source && A.module == B.module && A.function == B.function && A.occurrence == B.occurrence && A.from_module == B.from_module && A.from_function == B.from_function && A.from_occurrence == B.from_occurrence && A.query0 == B.query0 && A.query1 == B.query1 && A.query2 == B.query2 && A.query3 == B.query3 && A.query4 == B.query4 && A.query5 == B.query5 && A.query6 == B.query6 && A.query7 == B.query7
+    }
+    ActivityNode :: pure fn(Module: uint64, Function: uint64, Occurrence: uint64) -> int {
+        if Module == 0 || Function == 0 || Occurrence == 0 {
+            return -1
+        }
+        index := cast<int>(0)
+        for node in Nodes {
+            if node.execution_module == Module && node.execution_function == Function && node.execution_occurrence == Occurrence {
+                return index
+            }
+            index += 1
+        }
+        return -1
+    }
+    ActivityClear :: fn() {
+        for index in ActivityActiveNodes {
+            await set_ui_data(Name: format_text("graph.activity.nodes.{}", index), Value: "opacity: 0;")
+        }
+        for index in ActivityActiveEdges {
+            await set_ui_data(Name: format_text("graph.activity.edges.{}", index), Value: "opacity: 0;")
+        }
+        ActivityActiveNodes = []
+        ActivityActiveEdges = []
+        ActivityRows = []
+        ActivityNodes = []
+        ActivityFrom = []
+        ActivityNodeHeat = []
+        ActivityEdgeHeat = []
+        for node in Nodes {
+            ActivityNodeHeat = array_add(ActivityNodeHeat, cast<float>(0.0))
+        }
+        for edge in Edges {
+            ActivityEdgeHeat = array_add(ActivityEdgeHeat, cast<float>(0.0))
+        }
+        return
+    }
+    ActivityPulse :: fn(From: int, To: int) {
+        if ActivityReduceMotion {
+            return
+        }
+        if To >= 0 && To < length(ActivityNodeHeat) {
+            if ActivityNodeHeat[To] <= 0.0 {
+                ActivityActiveNodes = array_add(ActivityActiveNodes, To)
+            }
+            ActivityNodeHeat[To] = 2.0
+        }
+        if From < 0 || To < 0 {
+            return
+        }
+        index := cast<int>(0)
+        for edge in Edges {
+            if edge.flow && EdgeFrom[index] == From && EdgeTo[index] == To {
+                if ActivityEdgeHeat[index] <= 0.0 {
+                    ActivityActiveEdges = array_add(ActivityActiveEdges, index)
+                }
+                ActivityEdgeHeat[index] = 2.0
+            }
+            index += 1
+        }
+        return
+    }
+    on StudioDebuggerActivity {
+        if event.Error != "" || event.Handle <= 0 || event.Handle != DebugHandle || event.Session != DebugSession || event.Generation == 0 || event.Owner == 0 || Document <= 0 || length(event.Rows) > 512 {
+            ActivityClear()
+            ActivityHandle = 0
+            await set_ui_data(Name: "graph.activityStatus", Value: event.Error)
+            return
+        }
+        reset := ActivityHandle != event.Handle || ActivityGeneration != event.Generation || ActivityOwner != event.Owner || ActivityDocument != Document || ActivityRevision != Revision
+        if reset {
+            ActivityClear()
+        }
+        ActivityHandle = event.Handle
+        ActivityGeneration = event.Generation
+        ActivityOwner = event.Owner
+        ActivityDocument = Document
+        ActivityRevision = Revision
+        ActivityRetired = event.Retired
+        next_nodes: int[] = []
+        next_from: int[] = []
+        lineage_sources: string[] = []
+        lineage_valid: bool[] = []
+        index := cast<int>(0)
+        for row in event.Rows {
+            node := cast<int>(-1)
+            from := cast<int>(-1)
+            previous := cast<int>(-1)
+            if row.generation == event.Generation && row.owner == event.Owner {
+                if index < length(ActivityRows) && ActivitySame(ActivityRows[index], row) {
+                    previous = index
+                }
+                if previous >= 0 {
+                    node = ActivityNodes[previous]
+                    from = ActivityFrom[previous]
+                } else {
+                    node = ActivityNode(row.module, row.function, row.occurrence)
+                    from = ActivityNode(row.from_module, row.from_function, row.from_occurrence)
+                    if node >= 0 {
+                        lineage := cast<int>(-1)
+                        source_index := cast<int>(0)
+                        for source in lineage_sources {
+                            if source == row.source {
+                                lineage = source_index
+                            }
+                            source_index += 1
+                        }
+                        proved := false
+                        if lineage >= 0 {
+                            proved = lineage_valid[lineage]
+                        } else {
+                            requested_document := Document
+                            requested_revision := Revision
+                            frozen := await read_debug_source(event.Handle, row.source)
+                            current := await workspace_document_read(requested_document)
+                            if Document != requested_document || Revision != requested_revision || event.Handle != DebugHandle || event.Session != DebugSession {
+                                ActivityClear()
+                                return
+                            }
+                            proved = frozen.Valid && current.Ok && current.Revision == requested_revision && current.Path != "" && frozen.Path == current.Path && frozen.Text == current.Text
+                            lineage_sources = array_add(lineage_sources, row.source)
+                            lineage_valid = array_add(lineage_valid, proved)
+                        }
+                        if !proved {
+                            node = -1
+                            from = -1
+                        }
+                    }
+                }
+                changed := previous < 0
+                if previous >= 0 {
+                    changed = row.count != ActivityRows[previous].count
+                }
+                if !reset && !event.Retired && changed && node >= 0 {
+                    ActivityPulse(from, node)
+                }
+            }
+            next_nodes = array_add(next_nodes, node)
+            next_from = array_add(next_from, from)
+            index += 1
+        }
+        ActivityRows = event.Rows
+        ActivityNodes = next_nodes
+        ActivityFrom = next_from
+        summary := format_text("{} retained activity records", length(event.Rows))
+        if event.Retired {
+            summary = format_text("{} · retired runtime", summary)
+        }
+        if event.Dropped != 0 {
+            summary = format_text("{} · {} inspector traversals evicted", summary, event.Dropped)
+        }
+        await set_ui_data(Name: "graph.activityStatus", Value: summary)
+    }
+    ActivityTick :: fn(Delta: float) {
+        if Document != ActivityDocument || Revision != ActivityRevision || ActivityRetired {
+            if length(ActivityActiveNodes) > 0 || length(ActivityActiveEdges) > 0 {
+                ActivityClear()
+            }
+            return
+        }
+        seconds := cast<float>(clamp(Delta, 0.0, 0.05))
+        nodes: int[] = []
+        edges: int[] = []
+        for index in ActivityActiveNodes {
+            ActivityNodeHeat[index] = cast<float>(max(0.0, ActivityNodeHeat[index] - seconds))
+            remaining := ActivityNodeHeat[index]
+            await set_ui_data(Name: format_text("graph.activity.nodes.{}", index), Value: format_text("opacity: {};", min(1.0, remaining / 1.5)))
+            if remaining > 0.0 {
+                nodes = array_add(nodes, index)
+            }
+        }
+        for index in ActivityActiveEdges {
+            ActivityEdgeHeat[index] = cast<float>(max(0.0, ActivityEdgeHeat[index] - seconds))
+            remaining := ActivityEdgeHeat[index]
+            await set_ui_data(Name: format_text("graph.activity.edges.{}", index), Value: format_text("opacity: {};", min(1.0, remaining / 0.5)))
+            if remaining > 0.0 {
+                edges = array_add(edges, index)
+            }
+        }
+        ActivityActiveNodes = nodes
+        ActivityActiveEdges = edges
+        return
+    }
+
+    Document: int = 0
+    GraphTextEditing := false
+    Revision: int = 0
+    Nodes: DocumentNode[] = []
+    Ports: DocumentPort[] = []
+    Edges: DocumentEdge[] = []
+    EdgeFrom: int[] = []
+    EdgeTo: int[] = []
+    EdgeOut: int[] = []
+    EdgeIn: int[] = []
+    X: float[] = []
+    Y: float[] = []
+    Graph: string = ""
+    Selection: int[] = []
+    DragOriginalX: float[] = []
+    DragOriginalY: float[] = []
+    DragViewportWidth: float = 0.0
+    DragViewportHeight: float = 0.0
+    DragPixelRatio: float = 0.0
+    DragPointerX: float = 0.0
+    DragPointerY: float = 0.0
+    DragSnap := false
+    DragMovedX: float = 0.0
+    DragMovedY: float = 0.0
+    Selected: int = -1
+    Port: int = -1
+    SelectedEdge: int = -1
+    Wire: int = -1
+    Drag: int = -1
+    DragX: float = 0.0
+    DragY: float = 0.0
+    PanX: float = 32.0
+    PanY: float = 32.0
+    LastFrameSelection := false
+    Zoom: float = 1.0
+    Box := false
+    BoxStartX: float = 0.0
+    BoxStartY: float = 0.0
+    BoxX: float = 0.0
+    BoxY: float = 0.0
+    BoxBase: int[] = []
+    Panning := false
+    Busy := false
+    Notice: string = "Open a behavior or shader source document."
+    PendingDocument: int = 0
+    PendingRevision: int = 0
+    PendingState := false
+    EditDocument: int = 0
+    EditRevision: int = 0
+    EditKind: int = 0
+    EditOrigin: string = "0"
+    EditProducer: string = "0"
+    EditResult: int = 0
+    EditText: string = ""
+    CandidateMetadata: string = ""
+    LayoutOnly := false
+    Dialect: string = ""
+    SharedWritable := true
+    Collaborative := false
+    Request: int = 0
+    Lease := false
+    Palette := false
+    Query: string = ""
+    Choices: DocumentGraphChoice[] = []
+    VisibleChoices: DocumentGraphChoice[] = []
+    Scopes: DocumentGraphScope[] = []
+    EditCapability: string = ""
+    EditName: string = ""
+    EditSignature: string = ""
+    SignatureDraft: string = "() -> ()"
+    MemberName: string = "Value"
+    EditDisabled := false
+    RefactorOpen := false
+    SignatureOpen := false
+    CanUndo := false
+    CanRedo := false
+    Find: string = ""
+    SelectionOperation: int = -1
+    PendingCreated: string[] = []
+    PendingBox: string = "0"
+    Notes: DocumentGraphNote[] = []
+    Routes: DocumentGraphRoute[] = []
+    PresentationOperation: int = -1
+    NoteNode: string = "0"
+    NoteBox: string = "0"
+    NoteText: string = ""
+    NoteHidden := false
+    NoteRemove := false
+    NoteIsBox := false
+    RouteSelected: int = -1
+    RouteDrag := false
+    NotesOpen := false
+    RoutesOpen := false
+    NoteX: float = 64.0
+    NoteY: float = 64.0
+    NoteWidth: float = 320.0
+    NoteHeight: float = 180.0
+    NoteColor: uint64 = 0
+    RouteX: float = 0.0
+    RouteY: float = 0.0
+    RouteXs: float[] = []
+    RouteYs: float[] = []
+    Paste := false
+    Clipboard: string = ""
+    ClipboardRequest: int = 0
+    ClipboardMode: string = ""
+    ClipboardDocument: int = 0
+    ClipboardRevision: int = 0
+    ClipboardGraph: string = ""
+    ClipboardSelection: int[] = []
+    PortCompletions: DocumentCompletion[] = []
+    CompletionStart: int = -1
+    CompletionEnd: int = -1
+    CompletionPort: int = -1
+    CompletionRevision: int = -1
+    ViewDocuments: int[] = []
+    ViewGraphs: string[] = []
+    ViewX: float[] = []
+    ViewY: float[] = []
+    ViewZoom: float[] = []
+    ViewActive: int = -1
+    ViewReplace: int = 0
+    ObservationsOpen := true
+    PortFields: DocumentPortField[] = []
+    PortChoices: DocumentPortChoice[] = []
+    PortFieldEnums: bool[] = []
+    PortFieldStrings: bool[] = []
+    PortFieldTexts: string[] = []
+    PortFieldsFirst: int = 0
+    PortFieldsTotal: int = 0
+    FieldOperation := false
+    FieldPath: string = ""
+    FieldText: string = ""
+    FieldPort: int = -1
+    PortColor: string = ""
+    PortColorWidth: int = 0
+    Members: DocumentSourceMember[] = []
+    MembersFirst: int = 0
+    MembersTotal: int = 0
+    MembersQuery: string = ""
+    MembersOpen := false
+    MemberSelected: int = -1
+    DeclarationName: string = "Value"
+    DeclarationType: string = "float"
+    DeclarationValue: string = "0.0"
+    Bindings: DocumentSourceBinding[] = []
+    BindingsFirst: int = 0
+    BindingsTotal: int = 0
+    BindingsQuery: string = ""
+    BindingKind: int = 0
+    BindingSymbol: string = "0"
+    BindingComponent: string = "0"
+    BindingMember: string = "0"
+    DebugHandle: int = 0
+    DebugSession: int = 0
+    DebugRetired := false
+    DebugValues: struct<"WorkspaceDebugRow">[] = []
+    Observation: string = "Select a value port to inspect its retained observation."
+    ObservationAvailable := false
+    ObservationSource: string = ""
+    ObservationDocument: int = 0
+    ObservationRevision: int = -1
+    ObservationHandle: int = 0
+    ObservationLineage := false
+    FoldedNodes: bool[] = []
+    FlowNodes: bool[] = []
+    FoldedInputs: int[] = []
+    HistoryDocuments: int[] = []
+    HistoryGraphs: string[] = []
+    HistoryNodes: string[] = []
+    HistoryCursor: int = -1
+    HistoryPending := false
+    HistoryDocument: int = 0
+    HistoryGraph: string = "0"
+    HistoryNode: string = "0"
+    MemberOperation: int = -1
+    PendingBreakpointNodes: string[] = []
+    NodeFlagKind: int = -1
+    NodeFlag := false
+    NativeMemberSelected: int = -1
+    NativeMembersFirst: int = 0
+    ShownMembers: int[] = []
+    StructuredMembers: DocumentMember[] = []
+    CallablePins: DocumentMember[] = []
+    CallableTypes: DocumentMember[] = []
+    ShownPins: int[] = []
+    ShownTypes: int[] = []
+    PinsFirst: int = 0
+    TypeFirst: int = 0
+    TypePickerOpen := false
+    TypeQuery: string = ""
+    PinSelected: int = -1
+    PinName: string = "Value"
+    PinType: string = "float"
+    PinValue: string = "0.0"
+    PinStorage: int = 10
+    PinContainer: int = 0
+    PinResult := false
+    MemberRequest: DocumentMemberEdit = { operation: 0, storage: 0, container: 0, index: 0, target: 0, graph: "0", id: "0", name: "", type: "", value: "", result: false, flag: false }
+    ScopeOperation: int = -1
+    ScopeName: string = "Function"
+    GraphOperation: int = 0
+    GraphNode: string = "0"
+    GraphPin: string = "0"
+    FromNode: string = "0"
+    FromPin: string = "0"
+    PlaceX: float = 0.0
+    PlaceY: float = 0.0
+    FilterChoices :: fn() {
+        VisibleChoices = []
+        for choice in Choices {
+            if Query == "" || text_contains(Query, choice.label, true) || text_contains(Query, choice.query, true) || text_contains(Query, choice.category, true) {
+                VisibleChoices = array_add(VisibleChoices, choice)
+            }
+        }
+        return
+    }
+
+    Notice :: fn(Message: string) {
+        Notice = Message
+        await set_ui_data(Name: "graph.notice", Value: Message)
+        return
+    }
+    Current :: pure fn(Document: int, Revision: int) -> bool {
+        return Document == self.Document && Revision == self.Revision && Document != 0 && !Busy
+    }
+    NodeIndex :: pure fn(Graph: string, Node: string) -> int {
+        index: int = 0
+        foreach (item in Nodes) {
+            if text_equal(item.graph, Graph) && text_equal(item.node, Node) {
+                return index
+            }
+            index += 1
+        }
+        return -1
+    }
+    PortIndex :: pure fn(Graph: string, Node: string, Pin: string, Output: bool) -> int {
+        index: int = 0
+        foreach (item in Ports) {
+            if text_equal(item.graph, Graph) && text_equal(item.node, Node) && text_equal(item.pin, Pin) && item.output == Output {
+                return index
+            }
+            index += 1
+        }
+        return -1
+    }
+    IsSelected :: pure fn(Index: int) -> bool {
+        for selected in Selection {
+            if selected == Index {
+                return true
+            }
+        }
+        return false
+    }
+    Select :: fn(Index: int, Toggle: bool) {
+        if Toggle {
+            next: int[] = []
+            exists := false
+            for selected in Selection {
+                if selected == Index {
+                    exists = true
+                } else {
+                    next = array_add(next, selected)
+                }
+            }
+            if !exists {
+                next = array_add(next, Index)
+            }
+            Selection = next
+        } else {
+            Selection = [Index]
+        }
+        Selected = Index
+        LastFrameSelection = false
+        return
+    }
+    Frame :: fn(Selected: bool) {
+        width := get_ui_view_width(Element: ViewportElement())
+        height := get_ui_scroll(Element: ViewportElement())
+        if !width.Known || !height.Known || width.PixelRatio <= 0.0 || width."View Width" <= 0.0 || height."View Height" <= 0.0 {
+            Notice("The graph viewport has not been measured yet.")
+            return
+        }
+        min_x: float = 0.0
+        min_y: float = 0.0
+        max_x: float = 0.0
+        max_y: float = 0.0
+        found := false
+        i: int = 0
+        for node in Nodes {
+            if node.graph == Graph && (!Selected || IsSelected(i)) {
+                rows: int = 0
+                for port in Ports {
+                    if port.graph == node.graph && port.node == node.node {
+                        if port.output {
+                            rows += 1
+                        } else {
+                            rows += 1
+                        }
+                    }
+                }
+                x := X[i]
+                y := Y[i]
+                right := x + NodeWidths[i]
+                bottom := y + NodeHeights[i]
+                if !found {
+                    min_x = x
+                    min_y = y
+                    max_x = cast<float>(right)
+                    max_y = cast<float>(bottom)
+                    found = true
+                } else {
+                    min_x = cast<float>(min(min_x, x))
+                    min_y = cast<float>(min(min_y, y))
+                    max_x = cast<float>(max(max_x, right))
+                    max_y = cast<float>(max(max_y, bottom))
+                }
+            }
+            i += 1
+        }
+        if !found {
+            PanX = 32.0
+            PanY = 32.0
+            Zoom = 1.0
+            Publish()
+            return
+        }
+        w := width."View Width"
+        h := height."View Height"
+        Zoom = cast<float>(clamp(min(w * 0.9 / max(1.0, max_x - min_x), h * 0.9 / max(1.0, max_y - min_y)), 0.1, 1.0))
+        PanX = cast<float>((w - (max_x - min_x) * Zoom) * 0.5 - min_x * Zoom)
+        PanY = cast<float>((h - (max_y - min_y) * Zoom) * 0.5 - min_y * Zoom)
+        LastFrameSelection = Selected
+        Publish()
+        return
+    }
+    GlyphLight :: pure fn() -> bool {
+        theme := read_saved_number("studio.preference.theme", 0).Number
+        return theme == 2 || theme == 4 || theme == 8 || theme == 9 || theme == 15 || theme == 16 || (theme == 0 && GraphSystemLight)
+    }
+    PinColor :: pure fn(Port: DocumentPort) -> string {
+        if Port.flow {
+            if GlyphLight() { return "#18181bff" }
+            return "#ffffffff"
+        }
+        color := "#6694ebff"
+        switch Port.type {
+            case "bool": { color = "#f26e7aff" }
+            case "int": { color = "#03c46eff" }
+            case "float": { color = "#a6d963ff" }
+            case "double": { color = "#6bad38ff" }
+            case "name": { color = "#ba91e6ff" }
+            case "uint64": { color = "#69c46eff" }
+            case "int64": { color = "#69c46eff" }
+            case "string": { color = "#e87abaff" }
+            case "const char *": { color = "#e87abaff" }
+        }
+        if GlyphLight() {
+            switch Port.type {
+                case "bool": { return "#c25862ff" }
+                case "int": { return "#029d58ff" }
+                case "float": { return "#85ae4fff" }
+                case "double": { return "#568a2dff" }
+                case "name": { return "#9574b8ff" }
+                case "string": { return "#ba6295ff" }
+                case "const char *": { return "#ba6295ff" }
+                case: { return "#5276bcff" }
+            }
+        }
+        return color
+    }
+    EnterCall :: fn() {
+        if Document <= 0 || Selected < 0 || Selected >= length(Nodes) || Busy || GraphTextEditing { return }
+        node := Nodes[Selected]
+        if node.called_graph == "0" { Notice("This call has no local source graph to enter."); return }
+        if length(CallerGraphs) >= 64 { Notice("Call navigation is limited to 64 nested graphs."); return }
+        label := "Event Graph"
+        for scope in Scopes { if scope.graph == Graph && scope.name != "" { label = scope.name } }
+        CallerGraphs = array_add(CallerGraphs, Graph)
+        CallerNodes = array_add(CallerNodes, node.node)
+        CallerLabels = array_add(CallerLabels, label)
+        ViewState()
+        Graph = node.called_graph
+        Selection = []
+        Selected = -1
+        Port = -1
+        Wire = -1
+        SelectedEdge = -1
+        ViewState()
+        Frame(false)
+        Publish()
+    }
+    Caller :: fn(Index: int) {
+        if Index < 0 || Index >= length(CallerGraphs) || GraphTextEditing { return }
+        ViewState()
+        Graph = CallerGraphs[Index]
+        index := NodeIndex(Graph, CallerNodes[Index])
+        graphs: string[] = []
+        nodes: string[] = []
+        labels: string[] = []
+        previous: int = 0
+        while previous < Index {
+            graphs = array_add(graphs, CallerGraphs[previous])
+            nodes = array_add(nodes, CallerNodes[previous])
+            labels = array_add(labels, CallerLabels[previous])
+            previous += 1
+        }
+        CallerGraphs = graphs
+        CallerNodes = nodes
+        CallerLabels = labels
+        if index >= 0 { Select(index, false) }
+        ViewState()
+        Publish()
+    }
+    on StudioGraphEnterCall { EnterCall() }
+    on StudioGraphLeaveCall { Caller(length(CallerGraphs) - 1) }
+    ViewportElement :: pure fn() -> string { return format_text("#studio-graph-viewport-{}", GraphPane) }
+    on StudioPaneFocus {
+        if event.Context == "graph" { GraphPane = event.Area }
+    }
+    MetricWidth :: pure fn(Text: string, Size: float, Weight: int) -> float {
+        return measure_ui_text(ViewportElement(), Text, Size, Weight).Width
+    }
+    MatchesNode :: pure fn(Port: DocumentPort, Index: int) -> bool {
+        return Port.graph == Nodes[Index].graph && Port.node == Nodes[Index].node && Port.visible
+    }
+    HeaderPort :: pure fn(Index: int, Output: bool) -> int {
+        if !TitleFlow || NodeForms[Index] == 2 {
+            return -1
+        }
+        index: int = 0
+        for port in Ports {
+            if MatchesNode(port, Index) && port.output == Output && port.flow {
+                if port.label == "Exec" || port.label == "Then" || port.label == "In" || port.label == "Out" {
+                    return index
+                }
+                return -1
+            }
+            index += 1
+        }
+        return -1
+    }
+    IsRowPort :: pure fn(PortIndex: int, NodeIndex: int) -> bool {
+        port := Ports[PortIndex]
+        if !MatchesNode(port, NodeIndex) {
+            return false
+        }
+        return HeaderPort(NodeIndex, port.output) != PortIndex
+    }
+    FlowRows :: pure fn(Index: int) -> int {
+        inputs: int = 0
+        outputs: int = 0
+        p: int = 0
+        for port in Ports {
+            if IsRowPort(p, Index) && port.flow {
+                if port.output { outputs += 1 } else { inputs += 1 }
+            }
+            p += 1
+        }
+        return cast<int>(max(inputs, outputs))
+    }
+    RowCount :: pure fn(Index: int) -> int {
+        rows := FlowRows(Index)
+        p: int = 0
+        for port in Ports {
+            if IsRowPort(p, Index) && !port.flow { rows += 1 }
+            p += 1
+        }
+        return rows
+    }
+    PortRow :: pure fn(Index: int, Owner: int) -> int {
+        selected := Ports[Index]
+        order: int = 0
+        outputs: int = 0
+        p: int = 0
+        for port in Ports {
+            if IsRowPort(p, Owner) && port.flow == selected.flow {
+                if port.output == selected.output && port.index < selected.index { order += 1 }
+                if port.output && !port.flow { outputs += 1 }
+            }
+            p += 1
+        }
+        if selected.flow || NodeForms[Owner] == 2 { return order }
+        if selected.output { return FlowRows(Owner) + order }
+        return FlowRows(Owner) + outputs + order
+    }
+    CompactForm :: pure fn(Index: int) -> int {
+        node := Nodes[Index]
+        if !CompactNodes || node.call || node.kind == 2 { return 0 }
+        inputs: int = 0
+        outputs: int = 0
+        for port in Ports {
+            if MatchesNode(port, Index) {
+                if port.flow { return 0 }
+                if port.output {
+                    if port.named || port.editable || node.kind == 5 { return 0 }
+                    outputs += 1
+                } else { inputs += 1 }
+            }
+        }
+        if outputs != 1 { return 0 }
+        if inputs == 0 { return 1 }
+        if node.symbol != "" { return 2 }
+        return 0
+    }
+    EditorWidth :: pure fn(Port: DocumentPort) -> float {
+        if Port.flow { return 0.0 }
+        if Port.output && !Port.editable && !Port.named { return 0.0 }
+        if Port.connected || Port.bound { return max(96.0, MetricWidth(Port.source, 12.0, 400) + 14.0) }
+        if Port.type == "bool" { return 16.0 }
+        if Port.color { return 58.0 }
+        if Port.vector_width > 0 { return 58.0 * cast<float>(Port.vector_width) + 24.0 }
+        if Port.type == "float" || Port.type == "double" || Port.type == "int" { return 64.0 }
+        return 96.0
+    }
+    SourceBody :: pure fn(Index: int) -> bool {
+        node := Nodes[Index]
+        if node.source == "" || NodeForms[Index] != 0 { return false }
+        if node.call { return false }
+        return node.operation != 1 && node.operation != 2 && node.operation != 6 && node.operation != 7 && node.operation != 8 && node.operation != 12
+    }
+    SourceLines :: pure fn(Source: string, Width: float) -> string[] {
+        lines: string[] = []
+        size := text_cursor(Source, 0, "document", 1, 0).Offset
+        start: int = 0
+        fits: int = -1
+        index: int = 0
+        while index < size && length(lines) < 11 {
+            next := text_cursor(Source, index, "character", 1, 0).Offset
+            part := text_slice(Source, index, next).Text
+            if part == " " || text_contains(Text: ",+-*/%^&|<>=", Query: part, false) || next == size {
+                end := next
+                if part == " " { end = index }
+                line := text_slice(Source, start, end).Text
+                if fits > start && MetricWidth(line, 11.0, 400) > Width {
+                    lines = array_add(lines, text_slice(Source, start, fits).Text)
+                    start = fits
+                    if text_slice(Source, fits, fits + 1).Text == " " { start += 1 }
+                    fits = -1
+                    continue
+                }
+                fits = end
+            }
+            index = next
+        }
+        lines = array_add(lines, text_slice(Source, start, size).Text)
+        return lines
+    }
+    BuildMetrics :: fn() {
+        MetricProbeKnown = measure_ui_text(ViewportElement(), "", 12.0, 400).Known
+        if !MetricProbeKnown { return }
+        WireStyle = cast<int>(read_saved_number("studio.preference.wires", 0).Number)
+        CompactNodes = read_saved_number("studio.preference.nodes.compact", 1).Number == 1
+        TitleFlow = read_saved_number("studio.preference.nodes.titleFlow", 1).Number == 1
+        forms: int[] = []
+        index: int = 0
+        for node in Nodes { forms = array_add(forms, CompactForm(index)); index += 1 }
+        NodeForms = forms
+        widths: float[] = []
+        heights: float[] = []
+        code_heights: float[] = []
+        index = 0
+        for node in Nodes {
+            title := node.label
+            if node.call && node.reference_name != "" { title = node.reference_name }
+            if forms[index] == 0 && node.category == "expression" { title = "Expression" }
+            if forms[index] == 1 && text_slice(title, 0, 4).Text == "Get " {
+                title = text_slice(title, 4, text_cursor(title, 0, "document", 1, 0).Offset).Text
+            }
+            width: float = MetricWidth(title, 12.0, 600) + 20.0
+            if node.kind == 1 || node.kind == 2 || node.kind == 3 || node.kind == 4 || node.category == "expression" || node.call { width += 20.0 }
+            label: float = 0.0
+            value: float = 0.0
+            exec_in: float = 0.0
+            exec_out: float = 0.0
+            p: int = 0
+            for port in Ports {
+                if IsRowPort(p, index) {
+                    label_width := MetricWidth(port.label, 12.0, 400)
+                    value_width := EditorWidth(port)
+                    if port.flow {
+                        if port.output { exec_out = max(exec_out, 10.0 + label_width) }
+                        else { exec_in = max(exec_in, 10.0 + label_width) }
+                    } else if !port.output {
+                        label = max(label, label_width)
+                        value = max(value, value_width)
+                    } else { width = max(width, 20.0 + label_width + value_width + 6.0) }
+                }
+                p += 1
+            }
+            code: string[] = []
+            code_height: float = 0.0
+            height: float = 26.0
+            if forms[index] == 1 {
+                width = ceil(width + 8.0)
+            } else if forms[index] == 2 {
+                width = ceil(max(56.0, 2.0 + 10.0 + value + 12.0 + MetricWidth(node.symbol, 18.0, 700) + 10.0))
+                inputs: int = 0
+                for port in Ports { if MatchesNode(port, index) && !port.output { inputs += 1 } }
+                height = 10.0 + cast<float>(max(1, inputs)) * 22.0
+            } else {
+                width = max(width, exec_in + exec_out + 12.0)
+                width = max(width, 20.0 + label + value + 6.0)
+                if SourceBody(index) { width = max(width, MetricWidth(node.source, 11.0, 400) + 48.0) }
+                width = ceil(clamp(width + 2.0, 120.0, 360.0))
+                if SourceBody(index) {
+                    code = SourceLines(node.source, width - 50.0)
+                    code_height = 12.0 + cast<float>(length(code)) * 16.0
+                }
+                rows := RowCount(index)
+                if rows > 0 || code_height > 0.0 { height = 36.0 + code_height + cast<float>(rows) * 22.0 }
+            }
+            widths = array_add(widths, width)
+            heights = array_add(heights, height)
+            code_heights = array_add(code_heights, code_height)
+            base := format_text("graph.nodes.{}", index)
+            await set_ui_data(Name: format_text("{}.title", base), Value: title)
+            await set_ui_data(Name: format_text("{}.form", base), Value: forms[index])
+            await set_ui_data(Name: format_text("{}.symbol", base), Value: node.symbol)
+            await set_ui_data(Name: format_text("{}.symbolStyle", base), Value: format_text("left: {}dp;", 10.0 + value + 6.0))
+            await set_ui_data(Name: format_text("{}.inputStyle", base), Value: format_text("width: {}dp; right: auto;", 10.0 + value))
+            await set_ui_data(Name: format_text("{}.codeLines", base), Value: code)
+            await set_ui_data(Name: format_text("{}.headerIn", base), Value: HeaderPort(index, false))
+            await set_ui_data(Name: format_text("{}.headerOut", base), Value: HeaderPort(index, true))
+            index += 1
+        }
+        if MetricProbeKnown {
+            NodeWidths = widths
+            NodeHeights = heights
+            NodeCodeHeights = code_heights
+            MetricsReady = true
+        }
+        return
+    }
+    PortY :: pure fn(Index: int) -> float {
+        if Index < 0 || Index >= length(Ports) { return 40.0 }
+        port := Ports[Index]
+        owner_index := NodeIndex(port.graph, port.node)
+        if owner_index < 0 { return 40.0 }
+        if NodeForms[owner_index] == 1 || HeaderPort(owner_index, port.output) == Index { return 13.0 }
+        if NodeForms[owner_index] == 2 {
+            if port.output { return NodeHeights[owner_index] * 0.5 }
+            return 16.0 + cast<float>(PortRow(Index, owner_index)) * 22.0
+        }
+        return 40.0 + NodeCodeHeights[owner_index] + cast<float>(PortRow(Index, owner_index)) * 22.0
+    }
+    ViewState :: fn() {
+        if ViewActive >= 0 {
+            ViewX[ViewActive] = PanX
+            ViewY[ViewActive] = PanY
+            ViewZoom[ViewActive] = Zoom
+            if ViewDocuments[ViewActive] == Document && ViewGraphs[ViewActive] == Graph {
+                return
+            }
+        }
+        ViewActive = -1
+        if Document <= 0 {
+            return
+        }
+        index := cast<int>(0)
+        for document in ViewDocuments {
+            if document == Document && ViewGraphs[index] == Graph {
+                ViewActive = index
+            }
+            index += 1
+        }
+        if ViewActive >= 0 {
+            PanX = ViewX[ViewActive]
+            PanY = ViewY[ViewActive]
+            Zoom = ViewZoom[ViewActive]
+            return
+        }
+        PanX = 32.0
+        PanY = 32.0
+        Zoom = 1.0
+        if length(ViewDocuments) < 256 {
+            ViewActive = length(ViewDocuments)
+            ViewDocuments = array_add(ViewDocuments, Document)
+            ViewGraphs = array_add(ViewGraphs, Graph)
+            ViewX = array_add(ViewX, PanX)
+            ViewY = array_add(ViewY, PanY)
+            ViewZoom = array_add(ViewZoom, Zoom)
+        } else {
+            ViewActive = ViewReplace
+            ViewReplace = (ViewReplace + 1) % 256
+            ViewDocuments[ViewActive] = Document
+            ViewGraphs[ViewActive] = Graph
+            ViewX[ViewActive] = PanX
+            ViewY[ViewActive] = PanY
+            ViewZoom[ViewActive] = Zoom
+        }
+        return
+    }
+    Remember :: fn() {
+        if HistoryPending || Document <= 0 || Graph == "0" || length(Scopes) == 0 {
+            return
+        }
+        node := "0";
+        if Selected >= 0 && Selected < length(Nodes) {
+            node = Nodes[Selected].node
+        }
+        if HistoryCursor >= 0 && HistoryCursor < length(HistoryDocuments) && HistoryDocuments[HistoryCursor] == Document && HistoryGraphs[HistoryCursor] == Graph {
+            HistoryNodes[HistoryCursor] = node;
+            return
+        }
+        docs: int[] = [];
+        graphs: string[] = [];
+        nodes: string[] = []
+        index := cast<int>(0)
+        while index <= HistoryCursor && index < length(HistoryDocuments) {
+            if length(docs) < 63 {
+                docs = array_add(docs, HistoryDocuments[index]);
+                graphs = array_add(graphs, HistoryGraphs[index]);
+                nodes = array_add(nodes, HistoryNodes[index])
+            }
+            index += 1
+        }
+        if length(docs) == 63 {
+            shiftedDocs: int[] = [];
+            shiftedGraphs: string[] = [];
+            shiftedNodes: string[] = []
+            index = 1
+            while index < length(docs) {
+                shiftedDocs = array_add(shiftedDocs, docs[index]);
+                shiftedGraphs = array_add(shiftedGraphs, graphs[index]);
+                shiftedNodes = array_add(shiftedNodes, nodes[index]);
+                index += 1
+            }
+            docs = shiftedDocs;
+            graphs = shiftedGraphs;
+            nodes = shiftedNodes
+        }
+        HistoryDocuments = array_add(docs, Document);
+        HistoryGraphs = array_add(graphs, Graph);
+        HistoryNodes = array_add(nodes, node);
+        HistoryCursor = length(HistoryDocuments) - 1
+        return
+    }
+    ApplyHistory :: fn() {
+        if !HistoryPending || HistoryDocument != Document {
+            return
+        }
+        exists := false;
+        for scope in Scopes {
+            if scope.graph == HistoryGraph {
+                exists = true
+            }
+        }
+        if !exists {
+            HistoryPending = false;
+            Notice("That graph no longer exists in the current document.");
+            return
+        }
+        Graph = HistoryGraph
+        await Refresh()
+        index := NodeIndex(Graph, HistoryNode)
+        if index >= 0 {
+            Select(index, false);
+            Frame(true)
+        }
+        HistoryPending = false
+        send_event<"StudioPanelSelected">(self, "main", "graph")
+        send_event<"StudioPaneFocus">(self, "main", "graph", false)
+        Publish();
+        return
+    }
+    NavigateHistory :: fn(Direction: int) {
+        target := HistoryCursor + Direction
+        if target < 0 || target >= length(HistoryDocuments) {
+            return
+        }
+        current := await workspace_document_read(HistoryDocuments[target])
+        if !current.Ok {
+            Notice("That navigation document has been closed.");
+            return
+        }
+        HistoryCursor = target;
+        HistoryDocument = HistoryDocuments[target];
+        HistoryGraph = HistoryGraphs[target];
+        HistoryNode = HistoryNodes[target];
+        HistoryPending = true
+        if HistoryDocument == Document {
+            ApplyHistory()
+        } else if current.Path != "" {
+            send_event<"StudioDocumentCommand">(self, "open", current.Path)
+        } else {
+            HistoryPending = false;
+            Notice("An unnamed closed document cannot be reopened from navigation history.")
+        }
+        return
+    }
+    Folded :: pure fn(Index: int) -> bool {
+        return Index >= 0 && Index < length(FoldedNodes) && FoldedNodes[Index]
+    }
+    SpatialNode :: fn(Dx: float, Dy: float, Extend: bool) {
+        if Selected < 0 || Selected >= length(Nodes) {
+            NextNode(1, Extend);
+            return
+        }
+        best := cast<int>(-1);
+        score := 1.0e30
+        index := cast<int>(0)
+        for node in Nodes {
+            if node.graph == Graph && index != Selected && !Folded(index) {
+                x := X[index] - X[Selected];
+                y := Y[index] - Y[Selected]
+                ahead := x * Dx + y * Dy
+                if ahead > 0.01 {
+                    cross := abs(x * Dy - y * Dx)
+                    candidate := ahead + cross * 3.0
+                    edgeIndex := cast<int>(0)
+                    for edge in Edges {
+                        if (EdgeFrom[edgeIndex] == Selected && EdgeTo[edgeIndex] == index) || (EdgeTo[edgeIndex] == Selected && EdgeFrom[edgeIndex] == index) {
+                            candidate *= 0.35
+                        }
+                        edgeIndex += 1
+                    }
+                    if candidate < score {
+                        score = candidate;
+                        best = index
+                    }
+                }
+            }
+            index += 1
+        }
+        if best >= 0 {
+            if Extend {
+                if !IsSelected(best) {
+                    Selection = array_add(Selection, best)
+                }
+                Selected = best
+            } else {
+                Select(best, false)
+            }
+            Port = -1;
+            Wire = -1;
+            SelectedEdge = -1;
+            Frame(true);
+            Publish()
+        }
+        return
+    }
+    Linked :: fn(Arrange: bool) {
+        if Selected < 0 || Selected >= length(Nodes) {
+            return
+        }
+        connected := [Selected]
+        cursor := cast<int>(0)
+        while cursor < length(connected) && length(connected) <= 256 {
+            edgeIndex := cast<int>(0)
+            for edge in Edges {
+                if edge.graph == Graph {
+                    other := cast<int>(-1)
+                    if EdgeFrom[edgeIndex] == connected[cursor] {
+                        other = EdgeTo[edgeIndex]
+                    }
+                    if EdgeTo[edgeIndex] == connected[cursor] {
+                        other = EdgeFrom[edgeIndex]
+                    }
+                    if other >= 0 {
+                        found := false;
+                        for selected in connected {
+                            if selected == other {
+                                found = true
+                            }
+                        }
+                        if !found {
+                            connected = array_add(connected, other)
+                        }
+                    }
+                }
+                edgeIndex += 1
+            }
+            cursor += 1
+        }
+        if length(connected) > 256 {
+            Notice("Connected selection exceeds the 256-node edit limit.");
+            return
+        }
+        Selection = connected
+        if Arrange {
+            rank := cast<int>(0)
+            for selected in Selection {
+                X[selected] = X[Selected] + cast<float>(rank % 4) * 272.0;
+                Y[selected] = Y[Selected] + cast<float>(rank / 4) * 180.0;
+                rank += 1
+            }
+            SelectionOperation = 2;
+            BeginEdit()
+        } else {
+            Frame(true);
+            Publish()
+        }
+        return
+    }
+    NextNode :: fn(Direction: int, Extend: bool) {
+        count := length(Nodes)
+        if count == 0 {
+            return
+        }
+        index := Selected
+        visited := cast<int>(0)
+        while visited < count {
+            index += Direction
+            if index >= count {
+                index = 0
+            }
+            if index < 0 {
+                index = count - 1
+            }
+            if Nodes[index].graph == Graph {
+                if Extend {
+                    if !IsSelected(index) {
+                        Selection = array_add(Selection, index)
+                    }
+                    Selected = index
+                } else {
+                    Select(index, false)
+                }
+                Port = -1
+                Wire = -1
+                SelectedEdge = -1
+                Frame(true)
+                Publish()
+                return
+            }
+            visited += 1
+        }
+        return
+    }
+    Publish :: fn() {
+        ViewState()
+        Remember()
+        await set_ui_data(Name: "graph.canBack", Value: HistoryCursor > 0)
+        await set_ui_data(Name: "graph.canForward", Value: HistoryCursor + 1 < length(HistoryDocuments))
+        send_event<"StudioGraphCommandState">(self, Document > 0 && !Busy, Selected >= 0 && Selected < length(Nodes), Document > 0 && !Busy && (!Collaborative || SharedWritable), HistoryCursor > 0, HistoryCursor + 1 < length(HistoryDocuments))
+        await set_ui_data(Name: "graph.document", Value: Document)
+        await set_ui_data(Name: "graph.revision", Value: Revision)
+        await set_ui_data(Name: "graph.selected", Value: Selected)
+        await set_ui_data(Name: "graph.port", Value: Port)
+        await set_ui_data(Name: "graph.portCompletions", Value: PortCompletions)
+        await set_ui_data(Name: "graph.observation", Value: Observation)
+        await set_ui_data(Name: "graph.observationsOpen", Value: ObservationsOpen)
+        await set_ui_data(Name: "graph.observationAvailable", Value: ObservationAvailable)
+        await set_ui_data(Name: "graph.observationRetired", Value: DebugRetired)
+        await set_ui_data(Name: "graph.wire", Value: Wire)
+        caller_slots: int[] = []
+        caller: int = 0
+        for label in CallerLabels { caller_slots = array_add(caller_slots, caller); caller += 1 }
+        await set_ui_data(Name: "graph.callerSlots", Value: caller_slots)
+        await set_ui_data(Name: "graph.callerLabels", Value: CallerLabels)
+        await set_ui_data(Name: "graph.zoom", Value: Zoom)
+        await set_ui_data(Name: "graph.wireStyle", Value: WireStyle)
+        await set_ui_data(Name: "graph.compact", Value: CompactNodes)
+        await set_ui_data(Name: "graph.titleFlow", Value: TitleFlow)
+        if Document > 0 {
+            identity := workspace_asset_identity(Document, Revision)
+            await set_ui_data(Name: "graph.assetLabel", Value: identity.Name)
+        }
+        await set_ui_data(Name: "graph.readonly", Value: Collaborative && !SharedWritable)
+        await set_ui_data(Name: "graph.busy", Value: Busy)
+        await set_ui_data(Name: "graph.notice", Value: Notice)
+        await set_ui_data(Name: "graph.box", Value: Box)
+        await set_ui_data(Name: "graph.boxStyle", Value: format_text("left: {}dp; top: {}dp; width: {}dp; height: {}dp;", min(BoxStartX, BoxX), min(BoxStartY, BoxY), abs(BoxX - BoxStartX), abs(BoxY - BoxStartY)))
+        await set_ui_data(Name: "graph.palette", Value: Palette)
+        await set_ui_data(Name: "graph.query", Value: Query)
+        await set_ui_data(Name: "graph.choices", Value: VisibleChoices)
+        await set_ui_data(Name: "graph.dialect", Value: Dialect)
+        scope_name := ""
+        scope_signature := ""
+        scope_disabled := false
+        scope_editable := false
+        for scope in Scopes {
+            if scope.graph == Graph {
+                scope_name = scope.name
+                scope_signature = scope.signature
+                scope_disabled = scope.disabled
+                scope_editable = scope.origin != "0"
+            }
+        }
+        await set_ui_data(Name: "graph.scopeSignature", Value: scope_signature)
+        await set_ui_data(Name: "graph.scopeDisabled", Value: scope_disabled)
+        await set_ui_data(Name: "graph.scopeEditable", Value: scope_editable)
+        await set_ui_data(Name: "graph.signatureDraft", Value: SignatureDraft)
+        await set_ui_data(Name: "graph.memberName", Value: MemberName)
+        await set_ui_data(Name: "graph.scopes", Value: Scopes)
+        await set_ui_data(Name: "graph.refactorOpen", Value: RefactorOpen)
+        await set_ui_data(Name: "graph.signatureOpen", Value: SignatureOpen)
+        await set_ui_data(Name: "graph.canUndo", Value: CanUndo)
+        await set_ui_data(Name: "graph.canRedo", Value: CanRedo)
+        await set_ui_data(Name: "graph.find", Value: Find)
+        await set_ui_data(Name: "graph.notes", Value: Notes)
+        await set_ui_data(Name: "graph.noteText", Value: NoteText)
+        await set_ui_data(Name: "graph.noteNode", Value: NoteNode)
+        await set_ui_data(Name: "graph.noteBox", Value: NoteBox)
+        await set_ui_data(Name: "graph.noteIsBox", Value: NoteIsBox)
+        await set_ui_data(Name: "graph.notesOpen", Value: NotesOpen)
+        await set_ui_data(Name: "graph.routesOpen", Value: RoutesOpen)
+        await set_ui_data(Name: "graph.routes", Value: Routes)
+        note_slots: int[] = []
+        route_slots: int[] = []
+        ni := cast<int>(0)
+        for note in Notes {
+            note_slots = array_add(note_slots, ni)
+            width := 216.0
+            height := 24.0
+            if note.box {
+                width = note.width
+                height = note.height
+            }
+            await set_ui_data(Name: format_text("graph.noteStyle.{}", ni), Value: format_text("left: {}dp; top: {}dp; width: {}dp; height: {}dp;", PanX + note.x * Zoom, PanY + (note.y - height) * Zoom, width * Zoom, height * Zoom))
+            if note.box {
+                style := format_text("left: {}dp; top: {}dp; width: {}dp; height: {}dp;", PanX + note.x * Zoom, PanY + note.y * Zoom, width * Zoom, height * Zoom)
+                if note.color != 0 {
+                    packed := query_json(format_text("{}", note.color), "")
+                    color := packed_color_to_hex(packed.Number)
+                    if color.Valid {
+                        rgb := text_slice(color.Text, 0, 7)
+                        style = format_text("{} background-color: {}1f; border-color: {}80;", style, rgb.Text, rgb.Text)
+                    }
+                }
+                await set_ui_data(Name: format_text("graph.noteStyle.{}", ni), Value: style)
+            }
+            ni += 1
+        }
+        ni = 0
+        for route in Routes {
+            route_slots = array_add(route_slots, ni)
+            x := route.x
+            y := route.y
+            if RouteDrag && ni == RouteSelected {
+                x = RouteX
+                y = RouteY
+            }
+            await set_ui_data(Name: format_text("graph.routeStyle.{}", ni), Value: format_text("left: {}dp; top: {}dp;", PanX + x * Zoom - 4.0, PanY + y * Zoom - 4.0))
+            ni += 1
+        }
+        await set_ui_data(Name: "graph.noteSlots", Value: note_slots)
+        await set_ui_data(Name: "graph.routeSlots", Value: route_slots)
+        await set_ui_data(Name: "graph.routeSelected", Value: RouteSelected)
+        await set_ui_data(Name: "graph.noteHidden", Value: NoteHidden)
+        packed := query_json(format_text("{}", NoteColor), "")
+        swatch := packed_color_to_hex(packed.Number)
+        await set_ui_data(Name: "graph.noteColor", Value: swatch.Text)
+        await set_ui_data(Name: "graph.noteDefaultColor", Value: NoteColor == 0)
+        await set_ui_data(Name: "graph.noteX", Value: NoteX)
+        await set_ui_data(Name: "graph.noteY", Value: NoteY)
+        await set_ui_data(Name: "graph.noteWidth", Value: NoteWidth)
+        await set_ui_data(Name: "graph.noteHeight", Value: NoteHeight)
+        await set_ui_data(Name: "graph.selectedEdge", Value: SelectedEdge)
+        await set_ui_data(Name: "graph.routeX", Value: RouteX)
+        await set_ui_data(Name: "graph.routeY", Value: RouteY)
+        await set_ui_data(Name: "graph.clipboardBusy", Value: ClipboardRequest > 0)
+        await set_ui_data(Name: "graph.scopeName", Value: scope_name)
+        await set_ui_data(Name: "graph.newScopeName", Value: ScopeName)
+        send_event<"StudioGraphPublishCanvas">(self, Document, Revision)
+        send_event<"StudioGraphPublishProperties">(self, Document, Revision)
+        return
+    }
+    PublishCanvas :: fn() {
+        if !MetricsReady { BuildMetrics() }
+        viewport_width := get_ui_view_width(Element: ViewportElement())
+        viewport_height := get_ui_scroll(Element: ViewportElement())
+        slots: int[] = []
+        graphs: string[] = []
+        for scope in Scopes {
+            graphs = array_add(graphs, scope.graph)
+        }
+        i: int = 0
+        foreach (item in Nodes) {
+            exists := false
+            foreach (name in graphs) {
+                if text_equal(name, item.graph) {
+                    exists = true
+                }
+            }
+            if !exists {
+                graphs = array_add(graphs, item.graph)
+            }
+            if text_equal(item.graph, Graph) && !Folded(i) {
+                on_screen := true
+                if viewport_width.Known && viewport_height.Known && viewport_width."View Width" > 0.0 && viewport_height."View Height" > 0.0 {
+                    left := PanX + X[i] * Zoom
+                    top := PanY + Y[i] * Zoom
+                    on_screen = left + NodeWidths[i] * Zoom >= -200.0 && top + NodeHeights[i] * Zoom >= -200.0 && left <= viewport_width."View Width" + 200.0 && top <= viewport_height."View Height" + 200.0
+                }
+                if on_screen { slots = array_add(slots, i) }
+            }
+            base := format_text("graph.nodes.{}", i)
+            await set_ui_data(Name: format_text("{}.selected", base), Value: IsSelected(i))
+            await set_ui_data(Name: format_text("{}.label", base), Value: item.label)
+            if !MetricsReady {
+                await set_ui_data(Name: format_text("{}.title", base), Value: item.label)
+                await set_ui_data(Name: format_text("{}.form", base), Value: cast<int>(0))
+                empty_code: string[] = []
+                await set_ui_data(Name: format_text("{}.codeLines", base), Value: empty_code)
+            }
+            await set_ui_data(Name: format_text("{}.kind", base), Value: item.kind)
+            await set_ui_data(Name: format_text("{}.category", base), Value: item.category)
+            await set_ui_data(Name: format_text("{}.disabled", base), Value: item.disabled)
+            await set_ui_data(Name: format_text("{}.breakpoint", base), Value: item.breakpoint)
+            await set_ui_data(Name: format_text("{}.advanced", base), Value: item.advanced)
+            await set_ui_data(Name: format_text("{}.style", base), Value: format_text("left: {}dp; top: {}dp; width: {}dp; height: {}dp; transform: scale({}); transform-origin: 0dp 0dp;", PanX + X[i] * Zoom, PanY + Y[i] * Zoom, NodeWidths[i], NodeHeights[i], Zoom))
+            i += 1
+        }
+        await set_ui_data(Name: "graph.nodeCount", Value: length(Nodes))
+        await set_ui_data(Name: "graph.slots", Value: slots)
+        await set_ui_data(Name: "graph.empty", Value: length(Nodes) == 0)
+        await set_ui_data(Name: "graph.graphs", Value: graphs)
+        await set_ui_data(Name: "graph.active", Value: Graph)
+        await set_ui_data(Name: "graph.ports", Value: Ports)
+        glyph_background := "#2b2b2fff"
+        if GlyphLight() { glyph_background = "#fbfbfcff" }
+        await set_ui_data(Name: "graph.nodeColor", Value: glyph_background)
+        pi: int = 0
+        for port in Ports {
+            owner_index := NodeIndex(port.graph, port.node)
+            if owner_index >= 0 {
+                base := format_text("graph.ports.{}", pi)
+                await set_ui_data(Name: format_text("{}.colorText", base), Value: PinColor(port))
+                components: int[] = []
+                decoded_value := query_json(port.value_json, "")
+                if port.vector_width > 0 && port.vector_width <= 4 && decoded_value.Ok && decoded_value.Found && decoded_value.Kind == "object" {
+                    component: int = 0
+                    while component < port.vector_width {
+                        components = array_add(components, component)
+                        component += 1
+                    }
+                }
+                await set_ui_data(Name: format_text("{}.components", base), Value: components)
+                names: string[] = ["x", "y", "z", "w"]
+                values: double[] = []
+                for component in components { values = array_add(values, query_json(port.value_json, format_text("/{}", names[component])).Number) }
+                await set_ui_data(Name: format_text("{}.values", base), Value: values)
+                await set_ui_data(Name: format_text("{}.style", base), Value: format_text("top: {}dp;", PortY(pi) - 11.0))
+                await set_ui_data(Name: format_text("{}.header", base), Value: NodeForms[owner_index] == 1 || HeaderPort(owner_index, port.output) == pi)
+            }
+            pi += 1
+        }
+        await set_ui_data(Name: "graph.foldedInputs", Value: FoldedInputs)
+        wires: int[] = []
+        if WireGeneration >= 2147483647 { await Notice("Reopen this editor session to continue drawing graph wires."); return }
+        WireGeneration += 1
+        i = 0
+        foreach (edge in Edges) {
+            from := EdgeFrom[i]
+            to := EdgeTo[i]
+            out := EdgeOut[i]
+            input := EdgeIn[i]
+            if from >= 0 && to >= 0 && out >= 0 && input >= 0 && text_equal(edge.graph, Graph) && !Folded(from) && !Folded(to) {
+                wires = array_add(wires, i)
+                x1 := PanX + (X[from] + NodeWidths[from]) * Zoom
+                x2 := PanX + X[to] * Zoom
+                y1 := PanY + (Y[from] + PortY(out)) * Zoom
+                y2 := PanY + (Y[to] + PortY(input)) * Zoom
+                base := format_text("graph.edges.{}", i)
+                await set_ui_data(Name: format_text("{}.label", base), Value: format_text("{} → {}", Ports[out].label, Ports[input].label))
+                await set_ui_data(Name: format_text("{}.selected", base), Value: SelectedEdge == i)
+                await set_ui_data(Name: format_text("{}.flow", base), Value: edge.flow)
+                await set_ui_data(Name: format_text("{}.type", base), Value: Ports[out].type)
+                px := [cast<float>(x1)]
+                py := [cast<float>(y1)]
+                ri := cast<int>(0)
+                for route in Routes {
+                    if route.from_node == edge.from && route.from_pin == edge.from_pin && route.to_node == edge.to && route.to_pin == edge.to_pin {
+                        rx := route.x
+                        ry := route.y
+                        if RouteDrag && ri == RouteSelected {
+                            rx = RouteX
+                            ry = RouteY
+                        }
+                        px = array_add(px, PanX + rx * Zoom)
+                        py = array_add(py, PanY + ry * Zoom)
+                    }
+                    ri += 1
+                }
+                px = array_add(px, cast<float>(x2))
+                py = array_add(py, cast<float>(y2))
+                await send_event<"StudioGraphWirePath">(self, WireGeneration, px, py, i, WireStyle, Zoom)
+                stroke := 1.5 * Zoom
+                if edge.flow { stroke = 3.0 * Zoom }
+                if SelectedEdge == i { stroke += 1.0 * Zoom }
+                await set_ui_data(Name: format_text("{}.strokeWidth", base), Value: stroke)
+                color := PinColor(Ports[out])
+                if SelectedEdge == i { color = "#ffffffff"; if GlyphLight() { color = "#18181bff" } }
+                await set_ui_data(Name: format_text("{}.color", base), Value: color)
+            }
+            i += 1
+        }
+        await set_ui_data(Name: "graph.wires", Value: wires)
+        return
+    }
+    PublishProperties :: fn() {
+        await set_ui_data(Name: "graph.portFields", Value: PortFields)
+        await set_ui_data(Name: "graph.portChoices", Value: PortChoices)
+        await set_ui_data(Name: "graph.portFieldEnums", Value: PortFieldEnums)
+        await set_ui_data(Name: "graph.portFieldStrings", Value: PortFieldStrings)
+        await set_ui_data(Name: "graph.portFieldTexts", Value: PortFieldTexts)
+        await set_ui_data(Name: "graph.portFieldsFirst", Value: PortFieldsFirst)
+        await set_ui_data(Name: "graph.portFieldsTotal", Value: PortFieldsTotal)
+        await set_ui_data(Name: "graph.portColor", Value: PortColor)
+        await set_ui_data(Name: "graph.portColorWidth", Value: PortColorWidth)
+        await set_ui_data(Name: "graph.members", Value: Members)
+        await set_ui_data(Name: "graph.membersFirst", Value: MembersFirst)
+        await set_ui_data(Name: "graph.membersTotal", Value: MembersTotal)
+        await set_ui_data(Name: "graph.membersQuery", Value: MembersQuery)
+        await set_ui_data(Name: "graph.membersOpen", Value: MembersOpen)
+        await set_ui_data(Name: "graph.memberSelected", Value: MemberSelected)
+        await set_ui_data(Name: "graph.declarationName", Value: DeclarationName)
+        await set_ui_data(Name: "graph.declarationType", Value: DeclarationType)
+        await set_ui_data(Name: "graph.declarationValue", Value: DeclarationValue)
+        await set_ui_data(Name: "graph.bindings", Value: Bindings)
+        await set_ui_data(Name: "graph.bindingsFirst", Value: BindingsFirst)
+        await set_ui_data(Name: "graph.bindingsTotal", Value: BindingsTotal)
+        await set_ui_data(Name: "graph.bindingsQuery", Value: BindingsQuery)
+        return
+    }
+    on StudioGraphPublishCanvas {
+        if event.Document == self.Document && event.Revision == self.Revision {
+            PublishCanvas()
+        }
+    }
+    on StudioGraphPublishProperties {
+        if event.Document == self.Document && event.Revision == self.Revision {
+            PublishProperties()
+        }
+    }
+    RefreshNodeGeometry :: fn() {
+        MetricsReady = false
+        NodeWidths = []
+        NodeHeights = []
+        NodeForms = []
+        NodeCodeHeights = []
+        for node in Nodes {
+            NodeWidths = array_add(NodeWidths, cast<float>(216.0))
+            NodeHeights = array_add(NodeHeights, cast<float>(36.0))
+            NodeForms = array_add(NodeForms, cast<int>(0))
+            NodeCodeHeights = array_add(NodeCodeHeights, cast<float>(0.0))
+        }
+        index := cast<int>(0)
+        for node in Nodes {
+            rows := RowCount(index)
+            NodeHeights[index] = 26.0
+            if rows > 0 { NodeHeights[index] = 36.0 + cast<float>(rows) * 22.0 }
+            index += 1
+        }
+        await BuildMetrics()
+        X = []
+        Y = []
+        foreach (node in Nodes) {
+            X = array_add(X, node.x)
+            Y = array_add(Y, node.y)
+        }
+        i: int = 0
+        maxRows: int = 0
+        FlowNodes = []
+        foreach (item in Nodes) {
+            base := format_text("graph.nodes.{}", i)
+            inputs: int[] = []
+            outputs: int[] = []
+            hasFlow := false
+            j: int = 0
+            foreach (port in Ports) {
+                if text_equal(port.graph, item.graph) && text_equal(port.node, item.node) && port.flow {
+                    hasFlow = true
+                }
+                if text_equal(port.graph, item.graph) && text_equal(port.node, item.node) && port.visible {
+                    if port.output {
+                        outputs = array_add(outputs, j)
+                    } else {
+                        inputs = array_add(inputs, j)
+                    }
+                }
+                j += 1
+            }
+            FlowNodes = array_add(FlowNodes, hasFlow)
+            await set_ui_data(Name: format_text("{}.inputs", base), Value: inputs)
+            await set_ui_data(Name: format_text("{}.outputs", base), Value: outputs)
+            maxRows = cast<int>(max(maxRows, length(outputs) + length(inputs)))
+            i += 1
+        }
+        i = 0
+        foreach (item in Nodes) {
+            if item.x == 0.0 && item.y == 0.0 {
+                ordinal := cast<int>(0)
+                previous := cast<int>(0)
+                while previous < i {
+                    if text_equal(Nodes[previous].graph, item.graph) {
+                        ordinal += 1
+                    }
+                    previous += 1
+                }
+                X[i] = cast<float>(ordinal % 3 * 272)
+                Y[i] = cast<float>(floor(cast<double>(ordinal) / 3.0) * (96 + maxRows * 22))
+            }
+            i += 1
+        }
+    }
+    RefreshEdges :: fn() {
+        EdgeFrom = []
+        EdgeTo = []
+        EdgeOut = []
+        EdgeIn = []
+        foreach (edge in Edges) {
+            EdgeFrom = array_add(EdgeFrom, NodeIndex(edge.graph, edge.from))
+            EdgeTo = array_add(EdgeTo, NodeIndex(edge.graph, edge.to))
+            EdgeOut = array_add(EdgeOut, PortIndex(edge.graph, edge.from, edge.from_pin, true))
+            EdgeIn = array_add(EdgeIn, PortIndex(edge.graph, edge.to, edge.to_pin, false))
+        }
+        counts: int[] = [];
+        for node in Nodes {
+            counts = array_add(counts, cast<int>(0))
+        }
+        edgeIndex := cast<int>(0)
+        for edge in Edges {
+            from := EdgeFrom[edgeIndex]
+            if !edge.flow && from >= 0 {
+                counts[from] += 1
+            }
+            edgeIndex += 1
+        }
+        FoldedNodes = []
+        index := cast<int>(0)
+        for node in Nodes {
+            FoldedNodes = array_add(FoldedNodes, node.presentation == 1 && !FlowNodes[index] && counts[index] == 1);
+            index += 1
+        }
+        FoldedInputs = [];
+        for port in Ports {
+            FoldedInputs = array_add(FoldedInputs, cast<int>(-1))
+        }
+        edgeIndex = 0
+        for edge in Edges {
+            from := EdgeFrom[edgeIndex];
+            input := EdgeIn[edgeIndex]
+            if from >= 0 && input >= 0 && Folded(from) {
+                FoldedInputs[input] = from
+            }
+            edgeIndex += 1
+        }
+    }
+    Refresh :: fn() {
+        if Document == 0 {
+            return
+        }
+        snapshot := inspect_document(Document, Revision)
+        Dialect = snapshot.Dialect
+        choices := graph_node_choices(Document, Revision)
+        Choices = choices.Choices
+        scopes := document_graph_scopes(Document, Revision)
+        Scopes = scopes.Scopes
+        FilterChoices()
+        Nodes = snapshot.Nodes
+        Ports = snapshot.Ports
+        Edges = snapshot.Edges
+        await RefreshNodeGeometry()
+        await RefreshEdges()
+        exists := false
+        for scope in Scopes {
+            if text_equal(scope.graph, Graph) {
+                exists = true
+            }
+        }
+        if !exists && length(Scopes) > 0 {
+            Graph = Scopes[0].graph
+        }
+        if Graph == "" && length(Nodes) > 0 {
+            Graph = Nodes[0].graph
+        }
+        await MemberInventory()
+        await StructuredInventory()
+        Bindings = []
+        BindingsTotal = 0
+        PortFields = []
+        PortChoices = []
+        PortFieldEnums = []
+        PortFieldStrings = []
+        PortFieldTexts = []
+        PortFieldsTotal = 0
+        PortColorWidth = 0
+        presentation_current := inspect_graph_presentation(Document, Revision, Graph)
+        Notes = presentation_current.Notes
+        Routes = presentation_current.Routes
+        SelectedEdge = -1
+        Selection = []
+        Selected = -1
+        Port = -1
+        Wire = -1
+        PortCompletions = []
+        ObservationAvailable = false
+        Observation = "Select a value port to inspect its retained observation."
+        await set_ui_data(Name: "graph.diagnostics", Value: snapshot.Diagnostics)
+        await set_ui_data(Name: "graph.valid", Value: snapshot.Valid)
+        if !text_equal(snapshot.Error, "") {
+            Notice = snapshot.Error
+        } else {
+            if snapshot.Valid {
+                Notice = "Graph reflects this document revision."
+            } else {
+                Notice = "Draft contains diagnostics; validated edits can repair it."
+            }
+        }
+        Publish()
+    }
+    Release :: fn() {
+        if Lease {
+            await send_event<"StudioDocumentExternalEditComplete">(self, "graph", EditDocument, Request)
+        }
+        Lease = false
+        return
+    }
+    Failed :: fn(Message: string) {
+        PendingBreakpointNodes = []
+        await Release()
+        Busy = false
+        MemberOperation = -1
+        NodeFlagKind = -1
+        ScopeOperation = -1
+        SelectionOperation = -1
+        PresentationOperation = -1
+        Paste = false
+        PendingCreated = []
+        FieldOperation = false
+        PendingBox = "0"
+        BindingKind = 0
+        BindingSymbol = "0"
+        BindingComponent = "0"
+        BindingMember = "0"
+        LayoutOnly = false
+        if PendingState {
+            Document = PendingDocument
+            Revision = PendingRevision
+            PendingState = false
+        }
+        if Document > 0 {
+            await Refresh()
+        }
+        await Notice(Message)
+        Publish()
+        return
+    }
+    PrepareLanguageEdit :: fn() -> string {
+        if Dialect == "kdl" && ScopeOperation >= 0 {
+            request: DocumentScopeEdit = { operation: ScopeOperation, storage: 0, container: 0, index: 0, target: 0, graph: Graph, caller: Graph, name: EditName, type_name: "", value: "", result: false }
+            candidate := prepare_declarative_scope(EditDocument, EditRevision, request)
+            if !candidate.Ok { await Failed(candidate.Error); return "" }
+            return candidate.Text
+        }
+        if Dialect == "kdl" {
+            request: DocumentGraphEdit = { operation: GraphOperation, graph: Graph, node: GraphNode, pin: GraphPin, from_node: FromNode, from_pin: FromPin, type: EditCapability, value: EditText, x: PlaceX, y: PlaceY, placed: true }
+            candidate := prepare_declarative_graph(EditDocument, EditRevision, request)
+            if !candidate.Ok { await Failed(candidate.Error); return "" }
+            return candidate.Text
+        }
+        request: DocumentSourceEdit = { kind: EditKind, result: EditResult, binding: BindingKind, origin: EditOrigin, producer: EditProducer, previous: "0", capability: "0", symbol: BindingSymbol, component: BindingComponent, member: BindingMember, value: EditText, expression: EditText, fragment: EditText, capability_name: EditCapability, name: EditName, reference: "", field: "", signature: EditSignature, disabled: EditDisabled }
+        selection: string[] = []
+        if EditKind == 11 || EditKind == 6 || EditKind == 30 || EditKind == 31 || EditKind == 15 || EditKind == 16 || EditKind == 17 {
+            for selected in Selection { selection = array_add(selection, Nodes[selected].origin) }
+        }
+        candidate := prepare_source_graph(EditDocument, EditRevision, request, selection)
+        if !candidate.Ok { await Failed(candidate.Error); return "" }
+        CandidateMetadata = candidate.Metadata
+        return candidate.Text
+    }
+    Prepare :: fn() {
+        current := await workspace_document_read(EditDocument)
+        if !current.Ok || current.Revision != EditRevision {
+            Failed("The document changed. Refresh the graph before editing.")
+            return
+        }
+        companion := cast<int>(0)
+        companion_revision := cast<int>(-1)
+        companion_path := ""
+        if Dialect != "kdl" && current.Path != "" {
+            companion_path = format_text("{}.meta", current.Path)
+            presence := await workspace_document_path(companion_path)
+            if !presence.Ok {
+                Failed(presence.Error)
+                return
+            }
+            companion = presence.Document
+            if presence.Exists {
+                if companion == 0 {
+                    opened := await workspace_document_open(companion_path)
+                    if !opened.Ok {
+                        Failed(opened.Error)
+                        return
+                    }
+                    companion = opened.Document
+                }
+                sidecar := await workspace_document_read(companion)
+                if !sidecar.Ok {
+                    Failed(sidecar.Error)
+                    return
+                }
+                companion_revision = sidecar.Revision
+            }
+        }
+        text := ""
+        CandidateMetadata = ""
+        if MemberOperation >= 0 {
+            candidate := prepare_graph_member(EditDocument, EditRevision, MemberRequest)
+            if !candidate.Ok {
+                Failed(candidate.Error);
+                return
+            }
+            text = candidate.Text
+            CandidateMetadata = candidate.Metadata
+        } else if NodeFlagKind >= 0 {
+            ids: string[] = []
+            for selected in Selection {
+                if selected >= 0 && selected < length(Nodes) && Nodes[selected].graph == Graph {
+                    ids = array_add(ids, Nodes[selected].node)
+                }
+            }
+            if NodeFlagKind == 1 {
+                PendingBreakpointNodes = ids
+            }
+            PendingCreated = ids
+            candidate := prepare_graph_node_flag(EditDocument, EditRevision, Graph, ids, NodeFlagKind, NodeFlag)
+            if !candidate.Ok {
+                Failed(candidate.Error);
+                return
+            }
+            text = candidate.Text
+            CandidateMetadata = candidate.Metadata
+        } else if FieldOperation {
+            if FieldPort < 0 || FieldPort >= length(Ports) {
+                Failed("Select an editable field.")
+                return
+            }
+            port := Ports[FieldPort]
+            candidate := prepare_graph_port_field(EditDocument, EditRevision, port.graph, port.node, port.pin, port.output, FieldPath, FieldText)
+            if !candidate.Ok {
+                Failed(candidate.Error)
+                return
+            }
+            text = candidate.Text
+        } else {
+            if SelectionOperation >= 0 {
+                nodes: string[] = []
+                xs: float[] = []
+                ys: float[] = []
+                for selected in Selection {
+                    nodes = array_add(nodes, Nodes[selected].node)
+                    xs = array_add(xs, X[selected])
+                    ys = array_add(ys, Y[selected])
+                }
+                candidate := prepare_graph_selection(EditDocument, EditRevision, Graph, SelectionOperation, nodes, xs, ys, 32.0, 32.0)
+                if !candidate.Ok {
+                    Failed(candidate.Error)
+                    return
+                }
+                text = candidate.Text
+                CandidateMetadata = candidate.Metadata
+                PendingCreated = candidate.Created
+            } else {
+                if PresentationOperation == 0 {
+                    candidate := prepare_graph_comment(EditDocument, EditRevision, Graph, NoteNode, NoteText, NoteHidden)
+                    if !candidate.Ok {
+                        Failed(candidate.Error)
+                        return
+                    }
+                    text = candidate.Text
+                    CandidateMetadata = candidate.Metadata
+                } else {
+                    if PresentationOperation == 1 {
+                        candidate := prepare_graph_box(EditDocument, EditRevision, Graph, NoteBox, NoteRemove, NoteText, NoteColor, NoteX, NoteY, NoteWidth, NoteHeight)
+                        if !candidate.Ok {
+                            Failed(candidate.Error)
+                            return
+                        }
+                        text = candidate.Text
+                        CandidateMetadata = candidate.Metadata
+                        if !NoteRemove {
+                            PendingBox = candidate.Box
+                        }
+                    } else {
+                        if PresentationOperation == 2 {
+                            if SelectedEdge < 0 || SelectedEdge >= length(Edges) {
+                                Failed("Select an existing wire.")
+                                return
+                            }
+                            edge := Edges[SelectedEdge]
+                            candidate := prepare_graph_reroute(EditDocument, EditRevision, Graph, edge.from, edge.from_pin, edge.to, edge.to_pin, RouteXs, RouteYs)
+                            if !candidate.Ok {
+                                Failed(candidate.Error)
+                                return
+                            }
+                            text = candidate.Text
+                            CandidateMetadata = candidate.Metadata
+                        } else {
+                            if Paste && Dialect == "kdl" {
+                                candidate := prepare_declarative_paste(EditDocument, EditRevision, Graph, Clipboard, 32.0, 32.0)
+                                if !candidate.Ok {
+                                    Failed(candidate.Error)
+                                    return
+                                }
+                                text = candidate.Text
+                                PendingCreated = candidate.Created
+                            } else {
+                                if LayoutOnly {
+                                    layout := prepare_source_layout(EditDocument, EditRevision, Graph, GraphNode, PlaceX, PlaceY, true, GraphOperation == 6)
+                                    if !layout.Ok {
+                                        Failed(layout.Error)
+                                        return
+                                    }
+                                    text = current.Text
+                                    CandidateMetadata = layout.Metadata
+                                } else {
+                                    prepared := await PrepareLanguageEdit()
+                                    if prepared is string source { text = source } else { return }
+                                    if !Busy { return }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        FieldOperation = false
+        SelectionOperation = -1
+        PresentationOperation = -1
+        Paste = false
+        BindingKind = 0
+        BindingSymbol = "0"
+        BindingComponent = "0"
+        BindingMember = "0"
+        LayoutOnly = false
+        MemberOperation = -1
+        NodeFlagKind = -1
+        ScopeOperation = -1
+        if CandidateMetadata != "" {
+            if current.Path == "" {
+                Failed("Save the source document before persisting graph layout.")
+                return
+            }
+            documents := [EditDocument, companion]
+            revisions := [EditRevision, companion_revision]
+            paths := [current.Path, companion_path]
+            texts: string[] = [text, CandidateMetadata]
+            initial: string[] = []
+            await send_event<"StudioDocumentEdits">(self, EditDocument, EditRevision, documents, revisions, paths, texts, "graph", Request, initial)
+        } else {
+            await send_event<"StudioDocumentEdit">(self, EditDocument, EditRevision, 0, -1, text, "graph", Request)
+        }
+        return
+    }
+    BeginEdit :: fn() {
+        if Busy || Document <= 0 {
+            return
+        }
+        if Collaborative && !SharedWritable {
+            if SelectionOperation == 2 && length(DragOriginalX) == length(X) && length(X) > 0 {
+                X = DragOriginalX
+                Y = DragOriginalY
+            }
+            SelectionOperation = -1
+            PresentationOperation = -1
+            MemberOperation = -1
+            NodeFlagKind = -1
+            ScopeOperation = -1
+            LayoutOnly = false
+            Paste = false
+            FieldOperation = false
+            BindingKind = 0
+            BindingSymbol = "0"
+            BindingComponent = "0"
+            BindingMember = "0"
+            Notice("This shared session is not ready for graph edits.")
+            return
+        }
+        if Request >= 2147483647 {
+            SelectionOperation = -1
+            PresentationOperation = -1
+            MemberOperation = -1
+            NodeFlagKind = -1
+            ScopeOperation = -1
+            LayoutOnly = false
+            Paste = false
+            FieldOperation = false
+            BindingKind = 0
+            BindingSymbol = "0"
+            BindingComponent = "0"
+            BindingMember = "0"
+            Notice("Graph request limit reached.")
+            return
+        }
+        Request += 1
+        EditDocument = Document
+        EditRevision = Revision
+        Busy = true
+        await Publish()
+        if Collaborative {
+            send_event<"StudioGraphPrepare">(self, EditDocument, EditRevision, Request)
+        } else {
+            send_event<"StudioDocumentExternalEditRequested">(self, "graph", EditDocument, Request)
+        }
+        return
+    }
+    Edit :: fn(Kind: int, Origin: string, Producer: string, Result: int, Text: string) {
+        if Busy || Document == 0 || text_equal(Origin, "0") {
+            Notice("This projection has no editable source origin.")
+            return
+        }
+        EditKind = Kind
+        EditOrigin = Origin
+        EditProducer = Producer
+        EditResult = Result
+        EditText = Text
+        EditCapability = ""
+        EditName = ""
+        BeginEdit()
+    }
+    StructuredInventory :: fn() {
+        rows := inspect_graph_members(Document, Revision, Graph)
+        StructuredMembers = rows.Members
+        CallablePins = rows.Pins
+        CallableTypes = rows.Types
+        if rows.Error != "" {
+            Notice(rows.Error)
+        }
+        PinSelected = -1
+        PublishMembers()
+    }
+    PublishMembers :: fn() {
+        callable := false
+        for scope in Scopes {
+            if scope.graph == Graph && (scope.kind == "function" || scope.kind == "macro") {
+                callable = true
+            }
+        }
+        await set_ui_data(Name: "graph.callableEditable", Value: callable)
+        ShownPins = []
+        index := cast<int>(0)
+        for pin in CallablePins {
+            if index >= PinsFirst && length(ShownPins) < 7 {
+                ShownPins = array_add(ShownPins, index)
+            }
+            index += 1
+        }
+        ShownMembers = []
+        memberIndex := cast<int>(0)
+        for member in StructuredMembers {
+            if memberIndex >= NativeMembersFirst && length(ShownMembers) < 7 {
+                ShownMembers = array_add(ShownMembers, memberIndex)
+            }
+            memberIndex += 1
+        }
+        await set_ui_data(Name: "graph.structuredMembers", Value: StructuredMembers)
+        await set_ui_data(Name: "graph.shownMembers", Value: ShownMembers)
+        await set_ui_data(Name: "graph.nativeMemberSelected", Value: NativeMemberSelected)
+        ShownTypes = []
+        index = 0
+        matched := cast<int>(0)
+        for choice in CallableTypes {
+            if TypeQuery == "" || text_contains(TypeQuery, choice.name, true) {
+                if matched >= TypeFirst && length(ShownTypes) < 7 {
+                    ShownTypes = array_add(ShownTypes, index)
+                }
+                matched += 1
+            }
+            index += 1
+        }
+        await set_ui_data(Name: "graph.callablePins", Value: CallablePins)
+        await set_ui_data(Name: "graph.shownPins", Value: ShownPins)
+        await set_ui_data(Name: "graph.callableTypes", Value: CallableTypes)
+        await set_ui_data(Name: "graph.shownTypes", Value: ShownTypes)
+        await set_ui_data(Name: "graph.pinSelected", Value: PinSelected)
+        await set_ui_data(Name: "graph.pinName", Value: PinName)
+        await set_ui_data(Name: "graph.pinType", Value: PinType)
+        await set_ui_data(Name: "graph.pinValue", Value: PinValue)
+        await set_ui_data(Name: "graph.pinContainer", Value: PinContainer)
+        await set_ui_data(Name: "graph.pinResult", Value: PinResult)
+        await set_ui_data(Name: "graph.typePickerOpen", Value: TypePickerOpen)
+        await set_ui_data(Name: "graph.typeQuery", Value: TypeQuery)
+        await set_ui_data(Name: "graph.pinsFirst", Value: PinsFirst)
+        await set_ui_data(Name: "graph.typeFirst", Value: TypeFirst)
+        return
+    }
+    on StudioGraphMemberAction {
+        if event.Document != Document || event.Revision != Revision || Busy {
+            return
+        }
+        switch event.Action {
+            case "selectMember": {
+                if event.Index < 0 || event.Index >= length(StructuredMembers) {
+                    return
+                }
+                member := StructuredMembers[event.Index];
+                NativeMemberSelected = event.Index
+                PinName = member.name;
+                PinType = member.type;
+                PinValue = member.value;
+                PinStorage = member.storage;
+                PinContainer = member.container;
+                PublishMembers();
+                return
+            }
+            case "membersPrevious": {
+                NativeMembersFirst = max(0, NativeMembersFirst - 7);
+                PublishMembers();
+                return
+            }
+            case "membersNext": {
+                if NativeMembersFirst + 7 < length(StructuredMembers) {
+                    NativeMembersFirst += 7
+                }
+                PublishMembers();
+                return
+            }
+            case "select": {
+                if event.Index < 0 || event.Index >= length(CallablePins) {
+                    return
+                }
+                pin := CallablePins[event.Index]
+                PinSelected = event.Index;
+                PinName = pin.name;
+                PinType = pin.type;
+                PinValue = pin.value;
+                PinStorage = pin.storage;
+                PinContainer = pin.container;
+                PinResult = pin.result
+                PublishMembers();
+                return
+            }
+            case "name": {
+                PinName = event.Value;
+                PublishMembers();
+                return
+            }
+            case "type": {
+                PinType = event.Value;
+                PublishMembers();
+                return
+            }
+            case "value": {
+                PinValue = event.Value;
+                PublishMembers();
+                return
+            }
+            case "container": {
+                PinContainer = event.Index;
+                PublishMembers();
+                return
+            }
+            case "result": {
+                PinResult = !PinResult;
+                PublishMembers();
+                return
+            }
+            case "typeToggle": {
+                TypePickerOpen = !TypePickerOpen;
+                PublishMembers();
+                return
+            }
+            case "typeQuery": {
+                TypeQuery = event.Value;
+                TypeFirst = 0;
+                PublishMembers();
+                return
+            }
+            case "typePrevious": {
+                TypeFirst = max(0, TypeFirst - 7);
+                PublishMembers();
+                return
+            }
+            case "typeNext": {
+                TypeFirst += 7;
+                PublishMembers();
+                return
+            }
+            case "pinsPrevious": {
+                PinsFirst = max(0, PinsFirst - 7);
+                PublishMembers();
+                return
+            }
+            case "pinsNext": {
+                if PinsFirst + 7 < length(CallablePins) {
+                    PinsFirst += 7
+                }
+                PublishMembers();
+                return
+            }
+            case "chooseType": {
+                if event.Index < 0 || event.Index >= length(CallableTypes) {
+                    return
+                }
+                choice := CallableTypes[event.Index];
+                PinType = choice.type;
+                PinStorage = choice.storage;
+                PublishMembers();
+                return
+            }
+        }
+        if event.Action == "unfold" {
+            if event.Index < 0 || event.Index >= length(Nodes) {
+                return
+            }
+            Select(event.Index, false);
+            NodeFlagKind = 2;
+            NodeFlag = false;
+            BeginEdit();
+            return
+        }
+        if event.Action == "disabled" || event.Action == "breakpoint" || event.Action == "fold" || event.Action == "advanced" {
+            if Selected < 0 || Selected >= length(Nodes) || length(Selection) == 0 {
+                return
+            }
+            selected := Nodes[Selected]
+            if event.Action == "disabled" {
+                NodeFlagKind = 0;
+                NodeFlag = !selected.disabled
+            }
+            if event.Action == "breakpoint" {
+                NodeFlagKind = 1;
+                NodeFlag = !selected.breakpoint
+            }
+            if event.Action == "fold" {
+                NodeFlagKind = 2;
+                NodeFlag = selected.presentation != 1
+            }
+            if event.Action == "advanced" {
+                NodeFlagKind = 3;
+                NodeFlag = !selected.advanced
+            }
+            BeginEdit();
+            return
+        }
+        operation := cast<int>(-1)
+        switch event.Action {
+            case "add": {
+                operation = 0
+            }
+            case "remove": {
+                operation = 1
+            }
+            case "rename": {
+                operation = 2
+            }
+            case "up": {
+                operation = 3
+            }
+            case "down": {
+                operation = 3
+            }
+            case "retype": {
+                operation = 4
+            }
+            case "default": {
+                operation = 5
+            }
+            case "pure": {
+                operation = 6
+            }
+            case "addMember": {
+                operation = 7
+            }
+            case "duplicateMember": {
+                operation = 9
+            }
+            case "renameMember": {
+                operation = 10
+            }
+            case "typeMember": {
+                operation = 11
+            }
+            case "defaultMember": {
+                operation = 12
+            }
+            case "getMember": {
+                operation = 13
+            }
+            case "setMember": {
+                operation = 14
+            }
+            case "callMember": {
+                operation = 15
+            }
+            case "removeMember": {
+                operation = 8
+            }
+        }
+        if operation < 0 {
+            return
+        }
+        index := cast<int>(0);
+        target := cast<int>(0);
+        member := "0";
+        flag := false
+        if operation > 0 && operation < 6 {
+            if PinSelected < 0 || PinSelected >= length(CallablePins) {
+                Notice("Select a callable pin.");
+                return
+            }
+            pin := CallablePins[PinSelected];
+            index = pin.index;
+            target = index
+            if event.Action == "up" {
+                target = index - 1
+            }
+            if event.Action == "down" {
+                target = index + 1
+            }
+        }
+        if operation == 6 {
+            for scope in Scopes {
+                if scope.graph == Graph {
+                    flag = !scope.pure
+                }
+            }
+        }
+        if operation >= 8 {
+            if Dialect == "kdl" {
+                if NativeMemberSelected < 0 || NativeMemberSelected >= length(StructuredMembers) {
+                    return
+                }
+                member = StructuredMembers[NativeMemberSelected].id
+            } else {
+                if MemberSelected < 0 || MemberSelected >= length(Members) {
+                    return
+                }
+                member = Members[MemberSelected].origin
+                if operation == 13 || operation == 14 {
+                    EditKind = 33;
+                    if operation == 14 {
+                        EditKind = 34
+                    }
+                    EditOrigin = "0";
+                    for scope in Scopes {
+                        if scope.graph == Graph {
+                            EditOrigin = scope.body
+                        }
+                    }
+                    BindingSymbol = Members[MemberSelected].id
+                    EditText = DeclarationValue;
+                    EditName = DeclarationName;
+                    EditCapability = "";
+                    BeginEdit();
+                    return
+                }
+            }
+        }
+        MemberRequest = { operation: operation, storage: PinStorage, container: PinContainer, index: index, target: target, graph: Graph, id: member, name: PinName, type: PinType, value: PinValue, result: PinResult, flag: flag }
+        if operation == 9 && Dialect != "kdl" {
+            MemberRequest.name = DeclarationName
+        }
+        MemberOperation = operation
+        BeginEdit()
+    }
+    on StudioFocusState {
+        GraphTextEditing = event.TextEditing && (event.Context == "Graph" || event.Context == "Behavior")
+    }
+    on StudioCollaborationState {
+        Collaborative = event.Active
+        SharedWritable = event.Ready && !event.Pending && (event.Role == "host" || event.Role == "editor")
+        Publish()
+    }
+    on StudioGraphPrepare {
+        if Busy && event.Document == EditDocument && event.Revision == EditRevision && event.Request == self.Request {
+            if !Collaborative {
+                Failed("The shared session changed before graph preparation.")
+                return
+            }
+            Prepare()
+        }
+    }
+    on StudioDocumentExternalEditReady {
+        if event.Owner != "graph" || event.Document != EditDocument || event.Request != self.Request || !Busy {
+            return
+        }
+        if !event.Ok {
+            Failed(event.Error)
+            return
+        }
+        Lease = true
+        if event.Revision != EditRevision {
+            Failed("Source edits were flushed. Refresh the graph before repeating this action.")
+            return
+        }
+        Prepare()
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        if event.Owner == "graph" && event.Document == EditDocument && event.Request == self.Request {
+            Failed("Graph edit canceled.")
+        }
+    }
+    SelectCreated :: fn() {
+        if Document != EditDocument {
+            PendingCreated = []
+            return
+        }
+        Selection = []
+        index := cast<int>(0)
+        for node in Nodes {
+            for created in PendingCreated {
+                if node.graph == Graph && node.node == created {
+                    Selection = array_add(Selection, index)
+                    Selected = index
+                }
+            }
+            index += 1
+        }
+        PendingCreated = []
+        Publish()
+        return
+    }
+    on StudioDocumentEditResult {
+        if event.Owner != "graph" || event.Request != self.Request || event.Document != EditDocument || event.ExpectedRevision != EditRevision || !Busy {
+            return
+        }
+        await Release()
+        Busy = false
+        failure := event.Error
+        self.Revision = event.Revision
+        if PendingState {
+            self.Document = PendingDocument
+            self.Revision = PendingRevision
+            PendingState = false
+        }
+        await send_event<"StudioDocumentCommand">(self, "refresh", "")
+        await Refresh()
+        if event.Ok && length(PendingBreakpointNodes) > 0 {
+            send_event<"StudioGraphBreakpointChanged">(self, Document, Revision, PendingBreakpointNodes)
+        }
+        PendingBreakpointNodes = []
+        if event.Ok && length(PendingCreated) > 0 {
+            SelectCreated()
+        }
+        if event.Ok && PendingBox != "0" && self.Document == EditDocument {
+            NoteBox = PendingBox
+            NoteIsBox = true
+            Publish()
+        }
+        PendingBox = "0"
+        if !event.Ok {
+            PendingCreated = []
+            await Notice(failure)
+            Publish()
+        }
+    }
+    on StudioDocumentEditsResult {
+        if event.Owner != "graph" || event.Request != self.Request || event.Document != EditDocument || event.ExpectedRevision != EditRevision || !Busy {
+            return
+        }
+        await Release()
+        Busy = false
+        failure := event.Error
+        if length(event.Revisions) > 0 {
+            Revision = event.Revisions[0]
+        }
+        if PendingState {
+            self.Document = PendingDocument
+            Revision = PendingRevision
+            PendingState = false
+        }
+        await send_event<"StudioDocumentCommand">(self, "refresh", "")
+        await Refresh()
+        if event.Ok && length(PendingBreakpointNodes) > 0 {
+            send_event<"StudioGraphBreakpointChanged">(self, Document, Revision, PendingBreakpointNodes)
+        }
+        PendingBreakpointNodes = []
+        if event.Ok && length(PendingCreated) > 0 {
+            SelectCreated()
+        }
+        if event.Ok && PendingBox != "0" && self.Document == EditDocument {
+            NoteBox = PendingBox
+            NoteIsBox = true
+            Publish()
+        }
+        PendingBox = "0"
+        if !event.Ok {
+            PendingCreated = []
+            await Notice(failure)
+            Publish()
+        }
+    }
+    on StudioEnvironmentState {
+        GraphSystemLight = event.Light
+        MetricsReady = false
+        BuildMetrics()
+        Publish()
+    }
+    on StudioPreferencesChanged {
+        MetricsReady = false
+        BuildMetrics()
+        Publish()
+    }
+    on Begin {
+        ActivityReduceMotion = read_saved_number("studio.preference.reduceMotion", 0).Number == 1
+        Publish()
+    }
+    on StudioPreferenceNumber {
+        if event.Key == "reduceMotion" {
+            ActivityReduceMotion = event.Number == 1
+            ActivityClear()
+            ActivityHandle = 0
+        }
+    }
+    on StudioDocumentState {
+        if event.Document != self.Document {
+            CallerGraphs = []
+            CallerNodes = []
+            CallerLabels = []
+        }
+        self.CanUndo = event.CanUndo
+        self.CanRedo = event.CanRedo
+        if self.Busy {
+            PendingDocument = event.Document
+            PendingRevision = event.Revision
+            PendingState = true
+            return
+        }
+        if self.Document == event.Document && self.Revision == event.Revision {
+            if HistoryPending {
+                ApplyHistory()
+            }
+            Publish()
+            return
+        }
+        if self.Document != event.Document {
+            NoteNode = "0"
+            NoteBox = "0"
+            NoteIsBox = false
+            NoteText = ""
+            RouteSelected = -1
+            RouteDrag = false
+        }
+        self.Document = event.Document
+        self.Revision = event.Revision
+        Drag = -1
+        Panning = false
+        self.Busy = false
+        if self.Document == 0 {
+            Nodes = []
+            Ports = []
+            Edges = []
+            X = []
+            Y = []
+            Notes = []
+            Routes = []
+            Selected = -1
+            Port = -1
+            Wire = -1
+            await Notice("Open a behavior or shader source document.")
+            Publish()
+        } else {
+            await Refresh()
+            ApplyHistory()
+        }
+    }
+    BeginNodeDrag :: fn(Index: int, LocalPointer: struct<"CF_V2">, Mod: bool, Ratio: float) {
+        if Collaborative && !SharedWritable {
+            return
+        }
+        if Index < 0 || Index >= length(Nodes) {
+            return
+        }
+        if !IsSelected(Index) {
+            Select(Index, false)
+        }
+        Drag = Index
+        width := get_ui_view_width(Element: ViewportElement())
+        height := get_ui_scroll(Element: ViewportElement())
+        DragViewportWidth = 0.0
+        DragViewportHeight = 0.0
+        DragPixelRatio = 0.0
+        if width.Known && height.Known && width.PixelRatio > 0.0 {
+            DragPixelRatio = width.PixelRatio
+            DragViewportWidth = width."View Width"
+            DragViewportHeight = height."View Height"
+        }
+        DragPointerX = PanX + X[Index] * Zoom + (LocalPointer.x / Ratio)
+        DragPointerY = PanY + Y[Index] * Zoom + (LocalPointer.y / Ratio)
+        DragSnap = Mod
+        DragX = X[Index]
+        DragY = Y[Index]
+        DragOriginalX = []
+        DragOriginalY = []
+        for x in X {
+            DragOriginalX = array_add(DragOriginalX, x)
+        }
+        for y in Y {
+            DragOriginalY = array_add(DragOriginalY, y)
+        }
+        DragMovedX = 0.0
+        DragMovedY = 0.0
+    }
+    MoveNodeDrag :: fn(Index: int, LocalPointer: struct<"CF_V2">, Delta: struct<"CF_V2">, Mod: bool, Ratio: float) {
+        if Drag != Index || Drag < 0 {
+            return
+        }
+        DragPointerX = PanX + X[Index] * Zoom + (LocalPointer.x / Ratio)
+        DragPointerY = PanY + Y[Index] * Zoom + (LocalPointer.y / Ratio)
+        DragSnap = Mod
+        DragMovedX += (Delta.x / Ratio) / Zoom
+        DragMovedY += (Delta.y / Ratio) / Zoom
+        dx := DragMovedX
+        dy := DragMovedY
+        if Mod {
+            dx = cast<float>(round((DragX + dx) / 16.0) * 16.0 - DragX)
+            dy = cast<float>(round((DragY + dy) / 16.0) * 16.0 - DragY)
+        }
+        for selected in Selection {
+            X[selected] = DragOriginalX[selected] + dx
+            Y[selected] = DragOriginalY[selected] + dy
+        }
+    }
+    MoveCanvasDrag :: fn(LocalPointer: struct<"CF_V2">, Delta: struct<"CF_V2">, Mod: bool, Ratio: float) {
+        if Box {
+            BoxX = (LocalPointer.x / Ratio)
+            BoxY = (LocalPointer.y / Ratio)
+            selection: int[] = []
+            index: int = 0
+            for node in Nodes {
+                if node.graph == Graph {
+                    rows: int = 0
+                    for port in Ports {
+                        if port.graph == node.graph && port.node == node.node {
+                            if port.output {
+                                rows += 1
+                            } else {
+                                rows += 1
+                            }
+                        }
+                    }
+                    x := PanX + X[index] * Zoom
+                    y := PanY + Y[index] * Zoom
+                    inside := x <= max(BoxStartX, BoxX) && x + NodeWidths[index] * Zoom >= min(BoxStartX, BoxX) && y <= max(BoxStartY, BoxY) && y + NodeHeights[index] * Zoom >= min(BoxStartY, BoxY)
+                    base := false
+                    for selected in BoxBase {
+                        if selected == index {
+                            base = true
+                        }
+                    }
+                    if (Mod && base && !inside) || (!Mod && (base || inside)) {
+                        selection = array_add(selection, index)
+                    }
+                }
+                index += 1
+            }
+            Selection = selection
+            Selected = -1
+            if length(selection) > 0 {
+                Selected = selection[length(selection) - 1]
+            }
+            Port = -1
+            Wire = -1
+            SelectedEdge = -1
+        } else {
+            if Panning {
+                PanX += (Delta.x / Ratio)
+                PanY += (Delta.y / Ratio)
+            }
+        }
+    }
+    on StudioGraphPointer {
+        pointer_measure := get_ui_view_width(Element: ViewportElement())
+        pointer_ratio := pointer_measure.PixelRatio
+        if pointer_ratio <= 0.0 { return }
+        if !Current(event.Document, event.Revision) {
+            return
+        }
+        switch event.Action {
+            case "port": {
+                Port(event.Index)
+                return
+            }
+            case "member": {
+                if event.Index < 0 || event.Index >= length(Members) {
+                    return
+                }
+                member := Members[event.Index]
+                MemberSelected = event.Index
+                DeclarationName = member.name
+                DeclarationType = member.type
+                DeclarationValue = member.text
+                if member.kind == "function" || member.kind == "macro" {
+                    Graph = member.graph
+                    SignatureDraft = member.signature
+                    Refresh()
+                    return
+                }
+            }
+            case "binding": {
+                BindPort(event.Index)
+                return
+            }
+            case "completion": {
+                CompletePort(event.Index)
+                return
+            }
+            case "note": {
+                NotesOpen = true
+                if event.Index < 0 || event.Index >= length(Notes) {
+                    return
+                }
+                note := Notes[event.Index]
+                NoteIsBox = note.box
+                NoteNode = note.node
+                NoteBox = "0"
+                if note.box {
+                    NoteBox = note.id
+                }
+                NoteText = note.title
+                NoteHidden = note.hidden
+                NoteColor = note.color
+                NoteX = note.x
+                NoteY = note.y
+                NoteWidth = note.width
+                NoteHeight = note.height
+            }
+            case "route": {
+                RoutesOpen = true
+                if event.Index < 0 || event.Index >= length(Routes) {
+                    return
+                }
+                route := Routes[event.Index]
+                RouteSelected = event.Index
+                RouteX = route.x
+                RouteY = route.y
+                index := cast<int>(0)
+                for edge in Edges {
+                    if edge.graph == Graph && edge.from == route.from_node && edge.from_pin == route.from_pin && edge.to == route.to_node && edge.to_pin == route.to_pin {
+                        SelectedEdge = index
+                    }
+                    index += 1
+                }
+            }
+            case "routeDragBegin": {
+                if Collaborative && !SharedWritable {
+                    return
+                }
+                if event.Index < 0 || event.Index >= length(Routes) {
+                    return
+                }
+                route := Routes[event.Index]
+                RouteSelected = event.Index
+                RouteX = route.x
+                RouteY = route.y
+                index := cast<int>(0)
+                for edge in Edges {
+                    if edge.graph == Graph && edge.from == route.from_node && edge.from_pin == route.from_pin && edge.to == route.to_node && edge.to_pin == route.to_pin {
+                        SelectedEdge = index
+                    }
+                    index += 1
+                }
+                RouteDrag = true
+                RoutesOpen = true
+            }
+            case "routeDrag": {
+                if !RouteDrag || RouteSelected != event.Index {
+                    return
+                }
+                RouteX += (event.Delta.x / pointer_ratio) / Zoom
+                RouteY += (event.Delta.y / pointer_ratio) / Zoom
+            }
+            case "routeDragEnd": {
+                if !RouteDrag {
+                    return
+                }
+                RouteDrag = false
+                RouteEdit("routeSave")
+                return
+            }
+            case "wire": {
+                RoutesOpen = true
+                RouteSelected = -1
+                if event.Index < 0 || event.Index >= length(Edges) {
+                    return
+                }
+                SelectedEdge = event.Index
+                from := EdgeFrom[event.Index]
+                to := EdgeTo[event.Index]
+                if from >= 0 && to >= 0 {
+                    RouteX = (X[from] + NodeWidths[from] + X[to]) * 0.5
+                    RouteY = (Y[from] + PortY(EdgeOut[event.Index]) + Y[to] + PortY(EdgeIn[event.Index])) * 0.5
+                }
+                Port = EdgeIn[event.Index]
+                Wire = -1
+                Selected = -1
+                Selection = []
+            }
+            case "select": {
+                SelectedEdge = -1
+                if event.Index < 0 || event.Index >= length(Nodes) {
+                    return
+                }
+                Select(event.Index, event.Shift)
+                Port = -1
+                Wire = -1
+            }
+            case "dragBegin": {
+                await BeginNodeDrag(event.Index, event.LocalPointer, event.Mod, pointer_ratio)
+            }
+            case "drag": {
+                await MoveNodeDrag(event.Index, event.LocalPointer, event.Delta, event.Mod, pointer_ratio)
+            }
+            case "dragEnd": {
+                if Drag < 0 {
+                    return
+                }
+                index := Drag
+                Drag = -1
+                SelectionOperation = 2
+                BeginEdit()
+                return
+            }
+            case "panBegin": {
+                if event.Button == 0 {
+                    Box = true
+                    BoxStartX = (event.LocalPointer.x / pointer_ratio)
+                    BoxStartY = (event.LocalPointer.y / pointer_ratio)
+                    BoxX = BoxStartX
+                    BoxY = BoxStartY
+                    BoxBase = []
+                    if event.Shift || event.Mod {
+                        for selected in Selection {
+                            BoxBase = array_add(BoxBase, selected)
+                        }
+                    }
+                } else {
+                    Panning = true
+                }
+            }
+            case "pan": {
+                await MoveCanvasDrag(event.LocalPointer, event.Delta, event.Mod, pointer_ratio)
+            }
+            case "panEnd": {
+                Panning = false
+                Box = false
+            }
+            case "wheel": {
+                old := Zoom
+                Zoom = cast<float>(clamp(old * pow(2.0, clamp(-event.Wheel.y * 0.2, -1.0, 1.0)), 0.1, 2.0))
+                PanX = (event.LocalPointer.x / pointer_ratio) - ((event.LocalPointer.x / pointer_ratio) - PanX) * Zoom / old
+                PanY = (event.LocalPointer.y / pointer_ratio) - ((event.LocalPointer.y / pointer_ratio) - PanY) * Zoom / old
+            }
+        }
+        Publish()
+    }
+    PortSchema :: fn() {
+        PortFields = []
+        PortChoices = []
+        PortFieldEnums = []
+        PortFieldStrings = []
+        PortFieldTexts = []
+        PortFieldsTotal = 0
+        PortColorWidth = 0
+        if Port < 0 || Port >= length(Ports) {
+            return
+        }
+        port := Ports[Port]
+        schema := graph_port_schema(Document, Revision, port.graph, port.node, port.pin, port.output, PortFieldsFirst, 7)
+        PortFields = schema.Fields
+        PortChoices = schema.Choices
+        PortFieldsTotal = schema.Total
+        if schema.Error != "" {
+            Notice(schema.Error)
+            return
+        }
+        x := cast<float>(0.0)
+        y := cast<float>(0.0)
+        z := cast<float>(0.0)
+        w := cast<float>(1.0)
+        colors := cast<int>(0)
+        for field in PortFields {
+            enumeration := false
+            for choice in PortChoices {
+                if choice.path == field.path {
+                    enumeration = true
+                }
+            }
+            PortFieldEnums = array_add(PortFieldEnums, enumeration)
+            decoded := query_json(field.value, "")
+            string_value := decoded.Ok && decoded.Found && decoded.Kind == "string" && !enumeration
+            PortFieldStrings = array_add(PortFieldStrings, string_value)
+            shown := field.value
+            if string_value {
+                shown = decoded.String
+            }
+            PortFieldTexts = array_add(PortFieldTexts, shown)
+            if field.color && field.editable && (port.type == "CF_V3" || port.type == "CF_V4") {
+                value := query_json(field.value, "")
+                if value.Ok && value.Found && value.Kind == "number" {
+                    switch field.path {
+                        case "x": {
+                            x = cast<float>(value.Number)
+                            colors += 1
+                        }
+                        case "y": {
+                            y = cast<float>(value.Number)
+                            colors += 1
+                        }
+                        case "z": {
+                            z = cast<float>(value.Number)
+                            colors += 1
+                        }
+                        case "w": {
+                            w = cast<float>(value.Number)
+                            colors += 1
+                        }
+                    }
+                }
+            }
+        }
+        if PortFieldsFirst == 0 && ((port.type == "CF_V3" && colors == 3) || (port.type == "CF_V4" && colors == 4)) {
+            color := linear_color_to_hex(x, y, z, w)
+            if color.Valid {
+                PortColorWidth = colors
+                PortColor = color.Text
+            }
+        }
+        return
+    }
+    FieldEdit :: fn(Index: int, Text: string, Canceled: bool) {
+        if Canceled || Index < 0 || Index >= length(PortFields) || Port < 0 || !PortFields[Index].editable || Dialect != "kdl" {
+            return
+        }
+        literal := Text
+        if PortFieldStrings[Index] {
+            encoded := value_to_json(Text)
+            if !encoded.Ok {
+                Notice(encoded.Error)
+                return
+            }
+            literal = encoded.Text
+        }
+        FieldOperation = true
+        FieldPath = PortFields[Index].path
+        FieldText = literal
+        FieldPort = Port
+        BeginEdit()
+        return
+    }
+    SourceOffset :: pure fn() -> int {
+        if Dialect != "chibi" {
+            return -1
+        }
+        if Port >= 0 && Port < length(Ports) && Ports[Port].start >= 0 {
+            return Ports[Port].start
+        }
+        if Selected >= 0 && Selected < length(Nodes) {
+            return Nodes[Selected].start
+        }
+        if MemberSelected >= 0 && MemberSelected < length(Members) {
+            return Members[MemberSelected].start
+        }
+        return -1
+    }
+    SourceInspect :: fn(Action: string) {
+        offset := SourceOffset()
+        if offset < 0 {
+            Notice("Choose an authored node, input or declaration.")
+            return
+        }
+        if Action == "goToDefinition" {
+            references := document_project_references(Document, Revision, offset, 0, 256)
+            for row in references.Rows {
+                if row.kind == 0 {
+                    send_event<"StudioTextProjectRange">(self, row.path, row.start, row.end)
+                    return
+                }
+            }
+            if references.Error != "" {
+                Notice(references.Error)
+                return
+            }
+            local := document_references(Document, Revision, offset)
+            for row in local.Rows {
+                if row.kind == 0 {
+                    send_event<"StudioTextRange">(self, row.start, row.end)
+                    return
+                }
+            }
+            Notice("No authored definition was found for this selection.")
+            return
+        }
+        send_event<"StudioOutputInspectRequested">(self, Document, Revision, offset, Action)
+        return
+    }
+    MemberInventory :: fn() {
+        Members = []
+        MembersTotal = 0
+        MemberSelected = -1
+        if Dialect != "chibi" || Document <= 0 {
+            return
+        }
+        members := source_members(Document, Revision, Graph, MembersFirst, 7, MembersQuery)
+        Members = members.Rows
+        MembersTotal = members.Total
+        if members.Error != "" {
+            Notice(members.Error)
+        }
+        return
+    }
+    BindingInventory :: fn() {
+        Bindings = []
+        BindingsTotal = 0
+        if Dialect != "chibi" || Port < 0 || Port >= length(Ports) {
+            return
+        }
+        port := Ports[Port]
+        if port.output || port.flow || !port.editable || port.origin == "0" {
+            return
+        }
+        bindings := source_binding_choices(Document, Revision, port.origin, BindingsFirst, 7, BindingsQuery)
+        Bindings = bindings.Rows
+        BindingsTotal = bindings.Total
+        if bindings.Error != "" {
+            Notice(bindings.Error)
+        }
+        return
+    }
+    BindPort :: fn(Index: int) {
+        if Index < 0 || Index >= length(Bindings) || Port < 0 || Port >= length(Ports) {
+            return
+        }
+        binding := Bindings[Index]
+        if !binding.compatible {
+            Notice("Choose a binding compatible with this input type.")
+            return
+        }
+        EditKind = 29
+        EditOrigin = Ports[Port].origin
+        EditProducer = "0"
+        EditResult = 0
+        EditText = ""
+        EditName = ""
+        EditCapability = ""
+        BindingKind = binding.binding
+        BindingSymbol = binding.symbol
+        BindingComponent = binding.component
+        BindingMember = binding.member
+        BeginEdit()
+        return
+    }
+    PortCompletion :: fn() {
+        PortCompletions = []
+        if Dialect != "chibi" || Port < 0 || Port >= length(Ports) {
+            return
+        }
+        port := Ports[Port]
+        if port.output || port.flow || !port.editable || port.start < 0 || port.end < port.start {
+            return
+        }
+        completion := complete_document(Document, Revision, port.end)
+        if completion.Error != "" {
+            return
+        }
+        if completion.Start < port.start || completion.End > port.end || completion.End < completion.Start {
+            return
+        }
+        CompletionStart = completion.Start - port.start
+        CompletionEnd = completion.End - port.start
+        CompletionPort = Port
+        CompletionRevision = Revision
+        PortCompletions = completion.Items
+        return
+    }
+    CompletePort :: fn(Index: int) {
+        if CompletionRevision != Revision || CompletionPort != Port || Port < 0 || Port >= length(Ports) || Index < 0 || Index >= length(PortCompletions) {
+            return
+        }
+        port := Ports[Port]
+        prefix := text_slice(port.text, 0, CompletionStart)
+        suffix := text_slice(port.text, CompletionEnd, port.end - port.start)
+        if !prefix.Ok || !suffix.Ok {
+            Notice("The expression range changed. Select the input again.")
+            return
+        }
+        expression := format_text("{}{}{}", prefix.Text, PortCompletions[Index].insert, suffix.Text)
+        PortCompletions = []
+        Edit(0, port.origin, "0", 0, expression)
+        return
+    }
+    Observe :: fn() {
+        ObservationAvailable = false
+        Observation = "No retained observation for this port."
+        if Port < 0 || Port >= length(Ports) {
+            return
+        }
+        if Dialect != "chibi" || DebugHandle <= 0 {
+            Observation = "Choose a debug target to inspect retained source values."
+            return
+        }
+        port := Ports[Port]
+        if port.flow {
+            Observation = "Flow ports carry execution order."
+            return
+        }
+        mapping := source_graph_observation(Document, Revision, port.graph, port.node, port.pin, port.output)
+        if !mapping.Ok {
+            Observation = mapping.Error
+            return
+        }
+        selected := cast<int>(-1)
+        index := cast<int>(0)
+        for value in DebugValues {
+            if value.module == mapping.Module && value.function == mapping.Function && value.occurrence == mapping.Occurrence && value.index == mapping.Index && value.output == mapping.RecordedOutput {
+                selected = index
+            }
+            index += 1
+        }
+        if selected < 0 && mapping.HasFallback {
+            index = 0
+            for value in DebugValues {
+                if value.module == mapping.Module && value.function == mapping.Function && value.occurrence == mapping.FallbackOccurrence && value.index == mapping.FallbackIndex && value.output == mapping.FallbackOutput {
+                    selected = index
+                }
+                index += 1
+            }
+        }
+        if selected < 0 {
+            return
+        }
+        value := DebugValues[selected]
+        if ObservationHandle != DebugHandle || ObservationDocument != Document || ObservationRevision != Revision || ObservationSource != value.source {
+            ObservationLineage = false
+            ObservationHandle = DebugHandle
+            ObservationDocument = Document
+            ObservationRevision = Revision
+            ObservationSource = value.source
+            frozen := await read_debug_source(DebugHandle, value.source)
+            current := await workspace_document_read(Document)
+            if frozen.Valid && current.Ok && current.Revision == Revision && current.Path != "" && frozen.Path == current.Path && frozen.Text == current.Text {
+                ObservationLineage = true
+            }
+        }
+        if !ObservationLineage {
+            Observation = "Captured from a different source revision. Open the debugger snapshot to inspect it."
+            return
+        }
+        ObservationAvailable = value.available
+        Observation = value.text
+        if !value.available {
+            Observation = "The captured value is unavailable."
+        }
+        return
+    }
+    on StudioDebuggerObservations {
+        DebugHandle = event.Handle
+        DebugSession = event.Session
+        DebugRetired = event.Retired
+        DebugValues = event.Values
+        await Observe()
+        Publish()
+    }
+    Port :: fn(Index: int) {
+        if Index < 0 || Index >= length(Ports) {
+            return
+        }
+        port := Ports[Index]
+        Port = Index
+        Selected = NodeIndex(port.graph, port.node)
+        if port.output {
+            if port.flow && Dialect != "kdl" {
+                Notice("Choose a statement to move after this flow source.")
+            }
+            Wire = Index
+            Notice = "Choose an input. The source validator checks types and scope."
+        } else {
+            if Wire >= 0 {
+                producer := Ports[Wire]
+                if port.flow != producer.flow || !text_equal(port.graph, producer.graph) {
+                    Notice("Choose a value input in the same graph.")
+                    return
+                }
+                Wire = -1
+                if Dialect == "kdl" {
+                    GraphOperation = 1
+                    GraphNode = port.node
+                    GraphPin = port.pin
+                    FromNode = producer.node
+                    FromPin = producer.pin
+                    EditText = ""
+                    EditCapability = ""
+                    BeginEdit()
+                    return
+                }
+                if port.flow {
+                    Edit(4, port.origin, producer.origin, 0, "")
+                    return
+                }
+                // AUTHORING_EDIT_CONNECT: expression origins and reflected result index.
+                ordinal := cast<int>(0)
+                foreach (candidate in Ports) {
+                    if candidate.output && !candidate.flow && text_equal(candidate.graph, producer.graph) && text_equal(candidate.node, producer.node) && candidate.index < producer.index {
+                        ordinal += 1
+                    }
+                }
+                Edit(1, port.origin, producer.origin, ordinal, "")
+                return
+            }
+        }
+        BindingsFirst = 0
+        PortFieldsFirst = 0
+        await PortSchema()
+        await BindingInventory()
+        await PortCompletion()
+        await Observe()
+        Publish()
+    }
+    FindNext :: fn() {
+        count := length(Nodes)
+        if Find == "" || count == 0 {
+            Notice("Enter a node, port or value to find.")
+            return
+        }
+        index := Selected + 1
+        scanned := cast<int>(0)
+        while scanned < count {
+            if index >= count {
+                index = 0
+            }
+            node := Nodes[index]
+            if node.graph == Graph {
+                matches := text_contains(Find, node.label, true)
+                for port in Ports {
+                    if port.graph == node.graph && port.node == node.node && (text_contains(Find, port.label, true) || text_contains(Find, port.text, true) || text_contains(Find, port.value, true)) {
+                        matches = true
+                    }
+                }
+                if matches {
+                    Select(index, false)
+                    Frame(true)
+                    Notice(format_text("Found {}.", node.label))
+                    Publish()
+                    return
+                }
+            }
+            index += 1
+            scanned += 1
+        }
+        Notice("No matching node, port or value in this graph.")
+        return
+    }
+    RouteEdit :: fn(Action: string) {
+        if SelectedEdge < 0 || SelectedEdge >= length(Edges) {
+            Notice("Select a wire before editing its route.")
+            return
+        }
+        edge := Edges[SelectedEdge]
+        RouteXs = []
+        RouteYs = []
+        index := cast<int>(0)
+        for route in Routes {
+            if route.from_node == edge.from && route.from_pin == edge.from_pin && route.to_node == edge.to && route.to_pin == edge.to_pin && Action != "routeClear" {
+                if index != RouteSelected || Action != "routeRemove" {
+                    x := route.x
+                    y := route.y
+                    if index == RouteSelected && Action == "routeSave" {
+                        x = RouteX
+                        y = RouteY
+                    }
+                    RouteXs = array_add(RouteXs, x)
+                    RouteYs = array_add(RouteYs, y)
+                }
+            }
+            index += 1
+        }
+        if Action == "routeAdd" {
+            RouteXs = array_add(RouteXs, RouteX)
+            RouteYs = array_add(RouteYs, RouteY)
+        }
+        PresentationOperation = 2
+        BeginEdit()
+        return
+    }
+    Disconnect :: fn() {
+        if Port >= 0 && Ports[Port].flow {
+            Notice("Flow wires represent statement order; edit that order through the source operation.")
+            return
+        }
+        if Port < 0 || Ports[Port].output {
+            Notice("Select the input to disconnect.")
+            return
+        }
+        if Dialect == "kdl" {
+            GraphOperation = 2
+            GraphNode = Ports[Port].node
+            GraphPin = Ports[Port].pin
+            EditText = ""
+            EditCapability = ""
+            BeginEdit()
+            return
+        }
+        // AUTHORING_EDIT_DISCONNECT restores a type-valid source expression.
+        Edit(18, Ports[Port].origin, "0", 0, "")
+        return
+
+        return
+    }
+    Delete :: fn() {
+        if SelectedEdge >= 0 {
+            Disconnect()
+            return
+        }
+        if Selected < 0 {
+            return
+        }
+        if Dialect == "kdl" {
+            SelectionOperation = 0
+            BeginEdit()
+            return
+        }
+        // AUTHORING_EDIT_DELETE_STATEMENT validates whether this origin is a statement.
+        if length(Selection) > 1 {
+            Edit(6, Nodes[Selected].origin, "0", 0, "")
+            return
+        }
+        Edit(2, Nodes[Selected].origin, "0", 0, "")
+        return
+
+        return
+    }
+    Copy :: fn(Cut: bool) {
+        if ClipboardRequest > 0 || Selected < 0 {
+            return
+        }
+        nodes: string[] = []
+        if Dialect == "kdl" {
+            for selected in Selection {
+                nodes = array_add(nodes, Nodes[selected].node)
+            }
+            copied := copy_declarative_selection(Document, Revision, Graph, nodes)
+            if !copied.Ok {
+                Notice(copied.Error)
+                return
+            }
+            Clipboard = copied.Text
+        } else {
+            for selected in Selection {
+                nodes = array_add(nodes, Nodes[selected].origin)
+            }
+            copied := copy_source_selection(Document, Revision, nodes)
+            if !copied.Ok {
+                Notice(copied.Error)
+                return
+            }
+            Clipboard = copied.Text
+        }
+        request := await authoring_platform_request("clipboard-write", Clipboard)
+        ClipboardRequest = request.Result.Request
+        ClipboardMode = "write"
+        ClipboardDocument = Document
+        ClipboardRevision = Revision
+        ClipboardGraph = Graph
+        ClipboardSelection = []
+        if Cut {
+            ClipboardMode = "cut"
+            for selected in Selection {
+                ClipboardSelection = array_add(ClipboardSelection, selected)
+            }
+        }
+        if ClipboardRequest == 0 {
+            Notice(request.Result.Message)
+            return
+        }
+        ClipboardPoll()
+        return
+    }
+    PasteClipboard :: fn() {
+        if ClipboardRequest > 0 || Busy {
+            return
+        }
+        request := await authoring_platform_request("clipboard-read")
+        ClipboardRequest = request.Result.Request
+        ClipboardMode = "read"
+        ClipboardDocument = Document
+        ClipboardRevision = Revision
+        if ClipboardRequest == 0 {
+            Notice(request.Result.Message)
+            return
+        }
+        ClipboardPoll()
+        return
+    }
+    ClipboardPoll :: fn() {
+        if ClipboardRequest <= 0 {
+            return
+        }
+        status := await authoring_platform_poll(ClipboardRequest)
+        if status.Result.State == "pending" || status.Result.State == "running" {
+            Publish()
+            return
+        }
+        await authoring_platform_release(ClipboardRequest)
+        ClipboardRequest = 0
+        if !status.Result.Ok {
+            Notice(status.Result.Message)
+            Publish()
+            return
+        }
+        if ClipboardMode == "write" {
+            Notice("Copied selection.")
+            Publish()
+            return
+        }
+        if ClipboardMode == "cut" {
+            same := Document == ClipboardDocument && Revision == ClipboardRevision && Graph == ClipboardGraph && !Busy && length(Selection) == length(ClipboardSelection)
+            index := cast<int>(0)
+            while same && index < length(Selection) {
+                if Selection[index] != ClipboardSelection[index] {
+                    same = false
+                }
+                index += 1
+            }
+            if !same {
+                Notice("Copied selection. The graph or selection changed, so nothing was removed.")
+                Publish()
+                return
+            }
+            Delete()
+            return
+        }
+        if Document != ClipboardDocument || Revision != ClipboardRevision || Busy {
+            Notice("The graph changed while reading the clipboard. Paste again.")
+            return
+        }
+        Clipboard = status.Result.Value
+        if Clipboard == "" {
+            Notice("The clipboard is empty.")
+            return
+        }
+        if Dialect == "kdl" {
+            Paste = true
+            BeginEdit()
+            return
+        }
+        EditKind = 9
+        EditOrigin = "0"
+        EditProducer = "0"
+        EditResult = 0
+        for scope in Scopes {
+            if scope.graph == Graph {
+                EditOrigin = scope.body
+            }
+        }
+        if EditOrigin == "0" {
+            Notice("Choose a source body before pasting statements.")
+            return
+        }
+        EditText = Clipboard
+        EditName = ""
+        EditCapability = ""
+        BeginEdit()
+        return
+    }
+    PropertyCommand :: fn(Action: string, Argument: string) {
+        switch Action {
+            case "fieldPrevious": {
+                if PortFieldsFirst >= 7 {
+                    PortFieldsFirst -= 7
+                }
+                PortSchema()
+            }
+            case "fieldNext": {
+                if PortFieldsFirst + 7 < PortFieldsTotal {
+                    PortFieldsFirst += 7
+                    PortSchema()
+                }
+            }
+            case "portColor": {
+                if PortColorWidth < 3 || Port < 0 || Dialect != "kdl" {
+                    return
+                }
+                color := linear_color_from_hex(Argument)
+                if !color.Valid {
+                    Notice(color.Error)
+                    return
+                }
+                FieldOperation = true
+                FieldPath = ""
+                FieldPort = Port
+                FieldText = format_text("x {}\ny {}\nz {}\n", color.R, color.G, color.B)
+                if PortColorWidth == 4 {
+                    FieldText = format_text("x {}\ny {}\nz {}\nw {}\n", color.R, color.G, color.B, color.A)
+                }
+                BeginEdit()
+                return
+            }
+            case "membersToggle": {
+                MembersOpen = !MembersOpen
+                if MembersOpen {
+                    MemberInventory()
+                }
+            }
+            case "membersQuery": {
+                MembersQuery = Argument
+                MembersFirst = 0
+                MemberInventory()
+            }
+            case "membersPrevious": {
+                if MembersFirst >= 7 {
+                    MembersFirst -= 7
+                }
+                MemberInventory()
+            }
+            case "membersNext": {
+                if MembersFirst + 7 < MembersTotal {
+                    MembersFirst += 7
+                    MemberInventory()
+                }
+            }
+            case "declarationName": {
+                DeclarationName = Argument
+            }
+            case "declarationType": {
+                DeclarationType = Argument
+            }
+            case "declarationValue": {
+                DeclarationValue = Argument
+            }
+            case "memberRename": {
+                if MemberSelected < 0 || MemberSelected >= length(Members) {
+                    return
+                }
+                EditKind = 23
+                EditOrigin = Members[MemberSelected].origin
+                EditName = DeclarationName
+                EditText = ""
+                EditCapability = ""
+                BeginEdit()
+                return
+            }
+            case "memberInitializer": {
+                if MemberSelected < 0 || MemberSelected >= length(Members) {
+                    return
+                }
+                member := Members[MemberSelected]
+                if member.initializer == "0" {
+                    Notice("This declaration has no editable initializer expression.")
+                    return
+                }
+                Edit(0, member.initializer, "0", 0, DeclarationValue)
+                return
+            }
+            case "memberType": {
+                if MemberSelected < 0 || MemberSelected >= length(Members) {
+                    return
+                }
+                member := Members[MemberSelected]
+                if member.kind != "state" && member.kind != "shared-state" {
+                    Notice("Edit callable inputs and outputs through its signature.")
+                    return
+                }
+                EditKind = 35
+                EditOrigin = member.origin
+                EditSignature = DeclarationType
+                EditName = ""
+                EditText = ""
+                EditCapability = ""
+                BeginEdit()
+                return
+            }
+            case "newState": {
+                EditKind = 10
+                EditOrigin = "0"
+                EditName = ""
+                EditCapability = ""
+                EditText = format_text("{}: {} = {}", DeclarationName, DeclarationType, DeclarationValue)
+                BeginEdit()
+                return
+            }
+            case "bindingsQuery": {
+                BindingsQuery = Argument
+                BindingsFirst = 0
+                BindingInventory()
+            }
+            case "bindingsPrevious": {
+                if BindingsFirst >= 7 {
+                    BindingsFirst -= 7
+                }
+                BindingInventory()
+            }
+            case "bindingsNext": {
+                if BindingsFirst + 7 < BindingsTotal {
+                    BindingsFirst += 7
+                    BindingInventory()
+                }
+            }
+            case "goToDefinition": {
+                SourceInspect(Action)
+                return
+            }
+            case "findReferences": {
+                SourceInspect(Action)
+                return
+            }
+            case "callHierarchy": {
+                SourceInspect(Action)
+                return
+            }
+            case "selectAll": {
+                Selection = []
+                Selected = -1
+                index := cast<int>(0)
+                for node in Nodes {
+                    if node.graph == Graph {
+                        Selection = array_add(Selection, index)
+                        Selected = index
+                    }
+                    index += 1
+                }
+                Port = -1
+                Wire = -1
+                SelectedEdge = -1
+            }
+            case "deselect": {
+                Selection = []
+                Selected = -1
+                Port = -1
+                Wire = -1
+                SelectedEdge = -1
+            }
+            case "selectPrevious": {
+                SpatialNode(0.0, -1.0, false)
+                return
+            }
+            case "selectNext": {
+                SpatialNode(0.0, 1.0, false)
+                return
+            }
+            case "extendPrevious": {
+                SpatialNode(0.0, -1.0, true)
+                return
+            }
+            case "extendNext": {
+                SpatialNode(0.0, 1.0, true)
+                return
+            }
+            case "frameAll": {
+                Frame(false)
+                return
+            }
+            case "showLiveValues": {
+                ObservationsOpen = !ObservationsOpen
+            }
+            case "focusFind": {
+                await focus_ui_element(self, format_text("#studio-graph-find-{}", GraphPane))
+                return
+            }
+            case "copy": {
+                Copy(false)
+                return
+            }
+            case "cut": {
+                Copy(true)
+                return
+            }
+            case "paste": {
+                PasteClipboard()
+                return
+            }
+        }
+        Publish()
+        return
+    }
+    Command :: fn(Action: string, Argument: string) {
+        if Action == "fieldPrevious" || Action == "fieldNext" || Action == "portColor" || Action == "membersToggle" || Action == "membersQuery" || Action == "membersPrevious" || Action == "membersNext" || Action == "declarationName" || Action == "declarationType" || Action == "declarationValue" || Action == "memberRename" || Action == "memberInitializer" || Action == "memberType" || Action == "newState" || Action == "bindingsQuery" || Action == "bindingsPrevious" || Action == "bindingsNext" || Action == "goToDefinition" || Action == "findReferences" || Action == "callHierarchy" || Action == "selectAll" || Action == "deselect" || Action == "selectPrevious" || Action == "selectNext" || Action == "extendPrevious" || Action == "extendNext" || Action == "frameAll" || Action == "showLiveValues" || Action == "focusFind" || Action == "copy" || Action == "cut" || Action == "paste" {
+            send_event<"StudioGraphPropertyCommand">(self, Action, Argument, Document, Revision)
+            return
+        }
+        switch Action {
+            case "notesToggle": {
+                NotesOpen = !NotesOpen
+            }
+            case "routesToggle": {
+                RoutesOpen = !RoutesOpen
+            }
+            case "noteText": {
+                NoteText = Argument
+            }
+            case "noteHidden": {
+                NoteHidden = !NoteHidden
+            }
+            case "noteColor": {
+                color := packed_color_from_hex(Argument)
+                if !color.Valid {
+                    Notice(color.Error)
+                    return
+                }
+                NoteColor = color.Packed
+            }
+            case "noteDefaultColor": {
+                NoteColor = 0
+            }
+            case "noteNew": {
+                NotesOpen = true
+                if Selected < 0 {
+                    Notice("Select a node to comment.")
+                    return
+                }
+                NoteIsBox = false
+                NoteNode = Nodes[Selected].node
+                NoteBox = "0"
+                NoteText = ""
+                NoteHidden = false
+                for note in Notes {
+                    if !note.box && note.node == NoteNode {
+                        NoteText = note.title
+                        NoteHidden = note.hidden
+                    }
+                }
+            }
+            case "boxNew": {
+                NotesOpen = true
+                NoteIsBox = true
+                NoteNode = "0"
+                NoteBox = "0"
+                NoteText = "Group"
+                NoteX = (64.0 - PanX) / Zoom
+                NoteY = (64.0 - PanY) / Zoom
+                NoteWidth = 320.0
+                NoteHeight = 180.0
+                NoteColor = 0
+            }
+            case "noteSave": {
+                NoteRemove = false
+                PresentationOperation = 0
+                if NoteIsBox {
+                    PresentationOperation = 1
+                }
+                BeginEdit()
+                return
+            }
+            case "noteRemove": {
+                NoteRemove = true
+                PresentationOperation = 1
+                if !NoteIsBox {
+                    NoteText = ""
+                    PresentationOperation = 0
+                }
+                BeginEdit()
+                return
+            }
+            case "routeAdd": {
+                RouteEdit(Action)
+                return
+            }
+            case "routeSave": {
+                RouteEdit(Action)
+                return
+            }
+            case "routeRemove": {
+                RouteEdit(Action)
+                return
+            }
+            case "routeClear": {
+                RouteEdit(Action)
+                return
+            }
+            case "undo": {
+                if CanUndo {
+                    send_event<"StudioDocumentCommand">(self, "undo", "")
+                }
+                return
+            }
+            case "redo": {
+                if CanRedo {
+                    send_event<"StudioDocumentCommand">(self, "redo", "")
+                }
+                return
+            }
+            case "find": {
+                Find = Argument
+            }
+            case "findNext": {
+                FindNext()
+                return
+            }
+            case "refactorToggle": {
+                RefactorOpen = !RefactorOpen
+            }
+            case "signatureToggle": {
+                SignatureOpen = !SignatureOpen
+            }
+            case "signatureDraft": {
+                SignatureDraft = Argument
+            }
+            case "memberName": {
+                MemberName = Argument
+            }
+            case "signature": {
+                if Dialect == "kdl" {
+                    Notice("Declarative signatures use typed parameter operations.")
+                    return
+                }
+                EditKind = 28
+                EditOrigin = "0"
+                EditProducer = "0"
+                for scope in Scopes {
+                    if scope.graph == Graph {
+                        EditOrigin = scope.origin
+                    }
+                }
+                if EditOrigin == "0" {
+                    Notice("Choose an authored function or macro signature.")
+                    return
+                }
+                EditSignature = SignatureDraft
+                EditName = ""
+                EditText = ""
+                EditCapability = ""
+                BeginEdit()
+                return
+            }
+            case "scopeDisabled": {
+                if Dialect == "kdl" {
+                    return
+                }
+                EditKind = 26
+                EditOrigin = "0"
+                EditProducer = "0"
+                for scope in Scopes {
+                    if scope.graph == Graph {
+                        EditOrigin = scope.origin
+                        EditDisabled = !scope.disabled
+                    }
+                }
+                if EditOrigin == "0" {
+                    Notice("Choose an authored callable declaration.")
+                    return
+                }
+                EditName = ""
+                EditText = ""
+                EditCapability = ""
+                BeginEdit()
+                return
+            }
+            case "macroAdd": {
+                if Dialect == "kdl" {
+                    return
+                }
+                EditKind = 22
+                EditOrigin = "0"
+                EditProducer = "0"
+                EditName = ScopeName
+                EditText = ""
+                EditCapability = ""
+                BeginEdit()
+                return
+            }
+            case "nameValue": {
+                if Dialect == "kdl" || Selected < 0 {
+                    return
+                }
+                EditResult = 0
+                EditKind = 27
+                EditOrigin = Nodes[Selected].origin
+                EditProducer = "0"
+                EditName = MemberName
+                EditText = ""
+                EditCapability = ""
+                BeginEdit()
+                return
+            }
+            case "extractFunction": {
+                if Dialect == "kdl" || Selected < 0 {
+                    return
+                }
+                EditKind = 30
+                EditOrigin = Nodes[Selected].origin
+                EditProducer = "0"
+                EditName = MemberName
+                EditText = ""
+                EditCapability = ""
+                BeginEdit()
+                return
+            }
+            case "extractMacro": {
+                if Dialect == "kdl" || Selected < 0 {
+                    return
+                }
+                EditKind = 31
+                EditOrigin = Nodes[Selected].origin
+                EditProducer = "0"
+                EditName = MemberName
+                EditText = ""
+                EditCapability = ""
+                BeginEdit()
+                return
+            }
+            case "inline": {
+                if Dialect == "kdl" || Selected < 0 {
+                    return
+                }
+                Edit(32, Nodes[Selected].origin, "0", 0, "")
+                return
+            }
+            case "wrapIf": {
+                if Dialect != "kdl" && Selected >= 0 {
+                    Edit(15, Nodes[Selected].origin, "0", 0, "true")
+                }
+                return
+            }
+            case "wrapWhile": {
+                if Dialect != "kdl" && Selected >= 0 {
+                    Edit(16, Nodes[Selected].origin, "0", 0, "false")
+                }
+                return
+            }
+            case "wrapSequence": {
+                if Dialect != "kdl" && Selected >= 0 {
+                    Edit(17, Nodes[Selected].origin, "0", 0, "")
+                }
+                return
+            }
+            case "scopeName": {
+                ScopeName = Argument
+            }
+            case "scopeAdd": {
+                EditName = ScopeName
+                EditText = ""
+                EditCapability = ""
+                if Dialect == "kdl" {
+                    ScopeOperation = 0
+                } else {
+                    EditKind = 21
+                    EditOrigin = "0"
+                    EditProducer = "0"
+                }
+                BeginEdit()
+                return
+            }
+            case "scopeRemove": {
+                if Dialect == "kdl" {
+                    ScopeOperation = 1
+                    BeginEdit()
+                    return
+                }
+                EditKind = 13;
+                EditOrigin = "0";
+                EditText = "";
+                EditCapability = "";
+                EditName = ""
+                for scope in Scopes {
+                    if scope.graph == Graph {
+                        EditOrigin = scope.origin
+                    }
+                }
+                if EditOrigin == "0" {
+                    Notice("Select an authored callable declaration.");
+                    return
+                }
+                BeginEdit();
+                return
+            }
+            case "palette": {
+                Palette = !Palette
+            }
+            case "query": {
+                Query = Argument
+                FilterChoices()
+            }
+            case "add": {
+                EditCapability = Argument
+                EditText = ""
+                EditName = ""
+                PlaceX = (64.0 - PanX) / Zoom
+                PlaceY = (64.0 - PanY) / Zoom
+                if Dialect == "kdl" {
+                    GraphOperation = 0
+                    GraphNode = "0"
+                    GraphPin = "0"
+                } else {
+                    EditKind = 20
+                    EditOrigin = "0"
+                    EditProducer = "0"
+                    for scope in Scopes {
+                        if scope.graph == Graph {
+                            EditOrigin = scope.body
+                        }
+                    }
+                    if EditOrigin == "0" {
+                        Notice("Choose an executable graph before adding a capability.")
+                        return
+                    }
+                }
+                Palette = false
+                BeginEdit()
+                return
+            }
+            case "arrange": {
+                LayoutOnly = Dialect != "kdl"
+                GraphOperation = 6
+                GraphNode = "0"
+                GraphPin = "0"
+                EditText = ""
+                EditCapability = ""
+                BeginEdit()
+                return
+            }
+            case "cancel": {
+                RouteDrag = false
+                if ClipboardRequest > 0 {
+                    await authoring_platform_cancel(ClipboardRequest)
+                    await authoring_platform_release(ClipboardRequest)
+                    ClipboardRequest = 0
+                }
+                if Drag >= 0 {
+                    X = DragOriginalX
+                    Y = DragOriginalY
+                }
+                SelectedEdge = -1
+                Box = false
+                Drag = -1
+                Wire = -1
+                Panning = false
+                Notice = "Gesture canceled."
+            }
+            case "graph": {
+                Graph = Argument
+                Selected = -1
+                Port = -1
+                Wire = -1
+                Refresh()
+                return
+            }
+            case "home": {
+                Frame(false)
+                return
+            }
+            case "validate": {
+                Refresh()
+                return
+            }
+            case "evaluate": {
+                Notice("Select a runtime target in Debugger to inspect captured input and output values.")
+                return
+            }
+            case "delete": {
+                Delete()
+                return
+            }
+            case "disconnect": {
+                Disconnect()
+                return
+            }
+            case "frame": {
+                if length(Selection) > 0 && !LastFrameSelection {
+                    Frame(true)
+                } else {
+                    Frame(false)
+                }
+                return
+            }
+            case "rename": {
+                if Argument == "" {
+                    return
+                }
+                EditName = Argument
+                EditText = ""
+                EditCapability = ""
+                if Dialect == "kdl" {
+                    ScopeOperation = 2
+                } else {
+                    EditKind = 23
+                    EditOrigin = "0"
+                    EditProducer = "0"
+                    for scope in Scopes {
+                        if scope.graph == Graph {
+                            EditOrigin = scope.origin
+                        }
+                    }
+                    if EditOrigin == "0" {
+                        Notice("Choose a function declaration to rename.")
+                        return
+                    }
+                }
+                BeginEdit()
+                return
+            }
+            case "duplicate": {
+                if Selected < 0 {
+                    return
+                }
+                if Dialect == "kdl" {
+                    SelectionOperation = 1
+                    BeginEdit()
+                    return
+                }
+                Edit(11, Nodes[Selected].origin, "0", 0, "")
+                return
+            }
+        }
+        Publish()
+    }
+    on StudioGraphAction {
+        if !Current(event.Document, event.Revision) {
+            return
+        }
+        if event.Action == "caller" {
+            Caller(cast<int>(query_json(event.Argument, "").Number))
+            return
+        }
+        Command(event.Action, event.Argument)
+    }
+    Value :: fn(Index: int, Document: int, Revision: int, Text: string, Canceled: bool) {
+        if !Current(Document, Revision) || Canceled {
+            return
+        }
+        if Index < 0 || Index >= length(Ports) || Ports[Index].flow || !Ports[Index].editable {
+            return
+        }
+        if Dialect == "kdl" {
+            GraphOperation = 3
+            if Ports[Index].type == "const char *" || Ports[Index].type == "name" || Ports[Index].type == "string" {
+                GraphOperation = 7
+            }
+            GraphNode = Ports[Index].node
+            GraphPin = Ports[Index].pin
+            EditText = Text
+            EditCapability = ""
+            BeginEdit()
+            return
+        }
+        Edit(0, Ports[Index].origin, "0", 0, Text)
+    }
+    on StudioGraphVectorNumber {
+        if !Current(event.Document, event.Revision) || event.Canceled || event.Index < 0 || event.Index >= length(Ports) { return }
+        port := Ports[event.Index]
+        if event.Component < 0 || event.Component >= port.vector_width || port.vector_width > 4 || !port.editable || port.flow { return }
+        names: string[] = ["x", "y", "z", "w"]
+        text := ""
+        component: int = 0
+        while component < port.vector_width {
+            decoded := query_json(port.value_json, format_text("/{}", names[component]))
+            if !decoded.Ok || !decoded.Found || decoded.Kind != "number" { return }
+            value := decoded.Number
+            if component == event.Component { value = event.Value }
+            text = format_text("{}{} {}\n", text, names[component], value)
+            component += 1
+        }
+        Value(event.Index, event.Document, event.Revision, text, false)
+    }
+    on StudioGraphFieldValue {
+        if Current(event.Document, event.Revision) {
+            FieldEdit(event.Index, event.Text, event.Canceled)
+        }
+    }
+    on StudioGraphFieldNumber {
+        if Current(event.Document, event.Revision) {
+            FieldEdit(event.Index, format_text("{}", event.Value), event.Canceled)
+        }
+    }
+    on StudioGraphPresentationNumber {
+        if event.Canceled || !Current(event.Document, event.Revision) {
+            return
+        }
+        switch event.Id {
+            case "x":
+                NoteX = event.Value
+                case "y":
+                    NoteY = event.Value
+                    case "width":
+                        NoteWidth = event.Value
+                        case "height":
+                            NoteHeight = event.Value
+                            case "routeX":
+                                RouteX = event.Value
+                                case "routeY":
+                                    RouteY = event.Value
+                                }
+                                Publish()
+                            }
+                            Autopan :: fn(DeltaSeconds: float) {
+                                if Drag < 0 || Busy || DragPixelRatio <= 0.0 || DragViewportWidth <= 0.0 || DragViewportHeight <= 0.0 {
+                                    return
+                                }
+                                margin := 24.0
+                                x := 0.0
+                                y := 0.0
+                                if DragPointerX < margin {
+                                    x = 1.0
+                                }
+                                if DragPointerX > DragViewportWidth - margin {
+                                    x = -1.0
+                                }
+                                if DragPointerY < margin {
+                                    y = 1.0
+                                }
+                                if DragPointerY > DragViewportHeight - margin {
+                                    y = -1.0
+                                }
+                                if x == 0.0 && y == 0.0 {
+                                    return
+                                }
+                                step := 420.0 * min(max(cast<double>(DeltaSeconds), 0.0), 0.05)
+                                px := cast<float>(x * step)
+                                py := cast<float>(y * step)
+                                PanX += px
+                                PanY += py
+                                DragMovedX -= px / Zoom
+                                DragMovedY -= py / Zoom
+                                dx := DragMovedX
+                                dy := DragMovedY
+                                if DragSnap {
+                                    dx = cast<float>(round((DragX + dx) / 16.0) * 16.0 - DragX)
+                                    dy = cast<float>(round((DragY + dy) / 16.0) * 16.0 - DragY)
+                                }
+                                for selected in Selection {
+                                    X[selected] = DragOriginalX[selected] + dx
+                                    Y[selected] = DragOriginalY[selected] + dy
+                                }
+                                Publish()
+                                return
+                            }
+                            on Tick {
+                                if Document > 0 && !MetricsReady {
+                                    BuildMetrics()
+                                    if MetricsReady { PublishCanvas() }
+                                }
+                                RevealTick()
+                                ActivityTick(DeltaSeconds)
+                                if ClipboardRequest > 0 {
+                                    ClipboardPoll()
+                                }
+                                Autopan(DeltaSeconds)
+                            }
+                            on StudioGraphValue {
+                                Value(event.Index, event.Document, event.Revision, event.Text, event.Canceled)
+                            }
+                            on StudioGraphNumber {
+                                Value(event.Index, event.Document, event.Revision, format_text("{}", event.Value), event.Canceled)
+                            }
+                            on StudioGraphPropertyCommand {
+                                if Current(event.Document, event.Revision) {
+                                    PropertyCommand(event.Action, event.Argument)
+                                }
+                            }
+                            on StudioGraphCancel {
+                                if !GraphTextEditing {
+                                    Command("cancel", "")
+                                }
+                            }
+                            on StudioGraphDelete {
+                                if !GraphTextEditing {
+                                    Command("delete", "")
+                                }
+                            }
+                            on StudioGraphFrame {
+                                if !GraphTextEditing {
+                                    Command("frame", "")
+                                }
+                            }
+                            on StudioGraphHome {
+                                if !GraphTextEditing {
+                                    Command("home", "")
+                                }
+                            }
+                            on StudioGraphCommand {
+                                if event.Id == "enterCall" { EnterCall(); return }
+                                if event.Id == "leaveCall" { Caller(length(CallerGraphs) - 1); return }
+                                if event.Id == "zoomActual" {
+                                    Zoom = 1.0
+                                    ViewState()
+                                    Publish()
+                                    return
+                                }
+                                if Document != 0 && !Busy && !GraphTextEditing {
+                                    if event.Id == "back" {
+                                        NavigateHistory(-1);
+                                        return
+                                    }
+                                    if event.Id == "forward" {
+                                        NavigateHistory(1);
+                                        return
+                                    }
+                                    if event.Id == "left" {
+                                        SpatialNode(-1.0, 0.0, false);
+                                        return
+                                    }
+                                    if event.Id == "right" {
+                                        SpatialNode(1.0, 0.0, false);
+                                        return
+                                    }
+                                    if event.Id == "up" {
+                                        SpatialNode(0.0, -1.0, false);
+                                        return
+                                    }
+                                    if event.Id == "down" {
+                                        SpatialNode(0.0, 1.0, false);
+                                        return
+                                    }
+                                    if event.Id == "selectLinked" {
+                                        Linked(false);
+                                        return
+                                    }
+                                    if event.Id == "arrangeLinked" {
+                                        Linked(true);
+                                        return
+                                    }
+                                    if event.Id == "breakpoint" || event.Id == "disable" || event.Id == "fold" {
+                                        commandAction := event.Id;
+                                        if commandAction == "disable" {
+                                            commandAction = "disabled"
+                                        }
+                                        send_event<"StudioGraphMemberAction">(self, commandAction, 0, "", Document, Revision);
+                                        return
+                                    }
+                                }
+
+                                if Document != 0 && !Busy && !GraphTextEditing {
+                                    Command(event.Id, event.Argument)
+                                }
+                            }
+                        }

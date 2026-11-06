@@ -1,0 +1,11 @@
+version 3
+name "StudioModelBudgets"
+domain "event"
+id_counter 3
+(array)variables {
+    - id=1 name="Samples" type="uint64" category="Payload"
+    - id=2 name="Work" type="uint64" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

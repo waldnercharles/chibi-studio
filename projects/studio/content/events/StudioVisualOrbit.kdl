@@ -1,0 +1,12 @@
+version 3
+name "StudioVisualOrbit"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Id" type="const char *" category="Payload"
+    - id=2 name="X" type="float" category="Payload"
+    - id=3 name="Y" type="float" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

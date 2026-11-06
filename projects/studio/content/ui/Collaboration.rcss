@@ -3,7 +3,7 @@
 }
 .collaboration {
     display: flex; flex-direction: column; width: 100%; color: var(--foreground);
-    font-family: var(--font-ui); font-size: var(--studio-font-13, 13dp); line-height: var(--studio-line-18, 18dp);
+    font-family: var(--font-ui, geist); font-size: var(--studio-font-13, 13dp); line-height: var(--studio-line-18, 18dp);
 }
 .collab-head {
     display: flex; align-items: center; justify-content: space-between; gap: 16dp;
@@ -36,7 +36,7 @@
 .collab-input {
     flex: 1 1 0dp; min-width: 0dp; height: var(--h); padding: var(--input-pad) 9dp; border: 1dp var(--input);
     border-radius: var(--r); background-color: var(--field-edit); color: var(--foreground);
-    font-family: var(--font-ui); font-size: var(--studio-font-13, 13dp); line-height: var(--input-line); white-space: normal;
+    font-family: var(--font-ui, geist); font-size: var(--studio-font-13, 13dp); line-height: var(--input-line); white-space: normal;
 }
 .collab-input:focus-visible { border-color: var(--ring); }
 .collab-input:placeholder-shown { color: var(--faint-foreground); }

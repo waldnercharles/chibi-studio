@@ -1,0 +1,46 @@
+<div class="authored-studio">
+  <use ui="StudioShell">
+    <use ui="StudioHome" data-if="self.homeVisible" />
+    <div class="studio-workspace-group" data-if="!self.homeVisible">
+      <use ui="StudioDocumentTabs" />
+      <use ui="StudioWorkspace">
+        <div id="studio-workspace" data-measure="" class="workspace" data-class-across="self.shellAcross" data-attr-data-maximized="self.shellMaximized" data-attrif-data-side-open="self.shellSideOpen" data-attrif-data-drawer-open="self.shellDrawerOpen" data-attr-style="self.shellWorkspaceStyle">
+          <div class="column main" id="studio-main-column" data-measure="">
+            <div class="editors">
+              <div class="place" data-place="main" data-style-flex-basis="self.shellMainSize + 'dp'">
+                <use ui="StudioArea" data-alias-pane="'main'" data-alias-area="self.shellAreas.main" />
+              </div>
+              <splitter class="split" data-attr-axis="self.shellAcross ? 'x' : 'y'" min="80" max="4096" data-attr-value="self.shellMainSize" data-event-input="emit('StudioWorkspaceResize', 'main', ev.value)" />
+              <div class="place fill" data-place="secondary">
+                <use ui="StudioArea" data-alias-pane="'secondary'" data-alias-area="self.shellAreas.secondary" />
+              </div>
+            </div>
+            <div class="drawer" data-attrif-data-open="self.shellDrawerOpen" data-style-height="self.shellDrawerOpen ? (self.shellDrawerSize + 6) + 'dp' : '0dp'">
+              <splitter class="split" axis="y" invert="" min="80" max="2048" data-attr-value="self.shellDrawerSize" data-event-input="emit('StudioWorkspaceResize', 'drawer', ev.value)" />
+              <div class="place fill" data-place="drawer">
+                <use ui="StudioArea" data-alias-pane="'drawer'" data-alias-area="self.shellAreas.drawer" />
+              </div>
+            </div>
+          </div>
+          <div class="side" data-attrif-data-open="self.shellSideOpen" data-style-width="self.shellSideOpen ? (self.shellSideSize + 6) + 'dp' : '0dp'">
+            <splitter class="split" axis="x" invert="" min="260" max="2048" data-attr-value="self.shellSideSize" data-event-input="emit('StudioWorkspaceResize', 'side', ev.value)" />
+            <div class="column" id="studio-side-column" data-measure="">
+              <div class="place" data-place="outliner" data-style-flex-basis="self.shellOutlinerSize + 'dp'">
+                <use ui="StudioArea" data-alias-pane="'outliner'" data-alias-area="self.shellAreas.outliner" />
+              </div>
+              <splitter class="split" axis="y" min="80" max="2048" data-attr-value="self.shellOutlinerSize" data-event-input="emit('StudioWorkspaceResize', 'outliner', ev.value)" />
+              <div class="place fill" data-place="properties">
+                <use ui="StudioArea" data-alias-pane="'properties'" data-alias-area="self.shellAreas.properties" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </use>
+    </div>
+  </use>
+  <use ui="StudioMaterialCreate" />
+  <use ui="AssetFileHistory" />
+  <use ui="StudioProjectMigration" data-if="self.migrationOpen" />
+  <use ui="StudioCollaboration" />
+  <use ui="StudioNotices" />
+</div>

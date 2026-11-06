@@ -1,0 +1,15 @@
+<div class="studio-performance">
+  <div class="studio-performance-toolbar"><strong>Performance</strong><span class="spacer"></span><live-text data-attr-value="self.performanceReadout"></live-text><button class="btn sm" data-event-click="emit('StudioPerformanceCommand', 'freeze')">{{ self.performanceFrozen ? 'Resume charts' : 'Freeze charts' }}</button><button class="btn sm" data-event-click="emit('StudioPerformanceCommand', 'clear')">Clear</button></div>
+  <p class="dim">Latest measured timings sampled four times a second over 30 seconds.</p>
+  <h3>Host frame · 16.7 ms reference (60 Hz)</h3>
+  <line-chart class="perf-chart" data-if="self.performanceHostAvailable" data-attr-data-series="self.performanceFrame" reference="16.6667" window="30" unit="ms" precision="1" fill="" data-attrif-live="!self.performanceFrozen"></line-chart>
+  <p role="status" data-if="!self.performanceHostAvailable">Host frame timing is unavailable.</p>
+  <h3>Target simulation</h3>
+  <live-text data-attr-value="self.performanceTargetReadout"></live-text>
+  <p role="status" data-if="self.performanceTargetAvailable &amp;&amp; !self.performancePlaying">Target is paused.</p>
+  <line-chart class="perf-chart" data-if="self.performanceTargetAvailable" data-attr-data-series="self.performancePhases" window="30" unit="ms" precision="2" data-attrif-live="!self.performanceFrozen &amp;&amp; self.performancePlaying"></line-chart>
+  <div class="perf-legend" data-if="self.performanceTargetAvailable"><span>Behavior · blue</span><span>Physics · green</span><span>Systems · gold</span><span>Rendering · purple</span></div>
+  <h3 data-if="self.performanceLighting">Target GPU and lighting</h3>
+  <line-chart class="perf-chart" data-if="self.performanceLighting &amp;&amp; self.performanceGpuAvailable" data-attr-data-series="self.performanceGpu" data-attr-reference="self.performanceBudget" window="30" unit="ms" precision="2" data-attrif-live="!self.performanceFrozen"></line-chart>
+  <p role="status" data-if="self.performanceLighting &amp;&amp; !self.performanceGpuAvailable">This backend reports no GPU timestamps.</p>
+</div>

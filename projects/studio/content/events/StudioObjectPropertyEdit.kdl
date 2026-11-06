@@ -1,0 +1,13 @@
+version 3
+name "StudioObjectPropertyEdit"
+domain "event"
+id_counter 5
+(array)variables {
+    - id=1 name="Path" type="const char *" category="Payload"
+    - id=2 name="Operation" type="const char *" category="Payload"
+    - id=3 name="Value" type="const char *" category="Payload"
+    - id=4 name="Canceled" type="bool" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

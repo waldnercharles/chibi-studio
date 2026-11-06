@@ -1,0 +1,11 @@
+version 3
+name "AssetsFileAction"
+domain "event"
+id_counter 3
+(array)variables {
+    - id=1 name="Mode" type="const char *" category="Payload"
+    - id=2 name="Pointer" type="struct" type_name="CF_V2" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

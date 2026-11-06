@@ -1,0 +1,12 @@
+version 3
+name "StudioSceneCheckpoint"
+domain "event"
+id_counter 4
+(array)variables {
+    - id=1 name="Value" type="const char *" category="Payload"
+    - id=2 name="Ok" type="bool" category="Payload"
+    - id=3 name="Error" type="const char *" category="Payload"
+}
+(array)graphs {
+    - kind="event" name=""
+}

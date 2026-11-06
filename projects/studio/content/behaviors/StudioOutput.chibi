@@ -1,0 +1,399 @@
+behavior StudioOutput {
+    self.FindFocusDelay: int = 0
+    View: string = "log"
+    Filter: string = ""
+    Program: string = ""
+    Level: string = ""
+    First: int = 0
+    Total: int = 0
+    Dropped: int = 0
+    Follow := true
+    Error: string = ""
+    Logs: AuthoringLogRow[] = []
+    Problems: DocumentDiagnostic[] = []
+    ProjectProblems: ProjectDiagnostic[] = []
+    ProblemScope: string = "project"
+    References: ProjectReference[] = []
+    Calls: DocumentCall[] = []
+    Document: int = 0
+    Revision: int = 0
+    Path: string = ""
+    Caret: int = 0
+    QueryDocument: int = 0
+    QueryRevision: int = 0
+    Busy := false
+    Direction: int = 0
+    CallOffset: int = 0
+    CallPath: string = ""
+    PendingPath: string = ""
+    PendingOffset: int = 0
+    PendingAge: float = 0.0
+    TrailPaths: string[] = []
+    TrailOffsets: int[] = []
+    CallKeys: string[] = []
+    Age: float = 0.0
+    Clock: double = 0
+    Info: string = ""
+    action logs = query_authoring_log(0, First, 64, Program, Level, Filter)
+    publish :: fn() {
+        await set_ui_data(Name: "outputView", Value: View)
+        await set_ui_data(Name: "outputFilter", Value: Filter)
+        await set_ui_data(Name: "outputProgram", Value: Program)
+        await set_ui_data(Name: "outputLevel", Value: Level)
+        await set_ui_data(Name: "outputFirst", Value: First)
+        await set_ui_data(Name: "outputTotal", Value: Total)
+        await set_ui_data(Name: "outputDropped", Value: Dropped)
+        await set_ui_data(Name: "outputFollow", Value: Follow)
+        await set_ui_data(Name: "outputError", Value: Error)
+        await set_ui_data(Name: "outputLogs", Value: Logs)
+        await set_ui_data(Name: "outputProblems", Value: Problems)
+        await set_ui_data(Name: "outputProjectProblems", Value: ProjectProblems)
+        await set_ui_data(Name: "outputProblemScope", Value: ProblemScope)
+        await set_ui_data(Name: "outputReferences", Value: References)
+        await set_ui_data(Name: "outputCalls", Value: Calls)
+        await set_ui_data(Name: "outputPath", Value: Path)
+        await set_ui_data(Name: "outputCallPath", Value: CallPath)
+        await set_ui_data(Name: "outputDirection", Value: Direction)
+        await set_ui_data(Name: "outputCanBack", Value: length(TrailPaths) > 0)
+        await set_ui_data(Name: "outputBusy", Value: Busy || !text_equal(PendingPath, ""))
+        shown := length(Logs)
+        if text_equal(View, "references") {
+            shown = length(References)
+        }
+        if text_equal(View, "calls") {
+            shown = length(Calls)
+        }
+        if text_equal(View, "problems") {
+            shown = length(Problems)
+            if text_equal(ProblemScope, "project") {
+                shown = length(ProjectProblems)
+            }
+        }
+        await set_ui_data(Name: "outputShown", Value: shown)
+        info := Info
+        if !text_contains(Filter, info, true) {
+            info = "No information matches the filter."
+        }
+        set_ui_data(Name: "outputInfo", Value: info)
+        return
+    }
+    refresh :: fn() {
+        Error = ""
+        Total = 0
+        if text_equal(View, "log") || text_equal(View, "history") || text_equal(View, "runtime") {
+            await logs()
+            Logs = logs.Rows
+            Total = logs.Total
+            Dropped = logs.Dropped
+            Error = logs.Error
+            if Follow && Total > 0 {
+                latest := (Total - 1) / 64 * 64
+                if latest != First {
+                    First = latest
+                    await logs()
+                    Logs = logs.Rows
+                    Total = logs.Total
+                    Dropped = logs.Dropped
+                    Error = logs.Error
+                }
+            }
+            if First >= Total && First > 0 {
+                First = 0
+                await logs()
+                Logs = logs.Rows
+                Total = logs.Total
+                Dropped = logs.Dropped
+                Error = logs.Error
+            }
+        }
+        switch View {
+            case "problems": {
+                Problems = []
+                ProjectProblems = []
+                workspace := query_workspace_info()
+                if !workspace.Active {
+                    await publish()
+                    return
+                }
+                if text_equal(ProblemScope, "project") {
+                    diagnosed := project_diagnostics(First, 64)
+                    Total = diagnosed.Total
+                    Error = diagnosed.Error
+                    foreach (problem in diagnosed.Rows) {
+                        if text_contains(Filter, format_text("{} {}", problem.path, problem.message), true) {
+                            ProjectProblems = array_add(ProjectProblems, problem)
+                        }
+                    }
+                } else {
+                    if Document > 0 && !Busy {
+                        inspected := inspect_document(Document, Revision)
+                        Error = inspected.Error
+                        foreach (problem in inspected.Diagnostics) {
+                            if !text_contains(Filter, problem.message, true) {
+                                continue
+                            }
+                            index := Total
+                            Total += 1
+                            if index >= First && index < First + 64 {
+                                Problems = array_add(Problems, problem)
+                            }
+                        }
+                    }
+                }
+            }
+            case "references": {
+                References = []
+                if QueryDocument > 0 && !Busy {
+                    referenced := document_project_references(QueryDocument, QueryRevision, CallOffset, First, 64)
+                    foreach (row in referenced.Rows) {
+                        if text_contains(Filter, format_text("{} {}", row.path, row.name), true) {
+                            References = array_add(References, row)
+                        }
+                    }
+                    Total = referenced.Total
+                    Error = referenced.Error
+                }
+            }
+            case "calls": {
+                Calls = []
+                if QueryDocument > 0 && !Busy && text_equal(PendingPath, "") {
+                    called := document_calls(QueryDocument, QueryRevision, CallOffset, Direction, First, 64)
+                    foreach (row in called.Rows) {
+                        if text_contains(Filter, format_text("{} {} {}", row.path, row.label, row.signature), true) {
+                            Calls = array_add(Calls, row)
+                        }
+                    }
+                    Total = called.Total
+                    Error = called.Error
+                }
+            }
+            case "info": {
+                env := await authoring_platform_environment()
+                workspace := query_workspace_info()
+                if !workspace.Active {
+                    Info = format_text("Platform: {}\nAppearance: {}\nViewport: {} × {}\nUI scale: {}\nNo workspace open.", env.Environment.Platform, env.Environment.Theme, env.Environment.Width, env.Environment.Height, env.Environment.Scale)
+                    await publish()
+                    return
+                }
+                resources := await query_workspace_resources(0, 1, "", "")
+                Info = format_text("Platform: {}\nAppearance: {}\nViewport: {} × {}\nUI scale: {}\nWorkspace resources: {}\nInventory: {}\nCompiler: {}\nExport: {}", env.Environment.Platform, env.Environment.Theme, env.Environment.Width, env.Environment.Height, env.Environment.Scale, resources.Status.Total, resources.Status.Message, env.Environment.Compile, env.Environment.Export)
+            }
+        }
+        await publish()
+        return
+    }
+    show :: fn(View: string) {
+        self.View = View
+        First = 0
+        Level = ""
+        Program = ""
+        if text_equal(View, "history") {
+            Level = "history"
+        }
+        if text_equal(View, "runtime") {
+            Level = "error"
+            Program = "target"
+        }
+        await send_event<"StudioPanelSelected">(self, "drawer", "output")
+        await refresh()
+        return
+    }
+    navigate_call :: fn(Path: string, Offset: int) {
+        PendingPath = Path
+        PendingOffset = Offset
+        PendingAge = 0.0
+        await send_event<"StudioTextProjectRange">(self, Path, Offset, Offset)
+        await publish()
+        return
+    }
+    on Begin {
+        refresh()
+    }
+    on Tick(dt) {
+        if FindFocusDelay > 0 {
+            FindFocusDelay -= 1
+            if FindFocusDelay == 0 {
+                await focus_ui_element(self, "#studio-output-filter")
+            }
+        }
+        Clock += dt
+        Age += dt
+        if !text_equal(PendingPath, "") {
+            PendingAge += dt
+            if PendingAge >= 2.0 {
+                PendingPath = ""
+                Error = "Call navigation did not open the requested document. Retry after resolving the document review."
+                publish()
+            }
+        }
+        if Age >= 0.5 {
+            Age = 0.0
+            if text_equal(View, "log") || text_equal(View, "runtime") || text_equal(View, "history") {
+                refresh()
+            }
+        }
+    }
+    on StudioDocumentState {
+        changed := self.Document != event.Document || self.Revision != event.Revision || self.Busy != event.Busy
+        self.Document = event.Document
+        self.Revision = event.Revision
+        self.Path = event.Path
+        self.Busy = event.Busy
+        if !self.Busy && !text_equal(PendingPath, "") && text_equal(PendingPath, event.Path) {
+            CallPath = event.Path
+            CallOffset = PendingOffset
+            QueryDocument = event.Document
+            QueryRevision = event.Revision
+            PendingPath = ""
+            First = 0
+            refresh()
+            return
+        }
+        if changed && text_equal(View, "problems") {
+            refresh()
+        } else {
+            publish()
+        }
+    }
+    on StudioDocumentChanged {
+        changed := await workspace_document_info(event.Document)
+        if changed.Ok {
+            await append_authoring_log(Clock, "authoring", "history", format_text("Document {} revision {}", event.Document, changed.Revision), changed.Path, 0)
+        }
+    }
+    on StudioStatus {
+        await append_authoring_log(Clock, "authoring", event.Kind, event.Message, "", 0)
+    }
+    on StudioTextSelection {
+        self.Caret = event.Caret
+    }
+    on StudioTextInput {
+        self.Caret = event.Caret
+    }
+    on StudioOutputInspectRequested {
+        current := await workspace_document_info(event.Document)
+        if !current.Ok || current.Revision != event.Revision {
+            Error = "Source changed before inspection. Retry the command."
+            publish()
+            return
+        }
+        QueryDocument = event.Document
+        QueryRevision = event.Revision
+        CallPath = current.Path
+        CallOffset = event.Offset
+        PendingPath = ""
+        TrailPaths = []
+        TrailOffsets = []
+        CallKeys = [format_text("{}:{}", current.Path, event.Offset)]
+        if text_equal(event.Id, "findReferences") {
+            show("references")
+        } else {
+            show("calls")
+        }
+    }
+    on StudioOutputFind {
+        FindFocusDelay = 2
+    }
+    on StudioOutputCommand {
+        if text_equal(event.Id, "log") || text_equal(event.Id, "runtime") || text_equal(event.Id, "history") || text_equal(event.Id, "problems") || text_equal(event.Id, "info") {
+            show(event.Id)
+            return
+        }
+        switch event.Id {
+            case "filter": {
+                Filter = event.Argument
+                First = 0
+                refresh()
+            }
+            case "program": {
+                Program = event.Argument
+                First = 0
+                refresh()
+            }
+            case "level": {
+                Level = event.Argument
+                First = 0
+                refresh()
+            }
+            case "scope": {
+                ProblemScope = event.Argument
+                First = 0
+                refresh()
+            }
+            case "previous": {
+                Follow = false
+                First -= 64
+                if First < 0 {
+                    First = 0
+                }
+                refresh()
+            }
+            case "next": {
+                Follow = false
+                if First + 64 < Total {
+                    First += 64
+                }
+                refresh()
+            }
+            case "latest": {
+                Follow = true
+                refresh()
+            }
+            case "clear": {
+                await clear_authoring_log()
+                First = 0
+                refresh()
+            }
+            case "refresh": {
+                refresh()
+            }
+            case "incoming": {
+                Direction = 0
+                First = 0
+                refresh()
+            }
+            case "outgoing": {
+                Direction = 1
+                First = 0
+                refresh()
+            }
+            case "back": {
+                size := length(TrailPaths)
+                if size == 0 {
+                    return
+                }
+                path := TrailPaths[size - 1]
+                offset := TrailOffsets[size - 1]
+                TrailPaths = remove_index(TrailPaths, size - 1)
+                TrailOffsets = remove_index(TrailOffsets, size - 1)
+                CallKeys = remove_index(CallKeys, length(CallKeys) - 1)
+                navigate_call(path, offset)
+            }
+        }
+    }
+    on StudioOutputNavigate {
+        send_event<"StudioTextProjectRange">(self, event.Path, event.Start, event.End)
+    }
+    on StudioOutputExpand {
+        if Busy || !text_equal(PendingPath, "") || text_equal(event.Path, "") {
+            return
+        }
+        key := format_text("{}:{}", event.Path, event.Offset)
+        foreach (visited in CallKeys) {
+            if text_equal(key, visited) {
+                Error = "This callable is already in the hierarchy path."
+                publish()
+                return
+            }
+        }
+        if length(TrailPaths) >= 32 {
+            Error = "Hierarchy depth limit reached (32). Go back to continue."
+            publish()
+            return
+        }
+        TrailPaths = array_add(TrailPaths, CallPath)
+        TrailOffsets = array_add(TrailOffsets, CallOffset)
+        CallKeys = array_add(CallKeys, key)
+        navigate_call(event.Path, event.Offset)
+    }
+}

@@ -44,6 +44,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: chibi-studio
+      - name: Require authored Studio implementation
+        working-directory: chibi-studio
+        shell: bash
+        run: |
+          git ls-files -z -- ':(icase)*.c' ':(icase)*.h' ':(icase)*.cc' ':(icase)*.cpp' ':(icase)*.cxx' ':(icase)*.hpp' ':(icase)*.hxx' ':(icase)*.m' ':(icase)*.mm' > "$RUNNER_TEMP/studio-native-paths"
+          if [ -s "$RUNNER_TEMP/studio-native-paths" ]; then
+            echo '::error::Studio implementation belongs in RML, RCSS and .chibi; reusable native capabilities belong in the engine SDK.'
+            tr '\0' '\n' < "$RUNNER_TEMP/studio-native-paths"
+            exit 1
+          fi
       - name: Require engine checkout access
         env:
           TOKEN: ${{ secrets.CHIBI_ENGINE_TOKEN }}
@@ -155,14 +165,14 @@ jobs:
         shell: bash
         run: |
           timeout 60 xvfb-run -a build-studio/bin/chibi-dev \
-            --project-root ../chibi-studio/projects/starter --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee studio.log
+            --workspace-root ../chibi-studio/projects/starter --hidden --frames 2 --fixed-dt 0.0166667 2>&1 | tee studio.log
           ! grep -E 'Studio UI:|runtime frame failed|Could not initialize' studio.log
       - name: Two hidden frames of Studio's own project
         working-directory: chibi
         shell: bash
         run: |
           timeout 60 xvfb-run -a build-studio/bin/chibi-dev \
-            --project-root build-studio/share/chibi/studio --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee own.log
+            --workspace-root build-studio/share/chibi/studio --hidden --frames 2 --fixed-dt 0.0166667 2>&1 | tee own.log
           ! grep -E 'Studio UI:|runtime frame failed|Could not initialize|Could not load graph asset' own.log
       - name: Installed Studio opens the project it starts in
         shell: bash
@@ -174,6 +184,6 @@ jobs:
           make -C chibi-studio install PREFIX="$prefix"
           export PATH="$prefix/bin:$PATH"
           cd chibi-studio/projects/starter
-          timeout 60 xvfb-run -a chibi-dev --headless --frames 2 --fixed-dt 0.0166667 2>&1 | tee "$RUNNER_TEMP/installed.log"
+          timeout 60 xvfb-run -a chibi-dev --hidden --frames 2 --fixed-dt 0.0166667 2>&1 | tee "$RUNNER_TEMP/installed.log"
           chibi export . --output "$RUNNER_TEMP/export"
           ! grep -E 'Studio UI:|runtime frame failed|Could not initialize' "$RUNNER_TEMP/installed.log"

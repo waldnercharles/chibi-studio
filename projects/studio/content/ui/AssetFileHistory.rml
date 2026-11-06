@@ -1,0 +1,9 @@
+<use ui="Menu" id="asset-delete-history" class="asset-delete-history">
+  <div class="asset-file-title">Deleted files</div>
+  <div class="asset-file-hint">{{ self.fileHistory.retained }} deletion batches retained. Undo and Redo keep each batch together.</div>
+  <div class="asset-file-error" data-if="self.fileHistory.error != ''" role="alert">{{ self.fileHistory.error }}</div>
+  <div class="asset-file-hint" data-if="self.fileHistory.message != ''" role="status">{{ self.fileHistory.message }}</div>
+  <div class="asset-delete-actions"><button class="btn outline" data-attrif-data-disabled="!self.fileHistory.canUndo" data-event-click="emit('AssetsDeleteUndo')">Undo deletion</button><button class="btn outline" data-attrif-data-disabled="!self.fileHistory.canRedo" data-event-click="emit('AssetsDeleteRedo')">Redo deletion</button></div>
+  <button class="btn subtle" data-attrif-data-disabled="self.fileHistory.busy || self.fileHistory.readOnly || self.fileHistory.retained == 0" data-event-click="emit('AssetsDeleteForget')">Permanently forget oldest deletion</button>
+  <button class="btn outline" data-if="self.fileHistory.recoveryPending" data-attrif-data-disabled="self.fileHistory.busy || self.fileHistory.readOnly" data-event-click="emit('AssetsDeleteRetryCleanup')">Retry recovery cleanup</button>
+</use>

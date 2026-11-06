@@ -1,0 +1,322 @@
+behavior StudioModelReference {
+    self.Document: int = 0
+    Revision: int = 0
+    Active := false
+    DocumentBusy := false
+    Busy := false
+    Room := false
+    Writable := true
+    Reference: struct<"ModelReference"> = { image: "", center_x: 0.0, center_y: 0.0, height: 2.0, angle: 0.0, locked: true }
+    Visible := false
+    Opacity: float = 0.5
+    Query: string = ""
+    First: int = 0
+    Total: int = 0
+    Rows: struct<"WorkspaceResourceRow">[] = []
+    Picker := false
+    Error: string = ""
+    Intent: string = ""
+    IntentText: string = ""
+    IntentNumber: float = 0.0
+    IntentEnabled := false
+    Request: int = 0
+    RequestedDocument: int = 0
+    ExpectedRevision: int = 0
+    Lease := false
+    Submitted := false
+    Publish :: fn() {
+        await set_ui_data(Name: "modelReference.active", Value: Active)
+        await set_ui_data(Name: "modelReference.readOnly", Value: Busy || DocumentBusy || !Writable)
+        await set_ui_data(Name: "modelReference.busy", Value: Busy)
+        await set_ui_data(Name: "modelReference.image", Value: Reference.image)
+        await set_ui_data(Name: "modelReference.locked", Value: Reference.locked)
+        await set_ui_data(Name: "modelReference.x", Value: Reference.center_x)
+        await set_ui_data(Name: "modelReference.y", Value: Reference.center_y)
+        await set_ui_data(Name: "modelReference.height", Value: Reference.height)
+        await set_ui_data(Name: "modelReference.angle", Value: Reference.angle)
+        await set_ui_data(Name: "modelReference.visible", Value: Visible)
+        await set_ui_data(Name: "modelReference.opacity", Value: Opacity)
+        await set_ui_data(Name: "modelReference.rows", Value: Rows)
+        await set_ui_data(Name: "modelReference.query", Value: Query)
+        await set_ui_data(Name: "modelReference.picker", Value: Picker)
+        await set_ui_data(Name: "modelReference.first", Value: First)
+        await set_ui_data(Name: "modelReference.total", Value: Total)
+        await set_ui_data(Name: "modelReference.error", Value: Error)
+    }
+    Display :: fn() {
+        if Active {
+            await send_event<"StudioModelReferenceDisplay">(self, Document, Revision, Visible, Opacity)
+        }
+        await Publish()
+    }
+    Refresh :: fn() {
+        Active = false
+        if Document <= 0 {
+            await Publish();
+            return
+        }
+        read := await workspace_document_read(Document)
+        if !read.Ok {
+            Error = read.Error;
+            await Publish();
+            return
+        }
+        identity := workspace_asset_identity(Document, read.Revision)
+        if identity.Kind != "model" {
+            await Publish();
+            return
+        }
+        document := Document;
+        revision := read.Revision
+        inspected := await inspect_model_reference(document, revision)
+        if Document != document || Revision != revision {
+            return
+        }
+        Active = inspected.Valid
+        if Active {
+            Reference = inspected.Reference
+        } else {
+            Error = inspected.Error
+        }
+        await Display()
+    }
+    Choices :: fn() {
+        matches := await query_workspace_resources(First, 7, "image", Query)
+        if matches.Status.Ok {
+            Rows = matches.Rows;
+            Total = matches.Status.Total
+        } else {
+            Rows = [];
+            Total = 0;
+            Error = matches.Status.Message
+        }
+        await Publish()
+    }
+    Complete :: fn() {
+        if Lease {
+            Lease = false;
+            await send_event<"StudioDocumentExternalEditComplete">(self, "model-reference", RequestedDocument, Request)
+        }
+        Busy = false;
+        Submitted = false;
+        Intent = ""
+        await Publish()
+    }
+    Fail :: fn(Message: string) {
+        Error = Message;
+        await Complete();
+        await Refresh()
+    }
+    Submit :: fn(Revision: int) {
+        if !Busy || Submitted || Document != RequestedDocument || !Writable {
+            await Fail("Reference edit is no longer current");
+            return
+        }
+        inspected := await inspect_model_reference(RequestedDocument, Revision)
+        if !inspected.Valid {
+            await Fail(inspected.Error);
+            return
+        }
+        next := inspected.Reference
+        switch Intent {
+            case "image": {
+                image := IntentText
+                prefix := text_slice(image, 0, 8)
+                if prefix.Ok && prefix.Text == "content/" {
+                    bytes := text_difference("", image);
+                    image = text_slice(image, 8, bytes.Inserted).Text
+                }
+                next.image = image;
+                if next.height <= 0.0 {
+                    next.height = 2.0
+                }
+                next.locked = true
+            }
+            case "locked": {
+                next.locked = IntentEnabled
+            }
+            case "x": {
+                if next.locked {
+                    await Fail("Unlock reference alignment first");
+                    return
+                }
+                next.center_x = IntentNumber
+            }
+            case "y": {
+                if next.locked {
+                    await Fail("Unlock reference alignment first");
+                    return
+                }
+                next.center_y = IntentNumber
+            }
+            case "height": {
+                if next.locked {
+                    await Fail("Unlock reference alignment first");
+                    return
+                }
+                next.height = IntentNumber
+            }
+            case "angle": {
+                if next.locked {
+                    await Fail("Unlock reference alignment first");
+                    return
+                }
+                next.angle = IntentNumber
+            }
+        }
+        candidate := await prepare_model_reference(RequestedDocument, Revision, next)
+        if !candidate.Valid {
+            await Fail(candidate.Error);
+            return
+        }
+        if Document != RequestedDocument || !Writable {
+            await Fail("Reference edit is no longer current");
+            return
+        }
+        ExpectedRevision = Revision;
+        Submitted = true
+        await send_event<"StudioDocumentEdit">(self, RequestedDocument, Revision, 0, -1, candidate.Text, "model-reference", Request)
+    }
+    on Begin {
+        await Publish()
+    }
+    on StudioDocumentState {
+        DocumentBusy = event.Busy
+        changed := self.Document != event.Document
+        if changed && self.Busy && !Submitted {
+            await Complete()
+        }
+        self.Document = event.Document;
+        self.Revision = event.Revision
+        if changed {
+            Visible = false;
+            Picker = false;
+            Rows = [];
+            self.Error = ""
+        }
+        if !self.Busy {
+            await Refresh()
+        }
+    }
+    on StudioCollaborationState {
+        Room = event.Active
+        Writable = !event.Active || (event.Ready && !event.Pending && !event.Replaying && (event.Role == "host" || event.Role == "editor"))
+        await Publish()
+    }
+    on StudioModelReferenceEdit {
+        if event.Document != self.Document || event.Revision != self.Revision || !Active {
+            return
+        }
+        if event.Id == "visible" {
+            Visible = event.Enabled;
+            await Display();
+            return
+        }
+        if event.Id == "opacity" {
+            Opacity = clamp(event.Number, 0.0, 1.0);
+            await Display();
+            return
+        }
+        if event.Id == "close" {
+            Picker = false;
+            await Publish();
+            return
+        }
+        if event.Id == "picker" {
+            if Busy || !Writable {
+                return
+            }
+            Picker = true;
+            Query = "";
+            First = 0;
+            await Choices();
+            return
+        }
+        if event.Id == "query" {
+            Query = event.Text;
+            First = 0;
+            await Choices();
+            return
+        }
+        if event.Id == "previous" {
+            First = max(0, First - 7);
+            await Choices();
+            return
+        }
+        if event.Id == "next" {
+            if First + 7 < Total {
+                First += 7;
+                await Choices()
+            }
+            return
+        }
+        if Busy || DocumentBusy || !Writable || Request >= 2147483647 {
+            return
+        }
+        if event.Id != "image" && event.Id != "locked" && event.Id != "x" && event.Id != "y" && event.Id != "height" && event.Id != "angle" {
+            return
+        }
+        Request += 1;
+        RequestedDocument = self.Document;
+        Intent = event.Id;
+        IntentText = event.Text;
+        IntentNumber = event.Number;
+        IntentEnabled = event.Enabled
+        Busy = true;
+        Submitted = false;
+        Error = "";
+        Picker = false
+        if Room {
+            await Submit(self.Revision)
+        } else {
+            await send_event<"StudioDocumentExternalEditRequested">(self, "model-reference", self.Document, Request)
+        }
+        await Publish()
+    }
+    on StudioDocumentExternalEditReady {
+        if event.Owner != "model-reference" {
+            return
+        }
+        if !Busy || Submitted || event.Document != RequestedDocument || event.Request != self.Request {
+            if event.Ok {
+                await send_event<"StudioDocumentExternalEditComplete">(self, "model-reference", event.Document, event.Request)
+            }
+            return
+        }
+        if !event.Ok {
+            await Fail(event.Error);
+            return
+        }
+        Lease = true;
+        await Submit(event.Revision)
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        if event.Owner != "model-reference" || event.Document != RequestedDocument || event.Request != self.Request || !Busy || Submitted {
+            return
+        }
+        await Complete();
+        await Refresh()
+    }
+    on StudioDocumentEditResult {
+        if !Submitted || event.Owner != "model-reference" || event.Request != self.Request || event.Document != RequestedDocument || event.ExpectedRevision != self.ExpectedRevision {
+            return
+        }
+        success := event.Ok;
+        failure := event.Error
+        await Complete()
+        if success {
+            if self.Document == event.Document {
+                self.Revision = event.Revision
+            }
+            await send_event<"StudioDocumentCommand">(self, "refresh", "")
+        } else {
+            self.Error = failure
+        }
+        await Refresh()
+    }
+    on WorkspaceResourcesChanged {
+        if Picker {
+            await Choices()
+        }
+    }
+}

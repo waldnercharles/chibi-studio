@@ -1,0 +1,988 @@
+behavior StudioUICanvas {
+    self.Path: string = ""
+    Document: int = 0
+    Revision: int = 0
+    Preview: int = 0
+    Session: int = 0
+    Asset: string = ""
+    Assets: WorkspaceResourceRow[] = []
+    AssetQuery: string = ""
+    AssetFirst: int = 0
+    AssetTotal: int = 0
+    AssetNotice: string = ""
+    Context: string = ""
+    Image: string = ""
+    Error: string = ""
+    Ready := false
+    Dirty := false
+    Busy := false
+    Age: float = 0.0
+    RenderWidth: int = 640
+    RenderHeight: int = 360
+    Width: int = 640
+    Height: int = 360
+    Preset: string = "fit"
+    Selected: string = ""
+    SelectedTag: string = ""
+    SourceName: string = ""
+    SourcePath: string = ""
+    SourceStart: int = -1
+    SourceElement: int = -1
+    FollowDocument := true
+    SelectionX: double = 0
+    SelectionY: double = 0
+    SelectionWidth: double = 0
+    SelectionHeight: double = 0
+
+    Zoom: double = 1
+    ZoomPreset: string = "zoom100"
+    AtomicAlign := false
+    ReturnTool: string = "select"
+    Tool: string = "select"
+    CollaborationActive := false
+    Gesture := false
+    GuardPending := false
+    Authorized := false
+    PointerDown := false
+    Request: int = 0
+    GestureDocument: int = 0
+    GestureRevision: int = 0
+    GestureElement: int = -1
+    ExpectedRevision: int = 0
+    DeltaX: double = 0
+    DeltaY: double = 0
+    PointerScaleX: double = 1
+    PointerScaleY: double = 1
+    BaseBoxX: double = 0
+    BaseBoxY: double = 0
+    BaseBoxWidth: double = 0
+    BaseBoxHeight: double = 0
+    GestureNames: string[] = []
+    GestureLiterals: string[] = []
+    GestureNumbers: double[] = []
+    GestureUnits: double[] = []
+    GestureSigns: double[] = []
+    GestureAxes: int[] = []
+    RelativePosition := false
+    DisplayScaleX: double = 1
+    DisplayScaleY: double = 1
+    DrawRevision: int = 0
+    LoadAssets :: fn() {
+        page := await query_workspace_resources(AssetFirst, 6, "ui", AssetQuery)
+        Assets = page.Rows
+        AssetTotal = page.Status.Total
+        AssetNotice = ""
+        if !page.Status.Ok || !page.Status.Complete {
+            AssetNotice = page.Status.Message
+        }
+        if length(page.Rows) == 0 && AssetFirst < page.Status.Total {
+            AssetNotice = "UI inventory changed or returned an incomplete page. Search again."
+        }
+    }
+    Publish :: fn() {
+        await set_ui_data(Name: "uiCanvasAssetQuery", Value: AssetQuery)
+        await set_ui_data(Name: "uiCanvasAssetFirst", Value: AssetFirst)
+        await set_ui_data(Name: "uiCanvasAssetTotal", Value: AssetTotal)
+        await set_ui_data(Name: "uiCanvasAssetNotice", Value: AssetNotice)
+        await set_ui_data(Name: "uiCanvasAssetPrevious", Value: AssetFirst > 0)
+        await set_ui_data(Name: "uiCanvasAssetNext", Value: AssetFirst + length(Assets) < AssetTotal)
+        await set_ui_data(Name: "uiCanvasDocument", Value: Document)
+        await set_ui_data(Name: "uiCanvasRevision", Value: Revision)
+        await set_ui_data(Name: "uiCanvasTool", Value: Tool)
+        await set_ui_data(Name: "uiCanvasZoomPreset", Value: ZoomPreset)
+        await set_ui_data(Name: "uiCanvasDisplayWidth", Value: cast<double>(Width) * Zoom)
+        await set_ui_data(Name: "uiCanvasDisplayHeight", Value: cast<double>(Height) * Zoom)
+        await set_ui_data(Name: "uiCanvasAlign", Value: "")
+        await set_ui_data(Name: "uiCanvasEditing", Value: Gesture || GuardPending)
+        await set_ui_data(Name: "uiCanvasCanEdit", Value: Ready && !CollaborationActive && SourceElement >= 0)
+        await set_ui_data(Name: "uiCanvasFollow", Value: FollowDocument)
+        await set_ui_data(Name: "uiCanvasAsset", Value: Asset)
+        await set_ui_data(Name: "uiCanvasAssets", Value: Assets)
+        await set_ui_data(Name: "uiCanvasReady", Value: Ready)
+        await set_ui_data(Name: "uiCanvasImage", Value: Image)
+        await set_ui_data(Name: "uiCanvasError", Value: Error)
+        await set_ui_data(Name: "uiCanvasPreset", Value: Preset)
+        await set_ui_data(Name: "uiCanvasWidth", Value: Width)
+        await set_ui_data(Name: "uiCanvasHeight", Value: Height)
+        await set_ui_data(Name: "uiCanvasSelected", Value: Selected)
+        await set_ui_data(Name: "uiCanvasSourcePath", Value: SourcePath)
+        await set_ui_data(Name: "uiCanvasSourceStart", Value: SourceStart)
+        await set_ui_data(Name: "uiCanvasTag", Value: SelectedTag)
+        await set_ui_data(Name: "uiCanvasX", Value: SelectionX)
+        await set_ui_data(Name: "uiCanvasY", Value: SelectionY)
+        await set_ui_data(Name: "uiCanvasSelectionWidth", Value: SelectionWidth)
+        await set_ui_data(Name: "uiCanvasSelectionHeight", Value: SelectionHeight)
+        return
+    }
+    Close :: fn() {
+        if Preview > 0 {
+            await close_ui_source_preview(Preview)
+        }
+        Preview = 0
+        Image = ""
+        Context = ""
+        Selected = ""
+        SelectedTag = ""
+        SourceName = ""
+        SourcePath = ""
+        SourceStart = -1
+        SourceElement = -1
+        return
+    }
+    Open :: fn() {
+        if !Ready || Busy {
+            return
+        }
+        if text_equal(Asset, "") {
+            Dirty = false
+            Error = "Choose a UI page or widget that uses this stylesheet."
+            await Publish()
+            return
+        }
+        Busy = true
+        opened := await open_ui_source_preview(Document, Revision, Asset, Session)
+        Error = opened.Result.Error
+        Image = ""
+        Selected = ""
+        SourceName = ""
+        SourcePath = ""
+        SourceStart = -1
+        SourceElement = -1
+        if opened.Result.Ok {
+            Preview = opened.Result.Preview
+            Context = opened.Result.Context
+        } else {
+            Preview = 0
+            Context = ""
+        }
+        Dirty = false
+        Busy = false
+        await Publish()
+        return
+    }
+    ReadOrigin :: fn() {
+        SourceName = ""
+        SourcePath = ""
+        SourceStart = -1
+        SourceElement = -1
+        if text_equal(Selected, "") {
+            return
+        }
+        inspected := await inspect_ui_dom(Selected, "attributes", 0, 0)
+        if !inspected.Status.Ok {
+            return
+        }
+        if !text_equal(inspected.Row.SourceKey, "") && !text_equal(inspected.Row.SourceKey, Selected) {
+            Selected = inspected.Row.SourceKey
+            authored := await inspect_ui_dom(Selected, "attributes", 0, 0)
+            if !authored.Status.Ok {
+                return
+            }
+            SelectedTag = authored.Row.Tag
+            measure := get_ui_view_width(Element: "#studio-ui-canvas-image")
+            height := get_ui_scroll(Element: "#studio-ui-canvas-image")."View Height"
+            SelectionX = authored.Row.X * cast<double>(measure."View Width") / cast<double>(RenderWidth)
+            SelectionY = authored.Row.Y * cast<double>(height) / cast<double>(RenderHeight)
+            SelectionWidth = authored.Row.Width * cast<double>(measure."View Width") / cast<double>(RenderWidth)
+            SelectionHeight = authored.Row.Height * cast<double>(height) / cast<double>(RenderHeight)
+        }
+        SourceName = inspected.Row.SourceAsset
+        SourceStart = inspected.Row.SourceStart
+        if SourceStart < 0 {
+            return
+        }
+        sourceRevision := -1
+        for page in 0..15 {
+            sourcePage := await query_workspace_resources(page * 256, 256, "ui", SourceName)
+            if !sourcePage.Status.Ok || !sourcePage.Status.Complete {
+                Error = sourcePage.Status.Message
+                return
+            }
+            if sourceRevision >= 0 && sourceRevision != sourcePage.Status.Revision {
+                Error = "UI inventory changed while resolving source. Pick the element again."
+                return
+            }
+            sourceRevision = sourcePage.Status.Revision
+            foreach (asset in sourcePage.Rows) {
+                if text_equal(asset.Name, SourceName) {
+                    SourcePath = asset.Path
+                    break
+                }
+            }
+            if !text_equal(SourcePath, "") || (page + 1) * 256 >= sourcePage.Status.Total {
+                break
+            }
+            if length(sourcePage.Rows) == 0 {
+                Error = "UI source lookup returned an incomplete page."
+                return
+            }
+            if page == 15 {
+                Error = "UI source lookup exceeds 4096 matching assets. Narrow the source name."
+                return
+            }
+        }
+        identity := workspace_asset_identity(Document, Revision)
+        if !identity.Ok || !text_equal(identity.Kind, "ui") || !text_equal(identity.Name, SourceName) {
+            return
+        }
+        for page in 0..15 {
+            elements := await query_ui_source(Document, Revision, "rml", "element", First: page * 256, Count: 256)
+            if !elements.Status.Ok {
+                return
+            }
+            foreach (element in elements.Rows) {
+                if element.Start == SourceStart {
+                    SourceElement = element.Index
+                    await send_event<"StudioUIDesignerSelect">(self, element.Index)
+                    return
+                }
+            }
+            if (page + 1) * 256 >= elements.Status.Total {
+                return
+            }
+        }
+        return
+    }
+    Property :: pure fn(Properties: UiDomProperty[], Name: string, Fallback: string) -> string {
+        for property in Properties {
+            if text_equal(property.Name, Name) {
+                return property.Value
+            }
+        }
+        return Fallback
+    }
+    CaptureLength :: fn(Name: string, Literal: string, Axis: int, Sign: double) -> bool {
+        value := query_css_value(Name, Literal)
+        if !value.Simple || !text_equal(value.Kind, "length") {
+            Error = format_text("{} uses an expression or unsupported length. Edit its source directly.", Name)
+            return false
+        }
+        current := Literal
+        unit := value.Unit
+        if text_equal(unit, "") && value.Number == 0.0 {
+            unit = "px"
+            current = "0px"
+        }
+        axis := "x"
+        if Axis == 1 {
+            axis = "y"
+        }
+        resolved := await resolve_ui_dom_unit(Selected, unit, axis)
+        if !resolved.Status.Ok {
+            Error = resolved.Status.Error
+            return false
+        }
+        GestureNames = array_add(GestureNames, Name)
+        GestureLiterals = array_add(GestureLiterals, current)
+        GestureNumbers = array_add(GestureNumbers, value.Number)
+        GestureUnits = array_add(GestureUnits, resolved.Pixels)
+        GestureSigns = array_add(GestureSigns, Sign)
+        GestureAxes = array_add(GestureAxes, Axis)
+        return true
+    }
+    FinishGesture :: fn(Cancel: bool) {
+        PointerDown = false
+        if GuardPending && !Authorized && !Gesture {
+            await Publish()
+            return
+        }
+        if Gesture {
+            info := await workspace_document_info(GestureDocument)
+            if info.Ok && info.Transaction {
+                if Cancel {
+                    ended := await workspace_document_cancel(GestureDocument, info.Revision)
+                    if !ended.Ok {
+                        Error = ended.Error
+                    }
+                } else {
+                    ended := await workspace_document_commit(GestureDocument, info.Revision)
+                    if !ended.Ok {
+                        Error = ended.Error
+                    }
+                }
+            }
+            Gesture = false
+            settled := await workspace_document_info(GestureDocument)
+            if settled.Ok {
+                ExpectedRevision = settled.Revision
+                Revision = settled.Revision
+            }
+            await send_event<"StudioDocumentChanged">(self, GestureDocument)
+        }
+        if Authorized || GuardPending {
+            await send_event<"StudioDocumentExternalEditComplete">(self, "ui-canvas", GestureDocument, Request)
+        }
+        Authorized = false
+        GuardPending = false
+        if AtomicAlign {
+            Tool = ReturnTool
+        }
+        AtomicAlign = false
+        Dirty = Ready
+        Age = 0.0
+        await Publish()
+        return
+    }
+    ApplyGesture :: fn() {
+        if !Gesture || !Authorized {
+            return
+        }
+        for index in 0..length(GestureNames) - 1 {
+            delta := DeltaX
+            if GestureAxes[index] == 1 {
+                delta = DeltaY
+            }
+            number := GestureNumbers[index] + delta * GestureSigns[index] / GestureUnits[index]
+            if text_equal(Tool, "resize") {
+                number = max(0.0, number)
+            }
+            formatted := format_css_value(GestureNames[index], GestureLiterals[index], "number", number, "", "", 0.0, 0.0, 0.0, 0.0)
+            if !formatted.Ok {
+                Error = formatted.Error
+                await FinishGesture(true)
+                return
+            }
+            changed := await edit_ui_source(GestureDocument, GestureRevision, "style", GestureElement, Name: GestureNames[index], Value: formatted.Text)
+            if !changed.Status.Ok {
+                Error = changed.Status.Error
+                await FinishGesture(true)
+                return
+            }
+            GestureRevision = changed.Status.Revision
+        }
+        ExpectedRevision = GestureRevision
+        Revision = GestureRevision
+        if text_equal(Tool, "move") {
+            SelectionX = BaseBoxX + DeltaX * DisplayScaleX
+            SelectionY = BaseBoxY + DeltaY * DisplayScaleY
+        } else {
+            SelectionWidth = max(0.0, BaseBoxWidth + DeltaX * DisplayScaleX)
+            SelectionHeight = max(0.0, BaseBoxHeight + DeltaY * DisplayScaleY)
+        }
+        await send_event<"StudioDocumentChanged">(self, GestureDocument)
+        await Publish()
+        return
+    }
+    BeginGesture :: fn() {
+        if text_equal(Tool, "select") || Gesture || GuardPending {
+            return
+        }
+        if CollaborationActive {
+            Error = "Canvas gestures require an enabled collaboration proposal mapping."
+            await Publish()
+            return
+        }
+        if SourceElement < 0 || Document <= 0 || text_equal(Selected, "") {
+            return
+        }
+        selected := await select_ui_dom_context(Context)
+        if !selected.Status.Ok {
+            return
+        }
+        properties := await inspect_ui_dom(Selected, "declared", Count: 256)
+        computed := await inspect_ui_dom(Selected, "computed", Count: 256)
+        if !properties.Status.Ok || !computed.Status.Ok || !properties.Status.Complete || !computed.Status.Complete {
+            Error = "Current layout properties could not be read completely."
+            await Publish()
+            return
+        }
+        ancestor := Selected
+        for depth in 0..63 {
+            transform := await inspect_ui_dom(ancestor, "computed", Count: 256)
+            if !transform.Status.Ok || !text_equal(Property(transform.Properties, "transform", "none"), "none") {
+                Error = "Transforming this layout requires editing the transform in source."
+                await Publish()
+                return
+            }
+            ancestor = transform.Row.Parent
+            if text_equal(ancestor, "") {
+                break
+            }
+        }
+        GestureNames = []
+        GestureLiterals = []
+        GestureNumbers = []
+        GestureUnits = []
+        GestureSigns = []
+        GestureAxes = []
+        RelativePosition = false
+        if !AtomicAlign {
+            ReturnTool = Tool
+        }
+        if text_equal(Tool, "move") {
+            position := Property(computed.Properties, "position", "static")
+            RelativePosition = text_equal(position, "static")
+            for axis in 0..1 {
+                near := "left"
+                far := "right"
+                if axis == 1 {
+                    near = "top"
+                    far = "bottom"
+                }
+                nearValue := Property(properties.Properties, near, "auto")
+                farValue := Property(properties.Properties, far, "auto")
+                if text_equal(nearValue, "auto") && text_equal(farValue, "auto") {
+                    if !RelativePosition && !text_equal(position, "relative") {
+                        Error = "Set a literal positioned edge before moving this element."
+                        await Publish()
+                        return
+                    }
+                    nearValue = "0px"
+                }
+                if !text_equal(nearValue, "auto") {
+                    if !await CaptureLength(near, nearValue, axis, 1.0) {
+                        await Publish()
+                        return
+                    }
+                }
+                if !text_equal(farValue, "auto") {
+                    if !await CaptureLength(far, farValue, axis, -1.0) {
+                        await Publish()
+                        return
+                    }
+                }
+            }
+        } else {
+            for axis in 0..1 {
+                property := "width"
+                pixels := computed.Row.ContentWidth
+                if axis == 1 {
+                    property = "height"
+                    pixels = computed.Row.ContentHeight
+                }
+                if text_equal(Property(computed.Properties, "box-sizing", "content-box"), "border-box") {
+                    pixels = computed.Row.Width
+                    if axis == 1 {
+                        pixels = computed.Row.Height
+                    }
+                }
+                literal := Property(properties.Properties, property, "auto")
+                if text_equal(literal, "auto") {
+                    literal = format_text("{}px", pixels)
+                }
+                if !await CaptureLength(property, literal, axis, 1.0) {
+                    await Publish()
+                    return
+                }
+            }
+        }
+        measure := get_ui_view_width(Element: "#studio-ui-canvas-image")
+        height := get_ui_scroll(Element: "#studio-ui-canvas-image")."View Height"
+        if measure.PixelRatio <= 0.0 || measure."View Width" <= 0.0 || height <= 0.0 {
+            return
+        }
+        PointerScaleX = cast<double>(RenderWidth) / (cast<double>(measure."View Width") * cast<double>(measure.PixelRatio))
+        PointerScaleY = cast<double>(RenderHeight) / (cast<double>(height) * cast<double>(measure.PixelRatio))
+        DisplayScaleX = cast<double>(measure."View Width") / cast<double>(RenderWidth)
+        DisplayScaleY = cast<double>(height) / cast<double>(RenderHeight)
+        BaseBoxX = SelectionX
+        BaseBoxY = SelectionY
+        BaseBoxWidth = SelectionWidth
+        BaseBoxHeight = SelectionHeight
+        DeltaX = 0.0
+        DeltaY = 0.0
+        if Request >= 2147483646 {
+            Error = "Canvas edit request identities exhausted."
+            await Publish()
+            return
+        }
+        Request += 1
+        GuardPending = true
+        PointerDown = true
+        GestureDocument = Document
+        GestureRevision = Revision
+        GestureElement = SourceElement
+        await send_event<"StudioDocumentExternalEditRequested">(self, "ui-canvas", GestureDocument, Request)
+        await Publish()
+        return
+    }
+    Align :: fn(Id: string) {
+        if Gesture || GuardPending || SourceElement < 0 {
+            return
+        }
+        selected := await select_ui_dom_context(Context)
+        if !selected.Status.Ok {
+            return
+        }
+        element := await inspect_ui_dom(Selected, "attributes", Count: 0)
+        if !element.Status.Ok || text_equal(element.Row.Parent, "") {
+            return
+        }
+        parent := await inspect_ui_dom(element.Row.Parent, "attributes", Count: 0)
+        if !parent.Status.Ok {
+            return
+        }
+        left := parent.Row.X + parent.Row.BorderLeft + parent.Row.PaddingLeft
+        top := parent.Row.Y + parent.Row.BorderTop + parent.Row.PaddingTop
+        deltaX := 0.0
+        deltaY := 0.0
+        switch Id {
+            case "alignLeft": {
+                deltaX = left - element.Row.X
+            }
+            case "alignCenter": {
+                deltaX = left + (parent.Row.ContentWidth - element.Row.Width) * 0.5 - element.Row.X
+            }
+            case "alignRight": {
+                deltaX = left + parent.Row.ContentWidth - element.Row.Width - element.Row.X
+            }
+            case "alignTop": {
+                deltaY = top - element.Row.Y
+            }
+            case "alignMiddle": {
+                deltaY = top + (parent.Row.ContentHeight - element.Row.Height) * 0.5 - element.Row.Y
+            }
+            case "alignBottom": {
+                deltaY = top + parent.Row.ContentHeight - element.Row.Height - element.Row.Y
+            }
+        }
+        ReturnTool = Tool
+        Tool = "move"
+        AtomicAlign = true
+        await BeginGesture()
+        if GuardPending {
+            DeltaX = deltaX
+            DeltaY = deltaY
+        } else {
+            Tool = ReturnTool
+            AtomicAlign = false
+        }
+        await Publish()
+        return
+    }
+    Zoom :: fn(Value: double, Preset: string) {
+        ratio := Value / Zoom
+        SelectionX *= ratio
+        SelectionY *= ratio
+        SelectionWidth *= ratio
+        SelectionHeight *= ratio
+        Zoom = Value
+        ZoomPreset = Preset
+        return
+    }
+    on StudioDocumentExternalEditReady {
+        if !GuardPending || !text_equal(event.Owner, "ui-canvas") || event.Request != self.Request || event.Document != GestureDocument {
+            return
+        }
+        GuardPending = false
+        if !event.Ok || !PointerDown || self.Document != GestureDocument || event.Revision != GestureRevision {
+            Authorized = event.Ok
+            self.Error = event.Error
+            if event.Ok {
+                self.Error = "Source changed before the canvas gesture. Select again."
+            }
+            await FinishGesture(true)
+            return
+        }
+        Authorized = true
+        begun := await workspace_document_begin(GestureDocument, event.Revision)
+        if !begun.Ok {
+            self.Error = begun.Error
+            await FinishGesture(true)
+            return
+        }
+        Gesture = true
+        ExpectedRevision = GestureRevision
+        await send_event<"StudioDocumentChanged">(self, GestureDocument)
+        if RelativePosition {
+            changed := await edit_ui_source(GestureDocument, GestureRevision, "style", GestureElement, Name: "position", Value: "relative")
+            if !changed.Status.Ok {
+                self.Error = changed.Status.Error
+                await FinishGesture(true)
+                return
+            }
+            GestureRevision = changed.Status.Revision
+        }
+        await ApplyGesture()
+        if AtomicAlign && Gesture {
+            await FinishGesture(false)
+        }
+    }
+    on StudioDocumentExternalEditCancelRequested {
+        if text_equal(event.Owner, "ui-canvas") && event.Document == GestureDocument && event.Request == self.Request {
+            GuardPending = false
+            Authorized = true
+            await FinishGesture(true)
+        }
+    }
+    on StudioCollaborationState {
+        CollaborationActive = event.Active
+        if event.Active && (Gesture || GuardPending) {
+            await FinishGesture(true)
+        }
+        Publish()
+    }
+    on StudioUICanvasCancel {
+        FinishGesture(true)
+    }
+    on Begin {
+        await LoadAssets()
+        await Publish()
+    }
+    on StudioDocumentState {
+        if GuardPending && event.Document == GestureDocument && event.Revision == GestureRevision {
+            return
+        }
+        if Gesture && event.Document == GestureDocument && event.Revision == ExpectedRevision {
+            self.Revision = event.Revision
+            return
+        }
+        if Gesture || GuardPending {
+            await FinishGesture(true)
+        }
+        if self.Document == event.Document && self.Revision == event.Revision && text_equal(self.Path, event.Path) {
+            return
+        }
+        if self.Document != event.Document || !text_equal(self.Path, event.Path) {
+            await Close()
+        }
+        self.Document = event.Document
+        self.Path = event.Path
+        self.Revision = event.Revision
+        Ready = false
+        self.Error = ""
+        Image = ""
+        Selected = ""
+        SourceName = ""
+        SourcePath = ""
+        SourceStart = -1
+        SourceElement = -1
+        if self.Document > 0 {
+            identity := workspace_asset_identity(self.Document, self.Revision)
+            Ready = identity.Ok && (text_equal(identity.Kind, "ui") || text_equal(identity.Kind, "stylesheet"))
+            if Ready {
+                await LoadAssets()
+                if text_equal(identity.Kind, "ui") && FollowDocument {
+                    Asset = identity.Name
+                }
+                self.Dirty = true
+                Age = 0.0
+            }
+        }
+        Publish()
+    }
+    on StudioRuntimeState {
+        next := 0
+        if event.Ready {
+            next = event.Session
+        }
+        if next != self.Session {
+            if Gesture || GuardPending {
+                await FinishGesture(true)
+            }
+            await Close()
+            self.Session = next
+            Dirty = self.Ready
+            Age = 0.0
+            await Publish()
+        }
+    }
+    on StudioUICanvasSearch {
+        AssetQuery = event.Query
+        AssetFirst = 0
+        await LoadAssets()
+        await Publish()
+    }
+    on WorkspaceResourcesChanged {
+        await LoadAssets()
+        await Publish()
+    }
+    on StudioUICanvasAsset {
+        if Gesture || GuardPending {
+            await FinishGesture(true)
+            return
+        }
+        FollowDocument = false
+        Asset = event.Name
+        foreach (asset in Assets) {
+            if text_equal(asset.Name, event.Name) && !text_equal(asset.Path, Path) {
+                await send_event<"StudioDocumentCommand">(self, "open", asset.Path)
+                return
+            }
+        }
+        Dirty = Ready
+        Age = 1.0
+        await Publish()
+    }
+    on StudioResourceCommand {
+        if !text_equal(event.Id, "previewUi") {
+            return
+        }
+        if Gesture || GuardPending {
+            await FinishGesture(true)
+            return
+        }
+        AssetFirst = 0
+        await LoadAssets()
+        FollowDocument = true
+        if Document > 0 {
+            identity := workspace_asset_identity(Document, Revision)
+            if identity.Ok && text_equal(identity.Kind, "ui") {
+                Asset = identity.Name
+                Dirty = true
+                Age = 1.0
+            }
+        }
+        await send_event<"StudioPanelSelected">(self, "main", "designer")
+        await Publish()
+    }
+    on StudioUICanvasCommand {
+        if text_equal(event.Id, "cancel") {
+            await FinishGesture(true)
+            return
+        }
+        if Gesture || GuardPending {
+            return
+        }
+        switch event.Id {
+            case "assetsPrevious": {
+                AssetFirst -= 6
+                if AssetFirst < 0 {
+                    AssetFirst = 0
+                }
+                await LoadAssets()
+            }
+            case "assetsNext": {
+                if AssetFirst + length(Assets) < AssetTotal {
+                    AssetFirst += 6
+                    await LoadAssets()
+                }
+            }
+            case "zoom25": {
+                await Zoom(0.25, event.Id)
+            }
+            case "zoom50": {
+                await Zoom(0.5, event.Id)
+            }
+            case "zoom75": {
+                await Zoom(0.75, event.Id)
+            }
+            case "zoom100": {
+                await Zoom(1.0, event.Id)
+            }
+            case "zoom125": {
+                await Zoom(1.25, event.Id)
+            }
+            case "zoom150": {
+                await Zoom(1.5, event.Id)
+            }
+            case "zoom200": {
+                await Zoom(2.0, event.Id)
+            }
+            case "alignLeft": {
+                await Align(event.Id)
+            }
+            case "alignCenter": {
+                await Align(event.Id)
+            }
+            case "alignRight": {
+                await Align(event.Id)
+            }
+            case "alignTop": {
+                await Align(event.Id)
+            }
+            case "alignMiddle": {
+                await Align(event.Id)
+            }
+            case "alignBottom": {
+                await Align(event.Id)
+            }
+            case "select": {
+                Tool = "select"
+            }
+            case "move": {
+                Tool = "move"
+            }
+            case "resize": {
+                Tool = "resize"
+            }
+            case "source": {
+                if SourceStart >= 0 && !text_equal(SourcePath, "") {
+                    if !text_equal(Path, SourcePath) {
+                        FollowDocument = false
+                    }
+                    await send_event<"StudioTextProjectRange">(self, SourcePath, SourceStart, SourceStart)
+                }
+            }
+            case "follow": {
+                FollowDocument = true
+                identity := workspace_asset_identity(Document, Revision)
+                if identity.Ok && text_equal(identity.Kind, "ui") {
+                    Asset = identity.Name
+                    Dirty = true
+                    Age = 1.0
+                }
+            }
+            case "refresh": {
+                Dirty = Ready
+                Age = 1.0
+            }
+            case "fit": {
+                Preset = "fit"
+            }
+            case "desktop": {
+                Preset = "desktop"
+                Width = 1280
+                Height = 720
+            }
+            case "phone": {
+                Preset = "phone"
+                Width = 390
+                Height = 844
+            }
+            case "tablet": {
+                Preset = "tablet"
+                Width = 1024
+                Height = 768
+            }
+            case "inspect": {
+                if !text_equal(Selected, "") {
+                    await select_ui_dom_context(Context)
+                    await send_event<"StudioDOMInspectorSelect">(self, Selected)
+                    await send_event<"StudioPanelSelected">(self, "secondary", "dom")
+                }
+            }
+        }
+        Publish()
+    }
+    on StudioUICanvasPointer {
+        if text_equal(event.Action, "begin") {
+            if event.Button == 0 && event.Document == self.Document && event.Revision == self.Revision {
+                await BeginGesture()
+                if GuardPending {
+                    DeltaX += cast<double>(event.Delta.x) * PointerScaleX
+                    DeltaY += cast<double>(event.Delta.y) * PointerScaleY
+                }
+            }
+            return
+        }
+        if text_equal(event.Action, "drag") {
+            if (Gesture || GuardPending) && PointerDown && event.Document == GestureDocument {
+                DeltaX += cast<double>(event.Delta.x) * PointerScaleX
+                DeltaY += cast<double>(event.Delta.y) * PointerScaleY
+                if Gesture {
+                    await ApplyGesture()
+                }
+            }
+            return
+        }
+        if text_equal(event.Action, "end") {
+            if Gesture || GuardPending {
+                DeltaX += cast<double>(event.Delta.x) * PointerScaleX
+                DeltaY += cast<double>(event.Delta.y) * PointerScaleY
+                if Gesture && !event.Canceled {
+                    await ApplyGesture()
+                }
+                await FinishGesture(event.Canceled)
+            }
+            return
+        }
+        if Gesture || GuardPending {
+            return
+        }
+        if !text_equal(event.Action, "select") || Preview <= 0 || text_equal(Image, "") {
+            return
+        }
+        selected := await select_ui_dom_context(Context)
+        if !selected.Status.Ok {
+            Error = selected.Status.Error
+            await Publish()
+            return
+        }
+        measure := get_ui_view_width(Element: "#studio-ui-canvas-image")
+        surfaceWidth := measure."View Width"
+        surfaceHeight := get_ui_scroll(Element: "#studio-ui-canvas-image")."View Height"
+        if surfaceWidth <= 0.0 || surfaceHeight <= 0.0 {
+            return
+        }
+        scale := measure.PixelRatio
+        if scale <= 0.0 {
+            return
+        }
+        picked := await pick_ui_dom(cast<double>(event.LocalPointer.x * cast<float>(RenderWidth) / (surfaceWidth * scale)), cast<double>(event.LocalPointer.y * cast<float>(RenderHeight) / (surfaceHeight * scale)))
+        Error = picked.Status.Error
+        Selected = ""
+        SourceName = ""
+        SourcePath = ""
+        SourceStart = -1
+        SourceElement = -1
+        if picked.Status.Ok {
+            Selected = picked.Row.Key
+            SelectedTag = picked.Row.Tag
+            SelectionX = picked.Row.X * cast<double>(surfaceWidth) / cast<double>(RenderWidth)
+            SelectionY = picked.Row.Y * cast<double>(surfaceHeight) / cast<double>(RenderHeight)
+            SelectionWidth = picked.Row.Width * cast<double>(surfaceWidth) / cast<double>(RenderWidth)
+            SelectionHeight = picked.Row.Height * cast<double>(surfaceHeight) / cast<double>(RenderHeight)
+            await ReadOrigin()
+        }
+        Publish()
+    }
+    on Tick {
+        if Gesture {
+            Age += DeltaSeconds
+            if Age >= 0.1 && DrawRevision != GestureRevision {
+                Age = 0.0
+                opened := await open_ui_source_preview(GestureDocument, GestureRevision, Asset, Session)
+                Error = opened.Result.Error
+                if opened.Result.Ok {
+                    Preview = opened.Result.Preview
+                    Context = opened.Result.Context
+                    drawn := await draw_ui_source_preview(Preview, GestureRevision, RenderWidth, RenderHeight, 0.0)
+                    Error = drawn.Result.Error
+                    Image = ""
+                    if drawn.Result.Ok {
+                        Image = format_text("kit:ui-source/{}", drawn.Result.Preview)
+                        Context = drawn.Result.Context
+                        DrawRevision = GestureRevision
+                    }
+                }
+                await Publish()
+            }
+            return
+        }
+        if !Ready || Busy || GuardPending {
+            return
+        }
+        measure := get_ui_view_width(Element: "#studio-ui-canvas-surface")
+        surfaceWidth := measure."View Width"
+        surfaceHeight := get_ui_scroll(Element: "#studio-ui-canvas-surface")."View Height"
+        if surfaceWidth <= 0.0 || surfaceHeight <= 0.0 || measure.PixelRatio <= 0.0 {
+            return
+        }
+        Age += DeltaSeconds
+        if Dirty {
+            if Age < 0.15 {
+                return
+            }
+            await Open()
+        }
+        if Preview <= 0 {
+            return
+        }
+        if text_equal(Preset, "fit") {
+            Width = cast<int>(max(1.0, min(surfaceWidth, 2048.0)))
+            Height = cast<int>(max(1.0, min(surfaceHeight, 2048.0)))
+        }
+        density := min(measure.PixelRatio, min(2048.0 / cast<float>(Width), 2048.0 / cast<float>(Height)))
+        RenderWidth = cast<int>(max(1.0, cast<float>(Width) * density))
+        RenderHeight = cast<int>(max(1.0, cast<float>(Height) * density))
+        drawn := await draw_ui_source_preview(Preview, Revision, RenderWidth, RenderHeight, cast<double>(min(DeltaSeconds, 0.25)))
+        Error = drawn.Result.Error
+        Image = ""
+        if drawn.Result.Ok {
+            Image = format_text("kit:ui-source/{}", drawn.Result.Preview)
+            Context = drawn.Result.Context
+        } else {
+            Selected = ""
+            SourceName = ""
+            SourcePath = ""
+            SourceStart = -1
+            SourceElement = -1
+            if drawn.Result.Stale {
+                Dirty = true
+                Age = 0.0
+            }
+        }
+        await Publish()
+    }
+}

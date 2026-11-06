@@ -1,0 +1,788 @@
+behavior StudioDebugger {
+    self.Generation: uint64 = 0
+    ActivityRows: WorkspaceDebugActivity[] = []
+    ActivityDropped: uint64 = 0
+    ActivityError: string = ""
+    PrototypeRows: WorkspaceDebugRow[] = []
+    PrototypeFirst: int = 0
+    PrototypeTotal: int = 0
+    PrototypeQuery: string = ""
+    PrototypeOpen := false
+    FollowName: string = ""
+    WatchedObject: int = 0
+    PolicyOwner: uint64 = 0
+    LastRuntimeStep: int = -1
+    BreakKeys: string[] = []
+    BreakObjects: int[] = []
+    BreakNames: string[] = []
+    BreakSeen: int64[] = []
+    RuntimePlaying := false
+    FollowNewest := false
+    BreakOnSpawn := false
+    FollowLocation := true
+    FollowEntity := true
+    WatchedPrototype: string = ""
+    SeenCreation: int64 = 0
+    LastPauseModule: uint64 = 0
+    LastPauseFunction: uint64 = 0
+    LastPauseOccurrence: uint64 = 0
+    LastPauseStep: uint64 = 0
+    Session: int = 0
+    Handle: int = 0
+    ViewRevision: int = 0
+    Name: string = ""
+    Owner: uint64 = 0
+    Targets: struct<"WorkspaceDebugRow">[] = []
+    Frames: struct<"WorkspaceDebugRow">[] = []
+    Values: struct<"WorkspaceDebugRow">[] = []
+    Points: struct<"WorkspaceDebugRow">[] = []
+    Filter: string = ""
+    VisibleTargets: int[] = []
+    Paused := false
+    Retired := false
+    Error: string = ""
+    Source: string = ""
+    Line: int = 0
+    Start: int = 0
+    End: int = 0
+    BreakpointsOpen := false
+    ValuesOpen := true
+    Idle: float = 0.0
+    Snapshot: string = ""
+    SnapshotPath: string = ""
+    SnapshotStart: int = 0
+    SnapshotEnd: int = 0
+    AutoReveal := false
+    PendingText: string = ""
+    PendingPath: string = ""
+    PendingStart: int = 0
+    PendingEnd: int = 0
+    action targets = query_debug_targets(Session)
+    action open = open_debug_target(Session, Name, Owner)
+    action inspect = inspect_debug_target(Handle)
+    action close = close_debug_target(Handle)
+    publish :: fn() {
+        VisibleTargets = []
+        i: int = 0
+        for row in Targets {
+            if Filter == "" || text_contains(Filter, row.name, true) {
+                VisibleTargets = array_add(VisibleTargets, i)
+            }
+            i += 1
+        }
+        frame_slots: int[] = []
+        point_slots: int[] = []
+        index := cast<int>(0)
+        for frame in Frames {
+            frame_slots = array_add(frame_slots, index)
+            index += 1
+        }
+        index = 0
+        for point in Points {
+            point_slots = array_add(point_slots, index)
+            index += 1
+        }
+        await set_ui_data(Name: "debugFrameSlots", Value: frame_slots)
+        await set_ui_data(Name: "debugPointSlots", Value: point_slots)
+        await set_ui_data(Name: "debugViewRevision", Value: ViewRevision)
+        await set_ui_data(Name: "debugSnapshot", Value: Snapshot)
+        await set_ui_data(Name: "debugSnapshotPath", Value: SnapshotPath)
+        await set_ui_data(Name: "debugSnapshotStart", Value: SnapshotStart)
+        await set_ui_data(Name: "debugSnapshotEnd", Value: SnapshotEnd)
+        await set_ui_data(Name: "debugPrototypeRows", Value: PrototypeRows)
+        await set_ui_data(Name: "debugPrototypeFirst", Value: PrototypeFirst)
+        await set_ui_data(Name: "debugPrototypeTotal", Value: PrototypeTotal)
+        await set_ui_data(Name: "debugPrototypeQuery", Value: PrototypeQuery)
+        await set_ui_data(Name: "debugPrototypeOpen", Value: PrototypeOpen)
+        await set_ui_data(Name: "debugWatchedName", Value: FollowName)
+        await set_ui_data(Name: "debugWatchedObject", Value: WatchedObject)
+        await set_ui_data(Name: "debugSpawnBreakCount", Value: length(BreakKeys))
+        await set_ui_data(Name: "debugFollowNewest", Value: FollowNewest)
+        await set_ui_data(Name: "debugBreakOnSpawn", Value: BreakOnSpawn)
+        await set_ui_data(Name: "debugFollowLocation", Value: FollowLocation)
+        await set_ui_data(Name: "debugFollowEntity", Value: FollowEntity)
+        await set_ui_data(Name: "debugWatchedPrototype", Value: WatchedPrototype)
+        await set_ui_data(Name: "debugSession", Value: Session)
+        await set_ui_data(Name: "debugHandle", Value: Handle)
+        await set_ui_data(Name: "debugName", Value: Name)
+        await set_ui_data(Name: "debugOwner", Value: Owner)
+        await set_ui_data(Name: "debugTargets", Value: Targets)
+        await set_ui_data(Name: "debugTargetSlots", Value: VisibleTargets)
+        await set_ui_data(Name: "debugFilter", Value: Filter)
+        await set_ui_data(Name: "debugFrames", Value: Frames)
+        await set_ui_data(Name: "debugValues", Value: Values)
+        await set_ui_data(Name: "debugPoints", Value: Points)
+        await set_ui_data(Name: "debugPaused", Value: Paused)
+        await set_ui_data(Name: "debugRetired", Value: Retired)
+        await set_ui_data(Name: "debugError", Value: Error)
+        await set_ui_data(Name: "debugSource", Value: Source)
+        await set_ui_data(Name: "debugLine", Value: Line)
+        await set_ui_data(Name: "debugStart", Value: Start)
+        await set_ui_data(Name: "debugEnd", Value: End)
+        await set_ui_data(Name: "debugBreakpointsOpen", Value: BreakpointsOpen)
+        await set_ui_data(Name: "debugValuesOpen", Value: ValuesOpen)
+        send_event<"StudioDebuggerState">(self, Handle > 0, Paused && !Retired)
+        send_event<"StudioDebuggerObservations">(self, Handle, Session, Retired, Values)
+        send_event<"StudioDebuggerActivity">(self, Handle, Session, Generation, Owner, Retired, ActivityRows, ActivityDropped, ActivityError)
+        return
+    }
+    refresh_targets :: fn() {
+        await targets()
+        Targets = targets.Rows
+        Error = targets.Error
+        publish()
+        return
+    }
+    refresh :: fn() {
+        if Handle == 0 {
+            ActivityRows = []
+            Generation = 0
+            ActivityDropped = 0
+            ActivityError = ""
+            publish()
+            return
+        }
+        await inspect()
+        if !inspect.Valid {
+            Error = inspect.Error
+            ActivityRows = []
+            ActivityError = inspect.Error
+            publish()
+            return
+        }
+        changed := length(Frames) != length(inspect.Frames) || length(Points) != length(inspect.Points) || Retired != inspect.Cursor.retired || Source != inspect.Cursor.source || Start != inspect.Cursor.start || End != inspect.Cursor.end
+        index := cast<int>(0)
+        while !changed && index < length(Frames) {
+            old := Frames[index]
+            current := inspect.Frames[index]
+            if old.module != current.module || old.function != current.function || old.occurrence != current.occurrence || old.owner != current.owner || old.run != current.run || old.step != current.step || old.start != current.start || old.end != current.end {
+                changed = true
+            }
+            index += 1
+        }
+        index = 0
+        while !changed && index < length(Points) {
+            old := Points[index]
+            current := inspect.Points[index]
+            if old.module != current.module || old.function != current.function || old.occurrence != current.occurrence || old.start != current.start || old.end != current.end {
+                changed = true
+            }
+            index += 1
+        }
+        if changed {
+            if ViewRevision >= 2147483647 {
+                Error = "Debugger view revision limit reached. Restart the workspace."
+                publish()
+                return
+            }
+            ViewRevision += 1
+        }
+        Paused = inspect.Cursor.enabled
+        Retired = inspect.Cursor.retired
+        Source = inspect.Cursor.source
+        Line = inspect.Cursor.line
+        Start = inspect.Cursor.start
+        End = inspect.Cursor.end
+        Frames = inspect.Frames
+        Values = inspect.Values
+        Points = inspect.Points
+        Error = inspect.Error
+        Generation = inspect.Cursor.generation
+        if Paused && !Retired && (inspect.Cursor.module != LastPauseModule || inspect.Cursor.function != LastPauseFunction || inspect.Cursor.occurrence != LastPauseOccurrence || inspect.Cursor.step != LastPauseStep) {
+            LastPauseModule = inspect.Cursor.module;
+            LastPauseFunction = inspect.Cursor.function;
+            LastPauseOccurrence = inspect.Cursor.occurrence;
+            LastPauseStep = inspect.Cursor.step
+            if FollowEntity {
+                subject := await workspace_runtime_subject(Session, Owner)
+                if subject.Ok {
+                    send_event<"StudioRuntimeSubjectSelected">(self, Session, subject.Subject)
+                }
+            }
+            if FollowLocation && Source != "" {
+                AutoReveal = true;
+                reveal(Source, Start, End)
+            }
+        }
+        activity := await inspect_debug_activity(Handle, Generation, Owner)
+        ActivityRows = activity.Rows
+        ActivityDropped = activity.Dropped
+        ActivityError = activity.Error
+        publish()
+        return
+    }
+    control :: fn(Operation: string, Module: uint64, Function: uint64, Occurrence: uint64, Enabled: bool) {
+        if Handle == 0 || (Retired && Operation != "clear-error") {
+            return
+        }
+        result := await control_debug_target(Handle, Operation, Module, Function, Occurrence, Enabled)
+        if !result.Valid {
+            Error = result.Error
+            publish()
+            return
+        }
+        refresh()
+        return
+    }
+    reveal :: fn(Asset: string, Start: int, End: int) {
+        if Asset == "" {
+            Error = "This executable has no authored source location."
+            publish()
+            return
+        }
+        source := await read_debug_source(Handle, Asset)
+        if !source.Valid {
+            Error = source.Error
+            publish()
+            return
+        }
+        Snapshot = source.Text
+        SnapshotPath = source.Path
+        SnapshotStart = Start
+        SnapshotEnd = End
+        PendingPath = source.Path
+        PendingText = source.Text
+        PendingStart = Start
+        PendingEnd = End
+        await publish()
+        send_event<"StudioDocumentCommand">(self, "open", source.Path)
+        return
+    }
+    PrototypeChoices :: fn() {
+        choices := await query_debug_prototypes(Session, PrototypeFirst, 7, PrototypeQuery)
+        PrototypeRows = choices.Rows;
+        PrototypeTotal = choices.Total;
+        Error = choices.Error
+        if ViewRevision < 2147483647 {
+            ViewRevision += 1
+        }
+        publish();
+        return
+    }
+    SelectedBreak :: fn() {
+        BreakOnSpawn = false
+        index := cast<int>(0)
+        for key in BreakKeys {
+            if key == WatchedPrototype && BreakObjects[index] == WatchedObject {
+                BreakOnSpawn = true
+            }
+            index += 1
+        }
+        return
+    }
+    PollOwners :: fn() {
+        if Session <= 0 || !FollowNewest || WatchedPrototype == "" || FollowName == "" {
+            return
+        }
+        origins := await query_debug_spawns(Session, WatchedPrototype, WatchedObject, SeenCreation)
+        if origins.Error != "" {
+            Error = origins.Error;
+            return
+        }
+        if length(origins.Rows) > 0 {
+            PolicyOwner = origins.Rows[0].owner;
+            SeenCreation = origins.Rows[0].creation
+        }
+        if PolicyOwner != 0 && (Handle == 0 || Retired || Owner != PolicyOwner) {
+            if Handle > 0 {
+                await close()
+            }
+            Owner = PolicyOwner;
+            Name = FollowName
+            await open();
+            Handle = open.Handle;
+            Error = open.Error
+            if ViewRevision < 2147483647 {
+                ViewRevision += 1
+            }
+            refresh()
+        }
+        return
+    }
+    SpawnBreaks :: fn() {
+        if Session <= 0 || length(BreakKeys) == 0 {
+            return
+        }
+        newest: int64 = 0;
+        chosenOwner: uint64 = 0;
+        chosenName := ""
+        index := cast<int>(0)
+        for key in BreakKeys {
+            origins := await query_debug_spawns(Session, key, BreakObjects[index], BreakSeen[index])
+            if origins.Error != "" {
+                Error = origins.Error;
+                publish();
+                return
+            }
+            if length(origins.Rows) > 0 {
+                latest := origins.Rows[0]
+                BreakSeen[index] = latest.creation
+                if latest.creation > newest {
+                    newest = latest.creation;
+                    chosenOwner = latest.owner;
+                    chosenName = BreakNames[index]
+                }
+            }
+            index += 1
+        }
+        if newest == 0 || !RuntimePlaying {
+            return
+        }
+        send_event<"StudioDebugCommand">(self, "pause", "")
+        if FollowEntity {
+            selected := await workspace_runtime_subject(Session, chosenOwner)
+            if selected.Ok {
+                send_event<"StudioRuntimeSubjectSelected">(self, Session, selected.Subject)
+            }
+        }
+        if chosenName != "" {
+            if Handle == 0 || Owner != chosenOwner || Name != chosenName {
+                if Handle > 0 {
+                    await close()
+                }
+                Owner = chosenOwner;
+                Name = chosenName
+                await open();
+                Handle = open.Handle;
+                Error = open.Error
+            }
+            if Handle > 0 {
+                control("pause", 0, 0, 0, false)
+            }
+        }
+        publish();
+        return
+    }
+    ToggleSpawn :: fn() {
+        index := cast<int>(0);
+        found := cast<int>(-1)
+        for key in BreakKeys {
+            if key == WatchedPrototype && BreakObjects[index] == WatchedObject {
+                found = index
+            }
+            index += 1
+        }
+        if found >= 0 {
+            keys: string[] = [];
+            objects: int[] = [];
+            names: string[] = [];
+            seen: int64[] = [];
+            index = 0
+            for key in BreakKeys {
+                if index != found {
+                    keys = array_add(keys, key);
+                    objects = array_add(objects, BreakObjects[index]);
+                    names = array_add(names, BreakNames[index]);
+                    seen = array_add(seen, BreakSeen[index])
+                }
+                index += 1
+            }
+            BreakKeys = keys;
+            BreakObjects = objects;
+            BreakNames = names;
+            BreakSeen = seen
+        } else {
+            if length(BreakKeys) >= 64 {
+                Error = "At most 64 prototype spawn breaks may be armed.";
+                publish();
+                return
+            }
+            origins := await query_debug_spawns(Session, WatchedPrototype, WatchedObject, 0)
+            if origins.Error != "" {
+                Error = origins.Error;
+                publish();
+                return
+            }
+            baseline: int64 = 0
+            if length(origins.Rows) > 0 {
+                baseline = origins.Rows[0].creation
+            }
+            BreakKeys = array_add(BreakKeys, WatchedPrototype);
+            BreakObjects = array_add(BreakObjects, WatchedObject);
+            BreakNames = array_add(BreakNames, FollowName);
+            BreakSeen = array_add(BreakSeen, baseline)
+        }
+        SelectedBreak();
+        publish();
+        return
+    }
+    on StudioDebuggerPrototypeAction {
+        if event.Session != Session || event.Revision != ViewRevision {
+            return
+        }
+        switch event.Action {
+            case "open": {
+                PrototypeOpen = !PrototypeOpen;
+                if PrototypeOpen {
+                    PrototypeChoices()
+                }
+                publish();
+                return
+            }
+            case "query": {
+                PrototypeQuery = event.Value;
+                PrototypeFirst = 0;
+                PrototypeChoices();
+                return
+            }
+            case "previous": {
+                PrototypeFirst = max(0, PrototypeFirst - 7);
+                PrototypeChoices();
+                return
+            }
+            case "next": {
+                if PrototypeFirst + 7 < PrototypeTotal {
+                    PrototypeFirst += 7
+                }
+                PrototypeChoices();
+                return
+            }
+            case "choose": {
+                if event.Index < 0 || event.Index >= length(PrototypeRows) {
+                    return
+                }
+                row := PrototypeRows[event.Index]
+                if Handle > 0 {
+                    await close()
+                }
+                Handle = 0;
+                Owner = 0;
+                Name = row.name;
+                FollowName = row.name;
+                WatchedPrototype = row.prototype;
+                WatchedObject = row.object;
+                PolicyOwner = 0;
+                SeenCreation = 0;
+                FollowNewest = false;
+                PrototypeOpen = false
+                Frames = [];
+                Values = [];
+                Points = [];
+                ActivityRows = [];
+                Retired = false;
+                Paused = false;
+                Error = ""
+                SelectedBreak();
+                publish();
+                return
+            }
+        }
+    }
+    on StudioGraphBreakpointChanged {
+        if Handle == 0 || Retired {
+            return
+        }
+        captured := Handle;
+        session := Session
+        document := await workspace_document_read(event.Document)
+        if !document.Ok || document.Revision != event.Revision {
+            return
+        }
+        identity := workspace_asset_identity(event.Document, event.Revision)
+        if !identity.Ok {
+            return
+        }
+        source := await read_debug_source(captured, identity.Name)
+        if !source.Valid || source.Path != document.Path || source.Text != document.Text {
+            return
+        }
+        graph := inspect_document(event.Document, event.Revision)
+        if !graph.Valid {
+            return
+        }
+        for node in graph.Nodes {
+            selected := false;
+            for id in event.Nodes {
+                if node.node == id {
+                    selected = true
+                }
+            }
+            if selected && node.execution_module != 0 && node.execution_function != 0 && node.execution_occurrence != 0 {
+                if Handle != captured || Session != session || Retired {
+                    return
+                }
+                applied := await control_debug_target(captured, "breakpoint", node.execution_module, node.execution_function, node.execution_occurrence, node.breakpoint)
+                if !applied.Valid {
+                    Error = applied.Error;
+                    publish();
+                    return
+                }
+            }
+        }
+        refresh()
+    }
+    on StudioDebuggerPolicy {
+        if event.Session != Session || event.Revision != ViewRevision {
+            return
+        }
+        if event.Action == "followLocation" {
+            FollowLocation = !FollowLocation;
+            publish();
+            return
+        }
+        if event.Action == "followEntity" {
+            FollowEntity = !FollowEntity;
+            publish();
+            return
+        }
+        if WatchedPrototype == "" {
+            for target in Targets {
+                if target.owner == Owner && target.name == Name {
+                    WatchedPrototype = target.prototype;
+                    WatchedObject = target.object;
+                    FollowName = target.name
+                }
+            }
+        }
+        if WatchedPrototype == "" {
+            Error = "Choose a registered prototype to arm this policy.";
+            publish();
+            return
+        }
+        if event.Action == "spawn" {
+            ToggleSpawn();
+            return
+        }
+        if event.Action == "newest" {
+            if FollowName == "" {
+                Error = "This prototype object has no attached behavior to inspect.";
+                publish();
+                return
+            }
+            FollowNewest = !FollowNewest;
+            SeenCreation = 0;
+            PolicyOwner = 0;
+            PollOwners();
+            publish()
+        }
+    }
+    on Begin {
+        publish()
+    }
+    on StudioRuntimeState {
+        RuntimePlaying = event.Playing
+
+        if self.Session != event.Session {
+            SeenCreation = 0;
+            PolicyOwner = 0;
+            LastRuntimeStep = -1
+            PrototypeRows = [];
+            PrototypeTotal = 0;
+            PrototypeFirst = 0;
+            PrototypeOpen = false
+            index := cast<int>(0);
+            while index < length(BreakSeen) {
+                BreakSeen[index] = 0;
+                index += 1
+            }
+            self.Session = event.Session
+            if event.Ready {
+                await refresh_targets()
+            } else {
+                Targets = []
+            }
+            refresh()
+        }
+        if event.Ready && event.Steps != LastRuntimeStep {
+            LastRuntimeStep = event.Steps
+            PollOwners();
+            SpawnBreaks()
+        }
+    }
+    on StudioDebuggerFilter {
+        Filter = event.Text
+        publish()
+    }
+    on StudioDebuggerTarget {
+        if event.Session != self.Session || event.Revision != ViewRevision {
+            Error = "The debug target list changed. Choose the target again."
+            publish()
+            return
+        }
+        if ViewRevision >= 2147483647 {
+            Error = "Debugger view revision limit reached. Restart the workspace."
+            publish()
+            return
+        }
+        ViewRevision += 1
+        if Handle > 0 {
+            await close()
+        }
+        Handle = 0
+        self.Name = event.Name
+        self.Owner = event.Owner
+        FollowName = Name
+        FollowNewest = false;
+        PolicyOwner = 0
+        SeenCreation = 0
+        WatchedPrototype = ""
+        for target in Targets {
+            if target.owner == Owner && target.name == Name {
+                WatchedPrototype = target.prototype;
+                WatchedObject = target.object;
+                FollowName = target.name
+            }
+        }
+        SelectedBreak()
+        await open()
+        Handle = open.Handle
+        Error = open.Error
+        refresh()
+    }
+    on StudioDebuggerControl {
+        if event.Revision != ViewRevision {
+            Error = "The debugger view changed. Try the action again."
+            publish()
+            return
+        }
+        switch event.Id {
+            case "refresh":
+                refresh_targets()
+                case "close":
+                    if Handle > 0 {
+                        await close()
+                    }
+                    Handle = 0;
+                    FollowNewest = false;
+                    PolicyOwner = 0
+                    Paused = false
+                    Retired = false
+                    Frames = []
+                    Values = []
+                    Points = []
+                    ActivityRows = []
+                    Generation = 0
+                    ActivityDropped = 0
+                    ActivityError = ""
+                    publish()
+                    case "breakpoints":
+                        BreakpointsOpen = !BreakpointsOpen
+                        publish()
+                        case "values":
+                            ValuesOpen = !ValuesOpen
+                            publish()
+                            case:
+                                control(event.Id, 0, 0, 0, false)
+                            }
+                        }
+                        on StudioDebuggerPoint {
+                            AutoReveal = false
+
+                            if Handle == 0 || event.Revision != ViewRevision {
+                                Error = "The debugger view changed. Choose the location again."
+                                publish()
+                                return
+                            }
+                            if event.Kind == "cursor" {
+                                if event.Id == "reveal" {
+                                    reveal(Source, Start, End)
+                                }
+                                return
+                            }
+                            if event.Kind == "frame" {
+                                if event.Index < 0 || event.Index >= length(Frames) || event.Id != "reveal" {
+                                    return
+                                }
+                                frame := Frames[event.Index]
+                                reveal(frame.source, frame.start, frame.end)
+                                return
+                            }
+                            if event.Kind != "point" || event.Index < 0 || event.Index >= length(Points) {
+                                return
+                            }
+                            point := Points[event.Index]
+                            if event.Id == "reveal" {
+                                reveal(point.source, point.start, point.end)
+                                return
+                            }
+                            if event.Id == "breakpoint" {
+                                control("breakpoint", point.module, point.function, point.occurrence, !point.enabled)
+                                return
+                            }
+                            if event.Id == "run-to" {
+                                control("run-to", point.module, point.function, point.occurrence, true)
+                            }
+                        }
+                        on StudioDebugCommand {
+                            if event.Id == "slower" || event.Id == "faster" || event.Id == "normalSpeed" {
+                                if Session <= 0 {
+                                    return
+                                }
+                                current := await workspace_simulation_time_scale(Session, false, 1.0)
+                                if !current.Ok {
+                                    Error = current.Error;
+                                    publish();
+                                    return
+                                }
+                                speed := current.Scale
+                                if event.Id == "normalSpeed" {
+                                    speed = 1.0
+                                }
+                                if event.Id == "slower" {
+                                    if speed > 1.0 {
+                                        speed = 1.0
+                                    } else if speed > 0.5 {
+                                        speed = 0.5
+                                    } else if speed > 0.25 {
+                                        speed = 0.25
+                                    } else {
+                                        speed = 0.1
+                                    }
+                                }
+                                if event.Id == "faster" {
+                                    if speed < 0.25 {
+                                        speed = 0.25
+                                    } else if speed < 0.5 {
+                                        speed = 0.5
+                                    } else if speed < 1.0 {
+                                        speed = 1.0
+                                    } else {
+                                        speed = 2.0
+                                    }
+                                }
+                                send_event<"StudioSceneSpeed">(self, speed)
+                                return
+                            }
+                            if Handle == 0 || !Paused || Retired {
+                                return
+                            }
+                            switch event.Id {
+                                case "resume":
+                                    control("resume", 0, 0, 0, false)
+                                    case "stepOver":
+                                        control("over", 0, 0, 0, false)
+                                        case "stepInto":
+                                            control("into", 0, 0, 0, false)
+                                            case "stepOut":
+                                                control("out", 0, 0, 0, false)
+                                            }
+                                        }
+                                        on StudioDocumentState {
+                                            if PendingPath != "" && PendingPath == event.Path {
+                                                PendingPath = ""
+                                                current := await workspace_document_read(event.Document)
+                                                if current.Ok && current.Text == PendingText {
+                                                    send_event<"StudioTextRange">(self, PendingStart, PendingEnd)
+                                                    if AutoReveal && Paused && !Retired {
+                                                        graph := inspect_document(event.Document, current.Revision)
+                                                        for node in graph.Nodes {
+                                                            if node.execution_module == LastPauseModule && node.execution_function == LastPauseFunction && node.execution_occurrence == LastPauseOccurrence {
+                                                                send_event<"StudioGraphReveal">(self, event.Document, current.Revision, node.graph, node.node)
+                                                            }
+                                                        }
+                                                    }
+                                                    AutoReveal = false
+                                                }
+                                            }
+                                        }
+                                        on Tick {
+                                            if Handle == 0 {
+                                                return
+                                            }
+                                            Idle += DeltaSeconds
+                                            if Idle >= 0.1 {
+                                                Idle = 0.0
+                                                refresh()
+                                            }
+                                        }
+                                    }

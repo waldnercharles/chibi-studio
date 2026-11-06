@@ -1,0 +1,34 @@
+@import "theme/code.rcss";
+.studio-text-editor { display: flex; flex-direction: column; flex: 1 1 0dp; width: 100%; height: 100%; min-height: 0dp; min-width: 0dp; color: var(--foreground); background-color: var(--canvas); overflow: hidden; }
+.studio-text-toolbar { display: flex; align-items: center; gap: 6dp; flex: 0 0 auto; min-height: var(--row); padding: 4dp 8dp; border-bottom: 1dp var(--line); }
+.studio-text-title { flex: 1 1 0dp; min-width: 0dp; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.studio-text-count { color: var(--muted-foreground); margin-left: 4dp; }
+.studio-text-find, .studio-text-rename { display: flex; align-items: center; flex: 0 0 auto; gap: 6dp; padding: 6dp 8dp; border-bottom: 1dp var(--line); background-color: var(--rail); }
+.studio-text-find .field, .studio-text-rename .field { flex: 1 1 120dp; min-width: 60dp; }
+.studio-text-rename label { color: var(--muted-foreground); }
+.studio-text-notice { flex: 0 0 auto; padding: 6dp 12dp; color: var(--destructive); border-bottom: 1dp var(--line); }
+.studio-text-empty { flex: 1 1 0dp; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8dp; color: var(--muted-foreground); padding: 24dp; }
+.studio-text-empty .icon { font-size: 24dp; }
+.studio-text-surface { position: relative; display: flex; flex: 1 1 0dp; min-height: 0dp; overflow: hidden; padding: 8dp 12dp; }
+.studio-text-surface code-editor { display: block; flex: 1 1 0dp; width: 100%; height: 100%; min-width: 0dp; min-height: 0dp; font-family: var(--studio-code-font-family, jetbrains mono); font-size: var(--studio-code-font-size, 13dp); line-height: 20dp; }
+.studio-text-surface .code-input, .studio-text-surface .code-highlight { font-family: inherit; }
+.studio-text-surface .code-input { caret-color: var(--foreground); }
+.studio-text-surface .code-input selection { color: var(--foreground); background-color: var(--primary-wash); }
+.studio-text-completion { position: absolute; z-index: 10; left: 24dp; bottom: 12dp; width: 360dp; max-width: 90%; max-height: 196dp; overflow-y: auto; background-color: var(--popover); border: 1dp var(--line); border-radius: var(--r-lg); padding: 4dp; }
+.studio-text-suggestion { display: flex; align-items: center; gap: 12dp; width: 100%; height: 28dp; padding: 0dp 8dp; border-radius: var(--r); background-color: transparent; color: var(--foreground); text-align: left; }
+.studio-text-suggestion:hover, .studio-text-suggestion.selected { background-color: var(--selected); }
+.studio-text-suggestion-label { flex: 0 1 auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--studio-code-font-family, jetbrains mono); }
+.studio-text-suggestion-detail { flex: 1 1 0dp; color: var(--muted-foreground); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.studio-text-results { flex: 0 1 180dp; min-height: 0dp; overflow-y: auto; border-top: 1dp var(--line); }
+.studio-text-results header { display: flex; align-items: center; justify-content: space-between; padding: 4dp 12dp; min-height: var(--row); font-weight: 600; }
+.studio-text-result { display: flex; align-items: center; gap: 8dp; width: 100%; min-height: var(--row); padding: 4dp 12dp; background-color: transparent; color: var(--foreground); text-align: left; }
+.studio-text-result:hover { background-color: var(--accent); }
+.studio-text-result:focus { background-color: var(--selected); }
+.studio-text-problem-message { flex: 1 1 0dp; min-width: 0dp; }
+.studio-text-location { margin-left: auto; color: var(--muted-foreground); white-space: nowrap; }
+.studio-text-result-empty { color: var(--muted-foreground); padding: 8dp 12dp 12dp; }
+.studio-text-status { display: flex; align-items: center; flex: 0 0 auto; gap: 12dp; min-height: 26dp; padding: 0dp 8dp 0dp 12dp; border-top: 1dp var(--line); color: var(--muted-foreground); font-size: 11dp; }
+.studio-text-status-position { margin-left: auto; }
+.studio-text-symbol { flex: 0 0 auto; max-height: 120dp; overflow-y: auto; padding: 8dp 12dp; white-space: pre-wrap; border-top: 1dp var(--line); background-color: var(--rail); }
+
+.studio-text-draft-actions { display: flex; gap: 6dp; margin-top: 6dp; }

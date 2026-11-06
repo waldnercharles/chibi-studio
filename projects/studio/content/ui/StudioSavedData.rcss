@@ -1,0 +1,2 @@
+.caption { display: block; height: var(--h); line-height: var(--h); color: var(--muted-foreground); }
+.empty { display: block; padding: 12dp 0dp; color: var(--faint-foreground); text-align: center; }

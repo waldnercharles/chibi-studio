@@ -1,0 +1,10 @@
+.prototype-actions { margin: 8dp; }
+.prototype-actions-menu { width: 360dp; padding: 10dp; }
+.prototype-actions-title { font-weight: 600; margin-bottom: 6dp; }
+.prototype-actions-hint { color: var(--muted-foreground); margin-bottom: 8dp; }
+.prototype-actions-fields { max-height: 182dp; overflow-y: auto; margin-bottom: 8dp; }
+.prototype-actions-fields > .check { display: flex; min-height: 26dp; }
+.prototype-actions-error { color: var(--destructive); margin-bottom: 8dp; }
+
+.prototype-actions-name { display: flex; flex-direction: column; gap: 4dp; margin-bottom: 8dp; }
+.prototype-actions-name > input { width: 100%; }
